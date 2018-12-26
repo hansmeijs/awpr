@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load i18n %}{% load static %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item">{{ user.country }}
+      {% if user.country_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item">{{ user.examyear }}
+      {% if user.examyear_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item active">{{ school.abbrev }}</li>
+    <li class="breadcrumb-item active">{% trans 'Student grades' %}</li>
+  </ol>
+{% endblock %}
+
+{% block content %}
+  {% if user.enable_students_view %}
+    {% if user.enable_students_modify %}
+      <div class="mb-3">
+        <a href="{% url 'grade_add_url' %}" class="btn btn-primary">{% trans 'Add grade' %}</a>
+      </div>
+    {% endif %}
+        <h4>{% trans 'Student grades' %} {{ student.name }} {{ student.examyear }}</h4>
+
+        <table class="table table table-condensed">
+          <thead class="thead-inverse">
+            <tr>
+              <th>{% trans 'schemeitem' %}</th>
+              <th>{% trans 'examcode' %}</th>
+              <th>{% trans 'gradeclass' %}</th>
+              <th>{% trans 'value' %}</th>
+              <th>{% trans 'status' %}</th>
+              <th>{% trans 'modified_by' %}</th>
+              <th>{% trans 'modified_at' %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in grades.all %}
+              <tr>
+                <td>
+                  {% if user.enable_students_modify %}<a href="{% url 'grade_edit_url' item.pk %}">{% endif %}
+                    {{ item.studentsubject.schemeitem.subject.abbrev }}
+                  </a>
+                </td>
+                <td>{{ item.examcode }}</td>
+                <td>{{ item.gradeclass }}</td>
+                <td>{{ item.value }}</td>
+                <td>{{ item.status }}</td>
+                <td>{{ item.modified_by }}</td>
+                <td>{{ item.modified_at }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+  {% else %}
+    <div class="alert alert-danger">{{ user.message_students_view }}</div>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+  {% endif %}
+{% endblock %}l>

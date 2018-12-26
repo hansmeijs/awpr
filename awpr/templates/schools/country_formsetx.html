@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load i18n %}{% load static %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item active">{% trans 'Countries' %}</li>
+  </ol>
+{% endblock %}
+
+
+{% block content %}
+  <div>
+
+      <form method="post">
+          {% csrf_token %}
+    {{ formset.management_form }}
+    {% if formset.non_form_errors %}
+      <div class="alert alertdanger">{{formset.non_form_errors}}</div>
+    {% endif %}
+    <table>
+        {% for form in formset %}
+        <tr><td><ul class="list-inline">{{ form }}</ul></td></tr>
+        {% endfor %}
+    </table>
+    <input type="submit" value="Submit order" class="btn btn-primary">
+</form>
+
+
+
+
+
+
+
+  </div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'user_list_url' %}">{% trans 'Users' %}</a></li>
+    <li class="breadcrumb-item active">{% trans 'Add user' %}</li>
+  </ol>
+{% endblock %}
+
+{% block content %}
+  <h4>{% trans 'User added' %}</h4>
+    {% csrf_token %}
+    <p>{% trans 'We have sent an email to the user to verify the email address and enter a password.' %}</p>
+    <p>{% trans 'The user must click on the link in that email to complete the registration.' %}</p>
+    <a href="{% url 'user_list_url' %}" class="btn btn-primary btn_minwidth">{% trans 'Close' %}</a>
+  </form>
+{% endblock %}
+

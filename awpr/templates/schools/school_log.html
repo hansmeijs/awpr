@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item">{{ user.country }}
+      {% if user.country_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item">{{ user.examyear }}
+      {% if user.examyear_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item"><a href="{% url 'school_list_url' %}">{% trans 'Schools' %}</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'school_edit_url' school.pk %}">{{ school.name }}</a></li>
+    <li class="breadcrumb-item active">{% trans 'Log' %}</li>
+  </ol>
+{% endblock %}
+
+{% block content %}
+  {% if user.enable_schools_modify %}
+      <h4>{% trans 'Log of' %} {{ school.name }}  {{ school.examyear }}</h4></h4>
+      <table class="table table table-condensed">
+        <thead class="thead-inverse">
+          <tr>
+            <th>{% trans 'Schoolname' %}</th>
+            <th>{% trans 'Schoolcode' %}</th>
+            <th>{% trans 'Abbreviation' %}</th>
+            <th>{% trans 'Article' %}</th>
+            <th>{% trans 'Departments' %}</th>
+            <th>{% trans 'Is template' %}</th>
+            <th>{% trans 'Locked' %}</th>
+            <th>{% trans 'Modified by' %}</th>
+            <th>{% trans 'Modified at' %}</th>
+            <th>{% trans 'Action' %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in school_log.all %}
+            <tr>
+
+              <td>{% if item.name_mod %}<b>{% endif %}{{ item.name }}</b></td>
+              <td>{% if item.code_mod %}<b>{% endif %}{{ item.code }}</b></td>
+              <td>{% if item.abbrev_mod %}<b>{% endif %}{{ item.abbrev }}</b></td>
+              <td>{% if item.article_mod %}<b>{% endif %}{{ item.article }}</b></td>
+              <td>{% if item.depbase_list_mod %}<b>{% endif %}{{ item.depbase_list_str }}</b></td>
+              <td>{% if item.is_template_mod %}<b>{% endif %}{{ item.is_template_str }}</b></td>
+              <td>{% if item.locked_mod %}<b>{% endif %}{{ item.locked_str }}</b></td>
+
+              <td>{{ item.modified_by }}</td>
+              <td>{{ item.modified_at }}</td>
+              <td>{{ item.mode_str }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <a href="{% url 'school_list_url' %}" class="btn btn-outline-primary">{% trans 'Close' %}</a>
+  {% else %}
+    <div class="alert alert-danger">{{ user.message_schools_modify }}</div>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+  {% endif %}
+{% endblock %}l>

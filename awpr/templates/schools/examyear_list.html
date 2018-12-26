@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load i18n %}{% load static %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item">{{ user.country }}
+      {% if user.country_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item active">{% trans 'Exam years' %}</li>
+              <img src="{% static 'img/pbl00.png' %}" height="24" width="24">
+              <img src="{% static 'img/pbl01.png' %}" height="24" width="24">
+              <img src="{% static 'img/pbl02.png' %}" height="24" width="24">
+              <img src="{% static 'img/pbl03.png' %}" height="24" width="24">
+              <img src="{% static 'img/pbl04.png' %}" height="24" width="24">
+              <img src="{% static 'img/pbl05.png' %}" height="24" width="24">
+              <img src="{% static 'img/pbl06.png' %}" height="24" width="24">
+              <img src="{% static 'img/pbl07.png' %}" height="24" width="24">
+  </ol>
+{% endblock %}
+
+{% block content %}
+  {% if user.enable_examyear_view %}
+    {% if user.enable_examyear_modify %}
+      <div class="mb-3"><a  href="{% url 'examyear_add_url' %}" class="btn btn-primary">{% trans 'Add exam year' %}</a></div>
+    {% endif %}
+
+    <h4>{% trans 'Exam years' %} {{ user.country.name }}</h4>
+
+    <table class="table table table-condensed">
+      <thead class="thead-inverse">
+        <tr>
+          <th></th>
+          <th>{% trans 'Exam year' %}</th>
+          <th>{% trans 'Published' %}</th>
+          <th>{% trans 'Country' %}</th>
+          <th>{% trans 'Modified by' %}</th>
+          <th>{% trans 'Modified at' %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in examyears.all %}
+          <tr>
+            <td>
+              {% if user.enable_examyear_modify %}<a href="{% url 'examyear_lock_url' item.pk %}">{% endif %}
+                <img src=
+                "{% if item.locked %}
+                  {% if user.enable_examyear_modify %}
+                    {% static 'img/padlock.gif' %}
+                  {% else %}
+                    {% static 'img/locked.gif' %}
+                  {% endif %}
+                {% else %}
+                  {% static 'img/unlocked.gif' %}
+                {% endif %}"
+                height="16" width="16">
+
+              </a>
+
+
+
+            </td>
+            <td>
+              {% if user.enable_examyear_modify %}
+                <a href="{% url 'examyear_edit_url' item.pk %}">{{ item.examyear }}</a>
+              {% else %}
+                <a>{{ item.examyear }}</a>
+              {% endif %}
+            </td>
+            <td>{{ item.published_str }}</td>
+            <td>{{ item.country }}</td>
+            <td>{{ item.modified_by }}</td>
+            <td>{{ item.modified_at }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="alert alert-danger">{{ user.message_examyear_view }}</div>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+  {% endif %}
+{% endblock %}l>

@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ block.super }}{% endblock %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'user_list_url' %}">{% trans 'Users' %}</a></li>
+    <li class="breadcrumb-item active">{% trans 'Add user' %}</li>
+  </ol>
+{% endblock %}
+
+{% block content %}
+  {% if user.enable_user_view_modify %}
+    <h4>{% trans 'Add user' %}</h4>
+    <form method="post" novalidate>
+      {% csrf_token %}
+       <input type="hidden" name="next" value="{{ next }}">
+      {% include 'includes/form.html' %}
+      <div class="mb-3">
+        <button
+                id="btn_save"
+                type="submit"
+                class="btn btn-success"
+
+                data-user_schoolbase_id= "{{ user.schoolbase.id }}"
+                data-user_role= "{{ user.role }}"
+
+        >{% trans 'Save' %}</button>
+        <a href="{% url 'user_list_url' %}" class="btn btn-outline-secundary">Cancel</a>
+      </div>
+    </form>
+  {% else %}
+    <div class="alert alert-danger">{{ user.message_user_view_modify }}</div>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+  {% endif %}
+
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+
+  <script>
+      $(document).ready(function(){
+
+        var role_list = document.getElementById("id_role_list");
+        role_list.addEventListener("change", role_list_changed, false);
+
+        var schoolbase_list = document.getElementById("id_schoolbase");
+        schoolbase_list.addEventListener("change", schoolbase_list_changed, false)
+
+
+        const request_user_schoolbase_id =  $("#btn_save").data("data-user_schoolbase_id");
+        const request_user_role =  $("#btn_save").data("data-user_role");
+
+        enable_save();
+        $("#id_username").change(function () { enable_save() });
+        $("#id_last_name").change(function () { enable_save() });
+        $("#id_email").change(function () { enable_save() });
+
+          enable_save()
+        });
+        $("#id_schoolbase").change(function () {
+          console.log("id_schoolbase.change");
+          enable_save() });
+        $("#id_permit_list").change(function () {
+          console.log("id_permit_list.change");
+
+        enable_save() });
+
+        function enable_save(){
+          let disable_save = true;
+          let disable_school = true;
+          if($("#id_username").val() && $("#id_last_name").val() && $("#id_email").val()){
+            const id_role_list_val =  $("#id_role_list").val();
+            if(id_role_list_val === '1' || id_role_list_val === '2'){
+              $("#id_schoolbase").val('0');
+              disable_save = false
+              disable_school = true
+            } else {
+              disable_school = false
+              const id_schoolbase_val =  $("#id_schoolbase").val();
+              console.log("id_schoolbase.val = " +id_schoolbase_val + " type: " + typeof (id_schoolbase_val) );
+              if(id_schoolbase_val){
+                if(id_schoolbase_val !== '0'){
+                  disable_save = false
+                }
+              }
+            }
+          }
+          $("#id_schoolbase").prop("disabled", disable_school);
+          /* $("#btn_save").prop("disabled", disable_save); */
+        }
+
+
+//=========  role_list_changed   ======================
+            function role_list_changed() {
+              var role_int;
+              /* is role = 0 or null
+              if (!role_list.value){
+                schoolbase_list.value = request_user_schoolbase_id
+              } else {
+                schoolbase_list.value = null
+              };
+              };
+            };
+
+
+
+
+      })
+  </script>
+
+{% endblock %}

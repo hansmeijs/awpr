@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item active">{% trans 'Users' %}</li>
+  </ol>
+{% endblock %}
+
+{% block content %}
+  {% if user.enable_user_view_modify %}
+      <div class="mb-3">
+        <a  href="{% url 'user_add_url' %}" class="btn btn-primary">{% trans 'Add user' %}</a>
+      </div>
+      <table class="table table table-condensed">
+        <thead class="thead-inverse">
+          <tr>
+            <th>{% trans 'Username' %}</th>
+            <th>{% trans 'Full name' %}</th>
+            <th>{% trans 'Email' %}</th>
+            <th>{% trans 'Activated' %}</th>
+            <th>{% trans 'Active' %}</th>
+            <th>{% trans 'School' %}</th>
+            <th>{% trans 'Department' %}</th>
+            <th>{% trans 'Allowed departments' %}</th>
+            <th>{% trans 'Organization' %}</th>
+            <th>{% trans 'Permissions' %}</th>
+            <th>{% trans 'Country' %}</th>
+            <th>{% trans 'Exam year' %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for usr in users.all %}
+            <tr>
+              <td><a href="{% url 'user_edit_url' usr.pk %}">{{ usr.username }}</a></td>
+              <td>{{ usr.last_name }}</td>
+              <td>{{ usr.email }}</td>
+              <td>{{ usr.activated }}</td>
+              <td>{{ usr.is_active_str }}</td>
+              <td>{{ usr.schoolabbrev }}</td>
+              <td>{{ usr.depbase_str }}</td>
+              <td>{{ usr.allowed_depbase_list_str }}</td>
+              <td>{{ usr.role_str }}</td>
+              <td>{{ usr.permits_str }}</td>
+              <td>{{ usr.country }}</td>
+              <td>{{ usr.examyear.examyear }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+  {% else %}
+    <div class="alert alert-danger">{{ user.message_user_view_modify }}</div>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+  {% endif %}
+{% endblock %}l>

@@ -1,0 +1,20 @@
+body {
+  background-image: url(../img/brushed_alu.png);
+}
+
+.logo {
+  /*font-family: 'Marvel', sans-serif;*/
+}
+
+.logo a {
+  color: rgba(0,0,0,.9);
+}
+
+.logo a:hover,
+.logo a:active {
+  text-decoration: none;
+}
+
+.btn_minwidth {
+    min-width: 80px;
+}

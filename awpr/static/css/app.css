@@ -1,0 +1,222 @@
+
+
+/* PR201803-10 */
+/*
+.navbar-brand {
+    background-color: #2d4e77;
+    color: #e3ebf4;
+  /*font-family: 'Marvel', sans-serif;*/
+/*}*/
+*/
+/* PR2018-05-14 */
+/*
+.navbar-custom {
+    background-color: #ff5500;
+}*/
+/* Can't change background colour of navigation bar */
+/* You are missing an overflow:hidden in the parent of the floating elements. */
+/* Without it, the browser can't calculate the height hence the background colour not coming through. */
+/* from https://stackoverflow.com/questions/34255175/cant-change-background-colour-of-navigation-bar?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa */
+
+ul::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+a:hover {
+  color: #a8c1e0;
+   text-decoration: none;
+}
+
+.navbar, .nav-link {
+    padding-top:.3125rem;
+    padding-bottom:.3125rem;
+}
+
+.navbar-default {
+  background-color: #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+
+  color: #edf2f8; /*95% #233d5c */
+  background-image: none;
+  background-repeat: no-repeat;
+  text-decoration: none;
+  list-style: none;
+ }
+
+.navbar-item-default {
+  background-color: transparent; /* #233d5c; /* #2d4e77; */
+  color: #edf2f8; /*95% #233d5c */
+  background-image: none;
+  background-repeat: no-repeat;
+  text-decoration: none;
+  list-style: none;
+ }
+ /*
+.navbar-item-default:hover {
+  color: #a8c1e0;
+  text-decoration: none;
+  list-style: none;
+ }
+*/
+.navbar-item-warning {
+  background-color: transparent;/*#233d5c;  #2d4e77; */
+  color: #ff7e00; /* #ff7e00 is orange; #ff3300 is orange-red */
+  background-image: none;
+  background-repeat: no-repeat;
+  text-decoration: none;
+  list-style: none;
+ }
+
+.navbar-otheryear {
+  background-color: grey; /* #2d4e77; */
+  color: #edf2f8; /*95% #233d5c */
+  background-image: none;
+  background-repeat: no-repeat;
+  list-style: none;
+ }
+/* change the brand and text color */
+.navbar-custom .navbar-brand,
+.navbar-custom .navbar-text {
+    background-color: #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    color: #e3ebf4;
+    list-style: none;
+    /*line-height: 24px; */
+    overflow: hidden; /* Add this */
+}
+
+/* change the link color */
+.navbar-custom .navbar-nav .nav-link {
+    color: rgba(255,255,255,.5);
+}
+
+/* change the color of active or hovered links */
+.navbar-custom .nav-item.active .nav-link,
+.navbar-custom .nav-item:hover .nav-link {
+    color: #ffffff;
+}
+
+/* for dropdown only - change the color of droodown */
+.navbar-custom .dropdown-menu {
+    background-color: #ff5500;
+}
+.navbar-custom .dropdown-item {
+    color: #ffffff;
+}
+.navbar-custom .dropdown-item:hover,
+.navbar-custom .dropdown-item:focus {
+    color: #333333;
+    background-color: rgba(255,255,255,.5);
+}
+
+/* PR2018-05-12 Style the menubar */
+
+nav.menubar {
+    background-color: green; /*95% #233d5c */
+    color: red; /*95% #233d5c */
+    clear: both;
+    overflow: hidden; // Add this
+}
+ul.menubar {
+    padding: 4px 16px;
+    list-style: none;
+    background-color: #edf2f8; /*95% #233d5c */
+    color: #2d4e77;
+}
+
+/* Display list items side by side */
+ul.menubar li {
+    display: inline;
+    font-size: 1rem;  /* font-size: 18px;
+    color: #he3ebf4;
+}
+
+/* Add a slash symbol (/) before/behind each list item */
+ul.menubar li+li:before {
+    padding: 8px;
+    color: black;
+    content: "/\00a0";
+}
+
+/* Add a color to all links inside the list */
+ul.menubar li a {
+    color: #0275d8;
+    text-decoration: none;
+}
+
+/* Add a color on mouse-over */
+ul.menubar li a:hover {
+    color: #01447e;
+    text-decoration: underline;
+}
+
+/* define tables */
+.td, .th {
+    padding-top:.3125rem;
+    padding-bottom:.3125rem;
+}
+
+
+/* changes to Bootstrap */
+body {
+  line-height: 1.25; /* PR2018-08-17 was: line-height: 1.5; */
+}
+
+label {
+  margin-bottom: .125rem; /* PR2018-08-17 was: margin-bottom: .5rem; */
+}
+
+.form-control {
+  padding: 0.125rem 0.375rem; /* PR2018-08-17 was: padding: 0.375rem 0.75rem; */
+  line-height: 1.25; /* PR2018-08-17 was: line-height: 1.5; */
+}
+
+/* PR2018-08-17 was:
+select.form-control:not([size]):not([multiple]) {
+  height: calc(2.25rem + 2px);
+}
+*/
+
+.form-group {
+  margin-bottom: 0.5rem; /* PR2018-08-17 was: margin-bottom: 1rem; */
+}
+
+.btn {
+  padding: 0.1rem 0.25rem; //* PR2018-12-15 was: DEFAULT padding: 0.375rem 0.75rem; */
+}
+
+.navbar {
+  padding: 0.25rem 0.25rem; /* PR2018-12-15 was: padding: 0.25rem 1rem; */
+}
+
+.navbar-brand {
+  /*PR2017-12-17 font-size: 1.25rem; */
+}
+
+.close {
+  line-height: .75;  /* PR2018-08-18 was: line-height: 1; */
+}
+
+/* menubar */
+
+.menu_item{
+    back-color: #bacee6;
+}
+
+.polygon_middle{
+     points: "0,0 110,0 120,16 110,32 0,32 10,16";
+     fill: #bacee6;
+     stroke: #bacee6;
+     stroke-width: 1;
+}
+
+.menu_item_selected{
+    fill: red;
+
+}
+
+.menubar, .menu-link {
+    padding-top:.3125rem;
+    padding-bottom:.3125rem;
+}
+

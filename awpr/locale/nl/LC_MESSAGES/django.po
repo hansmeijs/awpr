@@ -1,0 +1,1946 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2018-12-20 07:18-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: .\accounts\forms.py:31 .\accounts\templates\user_list.html:19
+#: .\accounts\templates\user_log.html:20
+msgid "Username"
+msgstr "Gebruikersnaam"
+
+#: .\accounts\forms.py:32 .\accounts\forms.py:55 .\accounts\forms.py:185
+#: .\accounts\templates\user_list.html:20 .\accounts\templates\user_log.html:21
+msgid "Full name"
+msgstr "Volledige naam"
+
+#: .\accounts\forms.py:33 .\accounts\forms.py:76 .\accounts\forms.py:186
+#: .\accounts\templates\user_list.html:27
+msgid "Organization"
+msgstr "Organisatie"
+
+#: .\accounts\forms.py:56
+msgid "Required. 50 characters or fewer."
+msgstr "Verplicht. 50 tekens of minder."
+
+#: .\accounts\forms.py:66 .\accounts\forms.py:88 .\accounts\forms.py:241
+#: .\accounts\templates\user_list.html:24 .\accounts\templates\user_log.html:29
+#: .\awpr\constants.py:30 .\awpr\constants.py:37 .\students\forms.py:53
+#: .\students\forms.py:134 .\templates\includes\menubar.html:36
+#: .\templates\subjects\schemeitem_list.html:30
+msgid "School"
+msgstr ""
+
+#: .\accounts\forms.py:68 .\awpr\constants.py:31 .\awpr\constants.py:38
+msgid "Inspection"
+msgstr "Inspectie"
+
+#: .\accounts\forms.py:70 .\awpr\constants.py:32 .\awpr\constants.py:39
+#: .\awpr\constants.py:48
+msgid "System"
+msgstr "Systeem"
+
+#: .\accounts\forms.py:105 .\accounts\forms.py:298
+msgid ""
+"Select one or more permissions from the list. Press the Ctrl button to "
+"select multiple permissions."
+msgstr ""
+"Selecteer een of meer permissies van de lijst. Houdt de Ctrl knop ingedrukt "
+"om meerdere permissies te selecteren."
+
+#: .\accounts\forms.py:310 .\accounts\models.py:34
+#: .\accounts\templates\user_list.html:23 .\accounts\templates\user_log.html:25
+#: .\awpr\constants.py:99 .\awpr\constants.py:104 .\awpr\constants.py:108
+#: .\awpr\constants.py:114
+msgid "Active"
+msgstr "Actief"
+
+#: .\accounts\models.py:33 .\awpr\constants.py:98 .\awpr\constants.py:103
+#: .\awpr\constants.py:109 .\awpr\constants.py:115
+msgid "Inactive"
+msgstr "Niet aktief"
+
+#: .\accounts\models.py:59
+msgid "Required. 30 characters or fewer. Letters, digits and @/./+/-/_ only."
+msgstr "Verplicht. 30 tekens of minder. Alleen letters, cijfers en @/./+/-/_."
+
+#: .\accounts\models.py:62
+msgid ""
+"Enter a valid username. This value may contain only letters, numbers and @/./"
+"+/-/_ characters."
+msgstr ""
+"Voer een geldige gebruikersnaam in. De naam mag alleen letters, cijfers en "
+"@/./+/-/_ bevatten."
+
+#: .\accounts\models.py:67
+msgid "A user with that username already exists."
+msgstr "Een gebruiker met deze gebruikersnaam komt al voor."
+
+#: .\accounts\models.py:72 .\schools\models.py:372 .\schools\models.py:374
+#: .\schools\models.py:727 .\schools\models.py:729 .\schools\models.py:731
+#: .\subjects\models.py:51 .\subjects\models.py:53 .\subjects\models.py:306
+#: .\subjects\models.py:308 .\subjects\models.py:917 .\subjects\models.py:919
+msgid "Required. {} characters or fewer."
+msgstr "Verplicht. {} tekens of minder."
+
+#: .\accounts\models.py:75
+msgid ""
+"Enter a valid name. This value may contain only letters, numbers and '/./-/_ "
+"characters."
+msgstr ""
+"Voer een geldige naam in. De naam mag alleen letters, cijfers en '/./-/_ "
+"bevatten."
+
+#: .\accounts\models.py:80
+msgid "email address"
+msgstr "e-mail adres"
+
+#: .\accounts\models.py:343 .\awpr\functions.py:117
+msgid "<No exam year selected>"
+msgstr "<Geen examenjaar geselcteerd>"
+
+#: .\accounts\models.py:401 .\accounts\models.py:459
+msgid "Read"
+msgstr "Lezen"
+
+#: .\accounts\models.py:402 .\accounts\models.py:460
+msgid "Write"
+msgstr "Schrijven"
+
+#: .\accounts\models.py:403 .\accounts\models.py:461
+msgid "Authorize"
+msgstr "Authoriseren"
+
+#: .\accounts\models.py:404 .\accounts\models.py:462
+msgid "Admin"
+msgstr ""
+
+#: .\accounts\models.py:466 .\awpr\constants.py:132 .\awpr\constants.py:145
+msgid "None"
+msgstr "Geen"
+
+#: .\accounts\models.py:757 .\accounts\models.py:897
+msgid "You must be logged in to view this page."
+msgstr "U moet ingelogd zijn om deze pagina te kunnen bekijken."
+
+#: .\accounts\models.py:788
+msgid "You don't have permission to modify countries."
+msgstr "U heeft geen permissie om landen te wijzigen."
+
+#: .\accounts\models.py:892 .\templates\accounts\user_confirm_delete.html:27
+#: .\templates\importing\import_birthcity.html:27
+#: .\templates\importing\import_birthcountry.html:27
+#: .\templates\importing\import_department.html:27
+#: .\templates\importing\import_level.html:27
+#: .\templates\importing\import_scheme.html:27
+#: .\templates\importing\import_schemeitem.html:27
+#: .\templates\importing\import_sector.html:27
+#: .\templates\importing\import_subjecttype.html:27
+msgid "You don't have permission to view this page."
+msgstr "U heeft geen permissie om deze pagina te bekijken."
+
+#: .\accounts\models.py:904 .\accounts\models.py:936
+msgid "You are not connected to a country. You cannot view this page."
+msgstr "Er is geen land geselecteerd. U kunt deze pagina niet bekijken."
+
+#: .\accounts\models.py:909 .\accounts\models.py:948 .\accounts\models.py:1032
+msgid "You are not connected to a school. You cannot view this page."
+msgstr ""
+"U bent niet verbonden aan een school. U kunt deze pagina niet bekijken."
+
+#: .\accounts\models.py:927
+msgid "You don't have permission to view countries."
+msgstr "U heeft geen permissie om landen te bekijken."
+
+#: .\accounts\models.py:958
+msgid "You don't have permission to view exam years."
+msgstr "U heeft geen permissie om examenjaren te bekijken."
+
+#: .\accounts\models.py:969
+msgid "You don't have permission to modify exam years."
+msgstr "U heeft geen permissie om examenjaren te wijzigen."
+
+#: .\accounts\models.py:972
+msgid "This country is locked. You cannot modify exam years."
+msgstr "Dit land is vergrendeld. U kunt geen examenjaren wijzigen."
+
+#: .\accounts\models.py:980
+msgid "You must first select an examyear, before you can view this page."
+msgstr ""
+"U moet eerst een examenjaar selecteren om deze pagina te kunnen bekijken."
+
+#: .\accounts\models.py:990
+msgid "You don't have permission to view these items."
+msgstr "U heeft geen permissie om deze items te bekijken."
+
+#: .\accounts\models.py:999 .\accounts\models.py:1013
+msgid "You don't have permission to modify these items."
+msgstr "U heeft geen permissie om deze items te wijzigen."
+
+#: .\accounts\models.py:1001 .\accounts\models.py:1015
+#: .\accounts\models.py:1065
+msgid "This country is locked. You cannot modify these items."
+msgstr "Dit land is vergrendeld. U kunt deze items niet wijzigen."
+
+#: .\accounts\models.py:1017 .\accounts\models.py:1067
+msgid "This examyear is locked. You cannot modify these items."
+msgstr "Dit examenjaar is vergrendeld. U kunt deze items niet wijzigen."
+
+#: .\accounts\models.py:1040
+msgid "This country is locked. You cannot modify schools."
+msgstr "Dit land is vergrendeld. U kunt geen scholen wijzigen."
+
+#: .\accounts\models.py:1042
+msgid "This examyear is locked. You cannot modify schools."
+msgstr "Dit examenjaar is vergrendeld. U kunt geen scholen wijzigen."
+
+#: .\accounts\models.py:1046
+msgid "You don't have permission to modify schools."
+msgstr "Dit examenjaar is vergrendeld. U kunt geen scholen wijzigen."
+
+#: .\accounts\models.py:1049
+msgid "You don't have permission to add or delete schools."
+msgstr "U heeft geen permissie om scholen toe te voegen of te wissen"
+
+#: .\accounts\models.py:1069
+msgid "This school is locked. You cannot modify these items."
+msgstr "Deze school is vergrendeld. U kunt deze items niet wijzigen."
+
+#: .\accounts\models.py:1079
+msgid "Error. You cannot view this page."
+msgstr "Is er ee nfout opgetreden. U kunt deze pagina niet bekijken"
+
+#: .\accounts\templates\account_activation_email.html:4
+msgid "Hello "
+msgstr "Hallo "
+
+#: .\accounts\templates\account_activation_email.html:6
+msgid "The AWP-online team has made an account for you with user name:"
+msgstr ""
+"Het AWP-online team heeft voor u een account aangemaakt met de "
+"gebruikersnaam:"
+
+#: .\accounts\templates\account_activation_email.html:8
+msgid "Please click on the link below to activate your AWP-online account:"
+msgstr "Klik op de onderstaande link om uw AWP-online account te activeren:"
+
+#: .\accounts\templates\account_activation_invalid.html:5
+msgid "Activate account"
+msgstr "Activeer account"
+
+#: .\accounts\templates\account_activation_invalid.html:8
+msgid "The confirmation of your email address has failed."
+msgstr "De bevestiging van uw e-mail adres is niet gelukt."
+
+#: .\accounts\templates\account_activation_invalid.html:9
+msgid "Your account is not activated."
+msgstr "Uw account is niet geactiveerd."
+
+#: .\accounts\templates\account_activation_invalid.html:10
+msgid "OK"
+msgstr ""
+
+#: .\accounts\templates\account_activation_sent.html:7
+#: .\accounts\templates\password_change.html:9
+#: .\accounts\templates\password_change_done.html:9
+#: .\accounts\templates\user_add.html:9 .\accounts\templates\user_edit.html:9
+#: .\accounts\templates\user_list.html:7 .\accounts\templates\user_log.html:8
+#: .\templates\accounts\user_confirm_delete.html:9
+#: .\templates\includes\header.html:138
+#: .\templates\includes\headerCOPY.html:137
+msgid "Users"
+msgstr "Gebruikers"
+
+#: .\accounts\templates\account_activation_sent.html:8
+#: .\accounts\templates\user_add.html:10 .\accounts\templates\user_add.html:16
+#: .\accounts\templates\user_list.html:14
+msgid "Add user"
+msgstr "Gebruiker toevoegen"
+
+#: .\accounts\templates\account_activation_sent.html:13
+msgid "User added"
+msgstr "Gebruiker toegevoegd"
+
+#: .\accounts\templates\account_activation_sent.html:15
+msgid ""
+"We have sent an email to the user to verify the email address and enter a "
+"password."
+msgstr ""
+"We hebben een e-mail verzonden naar de gebruiker om het e-mail adres te "
+"verifiëren en een wachtwoord aan te maken."
+
+#: .\accounts\templates\account_activation_sent.html:16
+msgid ""
+"The user must click on the link in that email to complete the registration."
+msgstr ""
+"De gebruiker moet op de link in die e-mail klikken om de registratie te "
+"voltooien."
+
+#: .\accounts\templates\account_activation_sent.html:17
+#: .\accounts\templates\password_change_done.html:19
+#: .\accounts\templates\user_log.html:63
+#: .\templates\schools\country_log.html:51
+#: .\templates\schools\department_log.html:52
+#: .\templates\schools\examyear_log.html:43
+#: .\templates\schools\school_log.html:57
+#: .\templates\students\grade_log.html:55
+#: .\templates\students\student_log.html:66
+#: .\templates\subjects\level_log.html:48
+#: .\templates\subjects\scheme_log.html:48
+#: .\templates\subjects\schemeitem_log.html:48
+#: .\templates\subjects\sector_log.html:46
+#: .\templates\subjects\subject_log.html:51
+#: .\templates\subjects\subjecttype_log.html:46
+msgid "Close"
+msgstr "Sluiten"
+
+#: .\accounts\templates\account_activation_success.html:10
+msgid "Welcome to AWP-online"
+msgstr "Welkom bij AWP-online"
+
+#: .\accounts\templates\account_activation_success.html:11
+msgid "You have successfully activated your AWP-online account."
+msgstr "U heeft met succes uw AWP-online account geactiveerd."
+
+#: .\accounts\templates\account_activation_success.html:12
+msgid "Before you can login you have to create a password."
+msgstr "Voordat u kunt inloggen moet u eerst een wachtwoord aanmaken."
+
+#: .\accounts\templates\account_activation_success.html:13
+msgid "Click \"Create password\" and follow the instructions."
+msgstr "Klik op \"Wachtwoord aanmaken\" en volg de instructies."
+
+#: .\accounts\templates\account_activation_success.html:16
+msgid "Create password"
+msgstr "Wachtwoord aanmaken"
+
+#: .\accounts\templates\account_activation_success.html:17
+#: .\accounts\templates\user_add.html:36 .\accounts\templates\user_edit.html:33
+#: .\accounts\templates\user_list.html:54 .\accounts\templates\user_log.html:66
+#: .\accounts\templates\user_set_password.html:18
+#: .\templates\schools\country_add.html:20
+#: .\templates\schools\country_add.html:24
+#: .\templates\schools\country_confirm_delete.html:25
+#: .\templates\schools\country_edit.html:24
+#: .\templates\schools\country_edit.html:28
+#: .\templates\schools\country_list.html:51
+#: .\templates\schools\country_lock.html:33
+#: .\templates\schools\country_log.html:54
+#: .\templates\schools\department_add.html:27
+#: .\templates\schools\department_add.html:31
+#: .\templates\schools\department_delete.html:33
+#: .\templates\schools\department_edit.html:28
+#: .\templates\schools\department_edit.html:32
+#: .\templates\schools\department_list.html:57
+#: .\templates\schools\department_log.html:55
+#: .\templates\schools\examyear_add.html:24
+#: .\templates\schools\examyear_add.html:29
+#: .\templates\schools\examyear_delete.html:28
+#: .\templates\schools\examyear_edit.html:26
+#: .\templates\schools\examyear_edit.html:30
+#: .\templates\schools\examyear_list.html:68
+#: .\templates\schools\examyear_lock.html:35
+#: .\templates\schools\examyear_log.html:46
+#: .\templates\schools\school_add.html:30
+#: .\templates\schools\school_delete.html:33
+#: .\templates\schools\school_edit.html:29
+#: .\templates\schools\school_edit.html:33
+#: .\templates\schools\school_list.html:63
+#: .\templates\schools\school_log.html:60
+#: .\templates\students\grade_add.html:29
+#: .\templates\students\grade_add.html:33
+#: .\templates\students\grade_edit.html:37
+#: .\templates\students\grade_edit.html:41
+#: .\templates\students\grade_list.html:59
+#: .\templates\students\grade_log.html:58
+#: .\templates\students\student_add.html:39
+#: .\templates\students\student_add.html:45
+#: .\templates\students\student_delete.html:36
+#: .\templates\students\student_edit.html:38
+#: .\templates\students\student_edit.html:42
+#: .\templates\students\student_list.html:64
+#: .\templates\students\student_log.html:69
+#: .\templates\students\studentresult_list.html:63
+#: .\templates\students\studentsubject_add.html:29
+#: .\templates\students\studentsubject_add.html:33
+#: .\templates\students\studentsubject_edit.html:36
+#: .\templates\students\studentsubject_edit.html:40
+#: .\templates\students\studentsubject_formset.html:53
+#: .\templates\students\studentsubject_list.html:87
+#: .\templates\subjects\level_add.html:27
+#: .\templates\subjects\level_add.html:31
+#: .\templates\subjects\level_delete.html:31
+#: .\templates\subjects\level_edit.html:30
+#: .\templates\subjects\level_edit.html:34
+#: .\templates\subjects\level_list.html:55
+#: .\templates\subjects\level_log.html:51
+#: .\templates\subjects\scheme_add.html:32
+#: .\templates\subjects\scheme_add.html:37
+#: .\templates\subjects\scheme_delete.html:31
+#: .\templates\subjects\scheme_edit.html:30
+#: .\templates\subjects\scheme_edit.html:34
+#: .\templates\subjects\scheme_list.html:58
+#: .\templates\subjects\scheme_listCOPY.html:58
+#: .\templates\subjects\scheme_log.html:51
+#: .\templates\subjects\schemeitem_add.html:32
+#: .\templates\subjects\schemeitem_add.html:37
+#: .\templates\subjects\schemeitem_delete.html:31
+#: .\templates\subjects\schemeitem_edit.html:34
+#: .\templates\subjects\schemeitem_edit.html:38
+#: .\templates\subjects\schemeitem_list.html:70
+#: .\templates\subjects\schemeitem_log.html:51
+#: .\templates\subjects\sector_add.html:26
+#: .\templates\subjects\sector_add.html:30
+#: .\templates\subjects\sector_delete.html:31
+#: .\templates\subjects\sector_edit.html:30
+#: .\templates\subjects\sector_edit.html:34
+#: .\templates\subjects\sector_list.html:55
+#: .\templates\subjects\sector_log.html:49
+#: .\templates\subjects\subject_add.html:29
+#: .\templates\subjects\subject_add.html:33
+#: .\templates\subjects\subject_delete.html:38
+#: .\templates\subjects\subject_edit.html:36
+#: .\templates\subjects\subject_edit.html:40
+#: .\templates\subjects\subject_list.html:81
+#: .\templates\subjects\subject_log.html:54
+#: .\templates\subjects\subjecttype_add.html:27
+#: .\templates\subjects\subjecttype_add.html:31
+#: .\templates\subjects\subjecttype_delete.html:31
+#: .\templates\subjects\subjecttype_edit.html:28
+#: .\templates\subjects\subjecttype_edit.html:32
+#: .\templates\subjects\subjecttype_list.html:55
+#: .\templates\subjects\subjecttype_log.html:49
+msgid "Cancel"
+msgstr "Annuleren"
+
+#: .\accounts\templates\login.html:4 .\accounts\templates\login.html:11
+#: .\accounts\templates\login.html:16 .\templates\includes\header.html:155
+#: .\templates\includes\headerCOPY.html:154
+msgid "Log in"
+msgstr "Inloggen"
+
+#: .\accounts\templates\login.html:20
+#, fuzzy
+#| msgid "Forgot your password?"
+msgid "Forgot your XXX password?"
+msgstr "Wachtwoord vergeten?"
+
+#: .\accounts\templates\password_change.html:4
+#: .\accounts\templates\password_change.html:11
+#: .\accounts\templates\password_change_done.html:11
+#: .\templates\includes\header.html:146
+#: .\templates\includes\headerCOPY.html:145
+msgid "Change password"
+msgstr "Wijzig wachtwoord"
+
+#: .\accounts\templates\password_change_done.html:17
+msgid "Success!"
+msgstr "Succes!"
+
+#: .\accounts\templates\password_change_done.html:17
+msgid "Your password has been changed!"
+msgstr "Uw wachtwoord is gewijzigd!"
+
+#: .\accounts\templates\password_setpassword.html:11
+msgid "Create your password"
+msgstr "Vul uw wachtwoord in"
+
+#: .\accounts\templates\password_setpassword.html:12
+msgid ""
+"Enter your email address and we will send you a link to create your password."
+msgstr ""
+"Vul uw e-mail adres in, dan zullen we u een link sturen om uw wachtwoord aan "
+"te maken."
+
+#: .\accounts\templates\password_setpassword.html:16
+msgid "Send password email"
+msgstr "E-mail versturen"
+
+#: .\accounts\templates\user_add.html:30
+#: .\templates\schools\country_add.html:19
+#: .\templates\schools\country_edit.html:19
+#: .\templates\schools\country_formset.html:57
+#: .\templates\schools\department_add.html:26
+#: .\templates\schools\department_edit.html:25
+#: .\templates\schools\examyear_add.html:23
+#: .\templates\schools\examyear_edit.html:23
+#: .\templates\schools\school_edit.html:26
+#: .\templates\students\grade_add.html:28
+#: .\templates\students\grade_edit.html:31
+#: .\templates\students\student_add.html:38
+#: .\templates\students\student_edit.html:33
+#: .\templates\students\studentsubject_add.html:28
+#: .\templates\students\studentsubject_edit.html:31
+#: .\templates\subjects\level_add.html:26
+#: .\templates\subjects\level_edit.html:25
+#: .\templates\subjects\scheme_add.html:31
+#: .\templates\subjects\scheme_edit.html:25
+#: .\templates\subjects\schemeitem_add.html:31
+#: .\templates\subjects\schemeitem_edit.html:29
+#: .\templates\subjects\sector_add.html:25
+#: .\templates\subjects\sector_edit.html:25
+#: .\templates\subjects\subject_add.html:28
+#: .\templates\subjects\subject_edit.html:31
+#: .\templates\subjects\subjecttype_add.html:26
+#: .\templates\subjects\subjecttype_edit.html:25
+msgid "Save"
+msgstr "Opslaan"
+
+#: .\accounts\templates\user_edit.html:10
+msgid "Edit user"
+msgstr "Gebruiker wijzigen"
+
+#: .\accounts\templates\user_edit.html:16
+msgid "Edit user:"
+msgstr ""
+
+#: .\accounts\templates\user_edit.html:17
+msgid "Request user:"
+msgstr ""
+
+#: .\accounts\templates\user_edit.html:26
+#: .\templates\schools\country_edit.html:20
+#: .\templates\schools\department_edit.html:26
+#: .\templates\schools\examyear_edit.html:24
+#: .\templates\schools\school_edit.html:27
+#: .\templates\students\grade_edit.html:33
+#: .\templates\students\student_edit.html:34
+#: .\templates\students\studentsubject_edit.html:32
+#: .\templates\subjects\level_edit.html:26
+#: .\templates\subjects\scheme_edit.html:26
+#: .\templates\subjects\schemeitem_edit.html:30
+#: .\templates\subjects\sector_edit.html:26
+#: .\templates\subjects\subject_edit.html:32
+#: .\templates\subjects\subjecttype_edit.html:26
+msgid "View log"
+msgstr "Log openen"
+
+#: .\accounts\templates\user_edit.html:27
+#: .\templates\accounts\user_confirm_delete.html:11
+#: .\templates\schools\country_confirm_delete.html:9
+#: .\templates\schools\country_edit.html:22
+#: .\templates\schools\department_edit.html:27
+#: .\templates\schools\examyear_edit.html:25
+#: .\templates\schools\school_edit.html:28
+#: .\templates\students\grade_edit.html:35
+#: .\templates\students\student_edit.html:36
+#: .\templates\students\studentsubject_edit.html:34
+#: .\templates\subjects\level_edit.html:28
+#: .\templates\subjects\scheme_edit.html:28
+#: .\templates\subjects\schemeitem_edit.html:32
+#: .\templates\subjects\sector_edit.html:28
+#: .\templates\subjects\subject_edit.html:34
+#: .\templates\subjects\subjecttype_edit.html:27
+msgid "Delete"
+msgstr "Wissen"
+
+#: .\accounts\templates\user_list.html:21 .\accounts\templates\user_log.html:22
+msgid "Email"
+msgstr "E-mail"
+
+#: .\accounts\templates\user_list.html:22 .\accounts\templates\user_log.html:24
+msgid "Activated"
+msgstr "Geactiveerd"
+
+#: .\accounts\templates\user_list.html:25 .\accounts\templates\user_log.html:30
+#: .\schools\forms.py:537 .\students\forms.py:54 .\students\forms.py:135
+#: .\subjects\forms.py:297 .\subjects\forms.py:363 .\subjects\forms.py:379
+#: .\templates\subjects\scheme_list.html:30
+#: .\templates\subjects\scheme_listCOPY.html:30
+#: .\templates\subjects\scheme_log.html:26
+#: .\templates\subjects\schemeitem_log.html:26
+msgid "Department"
+msgstr "Afdeling"
+
+#: .\accounts\templates\user_list.html:26
+msgid "Allowed departments"
+msgstr "Toegestane afdelingen"
+
+#: .\accounts\templates\user_list.html:28 .\accounts\templates\user_log.html:32
+msgid "Permissions"
+msgstr "Permissies"
+
+#: .\accounts\templates\user_list.html:29 .\accounts\templates\user_log.html:27
+#: .\schools\forms.py:140 .\templates\schools\country_list.html:21
+#: .\templates\schools\country_log.html:21
+#: .\templates\schools\examyear_list.html:28
+#: .\templates\schools\examyear_log.html:23
+#: .\templates\subjects\level_log.html:27
+msgid "Country"
+msgstr "Land"
+
+#: .\accounts\templates\user_list.html:30 .\schools\forms.py:211
+#: .\schools\forms.py:306 .\schools\forms.py:358 .\schools\forms.py:464
+#: .\subjects\forms.py:77 .\subjects\forms.py:166 .\subjects\forms.py:246
+#: .\subjects\forms.py:412 .\subjects\forms.py:465
+#: .\templates\schools\examyear_list.html:26
+#: .\templates\schools\examyear_log.html:20
+msgid "Exam year"
+msgstr "Examenjaar"
+
+#: .\accounts\templates\user_log.html:10
+#: .\templates\schools\country_log.html:11
+#: .\templates\schools\department_log.html:15
+#: .\templates\schools\examyear_log.html:10
+#: .\templates\schools\school_log.html:16
+#: .\templates\students\grade_log.html:15
+#: .\templates\students\student_log.html:18
+#: .\templates\subjects\level_log.html:13
+#: .\templates\subjects\scheme_log.html:15
+#: .\templates\subjects\schemeitem_log.html:15
+#: .\templates\subjects\sector_log.html:13
+#: .\templates\subjects\subject_log.html:18
+#: .\templates\subjects\subjecttype_log.html:13
+msgid "Log"
+msgstr ""
+
+#: .\accounts\templates\user_log.html:16
+#: .\templates\schools\country_log.html:17
+msgid "Log of "
+msgstr "Log van "
+
+#: .\accounts\templates\user_log.html:28
+msgid "Examyear"
+msgstr "Examenjaar"
+
+#: .\accounts\templates\user_log.html:31
+msgid "Role"
+msgstr "Organisatie"
+
+#: .\accounts\templates\user_log.html:33
+#: .\templates\schools\country_list.html:23
+#: .\templates\schools\country_log.html:24
+#: .\templates\schools\department_log.html:31
+#: .\templates\schools\examyear_list.html:29
+#: .\templates\schools\examyear_log.html:24
+#: .\templates\schools\school_log.html:33
+#: .\templates\students\grade_log.html:32
+#: .\templates\students\student_list.html:38
+#: .\templates\students\student_log.html:36
+#: .\templates\subjects\level_log.html:28
+#: .\templates\subjects\scheme_list.html:33
+#: .\templates\subjects\scheme_listCOPY.html:33
+#: .\templates\subjects\scheme_log.html:29
+#: .\templates\subjects\schemeitem_log.html:29
+#: .\templates\subjects\sector_log.html:27
+#: .\templates\subjects\subject_log.html:32
+#: .\templates\subjects\subjecttype_log.html:27
+msgid "Modified by"
+msgstr "Gewijzigd door"
+
+#: .\accounts\templates\user_log.html:34
+#: .\templates\schools\country_list.html:24
+#: .\templates\schools\country_log.html:25
+#: .\templates\schools\department_log.html:32
+#: .\templates\schools\examyear_list.html:30
+#: .\templates\schools\examyear_log.html:25
+#: .\templates\schools\school_log.html:34
+#: .\templates\students\grade_log.html:33
+#: .\templates\students\student_list.html:39
+#: .\templates\students\student_log.html:37
+#: .\templates\subjects\level_log.html:29
+#: .\templates\subjects\scheme_list.html:34
+#: .\templates\subjects\scheme_listCOPY.html:34
+#: .\templates\subjects\scheme_log.html:30
+#: .\templates\subjects\schemeitem_log.html:30
+#: .\templates\subjects\sector_log.html:28
+#: .\templates\subjects\subject_log.html:33
+#: .\templates\subjects\subjecttype_log.html:28
+msgid "Modified at"
+msgstr "Gewijzigd op"
+
+#: .\accounts\templates\user_log.html:35
+#: .\templates\schools\country_log.html:26
+#: .\templates\schools\department_log.html:33
+#: .\templates\schools\examyear_log.html:26
+#: .\templates\schools\school_log.html:35
+#: .\templates\students\grade_log.html:34
+#: .\templates\students\student_log.html:38
+#: .\templates\subjects\level_log.html:30
+#: .\templates\subjects\scheme_log.html:31
+#: .\templates\subjects\schemeitem_log.html:31
+#: .\templates\subjects\sector_log.html:29
+#: .\templates\subjects\subject_log.html:34
+#: .\templates\subjects\subjecttype_log.html:29
+msgid "Action"
+msgstr "Actie"
+
+#: .\accounts\templates\user_set_password.html:7
+msgid "Welcome to AWP online"
+msgstr "Welkom bij AWP-online"
+
+#: .\accounts\templates\user_set_password.html:8
+msgid "Please enter a password to finish the registration."
+msgstr "Vul uw wachtwoord in om de registratie te voltooien."
+
+#: .\accounts\views.py:69
+msgid "User has no role."
+msgstr "Gebruiker heeft geen organisatie"
+
+#: .\accounts\views.py:551
+msgid "Import students"
+msgstr "Importeer kandidaten"
+
+#: .\accounts\views.py:552 .\templates\includes\menubar.html:43
+#: .\templates\includes\menubar.html:139
+#: .\templates\includes\menubarCOPY.html:61
+#: .\templates\subjects\subject_add.html:16
+#: .\templates\subjects\subject_delete.html:19
+#: .\templates\subjects\subject_edit.html:19
+#: .\templates\subjects\subject_list.html:18
+#: .\templates\subjects\subject_list.html:28
+#: .\templates\subjects\subject_log.html:16
+msgid "Subjects"
+msgstr "Vakken"
+
+#: .\accounts\views.py:553 .\templates\includes\menubar.html:133
+#: .\templates\includes\menubarCOPY.html:54
+#: .\templates\students\grade_edit.html:19
+#: .\templates\students\studentsubject_add.html:16
+#: .\templates\students\studentsubject_edit.html:19
+#: .\templates\students\studentsubject_formset.html:14
+#: .\templates\students\studentsubject_list.html:14
+#: .\templates\students\studentsubject_list.html:25
+msgid "Student subjects"
+msgstr "Vakken van kandidaten"
+
+#: .\awpr\constants.py:43
+msgid "Created"
+msgstr "Aangemaakt"
+
+#: .\awpr\constants.py:44
+msgid "Updated"
+msgstr "Gewijzigd"
+
+#: .\awpr\constants.py:45
+msgid "Authorized"
+msgstr "Geauthoriseerd"
+
+#: .\awpr\constants.py:46
+msgid "Approved"
+msgstr "Goedgekeurd"
+
+#: .\awpr\constants.py:47
+msgid "Deleted"
+msgstr "Gewist"
+
+#: .\awpr\constants.py:60 .\awpr\constants.py:66 .\awpr\constants.py:72
+#: .\awpr\constants.py:76 .\awpr\constants.py:81
+msgid "No"
+msgstr "Nee"
+
+#: .\awpr\constants.py:61 .\awpr\constants.py:67 .\awpr\constants.py:71
+#: .\awpr\constants.py:77 .\awpr\constants.py:82
+msgid "Yes"
+msgstr "Ja"
+
+#: .\awpr\constants.py:89 .\awpr\constants.py:93
+msgid "Unlocked"
+msgstr "Ontgrendeld"
+
+#: .\awpr\constants.py:90 .\awpr\constants.py:94 .\schools\forms.py:187
+#: .\schools\forms.py:294 .\schools\forms.py:456 .\schools\forms.py:497
+#: .\templates\schools\country_log.html:23
+#: .\templates\schools\examyear_log.html:22
+#: .\templates\schools\school_list.html:37
+#: .\templates\schools\school_log.html:32
+#: .\templates\students\studentresult_list.html:30
+msgid "Locked"
+msgstr "Vergrendeld"
+
+#: .\awpr\constants.py:120 .\awpr\constants.py:125
+msgid "Not a template"
+msgstr "Geen sjabloon"
+
+#: .\awpr\constants.py:121 .\awpr\constants.py:126 .\subjects\forms.py:325
+#: .\subjects\forms.py:346
+msgid "Template"
+msgstr "Sjabloon"
+
+#: .\awpr\constants.py:136 .\awpr\constants.py:140
+msgid "Not published"
+msgstr "Niet gepubliceerd"
+
+#: .\awpr\constants.py:137 .\awpr\constants.py:141 .\schools\forms.py:282
+#: .\templates\schools\examyear_list.html:27
+#: .\templates\schools\examyear_log.html:21
+msgid "Published"
+msgstr "Gepubliceerd"
+
+#: .\awpr\constants.py:146
+msgid "Number"
+msgstr "Nummer"
+
+#: .\awpr\constants.py:147
+msgid "Good/Sufficient/Insufficient"
+msgstr "Goed/Voldoende/Onvoldoende"
+
+#: .\awpr\constants.py:152
+msgid "-"
+msgstr ""
+
+#: .\awpr\constants.py:153
+msgid "nr."
+msgstr ""
+
+#: .\awpr\constants.py:154
+msgid "g/s/i"
+msgstr "g/v/o"
+
+#: .\awpr\constants.py:161
+msgid "M"
+msgstr ""
+
+#: .\awpr\constants.py:162
+msgid "F"
+msgstr "V"
+
+#: .\awpr\constants.py:175 .\templates\includes\menubar.html:64
+msgid "School exam"
+msgstr "Schoolexamen"
+
+#: .\awpr\constants.py:176 .\subjects\forms.py:345
+msgid "Practical exam"
+msgstr "Praktijkexamen"
+
+#: .\awpr\constants.py:177 .\templates\includes\menubar.html:71
+msgid "Central exam"
+msgstr "Centraal examen"
+
+#: .\awpr\constants.py:178
+msgid "Re-exam"
+msgstr "Herexamen"
+
+#: .\awpr\constants.py:179
+msgid "Re-exam third period"
+msgstr "Herexamen derde tijdvak"
+
+#: .\awpr\constants.py:190
+msgid "Score"
+msgstr ""
+
+#: .\awpr\constants.py:191
+msgid "Grade"
+msgstr "Cijfer"
+
+#: .\awpr\constants.py:192
+msgid "Exemption"
+msgstr "Vrijstelling"
+
+#: .\awpr\constants.py:193
+msgid "Final grade"
+msgstr "Eindcijfer"
+
+#: .\awpr\constants.py:205
+msgid "No result"
+msgstr "Geen uitslag"
+
+#: .\awpr\constants.py:206
+msgid "Passed"
+msgstr ""
+
+#: .\awpr\constants.py:207
+msgid "Failed"
+msgstr "Afgewezen"
+
+#: .\awpr\constants.py:208 .\templates\students\studentresult_list.html:31
+msgid "Withdrawn"
+msgstr "Teruggetrokken"
+
+#: .\awpr\functions.py:69
+msgid "<Select country>"
+msgstr "<Selecteer land>"
+
+#: .\awpr\functions.py:72
+msgid "<No country selected>"
+msgstr "<Geen land geseselecteerd"
+
+#: .\awpr\functions.py:84
+msgid "<No exam years found>"
+msgstr "<Geen examenjaar gevonden>"
+
+#: .\awpr\functions.py:87
+msgid "<Select exam year>"
+msgstr ""
+
+#: .\awpr\functions.py:96
+msgid ""
+"Please note: selected exam year is different from the current exam year."
+msgstr ""
+"Let op: het geselecteerd examenjaar is niet gelijk aan het huidig examenjaar."
+
+#: .\awpr\functions.py:111
+msgid "<Select school>"
+msgstr "<Selecteer school>"
+
+#: .\awpr\functions.py:114
+msgid "<No school selected>"
+msgstr "<Geen school geseselecteerd"
+
+#: .\awpr\functions.py:137
+msgid "<No departments found>"
+msgstr "<Geen afdeling gevonden>"
+
+#: .\awpr\functions.py:142
+msgid "<Select department>"
+msgstr "<Selecteer afdeling"
+
+#: .\awpr\settings.py:277 .\templates\includes\header.html:134
+#: .\templates\includes\headerCOPY.html:133
+msgid "English"
+msgstr "Engels"
+
+#: .\awpr\settings.py:278 .\templates\includes\header.html:135
+#: .\templates\includes\headerCOPY.html:134
+msgid "Dutch"
+msgstr "Nederlands"
+
+#: .\schools\forms.py:43
+msgid "CountryTEST"
+msgstr ""
+
+#: .\schools\forms.py:52 .\schools\forms.py:149 .\schools\forms.py:308
+#: .\schools\forms.py:360 .\schools\forms.py:467 .\schools\forms.py:559
+#: .\subjects\forms.py:37 .\subjects\forms.py:77 .\subjects\forms.py:129
+#: .\subjects\forms.py:166 .\subjects\forms.py:207 .\subjects\forms.py:246
+#: .\subjects\forms.py:414 .\subjects\forms.py:465
+#: .\templates\schools\country_list.html:22
+#: .\templates\schools\country_log.html:22
+#: .\templates\schools\department_list.html:30
+#: .\templates\schools\department_log.html:27
+#: .\templates\schools\school_list.html:33
+#: .\templates\schools\school_log.html:28
+#: .\templates\subjects\level_list.html:30
+#: .\templates\subjects\level_log.html:24
+#: .\templates\subjects\sector_list.html:30
+#: .\templates\subjects\sector_log.html:24
+#: .\templates\subjects\subject_list.html:34
+#: .\templates\subjects\subject_log.html:29
+#: .\templates\subjects\subjecttype_list.html:29
+#: .\templates\subjects\subjecttype_log.html:24
+msgid "Abbreviation"
+msgstr "Afkorting"
+
+#: .\schools\forms.py:307 .\schools\forms.py:359 .\subjects\forms.py:37
+#: .\subjects\forms.py:77 .\subjects\forms.py:129 .\subjects\forms.py:166
+#: .\subjects\forms.py:207 .\subjects\forms.py:246 .\subjects\forms.py:297
+#: .\subjects\forms.py:363 .\subjects\forms.py:379 .\subjects\forms.py:413
+#: .\subjects\forms.py:465 .\templates\schools\department_list.html:29
+#: .\templates\schools\department_log.html:26
+#: .\templates\students\student_list.html:32
+#: .\templates\subjects\level_list.html:29
+#: .\templates\subjects\level_log.html:23
+#: .\templates\subjects\scheme_list.html:29
+#: .\templates\subjects\scheme_listCOPY.html:29
+#: .\templates\subjects\scheme_log.html:25
+#: .\templates\subjects\schemeitem_log.html:25
+#: .\templates\subjects\sector_list.html:29
+#: .\templates\subjects\sector_log.html:23
+#: .\templates\subjects\subject_list.html:33
+#: .\templates\subjects\subject_log.html:28
+#: .\templates\subjects\subjecttype_list.html:28
+#: .\templates\subjects\subjecttype_log.html:23
+msgid "Name"
+msgstr "Naam"
+
+#: .\schools\forms.py:309 .\schools\forms.py:361 .\subjects\forms.py:37
+#: .\subjects\forms.py:77 .\subjects\forms.py:129 .\subjects\forms.py:166
+#: .\subjects\forms.py:207 .\subjects\forms.py:246 .\subjects\forms.py:415
+#: .\subjects\forms.py:465 .\templates\schools\department_list.html:31
+#: .\templates\schools\department_log.html:28
+#: .\templates\subjects\level_list.html:31
+#: .\templates\subjects\level_log.html:25
+#: .\templates\subjects\sector_list.html:31
+#: .\templates\subjects\sector_log.html:25
+#: .\templates\subjects\subject_list.html:35
+#: .\templates\subjects\subject_log.html:30
+#: .\templates\subjects\subjecttype_list.html:31
+#: .\templates\subjects\subjecttype_log.html:25
+msgid "Sequence"
+msgstr "Volgnummer"
+
+#: .\schools\forms.py:343 .\schools\forms.py:391
+#: .\templates\schools\department_list.html:32
+msgid "Leerweg required"
+msgstr "Leerweg verplicht"
+
+#: .\schools\forms.py:350 .\schools\forms.py:400
+#: .\templates\schools\department_list.html:33
+msgid "Sector / Profiel required"
+msgstr "Sector / Profiel verplicht"
+
+#: .\schools\forms.py:412 .\templates\schools\school_list.html:34
+#: .\templates\schools\school_log.html:29
+msgid "Article"
+msgstr "Lidwoord"
+
+#: .\schools\forms.py:422 .\schools\forms.py:466 .\schools\forms.py:585
+#: .\templates\schools\school_list.html:32
+#: .\templates\schools\school_log.html:26
+msgid "Schoolname"
+msgstr "Schoolnaam"
+
+#: .\schools\forms.py:428 .\schools\forms.py:465 .\schools\forms.py:595
+#: .\templates\schools\school_list.html:31
+#: .\templates\schools\school_log.html:27
+msgid "Schoolcode"
+msgstr ""
+
+#: .\schools\forms.py:433 .\schools\forms.py:605
+msgid "Short schoolname"
+msgstr "Verkorte schoolnaam"
+
+#: .\schools\forms.py:443 .\schools\forms.py:487 .\subjects\forms.py:69
+#: .\subjects\forms.py:108 .\subjects\forms.py:157 .\subjects\forms.py:197
+#: .\subjects\forms.py:239 .\subjects\forms.py:275 .\subjects\forms.py:456
+#: .\subjects\forms.py:498 .\templates\includes\menubar.html:145
+#: .\templates\includes\menubar.html:147
+#: .\templates\includes\menubarCOPY.html:67
+#: .\templates\includes\menubarCOPY.html:69
+#: .\templates\schools\department_add.html:14
+#: .\templates\schools\department_delete.html:14
+#: .\templates\schools\department_edit.html:13
+#: .\templates\schools\department_list.html:13
+#: .\templates\schools\department_list.html:23
+#: .\templates\schools\department_log.html:13
+#: .\templates\schools\school_list.html:35
+#: .\templates\schools\school_log.html:30
+#: .\templates\subjects\level_list.html:32
+#: .\templates\subjects\level_log.html:26
+#: .\templates\subjects\sector_list.html:32
+#: .\templates\subjects\sector_log.html:26
+#: .\templates\subjects\subject_list.html:36
+#: .\templates\subjects\subject_log.html:31
+#: .\templates\subjects\subjecttype_list.html:32
+#: .\templates\subjects\subjecttype_log.html:26
+msgid "Departments"
+msgstr "Afdelingen"
+
+#: .\schools\forms.py:444
+msgid ""
+"Select the departments of this school. Press the Ctrl button to select "
+"multiple departments."
+msgstr ""
+"Selecteer de afdelingen van deze school. Houdt de Ctrl toets ingedrukt om "
+"meerdere afdelingen te selecteren."
+
+#: .\schools\forms.py:488 .\subjects\forms.py:70 .\subjects\forms.py:109
+#: .\subjects\forms.py:276
+msgid ""
+"Select the departments where this level is available. Press the Ctrl button "
+"to select multiple departments."
+msgstr ""
+"Selecteer de afdelingen waar deze leerweg voorkomt. Houdt de Ctrl toets "
+"ingedrukt om meerdere leerwegen te selecteren."
+
+#: .\schools\forms.py:514
+msgid "Examyear already exists."
+msgstr "Examenjaar komt al voor"
+
+#: .\schools\forms.py:537 .\schools\forms.py:559 .\schools\forms.py:585
+#: .\schools\forms.py:595 .\schools\forms.py:605
+msgid "already exists"
+msgstr "komt al voor."
+
+#: .\schools\forms.py:621
+#, python-format
+msgid "%(value)s exceeds 10 characters."
+msgstr ""
+
+#: .\students\forms.py:55 .\students\forms.py:136
+#: .\templates\students\student_log.html:28
+msgid "Last name"
+msgstr "Achternaam"
+
+#: .\students\forms.py:56 .\students\forms.py:137
+#: .\templates\students\student_log.html:29
+msgid "First name"
+msgstr "Voornamen"
+
+#: .\students\forms.py:57 .\students\forms.py:138
+#: .\templates\students\student_log.html:30
+msgid "Prefix"
+msgstr "Voorvoegsel"
+
+#: .\students\forms.py:58 .\students\forms.py:139
+#: .\templates\students\student_list.html:33
+#: .\templates\students\student_log.html:31
+msgid "Gender"
+msgstr "Geslacht"
+
+#: .\students\forms.py:59 .\students\forms.py:140
+msgid "ID number"
+msgstr "ID nummer"
+
+#: .\students\forms.py:60 .\students\forms.py:141
+msgid "Birthdate"
+msgstr "Geboortedatum"
+
+#: .\students\forms.py:101
+msgid "Country of birth"
+msgstr "Geboorteland"
+
+#: .\students\forms.py:115
+msgid "City of birth"
+msgstr "Geboorteplaats"
+
+#: .\students\forms.py:171 .\templates\students\studentresult_list.html:28
+msgid "Diploma number"
+msgstr "Diplomanummer"
+
+#: .\students\forms.py:172
+msgid "gradelist number"
+msgstr "Cijferlijst nummer"
+
+#: .\students\forms.py:173
+msgid "locked"
+msgstr "Vergrendeld"
+
+#: .\students\forms.py:174
+msgid "has_reex2"
+msgstr "Heeft herexamen"
+
+#: .\students\forms.py:175
+msgid "has_reex3"
+msgstr "Heeft herexamen derde tijdvak"
+
+#: .\students\forms.py:176
+msgid "is_withdrawn"
+msgstr "Is teruggetrokken"
+
+#: .\subjects\forms.py:158 .\subjects\forms.py:198
+msgid ""
+"Select the departments where this sector is available. Press the Ctrl button "
+"to select multiple departments."
+msgstr ""
+"Selecteer de afdelingen waar deze sector/dit profiel voorkomt. Houdt de Ctrl "
+"toets ingedrukt om meerdere items te selecteren."
+
+#: .\subjects\forms.py:297 .\subjects\forms.py:363 .\subjects\forms.py:379
+#: .\templates\subjects\scheme_log.html:27
+#: .\templates\subjects\schemeitem_log.html:27
+msgid "Level"
+msgstr "Leerweg"
+
+#: .\subjects\forms.py:297 .\subjects\forms.py:363 .\subjects\forms.py:379
+#: .\templates\subjects\scheme_list.html:32
+#: .\templates\subjects\scheme_listCOPY.html:32
+#: .\templates\subjects\scheme_log.html:28
+#: .\templates\subjects\schemeitem_log.html:28
+msgid "Sector"
+msgstr "Sector/Profiel"
+
+#: .\subjects\forms.py:317 .\subjects\forms.py:341
+#: .\templates\subjects\schemeitem_list.html:33
+msgid "Subject type"
+msgstr "Vaktype"
+
+#: .\subjects\forms.py:318 .\subjects\forms.py:341
+#: .\templates\subjects\schemeitem_list.html:34
+msgid "Grade type"
+msgstr "Cijfertype"
+
+#: .\subjects\forms.py:319 .\templates\subjects\schemeitem_list.html:35
+msgid "Weight SE"
+msgstr "SE-weging"
+
+#: .\subjects\forms.py:320 .\templates\subjects\schemeitem_list.html:36
+msgid "Weight CE"
+msgstr "CE-weging"
+
+#: .\subjects\forms.py:321 .\subjects\forms.py:343
+#: .\templates\subjects\schemeitem_list.html:37
+msgid "Mandatory"
+msgstr "Verplicht"
+
+#: .\subjects\forms.py:322 .\templates\subjects\schemeitem_list.html:38
+msgid "Combi subject"
+msgstr "Combinatievak"
+
+#: .\subjects\forms.py:323
+msgid "Choice combi"
+msgstr "Keuze-combi vak"
+
+#: .\subjects\forms.py:324 .\templates\subjects\schemeitem_list.html:40
+msgid "Has practical exam"
+msgstr "Heeft praktijkexamen"
+
+#: .\subjects\forms.py:326 .\subjects\forms.py:346
+msgid "Voided"
+msgstr "Komt niet voor"
+
+#: .\subjects\forms.py:342
+msgid "SE weight"
+msgstr "SE-weging"
+
+#: .\subjects\forms.py:342
+msgid "CE weight"
+msgstr "CE-weging"
+
+#: .\subjects\forms.py:343
+msgid "Combination"
+msgstr "Combinatievak"
+
+#: .\subjects\forms.py:344
+msgid "Choice combi allowed"
+msgstr "Keuze-combi toegestaan"
+
+#: .\subjects\forms.py:457 .\subjects\forms.py:499
+msgid ""
+"Select the departments where this subject is available. Press the Ctrl "
+"button to select multiple departments."
+msgstr ""
+"Selecteer de afdelingen waar dit vak voorkomt. Houdt de Ctrl toets ingedrukt "
+"om meerdere vakken te selecteren."
+
+#: .\subjects\forms.py:524
+msgid "Level name already exists."
+msgstr "Leerweg komt al voor."
+
+#: .\subjects\forms.py:544
+msgid "Abbreviation of level already exists."
+msgstr "Afkorting van deze leerweg komt al voor."
+
+#: .\subjects\forms.py:566
+msgid "Sector name already exists."
+msgstr "Sector komt al voor."
+
+#: .\subjects\forms.py:586
+msgid "Abbreviation of sector already exists."
+msgstr "Afkorting van deze sector/dit profiel komt al voor."
+
+#: .\subjects\forms.py:607
+#, python-format
+msgid "Name \"%s\" already exists."
+msgstr "Naam \"%s\" komt al voor."
+
+#: .\subjects\forms.py:626
+#, python-format
+msgid "Abbreviation \"%s\" already exists."
+msgstr "Afkorting \"%s\" komt al voor."
+
+#: .\subjects\forms.py:643
+msgid "Subject already exists."
+msgstr "Vak komt al voor."
+
+#: .\subjects\forms.py:658
+msgid "Abbreviation of default subject already exists."
+msgstr "Afkorting van dit vak komt al voor."
+
+#: .\subjects\models.py:921
+msgid "Sets subject sequence in reports. Required. Maximum value is {}."
+msgstr ""
+"Bepaalt volgorde van de vakken in rapporten. Verplicht. Maximum waarde is {}."
+
+#: .\subjects\models.py:923
+msgid "Value must be less or equal to {}."
+msgstr "Waarde moet minder dan of gelijk zijn aan {}."
+
+#: .\templates\accounts\user_confirm_delete.html:21
+msgid "Delete user"
+msgstr "Wis gebruiker"
+
+#: .\templates\accounts\user_confirm_delete.html:23
+#: .\templates\schools\country_confirm_delete.html:20
+msgid "Yes, delete"
+msgstr "Ja, wis"
+
+#: .\templates\accounts\user_confirm_delete.html:24
+#: .\templates\schools\country_confirm_delete.html:21
+#: .\templates\schools\country_lock.html:29
+#: .\templates\schools\examyear_lock.html:31
+msgid "No, cancel"
+msgstr "Nee, annuleer"
+
+#: .\templates\home.html:9
+msgid "Replace the AWP-download program"
+msgstr "Vervang het AWP-downloadprogramma"
+
+#: .\templates\home.html:11
+msgid ""
+"Before AWP can download the new version AWP 2018.01 from the internet, the "
+"AWP-download program must be replaced."
+msgstr ""
+"Voordat AWP de nieuwe versie AWP 2018.01 van internet kan downloaden, moet "
+"eerst het AWP-downloadprogramma vervangen worden."
+
+#: .\templates\home.html:12
+msgid "This cannot be done with an update, but has to be replaced manually."
+msgstr "Dit kan niet via een update, maar moet handmatig gebeuren."
+
+#: .\templates\home.html:13
+msgid ""
+"Click Download to download the new AWP-download program and the instructions "
+"how to install it."
+msgstr ""
+"Klik op de Download knop om het nieuwe AWP-downloadprogramma en de "
+"handleiding voor het installeren ervan downloaden."
+
+#: .\templates\home.html:18
+msgid "Description"
+msgstr "Omschrijving"
+
+#: .\templates\home.html:19 .\templates\home.html:28 .\templates\home.html:36
+#: .\templates\home.html:44
+msgid "Download"
+msgstr "Downloaden"
+
+#: .\templates\home.html:25
+msgid "Download the AWP-download program"
+msgstr "Download het AWP-downloadprogramma"
+
+#: .\templates\home.html:33
+msgid "Download instructions in Dutch"
+msgstr "Download handleiding in het Nederlands"
+
+#: .\templates\home.html:41
+msgid "Download instructions in English"
+msgstr "Download handleiding in het Engels"
+
+#: .\templates\importing\import_birthcity.html:32
+#: .\templates\importing\import_birthcountry.html:32
+#: .\templates\importing\import_department.html:32
+#: .\templates\importing\import_level.html:32
+#: .\templates\importing\import_scheme.html:32
+#: .\templates\importing\import_schemeitem.html:32
+#: .\templates\importing\import_sector.html:32
+#: .\templates\importing\import_subjecttype.html:32
+msgid "You must be logged in to view this page"
+msgstr "U moet eerst inloggen om deze pagina te kunnen bekijken."
+
+#: .\templates\includes\header.html:150
+#: .\templates\includes\headerCOPY.html:149
+msgid "Log out"
+msgstr "Uitloggen"
+
+#: .\templates\includes\menubar.html:50 .\templates\includes\menubar.html:128
+#: .\templates\includes\menubar.html:131
+#: .\templates\includes\menubarCOPY.html:49
+#: .\templates\includes\menubarCOPY.html:52
+#: .\templates\students\student_add.html:13
+#: .\templates\students\student_edit.html:20
+#: .\templates\students\student_list.html:15
+#: .\templates\students\student_list.html:27
+#: .\templates\students\student_log.html:16
+msgid "Students"
+msgstr "Kandidaten"
+
+#: .\templates\includes\menubar.html:57
+msgid "Study program"
+msgstr ""
+
+#: .\templates\includes\menubar.html:78
+msgid "Re-examination"
+msgstr "Herexamen"
+
+#: .\templates\includes\menubar.html:85
+msgid "Results"
+msgstr "Uitslagen"
+
+#: .\templates\includes\menubar.html:92
+msgid "Rapportages"
+msgstr ""
+
+#: .\templates\includes\menubar.html:114
+#: .\templates\includes\menubarCOPY.html:35
+msgid "Countries formset"
+msgstr ""
+
+#: .\templates\includes\menubar.html:117
+#: .\templates\includes\menubarCOPY.html:38
+#: .\templates\schools\country_add.html:7
+#: .\templates\schools\country_confirm_delete.html:7
+#: .\templates\schools\country_edit.html:7
+#: .\templates\schools\country_formset.html:7
+#: .\templates\schools\country_formsetx.html:7
+#: .\templates\schools\country_list.html:7
+#: .\templates\schools\country_list.html:16
+#: .\templates\schools\country_lock.html:7
+#: .\templates\schools\country_log.html:9
+msgid "Countries"
+msgstr "Landen"
+
+#: .\templates\includes\menubar.html:120
+#: .\templates\includes\menubarCOPY.html:41
+#: .\templates\schools\examyear_add.html:10
+#: .\templates\schools\examyear_delete.html:10
+#: .\templates\schools\examyear_edit.html:11
+#: .\templates\schools\examyear_list.html:10
+#: .\templates\schools\examyear_list.html:20
+#: .\templates\schools\examyear_log.html:8
+msgid "Exam years"
+msgstr "Examenjaren"
+
+#: .\templates\includes\menubar.html:123
+#: .\templates\includes\menubarCOPY.html:44
+#: .\templates\schools\school_add.html:13
+#: .\templates\schools\school_delete.html:14
+#: .\templates\schools\school_edit.html:14
+#: .\templates\schools\school_list.html:14
+#: .\templates\schools\school_list.html:26
+#: .\templates\schools\school_log.html:14
+msgid "Schools"
+msgstr "Scholen"
+
+#: .\templates\includes\menubar.html:132
+#: .\templates\includes\menubarCOPY.html:53
+#: .\templates\students\studentresult_list.html:22
+msgid "Student results"
+msgstr "Kandidaatresultaten "
+
+#: .\templates\includes\menubar.html:134
+#: .\templates\includes\menubarCOPY.html:55
+#: .\templates\students\grade_add.html:16
+#: .\templates\students\grade_list.html:14
+#: .\templates\students\grade_list.html:25
+msgid "Student grades"
+msgstr "Cijfers van kandidaten"
+
+#: .\templates\includes\menubar.html:148
+#: .\templates\includes\menubarCOPY.html:70
+#: .\templates\subjects\level_add.html:14
+#: .\templates\subjects\level_delete.html:13
+#: .\templates\subjects\level_edit.html:13
+#: .\templates\subjects\level_list.html:13
+#: .\templates\subjects\level_list.html:23
+#: .\templates\subjects\level_log.html:11
+msgid "Levels"
+msgstr "Leerwegen"
+
+#: .\templates\includes\menubar.html:149
+#: .\templates\includes\menubarCOPY.html:71
+#: .\templates\subjects\sector_add.html:13
+#: .\templates\subjects\sector_delete.html:13
+#: .\templates\subjects\sector_edit.html:13
+#: .\templates\subjects\sector_list.html:13
+#: .\templates\subjects\sector_list.html:23
+#: .\templates\subjects\sector_log.html:11
+msgid "Sectors"
+msgstr "Sectoren/Profielen"
+
+#: .\templates\includes\menubar.html:150
+#: .\templates\includes\menubarCOPY.html:72
+#: .\templates\subjects\subjecttype_add.html:14
+#: .\templates\subjects\subjecttype_delete.html:13
+#: .\templates\subjects\subjecttype_list.html:13
+#: .\templates\subjects\subjecttype_list.html:23
+#: .\templates\subjects\subjecttype_log.html:11
+msgid "Subject types"
+msgstr "Vaktypes"
+
+#: .\templates\includes\menubar.html:151
+#: .\templates\includes\menubarCOPY.html:73
+#: .\templates\subjects\scheme_add.html:14
+#: .\templates\subjects\scheme_delete.html:13
+#: .\templates\subjects\scheme_edit.html:13
+#: .\templates\subjects\scheme_list.html:14
+#: .\templates\subjects\scheme_list.html:24
+#: .\templates\subjects\scheme_listCOPY.html:14
+#: .\templates\subjects\scheme_listCOPY.html:24
+#: .\templates\subjects\scheme_log.html:13
+#: .\templates\subjects\schemeitem_add.html:14
+#: .\templates\subjects\schemeitem_delete.html:13
+#: .\templates\subjects\schemeitem_log.html:13
+msgid "Schemes"
+msgstr "Vakschema's"
+
+#: .\templates\includes\menubar.html:152
+#: .\templates\includes\menubarCOPY.html:74
+#: .\templates\subjects\schemeitem_edit.html:15
+#: .\templates\subjects\schemeitem_list.html:15
+#: .\templates\subjects\schemeitem_list.html:25
+msgid "Scheme-items"
+msgstr "Vakschema items"
+
+#: .\templates\schools\country_add.html:8
+#: .\templates\schools\country_add.html:17
+#: .\templates\schools\country_list.html:14
+msgid "Add country"
+msgstr "Land toevoegen"
+
+#: .\templates\schools\country_confirm_delete.html:18
+msgid "Delete country"
+msgstr "Land wissen"
+
+#: .\templates\schools\country_edit.html:17
+msgid "Edit country"
+msgstr "Land wijzigen"
+
+#: .\templates\schools\country_lock.html:9
+#: .\templates\schools\examyear_lock.html:11
+msgid "Lock"
+msgstr "Vergrendelen"
+
+#: .\templates\schools\country_lock.html:20
+msgid "Unlock country"
+msgstr "Ontgrendel land"
+
+#: .\templates\schools\country_lock.html:22
+#: .\templates\schools\examyear_lock.html:24
+msgid "Yes, unlock"
+msgstr "ja, ontgrendel"
+
+#: .\templates\schools\country_lock.html:25
+msgid "Lock country"
+msgstr "Vergrendel land"
+
+#: .\templates\schools\country_lock.html:27
+#: .\templates\schools\examyear_lock.html:29
+msgid "Yes, lock"
+msgstr "Ja, vergrendel"
+
+#: .\templates\schools\department_add.html:15
+#: .\templates\schools\examyear_add.html:11
+msgid "Add"
+msgstr "Toevoegen"
+
+#: .\templates\schools\department_add.html:24
+#: .\templates\schools\department_list.html:20
+msgid "Add department"
+msgstr "Afdeling toevoegen"
+
+#: .\templates\schools\department_delete.html:26
+msgid "Delete department:"
+msgstr "Afdeling wissen"
+
+#: .\templates\schools\department_edit.html:23
+msgid "Edit department:"
+msgstr "Afdeling wijzigen"
+
+#: .\templates\schools\department_list.html:28
+#: .\templates\schools\department_log.html:25
+#: .\templates\subjects\level_list.html:28
+#: .\templates\subjects\sector_list.html:28
+msgid "ID"
+msgstr ""
+
+#: .\templates\schools\department_log.html:21
+#: .\templates\students\grade_log.html:21
+#: .\templates\students\student_log.html:24
+#: .\templates\subjects\level_log.html:19
+#: .\templates\subjects\scheme_log.html:21
+#: .\templates\subjects\schemeitem_log.html:21
+#: .\templates\subjects\sector_log.html:19
+#: .\templates\subjects\subject_log.html:24
+#: .\templates\subjects\subjecttype_log.html:19
+msgid "Log of:"
+msgstr "Log van:"
+
+#: .\templates\schools\department_log.html:29
+msgid "Level required"
+msgstr "Leerweg verplicht"
+
+#: .\templates\schools\department_log.html:30
+msgid "Sector required"
+msgstr "Sector/Profiel verplicht"
+
+#: .\templates\schools\examyear_add.html:20
+#: .\templates\schools\examyear_list.html:17
+msgid "Add exam year"
+msgstr "Examenjaar toevoegen"
+
+#: .\templates\schools\examyear_delete.html:21
+msgid "Delete exam year"
+msgstr "Examenjaar wissen"
+
+#: .\templates\schools\examyear_edit.html:21
+msgid "Edit exam year "
+msgstr "Examenjaar wijzigen"
+
+#: .\templates\schools\examyear_lock.html:22
+msgid "Unlock examyear"
+msgstr "Examenjaar ontgrendelen"
+
+#: .\templates\schools\examyear_lock.html:27
+msgid "Lock examyear"
+msgstr "Examenjaar vergrendelen"
+
+#: .\templates\schools\examyear_log.html:16
+msgid "Log of exam year "
+msgstr "Log van examenjaar "
+
+#: .\templates\schools\school_add.html:14
+#: .\templates\students\grade_add.html:17
+#: .\templates\students\student_add.html:14
+#: .\templates\students\studentsubject_add.html:17
+#: .\templates\subjects\level_add.html:15
+#: .\templates\subjects\scheme_add.html:15
+#: .\templates\subjects\schemeitem_add.html:15
+#: .\templates\subjects\sector_add.html:14
+#: .\templates\subjects\subject_add.html:17
+#: .\templates\subjects\subjecttype_add.html:15
+msgid "Add new"
+msgstr "Toevoegen"
+
+#: .\templates\schools\school_delete.html:26
+msgid "Delete school:"
+msgstr "School wissen"
+
+#: .\templates\schools\school_edit.html:24
+msgid "Edit school"
+msgstr "School wijzigen"
+
+#: .\templates\schools\school_list.html:22
+msgid "Add school"
+msgstr "School toevoegen"
+
+#: .\templates\schools\school_list.html:36
+#: .\templates\schools\school_log.html:31
+msgid "Is template"
+msgstr "Is sjabloon"
+
+#: .\templates\schools\school_log.html:22
+msgid "Log of"
+msgstr ""
+
+#: .\templates\session_security\dialog.html:6
+msgid "Your AWP session is about to expire."
+msgstr "Uw AWP sessie verloopt bijna."
+
+#: .\templates\session_security\dialog.html:7
+msgid "Click or type to extend your session."
+msgstr "Klik of type om uw sessie voort te zetten."
+
+#: .\templates\students\grade_add.html:26
+#: .\templates\students\grade_list.html:22
+msgid "Add grade"
+msgstr "Cijfer toevoegen"
+
+#: .\templates\students\grade_edit.html:29
+msgid "Edit student grade:"
+msgstr "Wijzig cijfer"
+
+#: .\templates\students\grade_list.html:30
+#: .\templates\students\studentsubject_list.html:31
+msgid "schemeitem"
+msgstr ""
+
+#: .\templates\students\grade_list.html:31
+#: .\templates\students\grade_log.html:26
+msgid "examcode"
+msgstr ""
+
+#: .\templates\students\grade_list.html:32
+#: .\templates\students\grade_log.html:27
+msgid "gradeclass"
+msgstr ""
+
+#: .\templates\students\grade_list.html:33
+#: .\templates\students\grade_log.html:28
+msgid "value"
+msgstr ""
+
+#: .\templates\students\grade_list.html:34
+#: .\templates\students\grade_log.html:29
+msgid "status"
+msgstr ""
+
+#: .\templates\students\grade_list.html:35
+msgid "modified_by"
+msgstr "Gewijzigd door"
+
+#: .\templates\students\grade_list.html:36
+msgid "modified_at"
+msgstr "gewijzigd op"
+
+#: .\templates\students\grade_log.html:25
+msgid "studentsubject_log"
+msgstr ""
+
+#: .\templates\students\student_add.html:24
+#: .\templates\students\student_list.html:23
+msgid "Add student"
+msgstr "Kandidaaat toevoegen"
+
+#: .\templates\students\student_add.html:26
+msgid "Test Button"
+msgstr ""
+
+#: .\templates\students\student_delete.html:26
+msgid "Delete student"
+msgstr "Kandidaat wissen"
+
+#: .\templates\students\student_edit.html:22
+msgid "Edit"
+msgstr "Wijzigen"
+
+#: .\templates\students\student_edit.html:31
+msgid "Edit student:"
+msgstr "Kandidaat wijzigen"
+
+#: .\templates\students\student_list.html:34
+#: .\templates\students\student_log.html:32
+msgid "Id number"
+msgstr "Sedula nummer"
+
+#: .\templates\students\student_list.html:35
+#: .\templates\students\student_log.html:33
+msgid "Birth date"
+msgstr "Geboortedatum"
+
+#: .\templates\students\student_list.html:36
+#: .\templates\students\student_log.html:34
+msgid "Birth country"
+msgstr "Geboorteland"
+
+#: .\templates\students\student_list.html:37
+#: .\templates\students\student_log.html:35
+msgid "Birth place"
+msgstr "Geboorteplaats"
+
+#: .\templates\students\studentresult_list.html:15
+msgid "Student resultss"
+msgstr "Resultaten kandidaten"
+
+#: .\templates\students\studentresult_list.html:27
+#: .\templates\students\studentsubject_list.html:30
+msgid "Student"
+msgstr "Kandidaat"
+
+#: .\templates\students\studentresult_list.html:29
+msgid "Gradelist number"
+msgstr "Cijferlijst nummer"
+
+#: .\templates\students\studentresult_list.html:32
+msgid "grade_ce_avg_final"
+msgstr ""
+
+#: .\templates\students\studentresult_list.html:33
+msgid "endgrade_avg_text"
+msgstr ""
+
+#: .\templates\students\studentresult_list.html:34
+msgid "result_final"
+msgstr ""
+
+#: .\templates\students\studentresult_list.html:35
+msgid "result_final_status"
+msgstr ""
+
+#: .\templates\students\studentsubject_add.html:26
+#: .\templates\students\studentsubject_formset.html:22
+#: .\templates\students\studentsubject_list.html:22
+#: .\templates\subjects\subject_add.html:26
+#: .\templates\subjects\subject_list.html:25
+msgid "Add subject"
+msgstr "Vak toevoegen"
+
+#: .\templates\students\studentsubject_edit.html:29
+msgid "Edit student subject:"
+msgstr ""
+
+#: .\templates\students\studentsubject_formset.html:25
+msgid "Student subjects FORMSET "
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:32
+msgid "cluster"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:33
+msgid "is_extra_subject"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:34
+msgid "is_extra_subject_counts"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:35
+msgid "is_choice_combi"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:36
+msgid "pws_title"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:37
+msgid "pws_subjects"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:38
+msgid "has_exemption"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:39
+msgid "has_tv02"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:40
+msgid "has_tv03"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:41
+msgid "has_pok"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:42
+msgid "has_pok_status"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:43
+msgid "endgrade_tv01"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:44
+msgid "endgrade_tv02"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:45
+msgid "endgrade_tv03"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:46
+msgid "endgrade_final"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:47
+msgid "endgrade_tv01_status"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:48
+msgid "endgrade_tv02_status"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:49
+msgid "endgrade_tv03_status"
+msgstr ""
+
+#: .\templates\students\studentsubject_list.html:50
+msgid "endgrade_final_status"
+msgstr ""
+
+#: .\templates\subjects\level_add.html:24
+#: .\templates\subjects\level_list.html:20
+msgid "Add level"
+msgstr "Leerweg toevoegen"
+
+#: .\templates\subjects\level_delete.html:24
+msgid "Delete level:"
+msgstr "Leerweg wissen"
+
+#: .\templates\subjects\level_edit.html:23
+msgid "Edit level:"
+msgstr "Leerweg wijzigen"
+
+#: .\templates\subjects\scheme_add.html:27
+#: .\templates\subjects\scheme_list.html:21
+#: .\templates\subjects\scheme_listCOPY.html:21
+#: .\templates\subjects\schemeitem_add.html:27
+msgid "Add scheme"
+msgstr "Vakschema toevoegen"
+
+#: .\templates\subjects\scheme_delete.html:24
+#: .\templates\subjects\schemeitem_delete.html:24
+msgid "Delete scheme:"
+msgstr "Vakschema wissen"
+
+#: .\templates\subjects\scheme_edit.html:23
+msgid "Edit scheme:"
+msgstr ""
+
+#: .\templates\subjects\scheme_list.html:31
+#: .\templates\subjects\scheme_listCOPY.html:31
+msgid "Leerweg"
+msgstr ""
+
+#: .\templates\subjects\schemeitem_edit.html:27
+msgid "Edit scheme item"
+msgstr "Vakschema-item wijzigen"
+
+#: .\templates\subjects\schemeitem_list.html:22
+msgid "Add scheme-item"
+msgstr "Vakschema toevoegen"
+
+#: .\templates\subjects\schemeitem_list.html:31
+msgid "Subject"
+msgstr "Vak"
+
+#: .\templates\subjects\schemeitem_list.html:32
+msgid "Scheme"
+msgstr "vakschema"
+
+#: .\templates\subjects\schemeitem_list.html:39
+msgid "Choice-combi allowed"
+msgstr "Keuze-combi toegestaan"
+
+#: .\templates\subjects\sector_add.html:23
+#: .\templates\subjects\sector_list.html:20
+msgid "Add sector"
+msgstr "Sector/Profiel toevoegen"
+
+#: .\templates\subjects\sector_delete.html:24
+msgid "Delete sector:"
+msgstr "Sector/Profiel wissen"
+
+#: .\templates\subjects\sector_edit.html:23
+msgid "Edit sector:"
+msgstr "Sector/Profiel wijzigen"
+
+#: .\templates\subjects\subject_delete.html:31
+msgid "Delete subject:"
+msgstr "Vak wissen"
+
+#: .\templates\subjects\subject_edit.html:29
+msgid "Edit subject:"
+msgstr "Vak wijzigen"
+
+#: .\templates\subjects\subjecttype_add.html:24
+#: .\templates\subjects\subjecttype_list.html:20
+msgid "Add subject type"
+msgstr "Vaktype toevoegen"
+
+#: .\templates\subjects\subjecttype_delete.html:24
+msgid "Delete subjecttype:"
+msgstr "Vaktype wissen"
+
+#: .\templates\subjects\subjecttype_edit.html:13
+msgid "Subjecttypes"
+msgstr "Vaktypes"
+
+#: .\templates\subjects\subjecttype_edit.html:23
+msgid "Edit subjecttype:"
+msgstr "Vaktype wijzigen"
+
+#: .\templates\subjects\subjecttype_list.html:30
+msgid "Code"
+msgstr ""
+
+#~ msgid ""
+#~ "Required. {} characters or fewer. Letters, digits and @/./+/-/_ only."
+#~ msgstr ""
+#~ "Verplicht. {} tekens of minder. Alleen letters, cijfers en @/./+/-/_."
+
+#~ msgid "User not connected to a country."
+#~ msgstr "Er is geen land geselecteerd."
+
+#~ msgid "User not connected to a school."
+#~ msgstr "Gebruiker is niet verbonden aan een school."
+
+#~ msgid "Schoolname \"%s\" already exists."
+#~ msgstr "Schoolnaam \"%s\" komt al voor."
+
+#~ msgid "Schoolcode \"%s\" already exists\"."
+#~ msgstr "Schoolcode \"%s\" komt al voor."
+
+#~ msgid "Short schoolname \"%s\" already exists\"."
+#~ msgstr "Verkorte schoolnaam \"%s\" komt al voor."
+
+#~ msgid "gradelistnumber number"
+#~ msgstr "Cijferlijst nummer"
+
+#~ msgid "Manda tory"
+#~ msgstr "Verplicht"

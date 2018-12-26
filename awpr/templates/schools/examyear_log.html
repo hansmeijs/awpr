@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item"><a >{{ examyear.country }}</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'examyear_list_url' %}">{% trans 'Exam years' %}</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'examyear_edit_url' examyear.pk %}">{{ examyear.examyear }}</a></li>
+    <li class="breadcrumb-item active">{% trans 'Log' %}</li>
+  </ol>
+{% endblock %}
+
+{% block content %}
+  {% if user.enable_examyear_modify %}
+    <h4>{% trans 'Log of exam year ' %}{{ examyear.examyear }} {{ examyear.country }}</h4>
+    <table class="table table table-condensed">
+      <thead class="thead-inverse">
+        <tr>
+          <th>{% trans 'Exam year' %}</th>
+          <th>{% trans 'Published' %}</th>
+          <th>{% trans 'Locked' %}</th>
+          <th>{% trans 'Country' %}</th>
+          <th>{% trans 'Modified by' %}</th>
+          <th>{% trans 'Modified at' %}</th>
+          <th>{% trans 'Action' %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in examyears_log.all %}
+          <tr>
+            <td>{% if item.examyear_mod %}<b>{% endif %}{{ item.examyear }}</b></td>
+            <td>{% if item.published_mod %}<b>{% endif %}{{ item.published_str }}</b></td>
+            <td>{% if item.locked_mod %}<b>{% endif %}{{ item.locked_str }}</b></td>
+            <td>{% if item.country_mod %}<b>{% endif %}{{ item.country }}</b></td>
+            <td>{{ item.modified_by }}</td>
+            <td>{{ item.modified_at }}</td>
+            <td>{{ item.mode_str }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <a href="{% url 'examyear_list_url' %}" class="btn btn-outline-primary mb-3">{% trans 'Close' %}</a>
+  {% else %}
+    <div class="alert alert-danger">{{ user.message_examyear_modify }}</div>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+  {% endif %}
+{% endblock %}l>

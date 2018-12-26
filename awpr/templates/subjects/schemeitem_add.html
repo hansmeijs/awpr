@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item">{{ user.country }}
+      {% if user.country_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item">{{ user.examyear }}
+      {% if user.examyear_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item"><a href="{% url 'scheme_list_url' %}">{% trans 'Schemes' %}</a></li>
+    <li class="breadcrumb-item active">{% trans 'Add new' %}</li>
+  </ol>
+{% endblock %}
+
+{% block content %}
+  {% if user.enable_schemes_modify %}
+
+    <form method="post" id="id_scheme_add_form"
+          load_levels_url="{% url 'load_levels_url' %}"
+          load_sectors_url="{% url 'load_sectors_url' %}"  novalidate>
+      {% csrf_token %}
+       <input type="hidden" name="next" value="{{ next }}">
+      <h4 id="header">{% trans 'Add scheme' %}</h4>
+
+      {% include 'includes/form.html' %}
+
+      <button type="submit" class="btn btn-success">{% trans 'Save' %}</button>
+      <a href="{% url 'scheme_list_url' %}" class="btn btn-outline-secundary"> {% trans 'Cancel' %} </a>
+    </form>
+
+  {% else %}
+    <div class="alert alert-danger">{{ user.message_schemes_modify }}</div>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+  {% endif %}
+
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+
+<script>
+// set global variables
+    let department_list = {};
+    let sel_dep_id = "0";
+    let sel_dep = {};
+
+    let level_list = {};
+    let sel_level_id = "0";
+
+    let sector_list = {};
+    let sel_sector_id = "0";
+
+    $(document).ready(function(){
+      // create department_list, level_list, sector_list
+        department_list = {{ deps | safe }};
+        level_list = {{ levels | safe }};
+        sector_list = {{ sectors | safe }};
+
+console.log("department_list typeof: " + typeof (department_list));
+console.log(department_list);
+console.log("level_list typeof: " + typeof (level_list));
+console.log(level_list);
+console.log("sector_list typeof: " + typeof (sector_list));
+console.log(sector_list);
+
+     // get the selected department ID from the HTML input
+        sel_dep_id = $("#id_department").val();
+        if (!sel_dep_id){sel_dep_id = "0"}
+
+     // get the selected department
+        sel_dep = department_list[sel_dep_id];
+
+console.log("sel_dep typeof: " + typeof (sel_dep));
+console.log(sel_dep);
+
+     // get level_req, sector_req from selected department
+        let sel_level_req = false;
+        let sel_sector_req = false;
+        if (sel_dep){
+          sel_level_req = (sel_dep.level_req.toLowerCase() === "true");
+          sel_level_req = (sel_dep.sector_req.toLowerCase() === "true");
+          }
+
+     // remove item (blank) when there is a selected option
+          if (sel_dep_id !=="0"){$("#id_department option[value='0']").remove()}
+
+     // get the selected level ID from the HTML input
+        sel_level_id = $("#id_level").val();
+        if (!sel_level_id){sel_level_id = "0"}
+
+     // get the selected id_sector ID from the HTML input
+        sel_sector_id = $("#id_sector").val();
+        if (!sel_sector_id){sel_sector_id = "0"}
+
+     // fill select_field options
+        fill_select($("#id_level"), "level");
+        fill_select($("#id_sector"), "sector");
+
+     // disable field 'name'
+        // $("#id_name").prop("disabled", true);
+
+    //=== Department change =================================
+      $("#id_department").change(function () {
+
+       // get the selected department ID from the HTML input
+          sel_dep_id = $(this).val()
+
+       // get selected department from department_list
+          sel_dep = department_list[sel_dep_id];
+console.log("sel_dep : <" +  sel_dep.abbrev + "> typeof: " + typeof (sel_dep));
+
+       // get level_req from selected department
+          let level_req = "false";
+          if (sel_dep){level_req = sel_dep.level_req}
+          const sel_level_req = (level_req.toLowerCase() === "true");
+console.log("sel_level_req: " +  sel_level_req + " typeof: " + typeof (sel_level_req));
+
+       // get sector_req from selected department
+          let sector_req = "false";
+          if (sel_dep){sector_req = sel_dep.sector_req}
+          const sel_sector_req = (sector_req.toLowerCase() === "true");
+console.log("sel_sector_req: " +  sel_sector_req + " typeof: " + typeof (sel_sector_req));
+
+       // remove item (blank) when there is a selected option
+          if (sel_dep_id !=="0"){$("#id_department option[value='0']").remove()}
+
+      // fill select_field options
+          fill_select($("#id_level"), "level");
+          fill_select($("#id_sector"), "sector");
+
+      // create scheme name
+          create_scheme_name();
+
+      }); // id_department.change
+
+    //=== Level change =================================
+      $("#id_level").change(function () {
+        // get the selected level ID from the HTML input
+          sel_level_id = $(this).val()
+
+        // remove option 'blank' if other option is selected
+          if (sel_level_id !== "0"){$("#id_level option[value='0']").remove()}
+
+          create_scheme_name();
+
+      }); // id_level.change
+
+    //=== Sector change =================================
+      $("#id_sector").change(function () {
+
+        // get the selected sector ID from the HTML input
+           sel_sector_id = $(this).val()
+
+        // remove option 'blank' if other option is selected
+          if (sel_sector_id !== "0"){$("#id_sector option[value='0']").remove()}
+
+          create_scheme_name();
+      });
+
+    // === Functions =====================================
+
+      function fill_select($select, select_field){
+
+            // declare local variables
+            let option_list = {};
+            let sel_req = false;
+            let sel_id = "";
+            if(select_field === "level"){
+                option_list = level_list
+                sel_id = sel_level_id;
+              } else {
+                option_list = sector_list
+                sel_id = sel_sector_id;
+              }
+console.log( ">> fill_select sel_req: " + select_field + ": " +  sel_req + " typeof: " + typeof (sel_req));
+
+            // get the selected department, department_list and sel_dep_id are global variables
+            sel_dep = department_list[sel_dep_id];
+console.log( " fill_select sel_dep: " +  sel_dep + " typeof: " + typeof (sel_dep));
+
+            // get level_req, sector_req from selected department
+
+            if (sel_dep){
+              if(select_field === "level"){
+                sel_req = (sel_dep.level_req.toLowerCase() === "true");
+              } else {
+                sel_req = (sel_dep.sector_req.toLowerCase() === "true");
+              }
+            }
+
+         // remove all options from select element
+            $select.children().remove();
+
+         // disable field when no dep selected or not sel_req
+            if(sel_dep_id === "0"){
+              $select.prop("disabled", true);
+              sel_id = "0";
+            } else {
+              if (!sel_req) {
+                sel_id = "0";
+              } else {
+                // add options to $select, but only when selected dep is in dep_list
+
+                // first item is blank, will be removed when there are selected options
+                let auxArr = [];
+                let j = 1; // j=0 is for blank option
+                auxArr[0] = "<option value='0'>---</option>";
+
+                // iterate through options in level_list / sector_list
+                let sel_id_found = false;
+                for (const option_id in option_list) {
+                  const option_item = option_list[option_id];
+                  // check if selected dep is in dep_list
+                  if (found_in_dep_list(sel_dep_id, option_item )){
+                    // add option_item to options if selected dep is in dep_list
+                    auxArr[j] = "<option value='" + option_id + "'>" + option_item.name + "</option>";
+                    if (sel_id === option_id){sel_id_found = true}
+                    console.log("''> sel_id_found: " + sel_id_found + " typeof: " + typeof (sel_id_found));
+                    ++j
+                  }
+                }
+
+                if (j > 1){
+                  // remove first option 'blank' form list when an item is already selected
+                  if (sel_id_found){auxArr.shift()}
+
+                  // append options to select element (make array first, then append. This works faster then appending one by one)
+                  $select.append(auxArr.join(""));
+
+                  // select selected option, if any
+                  if (sel_id_found){$select.val(sel_id)}
+                } // if j > 1
+              } // if (sel_req)
+
+              $select.prop("disabled", !sel_req);
+
+            } // if(sel_dep_id === "0")
+
+            // update global variable sel_level_id or sel_sector_id
+              if(select_field === "level"){
+                sel_level_id = sel_id;
+              } else {
+                sel_sector_id = sel_id;
+              }
+      }
+
+      function create_scheme_name(){
+         // get the selected department
+            let sel_dep = department_list[sel_dep_id];
+            let dep_name = "";
+            if (sel_dep){dep_name = sel_dep.shortname}
+
+         // set value of level_name
+            let level_name = "";
+            let sel_level = level_list[sel_level_id];
+            if (sel_level){
+              // check if selected dep is in level_dep_list
+              if (found_in_dep_list(sel_dep_id, sel_level )){
+                level_name = sel_level.abbrev.toLowerCase()
+              }}
+
+         // set value of sector_name
+            let sector_name = "";
+            let sel_sector = sector_list[sel_sector_id];
+            if (sel_sector){
+              // check if selected dep is in sector_dep_list
+              if (found_in_dep_list(sel_dep_id, sel_sector )){
+                sector_name = sel_sector.abbrev.toLowerCase()
+              }}
+
+         // set value of scheme_name
+            let scheme_name = dep_name;
+            if (level_name){scheme_name = scheme_name + " - " + level_name}
+            if (sector_name){scheme_name = scheme_name + " - " + sector_name}
+
+            $("#id_name").val(scheme_name);
+      }
+
+      function found_in_dep_list(sel_dep_id, level_or_sector ){
+          const sel_dep_id_delim = ";" + sel_dep_id + ";"
+          let found = false;
+          if (level_or_sector){
+            const dep_list =  level_or_sector["dep_list"];
+            if (dep_list){
+              let n = dep_list.indexOf(sel_dep_id_delim);
+              found = (n > -1);
+            }
+          }
+          return found
+      }
+
+    }); // document.ready
+</script>
+
+{% endblock %}
+
+<!---
+
+        var url_level = $("#id_scheme_add_form").attr("load_levels_url");  // get the url load_levels_url of the `load_cities` view
+        $.ajax({url: url_level,  // set the url of the request (= localhost:8000/hr/ajax/load-cities/)
+          data: {'department_id': department_id}, // add the department_id to the GET parameters
+          success: function (data) {   // `data` is the return of the `load_levels` view function
+            console.log("data");
+            console.log(data);
+            $("#id_level").html(data);  // replace the contents of the input with the data that came from the server
+          }
+        });
+
+        var url_sector = $("#id_scheme_add_form").attr("load_sectors_url");  // get the url load_levels_url of the `load_cities` view
+        $.ajax({url: url_sector,  // set the url of the request (= localhost:8000/hr/ajax/load-cities/)
+          data: {'department_id': department_id}, // add the department_id to the GET parameters
+          success: function (data) {   // `data` is the return of the `load_levels` view function
+            console.log("data");
+            console.log(data);
+            $("#id_sector").html(data);  // replace the contents of the input with the data that came from the server
+          }
+        });
+--->

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+  <h4>{% trans 'Activate account' %}</h4>
+  <form method="post">
+    {% csrf_token %}
+    <p>{% trans 'The confirmation of your email address has failed.' %}</p>
+    <p>{% trans 'Your account is not activated.' %}</p>
+    <button type="submit">{% trans 'OK' %}</button>
+  </form>
+{% endblock %}

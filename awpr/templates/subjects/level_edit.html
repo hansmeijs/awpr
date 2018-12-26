@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load i18n %}{% load static %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item">{{ user.country }}
+      {% if user.country_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item">{{ user.examyear }}
+      {% if user.examyear_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item"><a href="{% url 'level_list_url' %}">{% trans 'Levels' %}</a></li>
+    <li class="breadcrumb-item active">{{ level.abbrev }}</li>
+  </ol>
+{% endblock %}
+
+{% block content %}
+  {% if user.enable_schemes_modify %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <h4>{% trans 'Edit level:' %} {{ level.name }}</h4>
+      {% include 'includes/form.html' %}
+      <button type="submit" class="btn btn-success">{% trans 'Save' %}</button>
+      <a href="{% url 'level_log_url' level.pk %}" class="btn btn-outline-primary">{% trans 'View log' %}</a>
+      {% if level.has_no_linked_data %}
+        <a href="{% url 'level_delete_url' level.pk %}" class="btn btn-outline-danger">{% trans 'Delete' %}</a>
+      {% endif %}
+      <a href="{% url 'level_list_url' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+    </form>
+  {% else %}
+    <div class="alert alert-danger">{{ user.message_schemes_modify }}</div>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+  {% endif %}
+{% endblock %}

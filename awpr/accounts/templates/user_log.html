@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{{ block.super }}{% endblock %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'user_list_url' %}">{% trans 'Users' %}</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'user_edit_url' user.pk %}">{{ user.username }}</a></li>
+    <li class="breadcrumb-item active">{% trans 'Log' %}</li>
+  </ol>
+{% endblock %}
+
+{% block content %}
+  {% if user.enable_user_view_modify %}
+      <h4>{% trans 'Log of ' %}{{ user.username }}</h4>
+      <table class="table table table-condensed">
+        <thead class="thead-inverse">
+          <tr>
+            <th>{% trans 'Username' %}</th>
+            <th>{% trans 'Full name' %}</th>
+            <th>{% trans 'Email' %}</th>
+
+            <th>{% trans 'Activated' %}</th>
+            <th>{% trans 'Active' %}</th>
+
+            <th>{% trans 'Country' %}</th>
+            <th>{% trans 'Examyear' %}</th>
+            <th>{% trans 'School' %}</th>
+            <th>{% trans 'Department' %}</th>
+            <th>{% trans 'Role' %}</th>
+            <th>{% trans 'Permissions' %}</th>
+            <th>{% trans 'Modified by' %}</th>
+            <th>{% trans 'Modified at' %}</th>
+            <th>{% trans 'Action' %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in users_log.all %}
+            <tr>
+              <td>{% if item.username_mod %}<b>{% endif %}{{ item.username }}</b></td>
+              <td>{% if item.last_name_mod %}<b>{% endif %}{{ item.last_name }}</b></td>
+              <td>{% if item.email_mod %}<b>{% endif %}{{ item.email }}</b></td>
+
+              <td>{% if item.activated_mod %}<b>{% endif %}{{ item.activated }}</b></td>
+              <td>{% if item.is_active_mod %}<b>{% endif %}{{ item.is_active_str }}</b></td>
+
+              <td>{% if item.country_mod %}<b>{% endif %}{{ item.country }}</b></td>
+              <td>{% if item.examyear_mod %}<b>{% endif %}{{ item.examyear }}</b></td>
+              <td>{% if item.schooldefault_mod %}<b>{% endif %}{{ item.schooldefault }}</b></td>
+              <td>{% if item.department_mod %}<b>{% endif %}{{ item.abbrev }}</b></td>
+
+              <td>{% if item.role_mod %}<b>{% endif %}{{ item.role_str }}</b></td>
+              <td>{% if item.permits_mod %}<b>{% endif %}{{ item.permits_str }}</b></td>
+
+              <td>{{ item.modified_by }}</td>
+              <td>{{ item.modified_at }}</td>
+              <td>{{ item.mode_str }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <a href="{% url 'user_list_url' %}" class="btn btn-outline-primary mb-3">{% trans 'Close' %}</a>
+  {% else %}
+    <div class="alert alert-danger">{{ user.message_user_view_modify }}</div>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+  {% endif %}
+{% endblock %}l>

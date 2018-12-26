@@ -1,0 +1,22 @@
+{% extends 'base_accounts.html' %}
+{% load i18n %}
+{% block title %}Activate account{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-4 col-md-6 col-sm-8">
+      <div class="card mt-5">
+        <div class="card-body">
+          <h4 class="card-title">{% trans 'Welcome to AWP-online' %}</h4>
+            <p>{% trans 'You have successfully activated your AWP-online account.' %}
+            <p>{% trans 'Before you can login you have to create a password.' %}</p>
+            <p>{% trans 'Click "Create password" and follow the instructions.' %}</p>
+        </div>
+        <div class="card-footer text-muted text-center">
+            <a href="{% url 'password_setpassword' %}" class="btn btn-primary">{% trans 'Create password' %}</a>
+            <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'country_list_url' %}">{% trans 'Countries' %}</a></li>
+    <li class="breadcrumb-item active">{% trans 'Add country' %}</li>
+  </ol>
+{% endblock %}
+
+{% block content %}
+  {% if user.enable_country_modify %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+       <input type="hidden" name="next" value="{{ next }}">
+      <h4>{% trans 'Add country' %}</h4>
+      {% include 'includes/form.html' %}
+      <button type="submit" class="btn btn-success">{% trans 'Save' %}</button>
+      <a href="{% url 'country_list_url' %}" class="btn btn-outline-secundary">{% trans 'Cancel' %}</a>
+    </form>
+  {% else %}
+    <div class="alert alert-danger">{{ user.message_country_modify }}</div>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+  {% endif %}
+{% endblock %}

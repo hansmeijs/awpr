@@ -1,0 +1,161 @@
+{% load i18n %}
+{% load static %}
+
+<!--- navbar --->
+<nav class="navbar navbar-default navbar-expand-md">
+    <div class="container">
+        <div>
+            <img src="{% static 'img/AwpLogoGrey.gif' %}" href="{% url 'home' %}" height="24" width="48">
+        </div>
+
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar_collapse" aria-controls="navbarsExample04" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbar_collapse">
+
+            {% if user.is_authenticated %}
+                <!--- Select country --->
+                {% if display_country %}
+                    <li class="nav-item dropdown navbar-brand">
+                        {% if select_country %}
+                            <a class=" dropdown-toggle navbar-item-default" href="#" id="countyMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                {{ country }}
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="countryMenu">
+                                {% for row in country_list %}
+                                    {% if row.selected %}
+                                        <a class="dropdown-item" style="color:darkgrey;">{{ row.country }}</a>
+                                    {% else %}
+                                        <a  href="{% url 'country_selected_url' row.pk %}?next={{ request.path|urlencode }}" class="dropdown-item">
+                                            {{ row.country }}
+                                        </a>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <a class="navbar-brand navbar-default">{{ country }}</a>
+                        {% endif %}
+                    </li>
+                {% endif %}
+
+                <!--- Select exam year --->
+                <li class="nav-item dropdown navbar-brand">
+                    <a class=" dropdown-toggle navbar-item-default {{class_examyear_warning}} " href="#" id="examyearMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        {{ examyear }}
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="examyearMenu">
+                        {% for row in examyear_list %}
+                            <a class="dropdown-item"
+                                {% if row.selected %}
+                                    style="color:darkgrey;"
+                                {% else %}
+                                    {% if not row.published %}
+                                        style="color:#ff3300;"
+                                    {% endif %}
+                                {% endif %}
+                                {% if not row.selected %}
+                                    href="{% url 'examyear_selected_url' row.pk %}"
+                                {% endif %}
+                            >
+                                {{ row.examyear }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </li>
+
+                <!--- Select school --->
+                {% if display_school %}
+                    <li class="nav-item dropdown navbar-brand">
+                        {% if select_school %}
+                            <a class=" dropdown-toggle navbar-item-default" href="#" id="schoolMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                {{ school }}
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="schoolMenu">
+                                {% for row in school_list %}
+                                    {% if row.selected %}
+                                        <a class="dropdown-item" style="color:darkgrey;">{{ row.school }}</a>
+                                    {% else %}
+                                        <a  href="{% url 'school_selected_url' row.pk %}" class="dropdown-item">{{ row.school }}</a>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <a class="navbar-brand navbar-default">{{ school }}</a>
+                        {% endif %}
+                    </li>
+                {% endif %}
+                <!--- Select department --->
+                {% if display_dep %}
+                    <li class="nav-item dropdown navbar-brand">
+                        {% if select_dep %}
+                            <a class=" dropdown-toggle navbar-item-default" href="#" id="departmentMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                {{ departmentname }}
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="departmentMenu">
+                                {% for row in depbase_list %}
+                                    {% if row.is_cur_dep %}
+                                        <a class="dropdown-item" style="color:darkgrey;">{{ row.dep_name }}</a>
+                                    {% else %}
+                                        <a  href="{% url 'department_selected_url' row.pk %}" class="dropdown-item">{{ row.dep_name }}</a>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <a class="navbar-brand navbar-default">{{ departmentname }}</a>
+                        {% endif %}
+                    </li>
+                {% endif %}
+
+            {% else %}
+                <a class="navbar-brand navbar-item-default">online</a>
+            {% endif %}
+
+
+            <!--- User --->
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#mainMenu" aria-controls="mainMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mainMenu">
+                {% if user.is_authenticated %}
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link navbar-default dropdown-toggle" href="#" id="userMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                {{ user.username }}
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userMenu">
+                                <!--- temporary for testing --->
+                                <a class="dropdown-item"  >{{ user.role_str }}</a>
+                                <a class="dropdown-item"  >{{ user.permits_str }}</a>
+                                <a class="dropdown-item"  >{{ user.school.name }}</a>
+
+                                <div class="dropdown-divider"></div>
+
+                                <a class="dropdown-item"  href="{% url 'language_set_url' user.pk 'en' %}" >{% trans 'English' %}</a>
+                                <a class="dropdown-item" href="{% url 'language_set_url' user.pk 'nl' %}">{% trans 'Dutch' %}</a>
+                                {% if user.is_perm_admin %}
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item"  href="{% url 'user_list_url' %}" >{% trans 'Users' %}</a>
+                                {% endif %}
+                                {% if user.is_superuser %}
+                                    <a class="dropdown-item"  href="/admin/" >Admin</a>
+                                {% endif %}
+
+                                <div class="dropdown-divider"></div>
+
+                                <a class="dropdown-item" href="{% url 'password_change' %}">{% trans 'Change password' %}</a>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="{% url 'logout' %}" class="btn btn-outline-secondary">{% trans 'Log out' %}</a>
+                        </li>
+                    </ul>
+                {% else %}
+                    <form class="form-inline ml-auto">
+                        <a href="{% url 'login' %}" class="btn btn-secondary">{% trans 'Log in' %}</a>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>

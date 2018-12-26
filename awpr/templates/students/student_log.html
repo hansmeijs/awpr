@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item">
+      {{ user.country }}
+      {% if user.country_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item">
+      {{ user.examyear_str }}
+      {% if user.examyear_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item"><a href="{% url 'student_list_url' %}">{% trans 'Students' %}</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'student_edit_url' student.pk %}">{{ student.name }}</a></li>
+    <li class="breadcrumb-item active">{% trans 'Log' %}</li>
+  </ol>
+{% endblock %}
+
+{% block content %}
+  {% if user.enable_schemes_modify %}
+    <h4>{% trans 'Log of:' %} {{ student.full_name }}</h4>
+    <table class="table table table-condensed">
+      <thead class="thead-inverse">
+        <tr>
+          <th>{% trans 'Last name' %}</th>
+          <th>{% trans 'First name' %}</th>
+          <th>{% trans 'Prefix' %}</th>
+          <th>{% trans 'Gender' %}</th>
+          <th>{% trans 'Id number' %}</th>
+          <th>{% trans 'Birth date' %}</th>
+          <th>{% trans 'Birth country' %}</th>
+          <th>{% trans 'Birth place' %}</th>
+          <th>{% trans 'Modified by' %}</th>
+          <th>{% trans 'Modified at' %}</th>
+          <th>{% trans 'Action' %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in student_log.all %}
+          <tr>
+            <td>{% if item.lastname_mod %}<b>{% endif %}{{ item.lastname }}</b></td>
+            <td>{% if item.firstname_mod %}<b>{% endif %}{{ item.firstname }}</b></td>
+            <td>{% if item.prefix_mod %}<b>{% endif %}{{ item.prefix }}</b></td>
+            <td>{% if item.firstname_mod %}<b>{% endif %}{{ item.gender }}</b></td>
+            <td>{% if item.firstname_mod %}<b>{% endif %}{{ item.idnumber }}</b></td>
+            <td>{% if item.firstname_mod %}<b>{% endif %}{{ item.birthdate }}</b></td>
+            <td>{% if item.firstname_mod %}<b>{% endif %}{{ item.birthcountry_str }}</b></td>
+            <td>{% if item.firstname_mod %}<b>{% endif %}{{ item.birthcity_str }}</b></td>
+
+            <td>{{ item.modified_by }}</td>
+            <td>{{ item.modified_at }}</td>
+            <td>{{ item.mode_str }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+
+
+
+
+
+    <a href="{% url 'student_list_url' %}" class="btn btn-outline-primary">{% trans 'Close' %}</a>
+  {% else %}
+    <div class="alert alert-danger">{{ user.message_schemes_modify }}</div>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+  {% endif %}
+{% endblock %}l>

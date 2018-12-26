@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load i18n %}{% load static %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item">{{ user.country }}
+      {% if user.country_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item">{{ user.examyear }}
+      {% if user.examyear_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item"><a href="{% url 'scheme_list_url' %}">{% trans 'Schemes' %}</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'scheme_edit_url' scheme.pk %}">{{ scheme.name }}</a></li>
+    <li class="breadcrumb-item active">{% trans 'Log' %}</li>
+  </ol>
+{% endblock %}
+
+{% block content %}
+  {% if user.enable_schemes_modify %}
+    <h4>{% trans 'Log of:' %} {{ scheme.name }}</h4>
+    <table class="table table table-condensed">
+      <thead class="thead-inverse">
+        <tr>
+          <th>{% trans 'Name' %}</th>
+          <th>{% trans 'Department' %}</th>
+          <th>{% trans 'Level' %}</th>
+          <th>{% trans 'Sector' %}</th>
+          <th>{% trans 'Modified by' %}</th>
+          <th>{% trans 'Modified at' %}</th>
+          <th>{% trans 'Action' %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in scheme_log.all %}
+          <tr>
+            <td>{% if item.name_mod %}<b>{% endif %}{{ item.name }}</b></td>
+            <td>{% if item.dep_mod %}<b>{% endif %}{{ item.dep_str }}</b></td>
+            <td>{% if item.level_mod %}<b>{% endif %}{{ item.level_str }}</b></td>
+            <td>{% if item.sector_mod %}<b>{% endif %}{{ item.sector_str }}</b></td>
+            <td>{{ item.modified_by }}</td>
+            <td>{{ item.modified_at }}</td>
+            <td>{{ item.mode_str }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <a href="{% url 'scheme_list_url' %}" class="btn btn-outline-primary">{% trans 'Close' %}</a>
+  {% else %}
+    <div class="alert alert-danger">{{ user.message_schemes_modify }}</div>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+  {% endif %}
+{% endblock %}l>

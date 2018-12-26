@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item">{{ user.country }}
+      {% if user.country_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item">{{ user.examyear_str }}
+      {% if user.examyear_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item">{{ scheme.name }}</li>
+    <li class="breadcrumb-item active">{% trans 'Scheme-items' %}</li>
+  </ol>
+{% endblock %}
+
+{% block content %}
+  {% if user.enable_schemes_view %}
+    {% if user.enable_schemes_modify %}
+      <div class="mb-3"><a href="{% url 'schemeitem_add_url' %}" class="btn btn-primary">{% trans 'Add scheme-item' %}</a></div>
+    {% endif %}
+
+    <h4>{% trans 'Scheme-items' %}</h4>
+
+    <table class="table table table-condensed">
+      <thead class="thead-inverse">
+        <tr>
+          <th>{% trans 'School' %}</th>
+          <th>{% trans 'Subject' %}</th>
+          <th>{% trans 'Scheme' %}</th>
+          <th>{% trans 'Subject type' %}</th>
+          <th>{% trans 'Grade type' %}</th>
+          <th>{% trans 'Weight SE' %}</th>
+          <th>{% trans 'Weight CE' %}</th>
+          <th>{% trans 'Mandatory' %}</th>
+          <th>{% trans 'Combi subject' %}</th>
+          <th>{% trans 'Choice-combi allowed' %}</th>
+          <th>{% trans 'Has practical exam' %}</th>
+
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in schemeitems.all %}
+          <tr>
+            <td>{{ item.school.name }}</td>
+            <td>
+              {% if user.enable_schemes_modify %}
+                <a href="{% url 'schemeitem_edit_url' item.pk %}">{{ item.subject.name }}</a>
+              {% else %}
+                <a>{{ item.subject.name }}</a>
+              {% endif %}
+            </td>
+            <td>{{ item.scheme.name }}</td>
+            <td>{{ item.subjecttype.abbrev }}</td>
+            <td>{{ item.gradetype_str }}</td>
+            <td>{{ item.weightSE }}</td>
+            <td>{{ item.weightCE }}</td>
+            <td>{{ item.is_mandatory_str }}</td>
+            <td>{{ item.is_combi_str }}</td>
+            <td>{{ item.choicecombi_allowed_str }}</td>
+            <td>{{ item.has_practexam_str }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="alert alert-danger">{{ user.message_schemes_view }}</div>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+  {% endif %}
+{% endblock %}l>

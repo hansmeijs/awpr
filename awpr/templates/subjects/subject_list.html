@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load i18n %}{% load static %}
+
+{% block breadcrumb %}
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item">{{ user.country }}
+      {% if user.country_locked %}
+        <img src="{% static 'img/padlock.gif' %}" height="16" width="16">
+      {% endif %}
+    </li>
+    <li class="breadcrumb-item">
+      {{ user.examyear_str }}
+      {% if user.examyear_locked %}
+        <img src="{% static 'img/padlock.gif' %}" height="16" width="16">
+      {% endif %}
+    </li>
+    <li class="breadcrumb-item active">{% trans 'Subjects' %}</li>
+  </ol>
+{% endblock %}
+
+{% block content %}
+  {% if user.enable_schemes_view %}
+    {% if user.enable_schemes_modify %}
+      <div class="mb-3"><a href="{% url 'subject_add_url' %}" class="btn btn-primary">{% trans 'Add subject' %}</a></div>
+    {% endif %}
+
+    <h4>{% trans 'Subjects' %} {{ user.examyear }} </h4>
+
+    <table class="table table table-condensed">
+      <thead class="thead-inverse">
+        <tr>
+          <th>{% trans 'Name' %}</th>
+          <th>{% trans 'Abbreviation' %}</th>
+          <th>{% trans 'Sequence' %}</th>
+          <th>{% trans 'Departments' %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in subjects.all %}
+          <tr>
+            <td>
+              {% if user.enable_schemes_modify %}
+                <a href="{% url 'subject_edit_url' item.pk %}">{{ item.name }}</a>
+              {% else %}
+                {{ item.name }}
+              {% endif %}
+            </td>
+            <td>{{ item.abbrev }}</td>
+            <td>{{ item.sequence }}</td>
+            <td>{{ item.depbase_list_str }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if is_paginated %}
+      <ul class="pagination">
+        {% if page_obj.has_previous %}
+          <li><a href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+        {% else %}
+          <li class="disabled"><span>&laquo;</span></li>
+        {% endif %}
+        {% for i in paginator.page_range %}
+          {% if page_obj.number == i %}
+            <li class="active"><span>{{ i }} <span class="sr-only">(current)</span></span></li>
+          {% else %}
+            <li><a href="?page={{ i }}">{{ i }}</a></li>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+          <li><a href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>
+        {% else %}
+          <li class="disabled"><span>&raquo;</span></li>
+        {% endif %}
+      </ul>
+    {% endif %}
+
+  {% else %}
+    <div class="alert alert-danger">{{ user.message_schemes_view }}</div>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+  {% endif %}
+{% endblock %}l>
