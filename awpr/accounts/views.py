@@ -138,10 +138,10 @@ class UserAddView(CreateView):
         # data = request.POST.copy()
         # logger.debug('UserAddView def post(self, request:data = ' + str(data))
         form = UserAddForm(request.POST, request=request)  # form = UserAddForm(request.POST)
-        # logger.debug('UserAddView post form.data: ' + str(form.data))
+        logger.debug('UserAddView post form.data: ' + str(form.data))
 
         if form.is_valid():
-            # logger.debug('UserAddView post is_valid form.data: ' + str(form.data))
+            logger.debug('UserAddView post is_valid form.data: ' + str(form.data))
 
         # create random password
             randompassword = User.objects.make_random_password() + User.objects.make_random_password()
@@ -154,7 +154,7 @@ class UserAddView(CreateView):
 
 # ======  save field 'Role'  ============
         # only request.user with role=System and role=Insp kan set different role, School can only set its own role
-            # logger.debug('UserAddView post form.is_valid request.user.role: '+ str(request.user.role))
+            logger.debug('UserAddView post form.is_valid request.user.role: '+ str(request.user.role))
             if request.user.is_role_insp_or_system:
                 _role_int = form.cleaned_data.get('role_list')
             else:
@@ -232,13 +232,13 @@ class UserAddView(CreateView):
                 'uid': urlsafe_base64_encode(force_bytes(user.pk)).decode(),
                 'token': account_activation_token.make_token(user),
             })
-            # logger.debug('UserAddView post subject: ' + str(subject))
+            logger.debug('UserAddView post subject: ' + str(subject))
             # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
             user.email_user(subject, message)
-            # logger.debug('UserAddView post message sent. ')
+            logger.debug('UserAddView post message sent. ')
             return redirect('account_activation_sent_url')
         else:
-            # logger.debug('UserAddView post NOT is_valid form.data: ' + str(form.data))
+            logger.debug('UserAddView post NOT is_valid form.data: ' + str(form.data))
             return render(request, 'user_add.html', {'form': form})
 
 
@@ -404,18 +404,16 @@ class UserActivateView(UpdateView):
     form_class = UserActivateForm
     template_name = 'user_edit.html'  # without template_name Django searches for user_form.html
     pk_url_kwarg = 'pk'
-    context_object_name = 'UserEditForm'  # "context_object_name" changes the original parameter name "object_list"
-    # logger.debug('UserEditView load')
+    context_object_name = 'UserActivateForm'  # "context_object_name" changes the original parameter name "object_list"
 
     def activate(request, uidb64, token):
         logger.debug('UserActivateView def activate request: ' +  str(request))
 
         #try:
         uid = force_text(urlsafe_base64_decode(uidb64))
-        logger.debug('UserActivateView def activate try uid: ' + str(uid))
+
         user = User.objects.get(pk=uid)
-        logger.debug('UserActivateView def activate try user: ' + str(user))
-        logger.debug('UserActivateView def activate try user again: ' + str(user))
+        logger.debug('UserActivateView def activate user: ' + str(user))
 
         #except:  #except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         #    logger.debug('def activate except TypeError: ' + str(TypeError))
@@ -424,7 +422,6 @@ class UserActivateView(UpdateView):
         #    logger.debug('def activate except User.DoesNotExist: ' + str(User.DoesNotExist))
         #    user = None
 
-        logger.debug('UserActivateView def activate check_token: ' + str(account_activation_token.check_token(user, token)))
         logger.debug('UserActivateView def activate token: ' + str(token))
 
         if user is not None and account_activation_token.check_token(user, token):
@@ -432,8 +429,8 @@ class UserActivateView(UpdateView):
             user.activated = True
             user.save()
             logger.debug('UserActivateView def activate user.saved: ' + str(user))
-            #login(request, user)
-            logger.debug('UserActivateView def activate user.loggedin: ' + str(user))
+            # login(request, user)
+            # logger.debug('UserActivateView def activate user.loggedin: ' + str(user))
 
             # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
             #return render(request, 'account_activation_success.html', {'user': user,})
@@ -449,12 +446,12 @@ class UserActivateView(UpdateView):
             param = {'display_school': display_school, 'display_user': True, }
             headerbar_param = f.get_headerbar_param(request, param)
             headerbar_param['form'] = form
-            # logger.debug('def home(request) headerbar_param: ' + str(headerbar_param))
+            logger.debug('def home(request) headerbar_param: ' + str(headerbar_param))
 
             return render(request, 'user_add.html', headerbar_param)
 
         else:
-            # logger.debug('def activate account_activation_token.check_token False')
+            logger.debug('def activate account_activation_token.check_token False')
             return render(request, 'account_activation_invalid.html')
 
 
@@ -486,7 +483,7 @@ def UserActivate(request, uidb64, token):
         # open setpassword form
 
         # login(request, user)
-        logger.debug('UserActivate def activate user.loggedin: ' + str(user))
+        # logger.debug('UserActivate def activate user.loggedin: ' + str(user))
 
 
 
@@ -497,7 +494,7 @@ def UserActivate(request, uidb64, token):
         # return render(request, 'password_reset_confirm.html', {'user': user,})
 
     else:
-        # logger.debug('def activate account_activation_token.check_token False')
+        logger.debug('def activate account_activation_token.check_token False')
         return render(request, 'account_activation_invalid.html')
 
 
@@ -507,7 +504,7 @@ class UserActivatedSuccess(View):
 
     def get(self, request):
         def get(self, request):
-            # logger.debug('UserActivatedSuccess get request: ' + str(request))
+            logger.debug('UserActivatedSuccess get request: ' + str(request))
             return self.render(request)
 
         def render(self, request):
