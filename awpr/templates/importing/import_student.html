@@ -21,31 +21,31 @@
         <!--  PR2018-12-02 from: https://github.com/js-cookie/js-cookie/tree/latest#readme -->
         <script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
 
-        <div class="c_gridcontainer">
+        <!-- <div class="c_gridcontainer">
             <div class="c_header">
 
             </div>
-
-            <div class="c_select_file">
+-->
+            <!-- <div class="c_select_file"> -->
                 <p><b>Select file</b></p>
                 <p>Drag to link or unlink leerwegen</p>
                 <div>
                     <input class="c_form_text" type="file" id="filedialogID" name="file" accept=".xlsx, .xls, csv">
                 </div>
-                <br>
+                <br />
                 <div class="c_hide">
                     <label class="c_form_select" for="SheetListID">Select a worksheet</label>
                     <select id="SheetListID" class="c_form_select" ></select>
                 </div>
-                <br>
+                <br />
                 <div>
                   <input class="c_form_text" type="checkbox" id="checkBoxID" value="false">
                   <label class="c_form_text" for="checkBoxID">Worksheet has no header row</label>
                 </div>
-                <br>
+                <br />
 
                 <div id="div_infoID"></div>
-                <br>
+                <br />
                 <button
                         id="btn_import"
                         class="submit-button"
@@ -54,27 +54,28 @@
                         data-upload_student_mapping_url= "{% url 'upload_student_mapping_url' %}"
                         data-mapped_coldefs = '{{ mapped_coldefs | safe}}'
                 >Upload</button>
-            </div>
-            <div class="c_select_columns">
+            <!-- </div>     -->
+            <div>
+            <div class="c_link_columns">
                 <div class="c_columns_header">
                     <p><b>Link columns</b></p>
                     <p>Drag to link or unlink columns</p>
                 </div>
-                <table class="c_columns_Excel" id="idTableExcel">
+                <table class="c_grid_colExcel" id="idTableExcel">
                     <thead id="tblColExcel_theadID">
                         <tr><td>Excel columns</td></tr>
                     </thead>
                     <tbody id="tblColExcel_tbodyID"></tbody>
                     <tfoot id="tblColExcel_tfootID"></tfoot>
                 </table>
-                <table class="c_colAwp" id="idTableAwp">
+                <table class="c_grid_colAwp" id="idTableAwp">
                     <thead id="tblColAwp_theadID">
                         <tr><td>AWP columns</td></tr>
                     </thead>
                     <tbody id="tblColAwp_tbodyID"></tbody>
                     <tfoot id="tblColAwp_tfootID"></tfoot>
                 </table>
-                <table class="c_colLinked" id="tblColLinkedID">
+                <table class="c_grid_colLinked" id="idTableLinked">
                     <thead id="tblColLinked_theadID">
                         <tr><td>Linked columns</td></tr>
                     </thead>
@@ -87,8 +88,7 @@
                     <p>Drag to link or unlink leerwegen</p>
             </div>
         </div>
-
-        <br>
+        <br />
         <table class="c_table_stud" id="tableID" width="100%">
             <thead id="theadID" class="c_thead"></thead>
             <tbody id="tbodyID" class="c_tbody"></tbody>
@@ -126,6 +126,12 @@
             var checkbox_noheader = document.getElementById("checkBoxID");
             checkbox_noheader.addEventListener("change", handle_checkbox_noheader_changed) //, false);
 
+            // add a click listener to rows of TableExcel TableAwp TableLinked 
+            // // EAL: Excel Awp Linked table
+            document.getElementById("idTableExcel").addEventListener("click", handle_EAL_row_clicked); 
+            document.getElementById("idTableAwp").addEventListener("click", handle_EAL_row_clicked);
+            document.getElementById("idTableLinked").addEventListener("click", handle_EAL_row_clicked);
+
             // get the url of the `StudentImportAwpcoldefView` view
             const upload_student_mapping_url = $("#btn_import").data("upload_student_mapping_url");
 
@@ -135,8 +141,8 @@
             var stored_mapping = {};
 
             const stored_settings = $("#btn_import").data("mapped_coldefs");
-console.log("stored_settings: " + typeof(stored_settings));
-console.log(stored_settings);
+//console.log("stored_settings: " + typeof(stored_settings));
+//console.log(stored_settings);
 
             if (stored_settings.hasOwnProperty("no_header")){selected_no_header = !!stored_settings.no_header;}
             if (stored_settings.hasOwnProperty("worksheetname")){stored_worksheetname = stored_settings.worksheetname;}
@@ -148,6 +154,12 @@ console.log(stored_settings);
                 xls:"application/vnd.ms-excel",
                 xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             };
+            
+            // global variables to link and unlink colums
+            var selected_ExcelCol_id = ''; 
+            var selected_AwpCol_id = ''; 
+            var selected_LinkedCol_id = '';  // probably not necessary           
+            
 
             // add csrftoken to ajax header to prevent error 403 Forbidden PR2018-12-03
             // from https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
@@ -254,6 +266,66 @@ console.log(" function handle_checkbox_noheader_changed:");
                     updateSettings ();
                 }  // if(!!worksheet){
             }; //handle_checkbox_noheader_changed
+
+//=========   handle_EAL_row_clicked   ======================
+            function handle_EAL_row_clicked(e) {  //// EAL: Excel Awp Linked table
+                if(!!e.target && e.target.parentNode.nodeName === "TR") {
+                    var row_clicked =  e.target.parentNode;
+                    var is_excel_row = row_clicked.parentNode.id ==="tblColExcel_tbodyID";
+                    var is_awp_row = row_clicked.parentNode.id ==="tblColAwp_tbodyID";
+                    var is_linked_row = row_clicked.parentNode.id ==="tblColLinked_tbodyID";
+console.log("is_excel_row ", is_excel_row, "is_awp_row ", is_awp_row, "is_linked_row ", is_linked_row);
+
+                    if(is_excel_row || is_awp_row ) {
+console.log("row_clicked ", row_clicked, "row_clicked.id ", row_clicked.id);
+                        var table_body_clicked = document.getElementById(row_clicked.parentNode.id);
+                        var table_body_other // 'other' is Awp if clicked on Excel and vice versa
+                        if (is_excel_row){
+                            var table_body_other = document.getElementById("tblColAwp_tbodyID");
+                        } else { // 'other' is Excel if clicked on Awp
+                            var table_body_other = document.getElementById("tblColExcel_tbodyID");
+                        }
+                        
+                        var cls_hl = "c_colAwpExcel_highlighted";
+
+                        if(  row_clicked.classList.contains(cls_hl)) {
+                            row_clicked.classList.remove(cls_hl)
+                        } else {
+                            row_clicked.classList.add(cls_hl);
+                            // remove clas from all other rows in theis table
+                            for (var i = 0, row; row = table_body_clicked.rows[i]; i++) {
+                                if(row === row_clicked){
+                                    row.classList.add(cls_hl);   
+                                } else {
+                                    row.classList.remove(cls_hl)
+                                }
+                            }
+ 
+                        // check if other table has also selected row, if so: link
+                            var link_rows = false;
+                            for (var j = 0, row_other; row_other = table_body_other.rows[j]; j++) {
+                               if(row_other.classList.contains(cls_hl)) {
+                                   link_rows = true;
+                                   break;
+                                } 
+                            } 
+                            // link row_clicked with 
+                            if (link_rows){
+                                if (is_excel_row){ 
+                                   linkColumns(row_other.id, row_clicked.id);  // linkColumns(AwpId, ExcelId);
+                                } else {
+                                   linkColumns(row_clicked.id, row_other.id);  // linkColumns(AwpId, ExcelId);   
+                                }
+                            }
+ 
+                        }
+
+                    } else if (is_linked_row) {
+                        if(is_linked_row){cls_hl = "c_colLinked_highlighted"};
+
+                    }
+                }
+            }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //                 ExcelFile_Read
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -400,7 +472,7 @@ console.log("=========  function Fill_ExcelColDef =========");
                             let CellName = GetCellName (col,row);
 //console.log("CellName: " + CellName );
                             let ColName = GetExcelValue(worksheet, CellName,"w");
-                            ColName = ColName.replace(/ /g, "_");
+                            ColName = ColName.replace(/ /g, "_"); // g modifier repolaces all occurances
                             ColName = ColName.replace(/"/g, "_");
                             ColName = ColName.replace(/'/g, "_");
 //console.log("ColName: " + ColName);
@@ -443,7 +515,7 @@ console.log("=========  function FillDataTable =========");
                         let cell = tblHeadRow.insertCell(-1);
                         let caption = ExcelColDef[j].excCol;
                         cell.innerHTML = caption;
-                        cell.setAttribute("id", "idExc_" + caption);
+                        cell.setAttribute("id", "idTblCol_" + caption);
                     }; //for (let j = 0; j < 2; j++)
 
 //--------- insert DataSet rows
@@ -650,24 +722,26 @@ console.log("==========  fillColumns: ==========");
 // delete existing rows of tblColExcel, tblColAwp, tblColLinked
                 $("#tblColExcel_tbodyID, #tblColAwp_tbodyID, #tblColLinked_tbodyID" ).html("");
 
-//----- insert tblColLinked and tblColAwp rows
-//console.log("==========  insert tblColLinked and tblColAwp rows ==========");
+//----- insert tblColLinked and tblColAwp rows from stored_mapping
                 if(!!stored_mapping){
-
 //----- loop through array stored_mapping from row index = 0
                     for (let i = 0 ; i < stored_mapping.length; i++) {
                         let awpCol = stored_mapping[i].awpCol;
                         let AwpCaption = stored_mapping[i].caption;
-                        let idAwp = "idAwp_" + awpCol;
-                        let excCol = "";
-//----- if excCol exists: append row to table ColLinked
+                        let idAwpCol = "idAwpCol_" + awpCol;
+                        let ExcCol = "";
+//----- if ExcCol exists: append row to table ColLinked
                         if (!!stored_mapping[i].excCol){
-                            excCol = stored_mapping[i].excCol;
+                            ExcCol = stored_mapping[i].excCol;
                     // add row to table ColLinked
-//console.log("add row '" + excCol + "' to table ColLinked");
                             $("<tr>").appendTo( "#tblColLinked_tbodyID" )
-                                .attr({"id": idAwp})
+                                .attr({"id": idAwpCol})
                                 .addClass("c_colLinked_tr")
+                        
+//----- append cells to row ColLinked
+                                .append("<td>" + ExcCol + "</td>")
+                                .append("<td>" + AwpCaption + "</td>")
+                        
                                 .draggable({
                                     cursor: "move",
                                     snap: "#idTableExcel, #idTableAwp",
@@ -679,22 +753,25 @@ console.log("==========  fillColumns: ==========");
                                         $(this).addClass("c_colLinked_tr")
                                                .removeClass("c_colLinked_hover");},
                                     revert: true
-                                })   
-//----- append cells to row ColLinked
-                            $("<td>" + excCol + "</td>").appendTo("#" + idAwp);
-                            $("<td>" + AwpCaption + "</td>").appendTo("#" + idAwp);
+                                })
+ 
 //----- if new appended row: highlight row for 2 seconds
-                            if (JustLinked === idAwp) {
-                               $("#" + idAwp).addClass("c_colLinked_highlighted");
+                            if (JustLinked === idAwpCol) {
+                               $("#" + idAwpCol).addClass("c_colLinked_highlighted");
                                setTimeout(function () {
-                                   $("#" + idAwp).removeClass("c_colLinked_highlighted");
+                                   $("#" + idAwpCol).removeClass("c_colLinked_highlighted");
                                    }, 2000);
                             }
                         } else {
 //----- if row is not linked: append row to table ColAwp
+
                             $("<tr>").appendTo( "#tblColAwp_tbodyID" )
-                                .attr({"id": idAwp})
-                                .addClass("c_columns_tr")
+                                .attr({"id": idAwpCol})
+                                .addClass("c_colExcelAwp_tr")
+                        
+//----- append cells to row ColAwp
+                                .append("<td>" + stored_mapping[i].caption + "</td>")
+ 
                                 .draggable({
                                     cursor: "move",
                                     snap: "#idTableExcel",
@@ -707,6 +784,7 @@ console.log("==========  fillColumns: ==========");
                                                .removeClass("c_colAwpExcel_hover");},
                                     revert: true
                                     })
+                                    
                                 .droppable({
                                     accept: "#tblColExcel_tbodyID tr",
                                     //activeClass: "c_columns_activeEXCEL",  //activeClass highlights this element (that receives drop)
@@ -723,16 +801,17 @@ console.log("==========  fillColumns: ==========");
                                         linkColumns(AwpId, ExcelId);
                                     }
                                 });
-                                
 //----- append cell to row ColAwp
-                            $("<td>" + stored_mapping[i].caption + "</td>")
-                                .appendTo("#" + idAwp);
-                                
+                            // var tablerow_awp = document.getElementById(idAwpCol);
+                            // console.log("tablerow_awp", tablerow_awp);
+                            // $("<td>??" + stored_mapping[i].caption + "</td>").appendTo("#" + idAwpCol);
+                            // $("<td>??" + stored_mapping[i].caption + "</td>").appendTo(tablerow_awp);
+
 //----- if new unlinked row: highlight row ColAwp
-                                if (JustUnlinkedAwpId === idAwp) {
-                                   $("#" + idAwp).addClass("c_colAwpExcel_highlighted");
+                                if (JustUnlinkedAwpId === idAwpCol) {
+                                   $("#" + idAwpCol).addClass("c_colAwpExcel_highlighted");
                                    setTimeout(function () {
-                                       $("#" + idAwp).removeClass("c_colAwpExcel_highlighted");
+                                       $("#" + idAwpCol).removeClass("c_colAwpExcel_highlighted");
                                        }, 2000);
                                }
                         }
@@ -755,26 +834,31 @@ console.log(ExcelColDef);
                         // only rows that are not linked are added to tblColExcel
                         let ExcCol = ExcelColDef[j].excCol;
                         let AwpCaption = ExcelColDef[j].awpCaption;
-                        let idExc = "idExc_" + ExcCol;
-
+                        let idExcCol = "idExcCol_" + ExcCol;
+//console.log(ExcCol,idExcCol,AwpCaption );
                         if (!AwpCaption){
 //----- append row to table ColExcel if AwpCaption does not exist in ExcelColDef
 //console.log("append row to table ExcelColDef[" + j + "]: " + ExcelColDef[j].excCol);
 
-                             $("<tr>").appendTo( "#tblColExcel_tbodyID" )
-                                .attr({"id": idExc})
-                                .addClass("c_columns_Excel_tr")
+                            $("<tr>").appendTo( "#tblColExcel_tbodyID" )
+                                .attr({"id": idExcCol}) 
+                                .addClass("c_colExcelAwp_tr")
+
+//----- append cells to row ExcCol
+                                .append("<td>" + ExcCol + "</td>")
+
                                 .draggable(
                                     {cursor: "move",
                                     snap: "#idTableAwp",
-                                    stack: ".c_columns_Excel_tr", //keep dragged element on top
+                                    stack: ".c_colExcelAwp_tr", //keep dragged element on top
                                     start: function(event, ui) {
                                         $(this).addClass("c_colAwpExcel_hover")
-                                               .removeClass("c_columns_Excel_tr");},
+                                               .removeClass("c_colExcelAwp_tr");},
                                     stop: function(event, ui) {
-                                        $(this).addClass("c_columns_Excel_tr")
+                                        $(this).addClass("c_colExcelAwp_tr")
                                                .removeClass("c_colAwpExcel_hover");},
                                     revert: true})
+                                
                                 .droppable({
                                     accept: "#tblColAwp_tbodyID tr",
                                     //classes: "ui-droppable-active, ui-droppable-hover",
@@ -782,9 +866,9 @@ console.log(ExcelColDef);
                                     //hoverClass: "c_colAwpExcel_hover",
                                     over: function(event, ui) {
                                         $(this).addClass("c_colAwpExcel_hover");
-                                        $(this).removeClass("c_columns_Excel_tr");},
+                                        $(this).removeClass("c_colExcelAwp_tr");},
                                     out: function(event, ui) {
-                                        $(this).addClass("c_columns_Excel_tr");
+                                        $(this).addClass("c_colExcelAwp_tr");
                                         $(this).removeClass("c_colAwpExcel_hover");},
                                     drop: function(event, ui) {
                                         var ExcelId = $(event.target).attr("id"); // event.target is element that receives drop
@@ -792,25 +876,30 @@ console.log(ExcelColDef);
                                         linkColumns(AwpId, ExcelId );}
                                     });
                                     
-                            // append cell to row
-                            $("<td>" + ExcelColDef[j].excCol + "</td>").appendTo("#" + idExc );
-                            $( "#theadID tr td:nth-child(" + (j+1) + ")").text(ExcelColDef[j].excCol);
+// append cell to row ColExcel
+
+
+//----- append cells to row ColExcel
+                            //var tablerow_excel = document.getElementById(idExcCol);
+                            // $("<td>??" + ExcelColDef[j].excCol + "</td>").appendTo(tablerow_excel);
+                            // $("<td>????" + AwpCaption + "</td>").appendTo(tablerow_excel);
+                            // console.log("tablerow_excel",tablerow_excel );
+                            //$( "#theadID tr td:nth-child(" + (j+1) + ")").text("????" + ExcelColDef[j].excCol);
 
 //----- if new unlinked row: highlight row
-
-                            if (JustUnlinkedExcId === idExc) {    
-                                $( "#" + idExc).addClass("c_colAwpExcel_highlighted");
+                            if (JustUnlinkedExcId === idExcCol) {    
+                                $( "#" + idExcCol).addClass("c_colAwpExcel_highlighted");
                                 setTimeout(function () {
-                                    $( "#" + idExc).removeClass("c_colAwpExcel_highlighted");
+                                    $( "#" + idExcCol).removeClass("c_colAwpExcel_highlighted");
                                     }, 2000);
-                            }
+                            }                        
                         }; //if (!AwpCaption)
                     }; //for (let j = 0; j < 2; j++)
                 }; //if(!!ExcelColDef)
 
 
              // make container droppable for linked columns
-                $(".c_select_columns").droppable({
+                $(".c_link_columns").droppable({
                     accept:"#tblColLinked_tbodyID tr",
                     //activeClass: "c_columns_active",
                     //hoverClass: "c_colAwpExcel_hover",
@@ -832,39 +921,53 @@ console.log("---------  function updateDatatableHeader ---------");
                     // only rows that are not linked are added to tblColExcel
                     let ExcCol = ExcelColDef[j].excCol;
                     let AwpCaption = ExcelColDef[j].awpCaption;
-                    let idExc = "#idExc_" + ExcCol;
-                    columnheader = $(idExc);
-
-//----- when Excel column is linked: replace header with AwpCaption and set backgrouncolor
+                    
+                    let tblColHead = document.getElementById("idTblCol_" + ExcCol);
                     if (!!AwpCaption){
-console.log("      columnheader: " + columnheader);
-console.log("      AwpCaption: " + AwpCaption);
-                        columnheader.text(AwpCaption);
-                        columnheader.addClass("c_table_stud_thead_td_selected");
+                        tblColHead.innerHTML = AwpCaption
+                        tblColHead.classList.add("c_table_stud_thead_td_selected");
                     } else {
-//----- if Excel column is not linked: use Excel header and remove backgrouncolor
-                        columnheader.text(ExcCol);
-                        columnheader.removeClass("c_table_stud_thead_td_selected");
+                        tblColHead.innerHTML = ExcCol
+                        tblColHead.classList.remove("c_table_stud_thead_td_selected");
                     }
+
+                    
+                    
+                    //let tblColHeader = $("#idTblCol_" + ExcCol);
+//----- when Excel column is linked: replace header with AwpCaption and set backgrouncolor
+                    //if (!!AwpCaption){
+                    //    tblColHeader.text(AwpCaption);
+                    //    tblColHeader.addClass("c_table_stud_thead_td_selected");
+                    //} else {
+//----- if Excel column is not linked: use Excel header and remove backgrouncolor
+                    //    tblColHeader.text(ExcCol);
+                    //    tblColHeader.removeClass("c_table_stud_thead_td_selected");
+                    //}
                 }
            } // function updateDatatableHeader
 
 
 //========= linkColumns  ====================================================
             function linkColumns(AwpId, ExcelId) {
-//console.log("==========  linkColumns ==========");
+console.log("==========  linkColumns ==========");
 // function adds 'excCol' to stored_mapping and 'awpCaption' to ExcelColDef
 
+//AwpId:  idAwpCol_gender   ExcelId:  idExcCol_schooljaar
+console.log("AwpId: ", AwpId,"  ExcelId: ", ExcelId);
             // look up awpCol_row in stored_mapping
-                // make awpColName: 'lastname' from AwpId: 'idAwp_lastname'
-                var awpColName = AwpId.substring(6); 
+                // make awpColName: 'lastname' from AwpId: 'idAwpCol_lastname'
+                var awpColName = AwpId.substring(9); 
                 var awpCol_row = get_awpCol_row (awpColName);
 
+console.log("awpColName ", awpColName);
+console.log("awpCol_row ", awpCol_row);
             // look up excCol_row in ExcelColDef
-                // make 'ANAAM' from 'idExc_ANAAM'
-                var ExcelColName = ExcelId.substring(6); 
+                // make 'ANAAM' from 'idExcCol_ANAAM'
+                var ExcelColName = ExcelId.substring(9); 
                 var excCol_row = get_excelCol_row (ExcelColName);
 
+console.log("ExcelColName ", ExcelColName);
+console.log("excCol_row ", excCol_row);
                 var JustLinked = "";
                 if(!!awpCol_row && !!excCol_row){
                     if(!!awpCol_row.caption && !!ExcelColName){
@@ -885,12 +988,17 @@ console.log(ExcelColDef);
 
 //========= unlinkColumns =======================================================
             function unlinkColumns(AwpId) {
+console.log("====== unlinkColumns =======================");
                 // AwpId: "idAwp_lastname"
-                var awpCol = AwpId.substring(6); // makes 'lastname' from 'idAwp_lastname'
+                var awpCol = AwpId.substring(9); // makes 'lastname' from 'idAwp_lastname'
                 var awpCol_row = get_awpCol_row (awpCol);
+                
+console.log("    awpCol_row");
+console.log(awpCol_row);
                 if(!!awpCol_row){
                     if(!!awpCol_row.excCol){
                         var excCol = awpCol_row.excCol;
+console.log(" delete   excCol: ", excCol);
                         var ExcId = "";
             // delete ExcCol from awpCol_row
                         delete  awpCol_row.excCol;
@@ -899,8 +1007,11 @@ console.log(ExcelColDef);
                         var excCol_row = get_excelCol_row (excCol);
                         if(!!excCol_row){
                             ExcId = "idExc_" + excCol;
+console.log(" idExc_ ", ExcId);
                             if(!!excCol_row.awpCaption){
             // delete awpCaption from excCol_row]
+            
+console.log(" delete   excCol_row.awpCaption ", excCol_row.awpCaption);
                                 delete excCol_row.awpCaption;
                         }}
             // remove awpCaption from header in tabel Studenst awpCaption from ExcelColDef[AwpIndex] and delete
@@ -945,14 +1056,15 @@ console.log(ExcelColDef);
             // check if map_row.excCol exists: (excCol is column name in Excel sheet)
                         if (!!map_row.excCol){
                             let excCol = map_row.excCol;
-console.log("     i=" + i + " map_row.awpCol: " + map_row.awpCol  + " map_row.excCol: " + map_row.excCol );
+//console.log("     i=" + i + " map_row.awpCol: " + map_row.awpCol  + " map_row.excCol: " + map_row.excCol );
 
             //check if excCol also exists in ExcelColDef
                             let excCol_row = get_excelCol_row (excCol);
             //if ExcelLink is not found in ExcelColDef: remove excCol from stored_mapping
                             if (!!excCol_row){
                                 is_linked = true;
-                                excCol_row.awpCaption = map_row.caption
+                                excCol_row.awpCol = map_row.awpCol;
+                                excCol_row.awpCaption = map_row.caption;
                             } else {
                                 delete map_row.excCol;
                             }
@@ -963,6 +1075,7 @@ console.log("     i=" + i + " map_row.awpCol: " + map_row.awpCol  + " map_row.ex
                             let excCol_row = get_excelCol_row (map_row.caption);
                             if (!!excCol_row){
                                 map_row["excCol"] = excCol_row.excCol;
+                                excCol_row.awpCol = map_row.awpCol;
                                 excCol_row.awpCaption = map_row.caption;
                                 is_linked = true;
                         }}
@@ -976,7 +1089,7 @@ console.log("     i=" + i + " map_row.awpCol: " + map_row.awpCol  + " map_row.ex
 //========= function get_awpCol_row  ====================================
             function get_awpCol_row (awpCol) {
                // stored_mapping[3]: {awpCol: "lastname", caption: "Last name", excCol: "ANAAM" }
-               //  var awpCol = AwpId.substring(6); // makes 'lastname' from 'idAwp_lastname'
+
                var awpCol_row;
                for (let i = 0 ; i < stored_mapping.length; i++) {
                     if (awpCol === stored_mapping[i].awpCol){
@@ -1055,18 +1168,28 @@ console.log ("==========  UPLOAD DATA ==========");
 //------ loop through all rows of worksheet_data
                     var students = [];
 // row <3 is for testing TODO: replace with rowLength
-                    for (let row = 0 ; row <3; row++) {
+                    for (let row = 0 ; row <rowLength; row++) {
                         let DataRow = worksheet_data[row];
 
-//------ loop through rows of stored_mapping, start at 1 because 0 contains Header
+//console.log ("DataRow");
+//console.log (DataRow);
+// stored_mapping: [{awpCol: "idnumber", caption: "ID nummer", excCol: "ID"}, ...]
+
+//------ loop through rows of ExcelColDef
                         let student = {};
-                        for (let col = 1 ; col <colLength; col++) {
-                            let ExcelIndex = stored_mapping[col].excelIndex;
-                            if (typeof(ExcelIndex) === "number" || typeof(ExcelIndex) === "string"){ // don't use "if (!!ExcelIndex" because at (Index = 0) gives false
-                                student[stored_mapping[col].awpCol] = DataRow[ExcelIndex];
-                             };
+                        for (let idx = 0 ; idx < ExcelColDef.length; idx++) {
+                            if (!!ExcelColDef[idx].awpCol){
+                                let awp_col = ExcelColDef[idx].awpCol;
+                                if (!!DataRow[idx]){
+                                    student[awp_col] = DataRow[idx];
+                                }
+                            }
                         }; //for (let col = 1 ; col <colLength; col++)
-                        student_json = JSON.stringify(student);
+
+//console.log ("student");
+//console.log (student);
+                        
+                        let student_json = JSON.stringify(student);
 
                         // students.push(student);
 
@@ -1077,6 +1200,9 @@ console.log ("==========  UPLOAD DATA ==========");
                     var parameters = {
                       "students": JSON.stringify (students),
                     };
+
+//console.log ("parameters");
+//console.log (parameters);
 
                     $.ajax({
                         type: "POST",

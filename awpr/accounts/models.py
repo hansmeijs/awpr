@@ -11,6 +11,7 @@ from schools.models import Country, Examyear, Departmentbase, Department, School
 from awpr import constants as c
 from awpr.settings import AUTH_USER_MODEL
 
+
 # PR2018-05-10
 import logging
 logger = logging.getLogger(__name__)
@@ -302,8 +303,7 @@ class User(AbstractUser):
         send_mail(
             '{}'.format(args[0]),
             '{}'.format(args[1]),
-            #'{}'.format(args[2]),
-            'info@awponline.net',
+            'AWP online <noreply@awponline.net>',
             [self.email],
             fail_silently=False,
         )

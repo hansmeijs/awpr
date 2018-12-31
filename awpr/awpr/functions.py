@@ -14,7 +14,7 @@ def get_headerbar_param(request, params):
     # PR2018-05-28 set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
-    logger.debug('===== get_headerbar_param ===== ')
+    # logger.debug('===== get_headerbar_param ===== ')
 
     # select_country overrides display_country
     display_country = False

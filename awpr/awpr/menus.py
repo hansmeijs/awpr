@@ -119,8 +119,8 @@ def get_saved_menubutton_url(request):  # PR2018-12-25
 
 def save_setting(request, setting, menu_key, button_key):  # PR2018-12-25
     # function is called by get_headerbar_param, creates and saves usersetting
-    logger.debug('===== save_setting ===== ')
-    logger.debug('       menu_key: ' + str(menu_key) + '  button_key: ' + str(button_key)  )
+    # logger.debug('===== save_setting ===== ')
+    # logger.debug('       menu_key: ' + str(menu_key) + '  button_key: ' + str(button_key)  )
 
     if request.user:
     # update setting with new value of menu_key
@@ -148,7 +148,7 @@ def lookup_button_key_with_viewpermit(request):
     # function searches for menu_key and button_key in request, setting and default
     # and checks if button havs view_permits
     # returns menu_key and button_key and menubutton  # PR2018-12-25
-    logger.debug('===== lookup_button_key_with_viewpermit ===== ')
+    # logger.debug('===== lookup_button_key_with_viewpermit ===== ')
 
     setting = {}
     menu_key = None
@@ -204,8 +204,8 @@ def lookup_button_key_with_viewpermit(request):
     if not button_key:
         button_key = 'home' # default if no other found, should not happen
 
-    logger.debug('       return setting: ' + str(setting))
-    logger.debug('       return menu_key: ' + str(menu_key) + '  button_key: ' + str(button_key))
+    # logger.debug('       return setting: ' + str(setting))
+    # logger.debug('       return menu_key: ' + str(menu_key) + '  button_key: ' + str(button_key))
 
     return {'setting': setting,
             'menu_key': menu_key,
@@ -215,8 +215,8 @@ def set_menu_items(request, setting, selected_menu_key, selected_button_key):
     # function is called by get_headerbar_param, creates template tags menu_items and submenus
     # setting: {'menu': 'mn_schl', 'mn_schl': 'schllst'}
 
-    logger.debug('===== set_menu_items ===== ')
-    logger.debug('setting: ' + str(setting))
+    # logger.debug('===== set_menu_items ===== ')
+    # logger.debug('setting: ' + str(setting))
 
     menu_item_tags = []
     submenu_tags = []
@@ -224,8 +224,8 @@ def set_menu_items(request, setting, selected_menu_key, selected_button_key):
     # loop through all menus in menus, to retrieve href from all menu-buttons
     # from https://treyhunner.com/2016/04/how-to-loop-with-indexes-in-python/
     for menu_index, menu_key in enumerate(menus):
-        logger.debug('-----------------------------')
-        logger.debug('menu_key: "' + str(menu_key) + '"')
+        # logger.debug('-----------------------------')
+        # logger.debug('menu_key: "' + str(menu_key) + '"')
 
         # get menu_dict with key menu_key from menus, if not found: menu_dict = None
         # menu = {'caption': 'Subjects', ....,
@@ -250,17 +250,17 @@ def set_menu_items(request, setting, selected_menu_key, selected_button_key):
         if not button_key:
             button_key = 'home'  # default if no other found, should not happen
 
-        logger.debug('--> button_key: ' + str(saved_button_key))
+        # logger.debug('--> button_key: ' + str(saved_button_key))
         # get menubutton with key button_key from menubuttons
         menubutton = get_value_from_dict(button_key, menubuttons)
 
         # button_key = 'schllst'
         # menubutton: {'caption': 'Schools', 'href': 'school_list_url', 'visib': {'all': 'all'}}
-        logger.debug('menubutton: ' + str(menubutton))
+        # logger.debug('menubutton: ' + str(menubutton))
 
         # lookup the href that belongs to this index in submenus_tuple
         submenu_href = menubutton.get('href', '')
-        logger.debug('submenu_href: "' + str(submenu_href) + '"')
+        # logger.debug('submenu_href: "' + str(submenu_href) + '"')
 
     # ------------ get menu ------------
         svg_index = 'id_svg0' + str(menu_index)

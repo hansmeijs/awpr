@@ -60,7 +60,7 @@ a:hover{
     grid-template-areas:
             "c_header c_header c_header"
             "c_menu c_menu c_menu"
-            "c_select_file c_select_columns c_select_leerweg"
+            "c_select_file c_link_columns c_select_leerweg"
             "c_table_stud c_table_stud c_table_stud";
 }
 /* ------------------- c_header ----------------------*/
@@ -168,9 +168,11 @@ a:hover{
     display: grid;
 }
 */
-/* ------------------- c_select_columns ----------------------*/
-.c_select_columns {
-    grid-area: c_select_columns;
+
+
+/* ------------------- c_link_columns ----------------------*/
+.c_link_columns {
+    grid-area: c_link_columns;
         -ms-grid-row: 5;
         -ms-grid-column: 3;
 
@@ -183,8 +185,8 @@ a:hover{
 
     grid-template-areas:
         "c_columns_header c_columns_header"
-        "c_columns_Excel c_colAwp"
-        "c_colLinked c_colLinked";
+        "c_grid_colExcel c_grid_colAwp"
+        "c_grid_colLinked c_grid_colLinked";
 
     font-size: 14px;
     line-height: 1.25;
@@ -215,23 +217,26 @@ a:hover{
 
     color: #376191;  /*FooterBackColor Default Schema Blauw donkerblauw */
 }
-.c_columns_Excel {
+.c_grid_colExcel {
     -ms-grid-row: 3;
     -ms-grid-column: 1;
-    grid-area: c_columns_Excel;
+    grid-area: c_grid_colExcel;
     background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
     color: #ffffff;
     width: 100%
 }
 
-.c_columns_Excel_tr {
+
+
+
+.c_colExcelAwp_tr {
     background-color: #a5c2ff; /*lighter blueish*/
     background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */ /* #4A7DBB; /* 'TextboxBackColor Default Schema Blauw medium blauw */
     color: #ffffff;
 
     color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
     background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
-
+    text-align: left;
     padding: 4px 8px;
 
     /* to prevent text selection */
@@ -241,19 +246,32 @@ a:hover{
     -ms-user-select: none;
     user-select: none;
 
-    -webkit-transition: background-color 0.5s ease-in-out;
-    -o-transition: background-color 0.5s ease-in-out;
-    transition: background-color 0.5s ease-in-out;
+    -webkit-transition: background-color 0.5s ease;
+    -o-transition: background-color 0.5s ease;
+    transition: background-color 0.5s easet;
+
 }
 
-.c_colAwp {
+.c_colExcelAwp_tr :hover {
+    background-color: #6083cc; /*blueish   Needed for IEs */
+    background-color: #a5c2ff; /*lighter blueish*/
+    background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    color: #ffffff;
+    -webkit-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */  /* Firefox 3.5 - 3.6 */
+    /* box-shadow: [horizontal offset] [vertical offset] [blur radius] [optional spread radius] [color]; */
+    box-shadow:         3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
+}
+
+
+.c_grid_colAwp {
     -ms-grid-row: 3;
     -ms-grid-column: 3;
-    grid-area: c_colAwp;
+    grid-area: c_grid_colAwp;
     background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
     color: #ffffff;
     width: 100%
 }
+
 
 .c_columns_tr{
     background-color: #a5c2ff; /*lighter blueish*/
@@ -290,11 +308,12 @@ a:hover{
     box-shadow:         3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
 }
 
-.c_colLinked {
+
+.c_grid_colLinked { /* <table class="c_grid_colLinked" id="idTableLinked"> */
     -ms-grid-row: 5;
     -ms-grid-column: 1;
     -ms-grid-column-span: 3;
-    grid-area: c_colLinked;
+    grid-area: c_grid_colLinked;
     /*background-color: #a21313; /*reddish*/
     background-color: #800000; /*dark red*/
     color: #ffffff;
@@ -302,6 +321,7 @@ a:hover{
 }
 .c_colLinked_tr {
     background-color: #bd7f7f; /*lighter reddish*/
+    text-align: left;
     padding: 4px 18px;
     /* to prevent text selection */
     -webkit-touch-callout: none;
@@ -319,6 +339,15 @@ a:hover{
     background-color: #a21313; /*reddish*/
     padding: 4px 18px;
 }
+
+td :hover {
+    background-color: #a21313; /*reddish   Needed for IEs */
+    -webkit-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */  /* Firefox 3.5 - 3.6 */
+    /* box-shadow: [horizontal offset] [vertical offset] [blur radius] [optional spread radius] [color]; */
+    box-shadow:         3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
+}
+
+
 .c_colLinked_hover {
     background-color: #a21313; /*reddish   Needed for IEs */
     -webkit-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */  /* Firefox 3.5 - 3.6 */
@@ -474,7 +503,7 @@ a:hover{
             "c_header"
             "c_menu"
             "c_select_file"
-            "c_select_columns"
+            "c_link_columns"
             "c_select_leerweg"
             "c_table_stud";
         }
@@ -496,7 +525,7 @@ a:hover{
         -ms-grid-column: 1;
         }
 
-    [class="c_gridcontainer"] > .c_select_columns {
+    [class="c_gridcontainer"] > .c_link_columns {
         -ms-grid-row: 4;
         -ms-grid-column: 1;
         }

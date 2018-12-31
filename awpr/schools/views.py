@@ -1,9 +1,12 @@
 # PR2018-04-14
 from django.contrib.auth.decorators import login_required # PR2018-04-01
 from django.contrib import messages
+
+from django.core.mail import send_mail
 from django.db import connection
 from django.db.models.functions import Lower
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponse, HttpResponseRedirect, Http404
+
 from django.shortcuts import render, redirect #, get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -20,8 +23,8 @@ from awpr import menus
 
 # PR2018-04-27
 import logging
-#logger = logging.getLogger(__name__)
-logger = logging.getLogger('awpr.menus')
+logger = logging.getLogger(__name__)
+
 
 
 # PR2018-05-06
@@ -231,6 +234,7 @@ class CountryLogView(View):
     # paginate_by = 10  After this /country_list/?page=1 will return first 10 countries.
 
     def get(self, request, pk):
+
         countries_log = Country_log.objects.filter(country_id=pk).order_by('-modified_at')
         country = Country.objects.get(id=pk)
 
@@ -239,7 +243,9 @@ class CountryLogView(View):
         headerbar_param['countries_log'] = countries_log
         headerbar_param['country'] = country
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
+
         return render(request, 'country_log.html', headerbar_param)
+
 
 # PR 2018-06-16 Not in use
 @method_decorator([login_required], name='dispatch')

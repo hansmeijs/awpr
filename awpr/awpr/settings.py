@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'students',  # PR2018-07-20
 
     'session_security', # PR2018-05-10
+    'anymail', # PR2018-12-28
 ]
 
 MIDDLEWARE = [
@@ -166,8 +167,17 @@ LOGOUT_REDIRECT_URL = 'home'
 # PASSWORD_RESET_TIMEOUT_DAYS = 3
 
 
-# PR 2018-03-27
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# was: PR 2018-03-27  EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# PR 2018-12-28
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='')
+ANYMAIL = {
+    'MAILGUN_API_KEY': config('MAILGUN_API_KEY', default=''),
+    'MAILGUN_SENDER_DOMAIN': config('MAILGUN_SENDER_DOMAIN', default=''),
+}
+DEFAULT_FROM_EMAIL = 'AWP online <noreply@awponline.net>'
+
+
 
 LOGGING = {
     'version': 1,

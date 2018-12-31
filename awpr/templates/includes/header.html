@@ -1,11 +1,13 @@
 {% load i18n %}
 {% load static %}
 
-<!--- navbar --->
+<!-- navbar -->
 <nav class="navbar navbar-default navbar-expand-md">
     <div class="container">
         <div>
-            <img src="{% static 'img/AwpLogoGrey.gif' %}" href="{% url 'home' %}" height="24" width="48">
+            <a href="{% url 'home' %}">
+                <img src="{% static 'img/AwpLogoGrey.gif' %}" href="{% url 'home' %}" height="24" width="48">
+            </a>
         </div>
 
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar_collapse" aria-controls="navbarsExample04" aria-expanded="false" aria-label="Toggle navigation">
@@ -15,7 +17,7 @@
         <div class="collapse navbar-collapse" id="navbar_collapse">
 
             {% if user.is_authenticated %}
-                <!--- Select country --->
+                <!-- Select country -->
                 {% if display_country %}
                     <li class="nav-item dropdown navbar-brand">
                         {% if select_country %}
@@ -39,7 +41,7 @@
                     </li>
                 {% endif %}
 
-                <!--- Select exam year --->
+                <!-- Select exam year -->
                 <li class="nav-item dropdown navbar-brand">
                     <a class=" dropdown-toggle navbar-item-default {{class_examyear_warning}} " href="#" id="examyearMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         {{ examyear }}
@@ -64,7 +66,7 @@
                     </div>
                 </li>
 
-                <!--- Select school --->
+                <!-- Select school -->
                 {% if display_school %}
                     <li class="nav-item dropdown navbar-brand">
                         {% if select_school %}
@@ -85,7 +87,7 @@
                         {% endif %}
                     </li>
                 {% endif %}
-                <!--- Select department --->
+                <!-- Select department -->
                 {% if display_dep %}
                     <li class="nav-item dropdown navbar-brand">
                         {% if select_dep %}
@@ -112,7 +114,7 @@
             {% endif %}
 
 
-            <!--- User --->
+            <!-- User -->
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#mainMenu" aria-controls="mainMenu" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>

@@ -38,21 +38,21 @@ class StudentListView(ListView):  # PR2018-09-02
         })
         # get school from user.examyear and user.schoolbase PR2018-09-03
         if request.user.examyear and request.user.schoolbase:
-            logger.debug('StudentListView get request.user.examyear = ' + str(request.user.examyear) + ' type : ' + str(type(request.user.examyear)))
-            logger.debug('StudentListView get request.user.schoolbase = ' + str(request.user.schoolbase) + ' type : ' + str(type(request.user.schoolbase)))
+            # logger.debug('StudentListView get request.user.examyear = ' + str(request.user.examyear) + ' type : ' + str(type(request.user.examyear)))
+            # logger.debug('StudentListView get request.user.schoolbase = ' + str(request.user.schoolbase) + ' type : ' + str(type(request.user.schoolbase)))
 
             school= School.objects.filter(base=request.user.schoolbase, examyear=request.user.examyear).first()
             if school:
-                logger.debug('StudentListView get school = ' + str(school) + ' type : ' + str(type(school)))
+                # logger.debug('StudentListView get school = ' + str(school) + ' type : ' + str(type(school)))
 
                 if request.user.depbase:
                     # logger.debug('StudentListView get request.user.department = ' + str(request.user.department) + ' type : ' + str(type(request.user.department)))
                     # TODO testing
                     department= Department.objects.filter(base=request.user.depbase, examyear=request.user.examyear).first()
-                    logger.debug('StudentListView get department = ' + str(department) + ' type : ' + str(type(department)))
+                    # logger.debug('StudentListView get department = ' + str(department) + ' type : ' + str(type(department)))
                     # filter students of this school and this department
                     students = Student.objects.filter(school=school, department=department)
-                    logger.debug('StudentListView get students = ' + str(students) + ' type : ' + str(type(students)))
+                    # logger.debug('StudentListView get students = ' + str(students) + ' type : ' + str(type(students)))
                     _params.update({'school': school})
                     _params.update({'students': students})
         return render(request, 'student_list.html', _params)
@@ -92,9 +92,9 @@ class StudentAddView(CreateView): # PR2018-09-03
             _birthcountry_id_int = int(_birthcountry_id_str)
             try:
                 _birthcountry = Birthcountry.objects.get(id=_birthcountry_id_int)
-                logger.debug('StudentAddView form.is_valid _clean_birthcountry: ' + str(_birthcountry) + ' Type: ' + str(type(_birthcountry)))
+                # logger.debug('StudentAddView form.is_valid _clean_birthcountry: ' + str(_birthcountry) + ' Type: ' + str(type(_birthcountry)))
                 student.birthcountry = _birthcountry
-                logger.debug('StudentAddView form.is_valid _clean_birthcountry: ' + str(_birthcountry) + ' Type: ' + str(type(_birthcountry)))
+                # logger.debug('StudentAddView form.is_valid _clean_birthcountry: ' + str(_birthcountry) + ' Type: ' + str(type(_birthcountry)))
 
             except:
                 pass
@@ -181,21 +181,21 @@ class StudentresultListView(ListView):  # PR2018-11-21
         _params = f.get_headerbar_param(request, {'display_examyear': True, 'display_school': True, 'display_dep': True, 'display_user': True})
         # get school from user.examyear and user.schoolbase PR2018-09-03
         if request.user.examyear and request.user.schoolbase:
-            logger.debug('StudentresultListView get request.user.examyear = ' + str(request.user.examyear) + ' type : ' + str(type(request.user.examyear)))
-            logger.debug('StudentresultListView get request.user.schoolbase = ' + str(request.user.schoolbase) + ' type : ' + str(type(request.user.schoolbase)))
+            # logger.debug('StudentresultListView get request.user.examyear = ' + str(request.user.examyear) + ' type : ' + str(type(request.user.examyear)))
+            # logger.debug('StudentresultListView get request.user.schoolbase = ' + str(request.user.schoolbase) + ' type : ' + str(type(request.user.schoolbase)))
 
             school= School.objects.filter(base=request.user.schoolbase, examyear=request.user.examyear).first()
             if school:
-                logger.debug('StudentresultListView get school = ' + str(school) + ' type : ' + str(type(school)))
+                # logger.debug('StudentresultListView get school = ' + str(school) + ' type : ' + str(type(school)))
 
                 if request.user.depbase:
                     # logger.debug('StudentresultListView get request.user.department = ' + str(request.user.department) + ' type : ' + str(type(request.user.department)))
                     # TODO testing
                     department= Department.objects.filter(base=request.user.depbase, examyear=request.user.examyear).first()
-                    logger.debug('StudentresultListView get department = ' + str(department) + ' type : ' + str(type(department)))
+                    # logger.debug('StudentresultListView get department = ' + str(department) + ' type : ' + str(type(department)))
                     # filter studentresults of this school and this department
                     studentresults = Studentresult.objects.filter(student__school=school, student__department=department)
-                    logger.debug('StudentresultListView get studentresults = ' + str(studentresults) + ' type : ' + str(type(studentresults)))
+                    # logger.debug('StudentresultListView get studentresults = ' + str(studentresults) + ' type : ' + str(type(studentresults)))
                     _params.update({'school': school})
                     _params.update({'studentresults': studentresults})
         return render(request, 'studentresult_list.html', _params)
@@ -246,23 +246,23 @@ class StudentsubjectListView(ListView):  # PR2018-11-21
         })
         # get school from user.examyear and user.schoolbase PR2018-09-03
         if request.user.examyear and request.user.schoolbase:
-            logger.debug('StudentsubjectListView get request.user.examyear = ' + str(request.user.examyear) + ' type : ' + str(type(request.user.examyear)))
-            logger.debug('StudentsubjectListView get request.user.schoolbase = ' + str(request.user.schoolbase) + ' type : ' + str(type(request.user.schoolbase)))
+            # logger.debug('StudentsubjectListView get request.user.examyear = ' + str(request.user.examyear) + ' type : ' + str(type(request.user.examyear)))
+            # logger.debug('StudentsubjectListView get request.user.schoolbase = ' + str(request.user.schoolbase) + ' type : ' + str(type(request.user.schoolbase)))
 
             school= School.objects.filter(base=request.user.schoolbase, examyear=request.user.examyear).first()
             if school:
-                logger.debug('StudentsubjectListView get school = ' + str(school) + ' type : ' + str(type(school)))
+                # logger.debug('StudentsubjectListView get school = ' + str(school) + ' type : ' + str(type(school)))
 
                 if request.user.depbase:
                     # logger.debug('StudentsubjectListView get request.user.department = ' + str(request.user.department) + ' type : ' + str(type(request.user.department)))
                     # TODO testing
                     department= Department.objects.filter(base=request.user.depbase, examyear=request.user.examyear).first()
-                    logger.debug('StudentsubjectListView get department = ' + str(department) + ' type : ' + str(type(department)))
+                    # logger.debug('StudentsubjectListView get department = ' + str(department) + ' type : ' + str(type(department)))
                     # filter studentsubject of this school and this department
                     # studentsubjects = Studentsubject.objects.filter(studentresult__student__school=school, studentresult__student__department=department)
                     studentsubjects = Studentsubject.objects.all()
 
-                    logger.debug('StudentsubjectListView get studentsubjects = ' + str(studentsubjects) + ' type : ' + str(type(studentsubjects)))
+                    # logger.debug('StudentsubjectListView get studentsubjects = ' + str(studentsubjects) + ' type : ' + str(type(studentsubjects)))
                     _params.update({'school': school})
                     _params.update({'studentsubjects': studentsubjects})
         return render(request, 'studentsubject_list.html', _params)
@@ -282,14 +282,14 @@ class StudentsubjectAddView(CreateView): # PR2018-09-03
 
     def post(self, request, *args, **kwargs):
         form = StudentsubjectAddForm(request.POST, request=request) # this one doesn't work: form = Subjectdefault(request=request)
-        logger.debug('StudentsubjectAddView post request.POST: ' + str(self.request.POST) + ' type: ' + str(type(self.request.POST)))
+        # logger.debug('StudentsubjectAddView post request.POST: ' + str(self.request.POST) + ' type: ' + str(type(self.request.POST)))
 
         if form.is_valid():
             studentsubject = form.save(commit=False)
-            logger.debug('studentsubject commit=False: ' + str(studentsubject) + ' type: ' + str(type(studentsubject)))
+            # logger.debug('studentsubject commit=False: ' + str(studentsubject) + ' type: ' + str(type(studentsubject)))
 
             studentsubject.save(request=self.request)
-            logger.debug('studentsubject saved studentsubject.id: ' + str(studentsubject.id) + ' type: ' + str(type(studentsubject.id)))
+            # logger.debug('studentsubject saved studentsubject.id: ' + str(studentsubject.id) + ' type: ' + str(type(studentsubject.id)))
             return redirect('studentsubject_list_url')
         else:
             # If the form is invalid, render the invalid form.
@@ -315,15 +315,15 @@ class StudentsubjectEditView(UpdateView):  # PR2018-10-31
         # add request to kwargs, so it can be passed to form
         kwargs.update({'request': self.request})
 
-        logger.debug('StudentsubjectEditView get_form_kwargs: ' + str(kwargs) + ' type: ' + str(type(kwargs)))
+        # logger.debug('StudentsubjectEditView get_form_kwargs: ' + str(kwargs) + ' type: ' + str(type(kwargs)))
         return kwargs
 
     def form_valid(self, form):
         studentsubject = form.save(commit=False)
-        logger.debug('form_valid studentsubject: ' + str(studentsubject) + ' type: ' + str(type(studentsubject)))
+        # logger.debug('form_valid studentsubject: ' + str(studentsubject) + ' type: ' + str(type(studentsubject)))
 
         studentsubject.save(request=self.request)
-        logger.debug('form_valid studentsubject saved: ')
+        # logger.debug('form_valid studentsubject saved: ')
 
         return redirect('studentsubject_list_url')
 
@@ -351,22 +351,22 @@ class StudentsubjectFormsetView(ListView):  # PR2018-11-29
 
     def post(self, request, *args, **kwargs):
         formset = StudentsubjectFormset(data=request.POST, files=request.FILES)
-        logger.debug('StudentsubjectFormsetView post request.POST: ' + str(self.request.POST) + ' type: ' + str(type(self.request.POST)))
+        # logger.debug('StudentsubjectFormsetView post request.POST: ' + str(self.request.POST) + ' type: ' + str(type(self.request.POST)))
 
         if formset.is_valid():
-            logger.debug('StudentsubjectFormsetView post formset.is_valid: ' + str(formset.is_valid) + ' type: ' + str(type(formset.is_valid)))
+            # logger.debug('StudentsubjectFormsetView post formset.is_valid: ' + str(formset.is_valid) + ' type: ' + str(type(formset.is_valid)))
 
             instances = formset.save(commit=False)
             for instance in instances:
                 instance.save(request=self.request)
 
-            logger.debug('StudentsubjectFormsetView post formset.is_valid: ' + str(formset.is_valid) + ' type: ' + str(type(formset.is_valid)))
+            # logger.debug('StudentsubjectFormsetView post formset.is_valid: ' + str(formset.is_valid) + ' type: ' + str(type(formset.is_valid)))
 
             return render(request, 'country_formset.html', {'formset': formset})
 
 
         else:
-            logger.debug('StudentsubjectFormsetView post formset.is_NOT_valid: ' + str(formset.is_valid) + ' type: ' + str(type(formset.is_valid)))
+            # logger.debug('StudentsubjectFormsetView post formset.is_NOT_valid: ' + str(formset.is_valid) + ' type: ' + str(type(formset.is_valid)))
             return render(request, self.template_name, {'formset': formset})
 
 
@@ -396,76 +396,99 @@ class StudentImportUploadDataView(View):  # PR2018-12-04
     def post(self, request, *args, **kwargs):
 
         logger.debug(' ============= StudentImportUploadDataView ============= ')
+        # logger.debug('post request.POST: ' + str(request.POST) + ' type: ' + str(type(request.POST)))
 
-        #logger.debug('post request: ' + str(request) + ' type: ' + str(type(request)))
-        #logger.debug('post request.POST: ' + str(request.POST) + ' type: ' + str(type(request.POST)))
-        #logger.debug('post request.user: ' + str(request.user) + ' type: ' + str(type(request.user)))
+        if request.user is not None and request.user.examyear is not None:
+            if request.user.schoolbase is not None and request.user.depbase is not None:
+                # get school and department of this schoolyear
+                school = School.objects.filter(base=request.user.schoolbase, examyear=request.user.examyear).first()
+                department = Department.objects.filter(base=request.user.depbase, examyear=request.user.examyear).first()
 
-        if request.user is not None:
-            if request.user.schoolbase is not None and request.user.examyear is not None:
-                if request.user.depbase is not None:
-                    # get school and department of this schoolyear
-                    school = School.objects.filter(base=request.user.schoolbase, examyear=request.user.examyear).first()
-                    department = Department.objects.filter(base=request.user.depbase, examyear=request.user.examyear).first()
+                logger.debug('request.user.examyear: ' + str(request.user.examyear))
+                logger.debug('school: ' + str(school))
+                logger.debug('department: ' + str(department))
 
-                    students_str = request.POST['students']
-                    #logger.debug('post students_str: '  + str(students_str) + ' type: ' + str(type(students_str)))
-                    students = json.loads(students_str)
-                    #logger.debug('post students: '  + str(students) + ' type: ' + str(type(students)))
+                students = json.loads(request.POST['students'])
+                # logger.debug('post students: '  + str(students) + ' type: ' + str(type(students)))
+                students_log = []
+                for student in students:
+    # ------------ import student   -----------------------------------
+                    logger.debug('post student: '  + str(student) + ' type: ' + str(type(student)))
 
-                    for student in students:
-        # ------------ import student   -----------------------------------
-                        logger.debug('post student: '  + str(student) + ' type: ' + str(type(student)))
-                # check if required fields are present
-                        # required field: "idnumber","lastname", "firstname",
-                        # not required:  "examnumber", "prefix", "gender","birthdate", "birthcountry", "birthcity","level",  "sector", "classname"]
+            # check if required fields are present
+                    # required field: "idnumber", "lastname" + "firstname" or "fullname"
+                    # not required:  "prefix", "gender","birthdate", "birthcountry", "birthcity",
+                    # "level", "sector", "classname", "examnumber"
 
-                    # delete non-numeric characters from idnumber,
-                        # otherwise '1999.01.31.15' and '1999013115' are not recognized as the same idnumber
-                        has_error = False
-                        msg_str = ''
-                        k = 'idnumber'
-                        idnumber_stripped = ''
-                        if k in student:
-                            if student[k]:
-                                idnumber_stripped = re.sub("[^0-9]", "", student[k])
-                        if not idnumber_stripped:
-                            response = HttpResponse("ID number not entered!!")
-                            return response
+                    stud_log = []
+                    msg_list = []
 
-                # validate if idnumber already exist in this school and examyear
+    # delete non-numeric characters from idnumber,
+                    # otherwise '1999.01.31.15' and '1999013115' are not recognized as the same idnumber
+                    has_error = False
+                    msg_str = ''
+                    k = 'idnumber'
+                    idnumber_stripped = ''
+                    if k in student:
+                        if student[k]:
+                            idnumber_stripped = re.sub("[^0-9]", "", student[k])
+                    if not idnumber_stripped:
+                        msg_list.append(_("ID number not entered."))
 
-                        if Student.objects.filter(
-                                idnumber__iexact=idnumber_stripped, # _iexact filters a Case-insensitive exact match.
-                                school=school).exists():
-                            return HttpResponse("ID already exists!!")
+                    logger.debug('idnumber_stripped: ' + str(idnumber_stripped) + ' type: ' + str(type(idnumber_stripped)))
+            # validate if idnumber already exist in this school and examyear
+                    if Student.objects.filter(
+                            idnumber__iexact=idnumber_stripped, # _iexact filters a Case-insensitive exact match.
+                            school=school).exists():
+                        msg_list.append(_("ID number already exists."))
 
-                # validate if lastname / firstname already exist in this school and examyear
-                        k = 'lastname'
-                        lastname = ''
-                        if k in student:
-                            if student[k]:
-                                lastname = student[k]
-                        if not lastname:
-                            return HttpResponse("Last name not entered!!")
+            # validate if lastname / firstname already exist in this school and examyear
+                    k = 'lastname'
+                    lastname = ''
+                    if k in student:
+                        if student[k]:
+                            lastname = student[k]
+                    if not lastname:
+                        msg_list.append(_("Last name not entered."))
+                    logger.debug('lastname: ' + str(lastname) + ' type: ' + str(type(lastname)))
 
-                        k = 'firstname'
-                        firstname = ''
-                        if k in student:
-                            if student[k]:
-                                firstname = student[k]
-                        if not firstname:
-                            return HttpResponse("First name not entered!!")
+                    k = 'firstname'
+                    firstname = ''
+                    if k in student:
+                        if student[k]:
+                            firstname = student[k]
+                    if not firstname:
+                        msg_list.append(_("First name not entered."))
+                    logger.debug('firstname: ' + str(firstname) + ' type: ' + str(type(firstname)))
 
-                        # from https://stackoverflow.com/questions/1285911/how-do-i-check-that-multiple-keys-are-in-a-dict-in-a-single-pass
-                        # if all(k in student for k in ('idnumber','lastname', 'firstname')):
+                    k = 'prefix'
+                    prefix = ''
+                    if k in student:
+                        if student[k]:
+                            prefix = student[k]
 
-                        if Student.objects.filter(
-                                lastname__iexact=lastname,
-                                firstname__iexact=firstname,
-                                school=school).exists():
-                            return HttpResponse("ID already exists!!")
+                    fullname = lastname
+                    if prefix:
+                        fullname = prefix + ' ' +fullname
+                    if firstname:
+                        fullname = firstname + ' ' +fullname
 
+    # from https://stackoverflow.com/questions/1285911/how-do-i-check-that-multiple-keys-are-in-a-dict-in-a-single-pass
+                    # if all(k in student for k in ('idnumber','lastname', 'firstname')):
+
+                    if Student.objects.filter(
+                            lastname__iexact=lastname,
+                            firstname__iexact=firstname,
+                            school=school).exists():
+                        msg_list.append(_("Student name already exists."))
+
+# ========== create new student, but only if no errors found
+                    if  msg_list:
+                        logger.debug('Student not created: ')
+                        stud_log.append(_("Student not created."))
+                    else:
+
+                        logger.debug('Student created ')
                         new_student = Student(
                             school=school,
                             department=department,
@@ -473,39 +496,78 @@ class StudentImportUploadDataView(View):  # PR2018-12-04
                             lastname=lastname,
                             firstname=firstname
                         )
+                        new_student.save(request=self.request)
+                        stud_log.append(fullname)
 
                     # calcultae birthdate from  if lastname / firstname already exist in this school and examyear
-                        birthdate, msg_str, has_error = calc_bithday_from_id(idnumber_stripped)
-                        if not has_error:
-                            new_student.birthdate = birthdate
+                        birthdate_calc, msg_str, has_error = calc_bithday_from_id(idnumber_stripped)
+                        #if not has_error:
+                         #   new_student.birthdate = birthdate_calc
+                        logger.debug('birthdate_calc: ' + str(birthdate_calc))
 
-                        for field in ('prefix', 'gender', 'birthcountry', 'birthcity',
-                                  'examnumber', 'level', 'sector', 'classname'):
-                            # logger.debug('post field: ' + str(field) + ' type: ' + str(type(field)))
+                        gender_clean = ''
+                        birthdate_clean = None
+                        for field in ('prefix', 'gender', 'birthdate', 'birthcountry', 'birthcity',
+                                  'level', 'sector', 'classname', 'examnumber'):
                             if field in student:
                                 value = student[field]
                                 skip = False
-                                # validation
+
+                        # validate 'gender'
                                 if field == 'gender':
+                                    value_upper=''
                                     if len(value) > 1:
-                                        # max_length = 1
-                                            skip = True
+                                        skip = True
                                     else:
-                                        value = value.upper()
-                                        if value in ('M', 'F',):
+                                        value_upper = value.upper()
+                                        if value_upper in ('M', 'F',):
                                             pass
-                                        elif value == 'V':
-                                            value = 'F'
+                                        elif value_upper == 'V':
+                                            value_upper = 'F'
                                         else:
                                             skip = True
-                                if field == 'birthdate':
-                                    try:
-                                        date_time_obj = datetime.datetime.strptime(value, '%b %d %Y %I:%M%p')
-                                    except:
-                                        skip = True
-                                    logger.debug('birthdate value: ' + str(value) + ' type: ' + str(type(value)))
-                                if not skip:
-                                    setattr(new_student, field, value)
+                                    if skip:
+                                        msg_list.append("Gender" + "'" + value + "' not allowed." + "Only 'M', 'm', 'F', 'f', 'V', 'v' are allowed.")
+                                    else:
+                                        new_student.gender = value_upper
+                                    logger.debug('msg_list: ' + str(msg_list))
+                                    logger.debug('gender_clean: ' + str(gender_clean))
+
+                                #if field == 'birthdate':
+                                #    logger.debug('birthdate value: ' + str(value))
+                                #    try:
+                                #        # try to convert to date_time_obj
+                                #        logger.debug('value: ' + str(value) + ' type: ' + str(type(value)))
+                                #        birthdate_clean = datetime.datetime.strptime(value, '%b %d %Y %I:%M%p')
+                                #        logger.debug('birthdate_clean: ' + str(birthdate_clean) + ' type: ' + str(type(birthdate_clean)))
+                                #    except:
+                                #        skip = True
+                                #        msg_list.append(_("Birthdate") + "'" + value + "'" + _("cannot be converted to valid birh date"))
+
+                                #if not skip:
+                                #    setattr(new_student, field, value)
+
+
+                        # validate 'birthcountry'
+                                if field == 'birthcountry':
+                                    if value:
+                                        new_student.birthcountry = value
+
+                        # validate 'birthcity'
+                                if field == 'birthcity':
+                                    if value:
+                                        new_student.birthcity = value
+
+                        # validate 'classname'
+                                if field == 'classname':
+                                    if value:
+                                        new_student.classname = value
+
+                        # validate 'examnumber'
+                                if field == 'examnumber':
+                                    if value:
+                                        new_student.examnumber = value
+
 
                         new_student.save(request=self.request)
 
@@ -513,21 +575,11 @@ class StudentImportUploadDataView(View):  # PR2018-12-04
                             # for key, val in student.items():
                             #    logger.debug( str(key) +': ' + val + '" found in "' + str(student) + '"')
 
-                    """ 
-                    post students_str:  [   {"lastname":"Janssens","idnumber":"1986101906"},
-                                            {"lastname":"van Delden","idnumber":"1985122411"}
-                                        ] type: <class 'str'>
-                    post students:      [   {'lastname': 'Janssens', 'idnumber': '1986101906'}, 
-                                            {'lastname': 'van Delden', 'idnumber': '1985122411'}
-                                        ] type: <class 'list'>
-                    
-                    post student: {'lastname': 'Janssens', 'idnumber': '1986101906'} type: <class 'dict'>
-                    post student: {'lastname': 'van Delden', 'idnumber': '1985122411'} type: <class 'dict'>
-                    post items: [{'idnumber': '1985122411'}, {'lastname': 'van Delden'}, {'gender': 'm'}] type: <class 'list'>
-                    """
+        logger.debug('msg_list: ' + str(msg_list))
+
 
         response = HttpResponse("It works!!")
-        # logger.debug('post response: ' + str(response) + ' type: ' + str(type(response)))
+        logger.debug('post response: ' + str(response) + ' type: ' + str(type(response)))
 
         return response
 
@@ -735,6 +787,16 @@ def get_mapped_coldefs_student(request_user):  # PR2018-12-01
     #                   {'awpCol': 'level', 'excCol': '', 'caption': 'Level'},
     #                   etc
     logger.debug('==============get_mapped_coldefs_student ============= ' )
+
+    # caption Sector/Profiel depends on department
+    sector_caption =  "Sector/Profiel"
+    if request_user.depbase:
+        dep = request_user.department
+        if dep.abbrev == "Vsbo":
+            sector_caption = "Sector"
+        else:
+            sector_caption = "Profiel"
+
     if request_user.lang == 'nl':
         coldef_list = [
             {"awpCol": "idnumber", "caption": "ID nummer"},
@@ -746,9 +808,8 @@ def get_mapped_coldefs_student(request_user):  # PR2018-12-01
             {"awpCol": "birthdate", "caption": "Geboortedatum"},
             {"awpCol": "birthcountry", "caption": "Geboorteland"},
             {"awpCol": "birthcity", "caption": "Geboorteplaats"},
-            {"awpCol": "dep", "caption": "Afdeling"},
             {"awpCol": "level", "caption": "Leerweg"},
-            {"awpCol": "sector", "caption": "Sector/Profiel"},
+            {"awpCol": "sector", "caption": sector_caption},
             {"awpCol": "classname", "caption": "Klas"},
             {"awpCol": "examnumber", "caption": "Examennummer"}
         ]
@@ -763,9 +824,8 @@ def get_mapped_coldefs_student(request_user):  # PR2018-12-01
             {"awpCol": "birthdate", "caption": "Birthdate"},
             {"awpCol": "birthcountry", "caption": "Birth country"},
             {"awpCol": "birthcity", "caption": "Birth place"},
-            {"awpCol": "dep", "caption": "Departement"},
             {"awpCol": "level", "caption": "Level"},
-            {"awpCol": "sector", "caption": "Sector"},
+            {"awpCol": "sector", "caption": sector_caption},
             {"awpCol": "classname", "caption": "Class"},
             {"awpCol": "examnumber", "caption": "Exam number"}
         ]
