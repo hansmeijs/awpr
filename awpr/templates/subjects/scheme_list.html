@@ -23,13 +23,15 @@
 
     <h4>{% trans 'Schemes' %}</h4>
 
-    <table class="table table table-condensed">
+    <table class="table table-condensed">
       <thead class="thead-inverse">
         <tr>
           <th>{% trans 'Name' %}</th>
           <th>{% trans 'Department' %}</th>
           <th>{% trans 'Leerweg' %}</th>
           <th>{% trans 'Sector' %}</th>
+          <th>{% trans 'Fields' %}</th>
+          <th>{% trans 'Fields' %}</th>
           <th>{% trans 'Modified by' %}</th>
           <th>{% trans 'Modified at' %}</th>
         </tr>
@@ -47,6 +49,8 @@
             <td>{{ item.department.abbrev }}</td>
             <td>{{ item.level.abbrev }}</td>
             <td>{{ item.sector.abbrev }}</td>
+            <td>{{ item.fields }}</td>
+            <td>{{ item.fields_str }}</td>
             <td>{{ item.modified_by }}</td>
             <td>{{ item.modified_at }}</td>
           </tr>

@@ -27,7 +27,9 @@
           <th>{% trans 'Abbreviation' %}</th>
           <th>{% trans 'Sequence' %}</th>
           <th>{% trans 'Level required' %}</th>
+          <th>{% trans 'Level name' %}</th>
           <th>{% trans 'Sector required' %}</th>
+          <th>{% trans 'Sector name' %}</th>
           <th>{% trans 'Modified by' %}</th>
           <th>{% trans 'Modified at' %}</th>
           <th>{% trans 'Action' %}</th>
@@ -41,7 +43,9 @@
             <td>{% if item.abbrev_mod %}<b>{% endif %}{{ item.abbrev }}</b></td>
             <td>{% if item.sequence_mod %}<b>{% endif %}{{ item.sequence }}</b></td>
             <td>{% if item.level_req_mod %}<b>{% endif %}{{ item.level_req_str }}</b></td>
+            <td>{% if item.level_caption_mod %}<b>{% endif %}{{ item.level_caption_str }}</b></td>
             <td>{% if item.sector_req_mod %}<b>{% endif %}{{ item.sector_req_str }}</b></td>
+            <td>{% if item.sector_caption_mod %}<b>{% endif %}{{ item.sector_caption_str }}</b></td>
             <td>{{ item.modified_by }}</td>
             <td>{{ item.modified_at }}</td>
             <td>{{ item.mode_str }}</td>

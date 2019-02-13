@@ -29,6 +29,8 @@
           <th>{% trans 'Abbreviation' %}</th>
           <th>{% trans 'Code' %}</th>
           <th>{% trans 'Sequence' %}</th>
+          <th>{% trans 'Has werkstuk' %}</th>
+          <th>{% trans 'One allowed' %}</th>
           <th>{% trans 'Departments' %}</th>
         </tr>
       </thead>
@@ -45,6 +47,8 @@
             <td>{{ item.abbrev }}</td>
             <td>{{ item.code }}</td>
             <td>{{ item.sequence }}</td>
+            <td>{{ item.has_pws }}</td>
+            <td>{{ item.one_allowed }}</td>
             <td>{{ item.depbase_list_str }}</td>
           </tr>
         {% endfor %}

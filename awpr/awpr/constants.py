@@ -1,5 +1,6 @@
 #PR2018-05-25
-from django.utils.translation import ugettext_lazy as _
+# from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext as _
 
 USERNAME_MAX_LENGTH = 30
 
@@ -189,6 +190,29 @@ GENDER_CHOICES = (
     (GENDER_FEMALE, _('F')),
 )
 
+
+# PR2019-01-19
+SCHEMEFIELD_MANDATORY = 'mand'
+SCHEMEFIELD_COMBI = 'comb'
+SCHEMEFIELD_CHOICECOMBI_ALLOWED = 'chal'
+SCHEMEFIELD_PRACTEXAM = 'prac'
+
+SCHEMEFIELD_CHOICES = (
+    (SCHEMEFIELD_MANDATORY, _('Mandatory')),
+    (SCHEMEFIELD_COMBI, _('Combination subject')),
+    (SCHEMEFIELD_CHOICECOMBI_ALLOWED, _('Choice combi allowed')),
+    (SCHEMEFIELD_PRACTEXAM, _('Practical exam')),
+)
+
+# translation not working in dict, error: 'must be str, not __proxy__' Solved by using 'ugettext' instead of 'ugettext_lazy'
+SCHEMEFIELD_DICT = {
+    SCHEMEFIELD_MANDATORY: _('Mandatory'),
+    SCHEMEFIELD_COMBI: _('Combi subject'),
+    SCHEMEFIELD_CHOICECOMBI_ALLOWED: _('Choice combi'),
+    SCHEMEFIELD_PRACTEXAM: _('Practical exam')
+}
+
+
 # PR2018-11-28
 # se, pe ce, ce2, ce3, end
 SCHOOLEXAM_CODE = 'se'
@@ -205,6 +229,9 @@ EXAMCODE_CHOICES = (
     (CENTRALEXAM2_CODE, _('Re-exam')),
     (CENTRALEXAM3_CODE, _('Re-exam third period'))
 )
+
+
+
 
 # PR2018-11-28
 # s = score, g = grade, x = exemption, f = final grade
@@ -237,7 +264,6 @@ RESULT_CHOICES = (
 
 # SCHOOL SETTING KEYS PR2018-12-03
 KEY_STUDENT_MAPPED_COLDEFS = "student_mapped_coldefs"
-
 
 # USER SETTING KEYS PR2018-12-19
 KEY_USER_MENU_SELECTED = "menu_selected"

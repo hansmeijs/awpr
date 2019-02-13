@@ -1,8 +1,6 @@
+<!DOCTYPE html>
 {% load i18n %}
 {% load static %}
-
-<!DOCTYPE html>
-
 <html>
   <head>
     <meta charset="utf-8">
@@ -14,21 +12,41 @@
     <!-- TODO: reset to: <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/awpr_css.css' %}"> -->
 
+        <!-- PR2019-01-20 updated to bootstrap/4.2.1 from https://www.w3schools.com/bootstrap4/tryit.asp?filename=trybs_modal&stacked=h
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+ -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css">
   <!-- app.css goes after Bootstrap reference to CSS, otherwise, the default scheme will apply. -->
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
 
-  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    {% block stylesheet %}{% endblock %}
+
+            <!-- PR2019-01-20 updated Was:
     <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
-    <!--  PR2018-12-02 from: https://github.com/js-cookie/js-cookie/tree/latest#readme -->
-    <script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+    -->
 
-    {% block stylesheet %}{% endblock %}
+  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js"></script>
+
+      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"></script>
+
+  <!--  PR2018-12-02 from: https://github.com/js-cookie/js-cookie/tree/latest#readme -->
+      <script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+  <!--  PR2019-01-13 added, promise-polyfill to make 'promise' work in IE 11 -->
+      <script src="https://cdn.jsdelivr.net/npm/promise-polyfill@8/dist/polyfill.min.js"></script>
+  <!--  PR2019-01-13 added, contains csrftoken for ajax -->
+      <script src="{% static 'js/base.js' %}"></script>
+      <script src="{% static 'js/tables.js' %}"></script>
+
+      {% block script %}{% endblock %}
 
   </head>
   <body>
+      {% block modal %}{% endblock %}
     <header>
       {% include 'includes/header.html' %}
       {% block menubar %}
@@ -37,11 +55,11 @@
     </header>
 
     {% block body %}
-      <div class="container">
+      <!-- <div class="container"> -->
         {% block breadcrumb %}{% endblock %}
         {% include 'includes/messages.html' %}
         {% block content %}{% endblock %}
-      </div>
+      <!-- </div> -->
     {% endblock body %}
 
 

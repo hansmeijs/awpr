@@ -1,6 +1,8 @@
 # PR2018-07-20
 from django.db.models import Model, Manager, ForeignKey, OneToOneField, PROTECT, CASCADE
-from django.db.models import CharField, TextField, IntegerField, PositiveSmallIntegerField, DecimalField, BooleanField, DateField, DateTimeField
+from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, DecimalField, BooleanField, DateField, DateTimeField
+
+from django.db.models.functions import Lower
 
 from django.utils import timezone
 
@@ -203,6 +205,7 @@ class Student(Model):# PR2018-06-06, 2018-09-05
 
     base = ForeignKey(Studentbase, related_name='students', on_delete=PROTECT)
     school = ForeignKey(School, related_name='students', on_delete=PROTECT)
+
     department = ForeignKey(Department, related_name='students', on_delete=PROTECT)
     level = ForeignKey(Level, null=True, blank=True, related_name='students', on_delete=PROTECT)
     sector = ForeignKey(Sector, null=True,blank=True, related_name='students', on_delete=PROTECT)
@@ -214,7 +217,7 @@ class Student(Model):# PR2018-06-06, 2018-09-05
     prefix= CharField(max_length=10, null=True, blank=True)
     gender= CharField(db_index=True, max_length=1, choices=c.GENDER_CHOICES, default=c.GENDER_NONE)
     idnumber= CharField(db_index=True, max_length=20)
-    birthdate= DateField(null=True)
+    birthdate= DateField(null=True, blank=True)
 
     birthcountry= CharField(max_length=50, null=True, blank=True)
     birthcity= CharField( max_length=50, null=True, blank=True)
@@ -229,7 +232,7 @@ class Student(Model):# PR2018-06-06, 2018-09-05
     modified_at = DateTimeField()
 
     class Meta:
-        ordering = ['lastname', 'firstname']
+        ordering = [Lower('lastname'), Lower('firstname')]
 
     def __str__(self):
         _lastname = self.lastname
@@ -316,15 +319,6 @@ class Student(Model):# PR2018-06-06, 2018-09-05
             self.save_to_log()
 
             logger.debug('Student Model self: ' + str(self) + '> type: ' + str(type(self)))
-
-        # add Studentresult after new record is created PR2018-11-20
-            if not self.is_update:
-                # Create method also saves record
-                new = Studentresult()
-                new.student = self
-                new.modified_by = self.modified_by
-                new.modified_at = self.modified_at
-                new.save(request=self.request)
 
     def delete(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
@@ -472,11 +466,15 @@ class Student(Model):# PR2018-06-06, 2018-09-05
         full_name = str(self.lastname)
         full_name = full_name.strip()  # Trim
         if self.prefix: # put prefix at the front
-            prefix_str = str(self.prefix)
-            full_name = prefix_str .strip() + ' ' + full_name
+            # PR2019-01-13 is str() necessary?. Was:
+            # prefix_str = str(self.prefix)
+            # full_name = prefix_str .strip() + ' ' + full_name
+            full_name = self.prefix .strip() + ' ' + full_name
         if self.firstname:
-            firstname_str = str(self.firstname)
-            full_name = firstname_str.strip() + ' ' + full_name
+            # PR2019-01-13 is str() necessary?. Was:
+            # firstname_str = str(self.firstname)
+            # full_name = firstname_str.strip() + ' ' + full_name
+            full_name = self.firstname.strip() + ' ' + full_name
         return full_name
 
     @property
@@ -501,9 +499,9 @@ class Student(Model):# PR2018-06-06, 2018-09-05
                             firstnames = firstnames + item[:1] + ' ' # write of the next firstnames only the first letter
         if firstnames:
             full_name = full_name + ', ' + firstnames
-        if self.prefix: # put prefix at the front
+        if self.prefix: # put prefix at the end
             prefix = str(self.prefix)
-            full_name = prefix.strip() + ' ' + full_name
+            full_name = full_name + ' ' + prefix.strip()
         full_name = full_name.strip()
         return full_name
 
@@ -604,7 +602,7 @@ class Student_log(Model):
 # ====Studentresult=============
 class Studentresult(Model):# PR2018-11-10
     objects = CustomManager()
-
+    # TODO 2019-01-13: make table with row per tv, set realtion one-to-many
     student = OneToOneField(Student, related_name='studentresult', on_delete=CASCADE)
 
     diplomanumber = CharField(db_index=True, max_length=10, null=True, blank=True)
@@ -1036,7 +1034,7 @@ class Resultnote_log(Model):
 class Studentsubject(Model):
     objects = CustomManager()
 
-    studentresult = ForeignKey(Studentresult, related_name='studres_studsubs', on_delete=PROTECT)
+    student = ForeignKey(Student, related_name='studres_studsubs', on_delete=PROTECT)
     schemeitem = ForeignKey(Schemeitem, related_name='schemeitem_studsubs', on_delete=PROTECT)
     cluster = ForeignKey(Cluster, null=True, blank=True, related_name='cluster_studsubs', on_delete=PROTECT)
     # # #
@@ -1077,9 +1075,9 @@ class Studentsubject(Model):
         # Otherwise a logrecord is created every time the save button is clicked without changes
 
         try:
-            self.original_studentresult = self.studentresult
+            self.original_student = self.student
         except:
-            self.original_studentresult = None
+            self.original_student = None
         try:
             self.original_schemeitem = self.schemeitem
         except:
@@ -1111,7 +1109,7 @@ class Studentsubject(Model):
         # PR2018-11-10 initialize here, otherwise delete gives error: 'Examyear' object has no attribute 'examyear_mod'
         # # # various fields - 6 fields
         self.diplomanumber_mod = False
-        self.studentresult_mod = False
+        self.student_mod = False
         self.schemeitem_mod = False
         self.cluster_mod = False
         self.is_extra_subject_mod = False
@@ -1135,7 +1133,7 @@ class Studentsubject(Model):
 
     def save(self, *args, **kwargs):  # # PR2018-11-24 called by subject.save(self.request) in SubjectEditView.form_valid
         self.request = kwargs.pop('request', None)
-        logger.debug('Studentsubject Model save self.request: ' + str(self.request) + ' type: ' + str(type(self.request)))
+        # logger.debug('Studentsubject Model save self.request: ' + str(self.request) + ' type: ' + str(type(self.request)))
 
         # check if data has changed. If so: save object
         if self.data_has_changed():
@@ -1149,7 +1147,10 @@ class Studentsubject(Model):
         self.data_has_changed('d')
         # save to logfile before deleting record
         self.save_to_log()
+
+        logger.debug('Studentsubject Model before delete.')
         super(Studentsubject, self).delete(*args, **kwargs)
+        logger.debug('Studentsubject Model after delete.')
 
     def save_to_log(self): # PR2018-11-24
 
@@ -1159,7 +1160,7 @@ class Studentsubject(Model):
         Studentsubject_log.objects.create(
             studentsubject_id=self.id,  # self.id gets its value in super(School, self).save
 
-            studentresult = self.studentresult,
+            student = self.student,
             schemeitem = self.schemeitem,
             cluster = self.cluster,
             is_extra_subject = self.is_extra_subject,
@@ -1190,7 +1191,7 @@ class Studentsubject(Model):
         # returns True when the value of one or more fields has changed PR2018-08-26
         self.is_update = self.id is not None # self.id is None before new record is saved
 
-        self.studentresult_mod = self.original_studentresult != self.studentresult
+        self.student_mod = self.original_student != self.student
         self.schemeitem_mod = self.original_schemeitem != self.schemeitem
         self.cluster_mod = self.original_cluster != self.cluster
         self.is_extra_subject_mod = self.original_is_extra_subject != self.is_extra_subject
@@ -1216,7 +1217,7 @@ class Studentsubject(Model):
         data_changed_bool = (
             not self.is_update or
 
-            self.studentresult_mod or
+            self.student_mod or
             self.schemeitem_mod or
             self.cluster_mod or
             self.is_extra_subject_mod or
@@ -1249,8 +1250,60 @@ class Studentsubject(Model):
             # override mode on delete
             self.mode = mode
 
-        logger.debug('Studentsubject Model data_changed_bool: ' + str(data_changed_bool) + ' type: ' + str(type(data_changed_bool)))
+        # logger.debug('Studentsubject Model data_changed_bool: ' + str(data_changed_bool) + ' type: ' + str(type(data_changed_bool)))
         return data_changed_bool
+
+
+#  ++++++++++  Class methods  +++++++++++++++++++++++++++
+    @classmethod
+    def get_studsubj_list(cls, student):  # PR2019-02-08
+        studentsubject = cls.objects.filter(student=student).order_by('schemeitem__subject__sequence', 'schemeitem__subjecttype__sequence').all()
+        studentsubject_list = []
+        for item in studentsubject:
+            pws_title = ''
+            pws_subjects = ''
+            if item.pws_title:
+                pws_title = item.pws_title
+            if item.pws_subjects:
+                pws_subjects = item.pws_subjects
+            sequence = item.schemeitem.subject.sequence * 1000 + item.schemeitem.subjecttype.sequence
+            studentsubject_list.append({
+                'mode': '-',
+                'studsubj_id': item.id,
+                'stud_id': item.student.id,
+                'ssi_id': item.schemeitem.id,
+                'subj_id': item.schemeitem.subject.id,
+                'subj_name': item.schemeitem.subject.name,
+                'sjtp_id': item.schemeitem.subjecttype.id,
+                'sjtp_name': item.schemeitem.subjecttype.abbrev,
+                'sjtp_one': (0, 1)[item.schemeitem.subjecttype.one_allowed],
+                'sequence': sequence,
+                'extra_nocount': (0, 1)[item.is_extra_subject],
+                'extra_counts': (0, 1)[item.is_extra_subject_counts],
+                'choice_combi': (0, 1)[item.is_choice_combi],
+                'pws_title': pws_title,
+                'pws_subjects': pws_subjects
+            })
+
+            #schemeitem = ForeignKey(Schemeitem, related_name='schemeitem_studsubs', on_delete=PROTECT)
+            #cluster = ForeignKey(Cluster, null=True, blank=True, related_name='cluster_studsubs', on_delete=PROTECT)
+            # # #
+            #is_extra_subject = BooleanField(default=False)
+            #is_extra_subject_counts = BooleanField(default=False)
+            #is_choice_combi = BooleanField(default=False)
+            # # # profielwerkstuk / sectorwerkstuk
+            #pws_title = CharField(max_length=80, null=True, blank=True)
+            #pws_subjects = CharField(max_length=80, null=True, blank=True)
+
+        return studentsubject_list
+
+
+
+
+
+
+
+
 
 # PR2018-06-06
 class Studentsubject_log(Model):
@@ -1259,7 +1312,7 @@ class Studentsubject_log(Model):
 
     # # #
     # TODO: refer to log table
-    studentresult = ForeignKey(Studentresult, null=True, related_name='+', on_delete=PROTECT)
+    student = ForeignKey(Student, null=True, related_name='+', on_delete=PROTECT)
     schemeitem = ForeignKey(Schemeitem, null=True, related_name='+', on_delete=PROTECT)
     cluster = ForeignKey(Cluster, null=True, related_name='+', on_delete=PROTECT)
     # # #
@@ -1290,7 +1343,7 @@ class Studentsubject_log(Model):
     endgrade_final_status = CharField(max_length=12, null=True)
 
     # # #
-    studentresult_mod = BooleanField(default=False)
+    student_mod = BooleanField(default=False)
     schemeitem_mod = BooleanField(default=False)
     cluster_mod = BooleanField(default=False)
     # # #

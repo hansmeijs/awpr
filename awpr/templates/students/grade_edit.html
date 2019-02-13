@@ -16,7 +16,7 @@
         <img src="{% static 'img/padlock.gif' %}" height="16" width="16">
       {% endif %}
     </li>
-    <li class="breadcrumb-item"><a href="{% url 'studentsubject_list_url' %}">{% trans 'Student subjects' %}</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'studentsubject_url' %}">{% trans 'Student subjects' %}</a></li>
     <li class="breadcrumb-item active">{{ grade }}</li>
   </ol>
 {% endblock %}

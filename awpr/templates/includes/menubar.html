@@ -6,11 +6,14 @@
       <div class="container">
           <ul class="navbar-nav mr-auto">
             <li class="nav-item active">
-              <a class="nav-link" href="/">{% trans 'Home' %}</a>
+              <a class="nav-link" href="/">
+                  {% trans 'Home' %}
+              </a>
             </li>
           </ul>
       </div>
     </nav>
+
   {% else %}
 
     <nav class="navbar navbar-expand-md navbar-light bg-light">
@@ -30,7 +33,7 @@
             {% for menu_item in menu_items %}
                 <svg id="{{menu_item.svg_index}}" height="{{menu_item.height}}" width="{{menu_item.width}}">
                     <a href="{{menu_item.href}}" >
-                        <polygon id="'id_plg' +{{menu_item.index}}" points="{{menu_item.points}}" style="{{menu_item.style}}" />
+                        <polygon id="'id_plg' +{{menu_item.index}}" points="{{menu_item.points}}" style="{{menu_item.style}}"></polygon>
                         <text id="'id_txt' +{{menu_item.index}}"
                             x="{{menu_item.x}}"
                             y="{{menu_item.y}}"
@@ -47,6 +50,8 @@
         </div>  <!--  class="collapse navbar-collapse"  -->
       </div> <!-- class=container -->
     </nav>
+
+
     <nav class="navbar navbar-expand-md navbar-light bg-light">
       <div class="container">
           <div  class="d-flex flex-wrap" id="id_dflex_sub" >
@@ -57,86 +62,30 @@
                     <img src="{% static 'img/hourglass.gif' %}" href="{% url 'home' %}" height="16" width="16">
                 </li>
 -->
-            {% for sub_item in sub_items %}
-                {% if sub_item.dropdown %}
-                    <li class="nav-item dropdown">
-                      <a class="nav-link dropdown-toggle" href="https://example.com" id="drdo_students" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        {% trans 'Students' %}
-                      </a>
-                      <div class="dropdown-menu" aria-labelledby="drdo_students">
-                        <a class="dropdown-item" href="{% url 'student_list_url' %}">{% trans 'Students' %}</a>
-                        <a class="dropdown-item" href="{% url 'studentresult_list_url' %}">{% trans 'Student results' %}</a>
-                        <a class="dropdown-item" href="{% url 'studentsubject_list_url' %}">{% trans 'Student subjects' %}</a>
-                        <a class="dropdown-item" href="{% url 'grade_list_url' %}">{% trans 'Student grades' %}</a>
-                      </div>
-                    </li>
-                    </li>
-                {% else %}
-                    <li class="nav-item">
-                        <a class="{{sub_item.class}}" href="{{sub_item.href}}">
-                            {{sub_item.caption}}
-                        </a>
-                    </li>
-                {% endif %}
-
-
-            {% endfor %}
-
-
-
-              <!--
-                <li class="nav-item active">
-                  <a class="nav-link" href="/">Home<span class="sr-only">(current)</span></a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="{% url 'country_formset_url' %}">{% trans 'Countries formset' %}</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="{% url 'country_list_url' %}">{% trans 'Countries' %}</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="{% url 'examyear_list_url' %}">{% trans 'Exam years' %}</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="{% url 'school_list_url' %}">{% trans 'Schools' %}</a>
-                </li>
-
-                <li class="nav-item dropdown">
-                  <a class="nav-link dropdown-toggle" href="https://example.com" id="drdo_students" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    {% trans 'Students' %}
-                  </a>
-                  <div class="dropdown-menu" aria-labelledby="drdo_students">
-                    <a class="dropdown-item" href="{% url 'student_list_url' %}">{% trans 'Students' %}</a>
-                    <a class="dropdown-item" href="{% url 'studentresult_list_url' %}">{% trans 'Student results' %}</a>
-                    <a class="dropdown-item" href="{% url 'studentsubject_list_url' %}">{% trans 'Student subjects' %}</a>
-                    <a class="dropdown-item" href="{% url 'grade_list_url' %}">{% trans 'Student grades' %}</a>
-                  </div>
-                </li>
-
-                <li class="nav-item">
-                  <a class="nav-link" href="{% url 'subject_list_url' %}">{% trans 'Subjects' %}</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link disabled" href="#">Disabled</a>
-                </li>
-                <li class="nav-item dropdown">
-                  <a class="nav-link dropdown-toggle" href="https://example.com" id="dropdown04" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{% trans 'Departments' %}</a>
-                  <div class="dropdown-menu" aria-labelledby="dropdown04">
-                    <a class="dropdown-item" href="{% url 'department_list_url' %}">{% trans 'Departments' %}</a>
-                    <a class="dropdown-item" href="{% url 'level_list_url' %}">{% trans 'Levels' %}</a>
-                    <a class="dropdown-item" href="{% url 'sector_list_url' %}">{% trans 'Sectors' %}</a>
-                    <a class="dropdown-item" href="{% url 'subjecttype_list_url' %}">{% trans 'Subject types' %}</a>
-                    <a class="dropdown-item" href="{% url 'scheme_list_url' %}">{% trans 'Schemes' %}</a>
-                    <a class="dropdown-item" href="{% url 'schemeitem_list_url' %}">{% trans 'Scheme-items' %}</a>
-                  </div>
-                </li>
-                -->
-
-
+                {% for sub_item in sub_items %}
+                    {% if sub_item.dropdown %}
+                        <li class="nav-item dropdown">
+                          <a class="nav-link dropdown-toggle" href="https://example.com" id="drdo_students" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            {% trans 'Students' %}
+                          </a>
+                          <div class="dropdown-menu" aria-labelledby="drdo_students">
+                            <a class="dropdown-item" href="{% url 'student_list_url' %}">{% trans 'Students' %}</a>
+                            <a class="dropdown-item" href="{% url 'studentresult_list_url' %}">{% trans 'Student results' %}</a>
+                            <a class="dropdown-item" href="{% url 'studentsubject_url' %}">{% trans 'Student subjects' %}</a>
+                            <a class="dropdown-item" href="{% url 'grade_list_url' %}">{% trans 'Student grades' %}</a>
+                          </div>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="{{sub_item.class}}" href="{{sub_item.href}}">
+                                {{sub_item.caption}}
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
 
               </ul>
           </div>  <!--  class="d-flex flex-wrap"  -->
-        </div> <!-- class=collapse  -->
       </div> <!-- class=container -->
     </nav>
 

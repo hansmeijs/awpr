@@ -530,8 +530,8 @@ def get_schooldefault_choices_all(request_user):
 
 def get_depbase_list_field_sorted_zerostripped(depbase_list):  # PR2018-08-23
     # sort depbase_list. List ['16', '15', '0', '18'] becomes ['0', '15', '16', '18'].
-    # Sorted list is necessary, otherwise data_has_changed will not work properly
-    # PR2018-08-27 debug. ALso remove value '0'
+    # Sorted list is necessary, otherwise data_has_changed will not work properly (same values in different order gives modified=True)
+    # PR2018-08-27 debug. Also remove value '0'
     # function will store depbase_list as: [;15;16;18;] with delimiters at the beginning and end,
     # so it can filter depbase_list__contains =";15;"
     if depbase_list:
@@ -558,6 +558,7 @@ def get_depbase_list_field_sorted_zerostripped(depbase_list):  # PR2018-08-23
     else:
         return None
 
+
 def get_tuple_from_list_str(list_str):  # PR2018-08-28
     # get_tuple_from_list_str converts list_str string into tuple,
     # e.g.: list_str='1;2' will be converted to list_tuple=(1,2)
@@ -572,6 +573,7 @@ def get_tuple_from_list_str(list_str):  # PR2018-08-28
             pass
     # logger.debug('get_tuple_from_list_str tuple list_tuple <' + str(list_tuple) + '> Type: " + str(list_tuple))
     return list_tuple
+
 
 def id_found_in_list(id_str='', list_str='', value_at_empty_list = False):  # PR2018-11-22
     # Function searches for id in string,

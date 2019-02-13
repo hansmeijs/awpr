@@ -129,10 +129,12 @@ class StudentAddForm(ModelForm):  # PR2018-08-09
 class StudentEditForm(ModelForm):  # PR2018-08-11
     class Meta:
         model = Student
-        fields = ('school', 'department', 'lastname', 'firstname', 'prefix', 'gender', 'idnumber', 'birthdate')
+        fields = ('school', 'department', 'level', 'sector', 'lastname', 'firstname', 'prefix', 'gender', 'idnumber', 'birthdate')
         labels = {
             "school": _('School'),
             "department": _('Department'),
+            "level": _('Level'),
+            "sector": _('Sector'),
             "lastname": _('Last name'),
             "firstname": _('First name'),
             "prefix": _('Prefix'),
@@ -194,7 +196,7 @@ class StudentresultEditForm(ModelForm):  # PR2018-11-21
 class StudentsubjectAddForm(ModelForm):  # PR2018-11-27
     class Meta:
         model = Studentsubject
-        fields = ( 'studentresult', 'schemeitem',  'cluster',
+        fields = ( 'schemeitem',  'cluster',
             'is_extra_subject', 'is_extra_subject_counts', 'is_choice_combi',
             'pws_title', 'pws_subjects',
             'has_exemption', 'has_tv02', 'has_tv03', 'has_pok', 'has_pok_status',
@@ -237,7 +239,7 @@ class StudentsubjectFormsetForm(ModelForm):  # PR2018-11-29
 
 StudentsubjectFormset = modelformset_factory(
     Studentsubject,
-    fields=('pws_title', 'studentresult'),
+    fields=('pws_title',),
     extra=1,
     widgets={'pws_title': TextInput(attrs={
         'class': 'form-control',

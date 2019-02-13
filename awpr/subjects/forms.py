@@ -1,6 +1,6 @@
 # PR2018-07-20
 from django.core.exceptions import ValidationError
-from django.forms import Form, ModelForm, CharField, ChoiceField, MultipleChoiceField, SelectMultiple
+from django.forms import Form, ModelForm, CharField, BooleanField, MultipleChoiceField, SelectMultiple
 from django.forms import TextInput, URLField, URLInput
 from django.forms.formsets import BaseFormSet
 
@@ -203,8 +203,12 @@ class SectorEditForm(ModelForm):  # PR2018-08-24
 class SubjecttypeAddForm(ModelForm):
     class Meta:
         model = Subjecttype
-        fields = ('name', 'abbrev', 'sequence')
-        labels = {'name': _('Name'), 'abbrev': _('Abbreviation'), 'sequence': _('Sequence')}
+        fields = ('examyear', 'name', 'abbrev', 'sequence','has_pws', 'one_allowed')
+        labels = {'examyear': _('Exam year'), 'name': _('Name'),
+                  'abbrev': _('Abbreviation'),
+                  'sequence': _('Sequence'),
+                  'has_pws': _('Has werkstuk'),
+                  'one_allowed': _('One allowed')}
 
     # PR2018-06-09 from https://stackoverflow.com/questions/16205908/django-modelform-not-required-field/30403969?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
     # called by SubjectdefaultAddForm(request=request) in SubjectdefaultAddView.get and -.post
@@ -229,6 +233,11 @@ class SubjecttypeAddForm(ModelForm):
             # validators=[validate_unique_subjecttype_abbrev(self.request.user.examyear)]
         )
 
+        # ======= field 'one allowed' ============
+        self.fields['one_allowed'] = BooleanField(
+            help_text= _('If checked, student can only have one subject of this subject type.')
+        )
+
         # ======= field 'depbase_list' ============
         # in AddMode: get examyear from request.user
         dep_choices = Department.depbase_list_choices(examyear=self.request.user.examyear)
@@ -239,11 +248,19 @@ class SubjecttypeAddForm(ModelForm):
             label=_('Departments')
         )
 
+
 class SubjecttypeEditForm(ModelForm):  # PR2018-08-11
     class Meta:
         model = Subjecttype
-        fields = ('examyear', 'name', 'abbrev', 'code', 'sequence')
-        labels = {'examyear': _('Exam year'),  'name': _('Name'), 'abbrev': _('Abbreviation'), 'sequence': _('Sequence')}
+        fields = ('examyear', 'name', 'abbrev', 'code', 'sequence', 'has_pws', 'one_allowed')
+        labels = {'examyear': _('Exam year'),
+                  'name': _('Name'),
+                  'abbrev': _('Abbreviation'),
+                  'sequence': _('Sequence'),
+                  'has_pws': _('Has werkstuk'),
+                  'one_allowed': _('One allowed')}
+
+
 
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)  # To get request.user. Do not use kwargs.pop('user', None) due to potential security hole
@@ -264,6 +281,12 @@ class SubjecttypeEditForm(ModelForm):  # PR2018-08-11
         self.fields['abbrev'] = CharField(
             # validators=[validate_unique_subjecttype_abbrev(self.request.user.examyear, self.this_instance)]
         )
+
+        # ======= field 'one allowed' ============
+        self.fields['one_allowed'] = BooleanField(
+            help_text= _('If checked, student can only have one subject of this subject type.')
+        )
+
 
         # ======= field 'depbase_list' ============
         # in EditMode: get country from current record
@@ -288,7 +311,6 @@ class SubjecttypeEditForm(ModelForm):  # PR2018-08-11
         #     initial=__initial_is_active)
 
 
-
 # === Schemeitem =====================================
 class SchemeitemAddForm(ModelForm): # PR2018-08-24
     class Meta:
@@ -297,20 +319,16 @@ class SchemeitemAddForm(ModelForm): # PR2018-08-24
         labels = {'department': _('Department'), 'level': _('Level'), 'sector': _('Sector'), 'name': _('Name')}
 
 
-        fields = ('school',
-                  'scheme',
+        fields = ('scheme',
                   'subject',
                   'subjecttype',
                   'gradetype',
-                  'sequence',
                   'weightSE',
                   'weightCE',
                   'is_mandatory',
                   'is_combi',
                   'choicecombi_allowed',
-                  'has_practexam',
-                  'is_template',
-                  'is_voided_id',
+                  'has_practexam'
                   )
 
         labels = {
@@ -321,9 +339,7 @@ class SchemeitemAddForm(ModelForm): # PR2018-08-24
             'is_mandatory': _('Mandatory'),
             'is_combi': _('Combi subject'),
             'choicecombi_allowed': _('Choice combi'),
-            'has_practexam': _('Has practical exam'),
-            'is_template': _('Template'),
-            'is_voided_id': _('Voided')}
+            'has_practexam': _('Has practical exam')}
 
 
     def __init__(self, *args, **kwargs):
@@ -335,15 +351,14 @@ class SchemeitemAddForm(ModelForm): # PR2018-08-24
 class SchemeitemEditForm(ModelForm):  # PR2018-08-11
     class Meta:
         model = Schemeitem
-        fields = ('school', 'scheme', 'subject', 'subjecttype', 'gradetype', 'sequence', 'weightSE', 'weightCE',
-                  'is_mandatory', 'is_combi', 'choicecombi_allowed', 'has_practexam', 'is_template', 'is_voided_id')
+        fields = ('scheme', 'subject', 'subjecttype', 'gradetype', 'weightSE', 'weightCE',
+                  'is_mandatory', 'is_combi', 'choicecombi_allowed', 'has_practexam')
 
         labels = {'subjecttype': _('Subject type'), 'gradetype': _('Grade type'),
                   'weightSE': _('SE weight'), 'weightCE': _('CE weight'),
                   'is_mandatory': _('Mandatory'), 'is_combi': _('Combination'),
                   'choicecombi_allowed': _('Choice combi allowed'),
-                  'has_practexam': _('Practical exam'),
-                  'is_template': _('Template'), 'is_voided_id': _('Voided')}
+                  'has_practexam': _('Practical exam')}
 
 
     def __init__(self, *args, **kwargs):
@@ -384,7 +399,7 @@ class SchemeEditForm(ModelForm):  # PR2018-08-11
         self.request = kwargs.pop('request', None)  # To get request.user. Do not use kwargs.pop('user', None) due to potential security hole
         # self.src = kwargs.pop('src', None)
         super(SchemeEditForm, self).__init__(*args, **kwargs)
-        #self.this_instance = kwargs.get('instance')
+        self.this_instance = kwargs.get('instance')
 
         # TODO: country en examyear not showing in header
 
@@ -397,6 +412,27 @@ class SchemeEditForm(ModelForm):  # PR2018-08-11
         # self.initial['department_list'] = self.this_instance.department
 
 
+        # ======= field 'fields_list' ============ PR2019-01-19
+        # field_choices(('chco', 'Keuze-combi toegestaan'), ('prac', 'Praktijkexamen'))
+        field_choices = c.SCHEMEFIELD_CHOICES
+        logger.debug('field_choices' + str(field_choices))
+
+        # this_instance.fields = ';chco;prac;'
+        # init_fields = ['chco', 'prac']
+        init_fields = []
+        if self.this_instance.fields:
+            for value in self.this_instance.fields.split(';'):
+                if value:
+                    init_fields.append(value)
+
+        self.fields['fields_field'] = MultipleChoiceField(
+            required=False,
+            widget=SelectMultiple,
+            choices=field_choices,
+            label=_('Optional fields'),
+            help_text=_('Select the fields that are available in this scheme. Press the Ctrl button to select multiple fields.'),
+            initial= init_fields
+        )
 
 
 

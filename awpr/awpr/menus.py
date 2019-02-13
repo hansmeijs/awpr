@@ -28,12 +28,12 @@ menu_school = {'caption': 'School', 'width': 90, 'height': height, 'pos_x': 45, 
 menu_subjects = {'caption': 'Subjects', 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
                  'indent_left': indent_10, 'indent_right': indent_10,
                  'style_sel': style_sel, 'style_unsel': style_unsel, 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
-                 'submenu': ('subjlst', 'subjtyplst', 'schemlst')
+                 'submenu': ('subjlst', 'subjtyplst', 'schemlst', 'schemitemlst')
                  }
 menu_students = {'caption': 'Students', 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
                  'indent_left': indent_10, 'indent_right': indent_10,
                  'style_sel': style_sel, 'style_unsel': style_unsel, 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
-                 'submenu': ('studlst', 'impstud', 'subjtyplst','schemlst')
+                 'submenu': ('studlst', 'impstud', 'studsubj', 'schemlst')
                  }
 menu_package = {'caption': 'Study program', 'width': 140, 'height': height, 'pos_x': 70, 'pos_y': pos_y,
                       'indent_left': indent_10, 'indent_right': indent_10,
@@ -84,9 +84,14 @@ menubuttons = {
 'subjlst': {'caption': 'Subjects', 'href': 'subject_list_url', 'viewpermits': {'all': 'all'}},
 'subjtyplst': {'caption': 'Subject types', 'href': 'subjecttype_list_url', 'viewpermits': {'all': 'all'}},
 'schemlst': {'caption': 'Subject schemes', 'href': 'scheme_list_url', 'viewpermits': {'all': 'all'}},
+'schemitemlst': {'caption': 'Subject scheme items', 'href': 'schemeitem_list_url', 'viewpermits': {'all': 'all'}},
 'studlst': {'caption': 'Students', 'href': 'student_list_url', 'viewpermits': {'all': 'all'}},
+'studsubj': {'caption': 'Student subjects', 'href': 'studentsubject_url', 'viewpermits': {'system': 'admin', 'school': 'write'}},
+
 'impstud': {'caption': 'Import students', 'href': 'import_student_url', 'viewpermits': {'school': 'admin', 'insp': 'none','system': 'admin'}}
 }
+
+# viewpermits: 'none', 'read', 'write', 'auth', 'admin', 'all'
 
 
 # ---- get  get_saved_submenu_url

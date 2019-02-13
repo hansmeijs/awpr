@@ -118,16 +118,15 @@ class CountryListView(View):
 
 @method_decorator([login_required], name='dispatch')
 class CountrySelectView(View):
-    # PR2018-08-11
+    # PR2018-08-11  only users with role=System can change country
     def get(self, request, pk):
         # TODO go back to 'next' instead of home page
         #_next = request.GET.get('next', 'home')
         # logger.debug('CountrySelectView get _next: ' + str(_next))
 
+        country_selected = None
         if pk is not None:
             country_selected = Country.objects.get_or_none(id=pk)
-        else:
-            country_selected = None
 
         if country_selected is not None:
             # ==========  Validation  ===============
@@ -141,6 +140,7 @@ class CountrySelectView(View):
                 examyear_country_selected =  None
             request.user.country = country_selected
             request.user.examyear = examyear_country_selected
+            # reset selected school and department
             request.user.schoolbase = None
             request.user.depbase = None
             request.user.save(self.request)
@@ -580,6 +580,7 @@ class ExamyearDeleteView(DeleteView):
        else:
           raise Http404 #or return HttpResponse('404_url')
 
+
 @method_decorator([login_required], name='dispatch')
 class ExamyearLogView(View):
 
@@ -597,6 +598,7 @@ class ExamyearLogView(View):
         headerbar_param['examyear'] = examyear
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'examyear_log.html', headerbar_param)
+
 
 @method_decorator([login_required], name='dispatch')
 class ExamyearLockView(View):
@@ -653,6 +655,7 @@ class DepartmentSelectView(View):  # PR2018-08-24 PR2018-11-23
                 return redirect('home')
         return redirect('home')
 
+
 @method_decorator([login_required], name='dispatch')
 class DepartmentAddView(CreateView):
     # PR2018-08-11
@@ -683,6 +686,7 @@ class DepartmentAddView(CreateView):
         else:
             _params = f.get_headerbar_param(request, {'form': form, 'display_school': True})
             return render(request, 'department_add.html', _params)
+
 
 @method_decorator([login_required], name='dispatch')
 class DepartmentEditView(UpdateView):  # PR2018-08-11
@@ -721,6 +725,7 @@ class DepartmentEditView(UpdateView):  # PR2018-08-11
 
         return redirect('department_list_url')
 
+
 @method_decorator([login_required], name='dispatch')
 class DepartmentDeleteView(DeleteView):
     model = Department
@@ -735,6 +740,7 @@ class DepartmentDeleteView(DeleteView):
        else:
           raise Http404 #or return HttpResponse('404_url')
 
+
 @method_decorator([login_required], name='dispatch')
 class DepartmentLogView(View):
     def get(self, request, pk):
@@ -747,7 +753,6 @@ class DepartmentLogView(View):
             'override_school': request.user.role_str}
         _headerbar_param = f.get_headerbar_param(request, _param)
         return render(request, 'department_log.html', _headerbar_param)
-
 
 
 #@method_decorator([login_required], name='dispatch')

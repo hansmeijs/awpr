@@ -562,12 +562,14 @@ class ImportSchemeitemView(View):  # PR2018-11-10
         return render(request, 'import_schemeitem.html', headerbar_param)
 
     def post(self,request):
+        logger.debug('# ===== Import Scheme items =========')
         uploadedfile = request.FILES["excel_file"]
+        logger.debug('uploadedfile: ' + str(uploadedfile))
         wb = openpyxl.load_workbook(uploadedfile)
         # ws_names = wb.sheetnames
         worksheet = wb.worksheets[0]
         excel_data = list()
-        logger.debug('ImportSchemeitemView')
+
         # check if request.user.country is parent of request.user.examyear PR2018-10-18
         if request.user is not None:
             if request.user.examyear is not None and request.user.country is not None and request.user.schoolbase is not None:
@@ -678,6 +680,8 @@ class ImportSchemeitemView(View):  # PR2018-11-10
                                         schemeitem.save(request=self.request)
                                         # logger.debug('subject.id: ' + str(subject.id) + ' .name: ' + str(subject.name) + ' .abbrev: ' + str(subject.abbrev) + ' .sequence: ' + str(subject.sequence))
 
+
+                                        logger.debug('CORRECT???? schemeitem.school: ' + schemeitem.school.name)
                                         excel_data.append(row_data)
 
         return render(request, 'import_schemeitem.html', {"excel_data": excel_data})

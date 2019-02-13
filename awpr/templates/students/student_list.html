@@ -24,7 +24,7 @@
       </div>
     {% endif %}
 
-        <h4>{% trans 'Students' %} {{ school.name }} STUDENT_LIST {{ user.examyear }}</h4>
+        <h4>{% trans 'Students' %} {{ school.name }} {{ user.examyear }}</h4>
 
         <table class="table table table-condensed">
           <thead class="thead-inverse">
@@ -35,8 +35,6 @@
               <th>{% trans 'Birth date' %}</th>
               <th>{% trans 'Birth country' %}</th>
               <th>{% trans 'Birth place' %}</th>
-              <th>{% trans 'Modified by' %}</th>
-              <th>{% trans 'Modified at' %}</th>
             </tr>
           </thead>
           <tbody>
@@ -53,8 +51,6 @@
                 <td>{{ item.birthdate}}</td>
                 <td>{{ item.birthcountry_str}}</td>
                 <td>{{ item.birthcity_str}}</td>
-                <td>{{ item.modified_by }}</td>
-                <td>{{ item.modified_at }}</td>
               </tr>
             {% endfor %}
           </tbody>

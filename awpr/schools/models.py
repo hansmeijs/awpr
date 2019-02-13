@@ -375,6 +375,9 @@ class Department(Model):# PR2018-08-10
     sequence = PositiveSmallIntegerField(default=1)
     level_req = BooleanField(default=True)
     sector_req = BooleanField(default=True)
+    choicecombi_possible = BooleanField(default=False)
+    level_caption = CharField(max_length=20, null=True, blank=True)  # PR2019-01-17
+    sector_caption = CharField(max_length=20, null=True, blank=True)  # PR2019-01-17
 
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
     modified_at = DateTimeField()
@@ -394,6 +397,9 @@ class Department(Model):# PR2018-08-10
         self.original_sequence = self.sequence
         self.original_level_req = self.level_req
         self.original_sector_req = self.sector_req
+        self.original_choicecombi_possible = self.choicecombi_possible
+        self.original_level_caption = self.level_caption
+        self.original_sector_caption = self.sector_caption
 
         """
         # TODO iterate through field list PR2018-08-22
@@ -419,9 +425,9 @@ class Department(Model):# PR2018-08-10
         # Override the save() method of the model to perform validation on every save.
         # https://stackoverflow.com/questions/14470585/how-to-validate-uniqueness-constraint-across-foreign-key-django?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
         # self.full_clean()
-        logger.debug('Department Model self.id: ' + str(self.id) + '> type: ' + str(type(self.id)))
-        logger.debug('Department Model self.level_req: ' + str(self.level_req) + '> type: ' + str(type(self.level_req)))
-        logger.debug('Department Model self.sector_req: ' + str(self.sector_req) + '> type: ' + str(type(self.sector_req)))
+        # logger.debug('Department Model self.id: ' + str(self.id) + '> type: ' + str(type(self.id)))
+        # logger.debug('Department Model self.level_req: ' + str(self.level_req) + '> type: ' + str(type(self.level_req)))
+        # logger.debug('Department Model self.sector_req: ' + str(self.sector_req) + '> type: ' + str(type(self.sector_req)))
 
     # check if data has changed. If so: save object
         if self.data_has_changed():
@@ -465,6 +471,9 @@ class Department(Model):# PR2018-08-10
             sequence = self.sequence,
             level_req = self.level_req,
             sector_req = self.sector_req,
+            choicecombi_possible = self.choicecombi_possible,
+            level_caption = self.level_caption,
+            sector_caption = self.sector_caption,
 
             name_mod = self.name_mod,
             abbrev_mod = self.abbrev_mod,
@@ -472,6 +481,9 @@ class Department(Model):# PR2018-08-10
             sequence_mod = self.sequence_mod,
             level_req_mod = self.level_req_mod,
             sector_req_mod = self.sector_req_mod,
+            choicecombi_possible_mod = self.choicecombi_possible_mod,
+            level_caption_mod=self.level_caption_mod,
+            sector_caption_mod=self.sector_caption_mod,
 
             mode=self.mode,
             modified_by=_modified_by,
@@ -487,6 +499,9 @@ class Department(Model):# PR2018-08-10
         self.sequence_mod = self.original_sequence != self.sequence
         self.level_req_mod = self.original_level_req != self.level_req
         self.sector_req_mod = self.original_sector_req != self.sector_req
+        self.choicecombi_possible_mod = self.original_choicecombi_possible != self.choicecombi_possible
+        self.level_caption_mod = self.original_level_caption != self.level_caption
+        self.sector_caption_mod = self.original_sector_caption != self.sector_caption
 
         data_changed_bool = (
             not self.is_update or
@@ -494,7 +509,10 @@ class Department(Model):# PR2018-08-10
             self.abbrev_mod or
             self.sequence_mod or
             self.level_req_mod or
-            self.sector_req_mod
+            self.sector_req_mod or
+            self.choicecombi_possible_mod or
+            self.level_caption_mod or
+            self.sector_caption_mod
         )
 
         if data_changed_bool:
@@ -521,6 +539,10 @@ class Department(Model):# PR2018-08-10
     @property
     def sector_req_str(self):
         return c.YES_NO_BOOL_DICT.get(self.sector_req)
+
+    @property
+    def choicecombi_possible_str(self):
+        return c.YES_NO_BOOL_DICT.get(self.choicecombi_possible)
 
 #  ++++++++++  Class methods  ++++++++++++++++++++++++
     @classmethod
@@ -570,15 +592,17 @@ class Department(Model):# PR2018-08-10
         # PR2018-08-12 function creates list of depbase_list, used in LevelAddForm, LevelEditForm, SecctorAddForm, SectorEditForm
         # filter by examyear: show only deps of user's examyear (country is parent of examyear)
         # filter by user_schoolbase: show only deps of user's schoolbase
+
         # NIU: add inactive records only when it is the current record (otherwise it will not display in field) PR2018-08-24
+
         # choises must be tuple or list, dictionary gives error: 'int' object is not iterable
-        # depbase_list_choices: [(0, 'None'), (1, 'Vsbo'), (2, 'Havo'), (3, 'Vwo (inactive)')]
+
         # IN USE?? depbase_list_choices_tuple: ((0, 'None'), (1, 'Vsbo'), (2, 'Havo'), (3, 'Vwo')), filter by Country
-        # logger.debug('DepartmentModel depbase_list_choices depbase_list: <' + str(depbase_list) + '> Type: ' + str(type(depbase_list)))
-        # logger.debug(' init_list_str: <' + str(init_list_str) + '> Type: ' + str(type(init_list_str)))
 
         # PR 2018-11-06 depbase_list stores dep_base.id's. In this way you can copy a level etc to next year,
         # without having too look up the dep_id of that year
+
+        # depbase_list_choices = [(0, 'None'), (11, 'Vsbo'), (12, 'Havo'), (13, 'Vwo')]
         _choices = []
         if examyear:
             # logger.debug('user_country: <' + str(examyear) + '> Type: ' + str(type(examyear)))
@@ -634,7 +658,7 @@ class Department(Model):# PR2018-08-10
                 if show_item:
                     item = (item.base.id, item.abbrev )
                     _choices.append(item)
-        # logger.debug('depbase_list_choices _choices = ' + str(_choices))
+        logger.debug('depbase_list_choices _choices = ' + str(_choices))
         return _choices
 
 
@@ -657,14 +681,58 @@ class Department(Model):# PR2018-08-10
                         _abbrev = item.abbrev
                         _level_req_str = 'true' if item.level_req else 'false'
                         _sector_req_str = 'true' if item.sector_req else 'false'
+                        _choicecombi_possible_str = 'true' if item.choicecombi_possible else 'false'
 
                         attr[_id_str] = {
                             'abbrev': _abbrev,
                             'level_req':_level_req_str,
-                            'sector_req':_sector_req_str
+                            'sector_req':_sector_req_str,
+                            'chcom_poss':_choicecombi_possible_str
                         }
         # logger.debug('attr: ' + str(attr))
         return attr
+
+    @classmethod
+    def get_select_list(cls, request_user):  # PR2019-01-14
+    # function creates list of departments of this examyear
+    # when role = school: filter dep_list of school
+    # used in table select_dep in schemeitemlist
+    # select_list: {id: 32, name: "Cultuur en Maatschappij", abbrev: "c&m", depbase_list: ""}
+        select_list = []
+        if request_user is not None:
+            if request_user.examyear is not None:
+        # if role = school: filter by school.deplist: ";11;12;13;"
+                depbase_list = ''
+        # TODO: remove 'or request_user.is_role_insp_or_syst', this is just for testing
+                if request_user.is_role_school or request_user.is_role_insp_or_system:
+                    school = School.get_by_user_schoolbase_examyear(request_user)
+                    if school:
+                        depbase_list = school.depbase_list
+
+                deps = cls.objects.filter(examyear=request_user.examyear)
+                for dep in deps:
+                    skip_add = False
+         # allways add dep when depbase_list of school is empty
+                    if depbase_list:
+                        skip_add = not (';' + str(dep.base.id) + ';') in depbase_list
+                    if not skip_add:
+                        level_caption = '-'
+                        sector_caption = '-'
+                        if dep.level_caption:
+                            level_caption = dep.level_caption
+                        if dep.sector_caption:
+                            sector_caption = dep.sector_caption
+                        select_list.append( {
+                            "id": dep.id,
+                            "name": dep.name,
+                            "abbrev": dep.abbrev,
+                            "level_req": dep.level_req,
+                            "sector_req": dep.sector_req,
+                            "chcom_poss": dep.choicecombi_possible,
+                            "level_caption": level_caption,
+                            "sector_caption": sector_caption,
+                        })
+        return select_list
 
 
 # PR2018-06-06
@@ -681,12 +749,17 @@ class Department_log(Model):
     sequence = PositiveSmallIntegerField()
     level_req = BooleanField(default=True)
     sector_req = BooleanField(default=True)
+    choicecombi_possible = BooleanField(default=False)
+    level_caption = CharField(max_length=20, null=True)
+    sector_caption = CharField(max_length=20, null=True)
 
     name_mod = BooleanField(default=False)
     abbrev_mod = BooleanField(default=False)
     sequence_mod = BooleanField(default=False)
     level_req_mod = BooleanField(default=False)
     sector_req_mod = BooleanField(default=False)
+    level_caption_mod = BooleanField(default=False)
+    sector_caption_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
@@ -702,6 +775,11 @@ class Department_log(Model):
     @property
     def sector_req_str(self):
         return c.YES_NO_BOOL_DICT.get(self.sector_req)
+
+    @property
+    def choicecombi_possiblestr(self):
+        return c.YES_NO_BOOL_DICT.get(self.choicecombi_possible)
+
 
     @property
     def mode_str(self):
@@ -884,6 +962,15 @@ class School(Model):  # PR2018-08-20 PR2018-11-11
 
 #  ++++++++++  Class methods  ++++++++++++++++++++++++
 
+    @classmethod  # PR1019-01-15
+    def get_by_user_schoolbase_examyear(cls, request_user):
+        school = None
+        if request_user:
+            if request_user.schoolbase and request_user.examyear:
+                school = cls.objects.filter(base=request_user.schoolbase, examyear=request_user.examyear).first()
+        return school
+
+
     @classmethod
     def school_choices(cls, request_user):
         #PR2018-11-02 school_choices is used in User_add Form.
@@ -1045,7 +1132,6 @@ class Entrylist(Model):
     bool02 = BooleanField(default=False)
     date01 = DateTimeField(null=True)
     date02 = DateTimeField(null=True)
-
 
 
 class Schoolsetting(Model):  # PR2018-12-02

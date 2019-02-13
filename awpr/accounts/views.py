@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required  # PR2018-04-01
 from django.contrib.auth.mixins import UserPassesTestMixin  # PR2018-11-03
 from django.contrib.sites.shortcuts import get_current_site
 from django.contrib import messages
-from django.http import HttpResponse
+from django.core.mail import send_mail
 from django.shortcuts import render, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
@@ -31,6 +31,7 @@ from schools.models import Examyear, Schoolbase
 from subjects.models import Department
 from awpr import constants as c
 from awpr import functions as f
+from schools.models import School
 
 import logging
 logger = logging.getLogger(__name__)
@@ -179,9 +180,17 @@ class UserAddView(CreateView):
             # except:
             #     pass
 
-# ======  save field 'Country'  ============ PR2018-08-17
-            # user.examyear get default value user.examyear
+# ======  save field 'Schoolbase'  ============ PR2018-08-17
+            # user with role school needs a schoolbase, otherwise don't save
+            #
 
+            schoolbase_id = form.cleaned_data.get('schoolbase')
+            logger.debug('_schoolbase: '+ str(schoolbase_id))
+
+            if schoolbase_id:
+                school= School.objects.filter(base=schoolbase_id, examyear=request.user.examyear).first()
+                if school:
+                    user.schoolbase = school.base
 
             user.examyear = request.user.examyear
 
@@ -224,6 +233,7 @@ class UserAddView(CreateView):
             # logger.debug('UserAddView post token: ' + str(token))
 
             subject = 'Activate Your AWP online Account'
+            from_email = 'AWP online <noreply@awponline.net>'
             message = render_to_string('account_activation_email.html', {
                 'user': user,
                 'domain': current_site.domain,
@@ -233,8 +243,10 @@ class UserAddView(CreateView):
                 'token': account_activation_token.make_token(user),
             })
             logger.debug('UserAddView post subject: ' + str(subject))
+            # PR2018-12-31 moved from accounts_user to here
             # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
-            user.email_user(subject, message)
+            send_mail(subject, message, from_email, [user.email], fail_silently=False)
+
             logger.debug('UserAddView post message sent. ')
             return redirect('account_activation_sent_url')
         else:

@@ -301,12 +301,14 @@ class ExamyearEditForm(ModelForm):
 class DepartmentAddForm(ModelForm):
     class Meta:
         model = Department
-        fields = ('examyear', 'name', 'abbrev', 'sequence')
+        fields = ('examyear', 'name', 'abbrev', 'sequence', 'level_caption', 'sector_caption')
         labels = {
             'examyear': _('Exam year'),
             'name': _('Name'),
             'abbrev': _('Abbreviation'),
-            'sequence': _('Sequence')
+            'sequence': _('Sequence'),
+            'level_caption': _('Level name'),
+            'sector_caption': _('Sector name')
         }
 
 
@@ -350,15 +352,18 @@ class DepartmentAddForm(ModelForm):
             label=_('Sector / Profiel required'),
             initial=1)
 
+
 class DepartmentEditForm(ModelForm):  # PR2018-08-11
     class Meta:
         model = Department
-        fields = ('examyear', 'name', 'abbrev', 'sequence')
+        fields = ('examyear', 'name', 'abbrev', 'sequence', 'level_caption', 'sector_caption')
         labels = {
             'examyear': _('Exam year'),
             'name': _('Name'),
             'abbrev': _('Abbreviation'),
-            'sequence': _('Sequence')
+            'sequence': _('Sequence'),
+            'level_caption': _('Level name'),
+            'sector_caption': _('Sector name')
         }
 
     def __init__(self, *args, **kwargs):

@@ -139,6 +139,7 @@ a:hover{
 }
 /* ------------------- c_select_file ----------------------*/
 .c_select_file {
+/*
     grid-area: c_select_file;
         -ms-grid-row: 5;
         -ms-grid-column: 1;
@@ -147,6 +148,10 @@ a:hover{
     display: grid;
     grid-gap: 8px;
 
+
+    -webkit-box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+*/
     font-size: 14px;
     line-height: 1.25;
     text-align: center;
@@ -154,39 +159,79 @@ a:hover{
     color: #376191;  /*FooterBackColor Default Schema Blauw donkerblauw */
     background-color: #F5FAFF; /*licht licht blauw; */
 
-    -webkit-box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
 
 }
-/*
-.c_select_file p {
-    font-size: 14px;
-    color: #376191;  /*FooterBackColor Default Schema Blauw donkerblauw */
-    /*padding: 0.15em 0.15em;*/
-/*    line-height: 1.25;
-    displa`y: -ms-grid;
-    display: grid;
-}
-*/
-
 
 /* ------------------- c_link_columns ----------------------*/
+
+/* PR2019-01-05 try flexbox */
+
+.ea_flex {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around /*center /* space-between;  space-around PR2019-01-05 try flexbox */
+    align-items: flex-start;
+    border: 1px solid #2D4E77;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+/*
+    font-size: 14px;
+    line-height: 1.25;
+    text-align: center;
+    padding: 4px 8px;
+
+    color: #fff;
+    background-color: #F5FAFF; *//*licht licht blauw; */
+/*    padding: 20px;
+    border: 2px solid #376191;
+    width: 100%;
+    */
+}
+
+.ea_flex > div {
+    flex: 1;
+    border: 1px solid #2D4E77;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+}
+
+.li_flex {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around /* center /* space-between;  space-around PR2019-01-05 try flexbox */
+    align-items: flex-start
+/*
+    font-size: 14px;
+    line-height: 1.25;
+    text-align: center;
+    padding: 4px 8px;
+*/
+    /*color: #fff;*/
+    /*background-color: #F5FAFF; *//*licht licht blauw; */
+    /*padding: 20px;*/
+    /*border: 2px solid #376191;*/
+    /*width: 100%;*/
+}
+.li_flex > div {
+    flex: 1;
+    border: 1px solid #800000 /* background-color: #800000; dark red*/
+}
+
+
+
 .c_link_columns {
+/*
     grid-area: c_link_columns;
         -ms-grid-row: 5;
         -ms-grid-column: 3;
-
     display: -ms-grid;
     display: grid;
     grid-gap: 8px;
         -ms-grid-columns: 1fr 8px 1fr;
     grid-template-columns: 1fr 1fr;
         -ms-grid-rows: auto 8px auto 8px auto;
-
     grid-template-areas:
         "c_columns_header c_columns_header"
         "c_grid_colExcel c_grid_colAwp"
         "c_grid_colLinked c_grid_colLinked";
+
+*/
 
     font-size: 14px;
     line-height: 1.25;
@@ -206,6 +251,7 @@ a:hover{
     -ms-user-select: none;
     user-select: none;
 }
+
 .c_columns_header {
     -ms-grid-row: 1;
     -ms-grid-column: 1;
@@ -230,12 +276,12 @@ a:hover{
 
 
 .c_colExcelAwp_tr {
-    background-color: #a5c2ff; /*lighter blueish*/
+    /*background-color:    #a5c2ff; lighter blueish*/
     background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */ /* #4A7DBB; /* 'TextboxBackColor Default Schema Blauw medium blauw */
     color: #ffffff;
 
     color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
-    background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+    background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
     text-align: left;
     padding: 4px 8px;
 
@@ -246,22 +292,11 @@ a:hover{
     -ms-user-select: none;
     user-select: none;
 
-    -webkit-transition: background-color 0.5s ease;
-    -o-transition: background-color 0.5s ease;
-    transition: background-color 0.5s easet;
+    -webkit-transition: background-color 0.25s ease;
+    -o-transition: background-color 0.25s ease;
+    transition: background-color 0.25s easet;
 
 }
-
-.c_colExcelAwp_tr :hover {
-    background-color: #6083cc; /*blueish   Needed for IEs */
-    background-color: #a5c2ff; /*lighter blueish*/
-    background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
-    color: #ffffff;
-    -webkit-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */  /* Firefox 3.5 - 3.6 */
-    /* box-shadow: [horizontal offset] [vertical offset] [blur radius] [optional spread radius] [color]; */
-    box-shadow:         3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
-}
-
 
 .c_grid_colAwp {
     -ms-grid-row: 3;
@@ -287,9 +322,9 @@ a:hover{
     -ms-user-select: none;
     user-select: none;
 
-    -webkit-transition: background-color 0.5s ease-in-out;
-    -o-transition: background-color 0.5s ease-in-out;
-    transition: background-color 0.5s ease-in-out;
+    -webkit-transition: background-color 0.25s ease-in-out;
+    -o-transition: background-color 0.25s ease-in-out;
+    transition: background-color 0.25s ease-in-out;
 }
 .c_colAwpExcel_highlighted {
     background-color: #6083cc; /*blueish*/
@@ -299,9 +334,7 @@ a:hover{
     padding: 4px 18px;
 }
 .c_colAwpExcel_hover {
-    background-color: #6083cc; /*blueish   Needed for IEs */
-    background-color: #a5c2ff; /*lighter blueish*/
-    background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    background-color: #7e98b5; /*lgreyish lightblue PR2019-01-05*/
     color: #ffffff;
     -webkit-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */  /* Firefox 3.5 - 3.6 */
     /* box-shadow: [horizontal offset] [vertical offset] [blur radius] [optional spread radius] [color]; */
@@ -319,6 +352,7 @@ a:hover{
     color: #ffffff;
     width: 100%
 }
+
 .c_colLinked_tr {
     background-color: #bd7f7f; /*lighter reddish*/
     text-align: left;
@@ -330,26 +364,21 @@ a:hover{
     -ms-user-select: none;
     user-select: none;
 
-    -webkit-transition: background-color 0.5s ease-in-out;
-    -o-transition: background-color 0.5s ease-in-out;
-    transition: background-color 0.5s ease-in-out;
+    -webkit-transition: background-color 0.25s ease-in-out;
+    -o-transition: background-color 0.25s ease-in-out;
+    transition: background-color 0.25s ease-in-out;
 
 }
+
 .c_colLinked_highlighted {
     background-color: #a21313; /*reddish*/
-    padding: 4px 18px;
 }
-
-td :hover {
-    background-color: #a21313; /*reddish   Needed for IEs */
-    -webkit-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */  /* Firefox 3.5 - 3.6 */
-    /* box-shadow: [horizontal offset] [vertical offset] [blur radius] [optional spread radius] [color]; */
-    box-shadow:         3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
-}
-
 
 .c_colLinked_hover {
-    background-color: #a21313; /*reddish   Needed for IEs */
+
+    background-color: #a75050;  /* geryis red PR2019-01-05
+    /* background-color: #a21313; *//*reddish   Needed for IEs */
+
     -webkit-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */  /* Firefox 3.5 - 3.6 */
     /* box-shadow: [horizontal offset] [vertical offset] [blur radius] [optional spread radius] [color]; */
     box-shadow:         3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
@@ -410,7 +439,7 @@ td :hover {
     background-color: #508abb;
 
     background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */ /* #4A7DBB; /* 'TextboxBackColor Default Schema Blauw medium blauw */
-        color: #ffffff;/*color: #FFFFFF; white */
+    color: #ffffff;/*color: #FFFFFF; white */
 
 
     color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
@@ -543,4 +572,237 @@ td :hover {
     }
 
 
+/* SEARCH */
+.search_container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around /*center /* space-between;  space-around PR2019-01-05 try flexbox */
+    align-items: flex-start;
 
+    /*height: 24px;*/
+    /*width: 100%;*/
+    padding: 4px 8px;
+    margin: 0px; /*these dont work: margin: none; margin: 0;*/
+    /*background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */ /* #4A7DBB; /* 'TextboxBackColor Default Schema Blauw medium blauw */
+
+    background-color: #F5FAFF; */ /*licht licht blauw; */
+    color: #376191;  /* Default Schema Blauw donkerblauw */
+    border: 1px solid #2D4E77;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+}
+
+.search_container_header {
+    display: inline-block;
+    /*height: 36px;*/
+    width: 100%;
+    margin: 0px;
+    padding: 0px 8px;
+    /*  background-color:  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+    /* color: #376191;  /* Default Schema Blauw donkerblauw */
+    /* border: 1px solid #2D4E77;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+}
+
+
+.search_table_div {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+/*    overflow-y: auto;    /* Trigger vertical scroll    */
+/*    overflow-x: hidden;  /* Hide the horizontal scroll */
+/*    border: 1px solid #2D4E77;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+}
+
+.search_table {
+    display: table;
+    padding: 4px 8px;
+    /*margin: 4px 8px;*/
+    border: 1px solid ;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+
+    /*background-color: #800000; /*dark red*/
+    /*background-color: #a21313; /*reddish*/
+    /*background-color: #d7e4f3;/* is even lighter blueish */
+    background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    color: #376191;  /* Default Schema Blauw donkerblauw */
+
+    /* to prevent text selection */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.search_table > thead {
+    display: block;
+   /* background-color: #800000; /*dark red*/
+    color: #ffffff;
+    padding: 2px 8px;
+    border: 1px solid #2D4E77;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+    width: 100%
+
+}
+.search_table > tbody {
+    display: block;
+    /*height: 120px;* set at runtime  */
+    overflow-y: auto;    /* Trigger vertical scroll    */
+    overflow-x: hidden;  /* Hide the horizontal scroll */
+    /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+    /*background-color: #800000; /*dark red*/
+
+}
+
+.search_table_tr {
+    display: block;
+    background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+    background-color: #2d4e7705;
+
+
+    margin-right: auto;
+    margin-left: auto;
+        /*border: #7e98b5 1px solid;*/
+}
+/*.search_table_td {*/
+.search_table_tr > td {
+   /*display:block;*/
+   box-sizing:border-box;
+   padding: 0px 8px;
+}
+
+.search_table_hover {
+    background-color: #7e98b5; /*lgreyish lightblue PR2019-01-05*/
+    background-color: #2d4e7780;
+
+    color: #ffffff;
+    -webkit-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */  /* Firefox 3.5 - 3.6 */
+    /* box-shadow: [horizontal offset] [vertical offset] [blur radius] [optional spread radius] [color]; */
+    box-shadow:         3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
+}
+
+.search_table_highlighted {
+    background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    background-color:  #2d4e77cc;
+    color: #ffffff;
+}
+
+.color_tblhead_grey {
+    /*background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    /*background-color:  #2d4e77cc;*/
+    /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+
+    /*background-color: #7e98b5; /*lgreyish lightblue PR2019-01-05*/
+    /*background-color: #2d4e7780;
+    /*background-color: #F5FAFF; */ /*licht licht blauw; */
+
+    /*background-color: #800000; /*dark red*/
+    background-color: #68696b; /*dark grey */
+    /*background-color: #e4e8ec;  /*light grey */
+
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    /*color: #ffffff;
+    /*color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    /*color: #376191;  /* Default Schema Blauw donkerblauw */
+    /*color: #800000;  /* Default Schema Blauw donkerblauw */
+    color: #68696b; /*dark grey */
+}
+
+.color_tblbody_grey {
+
+    /*background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    /*background-color:  #2d4e77cc;*/
+    /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+
+    /*background-color: #7e98b5; /*lgreyish lightblue PR2019-01-05*/
+    /*background-color: #2d4e7780;
+    /*background-color: #F5FAFF; */ /*licht licht blauw; */
+
+    /*background-color: #800000; /*dark red*/
+    /*background-color: #68696b; /*dark grey */
+    background-color: #e4e8ec;  /*light grey */
+
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    /*color: #ffffff;
+    /*color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    /*color: #376191;  /* Default Schema Blauw donkerblauw */
+    /*color: #800000;  /* Default Schema Blauw donkerblauw */
+    color: #68696b; /*dark grey */
+}
+
+
+
+.color_tblbody_blue {
+
+    /*background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    /*background-color:  #2d4e77cc;*/
+
+    /*background-color: #7e98b5; /*lgreyish lightblue PR2019-01-05*/
+    /*background-color: #2d4e7780;*/
+
+    /*background-color: #e4e8ec;  /*light grey */
+    /*background-color: #800000; /*dark red*/
+    /*background-color: #68696b; /*dark grey */
+    /*background-color: #F5FAFF; */ /*licht licht blauw; */
+    background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    /*color: #ffffff;*/
+    color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    /*color: #376191;  /* Default Schema Blauw donkerblauw */
+    /*color: #800000;  /* Default Schema Blauw donkerblauw */
+}
+
+
+
+
+/* ============   popup window  =================== */
+.stp_container_div {
+    width: 100%;
+    height: 100%;
+    z-index:40;
+    position: absolute;
+    visibility:hidden;
+    display:none;
+    background-color: rgba(11,11,11,0.2);
+}
+.stp_container_show {
+    width: 100%;
+    height: 100%;
+    margin: auto
+    z-index:10;
+    position: relative;
+    visibility: visible;
+    display: block;
+    background-color: rgba(11,11,11,0.2);
+}
+
+.stp_popup {
+    background-color: white;
+    margin: auto;
+    width:300px;
+    position:relative;
+    z-index:11;
+    top: 25%;
+    padding:30px;
+    -webkit-box-shadow:0 0 10px rgba(0,0,0,0.4);
+    -moz-box-shadow:0 0 10px rgba(0,0,0,0.4);
+    box-shadow:0 0 10px rgba(0,0,0,0.4);
+}
+
+.mod_flex {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around /*center /* space-between;  space-around PR2019-01-05 try flexbox */
+    align-items: flex-start;
+    border: none;
+}
+
+.mod_flex > div {
+    flex: 1;
+    padding: 4px 16px;
+    border: none;
+}

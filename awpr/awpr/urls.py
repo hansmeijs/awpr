@@ -214,7 +214,7 @@ urlpatterns = [
 
 # studentsubject PR2018-11-27
     path('studentsubject/', include([
-        path('', student_views.StudentsubjectListView.as_view(), name='studentsubject_list_url'),
+        path('', student_views.StudentsubjectListView.as_view(), name='studentsubject_url'),
         path('add/', student_views.StudentsubjectAddView.as_view(), name='studentsubject_add_url'),
         path('<int:pk>/edit/', student_views.StudentsubjectEditView.as_view(), name='studentsubject_edit_url'),
         path('<int:pk>/formset/', student_views.StudentsubjectFormsetView.as_view(), name='studentsubject_formset_url'),
@@ -244,8 +244,12 @@ urlpatterns = [
 
 # ajax PR2018-12-02
     path('ajax/', include([
+        path('upload_user_settings/', account_views.DownloadSubmenusView.as_view(), name='download_submenus_url'),
         path('import_student_load/', student_views.StudentImportUploadDataView.as_view(), name='import_student_load_url'),
         path('import_student_awpcoldef/', student_views.StudentImportUploadSettingView.as_view(), name='upload_student_mapping_url'),
-        path('upload_user_settings/', account_views.DownloadSubmenusView.as_view(), name='download_submenus_url'),
+        path('ajax_studsubj_download/', student_views.StudentsubjectDownloadView.as_view(), name='ajax_studsubj_download_url'),
+        path('ajax_studsubj_upload/', student_views.StudentsubjectUploadView.as_view(), name='ajax_studsubj_upload_url'),
+        path('ajax_schemeitems_download/', subject_views.SchemeitemsDownloadView.as_view(), name='ajax_schemeitems_download_url'),
+        path('ajax_ssi_upload/', subject_views.SchemeitemUploadView.as_view(), name='ajax_ssi_upload_url'),
     ])),
 ]

@@ -2,7 +2,6 @@
 from django.db.models import Model, ForeignKey, PROTECT, CASCADE, SET_NULL
 from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, EmailField
 from django.contrib.auth.models import AbstractUser, UserManager
-from django.core.mail import send_mail
 from django.core.validators import RegexValidator
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
@@ -296,17 +295,6 @@ class User(AbstractUser):
             self.schoolbase_mod or \
             self.depbase_mod or \
             self.lang_mod
-
-    def email_user(self, *args, **kwargs):
-        # PR2018-04-25 debug. Had wrong number of arguments:
-        # send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
-        send_mail(
-            '{}'.format(args[0]),
-            '{}'.format(args[1]),
-            'AWP online <noreply@awponline.net>',
-            [self.email],
-            fail_silently=False,
-        )
 
     @property
     def role_str(self):

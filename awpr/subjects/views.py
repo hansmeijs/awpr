@@ -5,7 +5,7 @@ from django.core.exceptions import PermissionDenied # PR2018-11-03
 import json # PR2018-10-25
 from django.db import connection
 from django.db.models.functions import Lower
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render, redirect #, get_object_or_404
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
@@ -22,6 +22,7 @@ from subjects.forms import SubjectAddForm, SubjectEditForm, \
     SchemeAddForm, SchemeEditForm, SchemeitemAddForm, SchemeitemEditForm
 
 from awpr import functions as f
+from awpr import constants as c
 
 from django.contrib.auth.mixins import UserPassesTestMixin
 
@@ -52,6 +53,20 @@ class GetFormKwargsMixin(object):
         return super(FormMessageMixin, self).form_invalid(form)
 
 """
+
+# PR2019-01-04 from https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
+from django.utils.functional import Promise
+from django.utils.encoding import force_text
+from django.core.serializers.json import DjangoJSONEncoder
+
+class LazyEncoder(DjangoJSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Promise):
+            return force_text(obj)
+        return super(LazyEncoder, self).default(obj)
+
+
+
 
 # === Level =====================================
 @method_decorator([login_required], name='dispatch')
@@ -87,9 +102,9 @@ class LevelAddView(CreateView):
             # ======  set value 'examyear'  ============
             level.examyear = request.user.examyear
 
-            # ======  save field 'dep_list_field'  ============
-            _clean_dep_list_field = form.cleaned_data.get('dep_list_field')  # Type: <class 'list'>
-            level.dep_list = f.get_depbase_list_field_sorted_zerostripped(_clean_dep_list_field)
+            # ======  save field 'depbase_list_field'  ============
+            _clean_depbase_list_field = form.cleaned_data.get('depbase_list_field')  # Type: <class 'list'>
+            level.depbase_list = f.get_depbase_list_field_sorted_zerostripped(_clean_depbase_list_field)
 
             level.save(request=self.request)
 
@@ -131,10 +146,12 @@ class LevelEditView(UserPassesTestMixin, UpdateView):  # PR2018-08-11
     def form_valid(self, form):
         level = form.save(commit=False)
 
-    # ======  save field 'dep_list_field'  ============
-        _clean_dep_list_field = form.cleaned_data.get('dep_list_field')  # Type: <class 'list'>
-        level.dep_list = f.get_depbase_list_field_sorted_zerostripped(_clean_dep_list_field)
-        # logger.debug('LevelEditView form_valid level.dep_list: <' + str(level.dep_list) + '> Type: ' + str(type(level.dep_list)))
+    # ======  save field 'depbase_list_field'  ============
+        _clean_depbase_list_field = form.cleaned_data.get('depbase_list_field')  # Type: <class 'list'>
+        logger.debug('_clean_depbase_list_field: <' + str(_clean_depbase_list_field) + '> Type: ' + str(type(_clean_depbase_list_field)))
+
+        level.depbase_list = f.get_depbase_list_field_sorted_zerostripped(_clean_depbase_list_field)
+        logger.debug('LevelEditView form_valid level.depbase_list: <' + str(level.depbase_list) + '> Type: ' + str(type(level.depbase_list)))
 
         level.save(request=self.request)
 
@@ -195,9 +212,9 @@ class SectorAddView(CreateView):  # PR2018-08-24
             # ======  set value 'examyear'  ============
             sector.examyear = request.user.examyear
 
-            # ======  save field 'dep_list_field'  ============
-            _clean_dep_list_field = form.cleaned_data.get('dep_list_field')  # Type: <class 'list'>
-            sector.dep_list = f.get_depbase_list_field_sorted_zerostripped(_clean_dep_list_field)
+            # ======  save field 'depnase_list_field'  ============
+            _clean_depbase_list_field = form.cleaned_data.get('depbase_list_field')  # Type: <class 'list'>
+            sector.depbase_list = f.get_depbase_list_field_sorted_zerostripped(_clean_depbase_list_field)
 
             sector.save(request=self.request)
 
@@ -237,10 +254,12 @@ class SectorEditView(UserPassesTestMixin, UpdateView):  #PR2018-09-04
         def form_valid(self, form):
             sector = form.save(commit=False)
 
-            # ======  save field 'dep_list_field'  ============
-            _clean_dep_list_field = form.cleaned_data.get('dep_list_field')  # Type: <class 'list'>
-            sector.dep_list = f.get_depbase_list_field_sorted_zerostripped(_clean_dep_list_field)
-            # logger.debug('SectorEditView form_valid sector.dep_list: <' + str(sector.dep_list) + '> Type: ' + str(type(sector.dep_list)))
+            # ======  save field 'depbase_list_field'  ============
+            _clean_depbase_list_field = form.cleaned_data.get('depbase_list_field')  # Type: <class 'list'>
+            logger.debug('_clean_depbase_list_field: <' + str(_clean_depbase_list_field) + '> Type: ' + str(type(_clean_depbase_list_field)))
+
+            sector.depbase_list = f.get_depbase_list_field_sorted_zerostripped(_clean_depbase_list_field)
+            logger.debug('SectorEditView form_valid sector.depbase_list: <' + str(sector.depbase_list) + '> Type: ' + str(type(sector.depbase_list)))
 
             sector.save(request=self.request)
 
@@ -315,9 +334,9 @@ class SubjecttypeAddView(CreateView):
             # ======  set value 'examyear'  ============
             subjecttype.examyear = request.user.examyear
 
-            # ======  save field 'dep_list_field'  ============
-            _clean_dep_list_field = form.cleaned_data.get('dep_list_field')  # Type: <class 'list'>
-            subjecttype.dep_list = f.get_depbase_list_field_sorted_zerostripped(_clean_dep_list_field)
+            # ======  save field 'depbase_list_field'  ============
+            _clean_depbase_list_field = form.cleaned_data.get('depbase_list_field')  # Type: <class 'list'>
+            subjecttype.depbase_list = f.get_depbase_list_field_sorted_zerostripped(_clean_depbase_list_field)
 
             subjecttype.save(request=self.request)
 
@@ -329,6 +348,7 @@ class SubjecttypeAddView(CreateView):
                 'display_country': True
             })
             return render(request, 'subjecttype_add.html', _param)
+
 
 @method_decorator([login_required], name='dispatch')
 class SubjecttypeEditView(UserPassesTestMixin, UpdateView):  # PR2018-08-11
@@ -359,9 +379,9 @@ class SubjecttypeEditView(UserPassesTestMixin, UpdateView):  # PR2018-08-11
     def form_valid(self, form):
         subjecttype = form.save(commit=False)
 
-    # ======  save field 'dep_list_field'  ============
-        _clean_dep_list_field = form.cleaned_data.get('dep_list_field')  # Type: <class 'list'>
-        subjecttype.dep_list = f.get_depbase_list_field_sorted_zerostripped(_clean_dep_list_field)
+    # ======  save field 'depbase_list_field'  ============
+        _clean_depbase_list_field = form.cleaned_data.get('depbase_list_field')  # Type: <class 'list'>
+        subjecttype.depbase_list = f.get_depbase_list_field_sorted_zerostripped(_clean_depbase_list_field)
 
         subjecttype.save(request=self.request)
 
@@ -483,10 +503,15 @@ class SchemeEditView(UpdateView):  # PR2018-08-24
 
     def form_valid(self, form):
         scheme = form.save(commit=False)
-
+# TODO: scheme has field 'department', not 'dep_list' PR2019-01-18
         # ======  save field 'dep_list_field'  ============
-        _clean_dep_list_field = form.cleaned_data.get('dep_list_field')  # Type: <class 'list'>
-        scheme.dep_list = f.get_depbase_list_field_sorted_zerostripped(_clean_dep_list_field)
+        # _clean_dep_list_field = form.cleaned_data.get('dep_list_field')  # Type: <class 'list'>
+        # scheme.dep_list = f.get_depbase_list_field_sorted_zerostripped(_clean_dep_list_field)
+
+        # ======  save field 'depbase_list_field'  ============
+        _clean_fields_field = form.cleaned_data.get('fields_field')  # Type: <class 'list'>
+        scheme.fields = f.get_depbase_list_field_sorted_zerostripped(_clean_fields_field)
+
 
         scheme.save(request=self.request)
         return redirect('scheme_list_url')
@@ -523,15 +548,55 @@ class SchemeLogView(View):
 class SchemeitemListView(ListView):  # PR2018-11-09
 
     def get(self, request, *args, **kwargs):
-        _param = f.get_headerbar_param(request, {
+        _params = self.get_params(request)
+        return render(request, 'schemeitem_list.html', _params)
+
+
+    def get_params(self, request):
+
+        params = f.get_headerbar_param(request, {
             'display_country': True,
             'select_examyear': True,
         })
-        if request.user.country is not None:
-            if request.user.examyear is not None:
-                schemeitems = Schemeitem.objects.filter(scheme__department__examyear=request.user.examyear)
-                _param.update({'schemeitems': schemeitems})
-        return render(request, 'schemeitem_list.html', _param)
+        #if request.user.country is not None:
+        #    if request.user.examyear is not None:
+        #        schemeitems = Schemeitem.objects.filter(scheme__department__examyear=request.user.examyear)
+        #        params.update({'schemeitems': schemeitems})
+
+
+        # 'deps':
+        # '{"11": {"abbrev": "Vsbo", "level_req": "true", "sector_req": "true"},
+        # "12": {"abbrev": "Havo", "level_req": "true", "sector_req": "true"},
+        # "13": {"abbrev": "Vwo", "level_req": "true", "sector_req": "true"}}',
+
+        # 'levels':
+        # '{"7": {"name": "Theoretisch Kadergerichte Leerweg", "abbrev": "TKL", "sequence": 1, "depbase_list": ";11;"},
+        # "8": {"name": "Praktisch Kadergerichte Leerweg", "abbrev": "PKL", "sequence": 2, "depbase_list": ";11;"},
+        # "9": {"name": "Praktisch Basisgerichte Leerweg", "abbrev": "PBL", "sequence": 3, "depbase_list": ";11;"}}',
+
+        # 'sectors':
+        # '{"29": {"name": "Economie", "abbrev": "ec", "sequence": 1, "depbase_list": ";11;"},
+        # "30": {"name": "Techniek", "abbrev": "tech", "sequence": 2, "depbase_list": ";11;"},
+        # "31": {"name": "Zorg & Welzijn", "abbrev": "z&w", "sequence": 3, "depbase_list": ";11;"},
+        # "32": {"name": "Cultuur en Maatschappij", "abbrev": "c&m", "sequence": 4, "depbase_list": ""},
+        # "33": {"name": "Economie en Maatschappij", "abbrev": "e&m", "sequence": 5, "depbase_list": ";12;13;"},
+        # "34": {"name": "Natuur en Gezondheid", "abbrev": "n&g", "sequence": 6, "depbase_list": ";12;13;"},
+        # "35": {"name": "Natuur en Techniek", "abbrev": "n&t", "sequence": 7, "depbase_list": ";12;13;"}}'
+
+        # filter Departments of request.user.country
+        deps = Department.get_select_list(request.user)
+        params.update({'deps': json.dumps(deps)})
+
+        # filter Levels of request.user.country
+        levels = Level.get_select_list(request.user)
+        params.update({'levels': json.dumps(levels)})
+
+        # filter Sectors of request.user.country
+        sectors = Sector.get_select_list(request.user)
+        params.update({'sectors': json.dumps(sectors)})
+
+        # logger.debug('SchemeitemListView deps: ' + str(deps) + ' Type: ' + str(type(deps)))
+        return  params
 
 
 @method_decorator([login_required], name='dispatch')
@@ -609,7 +674,7 @@ class SchemeitemEditView(UpdateView):  # PR2018-08-24
 
     def form_valid(self, form):
         schemeitem = form.save(commit=False)
-
+        # TODO: scheme has field 'department', not 'dep_list' PR2019-01-18
         # ======  save field 'dep_list_field'  ============
         _clean_dep_list_field = form.cleaned_data.get('dep_list_field')  # Type: <class 'list'>
         schemeitem.dep_list = f.get_depbase_list_field_sorted_zerostripped(_clean_dep_list_field)
@@ -641,6 +706,232 @@ class SchemeitemLogView(View):
         schemeitem = Schemeitem.objects.get(id=pk)
         _param = f.get_headerbar_param(request,  {'schemeitem_log': schemeitem_log, 'schemeitem': schemeitem})
         return render(request, 'schemeitem_log.html', _param)
+
+
+
+
+@method_decorator([login_required], name='dispatch')
+class SchemeitemsDownloadView(View):  # PR2019-01-13
+    # PR2019-01-17
+    def post(self, request, *args, **kwargs):
+
+        # logger.debug(' ============= SchemeitemsDownloadView ============= ')
+        # logger.debug('request.POST' + str(request.POST) )
+        # request.POST<QueryDict: {'dep_id': ['11'], 'lvl_id': ['7'], 'sct_id': ['30']}>
+
+        params = {}
+        if request.user is not None and request.user.examyear is not None:
+
+        # lookup scheme by dep_id, lvl_id (if required) and sct_id (if required)
+            if 'dep_id' in request.POST.keys():
+                dep_id_int = int(request.POST['dep_id'])
+                examyear = request.user.examyear
+                department = Department.objects.filter(id=dep_id_int, examyear=examyear).first()
+                if department:
+                    dep_abbrev = department.abbrev
+                    # logger.debug(dep_abbrev)
+
+                    # lookup level (if required)
+                    level = None
+                    lvl_abbrev = ''
+                    if department.level_req:
+                        if 'lvl_id' in request.POST.keys():
+                            lvl_id_int = int(request.POST['lvl_id'])
+                            level = Level.objects.filter(id=lvl_id_int, examyear=examyear).first()
+                            if level:
+                                lvl_abbrev = level.abbrev
+                    logger.debug(lvl_abbrev)
+
+                    # lookup sector (if required)
+                    sector = None
+                    sct_name = ''
+                    if department.sector_req:
+                        if 'sct_id' in request.POST.keys():
+                            sct_id_int = int(request.POST['sct_id'])
+                            sector = Sector.objects.filter(id=sct_id_int, examyear=examyear).first()
+                            if sector:
+                                sct_name = sector.name
+                    logger.debug(sct_name)
+
+                    # lookup scheme by dep_id, lvl_id (if required) and sct_id (if required)
+                    scheme = None
+                    if level:
+                        if sector:
+                            logger.debug('filter by department, level and sector')
+                            # filter by department, level and sector
+                            # if selection contains multiple schemes: skip
+                            if Scheme.objects.filter(
+                                department=department, level=level, sector=sector
+                            ).count() == 1:
+                                scheme = Scheme.objects.filter(
+                                    department=department, level=level, sector=sector
+                                ).first()
+                        else:
+                            logger.debug('filter by department and level')
+                            # filter by department and level
+                            # if selection contains multiple schemes: skip
+                            if Scheme.objects.filter(
+                                    department=department, level=level
+                            ).count() == 1:
+                                scheme = Scheme.objects.filter(
+                                    department=department, level=level
+                                ).first()
+                    else:
+                        if sector:
+                            logger.debug('filter by department and sector')
+                            # filter by department and sector
+                            # if selection contains multiple schemes: skip
+                            if Scheme.objects.filter(department=department, sector=sector).count() == 1:
+                                scheme = Scheme.objects.filter(department=department, sector=sector).first()
+                        else:
+                            logger.debug('only by department')
+                            # filter only by department
+                            # if selection contains multiple schemes: skip
+                            if Scheme.objects.filter(department=department).count() == 1:
+                                scheme = Scheme.objects.filter(department=department).first()
+
+                    if scheme:
+                        scheme_list_str = scheme.get_scheme_list_str()
+                        params.update({'scheme': scheme_list_str})
+
+                        # make list of all Subjects from this department and examyear (included in dep)
+                        schemeitems = Schemeitem.get_schemeitem_list(scheme)
+                        params.update({'schemeitems': schemeitems})
+
+                        # make list of all Subjects from this department and examyear (included in dep)
+                        subjects = Subject.get_subj_list(department)
+                        params.update({'subjects': subjects})
+
+                        # make list of all Subjecttypes from this department and examyear (included in dep)
+                        subjecttypes = Subjecttype.get_subjtype_list( department)  # PR2019-01-18
+                        params.update({'subjecttypes': subjecttypes})
+
+                        # make list of all gradetypes
+
+                        # GRADETYPE_CHOICES = ((0, 'None'), (1, 'Number'), (2, 'Good/Sufficient/Insufficient'))
+                        gradetypes = []
+                        for item in c.GRADETYPE_CHOICES:
+                            if item[0] > 0:
+                                gradetypes.append({
+                                    'grtp_id': str(item[0]),
+                                    'name': item[1]
+                                })
+                        params.update({'gradetypes': gradetypes})
+
+        #logger.debug('params')
+        # logger.debug(params)
+        return HttpResponse(json.dumps(params))
+
+
+@method_decorator([login_required], name='dispatch')
+class SchemeitemUploadView(View):  # PR2019-01-24
+
+    def post(self, request, *args, **kwargs):
+        logger.debug(' ============= SchemeitemUploadView ============= ')
+
+        # create mode: ssi =  {'mode': 'c', 'scheme_id': '168', 'subj_id': '314', 'wtse': '2', 'wtce': '1',
+        #                       'mand': '1', 'comb': '1', 'chal': '0', 'prac': '0', 'sequ': 60}
+
+        #  update mode: ssi = {'mode': 'u', 'ssi_id': '380', 'scheme_id': '168', 'scm_id': '168', 'subj_id': '314',
+        #                       'wtse': '2', 'wtce': '0', 'mand': '1', 'comb': '1', 'chal': '0', 'prac': '0',
+        #                       'name': 'Duitse taal', 'sequ': '60'}
+
+        #  delete mode: ssi = {"mod":"d", "ssi_id":"393"}
+
+        params = {}
+        if request.user is not None and request.user.examyear is not None:
+            # get sybject scheme item from  request.POST
+            ssi = json.loads(request.POST['ssi'])
+            logger.debug("ssi: " + str(ssi))
+
+            # convert values
+            # ssi_id only necessary when items are updated
+            mode = ssi.get('mode', '')
+            ssi_id = int(ssi.get('ssi_id', '0'))
+            scheme_id = int(ssi.get('scheme_id', '0')) # scheme_id has always value (retrieved form scheme)
+            scm_id = int(ssi.get('scm_id', '0'))  # scm_id = '' scheme_id is retrieved form schemeitem
+            subj_id = int(ssi.get('subj_id', '0'))
+            sjtp_id = int(ssi.get('sjtp_id', '0'))
+
+            # check if scheme_id and scm_id are the same and ssi_id not None (only at update and remove)
+            scm_id_ok = False
+            record_saved = False
+            if scheme_id:
+                if mode == 'c':
+                    scm_id_ok = True
+                elif ssi_id and scm_id == scheme_id:
+                    scm_id_ok = True
+            logger.debug("scm_id_ok: " + str(scm_id_ok))
+
+            if scm_id_ok:
+                # check if scheme exists
+                scheme = Scheme.objects.filter(id=scheme_id).first()
+                if scheme:
+                    if mode == 'd':
+                        # lookup schemeitem
+                        schemeitem = Schemeitem.objects.filter(id=ssi_id).first()
+                        if schemeitem:
+                            schemeitem.delete(request=self.request)
+                            record_saved = True
+                    else:
+                        # check if subject and subjecttype exist
+                        subject = Subject.objects.filter(id=subj_id, examyear=request.user.examyear).first()
+                        subjecttype = Subjecttype.objects.filter(id=sjtp_id, examyear=request.user.examyear).first()
+
+                        logger.debug('scheme: <' + str(scheme) + '> type: ' + str(type(scheme)))
+                        logger.debug('subject: <' + str(subject) + '> type: ' + str(type(subject)))
+                        logger.debug('subjecttype: <' + str(subjecttype) + '> type: ' + str(type(subjecttype)))
+
+                        if subject and subjecttype:
+                            logger.debug("scheme and subject and subjecttype")
+                            if mode == 'c':
+                                # create new schemeitem
+                                schemeitem = Schemeitem(
+                                    scheme=scheme,
+                                    subject=subject,
+                                    subjecttype=subjecttype
+                                )
+                            else:
+                                # lookup schemeitem
+                                schemeitem = Schemeitem.objects.filter(id=ssi_id).first()
+
+                            if schemeitem:
+                                # update mode or create mode
+                                schemeitem.subjecttype = subjecttype
+
+                                # ------------ import values from ssi  -----------------------------------
+                                schemeitem.gradetype = int(ssi.get('grtp_id', '0'))
+                                schemeitem.weightSE = int(ssi.get('wtse', '0'))
+                                schemeitem.weightCE = int(ssi.get('wtce', '0'))
+                                schemeitem.is_mandatory = (ssi.get('mand', '0') == '1')
+                                schemeitem.is_combi = (ssi.get('comb', '0') == '1')
+                                schemeitem.choicecombi_allowed = (ssi.get('chal', '0') == '1')
+                                schemeitem.has_practexam = (ssi.get('prac', '0') == '1')
+
+                                schemeitem.save(request=self.request)
+
+                                record_saved = True
+
+            # renew list of all Subjects from this department and examyear (included in dep)
+            schemeitems = Schemeitem.get_schemeitem_list(scheme)
+            params.update({'schemeitems': schemeitems})
+
+            if not record_saved:
+                if mode == 'c':
+                    err_code = 'err_msg02'
+                elif mode == 'd':
+                    err_code = 'err_msg04'
+                else:
+                    err_code = 'err_msg03'
+                params.update({'err_code': err_code})
+
+        logger.debug("params: " + str(params))
+
+        # PR2019-02-04 was: return HttpResponse(json.dumps(params))
+
+        # return HttpResponse(json.dumps(params, cls=LazyEncoder), mimetype='application/javascript')
+
+        return HttpResponse(json.dumps(params, cls=LazyEncoder))
 
 
 # ========  Subject  =====================================
@@ -679,9 +970,9 @@ class SubjectAddView(CreateView):  # PR2018-08-09
         if form.is_valid():
             subject = form.save(commit=False)
 
-            # ======  save field 'dep_list_field'  ============
-            _clean_dep_list_field = form.cleaned_data.get('dep_list_field')  # Type: <class 'list'>
-            subject.dep_list = f.get_depbase_list_field_sorted_zerostripped(_clean_dep_list_field)
+            # ======  save field 'depbase_list_field'  ============
+            _clean_depbase_list_field = form.cleaned_data.get('depbase_list_field')  # Type: <class 'list'>
+            subject.depbase_list = f.get_depbase_list_field_sorted_zerostripped(_clean_depbase_list_field)
 
             # First create Levelbase record: Levelbase.id is used in Level. Create also saves new record
             # check if request.user.examyear is child of request.user.country PR2018-10-18
@@ -721,10 +1012,10 @@ class SubjectEditView(UpdateView):  # PR2018-10-31
     def form_valid(self, form):
         subject = form.save(commit=False)
 
-    # ======  save field 'dep_list_field'  ============
-        _clean_dep_list_field = form.cleaned_data.get('dep_list_field')  # Type: <class 'list'>
-        subject.dep_list = f.get_depbase_list_field_sorted_zerostripped(_clean_dep_list_field)
-        # logger.debug('SubjectlEditView form_valid subject.dep_list: <' + str(subject.dep_list) + '> Type: ' + str(type(subject.dep_list)))
+    # ======  save field 'depbase_list_field'  ============
+        _clean_depbase_list_field = form.cleaned_data.get('depbase_list_field')  # Type: <class 'list'>
+        subject.depbase_list = f.get_depbase_list_field_sorted_zerostripped(_clean_depbase_list_field)
+        #logger.debug('SubjectlEditView form_valid subject.depbase_list: <' + str(subject.depbase_list) + '> Type: ' + str(type(subject.depbase_list)))
 
         subject.save(request=self.request)
 
@@ -776,13 +1067,13 @@ def load_levels(request):
         if _dep:
             # wrap dep_id in delimiters, so ';1;' can be searched in ";1;15;6;'
             _dep_id_str = ';' + str(_dep_id) + ";"
-            # filter on Country (to be on the safe side, not necessary) and dep_id in dep_list
-            _levels = Level.objects.filter(country=_dep.country, dep_list__contains=_dep_id_str).order_by('sequence')
+            # filter on Country (to be on the safe side, not necessary) and dep_id in depbase_list
+            _levels = Level.objects.filter(country=_dep.country, depbase_list__contains=_dep_id_str).order_by('sequence')
             logger.debug('load_levels _levels ' + str(_levels) + ' Type: ' + str(type(_levels)))
 
             for _level in _levels:
                 logger.debug('load_levels _level ' + str(_level) + ' Type: ' + str(type(_level)))
-                values = [_level.id, _level.dep_list, _level.abbrev]
+                values = [_level.id, _level.depbase_list, _level.abbrev]
 
                 logger.debug('load_levels values: ' + str(values) + ' Type: ' + str(type(values)))
                 items.append(dict(zip(keys, values)))
