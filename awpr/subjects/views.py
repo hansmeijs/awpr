@@ -714,9 +714,9 @@ class SchemeitemLogView(View):
 class SchemeitemsDownloadView(View):  # PR2019-01-13
     # PR2019-01-17
     def post(self, request, *args, **kwargs):
-
         # logger.debug(' ============= SchemeitemsDownloadView ============= ')
         # logger.debug('request.POST' + str(request.POST) )
+
         # request.POST<QueryDict: {'dep_id': ['11'], 'lvl_id': ['7'], 'sct_id': ['30']}>
 
         params = {}
@@ -738,9 +738,9 @@ class SchemeitemsDownloadView(View):  # PR2019-01-13
                         if 'lvl_id' in request.POST.keys():
                             lvl_id_int = int(request.POST['lvl_id'])
                             level = Level.objects.filter(id=lvl_id_int, examyear=examyear).first()
-                            if level:
-                                lvl_abbrev = level.abbrev
-                    logger.debug(lvl_abbrev)
+                            # if level:
+                                # lvl_abbrev = level.abbrev
+                    # logger.debug(lvl_abbrev)
 
                     # lookup sector (if required)
                     sector = None
@@ -749,9 +749,9 @@ class SchemeitemsDownloadView(View):  # PR2019-01-13
                         if 'sct_id' in request.POST.keys():
                             sct_id_int = int(request.POST['sct_id'])
                             sector = Sector.objects.filter(id=sct_id_int, examyear=examyear).first()
-                            if sector:
-                                sct_name = sector.name
-                    logger.debug(sct_name)
+                            #if sector:
+                                #sct_name = sector.name
+                    # logger.debug(sct_name)
 
                     # lookup scheme by dep_id, lvl_id (if required) and sct_id (if required)
                     scheme = None
@@ -778,13 +778,15 @@ class SchemeitemsDownloadView(View):  # PR2019-01-13
                                 ).first()
                     else:
                         if sector:
-                            logger.debug('filter by department and sector')
+                            # logger.debug('filter by department and sector')
                             # filter by department and sector
                             # if selection contains multiple schemes: skip
+
+                            logger.debug('count: ' + str(Scheme.objects.filter(department=department, sector=sector).count()))
                             if Scheme.objects.filter(department=department, sector=sector).count() == 1:
                                 scheme = Scheme.objects.filter(department=department, sector=sector).first()
                         else:
-                            logger.debug('only by department')
+                            # logger.debug('only by department')
                             # filter only by department
                             # if selection contains multiple schemes: skip
                             if Scheme.objects.filter(department=department).count() == 1:

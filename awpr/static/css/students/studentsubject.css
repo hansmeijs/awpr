@@ -250,6 +250,15 @@ table {
     user-select: none;
 }
 
+.color_darkblue {
+    background:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    color: #edf2f8;
+}
+
+.color_darkgrey {
+    background:  #808080;
+    color: #e4e4e4;
+}
 .data_table {
     display: table;
     padding: 4px 8px;
@@ -259,16 +268,16 @@ table {
     width: 100%;
 
 
-    /*background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
     /*background-color: #4A7DBB; /* 'TextboxBackColor Default Schema Blauw medium blauw */
     /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish   */
     /*background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
     /*background: #F5FAFF; */ /*licht licht blauw; */
 
-    background: #d7e4f3;/* is even lighter blueish */
+   /* background: #d7e4f3;/* is even lighter blueish */
+    background:  #bacee6;
 
-    color: #376191;  /* Default Schema Blauw donkerblauw */
-
+    /*color: #376191;  /* Default Schema Blauw donkerblauw */
+color: #000;
     /* to prevent text selection */
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -306,7 +315,7 @@ table {
 
 .tr_highlighted {
     background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
-    /*background-color:  #2d4e77cc;*/
+    background:  #2d4e77cc;
     color: #ffffff;
 
         -webkit-transition: background 0.25s ease-in-out;

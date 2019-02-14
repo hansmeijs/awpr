@@ -58,7 +58,8 @@ coverage.xml
 .pytest_cache/
 
 # Translations
-*.mo
+#PR2019-02-14 .mo file removed from gitignore
+# *.mo
 *.pot
 
 # Django stuff:

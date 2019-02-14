@@ -84,9 +84,9 @@
             <div class="flex_content">
                 <div id="id_databar" class="databar">
                     <table id="id_data_table" class="data_table">
-                        <thead id="id_data_thead">
+                        <thead id="id_data_thead" class="color_darkblue">
                             <tr>
-                                <td>{% trans 'Subjects of student' %} </td>
+                                <td colspan=2>{% trans 'Subjects of student' %} </td>
                             </tr>
                         </thead>
                         <tbody id="id_data_tbody">
@@ -96,12 +96,12 @@
 
                 <div id="id_pickerbar" class="databar">
                     <table id="id_picker_table" class="search_table">
-                        <thead id="id_picker_thead" class="search_table">
+                        <thead id="id_picker_thead" class="color_darkgrey">
                             <tr>
-                                <td>{% trans 'Available subjects' %} </td>
+                                <td colspan=2>{% trans 'Available subjects' %} </td>
                             </tr>
                             <tr>
-                                <td>
+                                <td colspan=2>
                                     <input id="id_picker_filter" type="text" class="fieldname pt-0 pb-0" placeholder="filter subject...">
                                 </td>
                             </tr>
@@ -116,13 +116,13 @@
         <div id="id_flex_searchbar" class="flex_searchbar">
 
             <table id="id_search_table" class="search_table">
-                <thead id="id_search_thead" class="search_table">
+                <thead id="id_search_thead" class="color_darkgrey">
                     <tr>
-                        <td>{% trans 'Select student' %} </td>
+                        <td colspan=2>{% trans 'Select student' %} </td>
                     </tr>
                     <tr>
-                        <td>
-                            <input id="id_search_filter" type="text" class="fieldname pt-0 pb-0" placeholder="filter name...">
+                        <td colspan=2>
+                            <input id="id_search_filter" type="text" class="fieldname pt-0 pb-0" colspan=2 placeholder="filter name...">
                         </td>
                     </tr>
                 </thead>

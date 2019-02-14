@@ -15,7 +15,8 @@ from awpr import constants as c
 from awpr import functions as f
 
 from schools.models import Examyear, Department, Department_log, School, School_log
-from subjects.models import Level, Level_log, Sector, Sector_log, Scheme, Scheme_log, Schemeitem, Package, Package_log, Cluster
+from subjects.models import Level, Level_log, Sector, Sector_log, Scheme, Scheme_log, Schemeitem, Schemeitem_log,\
+    Package, Package_log, Cluster, Cluster_log
 
 import logging
 logger = logging.getLogger(__name__)
@@ -205,7 +206,6 @@ class Student(Model):# PR2018-06-06, 2018-09-05
 
     base = ForeignKey(Studentbase, related_name='students', on_delete=PROTECT)
     school = ForeignKey(School, related_name='students', on_delete=PROTECT)
-
     department = ForeignKey(Department, related_name='students', on_delete=PROTECT)
     level = ForeignKey(Level, null=True, blank=True, related_name='students', on_delete=PROTECT)
     sector = ForeignKey(Sector, null=True,blank=True, related_name='students', on_delete=PROTECT)
@@ -602,7 +602,8 @@ class Student_log(Model):
 # ====Studentresult=============
 class Studentresult(Model):# PR2018-11-10
     objects = CustomManager()
-    # TODO 2019-01-13: make table with row per tv, set realtion one-to-many
+
+    # TODO 2019-01-13: make table with row per tv, set relation one-to-many
     student = OneToOneField(Student, related_name='studentresult', on_delete=CASCADE)
 
     diplomanumber = CharField(db_index=True, max_length=10, null=True, blank=True)
@@ -740,7 +741,6 @@ class Studentresult(Model):# PR2018-11-10
         # save to logfile before deleting record
         self.save_to_log()
         super(Studentresult, self).delete(*args, **kwargs)
-
 
     def save_to_log(self):
         # Create method also saves record
@@ -1153,16 +1153,31 @@ class Studentsubject(Model):
         logger.debug('Studentsubject Model after delete.')
 
     def save_to_log(self): # PR2018-11-24
+        # PR2018-10-28 debug: 'NoneType' object has no attribute 'id'
 
-        logger.debug('Studentsubject Model save_to_log self.schemeitem: ' + str(self.schemeitem) + ' type: ' + str(type(self.schemeitem)))
+        # get latest Student_log row that corresponds with self.student
+        student_log = None
+        if self.student is not None:
+            student_log = Student_log.objects.filter(student_id=self.student.id).order_by('-id').first()
+
+        # get latest Schemeitem_log row that corresponds with self.schemeitem
+        schemeitem_log = None
+        if self.schemeitem is not None:
+            schemeitem_log = Schemeitem_log.objects.filter(schemeitem_id=self.schemeitem.id).order_by('-id').first()
+
+        # get latest Cluster_log row that corresponds with self.cluster
+        cluster_log = None
+        if self.cluster is not None:
+            cluster_log = Cluster_log.objects.filter(subjecttype_id=self.cluster.id).order_by('-id').first()
+
 
         # Create method also saves record
         Studentsubject_log.objects.create(
             studentsubject_id=self.id,  # self.id gets its value in super(School, self).save
 
-            student = self.student,
-            schemeitem = self.schemeitem,
-            cluster = self.cluster,
+            student_log = self.student_log,
+            schemeitem_log = self.schemeitem_log,
+            cluster_log = self.cluster_log,
             is_extra_subject = self.is_extra_subject,
             is_extra_subject_counts = self.is_extra_subject_counts,
             is_choice_combi = self.is_choice_combi,
@@ -1213,7 +1228,6 @@ class Studentsubject(Model):
         self.endgrade_tv03_status_mod = self.original_endgrade_tv03_status != self.endgrade_tv03_status
         self.endgrade_final_status_mod = self.original_endgrade_final_status != self.endgrade_final_status
 
-
         data_changed_bool = (
             not self.is_update or
 
@@ -1239,7 +1253,6 @@ class Studentsubject(Model):
             self.endgrade_tv03_status_mod or
             self.endgrade_final_status_mod
         )
-
 
         if data_changed_bool:
             self.modified_by = self.request.user
@@ -1299,23 +1312,16 @@ class Studentsubject(Model):
 
 
 
-
-
-
-
-
-
 # PR2018-06-06
 class Studentsubject_log(Model):
     objects = CustomManager()
     studentsubject_id = IntegerField(db_index=True)
 
-    # # #
-    # TODO: refer to log table
-    student = ForeignKey(Student, null=True, related_name='+', on_delete=PROTECT)
-    schemeitem = ForeignKey(Schemeitem, null=True, related_name='+', on_delete=PROTECT)
-    cluster = ForeignKey(Cluster, null=True, related_name='+', on_delete=PROTECT)
-    # # #
+    # PR2019-02-14 changed: refer to log table student_log instead of student, to prevent ref_int with table student
+    student_log = ForeignKey(Student_log, null=True, related_name='+', on_delete=PROTECT)
+    schemeitem_log = ForeignKey(Schemeitem_log, null=True, related_name='+', on_delete=PROTECT)
+    cluster_log = ForeignKey(Cluster_log,null=True,  related_name='+', on_delete=PROTECT)
+
     is_extra_subject = BooleanField(default=False)
     is_extra_subject_counts = BooleanField(default=False)
     is_choice_combi = BooleanField(default=False)
@@ -1343,9 +1349,9 @@ class Studentsubject_log(Model):
     endgrade_final_status = CharField(max_length=12, null=True)
 
     # # #
-    student_mod = BooleanField(default=False)
-    schemeitem_mod = BooleanField(default=False)
-    cluster_mod = BooleanField(default=False)
+    student_log_mod = BooleanField(default=False)
+    schemeitem_log_mod = BooleanField(default=False)
+    cluster_log_mod = BooleanField(default=False)
     # # #
     is_extra_subject_mod = BooleanField(default=False)
     is_extra_subject_counts_mod = BooleanField(default=False)

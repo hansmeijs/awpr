@@ -572,117 +572,108 @@ class ImportSchemeitemView(View):  # PR2018-11-10
 
         # check if request.user.country is parent of request.user.examyear PR2018-10-18
         if request.user is not None:
-            if request.user.examyear is not None and request.user.country is not None and request.user.schoolbase is not None:
+            if request.user.examyear is not None and request.user.country is not None:
                 if request.user.examyear.country.pk == request.user.country.pk:
-                    # get request.user.school of request.user.examyear
-                    school = School.objects.filter(examyear=request.user.examyear, base=request.user.schoolbase).first()
-                    if school is not None:
-                        logger.debug(school.name)
+                    # Excel file colums:
+                    # 0: dep_abbrev
+                    # 1: lvl_abbrev
+                    # 2: sct_aabrev
+                    # 3: subject_abbrev
+                    # 4: subjecttype_name
+                    # 5: gradetype_id
+                    # 6: weighSE
+                    # 7: weighCE
+                    # 8: mandatory
+                    # 9: combi
+                    # 10: choucecombiallowed
+                    # 11: practicalexam
+                    # 12: sequence
 
-                        # Excel file colums:
-                        # 0: schemename, 1: subject, 2: subjecttype, 3: gradetype, 4: sequence,
-                        # 5: weighSE, 6: weighCE, 7: mandatory, 8: combi, 9: keuzecombi,  10: praktijk
+                    # Map subject.abbrev to subject.id {'ne': 3}
+                    subject_dict = {}
+                    subjects =  Subject.objects.filter(examyear=request.user.examyear)
+                    for subject in subjects:
+                        subject_key =  subject.abbrev.lower()
+                        subject_dict[subject_key] = subject.id
+                    # logger.debug('subject_dict: ' + str(subject_dict))
+                    # subject_dict = {'ne': 37, 'pa': 6, 'en': 33, 'sp': 8, ... , 'stg': 24, 'go': 47}
 
+                    # Map subjecttype.code
+                    # Cannot map subjecttype, because code can refer to different departments. Lookup after scheme is found
 
-                        # Map scheme.name to scheme.id {'vsbo - tkl - tech': 4, ... 'vwo - n&g': 15, 'vwo - n&t': 14}
-                        scheme_dict = {}
-                        schemes =  Scheme.objects.filter(department__examyear=request.user.examyear)
-                        for scheme in schemes:
-                            scheme_key =  scheme.name.lower()
-                            scheme_dict[scheme_key] = scheme.id
-                        logger.debug(scheme_dict)
-                        # scheme_dict = {'vsbo - tkl - tech': 4, ... 'vwo - n&g': 15, 'vwo - n&t': 14}
+                    # iterating over the rows and
+                    # getting value from each cell in row
+                    for row in worksheet.iter_rows():
+                        row_data = list()
+                        for cell in row:
+                            row_data.append(str(cell.value))
+                        logger.debug(str(row_data))
+                        # ['Name', 'subject', 'subjecttype', 'gradetype', 'sequence', 'weighSE', 'weighCE', 'mandatory', 'combi', 'keuzecombi', 'praktijk']
+                        # ['vsbo - tkl - tech', 'ne', 'gmd', '1', '30', '1', '1', '1', '0', '0', '0']
 
-                        # Map subject.abbrev to subject.id {'ne': 3}
-                        subject_dict = {}
-                        subjects =  Subject.objects.filter(examyear=request.user.examyear)
-                        for subject in subjects:
-                            subject_key =  subject.abbrev.lower()
-                            subject_dict[subject_key] = subject.id
-                        logger.debug(subject_dict)
-                        # subject_dict = {'ne': 37, 'pa': 6, 'en': 33, 'sp': 8, ... , 'stg': 24, 'go': 47}
+                        # get scheme id
+                        dep_abbrev = row_data[0]
+                        lvl_abbrev = row_data[1]
+                        sct_abbrev = row_data[2]
+                        scheme = get_scheme_from_abbrevs(dep_abbrev, lvl_abbrev, sct_abbrev, request.user.examyear) # PR2018-02-14
+                        if scheme:
+                            logger.debug('scheme: ' + scheme.name)
 
-                        # Map subjecttype.code
-                        # Cannot map subjecttype, because code can refer to different departments. Lookup after scheme is found
+                            # get subject id
+                            subj_abbrev = row_data[3]
+                            subject_id = int(subject_dict.get(str(subj_abbrev), '-1'))
+                            subject = Subject.objects.filter(id=subject_id).first()
+                            if subject:
+                                logger.debug('subject: ' + subject.name)
 
-                        # iterating over the rows and
-                        # getting value from each cell in row
-                        for row in worksheet.iter_rows():
-                            row_data = list()
-                            for cell in row:
-                                row_data.append(str(cell.value))
-                            logger.debug(str(row_data))
-                            # ['Name', 'subject', 'subjecttype', 'gradetype', 'sequence', 'weighSE', 'weighCE', 'mandatory', 'combi', 'keuzecombi', 'praktijk']
-                            # ['vsbo - tkl - tech', 'ne', 'gmd', '1', '30', '1', '1', '1', '0', '0', '0']
+                                # get subjecttype
+                                subjtype_name = str(row_data[4])
+                                subjecttype = get_subjecttype_from_name(subjtype_name, scheme)
+                                #has_pws = BooleanField(default=False)  # has profielwerkstuk or sectorwerkstuk
+                                #one_allowed = BooleanField(
 
-                            # get scheme id
-                            scheme_id = int(scheme_dict.get(str(row_data[0]), '-1'))
-                            logger.debug('scheme_id: ' + str(scheme_id))
+                                logger.debug('subjecttype: ' + str(subjecttype) + ' type: ' + str(type(subjecttype)))
 
-                            scheme = Scheme.objects.filter(id=scheme_id).first()
-                            if scheme:
-                                logger.debug('scheme found: ' + scheme.name)
+                                if subjecttype:
+                                    logger.debug('subjecttype found: ' + subjecttype.code)
+                                    #  0 Scheme 1 subject 2 Subjecttype 3 Gradetype 4 Sequence 5 weightSE 6 weightCE
+                                    # 7 is_mandatory 8 is_combi 9 choicecombi_allowed 10 has_practexam
 
-                                # get subject id
-                                subject_id = int(subject_dict.get(str(row_data[1]), '-1'))
-                                subject = Subject.objects.filter(id=subject_id).first()
-                                if subject:
-                                    logger.debug('subject found: ' + subject.abbrev)
+                                    gradetype = int(str(row_data[5]))
+                                    weightSE = int(str(row_data[6]))
+                                    weightCE = int(str(row_data[7]))
+                                    is_mandatory = True if  str(row_data[8]) == '1' else False
+                                    is_combi = True if  str(row_data[9]) == '1' else False
+                                    choicecombi_allowed = True if  str(row_data[10]) == '1' else False
+                                    has_practexam = True if  str(row_data[11]) == '1' else False
+                                    sequence = int(str(row_data[12]))
 
-                                    # get subjecttype id
-                                    code = str(row_data[2])
-                                    logger.debug('code: ' + code)  # code: 'gmd'
-                                    dep_id_str = ';' + str(scheme.department.base.id) + ';'
-                                    logger.debug('dep_id_str: ' + dep_id_str)  # dep_id_str: ';1;'
-                                    subjecttype = Subjecttype.objects.filter(
-                                        examyear=request.user.examyear,
-                                        code=code,
-                                        depbase_list__contains=dep_id_str
-                                    ).first()
-                                    logger.debug('subjecttype: ' + str(subjecttype) + ' type: ' + str(type(subjecttype)))
+                                    # create new schemeitem
+                                    schemeitem = Schemeitem()
 
-                                    if subjecttype:
-                                        logger.debug('subjecttype found: ' + subjecttype.code)
-                                        #  0 Scheme 1 subject 2 Subjecttype 3 Gradetype 4 Sequence 5 weightSE 6 weightCE
-                                        # 7 is_mandatory 8 is_combi 9 choicecombi_allowed 10 has_practexam
+                                    schemeitem.scheme = scheme
+                                    schemeitem.subject = subject
+                                    schemeitem.subjecttype = subjecttype
 
-                                        gradetype = int(str(row_data[3]))
-                                        sequence = int(str(row_data[4]))
-                                        weightSE = int(str(row_data[5]))
-                                        weightCE = int(str(row_data[6]))
-                                        is_mandatory = True if  str(row_data[7]) == '1' else False
-                                        is_combi = True if  str(row_data[8]) == '1' else False
-                                        choicecombi_allowed = True if  str(row_data[9]) == '1' else False
-                                        has_practexam = True if  str(row_data[10]) == '1' else False
+                                    logger.debug('schemeitem.scheme: ' + schemeitem.scheme.name)
+                                    logger.debug('schemeitem.subject: ' + schemeitem.subject.name)
+                                    logger.debug('schemeitem.subjecttype: ' + schemeitem.subjecttype.name)
 
-                                        # create new schemeitem
-                                        schemeitem = Schemeitem()
+                                    schemeitem.gradetype = gradetype
+                                    schemeitem.sequence = sequence
+                                    schemeitem.weightSE = weightSE
+                                    schemeitem.weightCE = weightCE
+                                    schemeitem.is_mandatory = is_mandatory
+                                    schemeitem.is_combi = is_combi
+                                    schemeitem.choicecombi_allowed = choicecombi_allowed
+                                    schemeitem.has_practexam = has_practexam
 
-                                        schemeitem.school = school
-                                        schemeitem.scheme = scheme
-                                        schemeitem.subject = subject
-                                        schemeitem.subjecttype = subjecttype
-
-                                        logger.debug('schemeitem.school: ' + schemeitem.school.name)
-                                        logger.debug('schemeitem.scheme: ' + schemeitem.scheme.name)
-                                        logger.debug('schemeitem.subject: ' + schemeitem.subject.name)
-                                        logger.debug('schemeitem.subjecttype: ' + schemeitem.subjecttype.name)
-
-                                        schemeitem.gradetype = gradetype
-                                        schemeitem.sequence = sequence
-                                        schemeitem.weightSE = weightSE
-                                        schemeitem.weightCE = weightCE
-                                        schemeitem.is_mandatory = is_mandatory
-                                        schemeitem.is_combi = is_combi
-                                        schemeitem.choicecombi_allowed = choicecombi_allowed
-                                        schemeitem.has_practexam = has_practexam
-
-                                        schemeitem.save(request=self.request)
-                                        # logger.debug('subject.id: ' + str(subject.id) + ' .name: ' + str(subject.name) + ' .abbrev: ' + str(subject.abbrev) + ' .sequence: ' + str(subject.sequence))
+                                    schemeitem.save(request=self.request)
+                                    # logger.debug('subject.id: ' + str(subject.id) + ' .name: ' + str(subject.name) + ' .abbrev: ' + str(subject.abbrev) + ' .sequence: ' + str(subject.sequence))
 
 
-                                        logger.debug('CORRECT???? schemeitem.school: ' + schemeitem.school.name)
-                                        excel_data.append(row_data)
+                                    logger.debug('schemeitem.sequence: ' + str(schemeitem.sequence))
+                                    excel_data.append(row_data)
 
         return render(request, 'import_schemeitem.html', {"excel_data": excel_data})
 
@@ -854,24 +845,62 @@ def convert_nameslist_to_baseidlist(names_list, mapped_baselist):  # PR2018-12-1
     return base_id_list_str
 
 
-def get_dep_from_abbrev(abbrev, request_user_examyear):  # PR2018-12-13
+def get_scheme_from_abbrevs(dep_abbrev, lvl_abbrev, sct_abbrev,examyear):  # PR2018-02-14
+    logger.debug('get_scheme_from_abbrevs: ' + dep_abbrev + ' - ' + lvl_abbrev + ' - ' + sct_abbrev + ' - ' + str(examyear.examyear))
+    scheme = None
+    dep = get_dep_from_abbrev(dep_abbrev, examyear)
+    if dep:
+        lvl = None
+        sct = None
+
+        if dep.level_req:
+            lvl = get_level_from_abbrev(lvl_abbrev, examyear)
+        if dep.sector_req:
+            sct = get_sector_from_abbrev(sct_abbrev, examyear)
+
+        if lvl and sct:
+            scheme = Scheme.objects.filter(department=dep, level=lvl, sector=sct).first()
+        elif lvl:
+                scheme = Scheme.objects.filter(department=dep, level=lvl).first()
+        elif sct:
+            scheme = Scheme.objects.filter(department=dep, sector=sct).first()
+        else:
+            scheme = Scheme.objects.filter(department=dep).first()
+
+    return scheme
+
+
+def get_dep_from_abbrev(abbrev, examyear):  # PR2018-12-13
     dep = None
     if abbrev:
-        if Department.objects.filter(abbrev__iexact=abbrev, examyear=request_user_examyear).count() == 1:
-            dep = Department.objects.filter(abbrev__iexact=abbrev, examyear=request_user_examyear).first()
+        if Department.objects.filter(abbrev__iexact=abbrev, examyear=examyear).count() == 1:
+            dep = Department.objects.filter(abbrev__iexact=abbrev, examyear=examyear).first()
     return dep
 
-def get_level_from_abbrev(abbrev, request_user_examyear):  # PR2018-12-13
+
+def get_level_from_abbrev(abbrev, examyear):  # PR2018-12-13
     level = None
     if abbrev:
-        if Level.objects.filter(abbrev__iexact=abbrev, examyear=request_user_examyear).count() == 1:
-            level = Level.objects.filter(abbrev__iexact=abbrev, examyear=request_user_examyear).first()
+        if Level.objects.filter(abbrev__iexact=abbrev, examyear=examyear).count() == 1:
+            level = Level.objects.filter(abbrev__iexact=abbrev, examyear=examyear).first()
     return level
 
 
-def get_sector_from_abbrev(abbrev, request_user_examyear):  # PR2018-12-13
+def get_sector_from_abbrev(abbrev, examyear):  # PR2018-12-13
     sector = None
     if abbrev:
-        if Sector.objects.filter(abbrev__iexact=abbrev, examyear=request_user_examyear).count() == 1:
-            sector = Sector.objects.filter(abbrev__iexact=abbrev, examyear=request_user_examyear).first()
+        if Sector.objects.filter(abbrev__iexact=abbrev, examyear=examyear).count() == 1:
+            sector = Sector.objects.filter(abbrev__iexact=abbrev, examyear=examyear).first()
     return sector
+
+def get_subjecttype_from_name(name, scheme):  # PR2018-02-14
+    subjecttype = None
+    if scheme:
+        depbase_id_delim = ';' + str(scheme.department.base.id) + ';'
+        examyear = scheme.department.examyear
+        subjecttype = Subjecttype.objects.filter(
+            examyear=examyear,
+            name__iexact=name,
+            depbase_list__contains=depbase_id_delim
+        ).first()
+    return subjecttype

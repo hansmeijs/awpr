@@ -178,6 +178,31 @@ ANYMAIL = {
 DEFAULT_FROM_EMAIL = 'AWP online <noreply@awponline.net>'
 
 
+# Internationalization
+# https://docs.djangoproject.com/en/2.0/topics/i18n/
+TIME_ZONE = 'America/Curacao'
+USE_I18N = True
+USE_L10N = True
+USE_TZ = True
+
+
+# PR 2018-04-28 from https://medium.com/@nolanphillips/a-short-intro-to-translating-your-site-with-django-1-8-343ea839c89b
+# Add LocaleMiddleware to MIDDLEWARE, it checks the incoming request for the user's preferred language settings.
+# Add the LocaleMiddleware after SessionMiddleware and CacheMiddleware, and before the CommonMiddleware.
+# Provide a lists of languages which your site supports.
+LANGUAGES = (
+    ('en', _('English')),
+    ('nl', _('Dutch')),
+)
+
+# Set the default language for your site.
+LANGUAGE_CODE = 'nl'
+
+# Tell Django where the project's translation files should be.
+LOCALE_PATHS = (
+    os.path.join(BASE_DIR, 'locale'),
+)
+
 
 LOGGING = {
     'version': 1,
@@ -272,31 +297,6 @@ LOGGING = {
         'subjects': {'handlers': ['subjects_log'], 'level': 'DEBUG', 'propagate': True,},
     }
 }
-
-# Internationalization
-# https://docs.djangoproject.com/en/2.0/topics/i18n/
-TIME_ZONE = 'America/Curacao'
-USE_I18N = True
-USE_L10N = True
-USE_TZ = True
-
-
-# PR 2018-04-28 from https://medium.com/@nolanphillips/a-short-intro-to-translating-your-site-with-django-1-8-343ea839c89b
-# Add LocaleMiddleware to MIDDLEWARE, it checks the incoming request for the user's preferred language settings.
-# Add the LocaleMiddleware after SessionMiddleware and CacheMiddleware, and before the CommonMiddleware.
-# Provide a lists of languages which your site supports.
-LANGUAGES = (
-    ('en', _('English')),
-    ('nl', _('Dutch')),
-)
-
-# Set the default language for your site.
-LANGUAGE_CODE = 'nl'
-
-# Tell Django where the project's translation files should be.
-LOCALE_PATHS = (
-    os.path.join(BASE_DIR, 'locale'),
-)
 
 # PR2018-05-06 from https://simpleisbetterthancomplex.com/tips/2016/09/06/django-tip-14-messages-framework.html
 MESSAGE_TAGS = {
