@@ -45,12 +45,24 @@ PERMIT_DICT = {
 
 
 GENDER_NONE = '-'  # PR2018-09-05
-GENDER_MALE = 'm'
-GENDER_FEMALE = 'f'
+GENDER_MALE = 'M'
+GENDER_FEMALE = 'V'
+
+
+# PR2018-09-05
+GENDER_CHOICES = (
+    (GENDER_NONE, '-'),
+    (GENDER_MALE, _('M')),
+    (GENDER_FEMALE, _('V')),
+)
+
 
 GRADETYPE_00_NONE = 0
 GRADETYPE_01_NUMBER = 1
 GRADETYPE_02_CHARACTER = 2 # goed / voldoende / onvoldoende
+
+
+
 
 
 # PR2018-08-01
@@ -183,12 +195,6 @@ GRADETYPE_ABBREV = {
 }
 
 
-# PR2018-09-05
-GENDER_CHOICES = (
-    (GENDER_NONE, '-'),
-    (GENDER_MALE, _('M')),
-    (GENDER_FEMALE, _('F')),
-)
 
 
 # PR2019-01-19
@@ -213,40 +219,49 @@ SCHEMEFIELD_DICT = {
 }
 
 
-# PR2018-11-28
+# PR2019-02-15
 # se, pe ce, ce2, ce3, end
-SCHOOLEXAM_CODE = 'se'
-PRACTICALEXAM_CODE = 'pe'
-CENTRALEXAM_CODE = 'ce'
-CENTRALEXAM2_CODE = 'ce2'
-CENTRALEXAM3_CODE = 'ce3'
-FINALGRADE_CODE = 'fin'
+SCHOOLEXAM = 1
+PRACTICALEXAM = 2
+CENTRALEXAM = 3
+CENTRALEXAM2 = 4
+CENTRALEXAM3 = 5
+SCHOOLEXAM_EXEMPTION = 6
+CENTRALEXAM_EXEMPTION = 7
 
 EXAMCODE_CHOICES = (
-    (SCHOOLEXAM_CODE, _('School exam')),
-    (PRACTICALEXAM_CODE, _('Practical exam')),
-    (CENTRALEXAM_CODE, _('Central exam')),
-    (CENTRALEXAM2_CODE, _('Re-exam')),
-    (CENTRALEXAM3_CODE, _('Re-exam third period'))
+    (SCHOOLEXAM, _('School exam')),
+    (PRACTICALEXAM, _('Practical exam')),
+    (CENTRALEXAM, _('Central exam')),
+    (CENTRALEXAM2, _('Re-examination')),
+    (CENTRALEXAM3, _('Re-examination third period')),
+    (SCHOOLEXAM_EXEMPTION, _('School exam exemption')),
+    (CENTRALEXAM_EXEMPTION, _('Central exam exemption'))
 )
 
+# PR2019-02-15
+SCORE = 1
+GRADE = 2
+PECE = 3
+FINAL = 4
 
-
-
-# PR2018-11-28
-# s = score, g = grade, x = exemption, f = final grade
-SCORE_GRADECLASS = 's'
-GRADE_GRADECLASS = 'g'
-EXEMPTION_GRADECLASS = 'x'
-FINAL_GRADECLASS = 'f'
-
-GRADECLASS_CHOICES = (
-    (SCORE_GRADECLASS, _('Score')),
-    (GRADE_GRADECLASS, _('Grade')),
-    (EXEMPTION_GRADECLASS, _('Exemption')),
-    (FINAL_GRADECLASS, _('Final grade'))
+GRADECODE_CHOICES = (
+    (SCORE, _('Score')),
+    (GRADE, _('Grade')),
+    (PECE, _('CE-PE')),
+    (FINAL, _('Final grade'))
 )
 
+# PR2019-02-15
+PERIOD_1 = 1
+PERIOD_2 = 2
+PERIOD_3 = 2
+
+PERIOD_CHOICES = (
+    (PERIOD_1, _('Period 1')),
+    (PERIOD_2, _('Period 2')),
+    (PERIOD_3, _('Period 3'))
+)
 
 # PR2018-11-28
 # se, pe ce, ce2, ce3, end

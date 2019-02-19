@@ -3,7 +3,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-
 def split_prefix(name, is_lastname): # PR2018-12-06
     #PR2016-04-01 aparte functie van gemaakt
     #Functie splitst tussenvoegsel voor Achternaam (IsPrefix=True) of achter Voornamen (IsPrefix=False)

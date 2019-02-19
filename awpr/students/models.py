@@ -101,7 +101,7 @@ class Birthcountry_log(Model):
     name_mod = BooleanField(default=False)
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
     def __str__(self):
         return self.name
@@ -184,7 +184,7 @@ class Birthcity_log(Model):
     name_mod = BooleanField(default=False)
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
     def __str__(self):
         return self.name
@@ -205,6 +205,7 @@ class Student(Model):# PR2018-06-06, 2018-09-05
     objects = CustomManager()
 
     base = ForeignKey(Studentbase, related_name='students', on_delete=PROTECT)
+
     school = ForeignKey(School, related_name='students', on_delete=PROTECT)
     department = ForeignKey(Department, related_name='students', on_delete=PROTECT)
     level = ForeignKey(Level, null=True, blank=True, related_name='students', on_delete=PROTECT)
@@ -214,19 +215,23 @@ class Student(Model):# PR2018-06-06, 2018-09-05
 
     lastname = CharField(db_index=True, max_length=80)
     firstname= CharField(db_index=True, max_length=80)
-    prefix= CharField(max_length=10, null=True, blank=True)
-    gender= CharField(db_index=True, max_length=1, choices=c.GENDER_CHOICES, default=c.GENDER_NONE)
+    prefix= CharField(db_index=True, max_length=10, null=True, blank=True)
+    gender= CharField(db_index=True, max_length=1, null=True, blank=True)
     idnumber= CharField(db_index=True, max_length=20)
-    birthdate= DateField(null=True, blank=True)
-
-    birthcountry= CharField(max_length=50, null=True, blank=True)
-    birthcity= CharField( max_length=50, null=True, blank=True)
-    # birthcountry = ForeignKey(Birthcountry, null=True, blank=True, related_name='students', on_delete=PROTECT)
-    # birthcity = ForeignKey(Birthcity, null=True, blank=True, related_name='students', on_delete=PROTECT)
+    birthdate= DateField(db_index=True, null=True, blank=True)
+    birthcountry= CharField(db_index=True, max_length=50, null=True, blank=True)
+    birthcity= CharField(db_index=True, max_length=50, null=True, blank=True)
 
     classname = CharField(db_index=True, max_length=20, null=True, blank=True)
     examnumber = CharField(db_index=True, max_length=20, null=True, blank=True)
     regnumber = CharField(db_index=True, max_length=20, null=True, blank=True)
+    diplomanumber = CharField(db_index=True, max_length=10, null=True, blank=True)
+    gradelistnumber = CharField(db_index=True, max_length=10, null=True, blank=True)
+
+    locked =  BooleanField(db_index=True,default=False)
+    has_reex= BooleanField(db_index=True,default=False)
+    bis_exam= BooleanField(db_index=True,default=False)
+    withdrawn = BooleanField(db_index=True,default=False)
 
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
     modified_at = DateTimeField()
@@ -277,17 +282,26 @@ class Student(Model):# PR2018-06-06, 2018-09-05
         self.original_birthdate = self.birthdate
         self.original_birthcountry = self.birthcountry
         self.original_birthcity = self.birthcity
+
         self.original_classname = self.classname
         self.original_examnumber = self.examnumber
         self.original_regnumber = self.regnumber
 
-        # PR2018-10-19 initialize here, otherwise delete gives error: object has no attribute 'name_mod'
+        self.original_diplomanumber = self.diplomanumber
+        self.original_gradelistnumber = self.gradelistnumber
+        self.original_locked = self.locked
+        self.original_has_reex = self.has_reex
+        self.original_bis_exam = self.bis_exam
+        self.original_withdrawn = self.withdrawn
 
+        # PR2018-10-19 initialize here, otherwise delete gives error: object has no attribute 'name_mod'
+        self.school_mod = False
         self.dep_mod = False
         self.level_mod = False
         self.sector_mod = False
         self.scheme_mod = False
         self.package_mod = False
+
         self.lastname_mod = False
         self.firstname_mod = False
         self.prefix_mod = False
@@ -296,9 +310,17 @@ class Student(Model):# PR2018-06-06, 2018-09-05
         self.birthdate_mod = False
         self.birthcountry_mod = False
         self.birthcity_mod = False
+
         self.classname_mod = False
         self.examnumber_mod = False
         self.regnumber_mod = False
+        self.diplomanumber_mod = False
+        self.gradelistnumber_mod = False
+
+        self.locked_mod = False
+        self.has_reex_mod = False
+        self.bis_exam_mod = False
+        self.withdrawn_mod = False
 
     def save(self, *args, **kwargs):  # called by subjectdefault.save(self.request) in SubjectdefaultEditView.form_valid
         self.request = kwargs.pop('request', None)
@@ -313,12 +335,9 @@ class Student(Model):# PR2018-06-06, 2018-09-05
             if not self.is_update:
                 self.base = Studentbase.objects.create()
 
-                logger.debug('Student Model self.base: ' + str(self.base.id) + '> type: ' + str(type(self.base.id)))
             # when adding record: self.id=None, set force_insert=True; otherwise: set force_update=True PR2018-06-09
             super(Student, self).save(force_insert = not self.is_update, force_update = self.is_update, **kwargs)
             self.save_to_log()
-
-            logger.debug('Student Model self: ' + str(self) + '> type: ' + str(type(self)))
 
     def delete(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
@@ -364,14 +383,14 @@ class Student(Model):# PR2018-06-06, 2018-09-05
         Student_log.objects.create(
             student_id=self.id, # self.id gets its value in super(School, self).save
 
-            # # #
             base=self.base,
-            school_log = school_log,
-            dep_log = dep_log,
+
+            school_log=school_log,
+            dep_log=dep_log,
             level_log=level_log,
-            sector_log = sector_log,
-            scheme_log = scheme_log,
-            package_log = package_log,
+            sector_log=sector_log,
+            scheme_log=scheme_log,
+            package_log=package_log,
 
             lastname=self.lastname,
             firstname=self.firstname,
@@ -381,15 +400,25 @@ class Student(Model):# PR2018-06-06, 2018-09-05
             birthdate=self.birthdate,
             birthcountry=self.birthcountry,
             birthcity=self.birthcity,
+
             classname=self.classname,
             examnumber=self.examnumber,
             regnumber=self.regnumber,
+            diplomanumber=self.diplomanumber,
+            gradelistnumber=self.gradelistnumber,
 
-            dep_mod=self.dep_mod,
-            level_mod=self.level_mod,
-            sector_mod=self.sector_mod,
-            scheme_mod=self.scheme_mod,
-            package_mod=self.package_mod,
+            locked=self.locked,
+            has_reex=self.has_reex,
+            bis_exam=self.bis_exam,
+            withdrawn=self.withdrawn,
+
+            # # # mod variables
+            school_log_mod=self.school_mod,
+            dep_log_mod=self.dep_mod,
+            level_log_mod=self.level_mod,
+            sector_log_mod=self.sector_mod,
+            scheme_log_mod=self.scheme_mod,
+            package_log_mod=self.package_mod,
 
             lastname_mod = self.lastname_mod,
             firstname_mod = self.firstname_mod,
@@ -399,9 +428,17 @@ class Student(Model):# PR2018-06-06, 2018-09-05
             birthdate_mod = self.birthdate_mod,
             birthcountry_mod = self.birthcountry_mod,
             birthcity_mod = self.birthcity_mod,
+
             classname_mod = self.classname_mod,
             examnumber_mod = self.examnumber_mod,
             regnumber_mod = self.regnumber_mod,
+            diplomanumber_mod = self.diplomanumber_mod,
+            gradelistnumber_mod = self.gradelistnumber_mod,
+
+            locked_mod = self.locked_mod,
+            has_reex_mod = self.has_reex_mod,
+            bis_exam_mod = self.bis_exam_mod,
+            withdrawn_mod = self.withdrawn_mod,
 
             mode=self.mode,
             modified_by=self.modified_by,
@@ -427,16 +464,28 @@ class Student(Model):# PR2018-06-06, 2018-09-05
         self.birthdate_mod = self.original_birthdate != self.birthdate
         self.birthcountry_mod = self.original_birthcountry != self.birthcountry
         self.birthcity_mod = self.original_birthcity != self.birthcity
+
         self.classname_mod = self.original_classname != self.classname
         self.examnumber_mod = self.original_examnumber != self.examnumber
         self.regnumber_mod = self.original_regnumber != self.regnumber
+        self.diplomanumber_mod = self.original_diplomanumber != self.diplomanumber
+        self.gradelistnumber_mod = self.original_gradelistnumber != self.gradelistnumber
+
+        self.locked_mod = self.original_locked != self.locked
+        self.has_reex_mod = self.original_has_reex != self.has_reex
+        self.bis_exam_mod = self.original_bis_exam != self.bis_exam
+        self.withdrawn_mod = self.original_withdrawn != self.withdrawn
 
         data_changed_bool = (
                 not self.is_update or
+
                 self.school_mod or
                 self.dep_mod or
+                self.level_mod or
+                self.sector_mod or
                 self.scheme_mod or
                 self.package_mod or
+
                 self.lastname_mod or
                 self.firstname_mod or
                 self.prefix_mod or
@@ -445,9 +494,17 @@ class Student(Model):# PR2018-06-06, 2018-09-05
                 self.birthdate_mod or
                 self.birthcountry_mod or
                 self.birthcity_mod or
+
                 self.classname_mod or
                 self.examnumber_mod or
-                self.regnumber_mod
+                self.regnumber_mod or
+                self.diplomanumber_mod or
+                self.gradelistnumber_mod or
+
+                self.locked_mod or
+                self.has_reex_mod or
+                self.bis_exam_mod or
+                self.withdrawn_mod
         )
 
         if data_changed_bool:
@@ -553,25 +610,30 @@ class Student_log(Model):
     lastname = CharField(db_index=True, max_length=80)
     firstname = CharField(db_index=True, max_length=80)
     prefix = CharField(max_length=10, null=True, blank=True)
-    gender = CharField(db_index=True, max_length=1, choices=c.GENDER_CHOICES, default=c.GENDER_NONE)
+    gender = CharField(db_index=True, max_length=1, null=True)
     idnumber = CharField(db_index=True, max_length=20)
     birthdate = DateField(null=True)
-
     birthcountry = CharField(max_length=50, null=True)
     birthcity = CharField(max_length=50, null=True)
-    # birthcountry = ForeignKey(Birthcountry, null=True, blank=True, related_name='students', on_delete=PROTECT)
-    # birthcity = ForeignKey(Birthcity, null=True, blank=True, related_name='students', on_delete=PROTECT)
 
     classname = CharField(db_index=True, max_length=20, null=True, blank=True)
     examnumber = CharField(db_index=True, max_length=20, null=True, blank=True)
     regnumber = CharField(db_index=True, max_length=20, null=True, blank=True)
+    diplomanumber = CharField(max_length=10, null=True, blank=True)
+    gradelistnumber = CharField(max_length=10, null=True, blank=True)
 
-    school_mod = BooleanField(default=False)
-    dep_mod = BooleanField(default=False)
-    level_mod = BooleanField(default=False)
-    sector_mod = BooleanField(default=False)
-    scheme_mod = BooleanField(default=False)
-    package_mod = BooleanField(default=False)
+    locked = BooleanField(default=False)
+    has_reex = BooleanField(default=False)
+    bis_exam = BooleanField(default=False)
+    withdrawn = BooleanField(default=False)
+
+    # mod variables
+    school_log_mod = BooleanField(default=False)
+    dep_log_mod = BooleanField(default=False)
+    level_log_mod = BooleanField(default=False)
+    sector_log_mod = BooleanField(default=False)
+    scheme_log_mod = BooleanField(default=False)
+    package_log_mod = BooleanField(default=False)
 
     lastname_mod = BooleanField(default=False)
     firstname_mod = BooleanField(default=False)
@@ -579,19 +641,23 @@ class Student_log(Model):
     gender_mod = BooleanField(default=False)
     idnumber_mod = BooleanField(default=False)
     birthdate_mod = BooleanField(default=False)
-
     birthcountry_mod = BooleanField(default=False)
     birthcity_mod = BooleanField(default=False)
-    # birthcountry = ForeignKey(Birthcountry, null=True, blank=True, related_name='students', on_delete=PROTECT)
-    # birthcity = ForeignKey(Birthcity, null=True, blank=True, related_name='students', on_delete=PROTECT)
 
     classname_mod = BooleanField(default=False)
     examnumber_mod = BooleanField(default=False)
     regnumber_mod = BooleanField(default=False)
+    diplomanumber_mod = BooleanField(default=False)
+    gradelistnumber_mod = BooleanField(default=False)
+
+    locked_mod = BooleanField(default=False)
+    has_reex_mod = BooleanField(default=False)
+    bis_exam_mod = BooleanField(default=False)
+    withdrawn_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
     @property
     def mode_str(self):
@@ -599,131 +665,60 @@ class Student_log(Model):
 
 ##########################################################################
 
-# ====Studentresult=============
-class Studentresult(Model):# PR2018-11-10
+# ====Result=============
+class Result(Model):# PR2018-11-10
     objects = CustomManager()
 
-    # TODO 2019-01-13: make table with row per tv, set relation one-to-many
-    student = OneToOneField(Student, related_name='studentresult', on_delete=CASCADE)
+    student = ForeignKey(Student, related_name='results', on_delete=PROTECT)
+    period = PositiveSmallIntegerField(db_index=True, default=0, choices=c.PERIOD_CHOICES) # 1 = period 1, 2 = period 2, 3 = period 3
 
-    diplomanumber = CharField(db_index=True, max_length=10, null=True, blank=True)
-    gradelistnumber = CharField(db_index=True, max_length=10, null=True, blank=True)
-    locked =  BooleanField(default=False)
-    has_reex2= BooleanField(default=False)
-    has_reex3= BooleanField(default=False)
-    is_withdrawn = BooleanField(default=False)
-
-    # # # fields ce/combi avg 6 fields
-    grade_ce_avg_tv01 = DecimalField(max_digits=5, decimal_places=2, default = 0)
-    grade_ce_avg_tv02 = DecimalField(max_digits=5, decimal_places=2, default = 0)
-    grade_ce_avg_tv03 = DecimalField(max_digits=5, decimal_places=2, default = 0)
-    grade_ce_avg_final = DecimalField(max_digits=5, decimal_places=2, default = 0)
+    grade_ce_avg = DecimalField(max_digits=5, decimal_places=2, default = 0)
     grade_ce_avg_text = CharField(db_index=True, max_length=10, null=True, blank=True)
     grade_combi_avg_text = CharField(db_index=True, max_length=10, null=True, blank=True)
 
-    # # # fields endgrade sum/avg/count - 8 fields
-    endgrade_sum_tv01 = PositiveSmallIntegerField(default=0)
-    endgrade_sum_tv02 = PositiveSmallIntegerField(default=0)
-    endgrade_sum_tv03 = PositiveSmallIntegerField(default=0)
+    endgrade_sum = PositiveSmallIntegerField(default=0)
     endgrade_count = PositiveSmallIntegerField(default=0)
-    endgrade_avg_tv01 = CharField(db_index=True, max_length=10, null=True, blank=True)
-    endgrade_avg_tv02 = CharField(db_index=True, max_length=10, null=True, blank=True)
-    endgrade_avg_tv03 = CharField(db_index=True, max_length=10, null=True, blank=True)
+    endgrade_avg = DecimalField(max_digits=5, decimal_places=2, default = 0)
     endgrade_avg_text = CharField(db_index=True, max_length=10, null=True, blank=True)
 
-    # # # fields result - 9 fields
-    result_tv01 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    result_tv02 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    result_tv03 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    result_final = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    result = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
     result_info = CharField(db_index=True, max_length=80, null=True, blank=True)
-    result_tv01_status = CharField(max_length=12, null=True, blank=True)
-    result_tv02_status = CharField(max_length=12, null=True, blank=True)
-    result_tv03_status = CharField(max_length=12, null=True, blank=True)
-    result_final_status = CharField(max_length=12, null=True, blank=True)
+    result_status = CharField(max_length=12, null=True, blank=True)
 
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
     modified_at = DateTimeField()
 
     def __init__(self, *args, **kwargs):
-        super(Studentresult, self).__init__(*args, **kwargs)
+        super(Result, self).__init__(*args, **kwargs)
         # private variable __original checks if data_has_changed, to prevent update record when no changes are made.
         # Otherwise a logrecord is created every time the save button is clicked without changes
 
-        # # # various fields - 6 fields
-        self.original_diplomanumber = self.diplomanumber
-        self.original_gradelistnumber = self.gradelistnumber
-        self.locked = self.locked
-        self.original_has_reex2 = self.has_reex2
-        self.original_has_reex3 = self.has_reex3
-        self.original_is_withdrawn = self.is_withdrawn
-
-        # # # fields ce/combi avg 6 fields
-        self.original_grade_ce_avg_tv01 = self.grade_ce_avg_tv01
-        self.original_grade_ce_avg_tv02 = self.grade_ce_avg_tv02
-        self.original_grade_ce_avg_tv03 = self.grade_ce_avg_tv03
-        self.original_grade_ce_avg_final = self.grade_ce_avg_final
+        self.original_grade_ce_avg = self.grade_ce_avg
         self.original_grade_ce_avg_text = self.grade_ce_avg_text
         self.original_grade_combi_avg_text = self.grade_combi_avg_text
 
-        # # # fields endgrade sum/avg/count - 8 fields
-        self.original_endgrade_sum_tv01 = self.endgrade_sum_tv01
-        self.original_endgrade_sum_tv02 = self.endgrade_sum_tv02
-        self.original_endgrade_sum_tv03 = self.endgrade_sum_tv03
+        self.original_endgrade_sum = self.endgrade_sum
         self.original_endgrade_count = self.endgrade_count
-        self.original_endgrade_avg_tv01 = self.endgrade_avg_tv01
-        self.original_endgrade_avg_tv02 = self.endgrade_avg_tv02
-        self.original_endgrade_avg_tv03 = self.endgrade_avg_tv03
+        self.original_endgrade_avg = self.endgrade_avg
         self.original_endgrade_avg_text= self.endgrade_avg_text
 
-        # # # fields result - 9 fields
-        self.original_result_tv01 = self.result_tv01
-        self.original_result_tv02 = self.result_tv02
-        self.original_result_tv03 = self.result_tv03
-        self.original_result_final = self.result_final
+        self.original_result = self.result
         self.original_result_info = self.result_info
-        self.original_result_tv01_status = self.result_tv01_status
-        self.original_result_tv02_status = self.result_tv02_status
-        self.original_result_tv03_status = self.result_tv03_status
-        self.original_result_final_status = self.result_final_status
+        self.original_result_status = self.result_status
 
         # PR2018-11-10 initialize here, otherwise delete gives error: 'Examyear' object has no attribute 'examyear_mod'
-        # # # various fields - 6 fields
-        self.diplomanumber_mod = False
-        self.gradelistnumber_mod = False
-        self.locked_mod = False
-        self.has_reex2_mod = False
-        self.has_reex3_mod = False
-        self.is_withdrawn_mod = False
-
-        # # # fields ce/combi avg 6 fields
-        self.grade_ce_avg_tv01_mod = False
-        self.grade_ce_avg_tv02_mod = False
-        self.grade_ce_avg_tv03_mod = False
-        self.grade_ce_avg_final_mod = False
+        self.grade_ce_avg_mod = False
         self.grade_ce_avg_text_mod = False
         self.grade_combi_avg_text_mod = False
 
-        # # # fields endgrade sum/avg/count - 8 fields
-        self.endgrade_sum_tv01_mod = False
-        self.endgrade_sum_tv02_mod = False
-        self.endgrade_sum_tv03_mod = False
+        self.endgrade_sum_mod = False
         self.endgrade_count_mod = False
-        self.endgrade_avg_tv01_mod = False
-        self.endgrade_avg_tv02_mod = False
-        self.endgrade_avg_tv03_mod = False
+        self.endgrade_avg_mod = False
         self.endgrade_avg_text_mod = False
 
-        # # # fields result - 9 fields
-        self.result_tv01_mod = False
-        self.result_tv02_mod = False
-        self.result_tv03_mod = False
-        self.result_final_mod = False
+        self.result_mod = False
         self.result_info_mod = False
-        self.result_tv01_status_mod = False
-        self.result_tv02_status_mod = False
-        self.result_tv03_status_mod = False
-        self.result_final_status_mod = False
+        self.result_status_mod = False
 
     def save(self, *args, **kwargs):  # called by subject.save(self.request) in SubjectEditView.form_valid
         self.request = kwargs.pop('request', None)
@@ -731,7 +726,7 @@ class Studentresult(Model):# PR2018-11-10
         # check if data has changed. If so: save object
         if self.data_has_changed():
             # when adding record: self.id=None, set force_insert=True; otherwise: set force_update=True PR2018-06-09
-            super(Studentresult, self).save(force_insert = not self.is_update, force_update = self.is_update, **kwargs)
+            super(Result, self).save(force_insert = not self.is_update, force_update = self.is_update, **kwargs)
             # self.id gets its value in super(Subject, self).save
             self.save_to_log()
 
@@ -740,87 +735,41 @@ class Studentresult(Model):# PR2018-11-10
         self.data_has_changed('d')
         # save to logfile before deleting record
         self.save_to_log()
-        super(Studentresult, self).delete(*args, **kwargs)
+        super(Result, self).delete(*args, **kwargs)
 
     def save_to_log(self):
         # Create method also saves record
-        Studentresult_log.objects.create(
-            studentresult_id=self.id, # self.id gets its value in super(School, self).save
+        Result_log.objects.create(
+            result_id=self.id, # self.id gets its value in super(School, self).save
 
-            # # # various fields - 6 fields
-            diplomanumber = self.diplomanumber,
-            gradelistnumber = self.gradelistnumber,
-            locked = self.locked,
-            has_reex2 = self.has_reex2,
-            has_reex3 = self.has_reex3,
-            is_withdrawn = self.is_withdrawn,
-
-            # # # fields ce/combi avg 6 fields
-            grade_ce_avg_tv01 = self.grade_ce_avg_tv01,
-            grade_ce_avg_tv02 = self.grade_ce_avg_tv02,
-            grade_ce_avg_tv03 = self.grade_ce_avg_tv03,
-            grade_ce_avg_final = self.grade_ce_avg_final,
+            grade_ce_avg = self.grade_ce_avg,
             grade_ce_avg_text = self.grade_ce_avg_text,
             grade_combi_avg_text = self.grade_combi_avg_text,
 
             # # # fields endgrade sum/avg/count - 8 fields
-            endgrade_sum_tv01 = self.endgrade_sum_tv01,
-            endgrade_sum_tv02 = self.endgrade_sum_tv02,
-            endgrade_sum_tv03 = self.endgrade_sum_tv03,
+            endgrade_sum_tv01 = self.endgrade_sum,
             endgrade_count = self.endgrade_count,
-            endgrade_avg_tv01 = self.endgrade_avg_tv01,
-            endgrade_avg_tv02 = self.endgrade_avg_tv02,
-            endgrade_avg_tv03 = self.endgrade_avg_tv03,
+            endgrade_avg_tv01 = self.endgrade_avg,
             endgrade_avg_text = self.endgrade_avg_text,
 
             # # # fields result - 9 fields
-            result_tv01 = self.result_tv01,
-            result_tv02 = self.result_tv02,
-            result_tv03 = self.result_tv03,
-            result_final = self.result_final,
+            result_tv01 = self.result,
             result_info = self.result_info,
-            result_tv01_status = self.result_tv01_status,
-            result_tv02_status = self.result_tv02_status,
-            result_tv03_status = self.result_tv03_status,
-            result_final_status = self.result_final_status,
+            result_tv01_status = self.result_status,
 
             # PR2018-11-10 initialize here, otherwise delete gives error: 'Examyear' object has no attribute 'examyear_mod'
-            # # # various fields - 6 fields
-            diplomanumber_mod = self.diplomanumber_mod,
-            gradelistnumber_mod = self.gradelistnumber_mod,
-            locked_mod = self.locked_mod,
-            has_reex2_mod = self.has_reex2_mod,
-            has_reex3_mod = self.has_reex3_mod,
-            is_withdrawn_mod = self.is_withdrawn_mod,
-
-            # # # fields ce/combi avg 6 fields
-            grade_ce_avg_tv01_mod = self.grade_ce_avg_tv01_mod,
-            grade_ce_avg_tv02_mod = self.grade_ce_avg_tv02_mod,
-            grade_ce_avg_tv03_mod = self.grade_ce_avg_tv03_mod,
-            grade_ce_avg_final_mod = self.grade_ce_avg_final_mod,
+            grade_ce_avg_mod = self.grade_ce_avg_mod,
             grade_ce_avg_text_mod = self.grade_ce_avg_text_mod,
             grade_combi_avg_text_mod = self.grade_combi_avg_text_mod,
 
-            # # # fields endgrade sum/avg/count - 8 fields
-            endgrade_sum_tv01_mod = self.endgrade_sum_tv01_mod,
-            endgrade_sum_tv02_mod = self.endgrade_sum_tv02_mod,
-            endgrade_sum_tv03_mod = self.endgrade_sum_tv03_mod,
+            endgrade_sum_mod = self.endgrade_sum_mod,
             endgrade_count_mod = self.endgrade_count_mod,
-            endgrade_avg_tv01_mod = self.endgrade_avg_tv01_mod,
-            endgrade_avg_tv02_mod = self.endgrade_avg_tv02_mod,
-            endgrade_avg_tv03_mod = self.endgrade_avg_tv03_mod,
+            endgrade_avg_mod = self.endgrade_avg_mod,
             endgrade_avg_text_mod = self.endgrade_avg_text_mod,
 
-            # # # fields result - 9 fields
-            result_tv01_mod = self.result_tv01_mod,
-            result_tv02_mod = self.result_tv02_mod,
-            result_tv03_mod = self.result_tv03_mod,
-            result_final_mod = self.result_final_mod,
+            result_mod = self.result_mod,
             result_info_mod = self.result_info_mod,
-            result_tv01_status_mod = self.result_tv01_status_mod,
-            result_tv02_status_mod = self.result_tv02_status_mod,
-            result_tv03_status_mod = self.result_tv03_status_mod,
-            result_final_status_mod = self.result_final_status_mod,
+            result_status_mod = self.result_status_mod,
 
             mode=self.mode,
             modified_by=self.modified_by,
@@ -831,83 +780,37 @@ class Studentresult(Model):# PR2018-11-10
         # returns True when the value of one or more fields has changed PR2018-08-26
         self.is_update = self.id is not None # self.id is None before new record is saved
 
-        # # # various fields - 6 fields
-        self.diplomanumber_mod = self.original_diplomanumber != self.diplomanumber
-        self.gradelistnumber_mod = self.original_gradelistnumber != self.gradelistnumber
-        self.locked_mod = self.locked != self.locked
-        self.has_reex2_mod = self.original_has_reex2 != self.has_reex2
-        self.has_reex3_mod = self.original_has_reex3 != self.has_reex3
-        self.is_withdrawn_mod = self.original_is_withdrawn != self.is_withdrawn
-
         # # # fields ce/combi avg 6 fields
-        self.grade_ce_avg_tv01_mod = self.original_grade_ce_avg_tv01 != self.grade_ce_avg_tv01
-        self.grade_ce_avg_tv02_mod = self.original_grade_ce_avg_tv02 != self.grade_ce_avg_tv02
-        self.grade_ce_avg_tv03_mod = self.original_grade_ce_avg_tv03 != self.grade_ce_avg_tv03
-        self.grade_ce_avg_final_mod = self.original_grade_ce_avg_final != self.grade_ce_avg_final
+        self.grade_ce_avg_mod = self.original_grade_ce_avg != self.grade_ce_avg
         self.grade_ce_avg_text_mod = self.original_grade_ce_avg_text != self.grade_ce_avg_text
         self.grade_combi_avg_text_mod = self.original_grade_combi_avg_text != self.grade_combi_avg_text
 
         # # # fields endgrade sum/avg/count - 8 fields
-        self.endgrade_sum_tv01_mod = self.original_endgrade_sum_tv01 != self.endgrade_sum_tv01
-        self.endgrade_sum_tv02_mod = self.original_endgrade_sum_tv02 != self.endgrade_sum_tv02
-        self.endgrade_sum_tv03_mod = self.original_endgrade_sum_tv03 != self.endgrade_sum_tv03
+        self.endgrade_sum_mod = self.original_endgrade_sum != self.endgrade_sum
         self.endgrade_count_mod = self.original_endgrade_count != self.endgrade_count
-        self.endgrade_avg_tv01_mod = self.original_endgrade_avg_tv01 != self.endgrade_avg_tv01
-        self.endgrade_avg_tv02_mod = self.original_endgrade_avg_tv02 != self.endgrade_avg_tv02
-        self.endgrade_avg_tv03_mod = self.original_endgrade_avg_tv03 != self.endgrade_avg_tv03
+        self.endgrade_avg_mod = self.original_endgrade_avg != self.endgrade_avg
         self.endgrade_avg_text_mod = self.original_endgrade_avg_text != self.endgrade_avg_text
 
         # # # fields result - 9 fields
-        self.result_tv01_mod = self.original_result_tv01 != self.result_tv01
-        self.result_tv02_mod = self.original_result_tv02 != self.result_tv02
-        self.result_tv03_mod = self.original_result_tv03 != self.result_tv03
-        self.result_final_mod = self.original_result_final != self.result_final
+        self.result_mod = self.original_result != self.result
         self.result_info_mod = self.original_result_info != self.result_info
-        self.result_tv01_status_mod = self.original_result_tv01_status != self.result_tv01_status
-        self.result_tv02_status_mod = self.original_result_tv02_status != self.result_tv02_status
-        self.result_tv03_status_mod = self.original_result_tv03_status != self.result_tv03_status
-        self.result_final_status_mod = self.original_result_final_status != self.result_final_status
-
+        self.result_status_mod = self.original_result_status != self.result_status
 
         data_changed_bool = (
             not self.is_update or
 
-            # # # various fields - 6 fields
-            self.diplomanumber_mod or
-            self.gradelistnumber_mod or
-            self.locked_mod or
-            self.has_reex2_mod or
-            self.has_reex3_mod or
-            self.is_withdrawn_mod or
-
-            # # # fields ce/combi avg 6 fields
-            self.grade_ce_avg_tv01_mod or
-            self.grade_ce_avg_tv02_mod or
-            self.grade_ce_avg_tv03_mod or
-            self.grade_ce_avg_final_mod or
+            self.grade_ce_avg_mod or
             self.grade_ce_avg_text_mod or
             self.grade_combi_avg_text_mod or
 
-            # # # fields endgrade sum/avg/count - 8 fields
-            self.endgrade_sum_tv01_mod or
-            self.endgrade_sum_tv02_mod or
-            self.endgrade_sum_tv03_mod or
+            self.endgrade_sum_mod or
             self.endgrade_count_mod or
-            self.endgrade_avg_tv01_mod or
-            self.endgrade_avg_tv02_mod or
-            self.endgrade_avg_tv03_mod or
+            self.endgrade_avg_mod or
             self.endgrade_avg_text_mod or
 
-            # # # fields result - 9 fields
-            self.result_tv01_mod or
-            self.result_tv02_mod or
-            self.result_tv03_mod or
-            self.result_final_mod or
+            self.result_mod or
             self.result_info_mod or
-            self.result_tv01_status_mod or
-            self.result_tv02_status_mod or
-            self.result_tv03_status_mod or
-            self.result_final_status_mod
+            self.result_status_mod
         )
 
         if data_changed_bool:
@@ -922,95 +825,57 @@ class Studentresult(Model):# PR2018-11-10
         return data_changed_bool
 
 # PR2018-06-08
-class Studentresult_log(Model):
+class Result_log(Model):
     objects = CustomManager()
 
-    studentresult_id = IntegerField(db_index=True)
+    result_id = IntegerField(db_index=True)
 
-    diplomanumber = CharField(db_index=True, max_length=10, null=True, blank=True)
-    gradelistnumber = CharField(db_index=True, max_length=10, null=True, blank=True)
-    locked = BooleanField(default=False)
-    has_reex2= BooleanField(default=False)
-    has_reex3= BooleanField(default=False)
-    is_withdrawn = BooleanField(default=False)
-
-    grade_ce_avg_tv01 = DecimalField(max_digits=5, decimal_places=2, default=0)
-    grade_ce_avg_tv02 = DecimalField(max_digits=5, decimal_places=2, default=0)
-    grade_ce_avg_tv03 = DecimalField(max_digits=5, decimal_places=2, default=0)
-    grade_ce_avg_final = DecimalField(max_digits=5, decimal_places=2, default=0)
+    grade_ce_avg = DecimalField(max_digits=5, decimal_places=2, default=0)
     grade_ce_avg_text = CharField(max_length=10, null=True, blank=True)
     grade_combi_avg_text = CharField(max_length=10, null=True, blank=True)
 
-    endgrade_sum_tv01 = PositiveSmallIntegerField(default=0)
-    endgrade_sum_tv02 = PositiveSmallIntegerField(default=0)
-    endgrade_sum_tv03 = PositiveSmallIntegerField(default=0)
+    endgrade_sum = PositiveSmallIntegerField(default=0)
     endgrade_count = PositiveSmallIntegerField(default=0)
-    endgrade_avg_tv01 = CharField(max_length=10, null=True, blank=True)
-    endgrade_avg_tv02 = CharField(max_length=10, null=True, blank=True)
-    endgrade_avg_tv03 = CharField(max_length=10, null=True, blank=True)
+    endgrade_avg = CharField(max_length=10, null=True, blank=True)
     endgrade_avg_text = CharField(max_length=10, null=True, blank=True)
 
-    result_tv01 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    result_tv02 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    result_tv03 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    result_final = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    result = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
     result_info = CharField(max_length=80, null=True, blank=True)
 
-    result_tv01_status = CharField(max_length=12, null=True)
-    result_tv02_status = CharField(max_length=12, null=True)
-    result_tv03_status = CharField(max_length=12, null=True)
-    result_final_status = CharField(max_length=12, null=True)
+    result_status = CharField(max_length=12, null=True)
 
-    diplomanumber_mod = BooleanField(default=False)
-    gradelistnumber_mod = BooleanField(default=False)
-    locked_mod = BooleanField(default=False)
-    has_reex2_mod= BooleanField(default=False)
-    has_reex3_mod= BooleanField(default=False)
-    is_withdrawn_mod = BooleanField(default=False)
-
-    grade_ce_avg_tv01_mod = BooleanField(default=False)
-    grade_ce_avg_tv02_mod = BooleanField(default=False)
-    grade_ce_avg_tv03_mod = BooleanField(default=False)
-    grade_ce_avg_final_mod = BooleanField(default=False)
+    # mod variables
+    grade_ce_avg_mod = BooleanField(default=False)
     grade_ce_avg_text_mod = BooleanField(default=False)
     grade_combi_avg_text_mod = BooleanField(default=False)
 
-    endgrade_sum_tv01_mod = BooleanField(default=False)
-    endgrade_sum_tv02_mod = BooleanField(default=False)
-    endgrade_sum_tv03_mod = BooleanField(default=False)
+    endgrade_sum_mod = BooleanField(default=False)
     endgrade_count_mod = BooleanField(default=False)
-    endgrade_avg_tv01_mod = BooleanField(default=False)
-    endgrade_avg_tv02_mod = BooleanField(default=False)
-    endgrade_avg_tv03_mod = BooleanField(default=False)
+    endgrade_avg_mod = BooleanField(default=False)
     endgrade_avg_text_mod = BooleanField(default=False)
 
-    result_tv01_mod = BooleanField(default=False)
-    result_tv02_mod = BooleanField(default=False)
-    result_tv03_mod = BooleanField(default=False)
-    result_final_mod = BooleanField(default=False)
+    result_mod = BooleanField(default=False)
     result_info_mod = BooleanField(default=False)
-
-    result_tv01_status_mod = BooleanField(default=False)
-    result_tv02_status_mod = BooleanField(default=False)
-    result_tv03_status_mod = BooleanField(default=False)
-    result_final_status_mod = BooleanField(default=False)
+    result_status_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
 # PR2018-106-17
 class Resultnote(Model):
     objects = CustomManager()
 
-    studentresult = ForeignKey(Studentresult, related_name='+', on_delete=PROTECT)
+    # PR2019-02-14 changed: refer to log table student_log instead of student, to prevent ref_int with table student
+    student = ForeignKey(Student, null=True, related_name='+', on_delete=PROTECT)
+
     resultnote =  CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
 
     is_insp = BooleanField(default=False)
 
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(default=False)
+    modified_at = DateTimeField()
 
 # PR2018-106-17
 class Resultnote_log(Model):
@@ -1018,7 +883,9 @@ class Resultnote_log(Model):
 
     resultnote_id = IntegerField(db_index=True)
     # TODO: refer to log table
-    studentresult = ForeignKey(Studentresult, related_name='+', on_delete=PROTECT)
+    # PR2019-02-14 changed: refer to log table student_log instead of student, to prevent ref_int with table student
+    student_log = ForeignKey(Student_log, null=True, related_name='+', on_delete=PROTECT)
+
     resultnote = CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
 
@@ -1026,7 +893,7 @@ class Resultnote_log(Model):
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(default=False)
+    modified_at = DateTimeField(db_index=True)
 
 # ======= Student subject ======================================================================
 
@@ -1037,34 +904,19 @@ class Studentsubject(Model):
     student = ForeignKey(Student, related_name='studres_studsubs', on_delete=PROTECT)
     schemeitem = ForeignKey(Schemeitem, related_name='schemeitem_studsubs', on_delete=PROTECT)
     cluster = ForeignKey(Cluster, null=True, blank=True, related_name='cluster_studsubs', on_delete=PROTECT)
-    # # #
+
     is_extra_subject = BooleanField(default=False)
     is_extra_subject_counts = BooleanField(default=False)
     is_choice_combi = BooleanField(default=False)
-    # # # profielwerkstuk / sectorwerkstuk
+
     pws_title = CharField(max_length=80, null=True, blank = True)
     pws_subjects = CharField(max_length=80, null=True, blank = True)
-    # # #  exemption # # #
+
     has_exemption = BooleanField(default=False)
-    # # # Tv02 # # #
-    has_tv02 = BooleanField(default=False)
-    # # # Tv03 # # #
-    has_tv03 = BooleanField(default=False)
-    # # # proof of knowledge # # #
+    has_reex = BooleanField(default=False)
+    has_reex03 = BooleanField(default=False)
     has_pok = BooleanField(default=False)  # proof of knowledge
     has_pok_status = CharField(max_length=12, null=True)
-    # # # endgrade # # #
-    endgrade_tv01 = CharField(max_length=2, null=True)
-    endgrade_tv02 = CharField(max_length=2, null=True)
-    endgrade_tv03 = CharField(max_length=2, null=True)
-    endgrade_final = CharField(max_length=2, null=True)
-    endgrade_tv01_status = CharField(max_length=12, null=True)
-    endgrade_tv02_status = CharField(max_length=12, null=True)
-    endgrade_tv03_status = CharField(max_length=12, null=True)
-    endgrade_final_status = CharField(max_length=12, null=True)
-
-    # # #
-    # put notes in a separate table, per user
 
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
     modified_at = DateTimeField()
@@ -1093,8 +945,8 @@ class Studentsubject(Model):
         self.original_pws_title = self.pws_title
         self.original_pws_subjects = self.pws_subjects
         self.original_has_exemption = self.has_exemption
-        self.original_has_tv02 = self.has_tv02
-        self.original_has_tv03 = self.has_tv03
+        self.original_has_reex = self.has_reex
+        self.original_has_reex03 = self.has_reex03
         self.original_has_pok = self.has_pok
         self.original_has_pok_status = self.has_pok_status
         self.original_endgrade_tv01 = self.endgrade_tv01
@@ -1118,8 +970,8 @@ class Studentsubject(Model):
         self.pws_title_mod = False
         self.pws_subjects_mod = False
         self.has_exemption_mod = False
-        self.has_tv02_mod = False
-        self.has_tv03_mod = False
+        self.has_reex_mod = False
+        self.has_reex03_mod = False
         self.has_pok_mod = False
         self.has_pok_status_mod = False
         self.endgrade_tv01_mod = False
@@ -1170,22 +1022,21 @@ class Studentsubject(Model):
         if self.cluster is not None:
             cluster_log = Cluster_log.objects.filter(subjecttype_id=self.cluster.id).order_by('-id').first()
 
-
         # Create method also saves record
         Studentsubject_log.objects.create(
             studentsubject_id=self.id,  # self.id gets its value in super(School, self).save
 
-            student_log = self.student_log,
-            schemeitem_log = self.schemeitem_log,
-            cluster_log = self.cluster_log,
+            student_log = student_log, #PR2019-02-15 debug: must be student_log, not self.student_log
+            schemeitem_log = schemeitem_log,#PR2019-02-15 debug: must be schemeitem_log, not self.schemeitem_log
+            cluster_log = cluster_log,#PR2019-02-15 debug: must be cluster_log, not self.cluster_log
             is_extra_subject = self.is_extra_subject,
             is_extra_subject_counts = self.is_extra_subject_counts,
             is_choice_combi = self.is_choice_combi,
             pws_title = self.pws_title,
             pws_subjects = self.pws_subjects,
             has_exemption = self.has_exemption,
-            has_tv02 = self.has_tv02,
-            has_tv03 = self.has_tv03,
+            has_reex = self.has_reex,
+            has_reex03 = self.has_reex03,
             has_pok = self.has_pok,
             has_pok_status = self.has_pok_status,
             endgrade_tv01 = self.endgrade_tv01,
@@ -1215,8 +1066,8 @@ class Studentsubject(Model):
         self.pws_title_mod = self.original_pws_title != self.pws_title
         self.pws_subjects_mod = self.original_pws_subjects != self.pws_subjects
         self.has_exemption_mod = self.original_has_exemption != self.has_exemption
-        self.has_tv02_mod = self.original_has_tv02 != self.has_tv02
-        self.has_tv03_mod = self.original_has_tv03 != self.has_tv03
+        self.has_reex_mod = self.original_has_reex != self.has_reex
+        self.has_reex03_mod = self.original_has_reex03 != self.has_reex03
         self.has_pok_mod = self.original_has_pok != self.has_pok
         self.has_pok_status_mod = self.original_has_pok_status != self.has_pok_status
         self.endgrade_tv01_mod = self.original_endgrade_tv01 != self.endgrade_tv01
@@ -1240,8 +1091,8 @@ class Studentsubject(Model):
             self.pws_title_mod or
             self.pws_subjects_mod or
             self.has_exemption_mod or
-            self.has_tv02_mod or
-            self.has_tv03_mod or
+            self.has_reex_mod or
+            self.has_reex03_mod or
             self.has_pok_mod or
             self.has_pok_status_mod or
             self.endgrade_tv01_mod or
@@ -1273,6 +1124,7 @@ class Studentsubject(Model):
         studentsubject = cls.objects.filter(student=student).order_by('schemeitem__subject__sequence', 'schemeitem__subjecttype__sequence').all()
         studentsubject_list = []
         for item in studentsubject:
+            has_pws = item.schemeitem.subjecttype.has_pws
             pws_title = ''
             pws_subjects = ''
             if item.pws_title:
@@ -1280,7 +1132,7 @@ class Studentsubject(Model):
             if item.pws_subjects:
                 pws_subjects = item.pws_subjects
             sequence = item.schemeitem.subject.sequence * 1000 + item.schemeitem.subjecttype.sequence
-            studentsubject_list.append({
+            studsubj_dict = {
                 'mode': '-',
                 'studsubj_id': item.id,
                 'stud_id': item.student.id,
@@ -1289,14 +1141,32 @@ class Studentsubject(Model):
                 'subj_name': item.schemeitem.subject.name,
                 'sjtp_id': item.schemeitem.subjecttype.id,
                 'sjtp_name': item.schemeitem.subjecttype.abbrev,
+                'sjtp_has_pws': (0, 1)[item.schemeitem.subjecttype.has_pws],
                 'sjtp_one': (0, 1)[item.schemeitem.subjecttype.one_allowed],
-                'sequence': sequence,
-                'extra_nocount': (0, 1)[item.is_extra_subject],
-                'extra_counts': (0, 1)[item.is_extra_subject_counts],
-                'choice_combi': (0, 1)[item.is_choice_combi],
-                'pws_title': pws_title,
-                'pws_subjects': pws_subjects
-            })
+                'sequence': sequence
+            }
+            # add pws only if has_pws, then pws_title = '' when empty
+            if item.schemeitem.subjecttype.has_pws:
+                pws_title = ''
+                if item.pws_title:
+                    pws_title = item.pws_title
+                studsubj_dict['pws_title'] = pws_title
+
+                pws_subjects = ''
+                if item.pws_subjects:
+                    pws_subjects = item.pws_subjects
+                studsubj_dict['pws_subjects'] = pws_subjects
+
+            if item.schemeitem.extra_nocount_allowed:
+                studsubj_dict['extra_nocount'] = (0, 1)[item.is_extra_subject],
+
+            if item.schemeitem.extra_count_allowed:
+                studsubj_dict['extra_counts'] = (0, 1)[item.is_extra_subject_counts],
+
+            if item.schemeitem.choicecombi_allowed:
+                studsubj_dict['choice_combi'] = (0, 1)[item.is_choice_combi]
+
+            studentsubject_list.append(studsubj_dict)
 
             #schemeitem = ForeignKey(Schemeitem, related_name='schemeitem_studsubs', on_delete=PROTECT)
             #cluster = ForeignKey(Cluster, null=True, blank=True, related_name='cluster_studsubs', on_delete=PROTECT)
@@ -1309,8 +1179,6 @@ class Studentsubject(Model):
             #pws_subjects = CharField(max_length=80, null=True, blank=True)
 
         return studentsubject_list
-
-
 
 # PR2018-06-06
 class Studentsubject_log(Model):
@@ -1325,63 +1193,38 @@ class Studentsubject_log(Model):
     is_extra_subject = BooleanField(default=False)
     is_extra_subject_counts = BooleanField(default=False)
     is_choice_combi = BooleanField(default=False)
-    # # # profielwerkstuk / sectorwerkstuk
+
     pws_title = CharField(max_length=80, null=True, blank = True)
     pws_subjects = CharField(max_length=80, null=True, blank = True)
-    # # #  exemption # # #
+
     has_exemption = BooleanField(default=False)
-    # # # Tv02 # # #
-    has_tv02 = BooleanField(default=False)
-    # # # Tv03 # # #
-    has_tv03 = BooleanField(default=False)
-    # # # proof of knowledge # # #
+
+    has_reex = BooleanField(default=False)
+    has_reex03 = BooleanField(default=False)
     has_pok = BooleanField(default=False)
     has_pok_status = CharField(max_length=12, null=True)
-    # # # endgrade # # #
-    endgrade_tv01 = CharField(max_length=2, null=True)
-    endgrade_tv02 = CharField(max_length=2, null=True)
-    endgrade_tv03 = CharField(max_length=2, null=True)
-    endgrade_final = CharField(max_length=2, null=True)
 
-    endgrade_tv01_status = CharField(max_length=12, null=True)
-    endgrade_tv02_status = CharField(max_length=12, null=True)
-    endgrade_tv03_status = CharField(max_length=12, null=True)
-    endgrade_final_status = CharField(max_length=12, null=True)
-
-    # # #
+    #  mod variables
     student_log_mod = BooleanField(default=False)
     schemeitem_log_mod = BooleanField(default=False)
     cluster_log_mod = BooleanField(default=False)
-    # # #
+
     is_extra_subject_mod = BooleanField(default=False)
     is_extra_subject_counts_mod = BooleanField(default=False)
     is_choice_combi_mod = BooleanField(default=False)
-    # # # profielwerkstuk / sectorwerkstuk
+
     pws_title_mod = BooleanField(default=False)
     pws_subjects_mod = BooleanField(default=False)
-    # # #  exemption # # #
+
     has_exemption_mod = BooleanField(default=False)
-    # # # Tv02 # # #
-    has_tv02_mod_mod = BooleanField(default=False)
-    # # # Tv03 # # #
-    has_tv03_mod_mod = BooleanField(default=False)
-    # # # proof of knowledge # # #
+    has_reex_mod = BooleanField(default=False)
+    has_reex03_mod = BooleanField(default=False)
     has_pok_mod = BooleanField(default=False)
     has_pok_status_mod = BooleanField(default=False)
-    # # # endgrade # # #
-    endgrade_tv01_mod = BooleanField(default=False)
-    endgrade_tv02_mod = BooleanField(default=False)
-    endgrade_tv03_mod = BooleanField(default=False)
-    endgrade_final_mod = BooleanField(default=False)
-
-    endgrade_tv01_status_mod = BooleanField(default=False)
-    endgrade_tv02_status_mod = BooleanField(default=False)
-    endgrade_tv03_status_mod = BooleanField(default=False)
-    endgrade_final_status_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
 # PR2018-106-17
 class Studentsubjectnote(Model):
@@ -1394,7 +1237,9 @@ class Studentsubjectnote(Model):
     is_insp = BooleanField(default=False)
 
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(default=False)
+    modified_at = DateTimeField()
+
+    # TODO: refer to log table studentsubject_log
 
 # PR2018-106-17
 class Studentsubjectnote_log(Model):
@@ -1402,8 +1247,7 @@ class Studentsubjectnote_log(Model):
 
     studentsubjectnote_id = IntegerField(db_index=True)
 
-    # TODO: refer to log table
-    studentsubject = ForeignKey(Studentsubject, related_name='+', on_delete=PROTECT)
+    studentsubject_log = ForeignKey(Studentsubject_log, related_name='+', on_delete=PROTECT)
     note = CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
     is_insp = BooleanField(default=False)
@@ -1415,7 +1259,7 @@ class Studentsubjectnote_log(Model):
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(default=False)
+    modified_at = DateTimeField(db_index=True)
 
 #==== GRADES ======================================================
 
@@ -1424,12 +1268,12 @@ class Grade(Model):
     objects = CustomManager()
 
     studentsubject = ForeignKey(Studentsubject, related_name='grades', on_delete=PROTECT)
-
-    examcode = CharField(max_length=4, choices=c.EXAMCODE_CHOICES) # se, pe ce, ce2, ce3, fin
-    gradeclass = CharField(max_length=1, null=True, choices=c.GRADECLASS_CHOICES) # s = score, g = grade, x = exemption, f = final grade
+    examcode = PositiveSmallIntegerField(db_index=True, default=0, choices=c.EXAMCODE_CHOICES)  # 1:se, 2:pe 3:ce, 4:ce2, 5:ce3, 6:se-exemption, 7:ce-exemption
+    gradecode = PositiveSmallIntegerField(db_index=True, default=0, choices=c.GRADECODE_CHOICES) # s = score, g = grade, pe-ce, f = final grade
+    period = PositiveSmallIntegerField(db_index=True, default=0, choices=c.PERIOD_CHOICES) # 1 = period 1, 2 = period 2, 3 = period 3
     value = CharField(max_length=4, null=True, blank=True)
-    status = CharField(max_length=12, null=True, blank=True)
-    published = BooleanField(default=False)
+    status = CharField(db_index=True, max_length=12, null=True, blank=True)
+    published = BooleanField(db_index=True, default=False)
 
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
     modified_at = DateTimeField()
@@ -1445,14 +1289,14 @@ class Grade(Model):
             self.original_studentsubject = None
 
         self.original_examcode = self.examcode
-        self.original_gradeclass = self.gradeclass
+        self.original_gradecode = self.gradecode
         self.original_published = self.published
         self.original_status = self.status
 
         # PR2018-11-10 initialize here, otherwise delete gives error: 'Examyear' object has no attribute 'examyear_mod'
         # # # various fields - 6 fields
         self.examcode_mod = False
-        self.gradeclass_mod = False
+        self.gradecode_mod = False
         self.value_mod = False
         self.published_mod = False
         self.status_mod = False
@@ -1495,13 +1339,13 @@ class Grade(Model):
             studentsubject_log = self.studentsubject_log,
 
             examcode=self.examcode,
-            gradeclass=self.gradeclass,
+            gradecode=self.gradecode,
             value=self.value,
             published=self.published,
             status=self.status,
 
             examcode_mod=self.examcode_mod,
-            gradeclass_mod=self.gradeclass_mod,
+            gradecode_mod=self.gradecode_mod,
             value_mod=self.value_mod,
             status_mod=self.status_mod,
 
@@ -1516,7 +1360,7 @@ class Grade(Model):
 
         self.studentsubject_mod = self.original_studentsubject != self.studentsubject
         self.examcode_mod = self.original_examcode != self.examcode
-        self.gradeclass_mod = self.original_gradeclass != self.gradeclass
+        self.gradecodemod = self.original_gradecode != self.gradecode
         self.value_mod = self.original_value != self.value
         self.published_mod = self.original_published != self.published
         self.status_mod = self.original_status != self.status
@@ -1526,7 +1370,7 @@ class Grade(Model):
 
             self.studentsubject_mod or
             self.examcode_mod or
-            self.gradeclass_mod or
+            self.gradecode_mod or
             self.value_mod or
             self.published_mod or
             self.status_mod
@@ -1552,21 +1396,21 @@ class Grade_log(Model):
 
     studentsubject_log = ForeignKey(Studentsubject_log, related_name='+', on_delete=PROTECT)
 
-    examcode = CharField(max_length=4, null=True)
-    gradeclass = CharField(max_length=1, null=True)
+    examcode = PositiveSmallIntegerField(default=0)
+    gradecode = PositiveSmallIntegerField(default=0)
     value = CharField(max_length=4, null=True)
     published = BooleanField(default=False)
     status = CharField(max_length=12, null=True)
 
     examcode_mod = BooleanField(default=False)
-    gradeclass_mod = BooleanField(default=False)
+    gradecode_mod = BooleanField(default=False)
     value_mod = BooleanField(default=False)
     published_mod = BooleanField(default=False)
     status_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
     @property
     def mode_str(self):

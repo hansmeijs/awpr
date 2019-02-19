@@ -150,7 +150,7 @@ class Country_log(Model):
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
     def __str__(self):
         return self.name
@@ -338,7 +338,7 @@ class Examyear_log(Model):
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
     @property
     def locked_str(self):
@@ -364,6 +364,7 @@ class Departmentbase(Model):# PR2018-10-17
 
 class Department(Model):# PR2018-08-10
     objects = CustomManager()
+
     # base and  examyear cannot be changed
     base = ForeignKey(Departmentbase, related_name='departments', on_delete=PROTECT)
     examyear = ForeignKey(Examyear, related_name='examyears', on_delete=PROTECT)
@@ -372,10 +373,9 @@ class Department(Model):# PR2018-08-10
         help_text=_('Required. {} characters or fewer.'.format('50')),)
     abbrev = CharField(max_length=4, # PR2018-08-06 set Unique per Country True. Was: unique=True,
         help_text=_('Required. {} characters or fewer.'.format('4')),)
-    sequence = PositiveSmallIntegerField(default=1)
+    sequence = PositiveSmallIntegerField(db_index=True, default=1)
     level_req = BooleanField(default=True)
     sector_req = BooleanField(default=True)
-    choicecombi_possible = BooleanField(default=False)
     level_caption = CharField(max_length=20, null=True, blank=True)  # PR2019-01-17
     sector_caption = CharField(max_length=20, null=True, blank=True)  # PR2019-01-17
 
@@ -386,18 +386,18 @@ class Department(Model):# PR2018-08-10
         ordering = ['sequence',]
 
     def __str__(self):
-        return self.name
+        return self.abbrev
 
     def __init__(self, *args, **kwargs):
         super(Department, self).__init__(*args, **kwargs)
-        # private variable __original checks if data_has_changed, to prevent update record when no changes are made.
 
+        # private variable __original checks if data_has_changed, to prevent update record when no changes are made.
+        # Otherwise a logrecord is created every time the save button is clicked without changes
         self.original_name = self.name
         self.original_abbrev = self.abbrev
         self.original_sequence = self.sequence
         self.original_level_req = self.level_req
         self.original_sector_req = self.sector_req
-        self.original_choicecombi_possible = self.choicecombi_possible
         self.original_level_caption = self.level_caption
         self.original_sector_caption = self.sector_caption
 
@@ -425,17 +425,11 @@ class Department(Model):# PR2018-08-10
         # Override the save() method of the model to perform validation on every save.
         # https://stackoverflow.com/questions/14470585/how-to-validate-uniqueness-constraint-across-foreign-key-django?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
         # self.full_clean()
-        # logger.debug('Department Model self.id: ' + str(self.id) + '> type: ' + str(type(self.id)))
-        # logger.debug('Department Model self.level_req: ' + str(self.level_req) + '> type: ' + str(type(self.level_req)))
-        # logger.debug('Department Model self.sector_req: ' + str(self.sector_req) + '> type: ' + str(type(self.sector_req)))
 
     # check if data has changed. If so: save object
         if self.data_has_changed():
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()  # timezone.now() is timezone aware; datetime.now() is timezone naive.
-            self.mode = ('c', 'u')[self.is_update]  # result = (on_false, on_true)[condition]
 
-    # When new record: First create base record. base.id is used in Department. Create also saves new record
+            # First create base record. base.id is used in Department. Create also saves new record
             if not self.is_update:
                 self.base = Departmentbase.objects.create()
 
@@ -452,13 +446,6 @@ class Department(Model):# PR2018-08-10
         super(Department, self).delete(*args, **kwargs)
 
     def save_to_log(self):
-        # on delete: modified time = now instead of _modified_by of this instance
-        _modified_by = self.modified_by
-        _modified_at = self.modified_at
-        if self.mode == 'd':
-            _modified_by = self.request.user
-            _modified_at = timezone.now()
-
         # Create method also saves record
         Department_log.objects.create(
             department_id=self.id, # self.id gets its value in super(School, self).save
@@ -471,7 +458,6 @@ class Department(Model):# PR2018-08-10
             sequence = self.sequence,
             level_req = self.level_req,
             sector_req = self.sector_req,
-            choicecombi_possible = self.choicecombi_possible,
             level_caption = self.level_caption,
             sector_caption = self.sector_caption,
 
@@ -481,13 +467,12 @@ class Department(Model):# PR2018-08-10
             sequence_mod = self.sequence_mod,
             level_req_mod = self.level_req_mod,
             sector_req_mod = self.sector_req_mod,
-            choicecombi_possible_mod = self.choicecombi_possible_mod,
             level_caption_mod=self.level_caption_mod,
             sector_caption_mod=self.sector_caption_mod,
 
             mode=self.mode,
-            modified_by=_modified_by,
-            modified_at=_modified_at
+            modified_by=self.modified_by,
+            modified_at=self.modified_at
         )
 
     def data_has_changed(self, mode = None):  # PR2018-11-22
@@ -499,7 +484,6 @@ class Department(Model):# PR2018-08-10
         self.sequence_mod = self.original_sequence != self.sequence
         self.level_req_mod = self.original_level_req != self.level_req
         self.sector_req_mod = self.original_sector_req != self.sector_req
-        self.choicecombi_possible_mod = self.original_choicecombi_possible != self.choicecombi_possible
         self.level_caption_mod = self.original_level_caption != self.level_caption
         self.sector_caption_mod = self.original_sector_caption != self.sector_caption
 
@@ -510,7 +494,6 @@ class Department(Model):# PR2018-08-10
             self.sequence_mod or
             self.level_req_mod or
             self.sector_req_mod or
-            self.choicecombi_possible_mod or
             self.level_caption_mod or
             self.sector_caption_mod
         )
@@ -539,10 +522,6 @@ class Department(Model):# PR2018-08-10
     @property
     def sector_req_str(self):
         return c.YES_NO_BOOL_DICT.get(self.sector_req)
-
-    @property
-    def choicecombi_possible_str(self):
-        return c.YES_NO_BOOL_DICT.get(self.choicecombi_possible)
 
 #  ++++++++++  Class methods  ++++++++++++++++++++++++
     @classmethod
@@ -681,13 +660,11 @@ class Department(Model):# PR2018-08-10
                         _abbrev = item.abbrev
                         _level_req_str = 'true' if item.level_req else 'false'
                         _sector_req_str = 'true' if item.sector_req else 'false'
-                        _choicecombi_possible_str = 'true' if item.choicecombi_possible else 'false'
 
                         attr[_id_str] = {
                             'abbrev': _abbrev,
                             'level_req':_level_req_str,
-                            'sector_req':_sector_req_str,
-                            'chcom_poss':_choicecombi_possible_str
+                            'sector_req':_sector_req_str
                         }
         # logger.debug('attr: ' + str(attr))
         return attr
@@ -728,7 +705,6 @@ class Department(Model):# PR2018-08-10
                             "abbrev": dep.abbrev,
                             "level_req": dep.level_req,
                             "sector_req": dep.sector_req,
-                            "chcom_poss": dep.choicecombi_possible,
                             "level_caption": level_caption,
                             "sector_caption": sector_caption,
                         })
@@ -749,7 +725,6 @@ class Department_log(Model):
     sequence = PositiveSmallIntegerField()
     level_req = BooleanField(default=True)
     sector_req = BooleanField(default=True)
-    choicecombi_possible = BooleanField(default=False)
     level_caption = CharField(max_length=20, null=True)
     sector_caption = CharField(max_length=20, null=True)
 
@@ -763,7 +738,7 @@ class Department_log(Model):
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
     def __str__(self):
         return self.name
@@ -775,11 +750,6 @@ class Department_log(Model):
     @property
     def sector_req_str(self):
         return c.YES_NO_BOOL_DICT.get(self.sector_req)
-
-    @property
-    def choicecombi_possiblestr(self):
-        return c.YES_NO_BOOL_DICT.get(self.choicecombi_possible)
-
 
     @property
     def mode_str(self):
@@ -1042,6 +1012,7 @@ class School_log(Model):
     school_id = IntegerField(db_index=True)
 
     base = ForeignKey(Schoolbase, related_name='+', on_delete=PROTECT)
+
     examyear = ForeignKey(Examyear, related_name='+', on_delete=PROTECT)
 
     name = CharField(max_length=50,null=True)
@@ -1062,7 +1033,7 @@ class School_log(Model):
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
     def __str__(self):
         return self.name
@@ -1103,7 +1074,7 @@ class School_message(Model):
     is_unread = BooleanField(default=False)
 
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(default=False)
+    modified_at = DateTimeField()
 
 # PR2018-106-17
 class School_message_log(Model):
@@ -1118,7 +1089,7 @@ class School_message_log(Model):
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(default=False)
+    modified_at = DateTimeField(db_index=True)
 
 # PR2018-06-07
 class Entrylist(Model):
@@ -1152,7 +1123,6 @@ class Schoolsetting(Model):  # PR2018-12-02
     bool02 = BooleanField(default=False)
     date01 = DateTimeField(null=True)
     date02 = DateTimeField(null=True)
-
 
 
 # +++++++++++++++++++++   Functions Schooldefault  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

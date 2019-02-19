@@ -284,6 +284,7 @@ class SubjecttypeEditForm(ModelForm):  # PR2018-08-11
 
         # ======= field 'one allowed' ============
         self.fields['one_allowed'] = BooleanField(
+            required=False,
             help_text= _('If checked, student can only have one subject of this subject type.')
         )
 

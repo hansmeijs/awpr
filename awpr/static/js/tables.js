@@ -285,6 +285,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         }}}}
         return col_index;
     }
+
 //========= function get_arrayRow_by_keyValue  ====================================
     function get_arrayRow_by_keyValue (objArray, arrKey, keyValue) {
         // Function returns row of array that contains Value in objKey PR2019-01-05
@@ -315,6 +316,23 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         }}}}
         return row;
     }
+
+
+//========= function get_object_value_by_key  ====================================
+    function get_obj_value_by_key (obj, objKey) {
+        // Function returns value of key in obj PR2019-02-19
+        // obj:  {excCol: "ANAAM", awpCol: "lastname", awpCaption: "Achternaam"}
+        let obj_value;
+        if (!!obj && !!objKey){
+            if (objKey in obj) {
+                obj_value = obj[objKey];
+            }
+        }
+        return obj_value;
+    }
+
+
+
 
 //========= function found_in_list_str  ======== PR2019-01-22
     function found_in_list_str(value, list_str ){

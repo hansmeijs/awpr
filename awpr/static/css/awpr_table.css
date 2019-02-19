@@ -465,30 +465,36 @@ a:hover{
         /*border: 1px solid #e1edff;*/
         padding: 2px 4px;
 }
+
+/*
 .c_table_stud tbody td:nth-child(1) {
         text-align: center;
         background-color: #F5FAFF; /* RGB 245, 250, 255 #F5FAFF = licht licht blauw; #B8CCE4 = 'TextboxBackColor Default Schema Blauw lichtblauw */
 
-}
-
+/*}
+*/
+/*
 .c_table_stud tbody tr:nth-child(even) td {
         /*background-color: #f4fbff; /* RGB(244,251,255) heel licht blauw */
-        background-color: #F5FAFF; /* RGB 245, 250, 255 #F5FAFF = licht licht blauw; #B8CCE4 = 'TextboxBackColor Default Schema Blauw lichtblauw */
+       /* background-color: #F5FAFF; /* RGB 245, 250, 255 #F5FAFF = licht licht blauw; #B8CCE4 = 'TextboxBackColor Default Schema Blauw lichtblauw */
 
         /*background-color: rgba(0, 169, 230, 0.1)*/
-}
+/*}
+*/
 
 /* Table Footer */
 .c_table_stud tfoot th {
         background-color: #376191;  /* RGB(55,97,145) FooterBackColor Default Schema Blauw medium blauw  */
         text-align: left;
 }
+/*
 .c_table_stud tfoot th:first-child {
         text-align: left;
 }
-.c_table_stud tbody td:empty {
+*/
+/*.c_table_stud tbody td:empty {
         background-color: #ffcccc;
-}
+}*/
 
 .submit-button {
     font-size: 14px;
@@ -806,3 +812,44 @@ a:hover{
     padding: 4px 16px;
     border: none;
 }
+
+.display_show {
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
+}
+.display_hide {
+  display:none;
+}
+
+.cell_error_odd {
+    background: #ffcccc;
+}
+.cell_error_even {
+    background: #ffefef;
+}
+
+.cell_saved_odd {
+    background: #ccffcc;
+}
+.cell_saved_even {
+    background: #deffde;
+}
+
+.cell_unchanged_odd {
+    background: #e0e0e0;  /* light grey */
+
+}
+.cell_unchanged_even {
+    background: #f8f8f8;  /* light light grey */
+}
+
+
+
+/*
+.cell_error tr:nth-child(even) td {
+        background-color: #f4fbff; /* RGB(244,251,255) heel licht blauw */
+        /*background-color: #F5FAFF; /* RGB 245, 250, 255 #F5FAFF = licht licht blauw; #B8CCE4 = 'TextboxBackColor Default Schema Blauw lichtblauw */
+    /*background: #ffcccc
+        /*background-color: rgba(0, 169, 230, 0.1)*/
+/*}*/

@@ -1,8 +1,6 @@
-
-
-var file_types = {
-    xls:"application/vnd.ms-excel",
-    xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"};
+//var file_types = {
+//    xls:"application/vnd.ms-excel",
+//    xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"};
 
 $(document).ready(function() {
 
@@ -60,8 +58,6 @@ console.log("stored_settings: " , stored_settings);
         xls:"application/vnd.ms-excel",
         xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     };
-
-
 
 
 //=========   handle_file_dialog   ======================
@@ -268,7 +264,7 @@ console.log("e.target.currentTarget.id", e.currentTarget.id) ;
            // PR2017-11-08 debug: reader.onload didn't work when reader.readAsBinaryString was placed after reader.onload
 
             // PR2018-12-09 debug: leave functions that depend on reading file within onload.
-            // Thisway code executing stops till loading has finuished.
+            // This way code executing stops till loading has finished.
             // Otherwise use Promise. See: https://javascript.info/promise-basics
             reader.onload = function(event) {
                 var data = event.target.result;
@@ -508,8 +504,8 @@ console.log("excel_items ", excel_items);
             excel_sectors = excel_items;
         }
 
-console.log("stored_items ", stored_items);
-console.log("excel_items ", excel_items);
+console.log("stored_columns ", stored_columns);
+console.log("excel_columns ", excel_columns);
 
     }  // Fill_Excel_Items
 
@@ -518,15 +514,15 @@ console.log("excel_items ", excel_items);
 console.log("=========  function FillDataTable =========");
 
 //--------- delete existing rows
-        $("#theadID,#tbodyID ").html("");
+        $("#id_thead, #id_tbody").html("");
 
         if(!!worksheet_data && !!excel_columns){
             // create a <tblHead> element
-            var tblHead = document.getElementById('theadID');
-            var tblBody = document.getElementById('tbodyID');
+            let tblHead = document.getElementById('id_thead');
+            let tblBody = document.getElementById('id_tbody');
 
 //--------- insert tblHead row of datatable
-            var tblHeadRow = tblHead.insertRow();
+            let tblHeadRow = tblHead.insertRow();
 
             //PR2017-11-21 debug: error when StartColNumber > 1, j must start at 0
             //var EndIndexPlusOne = (sheet_range.EndColNumber) - (sheet_range.StartColNumber -1)
@@ -559,6 +555,132 @@ console.log("=========  function FillDataTable =========");
             //table.setAttribute("border", "2");
         }; // if(!!worksheet_data && !!excel_columns){
     };//function DataTabel_Set() {
+
+
+//=========  FillDataTableAfterUpload  ==============================
+    function FillDataTableAfterUpload(response, sheet_range) {
+console.log("=========  function FillDataTableAfterUpload =========");
+
+//--------- delete existing rows
+       // $("#id_thead, #id_tbody").html("");
+
+        let tblBody =$("#id_tbody");
+        tblBody.html("");
+
+        if(!!worksheet_data && !!excel_columns){
+            // create a <tblHead> element
+            //let tblHead = document.getElementById('id_thead');
+            //let tblBody = document.getElementById('id_tbody');
+
+//--------- insert tblHead row of datatable
+            //let tblHeadRow = tblHead.insertRow();
+
+            //PR2017-11-21 debug: error when StartColNumber > 1, j must start at 0
+            //var EndIndexPlusOne = (sheet_range.EndColNumber) - (sheet_range.StartColNumber -1)
+
+            //index j goes from 0 to ColCount-1, excel_columns index starts at 0, last index is ColCount-1
+            //for (let j = 0 ; j <sheet_range.ColCount; j++) {
+            //    let cell = tblHeadRow.insertCell(-1);
+            //    let excKey = excel_columns[j].excKey;
+            //    cell.innerHTML = excKey;
+            //    cell.setAttribute("id", "idTblCol_" + excKey);
+            //}; //for (let j = 0; j < 2; j++)
+
+//--------- iterate through response rows
+            //var EndRowIndex = 9;
+            var LastRowIndex = sheet_range.RowCount -1;
+            // worksheet_data has no header row, start allways at 0
+            if (!selected_no_header) { --LastRowIndex;}
+            //if (EndRow-1 < EndRowIndex) { EndRowIndex = EndRow-1;};
+            for (let i = 0, len = response.length; i <= len; i++) {
+                let datarow = response[i];
+
+console.log("datarow: ", i , datarow );
+//e_idnumber: "ID number already exists."
+//e_lastname: "Student name already exists."
+//o_firstname: "Arlienne Marie Nedelie"
+//o_fullname: "Arlienne Marie Nedelie Frans"
+//o_idnumber: "1996011503"
+//o_lastname: "Frans"
+
+// if s_idnumber is not present, the record is not saved
+                let s_idnumber = get_obj_value_by_key (datarow, "s_idnumber")
+                let record_is_saved = !!s_idnumber
+
+//--------- iterate through columns of response row
+
+// ---  add <tr>
+                let id_datarow =  "id_datarow_" + i.toString()
+                let class_background;
+                if (record_is_saved){
+                    if (i%2 === 0) {
+                        class_background = "cell_saved_even";
+                    } else {
+                        class_background = "cell_saved_odd";
+                    }
+                } else {
+                    if (i%2 === 0) {
+                        class_background = "cell_unchanged_even";
+                    } else {
+                        class_background = "cell_unchanged_odd";
+                    }
+                }
+                $("<tr>").appendTo(tblBody)
+                    .attr({"id": id_datarow})
+                    .addClass(class_background);
+                let tblRow = $("#" + id_datarow);
+                for (let j = 0, len = excel_columns.length ; j < len; j++) {
+
+//========= Create td
+                    let id_datacell =  "id_datacell_" + i.toString() + "_" + + j.toString()
+                    $("<td>").appendTo(tblRow)
+                             .attr({"id": id_datacell});
+                    let tblCell = $("#" + id_datacell);
+
+                    let key = get_obj_value_by_key (excel_columns[j], "awpKey");
+// ---  skip if column not linked
+                    if (!!key) {
+
+                        let o_value, e_value, s_value;
+                        o_value = get_obj_value_by_key (datarow, "o_" + key);
+                        e_value = get_obj_value_by_key (datarow, "e_" + key);
+                        s_value = get_obj_value_by_key (datarow, "s_" + key);
+
+
+                        if(!!o_value){
+                            tblCell.html(o_value);
+                        }
+                        // add tooltip, set background color pink
+
+                        if (!!e_value){
+                            if (i%2 === 0) {class_background = "cell_error_even"; } else { class_background = "cell_error_odd"; }
+                            tblCell.html(o_value);
+                            tblCell.attr({"data-toggle": "tooltip", "title": e_value})
+                                    .addClass(class_background);
+                        } else {
+                            tblCell.html(s_value);
+                        }
+                        tblCell.addClass(class_background);
+
+
+
+
+
+
+                    }
+
+//console.log("worksheet_data[" + i + "][" + j + "]: <" + worksheet_data[i][j]) + ">";
+
+
+
+
+
+
+
+                } //for (let j = 0; j < 2; j++)
+            } //for (let i = 0; i < 2; i++)
+        }; // if(!!worksheet_data && !!excel_columns){
+    };//function FillDataTableAfterUpload() {
 
 
 //========= is_valid_filetype  ====================================
@@ -1185,29 +1307,29 @@ console.log("---------  function UpdateDatatableHeader ---------");
 //========= UPLOAD DATA =====================================
     $("#btn_import").on("click", function () {
 console.log ("==========  UPLOAD DATA ==========");
-//console.log (stored_columns);
 
         const import_student_load_url = $(this).data("import_student_load_url"); // get the url of the `Student_Import_Load` view
 
-//console.log(import_student_load_url);
-        var rowLength = 0, colLength = 0;
+//--------- delete existing rows
+        $("#id_tbody").html("");
+
+//--------- shoq loading gif
+        ShowLoadingGif(true);
+
+        let rowLength = 0, colLength = 0;
         if(!!worksheet_data){rowLength = worksheet_data.length;};
         if(!!stored_columns){colLength = stored_columns.length;};
         if(rowLength > 0 && colLength > 0){
 
-//------ loop through all rows of worksheet_data
-            var students = [];
+// ---  loop through all rows of worksheet_data
+            let students = [];
 // row <3 is for testing TODO: replace with rowLength
-            for (let row = 0 ; row <rowLength; row++) {
+            for (let row = 0 ; row < rowLength; row++) {
                 let DataRow = worksheet_data[row];
 
-//console.log ("DataRow");
-//console.log (DataRow);
-// stored_columns: [{awpCol: "idnumber", caption: "ID nummer", excCol: "ID"}, ...]
-
-//------ loop through rows of excel_columns
+//------ loop through excel_columns
                 let student = {};
-                for (let idx = 0 ; idx < excel_columns.length; idx++) {
+                for (let idx = 0, len = excel_columns.length ; idx < len; idx++) {
                     if (!!excel_columns[idx].awpKey){
                         let awp_key = excel_columns[idx].awpKey;
                         if (!!DataRow[idx]){
@@ -1215,38 +1337,49 @@ console.log ("==========  UPLOAD DATA ==========");
                         }
                     }
                 }; //for (let col = 1 ; col <colLength; col++)
+                students.push(student);
+            }  // for (let row = 0 ; row < 5; row++)
 
-console.log ("student");
-console.log (student);
-
-                let student_json = JSON.stringify(student);
-
-                // students.push(student);
-
-                students[row] = student; // student_json;
-
-            } // for (let row = 0 ; row <3; row++)
-
-            var parameters = {
-              "students": JSON.stringify (students)
-            };
-
-console.log ("parameters");
-console.log (parameters);
+            let parameters = {"students": JSON.stringify (students)};
 
             $.ajax({
                 type: "POST",
                 url: import_student_load_url,
                 data: parameters,
-                success: function (msg) {
-                    alert (msg);
+                dataType:'json',
+                success: function (response) {
+console.log("========== response Upload Students ==>", typeof response,  response);
+
+//--------- hide loading gif
+                    ShowLoadingGif(false);
+
+                    FillDataTableAfterUpload(response, worksheet_range);
                 },
                 error: function (xhr, msg) {
-                    console.log(msg + '\n' + xhr.responseText);
+//--------- hide loading gif
+                    ShowLoadingGif(false);
+
+                    alert(msg + '\n' + xhr.responseText);
                 }
             });
         }; //if(rowLength > 0 && colLength > 0)
     }); //$("#btn_import").on("click", function ()
 //========= END UPLOAD =====================================
 
+    function ShowLoadingGif(show) {
+    //--------- show / hide loading gif PR2019-02-19
+        let loading_img = $("#id_loading_img");
+        let datatable = $("#id_table");
+        if (show){
+            loading_img.removeClass("display_hide")
+                        .addClass("display_show");
+            datatable.removeClass("display_show")
+                       .addClass("display_hide");
+        } else {
+            loading_img.removeClass("display_show")
+                       .addClass("display_hide");
+            datatable.removeClass("display_hide")
+                        .addClass("display_show");
+        }
+    }
     }); //$(document).ready(function() {

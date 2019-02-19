@@ -3,7 +3,7 @@ from django.forms import Form, ModelForm, CharField, ChoiceField, MultipleChoice
 from django.forms import formset_factory, modelformset_factory, inlineformset_factory
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
-from students.models import Student, Studentresult, Studentsubject, Grade, Birthcountry, Birthcity
+from students.models import Student, Result, Studentsubject, Grade, Birthcountry, Birthcity
 
 from schools.models import Country, Examyear
 # PR2018-04-20 from: https://experiencehq.net/articles/better-django-modelform-html
@@ -158,30 +158,18 @@ class StudentEditForm(ModelForm):  # PR2018-08-11
 
 
 # === Student result =====================================
-class StudentresultEditForm(ModelForm):  # PR2018-11-21
+class ResultEditForm(ModelForm):  # PR2018-11-21
     class Meta:
-        model = Studentresult
-        fields = ('diplomanumber', 'gradelistnumber', 'locked', 'has_reex2', 'has_reex3', 'is_withdrawn',
-                  'grade_ce_avg_tv01', 'grade_ce_avg_tv02', 'grade_ce_avg_tv03', 'grade_ce_avg_final', 'grade_ce_avg_text', 'grade_combi_avg_text',
-                  'endgrade_sum_tv01', 'endgrade_sum_tv02', 'endgrade_sum_tv03', 'endgrade_count',
-                  'endgrade_avg_tv01', 'endgrade_avg_tv02', 'endgrade_avg_tv03', 'endgrade_avg_text',
-                  'result_tv01', 'result_tv02', 'result_tv03', 'result_final', 'result_info',
-                  'result_tv01_status', 'result_tv02_status', 'result_tv03_status', 'result_final_status'
+        model = Result
+        fields = ('grade_ce_avg', 'grade_ce_avg_text', 'grade_combi_avg_text',
+                  'endgrade_sum', 'endgrade_count', 'endgrade_avg', 'endgrade_avg_text',
+                  'result', 'result_info', 'result_status'
                   )
-
-        labels = {
-            'diplomanumber': _('Diploma number'),
-            'gradelistnumber': _('gradelist number'),
-            'locked': _('locked'),
-            'has_reex2': _('has_reex2'),
-            'has_reex3': _('has_reex3'),
-            'is_withdrawn': _('is_withdrawn')
-        }
 
     def __init__(self, *args, **kwargs):
         # To get request.user. Do not use kwargs.pop('user', None) due to potential security hole
         self.request = kwargs.pop('request', None)
-        super(StudentresultEditForm, self).__init__(*args, **kwargs)
+        super(ResultEditForm, self).__init__(*args, **kwargs)
 
         # self.this_instance = kwargs.get('instance')
 
@@ -199,9 +187,7 @@ class StudentsubjectAddForm(ModelForm):  # PR2018-11-27
         fields = ( 'schemeitem',  'cluster',
             'is_extra_subject', 'is_extra_subject_counts', 'is_choice_combi',
             'pws_title', 'pws_subjects',
-            'has_exemption', 'has_tv02', 'has_tv03', 'has_pok', 'has_pok_status',
-            'endgrade_tv01', 'endgrade_tv02', 'endgrade_tv03', 'endgrade_final',
-            'endgrade_tv01_status','endgrade_tv02_status', 'endgrade_tv03_status', 'endgrade_final_status'
+            'has_exemption', 'has_reex', 'has_reex03', 'has_pok', 'has_pok_status'
         )
 
     def __init__(self, *args, **kwargs):
@@ -248,10 +234,10 @@ StudentsubjectFormset = modelformset_factory(
     }
 )
 
-#StudentsubjectFormset = modelformset_factory(Studentresult,  # parent form
+#StudentsubjectFormset = modelformset_factory(Result,  # parent form
 #                                            StudentsubjectFormsetForm,  # inline-form
 #                                            #fk_name='studres_studsubs',
-#                                            fields=['studentresult', 'pws_title',], # inline-form fields
+#                                            fields=['result', 'pws_title',], # inline-form fields
 #                                            # labels for the fields
 #                                            labels={
 #                                                  'pws_title': _(u'Question and '
@@ -271,8 +257,7 @@ StudentsubjectFormset = modelformset_factory(
 class GradeAddForm(ModelForm):  # PR2018-11-27
     class Meta:
         model = Grade
-        fields = ( 'studentsubject', 'examcode',  'gradeclass',
-            'value', 'status'
+        fields = ( 'studentsubject', 'examcode', 'gradecode', 'period', 'value', 'status' , 'published'
         )
 
     def __init__(self, *args, **kwargs):
@@ -291,13 +276,6 @@ class GradeEditForm(ModelForm):  # PR2018-11-24
         # self.src = kwargs.pop('src', None)
         super(GradeEditForm, self).__init__(*args, **kwargs)
         #self.this_instance = kwargs.get('instance')
-
-
-
-
-
-
-
 
 
 

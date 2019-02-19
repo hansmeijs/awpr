@@ -10,11 +10,22 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# PR2019-01-04 from https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
+from django.utils.functional import Promise
+from django.utils.encoding import force_text
+from django.core.serializers.json import DjangoJSONEncoder
+
+class LazyEncoder(DjangoJSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Promise):
+            return force_text(obj)
+        return super(LazyEncoder, self).default(obj)
+
 def get_headerbar_param(request, params):
     # PR2018-05-28 set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
-    # logger.debug('===== get_headerbar_param ===== ')
+    logger.debug('===== get_headerbar_param ===== ')
 
     # select_country overrides display_country
     display_country = False
@@ -51,6 +62,7 @@ def get_headerbar_param(request, params):
         # PR2018-05-11 set language
         if request.user.lang is not None:
             activate(request.user.lang)
+            logger.debug('activated lang: ' + str(request.user.lang))
         else:
             activate('nl')
 

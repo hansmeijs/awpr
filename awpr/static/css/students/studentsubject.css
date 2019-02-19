@@ -76,48 +76,32 @@
 
 }
 
-.content_header > div {
+.content_header_left {
     flex: 1;
-    /*border: 1px solid #B8CCE4; /*rgba(0,0,0,0.25);*/
+    text-align: left;
 }
 
 .content_header_right {
-    /*flex: 1;*/
-
+    flex: 1;
     display: -webkit-box;
     display: -ms-flexbox;
     display: flex;
 
-    -webkit-box-orient: horizontal;
-    -webkit-box-direction: reverse;
-        -ms-flex-direction: row-reverse;
-            flex-direction: row-reverse; /* flex-direction: row | row-reverse | column | column-reverse; */
-
-    -ms-flex-wrap: wrap;
-        flex-wrap: wrap;  /* flex-wrap: nowrap | wrap | wrap-reverse;  */
-
-    -ms-flex-pack: distribute;
-        justify-content: space-around; /*center space-between; space-around PR2019-01-05 */
-    /*  flex-flow: is a shorthand flex-direction and flex-wrap <‘flex-direction’> || <‘flex-wrap’>  */
-
-    /*  align-items defines how flex items are laid out along the cross axis on the current line. */
-     -webkit-box-align: stretch;
-         -ms-flex-align: stretch;
-             align-items: stretch;   /*   align-items: stretch | flex-start | flex-end | center |  */
-
-    /*  align-content aligns a flex container's lines within when there is extra space in the cross-axis,   */
-    -ms-flex-line-pack: start;
-        align-content: flex-start;  /* flex-start | flex-end | center | space-between | space-around | stretch; */
-
-
-    /*border: 1px solid #B8CCE4; /*rgba(0,0,0,0.25);*/
+    text-align: right;
 }
-.content_header_button {
-    flex: 0 0 80px;
+.content_subheader_left {
+    flex: 2;
+    text-align: left;
 }
-.content_header_right_text {
+
+.content_subheader_right {
     flex: 1;
-    padding: 0px 8px;
+    text-align: right;
+}
+.btn-package {
+    color: #edf2f8;
+    background-color: #4f6c8f;
+    border-color: #2d4e77;
 }
 
 

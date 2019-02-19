@@ -17,22 +17,20 @@ $(function() {
 
     let databox = $("#id_data");
     const student_list = databox.data("student_list");
+console.log(student_list);
 
 // ---  add 'onclick' event handler to all table bodies
-    // PR2019-02-09 debug. jQ fired event twice, JS works fine.
-    // was: sel_tbody.on("click", HandleTableRowClicked);
-    document.getElementById("id_search_tbody").addEventListener("click", HandleTableRowClicked);
-    document.getElementById("id_picker_tbody").addEventListener("click", HandleTableRowClicked);
-    document.getElementById("id_data_tbody").addEventListener("click", HandleTableRowClicked);
+        // PR2019-02-09 debug. jQ fired event twice, JS works fine.
+        // was: sel_tbody.on("click", HandleTableRowClicked);
+        document.getElementById("id_search_tbody").addEventListener("click", HandleTableRowClicked);
+        document.getElementById("id_picker_tbody").addEventListener("click", HandleTableRowClicked);
+        document.getElementById("id_data_tbody").addEventListener("click", HandleTableRowClicked);
 
 // ---  add 'keyup' event handler to filter input
     document.getElementById("id_search_filter").addEventListener("keyup", function() {
-                delay(function(){HandleSearchFilterEvent("search");}, 250 );});
+                delay(function(){HandleSearchFilterEvent("search");}, 150 );});
     document.getElementById("id_picker_filter").addEventListener("keyup", function() {
-                delay(function(){HandleSearchFilterEvent("picker");}, 250 );});
-
-    document.getElementById("id_btn_save").addEventListener("click", UploadStudentSubjects);
-
+                delay(function(){HandleSearchFilterEvent("picker");}, 150 );});
 
         $("#id_mod_btn_ok").on("click", function(){handle_mod_btn_ok();});
         $("#id_mod_btn_del").on("click", function(){handle_mod_btn_del();});
@@ -74,11 +72,6 @@ console.log("===  HandleTableRowClicked  =====") ;
 // ---  get clicked tablerow
         let tr_clicked = get_tablerow_clicked(e)
         if(!!tr_clicked) {
-
-// NOT IN USE
-// ---  get tr_clicked_id_str (attribute is always string)
-//            let tr_clicked_id_str = "";
-//            if(tr_clicked.hasAttribute("id")){tr_clicked_id_str = tr_clicked.getAttribute("id");}
 
 // ---  extract TableName from "id_data_tr_4"
             const TableName = get_tablename(tr_clicked);
@@ -124,7 +117,6 @@ console.log("===  HandleTableRowClicked  =====") ;
         return false;
     }; //function HandleTableRowClicked()
 
-
 //========= OpenModal  ====================================
     function OpenModal(tr_clicked) {
 console.log("===  OpenModal  =====") ;
@@ -156,9 +148,14 @@ console.log( sel_studsubj);
             if (!!sel_studsubj.sjtp_name){subj_name = subj_name + " (" + sel_studsubj.sjtp_name.toLowerCase() + ")";};
             $("#id_mod_header").html(subj_name);
 
-            document.getElementById("id_input_pws_title").value = sel_studsubj.pws_title;
-            document.getElementById("id_input_pws_subjects").value = sel_studsubj.pws_subjects;
+            //document.getElementById("id_input_pws_title").value = sel_studsubj.pws_title;
+            //document.getElementById("id_input_pws_subjects").value = sel_studsubj.pws_subjects;
 
+sel_studsubj.has_
+$('#contest_numofwinners').hide();
+
+            $("#id_input_pws_title").val(sel_studsubj.pws_title);
+            $("#id_input_pws_subjects").val(sel_studsubj.pws_subjects);
 
             let extra_counts = true // (!!sel_studsubj.extra_counts && sel_studsubj.extra_counts === 1);
             let mod_checkbox = $("#id_mod_checkbox");
@@ -170,7 +167,6 @@ console.log( sel_studsubj);
             CreateCheckbox(mod_checkbox, "extracounts", databox.data("chk_extracounts_cap"), sel_studsubj.extra_counts, false);
             CreateCheckbox(mod_checkbox, "extranocount", databox.data("chk_extranocount_cap"), sel_studsubj.extra_nocount, false);
             CreateCheckbox(mod_checkbox, "choicecombi", databox.data("chk_choicecombi_cap"), sel_studsubj.choice_combi, false);
-
 
 
 // ---  show modal
@@ -210,8 +206,6 @@ console.log("-------------- SelectStudent  --------------");
         let parameters = {"stud_id": tr_clicked_stud_id};
         let url_str = $("#id_data").data("ajax_studsubj_download_url");
 
-console.log("parameters", parameters);
-console.log("url_str", url_str);
         response = "";
         $.ajax({
             type: "POST",
@@ -220,7 +214,6 @@ console.log("url_str", url_str);
             dataType:'json',
             success: function (response) {
 console.log("-------------- response  --------------");
-console.log(response);
 
                 student = {};
                 studentsubjects = [];
@@ -229,6 +222,12 @@ console.log(response);
                 if (response.hasOwnProperty("studentsubjects")){studentsubjects = response.studentsubjects;}
                 if (response.hasOwnProperty("schemeitems")){schemeitems = response.schemeitems;}
 
+console.log("student");
+console.log(student);
+console.log("schemeitems");
+console.log(schemeitems);
+console.log("studentsubjects");
+console.log(studentsubjects);
                 if (!!student.name){$("#id_content_header_name").html(student.name);}
                 if (!!student.level_sector){$("#id_content_header_level_sector").html(student.level_sector);}
 
@@ -312,14 +311,14 @@ console.log("ssi_id_exists", ssi_id_exists);
 // ---  add row at end of list
                     studentsubjects.push(new_studentsubject);
                 }
+                console.log("new_studentsubject", new_studentsubject);
+                UploadStudsubj(new_studentsubject);
             }
         }
-
         FillTableRows("picker", schemeitems, "", tr_clicked_ssi_id);
         FillTableRows("data", studentsubjects, "", tr_clicked_ssi_id);
 
     }; // function StudentSubject_add
-
 
 //========= handle_mod_btn_ok  ====================================
     function handle_mod_btn_ok() {
@@ -329,6 +328,8 @@ console.log("===  handle_mod_btn_ok  =====") ;
         if (!!sel_studsubj) {
             sel_studsubj.pws_title = document.getElementById("id_input_pws_title").value
             sel_studsubj.pws_subjects = document.getElementById("id_input_pws_subjects").value
+
+            UploadStudsubj(sel_studsubj);
 
         }
 
@@ -345,7 +346,9 @@ console.log("===  handle_mod_btn_del  =====") ;
             // make mode 'deleted'
             sel_studsubj["mode"] = "d"
     console.log("sel_studsubj", sel_studsubj);
-        let tr_clicked_ssi_id = ""
+            UploadStudsubj(sel_studsubj);
+
+            let tr_clicked_ssi_id = ""
             FillTableRows("picker", schemeitems, "", tr_clicked_ssi_id);
             FillTableRows("data", studentsubjects, "", tr_clicked_ssi_id);
         };
@@ -353,55 +356,53 @@ console.log("===  handle_mod_btn_del  =====") ;
         closeModal();
     }; // function handle_mod_btn_del
 
-//========= UploadStudentSubjects  ====================================
-    function UploadStudentSubjects(tr_clicked) {
-console.log("===  UploadStudentSubjects  =====") ;
+//========= UploadStudsubj  ====================================
+    function UploadStudsubj(studentsubject) {
+console.log("===  UploadStudsubj  =====") ;
         // PR2019-02-10 function uploads StudentSubjects
 
 // ---  disable save button
     //$("#id_btn_save").prop("disabled", true);
+        if (!!studentsubject){
+            let studsubj_array = []
+            studsubj_array.push(studentsubject);
 
-        let parameters = {"studentsubjects": JSON.stringify (studentsubjects)};
+            let parameters = {"studentsubjects": JSON.stringify (studsubj_array)};
+    console.log("parameters");
+    console.log(parameters);
 
-console.log("parameters");
-console.log(parameters);
+            response = "";
+            msg_txt = "";
 
-        response = "";
-        msg_txt = "";
+    console.log('----ajax_studsubj_upload_url');
+            $.ajax({
+                type: "POST",
+                url: $("#id_data").data("ajax_studsubj_upload_url"),
+                data: parameters,
+                dataType:'json',
+                success: function (response) {
+    console.log("========== response UploadStudentSubject ==>", typeof response,  response);
 
-console.log('----ajax_studsubj_upload_url');
-        $.ajax({
-            type: "POST",
-            url: $("#id_data").data("ajax_studsubj_upload_url"),
-            data: parameters,
-            dataType:'json',
-            success: function (response) {
-console.log("========== response UploadStudentSubject ==>", typeof response,  response);
+                    studentsubjects = response["studentsubjects"];
+                    schemeitems = response["schemeitems"];
+                    err_code = response["err_code"];
 
-                studentsubjects = response["studentsubjects"];
-                schemeitems = response["schemeitems"];
-                err_code = response["err_code"];
+    // ---  fill TableRows
+                    FillTableRows("picker", schemeitems);
+                    FillTableRows("data", studentsubjects);
 
-console.log("========== studentsubjects ==<",typeof studentsubjects, ">", studentsubjects);
-console.log("========== schemeitems ==<",typeof schemeitems, ">", schemeitems);
-//console.log("========== err_code ==<",typeof err_code, ">", err_code);
-
-// ---  fill TableRows
-                FillTableRows("picker", schemeitems);
-                FillTableRows("data", studentsubjects);
-
-                if (!!err_code){
-                    err_msg =  databox.data("err_msg01") + " " + databox.data(err_code);
-                    alert(err_msg);
+                    if (!!err_code){
+                        err_msg =  databox.data("err_msg01") + " " + databox.data(err_code);
+                        alert(err_msg);
+                    }
+                },
+                error: function (xhr, msg) {
+                    alert(msg + '\n' + xhr.responseText);
                 }
-            },
-            error: function (xhr, msg) {
-                alert(msg + '\n' + xhr.responseText);
-            }
-        });
-//console.log("+++++++++ schemeitems ==>", schemeitems);
+            });
+        };
+    }; // function UploadStudsubj
 
-    }; // function AddSubject
 
 //========= FillTableRows  ==================================== PR2019-02-07
     function FillTableRows(TableName, item_list, filter_str, just_clicked_ssi_id) {
@@ -523,7 +524,6 @@ console.log(item_list);
         }
      }; //function FillTableRows()
 
-
 //========= CreateCheckbox  ============= PR2019-02-11
     function CreateCheckbox(sel_checkbox, field, caption, is_checked, disabled, tooltiptext) {
         const id_chk = "id_mod_" + field;
@@ -639,9 +639,6 @@ console.log(item_list);
                 "ssi_id_exists": ssi_id_exists,
                 "sjtp_one_allowed": sjtp_one_allowed};
     }
-
-
-
 
 //========= found_ssi_in_studsub  ============= PR2019-02-12
     function found_id_in_studsub(sel_ssi_id, key, skip_del) {

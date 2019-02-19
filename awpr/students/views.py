@@ -13,12 +13,14 @@ import json # PR2018-12-03
 
 from schools.models import Department, School, Schoolsetting
 from subjects.models import Level, Sector, Subject, Scheme, Schemeitem
-from students.models import Student, Student_log, Studentresult, Studentresult_log, Studentsubject, Grade, Grade_log, Birthcountry, Birthcity
-from students.forms import StudentAddForm, StudentEditForm, StudentresultEditForm, StudentsubjectFormset, \
+from students.models import Student, Student_log, Result, Result_log, Studentsubject, Grade, Grade_log, Birthcountry, Birthcity
+from students.forms import StudentAddForm, StudentEditForm, ResultEditForm, StudentsubjectFormset, \
     StudentsubjectAddForm, StudentsubjectEditForm, GradeAddForm, GradeEditForm
 
 from awpr import functions as f
 from awpr import constants as c
+from students import validations as v
+
 
 # PR2018-04-27
 import logging
@@ -185,65 +187,65 @@ class StudentLogView(View):
         return render(request, 'student_log.html', _param)
 
 
-# ========  Studentresult  =====================================
+# ========  Result  =====================================
 @method_decorator([login_required], name='dispatch')
-class StudentresultListView(ListView):  # PR2018-11-21
+class ResultListView(ListView):  # PR2018-11-21
 
     def get(self, request, *args, **kwargs):
         _params = f.get_headerbar_param(request, {'display_examyear': True, 'display_school': True, 'display_dep': True, 'display_user': True})
         # get school from user.examyear and user.schoolbase PR2018-09-03
         if request.user.examyear and request.user.schoolbase:
-            # logger.debug('StudentresultListView get request.user.examyear = ' + str(request.user.examyear) + ' type : ' + str(type(request.user.examyear)))
-            # logger.debug('StudentresultListView get request.user.schoolbase = ' + str(request.user.schoolbase) + ' type : ' + str(type(request.user.schoolbase)))
+            # logger.debug('ResultListView get request.user.examyear = ' + str(request.user.examyear) + ' type : ' + str(type(request.user.examyear)))
+            # logger.debug('ResultListView get request.user.schoolbase = ' + str(request.user.schoolbase) + ' type : ' + str(type(request.user.schoolbase)))
 
             school= School.objects.filter(base=request.user.schoolbase, examyear=request.user.examyear).first()
             if school:
-                # logger.debug('StudentresultListView get school = ' + str(school) + ' type : ' + str(type(school)))
+                # logger.debug('ResultListView get school = ' + str(school) + ' type : ' + str(type(school)))
 
                 if request.user.depbase:
-                    # logger.debug('StudentresultListView get request.user.department = ' + str(request.user.department) + ' type : ' + str(type(request.user.department)))
+                    # logger.debug('ResultListView get request.user.department = ' + str(request.user.department) + ' type : ' + str(type(request.user.department)))
                     # TODO testing
                     department= Department.objects.filter(base=request.user.depbase, examyear=request.user.examyear).first()
-                    # logger.debug('StudentresultListView get department = ' + str(department) + ' type : ' + str(type(department)))
-                    # filter studentresults of this school and this department
-                    studentresults = Studentresult.objects.filter(student__school=school, student__department=department)
-                    # logger.debug('StudentresultListView get studentresults = ' + str(studentresults) + ' type : ' + str(type(studentresults)))
+                    # logger.debug('ResultListView get department = ' + str(department) + ' type : ' + str(type(department)))
+                    # filter results of this school and this department
+                    results = Result.objects.filter(student__school=school, student__department=department)
+                    # logger.debug('ResultListView get results = ' + str(results) + ' type : ' + str(type(results)))
                     _params.update({'school': school})
-                    _params.update({'studentresults': studentresults})
-        return render(request, 'studentresult_list.html', _params)
+                    _params.update({'results': results})
+        return render(request, 'result_list.html', _params)
 
 
 @method_decorator([login_required], name='dispatch')
-class StudentresultEditView(UpdateView):  # PR2018-10-31
-    model = Studentresult
-    form_class = StudentresultEditForm
-    template_name = 'studentresult_edit.html'
-    context_object_name = 'studentresult'
+class ResultEditView(UpdateView):  # PR2018-10-31
+    model = Result
+    form_class = ResultEditForm
+    template_name = 'result_edit.html'
+    context_object_name = 'result'
 
     # from https://stackoverflow.com/questions/7299973/django-how-to-access-current-request-user-in-modelform?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
     # PR 2018-05-25 add request to kwargs, so it passes request to the form
     def get_form_kwargs(self):
-        kwargs = super(StudentresultEditView, self).get_form_kwargs()
+        kwargs = super(ResultEditView, self).get_form_kwargs()
         # add request to kwargs, so it can be passed to form
         kwargs.update({'request': self.request})
         return kwargs
 
     def form_valid(self, form):
-        studentresult = form.save(commit=False)
+        result = form.save(commit=False)
 
-        studentresult.save(request=self.request)
+        result.save(request=self.request)
 
-        return redirect('studentresult_list_url')
+        return redirect('result_list_url')
 
 
 @method_decorator([login_required], name='dispatch')
-class StudentresultLogView(View):
+class ResultLogView(View):
     def get(self, request, pk):
-        # studentresult_log = Studentresult_log.objects.filter(studentresult_id=pk).order_by('-modified_at')
-        studentresult_log = Studentresult_log.objects.all().order_by('lastname')
-        studentresult = Studentresult.objects.get(id=pk)
-        _param = f.get_headerbar_param(request,  {'studentresult_log': studentresult_log, 'studenresultt': studentresult})
-        return render(request, 'studentresult_log.html', _param)
+        # result_log = Result_log.objects.filter(result_id=pk).order_by('-modified_at')
+        result_log = Result_log.objects.all().order_by('lastname')
+        result = Result.objects.get(id=pk)
+        _param = f.get_headerbar_param(request,  {'result_log': result_log, 'result': result})
+        return render(request, 'result_log.html', _param)
 
 
 # ========  Student subject  =====================================
@@ -271,7 +273,7 @@ class StudentsubjectListView(ListView):  # PR2018-11-21
                     department= Department.objects.filter(base=request.user.depbase, examyear=request.user.examyear).first()
                     # logger.debug('StudentsubjectListView get department = ' + str(department) + ' type : ' + str(type(department)))
                     # filter studentsubject of this school and this department
-                    # studentsubjects = Studentsubject.objects.filter(studentresult__student__school=school, studentresult__student__department=department)
+                    # studentsubjects = Studentsubject.objects.filter(result__student__school=school, result__student__department=department)
                     studentsubjects = Studentsubject.objects.all()
                     students = Student.objects.filter(school=school, department =  department).all()
                     student_list = []
@@ -294,8 +296,8 @@ class StudentsubjectListView(ListView):  # PR2018-11-21
                     _params.update({'school': school})
                     _params.update({'department': department})
                     _params.update({'student_list': student_list})
-                    _params.update({'subject_list': subject_list})
-                    _params.update({'studentsubjects': studentsubjects})
+                    #_params.update({'subject_list': subject_list})
+                    #_params.update({'studentsubjects': studentsubjects})
         return render(request, 'studentsubject.html', _params)
 
 
@@ -425,9 +427,7 @@ class ImportStudentView(View):  # PR2018-12-01
 class StudentImportUploadDataView(View):  # PR2018-12-04
 
     def post(self, request, *args, **kwargs):
-
         logger.debug(' ============= StudentImportUploadDataView ============= ')
-        logger.debug('post request.POST: ' + str(request.POST) + ' type: ' + str(type(request.POST)))
 
         if request.user is not None and request.user.examyear is not None:
             if request.user.schoolbase is not None and request.user.depbase is not None:
@@ -435,151 +435,112 @@ class StudentImportUploadDataView(View):  # PR2018-12-04
                 school = School.objects.filter(base=request.user.schoolbase, examyear=request.user.examyear).first()
                 department = Department.objects.filter(base=request.user.depbase, examyear=request.user.examyear).first()
 
-                logger.debug('request.user.examyear: ' + str(request.user.examyear))
-                logger.debug('school: ' + str(school))
-                logger.debug('department: ' + str(department))
-
                 students = json.loads(request.POST['students'])
-                # logger.debug('post students: '  + str(students) + ' type: ' + str(type(students)))
-                students_log = []
-                for student in students:
-    # ------------ import student   -----------------------------------
-                    logger.debug('post student: '  + str(student) + ' type: ' + str(type(student)))
 
-            # check if required fields are present
+                params = []
+
+                for student in students:
+
+# ------------ import student   -----------------------------------
+                    logger.debug(' ')
+                    logger.debug('import student:')
+                    logger.debug(str(student))
+
+# ---  fill in required fields
                     # required field: "idnumber", "lastname" + "firstname" or "fullname"
                     # not required:  "prefix", "gender","birthdate", "birthcountry", "birthcity",
                     # "level", "sector", "classname", "examnumber"
 
-                    stud_log = []
-                    msg_list = []
-
-    # delete non-numeric characters from idnumber,
-                    # otherwise '1999.01.31.15' and '1999013115' are not recognized as the same idnumber
+                    data = {}
                     has_error = False
-                    msg_str = ''
-                    k = 'idnumber'
-                    idnumber_stripped = ''
-                    if k in student:
-                        if student[k]:
-                            idnumber_stripped = re.sub("[^0-9]", "", student[k])
-                    if not idnumber_stripped:
-                        msg_list.append(_("ID number not entered."))
+                    dont_add = False
 
-                    logger.debug('idnumber_stripped: ' + str(idnumber_stripped) + ' type: ' + str(type(idnumber_stripped)))
-            # validate if idnumber already exist in this school and examyear
-                    if Student.objects.filter(
-                            idnumber__iexact=idnumber_stripped, # _iexact filters a Case-insensitive exact match.
-                            school=school).exists():
-                        msg_list.append(_("ID number already exists."))
-
-            # validate if lastname / firstname already exist in this school and examyear
-                    k = 'lastname'
-                    lastname = ''
-                    if k in student:
-                        if student[k]:
-                            lastname = student[k]
-                    if not lastname:
-                        msg_list.append(_("Last name is blank."))
-                    logger.debug('lastname: ' + str(lastname) + ' type: ' + str(type(lastname)))
-                    logger.debug('lastname: ' + str(msg_list))
-
-                    k = 'firstname'
-                    firstname = ''
-                    if k in student:
-                        if student[k]:
-                            firstname = student[k]
-                    if not firstname:
-                        msg_list.append(_("First name not entered."))
-                    logger.debug('firstname: ' + str(firstname) + ' type: ' + str(type(firstname)))
-                    logger.debug('lastname: ' + str(msg_list))
-
-                    k = 'prefix'
-                    prefix = ''
-                    if k in student:
-                        if student[k]:
-                            prefix = student[k]
-
-                    fullname = lastname
-                    if prefix:
-                        fullname = prefix + ' ' +fullname
-                    if firstname:
-                        fullname = firstname + ' ' +fullname
-
-    # from https://stackoverflow.com/questions/1285911/how-do-i-check-that-multiple-keys-are-in-a-dict-in-a-single-pass
-                    # if all(k in student for k in ('idnumber','lastname', 'firstname')):
-
-                    if Student.objects.filter(
-                            lastname__iexact=lastname,
-                            firstname__iexact=firstname,
-                            school=school).exists():
-                        msg_list.append(_("Student name already exists."))
-
-                    logger.debug('create: ' + str(msg_list))
-# ========== create new student, but only if no errors found
-                    if msg_list:
-                        logger.debug('Student not created: ')
-                        stud_log.append(_("Student not created."))
+    # ---   validate idnumber, convert to birthdate
+                    # otherwise '1999.01.31.15' and '1999013115' are not recognized as the same idnumber
+                    if 'idnumber' in student:
+                        if student['idnumber']:
+                            data['o_idnumber'] = student['idnumber']
+                    clean_idnumber, birthdate, msg_dont_add = v.validate_idnumber(data['o_idnumber'])
+                    if msg_dont_add:
+                        dont_add = True
+                        data['e_idnumber'] = msg_dont_add
                     else:
+    # ---   validate if idnumber is not None and if it already exist in this school and examyear
+                        # function returns None if ID is not None and not exists, otherwise returns msgtext
+                        msg_dont_add = v.idnumber_already_exists(clean_idnumber,school)
+                        if msg_dont_add:
+                            dont_add = True
+                            data['e_idnumber'] = msg_dont_add
 
-                        logger.debug('Student created ')
+    # ---   set lastname / firstname / prefix / fullname
+                    if 'lastname' in student:
+                        if student['lastname']:
+                            data['o_lastname'] = student['lastname']
+                    if 'firstname' in student:
+                        if student['firstname']:
+                            data['o_firstname'] = student['firstname']
+                    if 'prefix' in student:
+                        if student['prefix']:
+                            data['o_prefix'] = student['prefix']
+
+                    data['o_fullname'] = data['o_lastname']
+                    if 'o_prefix' in data:
+                        data['o_fullname'] = data['o_prefix'] + ' ' + data['o_fullname']
+                    if 'o_firstname' in data:
+                        data['o_fullname'] = data['o_firstname'] + ' ' + data['o_fullname']
+
+    # ---   validate if firstname and lastname are not None and if name already exists in this school and examyear
+                    # function returns None if name is not None and not exists, otherwise returns msgtext
+                    msg_dont_add = v.studentname_already_exists(data['o_lastname'], data['o_firstname'], school)
+                    if msg_dont_add:
+                        dont_add = True
+                        data['e_lastname'] = msg_dont_add
+                        data['e_firstname'] = msg_dont_add
+
+
+    # ---   validate if examnumber is not None and if it already exists in this school and examyear
+                    if 'examnumber' in student:
+                        if student['examnumber']:
+                            data['o_examnumber'] = student['examnumber']
+                    msg_dont_add = v.examnumber_already_exists(data['o_examnumber'], school)
+                    if msg_dont_add:
+                        dont_add = True
+                        data['e_examnumber'] = msg_dont_add
+
+    # ========== create new student, but only if no errors found
+                    if dont_add:
+                        logger.debug('Student not created: ')
+                        # TODO stud_log.append(_("Student not created."))
+                    else:
                         new_student = Student(
                             school=school,
                             department=department,
-                            idnumber=idnumber_stripped,
-                            lastname=lastname,
-                            firstname=firstname
+                            idnumber=clean_idnumber,
+                            lastname=data['o_lastname'],
+                            firstname=data['o_firstname'],
+                            examnumber = data['o_examnumber']
                         )
-                        stud_log.append(fullname)
+                        # stud_log['fullname'] = "Student '" + fullname + "' created."
+                        # stud_log['fullname'] = _("Student created.")
 
-                    # calcultae birthdate from  if lastname / firstname already exist in this school and examyear
-                        birthdate_calc, msg_str, has_error = calc_bithday_from_id(idnumber_stripped)
-                        #if not has_error:
-                         #   new_student.birthdate = birthdate_calc
-                        logger.debug('birthdate_calc: ' + str(birthdate_calc))
+                    # calculate birthdate from  if lastname / firstname already exist in this school and examyear
+                        if birthdate:
+                            new_student.birthdate = birthdate
 
-                        gender_clean = ''
-                        birthdate_clean = None
-                        for field in ('prefix', 'gender', 'birthdate', 'birthcountry', 'birthcity',
-                                  'level', 'sector', 'classname', 'examnumber'):
+                        for field in ('prefix', 'gender', 'birthcountry', 'birthcity',
+                                  'level', 'sector', 'classname'):
                             if field in student:
                                 value = student[field]
                                 skip = False
 
-                        # validate 'gender'
+                                # validate 'gender'
                                 if field == 'gender':
-                                    value_upper=''
-                                    if len(value) > 1:
-                                        skip = True
-                                    else:
-                                        value_upper = value.upper()
-                                        if value_upper in ('M', 'F',):
-                                            pass
-                                        elif value_upper == 'V':
-                                            value_upper = 'F'
-                                        else:
-                                            skip = True
-                                    if skip:
-                                        msg_list.append("Gender" + "'" + value + "' not allowed." + "Only 'M', 'm', 'F', 'f', 'V', 'v' are allowed.")
-                                    else:
-                                        new_student.gender = value_upper
-                                    logger.debug('msg_list: ' + str(msg_list))
-                                    logger.debug('gender_clean: ' + str(gender_clean))
-
-                                #if field == 'birthdate':
-                                #    logger.debug('birthdate value: ' + str(value))
-                                #    try:
-                                #        # try to convert to date_time_obj
-                                #        logger.debug('value: ' + str(value) + ' type: ' + str(type(value)))
-                                #        birthdate_clean = datetime.datetime.strptime(value, '%b %d %Y %I:%M%p')
-                                #        logger.debug('birthdate_clean: ' + str(birthdate_clean) + ' type: ' + str(type(birthdate_clean)))
-                                #    except:
-                                #        skip = True
-                                #        msg_list.append(_("Birthdate") + "'" + value + "'" + _("cannot be converted to valid birh date"))
-
-                                #if not skip:
-                                #    setattr(new_student, field, value)
-
+                                    clean_gender, msg_text = v.validate_gender(value)
+                                    if msg_text:
+                                        has_error = True
+                                        data['e_gender'] = msg_text
+                                    # validate_gender eneters '-' as gender on error
+                                    new_student.gender = clean_gender
 
                         # validate 'birthcountry'
                                 if field == 'birthcountry':
@@ -596,32 +557,61 @@ class StudentImportUploadDataView(View):  # PR2018-12-04
                                     if value:
                                         new_student.classname = value
 
-                        # validate 'examnumber'
-                                if field == 'examnumber':
-                                    if value:
-                                        new_student.examnumber = value
+                        try:
+                            new_student.save(request=self.request)
+                        except:
+                            has_error = True
+                            data['e_lastname'] = _('An error occurred. The student data is not saved.')
 
+                        if new_student.id:
+                            if new_student.idnumber:
+                                data['s_idnumber'] = new_student.idnumber
+                            if new_student.lastname:
+                                data['s_lastname'] = new_student.lastname
+                            if new_student.firstname:
+                                data['s_firstname'] = new_student.firstname
+                            # TODO: full_name
+                            if new_student.prefix:
+                                data['s_prefix'] = new_student.prefix
+                            if new_student.gender:
+                                data['s_gender'] = new_student.gender
+                            if new_student.birthdate:
+                                data['s_birthdate'] = new_student.birthdate
+                            if new_student.birthcountry:
+                                data['s_birthcountry'] = new_student.birthcountry
+                            if new_student.birthcity:
+                                data['s_birthcity'] = new_student.birthcity
+                            if new_student.level:
+                                data['s_level'] = new_student.level
+                            if new_student.sector:
+                                data['s_sector'] = new_student.sector
+                            if new_student.classname:
+                                data['s_classname'] = new_student.classname
+                            if new_student.examnumber:
+                                data['s_examnumber'] = new_student.examnumber
 
-                        new_student.save(request=self.request)
+                        # logger.debug(str(new_student.id) + ': Student ' + new_student.lastname_firstname_initials + ' created ')
 
                             # from https://docs.quantifiedcode.com/python-anti-patterns/readability/not_using_items_to_iterate_over_a_dictionary.html
                             # for key, val in student.items():
                             #    logger.debug( str(key) +': ' + val + '" found in "' + str(student) + '"')
 
-        logger.debug('msg_list: ' + str(msg_list))
+                    # json_dumps_err_list = json.dumps(msg_list, cls=f.LazyEncoder)
+                    if len(data) > 0:
+                        params.append(data)
+                    # params.append(student)
 
-        response = HttpResponse("Upload SSI  works!!")
-        logger.debug('post response: ' + str(response) + ' type: ' + str(type(response)))
-
-        return response
+                #return HttpResponse(json.dumps(params))
+                return HttpResponse(json.dumps(params, cls=LazyEncoder))
 
 
 @method_decorator([login_required], name='dispatch')
 class StudentImportUploadSettingView(View):  # PR2018-12-03
     # function updates mapped fields, no_header and worksheetname in table Schoolsettings
     def post(self, request, *args, **kwargs):
-        logger.debug(' ============= StudentImportUploadSettingView ============= ')
-        logger.debug('request.POST' + str(request.POST) )
+        # logger.debug(' ============= StudentImportUploadSettingView ============= ')
+        # logger.debug('request.POST' + str(request.POST) )
+
         # check if request.user.country is parent of request.user.examyear PR2018-10-18
         if request.user is not None and request.user.schoolbase is not None:
             if request.user.schoolbase is not None:
@@ -752,9 +742,8 @@ class StudentsubjectUploadView(View):  # PR2019-02-09
         params = {}
         if request.user is not None and request.user.examyear is not None and request.user.schoolbase is not None:
             # get sybject scheme item from  request.POST
-
             studentsubjects = json.loads(request.POST['studentsubjects'])
-            # logger.debug("studentsubjects: " + str(studentsubjects))
+            #logger.debug("studentsubjects: " + str(studentsubjects))
 
             for item in studentsubjects:
                 # convert values
@@ -910,7 +899,7 @@ class GradeListView(ListView):  # PR2018-11-21
                     department= Department.objects.filter(base=request.user.depbase, examyear=request.user.examyear).first()
                     logger.debug('GradeListView get department = ' + str(department) + ' type : ' + str(type(department)))
                     # filter grade of this school and this department
-                    # grades = Grade.objects.filter(studentresult__student__school=school, studentresult__student__department=department)
+                    # grades = Grade.objects.filter(result__student__school=school, result__student__department=department)
                     grades = Grade.objects.all()
 
                     # logger.debug('GradeListView get grades = ' + str(grades) + ' type : ' + str(type(grades)))
@@ -1002,7 +991,7 @@ def get_mapped_coldefs_student(request_user):  # PR2018-12-01
     #     "mapped_coldef_list": [{"awpKey": "idnumber", "caption": "ID nummer", "excKey": "ID"},
     #                            {"awpKey": "lastname", "caption": "Achternaam", "excKey": "ANAAM"}, ....]
 
-    logger.debug('==============get_mapped_coldefs_student ============= ' )
+    # logger.debug('==============get_mapped_coldefs_student ============= ' )
 
     # get mapped excelColDef from table Schoolsetting
     mapped_coldefs = {}
@@ -1261,53 +1250,6 @@ def get_mapped_levels_sectors(request_user):  # PR2019-01-01
     """
 # ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 
-
-def calc_bithday_from_id(id_str):
-    #PR 28 jun 07 from Lrs 'PR2014-10-19 'PR2015-12-23
-    # id_str is sedulanummer: format:: YYYY.MM.DD.XX or  YYYYMMDDXX
-
-    #reset returnvalues
-    date_dte = None
-    msg_str = None
-    has_error = False
-
-    # return None when id_str is empty
-    # logger.debug('calc_bithday_from_id id_str: ' + str(id_str) + ' type: ' + str(type(id_str)))
-    if id_str:
-    # get year, month and day from id_str
-        month_str = '00'
-        day_str = '00'
-        if '.' in id_str:
-        # make array if id_str contains dots (format: yyyy.mm.dd.xx)
-            # PR2014 - 05 - 01 toegevoegd op vezoek HvD.SXM gebruikt sedulanr met punten
-            arr =id_str.split('.')
-            # logger.debug('calc_bithday_from_id arr: ' + str(arr) + ' type: ' + str(type(arr)))
-            year_str = arr[0]
-            if len(arr) >= 1:
-                month_str = "00" + arr[1]
-                month_str = month_str[-2:]
-            if len (arr) >= 2:
-                day_str =  "00" +arr[2]
-                day_str = day_str[-2:]
-        else:
-        # get year, month and day from id_str (format: yyyymmddxx)
-            year_str = id_str[:4]
-            month_str = id_str[4:6]
-            day_str = id_str[6:8]
-            # logger.debug('year_str=' + str(year_str) + ' month_str=' + str(month_str) +' day_str=' + str(day_str))
-
-        date_str = year_str + "-" + month_str + "-" + day_str
-        # logger.debug('date_str=' + str(date_str))
-        try:
-            date_dte = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
-            # logger.debug('date_dte=' + str(date_dte) + ' type: ' + str(type(date_dte)))
-        except ValueError as ve:
-            # msg_str = "'" + date_str + "'" + _("is not a valid birthday.")
-
-            # logger.debug("'" + date_str + "'is not a valid birthday.")
-            has_error = True
-
-    return date_dte, msg_str, has_error
 
 #  =========== Ajax requests  ===========
 # PR2018-09-03 from https://simpleisbetterthancomplex.com/tutorial/2018/01/29/how-to-implement-dependent-or-chained-dropdown-list-with-django.html

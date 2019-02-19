@@ -203,12 +203,12 @@ urlpatterns = [
         path('load_cities/', student_views.load_cities, name='load_cities_url'),  # PR2018-09-03
     ])),
 
-# studentresult PR2018-11-21
-    path('studentresult/', include([
-        path('', student_views.StudentresultListView.as_view(), name='studentresult_list_url'),
+# result PR2018-11-21
+    path('result/', include([
+        path('', student_views.ResultListView.as_view(), name='result_list_url'),
         path('<int:pk>/', include([
-            path('edit/', student_views.StudentresultEditView.as_view(), name='studentresult_edit_url'),
-            path('log/', student_views.StudentresultLogView.as_view(), name='studentresult_log_url'),
+            path('edit/', student_views.ResultEditView.as_view(), name='result_edit_url'),
+            path('log/', student_views.ResultLogView.as_view(), name='result_log_url'),
         ])),
     ])),
 
@@ -229,14 +229,14 @@ urlpatterns = [
     ])),
 
     # PR2018-05-06 debug: don't forget the brackets at the end of as_view() !!
-    url(r'^school/import/$', import_views.ImportSchoolView.as_view(), name='import_school_url'),
-    url(r'^subject/import/$', import_views.ImportSubjectView.as_view(), name='import_subject_url'),
     url(r'^department/import/$', import_views.ImportDepartmentView.as_view(), name='import_department_url'),
     url(r'^level/import/$', import_views.ImportLevelView.as_view(), name='import_level_url'),
     path('sector/import/', import_views.ImportSectorView.as_view(), name='import_sector_url'),  # PR2018-09-04
-    path('subjecttype/import/', import_views.ImportSubjecttypeView.as_view(), name='import_subjecttype_url'),  # PR2018-11-10
     path('scheme/import/', import_views.ImportSchemeView.as_view(), name='import_scheme_url'),  # PR2018- 11-10
+    path('subjecttype/import/', import_views.ImportSubjecttypeView.as_view(), name='import_subjecttype_url'),  # PR2018-11-10
+    url(r'^subject/import/$', import_views.ImportSubjectView.as_view(), name='import_subject_url'),
     path('schemeitem/import/', import_views.ImportSchemeitemView.as_view(), name='import_schemeitem_url'),  # PR2018- 11-10
+    url(r'^school/import/$', import_views.ImportSchoolView.as_view(), name='import_school_url'),
 
     # PR2018- 11-10
     url(r'^birthcountry/import/$', import_views.ImportBirthcountryView.as_view(), name='import_birthcountry_url'),
@@ -249,6 +249,7 @@ urlpatterns = [
         path('import_student_awpcoldef/', student_views.StudentImportUploadSettingView.as_view(), name='upload_student_mapping_url'),
         path('ajax_studsubj_download/', student_views.StudentsubjectDownloadView.as_view(), name='ajax_studsubj_download_url'),
         path('ajax_studsubj_upload/', student_views.StudentsubjectUploadView.as_view(), name='ajax_studsubj_upload_url'),
+        path('ajax_importssi_upload/', import_views.AjaxImportSSIupload.as_view(), name='ajax_importssi_upload_url'),
         path('ajax_schemeitems_download/', subject_views.SchemeitemsDownloadView.as_view(), name='ajax_schemeitems_download_url'),
         path('ajax_ssi_upload/', subject_views.SchemeitemUploadView.as_view(), name='ajax_ssi_upload_url'),
     ])),

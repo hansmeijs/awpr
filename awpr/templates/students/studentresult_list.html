@@ -37,10 +37,10 @@
             </tr>
           </thead>
           <tbody>
-            {% for item in studentresults.all %}
+            {% for item in results.all %}
               <tr>
                 <td>
-                  {% if user.enable_students_modify %}<a href="{% url 'studentresult_edit_url' item.pk %}">{% endif %}
+                  {% if user.enable_students_modify %}<a href="{% url 'tresult_edit_url' item.pk %}">{% endif %}
                   {{ item.student.lastname_firstname_initials }}</a>
                 </td>
                 <td>

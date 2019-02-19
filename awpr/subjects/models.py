@@ -51,7 +51,7 @@ class Level(Model): # PR2018-08-12
         help_text=_('Required. {} characters or fewer.'.format('50')),)
     abbrev = CharField(max_length=8, # PR2018-10-20 set Unique per Examyear True.
         help_text=_('Required. {} characters or fewer.'.format('8')),)
-    sequence = PositiveSmallIntegerField(default=1)
+    sequence = PositiveSmallIntegerField(db_index=True, default=1)
     depbase_list = CharField(max_length=20, null=True)
 
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
@@ -317,7 +317,7 @@ class Level_log(Model):
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
     @property
     def depbase_list_str(self): # PR108-08-27
@@ -345,7 +345,7 @@ class Sector(Model):  # PR2018-06-06
         help_text=_('Required. {} characters or fewer.'.format('50')),)
     abbrev = CharField(max_length=8, # PR2018-10-20 set Unique per Examyear True.
         help_text=_('Required. {} characters or fewer.'.format('8')),)
-    sequence = PositiveSmallIntegerField(default=1)
+    sequence = PositiveSmallIntegerField(db_index=True, default=1)
     depbase_list = CharField(max_length=20, null=True)
 
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
@@ -617,7 +617,7 @@ class Sector_log(Model):
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
     @property
     def depbase_list_str(self): # PR108-08-27
@@ -644,8 +644,9 @@ class Subjecttype(Model):
     name = CharField(max_length=50)
     abbrev = CharField(db_index=True,max_length=20)
     code = CharField(db_index=True,max_length=4)
-    sequence = PositiveSmallIntegerField(default=1)
+    sequence = PositiveSmallIntegerField(db_index=True, default=1)
     depbase_list = CharField(max_length=20, null=True)
+    has_prac = BooleanField(default=False) # has practical exam
     has_pws = BooleanField(default=False) # has profielwerkstuk or sectorwerkstuk
     one_allowed = BooleanField(default=False) # if true: only one subject with this Subjecttype allowed per student
 
@@ -668,6 +669,7 @@ class Subjecttype(Model):
         self.original_code = self.code
         self.original_sequence = self.sequence
         self.original_depbase_list = self.depbase_list
+        self.original_has_prac = self.has_prac
         self.original_has_pws = self.has_pws
         self.original_one_allowed = self.one_allowed
 
@@ -677,6 +679,7 @@ class Subjecttype(Model):
         self.code_mod = False
         self.sequence_mod = False
         self.depbase_list_mod = False
+        self.has_prac_mod = False
         self.has_pws_mod = False
         self.one_allowed_mod = False
 
@@ -714,6 +717,7 @@ class Subjecttype(Model):
             code=self.code,
             sequence=self.sequence,
             depbase_list=self.depbase_list,
+            has_prac=self.has_prac,
             has_pws=self.has_pws,
             one_allowed=self.one_allowed,
 
@@ -722,6 +726,7 @@ class Subjecttype(Model):
             code_mod=self.code_mod,
             sequence_mod=self.sequence_mod,
             depbase_list_mod=self.depbase_list_mod,
+            has_prac_mod=self.has_prac_mod,
             has_pws_mod=self.has_pws_mod,
             one_allowed_mod=self.one_allowed_mod,
 
@@ -739,6 +744,7 @@ class Subjecttype(Model):
         self.code_mod = self.original_code != self.code
         self.sequence_mod = self.original_sequence != self.sequence
         self.depbase_list_mod = self.original_depbase_list != self.depbase_list
+        self.has_prac_mod = self.original_has_prac != self.has_prac
         self.has_pws_mod = self.original_has_pws != self.has_pws
         self.one_allowed_mod = self.original_one_allowed != self.one_allowed
 
@@ -749,6 +755,7 @@ class Subjecttype(Model):
             self.code_mod or
             self.sequence_mod or
             self.depbase_list_mod or
+            self.has_prac_mod or
             self.has_pws_mod or
             self.one_allowed_mod
         )
@@ -786,10 +793,20 @@ class Subjecttype(Model):
                 'name': item.name,
                 'abbrev': item.abbrev,
                 'sequ': item.sequence,
+                'prac': item.has_prac,
                 'pws': item.has_pws,
                 'one': item.one_allowed
             })
         return subjecttype_list
+
+    @classmethod
+    def get_lookup_subjtype_list(cls, examyear): # PR2019-02-17
+        # make list of dicts with subjtype_id and name.lower
+        # {'id': 1, 'name': 'gemeenschappelijk deel'}
+        subjtype_list = []
+        for subjtype in Subjecttype.objects.filter(examyear = examyear):
+            subjtype_list.append ({'id': subjtype.id, 'name': subjtype.name.lower()})
+        return subjtype_list
 
 class Subjecttype_log(Model):
     # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
@@ -806,6 +823,7 @@ class Subjecttype_log(Model):
     code = CharField(max_length=4,null=True)
     sequence = PositiveSmallIntegerField(null=True)
     depbase_list = CharField(max_length=20, null=True)
+    has_prac = BooleanField(default=False)
     has_pws = BooleanField(default=False)
     one_allowed = BooleanField(default=False)
 
@@ -814,12 +832,13 @@ class Subjecttype_log(Model):
     code_mod = BooleanField(default=False)
     sequence_mod = BooleanField(default=False)
     depbase_list_mod = BooleanField(default=False)
+    has_prac_mod = BooleanField(default=False)
     has_pws_mod = BooleanField(default=False)
     one_allowed_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
     @property
     def depbase_list_str(self): # PR108-08-27
@@ -831,15 +850,18 @@ class Subjecttype_log(Model):
 
 
 # PR2018-06-06 There is one Scheme per department/level/sector per year per country
-class Scheme(Model):  # PR2018-09-07
+class Scheme(Model):
+    # PR2018-09-07
     # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
     objects = CustomManager()
+
     # PR2018-11-07 blank=True is necessary otherwise blank field gives error 'Dit veld is verplicht.'
+    # PR2019-02-16 scheme is linked with department, level and sector . get s examyear from department
     department = ForeignKey(Department, related_name='schemes', on_delete=PROTECT)
     level = ForeignKey(Level, null=True, blank=True, related_name='schemes', on_delete=PROTECT)
     sector = ForeignKey(Sector, null=True,  blank=True, related_name='schemes', on_delete=PROTECT)
     name = CharField(max_length=50)  # TODO set department+level+sector Unique per examyear True.
-    fields = CharField(max_length=50, null=True,  blank=True)
+    fields = CharField(max_length=50, null=True,  blank=True, choices=c.SCHEMEFIELD_CHOICES)
 
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
     modified_at = DateTimeField()
@@ -1044,6 +1066,28 @@ class Scheme(Model):  # PR2018-09-07
         return scheme
 
 
+    @classmethod
+    def get_lookup_scheme_list(cls, examyear): # PR2019-02-17
+        # makre list of dicts with scheme_id and abbrev.lower of dep, lvl and sct
+        # {'id': 93, 'dep': 'vsbo', 'lvl': 'pbl', 'sct': 'ec'}
+        schemes_list = []
+        schemes = Scheme.objects.filter(department__examyear = examyear)
+        for scheme in schemes:
+            scheme_dict = {}
+            scheme_dict['id'] = scheme.id
+            if scheme.department:
+                if scheme.department.abbrev:
+                    scheme_dict['dep'] = scheme.department.abbrev.lower()
+            if scheme.level:
+                if scheme.level.abbrev:
+                    scheme_dict['lvl'] = scheme.level.abbrev.lower()
+            if scheme.sector:
+                if scheme.sector.abbrev:
+                    scheme_dict['sct'] = scheme.sector.abbrev.lower()
+
+            schemes_list.append(scheme_dict)
+        return schemes_list
+
 class Scheme_log(Model):
     # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
     objects = CustomManager()
@@ -1065,7 +1109,7 @@ class Scheme_log(Model):
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
     @property
     def mode_str(self):
@@ -1117,7 +1161,7 @@ class Subject(Model):  # PR1018-11-08
         help_text=_('Required. {} characters or fewer.'.format('50')),)
     abbrev = CharField(max_length=10, # PR2018-08-08 set Unique per Examyear True. Was: unique=True,
         help_text=_('Required. {} characters or fewer.'.format('10')),)
-    sequence = PositiveSmallIntegerField(default=9999,
+    sequence = PositiveSmallIntegerField(db_index=True, default=9999,
         help_text=_('Sets subject sequence in reports. Required. Maximum value is {}.'.format(9999)),
         validators=[MaxValueValidator(9999),],
         error_messages={'max_value': _('Value must be less or equal to {}.'.format(9999))})
@@ -1274,7 +1318,7 @@ class Subject_log(Model):
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
     @property
     def depbase_list_str(self): # PR2018-11-04
@@ -1283,39 +1327,6 @@ class Subject_log(Model):
     @property
     def mode_str(self):
         return c.MODE_DICT.get(str(self.mode),'-')
-
-
-# PR2018-06-06
-class Package(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
-
-    school = ForeignKey(School, related_name='packages', on_delete=PROTECT)
-    scheme = ForeignKey(Scheme, related_name='packages', on_delete=PROTECT)
-
-    name = CharField(max_length=50)
-    abbrev = CharField(max_length=20)
-
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
-
-    def __str__(self):
-        return self.abbrev
-
-
-# PR2018-06-06
-class Package_log(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
-
-    package_id = IntegerField(db_index=True)
-
-    name = CharField(max_length=50, null=True)
-    abbrev = CharField(max_length=20, null=True)
-
-    mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
 
 
 # PR2018-06-05
@@ -1387,7 +1398,6 @@ class Schemeitem(Model):
             self.save_to_log()
 
     def delete(self, *args, **kwargs):
-        logger.debug("Schemeitem delete kwargs: " + str(kwargs) + str(type(kwargs)))
         self.request = kwargs.pop('request', None)
         self.data_has_changed('d')
         # save to logfile before deleting record
@@ -1396,7 +1406,6 @@ class Schemeitem(Model):
 
     def save_to_log(self):  # PR2018-08-27
         # PR2018-10-28 debug: 'NoneType' object has no attribute 'id'
-        logger.debug("----- Schemeitem save_to_log")
         # get latest Scheme_log row that corresponds with self.scheme
         scheme_log = None
         if self.scheme is not None:
@@ -1501,6 +1510,7 @@ class Schemeitem(Model):
             # override mode on delete
             self.mode = mode
 
+        logger.debug("data_changed_bool " + str(data_changed_bool))
         return data_changed_bool
 
     @property
@@ -1567,8 +1577,6 @@ class Schemeitem(Model):
         return schemeitem_list
 
 
-
-
 # PR2018-06-08
 class Schemeitem_log(Model):
     # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
@@ -1611,7 +1619,163 @@ class Schemeitem_log(Model):
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
+    modified_at = DateTimeField(db_index=True)
+
+
+# PR2018-06-06 # PR2019-02-17
+class Package(Model):
+    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
+    objects = CustomManager()
+
+    school = ForeignKey(School, related_name='packages', on_delete=PROTECT)
+    scheme = ForeignKey(Scheme, related_name='packages', on_delete=PROTECT)
+
+    name = CharField(max_length=50)
+
+    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
     modified_at = DateTimeField()
+
+    class Meta:
+        ordering = ['name',]
+
+    def __str__(self):
+        return self.name
+
+    def __init__(self, *args, **kwargs):
+        super(Package, self).__init__(*args, **kwargs)
+        try:
+            self.original_school = self.school
+        except:
+            self.original_school = None
+        try:
+            self.original_scheme = self.scheme
+        except:
+            self.original_scheme = None
+
+        self.original_name = self.name
+
+    def save(self, *args, **kwargs):  # called by subjectdefault.save(self.request) in SubjectdefaultEditView.form_valid
+        self.request = kwargs.pop('request', None)
+
+        # check if data has changed. If so: save object
+        if self.data_has_changed():
+            super(Package, self).save(force_insert = not self.is_update, force_update = self.is_update, **kwargs)
+            self.save_to_log()
+
+    def delete(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
+        self.data_has_changed('d')
+        # save to logfile before deleting record
+        self.save_to_log()
+        super(Package, self).delete(*args, **kwargs)
+
+    def save_to_log(self):  # PR2019-02-17
+        # PR2018-10-28 debug: 'NoneType' object has no attribute 'id'
+
+        # get latest School_log row that corresponds with self.school
+        school_log = None
+        if self.school is not None:
+            school_log = School_log.objects.filter(school_id=self.school.id).order_by('-id').first()
+
+        # get latest Scheme_log row that corresponds with self.scheme
+        scheme_log = None
+        if self.scheme is not None:
+            scheme_log = Scheme_log.objects.filter(scheme_id=self.scheme.id).order_by('-id').first()
+            # scheme_id = self.scheme.id if self.scheme is not None else None
+
+        # Create method also saves record
+        Package_log.objects.create(
+            package_id=self.id,  # self.id gets its value in super(Package, self).save
+
+            school_log=school_log,
+            scheme_log=scheme_log,
+            name=self.name,
+
+            school_mod=self.school_mod,
+            scheme_mod=self.scheme_mod,
+            name_mod=self.name_mod,
+
+            mode=self.mode,
+            modified_by=self.modified_by,
+            modified_at=self.modified_at
+        )
+
+    def data_has_changed(self, mode = None):  # PR2018-09-07 PR2018-11-07
+        # returns True when the value of one or more fields has changed
+        self.is_update = self.id is not None  # self.id is None before new record is saved
+
+        self.school_mod = self.original_school != self.school
+        self.scheme_mod = self.original_scheme != self.scheme
+        self.name_mod = self.original_name != self.name
+
+        data_changed_bool = (
+            not self.is_update or
+            self.school_mod or
+            self.scheme_mod or
+            self.name_mod
+        )
+
+        if data_changed_bool:
+            self.modified_by = self.request.user
+            self.modified_at = timezone.now()
+            self.mode = ('c', 'u')[self.is_update]
+
+        if mode:
+            # override mode on delete
+            self.mode = mode
+
+        return data_changed_bool
+
+
+# PR2018-06-06
+class Package_log(Model):
+    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
+    objects = CustomManager()
+
+    package_id = IntegerField(db_index=True)
+
+    school_log = ForeignKey(School_log, related_name='+', on_delete=PROTECT)
+    scheme_log = ForeignKey(Scheme_log, null=True, related_name='+', on_delete=PROTECT)
+
+    name = CharField(max_length=50, null=True)
+
+    mode = CharField(max_length=1, null=True)
+    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
+    modified_at = DateTimeField(db_index=True)
+
+    @property
+    def mode_str(self):
+        return c.MODE_DICT.get(str(self.mode),'-')
+
+
+# PR2018-06-06
+class Package_item(Model):
+    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
+    objects = CustomManager()
+
+    package = ForeignKey(Package, related_name='packageschemes', on_delete=PROTECT)
+    scheme_item = ForeignKey(Schemeitem, related_name='packageschemes', on_delete=PROTECT)
+    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
+    modified_at = DateTimeField()
+
+
+# PR2018-06-06
+class Package_item_log(Model):
+    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
+    objects = CustomManager()
+
+    package_item_id = IntegerField(db_index=True)
+    # TODO: refer to log table
+    package = ForeignKey(Package, null=True, related_name='+', on_delete=PROTECT)
+    scheme_item = ForeignKey(Schemeitem, null=True, related_name='+', on_delete=PROTECT)
+    mode = CharField(max_length=1, null=True)
+    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
+    modified_at = DateTimeField(db_index=True)
+
+
+
+
+
 
 
 # PR2018-08-23
@@ -1665,41 +1829,7 @@ class Norm_log(Model):
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
-
-
-# PR2018-06-06
-class Package_item(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
-
-    package = ForeignKey(Package, related_name='packageschemes', on_delete=PROTECT)
-    scheme_item = ForeignKey(Schemeitem, related_name='packageschemes', on_delete=PROTECT)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
-
-    def __str__(self):
-        name = ''
-        if self.package:
-            name = str(self.package)
-        if self.scheme_item:
-            name = name + '-' + str(self.scheme_item)
-        return name
-
-
-# PR2018-06-06
-class Package_item_log(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
-
-    package_item_id = IntegerField(db_index=True)
-    # TODO: refer to log table
-    package = ForeignKey(Package, null=True, related_name='+', on_delete=PROTECT)
-    scheme_item = ForeignKey(Schemeitem, null=True, related_name='+', on_delete=PROTECT)
-    mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
-
+    modified_at = DateTimeField(db_index=True)
 
 # PR2018-06-06
 class Cluster(Model):
@@ -1736,7 +1866,7 @@ class Cluster_log(Model):
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modified_at = DateTimeField(db_index=True)
 
     def __str__(self):
         return self.abbrev

@@ -54,20 +54,6 @@ class GetFormKwargsMixin(object):
 
 """
 
-# PR2019-01-04 from https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
-from django.utils.functional import Promise
-from django.utils.encoding import force_text
-from django.core.serializers.json import DjangoJSONEncoder
-
-class LazyEncoder(DjangoJSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Promise):
-            return force_text(obj)
-        return super(LazyEncoder, self).default(obj)
-
-
-
-
 # === Level =====================================
 @method_decorator([login_required], name='dispatch')
 class LevelListView(ListView):  # PR2018-08-11
@@ -707,9 +693,6 @@ class SchemeitemLogView(View):
         _param = f.get_headerbar_param(request,  {'schemeitem_log': schemeitem_log, 'schemeitem': schemeitem})
         return render(request, 'schemeitem_log.html', _param)
 
-
-
-
 @method_decorator([login_required], name='dispatch')
 class SchemeitemsDownloadView(View):  # PR2019-01-13
     # PR2019-01-17
@@ -933,7 +916,7 @@ class SchemeitemUploadView(View):  # PR2019-01-24
 
         # return HttpResponse(json.dumps(params, cls=LazyEncoder), mimetype='application/javascript')
 
-        return HttpResponse(json.dumps(params, cls=LazyEncoder))
+        return HttpResponse(json.dumps(params, cls=f.LazyEncoder))
 
 
 # ========  Subject  =====================================
