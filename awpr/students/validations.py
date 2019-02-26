@@ -11,7 +11,7 @@ from awpr import constants as c
 # ++++++++++++ Validations  +++++++++++++++++++++++++
 
 def validate_idnumber(id_str):
-    logger.debug('validate_idnumber: ' + id_str)
+    # logger.debug('validate_idnumber: ' + id_str)
     # validate idnumber, convert to string without dots PR2019-02-17
     msg_dont_add = None
     idnumber_clean = None
@@ -30,12 +30,12 @@ def validate_idnumber(id_str):
                     # idnumber_stripped = re.sub("[^0-9]", "", id_str
         if id_str:
             if len(id_str) == 10: # PR2019-02-18 debug: object of type 'NoneType' has no len(), added: if id_str
-                logger.debug('id_str: ' + id_str + ' len: ' + str(len(id_str)))
+                # logger.debug('id_str: ' + id_str + ' len: ' + str(len(id_str)))
                 date_str = id_str[:8]
-                logger.debug('date_str: ' + date_str + ' len: ' + str(len(date_str)))
+                # logger.debug('date_str: ' + date_str + ' len: ' + str(len(date_str)))
                 if date_str.isnumeric():
                     birthdate = calc_bithday_from_id(date_str)
-                    logger.debug('birthdate: ' + str( birthdate) + ' type: ' + str(type(birthdate)))
+                    # logger.debug('birthdate: ' + str( birthdate) + ' type: ' + str(type(birthdate)))
 
             if birthdate is not None:
                 idnumber_clean = id_str

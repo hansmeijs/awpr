@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+  {% if user.is_authenticated %}
+    {% if user.is_role_system_perm_admin %}
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+                <input type="file"
+                       title="Upload excel file"
+                       name="excel_file"
+                       style="border: 1px solid black; padding: 5px;"
+                       required="required">
+
+            <button type="submit">Upload package items</button>
+        </form>
+        <hr>
+        {% for row in excel_data %}
+            {% for cell in row %}
+                {{ cell }}&nbsp;&nbsp;
+            {% endfor %}
+            <br />
+        {% endfor %}
+
+    {% else %}
+      <form class="form-inline ml-auto">
+        <a href="{% url 'home' %}" class="btn btn-outline-secundary">{% trans "You don't have permission to view this page." %}</a>
+      </form>
+    {% endif %}
+  {% else %}
+    <form class="form-inline ml-auto">
+      <a href="{% url 'login' %}" class="btn btn-outline-secundary">{% trans 'You must be logged in to view this page' %}</a>
+    </form>
+  {% endif %}
+{% endblock %}

@@ -79,13 +79,23 @@ CHOICES_ROLE_DICT = {
     ROLE_02_SYSTEM: _('System')
 }
 
+
+MODE_C_CREATED = 'c'
+MODE_L_COPIED = 'l'
+MODE_U_UPDATED = 'u'
+MODE_A_AUTHORIZED = 'a'
+MODE_P_APPROVED = 'p'
+MODE_D_DELETED = 'd'
+MODE_S_SYSTEM = 's'
+
 MODE_DICT = {
-    'c': _('Created'),
-    'u': _('Updated'),
-    'a': _('Authorized'),
-    'p': _('Approved'),
-    'd': _('Deleted'),
-    's': _('System')
+    MODE_C_CREATED: _('Created'),
+    MODE_L_COPIED: _('Copied from last year'),
+    MODE_U_UPDATED: _('Updated'),
+    MODE_A_AUTHORIZED: _('Authorized'),
+    MODE_P_APPROVED: _('Approved'),
+    MODE_D_DELETED: _('Deleted'),
+    MODE_S_SYSTEM: _('System')
 }
 
 def get_mode_str(self): # PR2018-11-20

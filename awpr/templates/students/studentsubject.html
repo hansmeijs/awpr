@@ -6,10 +6,10 @@
   <!-- <link rel="stylesheet" href="{% static 'css/awpr_table.css' %}"> -->
   <link rel="stylesheet" href="{% static 'css/students/studentsubject.css' %}">
 {% endblock %}
+
 {% block script %}
   <script src="{% static 'js/students/studentsubject.js' %}"></script>
 {% endblock %}
-
 
 {% block modal %}
 <div class="container">
@@ -56,8 +56,6 @@
       </div>
     </div>
   </div>
-
-
 </div>
 {% endblock %}
 
@@ -88,6 +86,11 @@
                             <tr>
                                 <td colspan=2>{% trans 'Subjects of student' %} </td>
                             </tr>
+                            <tr>
+                                <td colspan=2>
+                                    <input id="id_data_filter" type="text" class="fieldname pt-0 pb-0" placeholder="{% trans 'filter subject...' %}">
+                                </td>
+                            </tr>
                         </thead>
                         <tbody id="id_data_tbody">
                         </tbody>
@@ -102,7 +105,7 @@
                             </tr>
                             <tr>
                                 <td colspan=2>
-                                    <input id="id_picker_filter" type="text" class="fieldname pt-0 pb-0" placeholder="filter subject...">
+                                    <input id="id_picker_filter" type="text" class="fieldname pt-0 pb-0" placeholder="{% trans 'filter subject...' %}">
                                 </td>
                             </tr>
                         </thead>
@@ -122,7 +125,7 @@
                     </tr>
                     <tr>
                         <td colspan=2>
-                            <input id="id_search_filter" type="text" class="fieldname pt-0 pb-0" colspan=2 placeholder="filter name...">
+                            <input id="id_search_filter" type="text" class="fieldname pt-0 pb-0" colspan=2 placeholder="{% trans 'filter name...' %}">
                         </td>
                     </tr>
                 </thead>
@@ -136,6 +139,8 @@
         data-ajax_studsubj_download_url= "{% url 'ajax_studsubj_download_url' %}"
         data-ajax_studsubj_upload_url= "{% url 'ajax_studsubj_upload_url' %}"
         data-student_list= "{{ student_list}}"
+        data-info_hasprac_cap="{% trans 'Subject has practical exam.' %}"
+        data-info_ismand_cap="{% trans 'Subject is mandatory.' %}"
         data-chk_extracounts_cap="{% trans 'Is extra subject, counts in result.' %}"
         data-chk_extranocount_cap="{% trans 'Is extra subject, does not count in result.' %}"
         data-chk_choicecombi_cap="{% trans 'Is choice-combi subject.' %}"

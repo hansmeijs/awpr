@@ -30,11 +30,11 @@ from django.contrib.auth.mixins import UserPassesTestMixin
 import logging
 logger = logging.getLogger(__name__)
 
-# PR2018-05-06
-from django.utils.translation import activate, get_language_info, ugettext_lazy as _
 
 """
 
+# PR2018-05-06
+from django.utils.translation import activate, get_language_info, ugettext_lazy as _
 # from https://simpleisbetterthancomplex.com/tips/2016/09/27/django-tip-15-cbv-mixins.html
 
 class GetFormKwargsMixin(object):
@@ -798,7 +798,7 @@ class SchemeitemsDownloadView(View):  # PR2019-01-13
                         for item in c.GRADETYPE_CHOICES:
                             if item[0] > 0:
                                 gradetypes.append({
-                                    'grtp_id': str(item[0]),
+                                    'grtp_id': item[0],
                                     'name': item[1]
                                 })
                         params.update({'gradetypes': gradetypes})
@@ -1086,6 +1086,7 @@ def load_sectors(request):
         if _dep:
             # wrap dep_id in delimiters, so ';1;' can be searched in ";1;15;6;'
             _dep_id_str = ';' + str(_dep_id) + ";"
+            # TODO change dep_list in  depbase_list PR2019-02-26
             # filter on Country (to be on the safe side, not necessary) and dep_id in dep_list
             _sectors = Sector.objects.filter(country=_dep.country, dep_list__contains=_dep_id_str).order_by('sequence')
             # logger.debug('load_sectors _levels ' + str(_sectors) + ' Type: ' + str(type(_sectors)))

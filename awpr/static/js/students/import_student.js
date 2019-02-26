@@ -1333,13 +1333,29 @@ console.log ("==========  UPLOAD DATA ==========");
                     if (!!excel_columns[idx].awpKey){
                         let awp_key = excel_columns[idx].awpKey;
                         if (!!DataRow[idx]){
-                            student[awp_key] = DataRow[idx];
+                            let value = DataRow[idx];
+                            let new_value;
+                            if (awp_key === "level"){
+                                new_value = get_awpkey_from_storeditems(stored_levels, value);
+                                if (!!new_value) {
+                                    student[awp_key] = new_value;
+                                }
+                            } else if (awp_key === "sector"){
+                                new_value = get_awpkey_from_storeditems(stored_sectors, value);
+                                if (!!new_value) {
+                                    student[awp_key] = new_value;
+                                }
+                            } else {
+                                student[awp_key] = value;
+                            }
                         }
                     }
                 }; //for (let col = 1 ; col <colLength; col++)
                 students.push(student);
             }  // for (let row = 0 ; row < 5; row++)
 
+console.log("students ==>");
+console.log( students);
             let parameters = {"students": JSON.stringify (students)};
 
             $.ajax({
@@ -1365,6 +1381,22 @@ console.log("========== response Upload Students ==>", typeof response,  respons
         }; //if(rowLength > 0 && colLength > 0)
     }); //$("#btn_import").on("click", function ()
 //========= END UPLOAD =====================================
+
+
+    function get_awpkey_from_storeditems(stored_items, excKey) {
+    //--------- lookup awpKey in stored_items PR2019-02-22
+    //stored_sectors:  {awpKey: "32", caption: "c&m", excKey: "cm"}
+        let awp_key;
+        if (!!stored_items && !!excKey){
+            for (let i = 0, len = stored_items.length ; i < len; i++) {
+                if (!!stored_items[i].excKey){
+                    if (stored_items[i].excKey.toLowerCase()  === excKey.toLowerCase() ){
+                        if (!!stored_items[i].awpKey){
+                            awp_key = stored_items[i].awpKey;
+                            break;
+        }}}}};
+        return awp_key
+    }
 
     function ShowLoadingGif(show) {
     //--------- show / hide loading gif PR2019-02-19

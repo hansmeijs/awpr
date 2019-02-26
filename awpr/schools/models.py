@@ -1,13 +1,11 @@
 #PR2018-04-13
+from django.contrib.auth import get_user_model
+from django.db import connection
 from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
 from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateField, DateTimeField
-from django.contrib.auth import get_user_model
 from django.utils import timezone
-import json # PR2018-12-02
 
 # PR2018-05-05 use AUTH_USER_MODEL
-#from django.contrib.auth.models import User
-#from accounts.models import User
 from awpr.settings import AUTH_USER_MODEL
 from django.utils.translation import ugettext_lazy as _
 from awpr import constants as c
@@ -54,11 +52,11 @@ class Country(Model):
 
     def __init__(self, *args, **kwargs):
         super(Country, self).__init__(*args, **kwargs)
-        # private variable __original checks if data_has_changed, to prevent update record when no changes are made.
+        # private variable o_ checks if data_has_changed, to prevent update record when no changes are made.
         # otherwise a logrecord would be created every time the save button is clicked without changes
-        self.original_name = self.name
-        self.original_abbrev = self.abbrev
-        self.original_locked = self.locked
+        self.o_name = self.name
+        self.o_abbrev = self.abbrev
+        self.o_locked = self.locked
 
     def save(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
@@ -68,7 +66,7 @@ class Country(Model):
         # self.full_clean()
 
     # check if data has changed. If so: save object
-        #logger.debug('original_name ' + str(self.original_name) + ' name ' + str(self.name))
+        #logger.debug('o_name ' + str(self.o_name) + ' name ' + str(self.name))
         if self.data_has_changed():
             self.modified_by = self.request.user
             # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
@@ -114,9 +112,9 @@ class Country(Model):
     def data_has_changed(self):  # PR2018-08-31
         # returns True when the value of one or more fields has changed PR2018-08-26
         self.is_update = self.id is not None # self.id is None before new record is saved
-        self.name_mod = self.original_name != self.name
-        self.abbrev_mod = self.original_abbrev != self.abbrev
-        self.locked_mod = self.original_locked != self.locked
+        self.name_mod = self.o_name != self.name
+        self.abbrev_mod = self.o_abbrev != self.abbrev
+        self.locked_mod = self.o_locked != self.locked
         return not self.is_update or \
                self.name_mod or \
                self.abbrev_mod or \
@@ -193,13 +191,13 @@ class Examyear(Model):  # PR2018-06-06
 
         # NOT IN USE:
         # try: # PR2018-08-03 necessary, otherwise gives error 'Examyear has no country' because self = None.
-        #     self._original_country = self.country
+        #     self._o_country = self.country
         # except:
-        #     self._original_country = None
+        #     self._o_country = None
 
-        self.original_examyear = self.examyear
-        self.original_published = self.published
-        self.original_locked = self.locked
+        self.o_examyear = self.examyear
+        self.o_published = self.published
+        self.o_locked = self.locked
 
         # PR2018-10-19 initialize here, otherwise delete gives error: 'Examyear' object has no attribute 'examyear_mod'
         self.examyear_mod = False
@@ -210,35 +208,37 @@ class Examyear(Model):  # PR2018-06-06
         # country.save(request) in ExamyearAddView.post
         self.request = kwargs.pop('request', None)
 
+        # check if data has changed. If so: save object
         if self.data_has_changed():
             self.modified_by = self.request.user
             self.modified_at = timezone.now()  # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
             self.mode = ('c', 'u')[self.is_update]  # result = (on_false, on_true)[condition]
+
             # when adding record: self.id=None, set force_insert=True; otherwise: set force_update=True PR2018-06-09
             super(Examyear, self).save(force_insert = not self.is_update, force_update = self.is_update, **kwargs)
-            # self.id gets its value in super(Country, self).save
             self.save_to_log()
 
     def delete(self, *args, **kwargs):
-        request_user = kwargs.pop('request_user')
-
-        # update modified_by and modified_at, so it can be stored in log
-        self.modified_by = request_user
-        self.modified_at = timezone.now()
-        self.mode = 'd'
-        self.data_has_changed()
-
-        # First save to logfile
+        # self.object.delete(request=self.request) in class ExamyearDeleteView
+        self.request = kwargs.pop('request', None)
+        self.data_has_changed('d')
+        # save to logfile before deleting record
         self.save_to_log()
         # then delete record
         super(Examyear, self).delete(*args, **kwargs)
 
-
     def save_to_log(self, *args, **kwargs):
+        """
+        # get latest Country_log row that corresponds with self.country
+        country_log = None
+        if self.country is not None:
+            country_log = Country_log.objects.filter(country_id=self.country.id).order_by('-id').first()
+
         #Create method also saves record
-        log_obj = Examyear_log.objects.create(
+        Examyear_log.objects.create(
             examyear_id=self.id,
-            country_id=self.country.id,
+
+            country_log=country_log,
 
             examyear=self.examyear,
             published=self.published,
@@ -252,19 +252,53 @@ class Examyear(Model):  # PR2018-06-06
             modified_by=self.modified_by,
             modified_at=self.modified_at
         )
-        log_obj.save()
+        """
+        # PR2019-02-24 This works, but is rather complicated
+        field_list = 'examyear, published, locked, modified_by_id, modified_at,'
+        sql_list = ['INSERT INTO schools_examyear_log',
+                        '(examyear_id, country_log_id,',
+                         field_list,
+                        'mode, examyear_mod, published_mod, locked_mod',
+                    ') SELECT',
+                        'id,',
+                        '(SELECT id FROM schools_country_log WHERE country_id=exy.country_id ORDER BY id DESC LIMIT 1),',
+                        field_list,
+                        '%s AS mode, %s AS examyear_mod, %s AS published_mod, %s AS locked_mod',
+                    'FROM schools_examyear AS exy WHERE id=%s;']
+        sql = ' '.join(sql_list)
+        cursor = connection.cursor()
+        cursor.execute(sql, [self.mode,
+                             self.examyear_mod,
+                             self.published_mod,
+                             self.locked_mod,
+                             self.pk])
+        connection.commit()
 
-    def data_has_changed(self):  # PR2018-10-19
+    def data_has_changed(self, mode_override = None):  # PR2018-10-19
         # returns True when the value of one or more fields has changed
         self.is_update = self.id is not None # self.id is None before new record is saved
-        self.examyear_mod = self.original_examyear != self.examyear
-        self.published_mod = self.original_published != self.published
-        self.locked_mod = self.original_locked != self.locked
 
-        return not self.is_update or \
-               self.examyear_mod or \
-               self.published_mod or \
-               self.locked_mod
+        self.examyear_mod = self.o_examyear != self.examyear
+        self.published_mod = self.o_published != self.published
+        self.locked_mod = self.o_locked != self.locked
+
+        data_changed_bool = (
+            not self.is_update or
+            self.examyear_mod or
+            self.published_mod or
+            self.locked_mod
+        )
+
+        if data_changed_bool:
+            self.modified_by = self.request.user
+            self.modified_at = timezone.now()
+            self.mode = ('c', 'u')[self.is_update]
+
+        # override mode on delete
+        if mode_override:
+            self.mode = mode_override
+
+        return data_changed_bool
 
     @property
     def published_str(self):
@@ -326,7 +360,8 @@ class Examyear_log(Model):
     objects = CustomManager()
 
     examyear_id = IntegerField(db_index=True)
-    country_id = IntegerField()
+
+    country_log = ForeignKey(Country_log, related_name='+', on_delete=PROTECT)
 
     examyear = PositiveSmallIntegerField(null=True)
     published = BooleanField(default=False)
@@ -356,7 +391,7 @@ class Examyear_log(Model):
         return mode_str
 
 
-# === Department =====================================
+# === Department Model =====================================
 # PR2018-09-15 moved from Subjects to School because of circulair refrence when trying to import subjects.Department
 class Departmentbase(Model):# PR2018-10-17
     objects = CustomManager()
@@ -393,13 +428,22 @@ class Department(Model):# PR2018-08-10
 
         # private variable __original checks if data_has_changed, to prevent update record when no changes are made.
         # Otherwise a logrecord is created every time the save button is clicked without changes
-        self.original_name = self.name
-        self.original_abbrev = self.abbrev
-        self.original_sequence = self.sequence
-        self.original_level_req = self.level_req
-        self.original_sector_req = self.sector_req
-        self.original_level_caption = self.level_caption
-        self.original_sector_caption = self.sector_caption
+        self.o_name = self.name
+        self.o_abbrev = self.abbrev
+        self.o_sequence = self.sequence
+        self.o_level_req = self.level_req
+        self.o_sector_req = self.sector_req
+        self.o_level_caption = self.level_caption
+        self.o_sector_caption = self.sector_caption
+
+        # PR2019-02-23 initialize here, otherwise delete gives error: object has no attribute 'name_mod'
+        self.name_mod = False
+        self.abbrev_mod = False
+        self.sequence_mod = False
+        self.level_req_mod = False
+        self.sector_req_mod = False
+        self.level_caption_mod = False
+        self.sector_caption_mod = False
 
         """
         # TODO iterate through field list PR2018-08-22
@@ -414,6 +458,11 @@ class Department(Model):# PR2018-08-10
         field_name = 'interest_%s' % (i + 1,)
         self.fields[field_name] = forms.CharField(required=False)
         self.fields[field_name] = “”
+        # like this, but its not working
+        field_list = ['name', 'abbrev', 'sequence', 'level_req', 'sector_req', 'level_caption', 'sector_caption', '']
+        for item in field_list:
+            field_name = '%s_mod' % (item,)
+            self.[field_name] = False
         """
 
         # for k, v in vars(self).items():
@@ -428,14 +477,16 @@ class Department(Model):# PR2018-08-10
 
     # check if data has changed. If so: save object
         if self.data_has_changed():
+            self.modified_by = self.request.user
+            self.modified_at = timezone.now()
+            self.mode = ('c', 'u')[self.is_update]
 
-            # First create base record. base.id is used in Department. Create also saves new record
+            # When new record: First create base record. base.id is used in Department. Create also saves new record
             if not self.is_update:
                 self.base = Departmentbase.objects.create()
 
             # when adding record: self.id=None, set force_insert=True; otherwise: set force_update=True PR2018-06-09
             super(Department, self).save(force_insert = not self.is_update, force_update = self.is_update, **kwargs)
-            # self.id gets its value in super(Department, self).save
             self.save_to_log()
 
     def delete(self, *args, **kwargs):  # PR2018-11-22
@@ -446,12 +497,19 @@ class Department(Model):# PR2018-08-10
         super(Department, self).delete(*args, **kwargs)
 
     def save_to_log(self):
+        # PR2019-02-23
+
+        # get latest Examyear_log row that corresponds with self.examyear
+        examyear_log = None
+        if self.examyear is not None:
+            examyear_log = Examyear_log.objects.filter(examyear_id=self.examyear.id).order_by('-id').first()
+
         # Create method also saves record
         Department_log.objects.create(
             department_id=self.id, # self.id gets its value in super(School, self).save
 
-            base = self.base,
-            examyear = self.examyear,
+            base=self.base,
+            examyear_log=examyear_log,
 
             name=self.name,
             abbrev=self.abbrev,
@@ -463,7 +521,6 @@ class Department(Model):# PR2018-08-10
 
             name_mod = self.name_mod,
             abbrev_mod = self.abbrev_mod,
-
             sequence_mod = self.sequence_mod,
             level_req_mod = self.level_req_mod,
             sector_req_mod = self.sector_req_mod,
@@ -475,17 +532,17 @@ class Department(Model):# PR2018-08-10
             modified_at=self.modified_at
         )
 
-    def data_has_changed(self, mode = None):  # PR2018-11-22
+    def data_has_changed(self, mode_override = None):  # PR2018-11-22
         # returns True when the value of one or more fields has changed PR2018-08-26
         self.is_update = self.id is not None # self.id is None before new record is saved
 
-        self.name_mod = self.original_name != self.name
-        self.abbrev_mod = self.original_abbrev != self.abbrev
-        self.sequence_mod = self.original_sequence != self.sequence
-        self.level_req_mod = self.original_level_req != self.level_req
-        self.sector_req_mod = self.original_sector_req != self.sector_req
-        self.level_caption_mod = self.original_level_caption != self.level_caption
-        self.sector_caption_mod = self.original_sector_caption != self.sector_caption
+        self.name_mod = self.o_name != self.name
+        self.abbrev_mod = self.o_abbrev != self.abbrev
+        self.sequence_mod = self.o_sequence != self.sequence
+        self.level_req_mod = self.o_level_req != self.level_req
+        self.sector_req_mod = self.o_sector_req != self.sector_req
+        self.level_caption_mod = self.o_level_caption != self.level_caption
+        self.sector_caption_mod = self.o_sector_caption != self.sector_caption
 
         data_changed_bool = (
             not self.is_update or
@@ -503,9 +560,9 @@ class Department(Model):# PR2018-08-10
             self.modified_at = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
 
-        if mode:
-            # override mode on delete
-            self.mode = mode
+        # override mode on delete
+        if mode_override:
+            self.mode = mode_override
 
         return data_changed_bool
 
@@ -711,6 +768,17 @@ class Department(Model):# PR2018-08-10
         return select_list
 
 
+    @classmethod
+    def get_dep_by_abbrev(cls, abbrev, examyear):  # PR2019-02-26
+        # function gets Department with this abbrev and examyear, returns None if multiple found
+        dep = None
+        if examyear and abbrev:
+            if cls.objects.filter(examyear=examyear,abbrev__iexact=abbrev).count() == 1:
+                dep = cls.objects.filter(examyear=examyear,abbrev__iexact=abbrev).first()
+        return dep
+
+
+
 # PR2018-06-06
 class Department_log(Model):
     objects = CustomManager()
@@ -718,7 +786,8 @@ class Department_log(Model):
     department_id = IntegerField(db_index=True)
 
     base = ForeignKey(Departmentbase, related_name='+', on_delete=PROTECT)
-    examyear = ForeignKey(Examyear, related_name='+', on_delete=PROTECT)
+
+    examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=PROTECT)
 
     name = CharField(max_length=50, null=True)
     abbrev = CharField(max_length=4, null=True)
@@ -802,13 +871,13 @@ class School(Model):  # PR2018-08-20 PR2018-11-11
         super(School, self).__init__(*args, **kwargs)
         # private variable __original checks if data_has_changed, to prevent update record when no changes are made.
         # Otherwise a logrecord is created every time the save button is clicked without changes
-        self.original_name = self.name
-        self.original_code = self.code
-        self.original_abbrev = self.abbrev
-        self.original_article = self.article
-        self.original_depbase_list = self.depbase_list
-        self.original_is_template = self.is_template
-        self.original_locked = self.locked
+        self.o_name = self.name
+        self.o_code = self.code
+        self.o_abbrev = self.abbrev
+        self.o_article = self.article
+        self.o_depbase_list = self.depbase_list
+        self.o_is_template = self.is_template
+        self.o_locked = self.locked
 
         # PR2018-10-19 initialize here, otherwise delete gives error: object has no attribute 'name_mod'
         self.name_mod = False
@@ -840,12 +909,17 @@ class School(Model):  # PR2018-08-20 PR2018-11-11
         super(School, self).delete(*args, **kwargs)
 
     def save_to_log(self):
+        # get latest Examyear_log row that corresponds with self.examyear PR2019-02-24
+        examyear_log = None
+        if self.examyear is not None:
+            examyear_log = Examyear_log.objects.filter(examyear_id=self.examyear.id).order_by('-id').first()
+
         # Create method also saves record
         School_log.objects.create(
             school_id=self.id,  # self.id gets its value in super(School, self).save
 
             base=self.base,
-            examyear=self.examyear,
+            examyear_log=examyear_log,
 
             name=self.name,
             code=self.code,
@@ -872,13 +946,13 @@ class School(Model):  # PR2018-08-20 PR2018-11-11
         # returns True when the value of one or more fields has changed PR2018-08-26
         self.is_update = self.id is not None # self.id is None before new record is saved
 
-        self.name_mod = self.original_name != self.name
-        self.code_mod = self.original_code != self.code
-        self.abbrev_mod = self.original_abbrev != self.abbrev
-        self.article_mod = self.original_article != self.article
-        self.depbase_list_mod = self.original_depbase_list != self.depbase_list
-        self.is_template_mod = self.original_is_template != self.is_template
-        self.locked_mod = self.original_locked != self.locked
+        self.name_mod = self.o_name != self.name
+        self.code_mod = self.o_code != self.code
+        self.abbrev_mod = self.o_abbrev != self.abbrev
+        self.article_mod = self.o_article != self.article
+        self.depbase_list_mod = self.o_depbase_list != self.depbase_list
+        self.is_template_mod = self.o_is_template != self.is_template
+        self.locked_mod = self.o_locked != self.locked
 
         data_changed_bool = (
             not self.is_update or
@@ -1012,8 +1086,7 @@ class School_log(Model):
     school_id = IntegerField(db_index=True)
 
     base = ForeignKey(Schoolbase, related_name='+', on_delete=PROTECT)
-
-    examyear = ForeignKey(Examyear, related_name='+', on_delete=PROTECT)
+    examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=PROTECT)
 
     name = CharField(max_length=50,null=True)
     code = CharField(max_length=12,null=True)

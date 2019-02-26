@@ -201,6 +201,7 @@ class Birthcity_log(Model):
 class Studentbase(Model):# PR2018-10-17
     objects = CustomManager()
 
+
 class Student(Model):# PR2018-06-06, 2018-09-05
     objects = CustomManager()
 
@@ -445,7 +446,7 @@ class Student(Model):# PR2018-06-06, 2018-09-05
             modified_at=self.modified_at
         )
 
-    def data_has_changed(self, mode=None):  # PR2018-11-20
+    def data_has_changed(self, mode_override=None):  # PR2018-11-20
         # returns True when the value of one or more fields has changed PR2018-08-26
         self.is_update = self.id is not None # self.id is None before new record is saved
 
@@ -512,9 +513,9 @@ class Student(Model):# PR2018-06-06, 2018-09-05
             self.modified_at = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
 
-        if mode:
+        if mode_override:
             # override mode on delete
-            self.mode = mode
+            self.mode = mode_override
 
         return data_changed_bool
 
@@ -590,14 +591,12 @@ class Student(Model):# PR2018-06-06, 2018-09-05
             "dep", "level",  "sector", "classname"]
 
 
-
 # PR2018-06-08
 class Student_log(Model):
     objects = CustomManager()
 
     student_id = IntegerField(db_index=True)
 
-# # #
     base = ForeignKey(Studentbase, related_name='+', on_delete=PROTECT)
 
     school_log = ForeignKey(School_log, related_name='+', on_delete=PROTECT)
@@ -827,7 +826,7 @@ class Result(Model):# PR2018-11-10
 # PR2018-06-08
 class Result_log(Model):
     objects = CustomManager()
-
+    # TODO bind to student
     result_id = IntegerField(db_index=True)
 
     grade_ce_avg = DecimalField(max_digits=5, decimal_places=2, default=0)
@@ -905,8 +904,8 @@ class Studentsubject(Model):
     schemeitem = ForeignKey(Schemeitem, related_name='schemeitem_studsubs', on_delete=PROTECT)
     cluster = ForeignKey(Cluster, null=True, blank=True, related_name='cluster_studsubs', on_delete=PROTECT)
 
-    is_extra_subject = BooleanField(default=False)
-    is_extra_subject_counts = BooleanField(default=False)
+    is_extra_nocount = BooleanField(default=False)
+    is_extra_counts = BooleanField(default=False)
     is_choice_combi = BooleanField(default=False)
 
     pws_title = CharField(max_length=80, null=True, blank = True)
@@ -939,24 +938,18 @@ class Studentsubject(Model):
         except:
             self.original_cluster = None
 
-        self.original_is_extra_subject = self.is_extra_subject
-        self.original_is_extra_subject_counts = self.is_extra_subject_counts
+        self.original_is_extra_nocount = self.is_extra_nocount
+        self.original_is_extra_counts = self.is_extra_counts
         self.original_is_choice_combi = self.is_choice_combi
+
         self.original_pws_title = self.pws_title
         self.original_pws_subjects = self.pws_subjects
+
         self.original_has_exemption = self.has_exemption
         self.original_has_reex = self.has_reex
         self.original_has_reex03 = self.has_reex03
         self.original_has_pok = self.has_pok
         self.original_has_pok_status = self.has_pok_status
-        self.original_endgrade_tv01 = self.endgrade_tv01
-        self.original_endgrade_tv02 = self.endgrade_tv02
-        self.original_endgrade_tv03 = self.endgrade_tv03
-        self.original_endgrade_final = self.endgrade_final
-        self.original_endgrade_tv01_status = self.endgrade_tv01_status
-        self.original_endgrade_tv02_status = self.endgrade_tv02_status
-        self.original_endgrade_tv03_status = self.endgrade_tv03_status
-        self.original_endgrade_final_status = self.endgrade_final_status
 
         # PR2018-11-10 initialize here, otherwise delete gives error: 'Examyear' object has no attribute 'examyear_mod'
         # # # various fields - 6 fields
@@ -964,8 +957,8 @@ class Studentsubject(Model):
         self.student_mod = False
         self.schemeitem_mod = False
         self.cluster_mod = False
-        self.is_extra_subject_mod = False
-        self.is_extra_subject_counts_mod = False
+        self.is_extra_nocount_mod = False
+        self.is_extra_counts_mod = False
         self.is_choice_combi_mod = False
         self.pws_title_mod = False
         self.pws_subjects_mod = False
@@ -974,14 +967,7 @@ class Studentsubject(Model):
         self.has_reex03_mod = False
         self.has_pok_mod = False
         self.has_pok_status_mod = False
-        self.endgrade_tv01_mod = False
-        self.endgrade_tv02_mod = False
-        self.endgrade_tv03_mod = False
-        self.endgrade_final_mod = False
-        self.endgrade_tv01_status_mod = False
-        self.endgrade_tv02_status_mod = False
-        self.endgrade_tv03_status_mod = False
-        self.endgrade_final_status_mod = False
+
 
     def save(self, *args, **kwargs):  # # PR2018-11-24 called by subject.save(self.request) in SubjectEditView.form_valid
         self.request = kwargs.pop('request', None)
@@ -1029,8 +1015,8 @@ class Studentsubject(Model):
             student_log = student_log, #PR2019-02-15 debug: must be student_log, not self.student_log
             schemeitem_log = schemeitem_log,#PR2019-02-15 debug: must be schemeitem_log, not self.schemeitem_log
             cluster_log = cluster_log,#PR2019-02-15 debug: must be cluster_log, not self.cluster_log
-            is_extra_subject = self.is_extra_subject,
-            is_extra_subject_counts = self.is_extra_subject_counts,
+            is_extra_nocount = self.is_extra_nocount,
+            is_extra_counts = self.is_extra_counts,
             is_choice_combi = self.is_choice_combi,
             pws_title = self.pws_title,
             pws_subjects = self.pws_subjects,
@@ -1039,14 +1025,6 @@ class Studentsubject(Model):
             has_reex03 = self.has_reex03,
             has_pok = self.has_pok,
             has_pok_status = self.has_pok_status,
-            endgrade_tv01 = self.endgrade_tv01,
-            endgrade_tv02 = self.endgrade_tv02,
-            endgrade_tv03 = self.endgrade_tv03,
-            endgrade_final = self.endgrade_final,
-            endgrade_tv01_status = self.endgrade_tv01_status,
-            endgrade_tv02_status = self.endgrade_tv02_status,
-            endgrade_tv03_status = self.endgrade_tv03_status,
-            endgrade_final_status = self.endgrade_final_status,
 
             mode=self.mode,
             modified_by=self.modified_by,
@@ -1060,8 +1038,8 @@ class Studentsubject(Model):
         self.student_mod = self.original_student != self.student
         self.schemeitem_mod = self.original_schemeitem != self.schemeitem
         self.cluster_mod = self.original_cluster != self.cluster
-        self.is_extra_subject_mod = self.original_is_extra_subject != self.is_extra_subject
-        self.is_extra_subject_counts_mod = self.original_is_extra_subject_counts != self.is_extra_subject_counts
+        self.is_extra_nocount_mod = self.original_is_extra_nocount != self.is_extra_nocount
+        self.is_extra_counts_mod = self.original_is_extra_counts != self.is_extra_counts
         self.is_choice_combi_mod = self.original_is_choice_combi != self.is_choice_combi
         self.pws_title_mod = self.original_pws_title != self.pws_title
         self.pws_subjects_mod = self.original_pws_subjects != self.pws_subjects
@@ -1070,14 +1048,6 @@ class Studentsubject(Model):
         self.has_reex03_mod = self.original_has_reex03 != self.has_reex03
         self.has_pok_mod = self.original_has_pok != self.has_pok
         self.has_pok_status_mod = self.original_has_pok_status != self.has_pok_status
-        self.endgrade_tv01_mod = self.original_endgrade_tv01 != self.endgrade_tv01
-        self.endgrade_tv02_mod = self.original_endgrade_tv02 != self.endgrade_tv02
-        self.endgrade_tv03_mod = self.original_endgrade_tv03 != self.endgrade_tv03
-        self.endgrade_final_mod = self.original_endgrade_final != self.endgrade_final
-        self.endgrade_tv01_status_mod = self.original_endgrade_tv01_status != self.endgrade_tv01_status
-        self.endgrade_tv02_status_mod = self.original_endgrade_tv02_status != self.endgrade_tv02_status
-        self.endgrade_tv03_status_mod = self.original_endgrade_tv03_status != self.endgrade_tv03_status
-        self.endgrade_final_status_mod = self.original_endgrade_final_status != self.endgrade_final_status
 
         data_changed_bool = (
             not self.is_update or
@@ -1085,8 +1055,8 @@ class Studentsubject(Model):
             self.student_mod or
             self.schemeitem_mod or
             self.cluster_mod or
-            self.is_extra_subject_mod or
-            self.is_extra_subject_counts_mod or
+            self.is_extra_nocount_mod or
+            self.is_extra_counts_mod or
             self.is_choice_combi_mod or
             self.pws_title_mod or
             self.pws_subjects_mod or
@@ -1094,15 +1064,7 @@ class Studentsubject(Model):
             self.has_reex_mod or
             self.has_reex03_mod or
             self.has_pok_mod or
-            self.has_pok_status_mod or
-            self.endgrade_tv01_mod or
-            self.endgrade_tv02_mod or
-            self.endgrade_tv03_mod or
-            self.endgrade_final_mod or
-            self.endgrade_tv01_status_mod or
-            self.endgrade_tv02_status_mod or
-            self.endgrade_tv03_status_mod or
-            self.endgrade_final_status_mod
+            self.has_pok_status_mod
         )
 
         if data_changed_bool:
@@ -1124,55 +1086,72 @@ class Studentsubject(Model):
         studentsubject = cls.objects.filter(student=student).order_by('schemeitem__subject__sequence', 'schemeitem__subjecttype__sequence').all()
         studentsubject_list = []
         for item in studentsubject:
-            has_pws = item.schemeitem.subjecttype.has_pws
-            pws_title = ''
-            pws_subjects = ''
-            if item.pws_title:
-                pws_title = item.pws_title
-            if item.pws_subjects:
-                pws_subjects = item.pws_subjects
+
             sequence = item.schemeitem.subject.sequence * 1000 + item.schemeitem.subjecttype.sequence
-            studsubj_dict = {
+            item_dict = {
                 'mode': '-',
                 'studsubj_id': item.id,
                 'stud_id': item.student.id,
-                'ssi_id': item.schemeitem.id,
-                'subj_id': item.schemeitem.subject.id,
-                'subj_name': item.schemeitem.subject.name,
-                'sjtp_id': item.schemeitem.subjecttype.id,
-                'sjtp_name': item.schemeitem.subjecttype.abbrev,
-                'sjtp_has_pws': (0, 1)[item.schemeitem.subjecttype.has_pws],
-                'sjtp_one': (0, 1)[item.schemeitem.subjecttype.one_allowed],
-                'sequence': sequence
+                'ssi_id': item.schemeitem.id
             }
-            # add pws only if has_pws, then pws_title = '' when empty
-            if item.schemeitem.subjecttype.has_pws:
-                pws_title = ''
-                if item.pws_title:
-                    pws_title = item.pws_title
-                studsubj_dict['pws_title'] = pws_title
 
-                pws_subjects = ''
-                if item.pws_subjects:
-                    pws_subjects = item.pws_subjects
-                studsubj_dict['pws_subjects'] = pws_subjects
+            if item.schemeitem.is_mandatory:
+                item_dict['ssi_mand'] = 1
 
-            if item.schemeitem.extra_nocount_allowed:
-                studsubj_dict['extra_nocount'] = (0, 1)[item.is_extra_subject],
+            if item.schemeitem.is_combi:
+                item_dict['ssi_comb'] = 1
 
             if item.schemeitem.extra_count_allowed:
-                studsubj_dict['extra_counts'] = (0, 1)[item.is_extra_subject_counts],
+                item_dict['ssi_exal'] = 1
+                item_dict['extra_counts'] = (0, 1)[item.is_extra_counts],
+
+            if item.schemeitem.extra_nocount_allowed:
+                item_dict['ssi_exna'] = 1
+                item_dict['extra_nocount'] = (0, 1)[item.is_extra_nocount],
 
             if item.schemeitem.choicecombi_allowed:
-                studsubj_dict['choice_combi'] = (0, 1)[item.is_choice_combi]
+                item_dict['ssi_chal'] = 1
+                item_dict['choice_combi'] = (0, 1)[item.is_choice_combi]
 
-            studentsubject_list.append(studsubj_dict)
+            if item.schemeitem.subject:
+                item_dict['subj_id'] = item.schemeitem.subject.id
+                item_dict['subj_name'] = item.schemeitem.subject.name
+                item_dict['subj_sequ'] = item.schemeitem.subject.sequence
+
+            if item.schemeitem.subjecttype:
+                item_dict['sjtp_id'] = item.schemeitem.subjecttype.id
+                item_dict['sjtp_name'] = item.schemeitem.subjecttype.abbrev
+
+                if item.schemeitem.subjecttype.has_prac:
+                    item_dict['sjtp_has_prac'] = 1  # (0, 1)[item.schemeitem.subjecttype.has_prac]
+
+                if item.schemeitem.subjecttype.has_pws:
+                    item_dict['sjtp_has_pws'] = 1  # (0, 1)[item.schemeitem.subjecttype.has_pws]
+
+                    # add pws only if has_pws, then pws_title = '' when empty
+                    pws_title = ''
+                    if item.pws_title:
+                        pws_title = item.pws_title
+                    item_dict['pws_title'] = pws_title
+
+                    pws_subjects = ''
+                    if item.pws_subjects:
+                        pws_subjects = item.pws_subjects
+                    item_dict['pws_subjects'] = pws_subjects
+
+                if item.schemeitem.subjecttype.one_allowed:
+                    item_dict['sjtp_only_one'] = 1  #  (0, 1)[item.schemeitem.subjecttype.one_allowed]
+
+            item_dict['sequence'] = sequence
+
+
+            studentsubject_list.append(item_dict)
 
             #schemeitem = ForeignKey(Schemeitem, related_name='schemeitem_studsubs', on_delete=PROTECT)
             #cluster = ForeignKey(Cluster, null=True, blank=True, related_name='cluster_studsubs', on_delete=PROTECT)
             # # #
-            #is_extra_subject = BooleanField(default=False)
-            #is_extra_subject_counts = BooleanField(default=False)
+            #is_extra_nocount = BooleanField(default=False)
+            #is_extra_counts = BooleanField(default=False)
             #is_choice_combi = BooleanField(default=False)
             # # # profielwerkstuk / sectorwerkstuk
             #pws_title = CharField(max_length=80, null=True, blank=True)
@@ -1190,15 +1169,14 @@ class Studentsubject_log(Model):
     schemeitem_log = ForeignKey(Schemeitem_log, null=True, related_name='+', on_delete=PROTECT)
     cluster_log = ForeignKey(Cluster_log,null=True,  related_name='+', on_delete=PROTECT)
 
-    is_extra_subject = BooleanField(default=False)
-    is_extra_subject_counts = BooleanField(default=False)
+    is_extra_nocount = BooleanField(default=False)
+    is_extra_counts = BooleanField(default=False)
     is_choice_combi = BooleanField(default=False)
 
     pws_title = CharField(max_length=80, null=True, blank = True)
     pws_subjects = CharField(max_length=80, null=True, blank = True)
 
     has_exemption = BooleanField(default=False)
-
     has_reex = BooleanField(default=False)
     has_reex03 = BooleanField(default=False)
     has_pok = BooleanField(default=False)
@@ -1209,8 +1187,8 @@ class Studentsubject_log(Model):
     schemeitem_log_mod = BooleanField(default=False)
     cluster_log_mod = BooleanField(default=False)
 
-    is_extra_subject_mod = BooleanField(default=False)
-    is_extra_subject_counts_mod = BooleanField(default=False)
+    is_extra_nocount_mod = BooleanField(default=False)
+    is_extra_counts_mod = BooleanField(default=False)
     is_choice_combi_mod = BooleanField(default=False)
 
     pws_title_mod = BooleanField(default=False)
@@ -1248,6 +1226,7 @@ class Studentsubjectnote_log(Model):
     studentsubjectnote_id = IntegerField(db_index=True)
 
     studentsubject_log = ForeignKey(Studentsubject_log, related_name='+', on_delete=PROTECT)
+
     note = CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
     is_insp = BooleanField(default=False)
@@ -1268,6 +1247,7 @@ class Grade(Model):
     objects = CustomManager()
 
     studentsubject = ForeignKey(Studentsubject, related_name='grades', on_delete=PROTECT)
+
     examcode = PositiveSmallIntegerField(db_index=True, default=0, choices=c.EXAMCODE_CHOICES)  # 1:se, 2:pe 3:ce, 4:ce2, 5:ce3, 6:se-exemption, 7:ce-exemption
     gradecode = PositiveSmallIntegerField(db_index=True, default=0, choices=c.GRADECODE_CHOICES) # s = score, g = grade, pe-ce, f = final grade
     period = PositiveSmallIntegerField(db_index=True, default=0, choices=c.PERIOD_CHOICES) # 1 = period 1, 2 = period 2, 3 = period 3
@@ -1290,16 +1270,19 @@ class Grade(Model):
 
         self.original_examcode = self.examcode
         self.original_gradecode = self.gradecode
-        self.original_published = self.published
+        self.original_period = self.period
+        self.original_value = self.value
         self.original_status = self.status
+        self.original_published = self.published
 
         # PR2018-11-10 initialize here, otherwise delete gives error: 'Examyear' object has no attribute 'examyear_mod'
         # # # various fields - 6 fields
         self.examcode_mod = False
         self.gradecode_mod = False
+        self.period_mod = False
         self.value_mod = False
-        self.published_mod = False
         self.status_mod = False
+        self.published_mod = False
 
     def save(self, *args, **kwargs):  # # PR2018-11-24 called by subject.save(self.request) in SubjectEditView.form_valid
         self.request = kwargs.pop('request', None)
@@ -1341,13 +1324,16 @@ class Grade(Model):
             examcode=self.examcode,
             gradecode=self.gradecode,
             value=self.value,
-            published=self.published,
+            period=self.period,
             status=self.status,
+            published=self.published,
 
             examcode_mod=self.examcode_mod,
             gradecode_mod=self.gradecode_mod,
             value_mod=self.value_mod,
+            period_mod=self.period_mod,
             status_mod=self.status_mod,
+            published_mod=self.published_mod,
 
             mode=self.mode,
             modified_by=self.modified_by,
@@ -1359,23 +1345,24 @@ class Grade(Model):
         self.is_update = self.id is not None # self.id is None before new record is saved
 
         self.studentsubject_mod = self.original_studentsubject != self.studentsubject
+
         self.examcode_mod = self.original_examcode != self.examcode
         self.gradecodemod = self.original_gradecode != self.gradecode
         self.value_mod = self.original_value != self.value
-        self.published_mod = self.original_published != self.published
+        self.period_mod = self.original_period != self.period
         self.status_mod = self.original_status != self.status
+        self.published_mod = self.original_published != self.published
 
         data_changed_bool = (
             not self.is_update or
-
             self.studentsubject_mod or
             self.examcode_mod or
             self.gradecode_mod or
             self.value_mod or
-            self.published_mod or
-            self.status_mod
+            self.period_mod or
+            self.status_mod or
+            self.published_mod
         )
-
 
         if data_changed_bool:
             self.modified_by = self.request.user

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-02-19 15:30-0400\n"
+"POT-Creation-Date: 2019-02-26 19:50-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -49,7 +49,7 @@ msgid "Inspection"
 msgstr "Inspectie"
 
 #: .\accounts\forms.py:70 .\awpr\constants.py:72 .\awpr\constants.py:79
-#: .\awpr\constants.py:88
+#: .\awpr\constants.py:98
 msgid "System"
 msgstr "Systeem"
 
@@ -63,13 +63,13 @@ msgstr ""
 
 #: .\accounts\forms.py:310 .\accounts\models.py:34
 #: .\accounts\templates\user_list.html:23 .\accounts\templates\user_log.html:25
-#: .\awpr\constants.py:139 .\awpr\constants.py:144 .\awpr\constants.py:148
-#: .\awpr\constants.py:154
+#: .\awpr\constants.py:149 .\awpr\constants.py:154 .\awpr\constants.py:158
+#: .\awpr\constants.py:164
 msgid "Active"
 msgstr "Actief"
 
-#: .\accounts\models.py:33 .\awpr\constants.py:138 .\awpr\constants.py:143
-#: .\awpr\constants.py:149 .\awpr\constants.py:155
+#: .\accounts\models.py:33 .\awpr\constants.py:148 .\awpr\constants.py:153
+#: .\awpr\constants.py:159 .\awpr\constants.py:165
 msgid "Inactive"
 msgstr "Niet aktief"
 
@@ -89,10 +89,10 @@ msgstr ""
 msgid "A user with that username already exists."
 msgstr "Een gebruiker met deze gebruikersnaam komt al voor."
 
-#: .\accounts\models.py:72 .\schools\models.py:373 .\schools\models.py:375
-#: .\schools\models.py:775 .\schools\models.py:777 .\schools\models.py:779
-#: .\subjects\models.py:51 .\subjects\models.py:53 .\subjects\models.py:345
-#: .\subjects\models.py:347 .\subjects\models.py:1161 .\subjects\models.py:1163
+#: .\accounts\models.py:72 .\schools\models.py:408 .\schools\models.py:410
+#: .\schools\models.py:844 .\schools\models.py:846 .\schools\models.py:848
+#: .\subjects\models.py:47 .\subjects\models.py:49 .\subjects\models.py:362
+#: .\subjects\models.py:364 .\subjects\models.py:1236 .\subjects\models.py:1238
 msgid "Required. {} characters or fewer."
 msgstr "Verplicht. {} tekens of minder."
 
@@ -128,7 +128,7 @@ msgstr "Authoriseren"
 msgid "Admin"
 msgstr ""
 
-#: .\accounts\models.py:471 .\awpr\constants.py:172 .\awpr\constants.py:185
+#: .\accounts\models.py:471 .\awpr\constants.py:182 .\awpr\constants.py:195
 msgid "None"
 msgstr "Geen"
 
@@ -145,6 +145,8 @@ msgstr "U heeft geen permissie om landen te wijzigen."
 #: .\templates\importing\import_birthcountry.html:27
 #: .\templates\importing\import_department.html:27
 #: .\templates\importing\import_level.html:27
+#: .\templates\importing\import_package.html:27
+#: .\templates\importing\import_packageitem.html:27
 #: .\templates\importing\import_scheme.html:27
 #: .\templates\importing\import_schemeitem.html:65
 #: .\templates\importing\import_sector.html:27
@@ -253,7 +255,7 @@ msgstr "Uw account is niet geactiveerd."
 #: .\accounts\templates\account_activation_invalid.html:10
 #: .\templates\students\studentsubject.html:54
 #: .\templates\subjects\schemeitem_list.html:69
-#: .\templates\subjects\schemeitem_list.html:124
+#: .\templates\subjects\schemeitem_list.html:121
 msgid "OK"
 msgstr ""
 
@@ -378,7 +380,7 @@ msgstr "Wachtwoord aanmaken"
 #: .\templates\students\student_log.html:69
 #: .\templates\students\studentresult_list.html:63
 #: .\templates\students\studentsubject.html:52
-#: .\templates\students\studentsubject.html:148
+#: .\templates\students\studentsubject.html:153
 #: .\templates\students\studentsubject_add.html:29
 #: .\templates\students\studentsubject_add.html:33
 #: .\templates\students\studentsubject_edit.html:36
@@ -404,7 +406,7 @@ msgstr "Wachtwoord aanmaken"
 #: .\templates\subjects\schemeitem_edit.html:34
 #: .\templates\subjects\schemeitem_edit.html:38
 #: .\templates\subjects\schemeitem_list.html:67
-#: .\templates\subjects\schemeitem_list.html:146
+#: .\templates\subjects\schemeitem_list.html:143
 #: .\templates\subjects\schemeitem_log.html:51
 #: .\templates\subjects\sector_add.html:26
 #: .\templates\subjects\sector_add.html:30
@@ -530,11 +532,11 @@ msgid "Activated"
 msgstr "Geactiveerd"
 
 #: .\accounts\templates\user_list.html:25 .\accounts\templates\user_log.html:30
-#: .\schools\forms.py:542 .\students\forms.py:54 .\students\forms.py:135
+#: .\schools\forms.py:543 .\students\forms.py:54 .\students\forms.py:135
 #: .\subjects\forms.py:320 .\subjects\forms.py:379 .\subjects\forms.py:395
 #: .\templates\subjects\scheme_list.html:30
 #: .\templates\subjects\scheme_log.html:26
-#: .\templates\subjects\schemeitem_list.html:132
+#: .\templates\subjects\schemeitem_list.html:129
 #: .\templates\subjects\schemeitem_log.html:26
 msgid "Department"
 msgstr "Afdeling"
@@ -548,7 +550,8 @@ msgid "Permissions"
 msgstr "Permissies"
 
 #: .\accounts\templates\user_list.html:29 .\accounts\templates\user_log.html:27
-#: .\schools\forms.py:140 .\templates\schools\country_list.html:21
+#: .\schools\forms.py:140 .\schools\forms.py:211
+#: .\templates\schools\country_list.html:21
 #: .\templates\schools\country_log.html:21
 #: .\templates\schools\examyear_list.html:36
 #: .\templates\schools\examyear_log.html:23
@@ -557,10 +560,10 @@ msgid "Country"
 msgstr "Land"
 
 #: .\accounts\templates\user_list.html:30 .\schools\forms.py:211
-#: .\schools\forms.py:306 .\schools\forms.py:361 .\schools\forms.py:469
-#: .\subjects\forms.py:77 .\subjects\forms.py:166 .\subjects\forms.py:207
-#: .\subjects\forms.py:256 .\subjects\forms.py:449 .\subjects\forms.py:502
-#: .\templates\schools\examyear_list.html:34
+#: .\schools\forms.py:223 .\schools\forms.py:307 .\schools\forms.py:362
+#: .\schools\forms.py:470 .\subjects\forms.py:77 .\subjects\forms.py:166
+#: .\subjects\forms.py:207 .\subjects\forms.py:256 .\subjects\forms.py:449
+#: .\subjects\forms.py:502 .\templates\schools\examyear_list.html:34
 #: .\templates\schools\examyear_log.html:20
 msgid "Exam year"
 msgstr "Examenjaar"
@@ -691,42 +694,46 @@ msgstr ""
 msgid "V"
 msgstr ""
 
-#: .\awpr\constants.py:83
+#: .\awpr\constants.py:92
 msgid "Created"
 msgstr "Aangemaakt"
 
-#: .\awpr\constants.py:84
+#: .\awpr\constants.py:93
+msgid "Copied from last year"
+msgstr ""
+
+#: .\awpr\constants.py:94
 msgid "Updated"
 msgstr "Gewijzigd"
 
-#: .\awpr\constants.py:85
+#: .\awpr\constants.py:95
 msgid "Authorized"
 msgstr "Geauthoriseerd"
 
-#: .\awpr\constants.py:86
+#: .\awpr\constants.py:96
 msgid "Approved"
 msgstr "Goedgekeurd"
 
-#: .\awpr\constants.py:87
+#: .\awpr\constants.py:97
 msgid "Deleted"
 msgstr "Gewist"
 
-#: .\awpr\constants.py:100 .\awpr\constants.py:106 .\awpr\constants.py:112
-#: .\awpr\constants.py:116 .\awpr\constants.py:121
+#: .\awpr\constants.py:110 .\awpr\constants.py:116 .\awpr\constants.py:122
+#: .\awpr\constants.py:126 .\awpr\constants.py:131
 msgid "No"
 msgstr "Nee"
 
-#: .\awpr\constants.py:101 .\awpr\constants.py:107 .\awpr\constants.py:111
-#: .\awpr\constants.py:117 .\awpr\constants.py:122
+#: .\awpr\constants.py:111 .\awpr\constants.py:117 .\awpr\constants.py:121
+#: .\awpr\constants.py:127 .\awpr\constants.py:132
 msgid "Yes"
 msgstr "Ja"
 
-#: .\awpr\constants.py:129 .\awpr\constants.py:133
+#: .\awpr\constants.py:139 .\awpr\constants.py:143
 msgid "Unlocked"
 msgstr "Ontgrendeld"
 
-#: .\awpr\constants.py:130 .\awpr\constants.py:134 .\schools\forms.py:187
-#: .\schools\forms.py:294 .\schools\forms.py:461 .\schools\forms.py:502
+#: .\awpr\constants.py:140 .\awpr\constants.py:144 .\schools\forms.py:187
+#: .\schools\forms.py:295 .\schools\forms.py:462 .\schools\forms.py:503
 #: .\templates\schools\country_log.html:23
 #: .\templates\schools\examyear_log.html:22
 #: .\templates\schools\school_list.html:37
@@ -735,135 +742,135 @@ msgstr "Ontgrendeld"
 msgid "Locked"
 msgstr "Vergrendeld"
 
-#: .\awpr\constants.py:160 .\awpr\constants.py:165
+#: .\awpr\constants.py:170 .\awpr\constants.py:175
 msgid "Not a template"
 msgstr "Geen sjabloon"
 
-#: .\awpr\constants.py:161 .\awpr\constants.py:166
+#: .\awpr\constants.py:171 .\awpr\constants.py:176
 msgid "Template"
 msgstr "Sjabloon"
 
-#: .\awpr\constants.py:176 .\awpr\constants.py:180
+#: .\awpr\constants.py:186 .\awpr\constants.py:190
 msgid "Not published"
 msgstr "Niet gepubliceerd"
 
-#: .\awpr\constants.py:177 .\awpr\constants.py:181 .\schools\forms.py:282
+#: .\awpr\constants.py:187 .\awpr\constants.py:191 .\schools\forms.py:283
 #: .\templates\schools\examyear_list.html:35
 #: .\templates\schools\examyear_log.html:21
 msgid "Published"
 msgstr "Gepubliceerd"
 
-#: .\awpr\constants.py:186
+#: .\awpr\constants.py:196
 msgid "Number"
 msgstr "Nummer"
 
-#: .\awpr\constants.py:187
+#: .\awpr\constants.py:197
 msgid "Good/Sufficient/Insufficient"
 msgstr "Goed/Voldoende/Onvoldoende"
 
-#: .\awpr\constants.py:192
+#: .\awpr\constants.py:202
 msgid "-"
 msgstr ""
 
-#: .\awpr\constants.py:193
+#: .\awpr\constants.py:203
 msgid "nr."
 msgstr ""
 
-#: .\awpr\constants.py:194
+#: .\awpr\constants.py:204
 msgid "g/s/i"
 msgstr "g/v/o"
 
-#: .\awpr\constants.py:207 .\awpr\constants.py:215 .\subjects\forms.py:340
+#: .\awpr\constants.py:217 .\awpr\constants.py:225 .\subjects\forms.py:340
 #: .\subjects\forms.py:360
 msgid "Mandatory"
 msgstr "Verplicht"
 
-#: .\awpr\constants.py:208
+#: .\awpr\constants.py:218
 msgid "Combination subject"
 msgstr "Combinatievak"
 
-#: .\awpr\constants.py:209 .\subjects\forms.py:361
+#: .\awpr\constants.py:219 .\subjects\forms.py:361
 msgid "Choice combi allowed"
 msgstr "Keuze-combi toegestaan"
 
-#: .\awpr\constants.py:210 .\awpr\constants.py:218 .\awpr\constants.py:234
+#: .\awpr\constants.py:220 .\awpr\constants.py:228 .\awpr\constants.py:244
 #: .\subjects\forms.py:362
 msgid "Practical exam"
 msgstr "Praktijkexamen"
 
-#: .\awpr\constants.py:216 .\subjects\forms.py:341
+#: .\awpr\constants.py:226 .\subjects\forms.py:341
 msgid "Combi subject"
 msgstr "Combinatievak"
 
-#: .\awpr\constants.py:217 .\subjects\forms.py:342
+#: .\awpr\constants.py:227 .\subjects\forms.py:342
 msgid "Choice combi"
 msgstr "Keuze-combi vak"
 
-#: .\awpr\constants.py:233
+#: .\awpr\constants.py:243
 msgid "School exam"
 msgstr "Schoolexamen"
 
-#: .\awpr\constants.py:235
+#: .\awpr\constants.py:245
 msgid "Central exam"
 msgstr "Centraal examen"
 
-#: .\awpr\constants.py:236
+#: .\awpr\constants.py:246
 msgid "Re-examination"
 msgstr "Herexamen"
 
-#: .\awpr\constants.py:237
+#: .\awpr\constants.py:247
 msgid "Re-examination third period"
 msgstr "Herexamen derde tijdvak"
 
-#: .\awpr\constants.py:238
+#: .\awpr\constants.py:248
 msgid "School exam exemption"
 msgstr "Vrijstelling schoolexamen"
 
-#: .\awpr\constants.py:239
+#: .\awpr\constants.py:249
 msgid "Central exam exemption"
 msgstr "Vrijstelling centraal examen"
 
-#: .\awpr\constants.py:249
+#: .\awpr\constants.py:259
 msgid "Score"
 msgstr ""
 
-#: .\awpr\constants.py:250
+#: .\awpr\constants.py:260
 msgid "Grade"
 msgstr "Cijfer"
 
-#: .\awpr\constants.py:251
+#: .\awpr\constants.py:261
 msgid "CE-PE"
 msgstr ""
 
-#: .\awpr\constants.py:252
+#: .\awpr\constants.py:262
 msgid "Final grade"
 msgstr "Eindcijfer"
 
-#: .\awpr\constants.py:261
+#: .\awpr\constants.py:271
 msgid "Period 1"
 msgstr "Tijdvak 1"
 
-#: .\awpr\constants.py:262
+#: .\awpr\constants.py:272
 msgid "Period 2"
 msgstr "Tijdvak 2"
 
-#: .\awpr\constants.py:263
+#: .\awpr\constants.py:273
 msgid "Period 3"
 msgstr "Tijdvak 3"
 
-#: .\awpr\constants.py:274
+#: .\awpr\constants.py:284
 msgid "No result"
 msgstr "Geen uitslag"
 
-#: .\awpr\constants.py:275
+#: .\awpr\constants.py:285
 msgid "Passed"
 msgstr "Geslaagd"
 
-#: .\awpr\constants.py:276
+#: .\awpr\constants.py:286
 msgid "Failed"
 msgstr "Afgewezen"
 
-#: .\awpr\constants.py:277 .\templates\students\studentresult_list.html:31
+#: .\awpr\constants.py:287 .\templates\students\studentresult_list.html:31
 msgid "Withdrawn"
 msgstr "Teruggetrokken"
 
@@ -913,7 +920,7 @@ msgstr "Engels"
 msgid "Dutch"
 msgstr "Nederlands"
 
-#: .\importing\views.py:657
+#: .\importing\views.py:672
 msgid "An error occurred. This action cannot be completed."
 msgstr "Er is een fout opgetreden. Deze bewerking kan niet worden afgerond."
 
@@ -921,8 +928,8 @@ msgstr "Er is een fout opgetreden. Deze bewerking kan niet worden afgerond."
 msgid "CountryTEST"
 msgstr ""
 
-#: .\schools\forms.py:52 .\schools\forms.py:149 .\schools\forms.py:308
-#: .\schools\forms.py:363 .\schools\forms.py:472 .\schools\forms.py:564
+#: .\schools\forms.py:52 .\schools\forms.py:149 .\schools\forms.py:309
+#: .\schools\forms.py:364 .\schools\forms.py:473 .\schools\forms.py:565
 #: .\subjects\forms.py:37 .\subjects\forms.py:77 .\subjects\forms.py:129
 #: .\subjects\forms.py:166 .\subjects\forms.py:208 .\subjects\forms.py:258
 #: .\subjects\forms.py:451 .\subjects\forms.py:502
@@ -943,7 +950,7 @@ msgstr ""
 msgid "Abbreviation"
 msgstr "Afkorting"
 
-#: .\schools\forms.py:307 .\schools\forms.py:362 .\subjects\forms.py:37
+#: .\schools\forms.py:308 .\schools\forms.py:363 .\subjects\forms.py:37
 #: .\subjects\forms.py:77 .\subjects\forms.py:129 .\subjects\forms.py:166
 #: .\subjects\forms.py:207 .\subjects\forms.py:257 .\subjects\forms.py:320
 #: .\subjects\forms.py:379 .\subjects\forms.py:395 .\subjects\forms.py:450
@@ -964,7 +971,7 @@ msgstr "Afkorting"
 msgid "Name"
 msgstr "Naam"
 
-#: .\schools\forms.py:309 .\schools\forms.py:364 .\subjects\forms.py:37
+#: .\schools\forms.py:310 .\schools\forms.py:365 .\subjects\forms.py:37
 #: .\subjects\forms.py:77 .\subjects\forms.py:129 .\subjects\forms.py:166
 #: .\subjects\forms.py:209 .\subjects\forms.py:259 .\subjects\forms.py:452
 #: .\subjects\forms.py:502 .\templates\schools\department_list.html:31
@@ -980,47 +987,47 @@ msgstr "Naam"
 msgid "Sequence"
 msgstr "Volgnummer"
 
-#: .\schools\forms.py:310 .\schools\forms.py:365
+#: .\schools\forms.py:311 .\schools\forms.py:366
 #: .\templates\schools\department_log.html:30
 msgid "Level name"
 msgstr "Leerweg naam"
 
-#: .\schools\forms.py:311 .\schools\forms.py:366
+#: .\schools\forms.py:312 .\schools\forms.py:367
 #: .\templates\schools\department_log.html:32
 msgid "Sector name"
 msgstr "Sector naam"
 
-#: .\schools\forms.py:345 .\schools\forms.py:396
+#: .\schools\forms.py:346 .\schools\forms.py:397
 #: .\templates\schools\department_list.html:32
 msgid "Leerweg required"
 msgstr "Leerweg verplicht"
 
-#: .\schools\forms.py:352 .\schools\forms.py:405
+#: .\schools\forms.py:353 .\schools\forms.py:406
 msgid "Sector / Profiel required"
 msgstr "Sector / Profiel verplicht"
 
-#: .\schools\forms.py:417 .\templates\schools\school_list.html:34
+#: .\schools\forms.py:418 .\templates\schools\school_list.html:34
 #: .\templates\schools\school_log.html:29
 msgid "Article"
 msgstr "Lidwoord"
 
-#: .\schools\forms.py:427 .\schools\forms.py:471 .\schools\forms.py:590
+#: .\schools\forms.py:428 .\schools\forms.py:472 .\schools\forms.py:591
 #: .\templates\schools\school_list.html:32
 #: .\templates\schools\school_log.html:26
 msgid "Schoolname"
 msgstr "Schoolnaam"
 
-#: .\schools\forms.py:433 .\schools\forms.py:470 .\schools\forms.py:600
+#: .\schools\forms.py:434 .\schools\forms.py:471 .\schools\forms.py:601
 #: .\templates\schools\school_list.html:31
 #: .\templates\schools\school_log.html:27
 msgid "Schoolcode"
 msgstr ""
 
-#: .\schools\forms.py:438 .\schools\forms.py:610
+#: .\schools\forms.py:439 .\schools\forms.py:611
 msgid "Short schoolname"
 msgstr "Verkorte schoolnaam"
 
-#: .\schools\forms.py:448 .\schools\forms.py:492 .\subjects\forms.py:69
+#: .\schools\forms.py:449 .\schools\forms.py:493 .\subjects\forms.py:69
 #: .\subjects\forms.py:108 .\subjects\forms.py:157 .\subjects\forms.py:197
 #: .\subjects\forms.py:248 .\subjects\forms.py:299 .\subjects\forms.py:493
 #: .\subjects\forms.py:535 .\templates\schools\department_add.html:14
@@ -1042,7 +1049,7 @@ msgstr "Verkorte schoolnaam"
 msgid "Departments"
 msgstr "Afdelingen"
 
-#: .\schools\forms.py:449
+#: .\schools\forms.py:450
 msgid ""
 "Select the departments of this school. Press the Ctrl button to select "
 "multiple departments."
@@ -1050,7 +1057,7 @@ msgstr ""
 "Selecteer de afdelingen van deze school. Houdt de Ctrl toets ingedrukt om "
 "meerdere afdelingen te selecteren."
 
-#: .\schools\forms.py:493 .\subjects\forms.py:70 .\subjects\forms.py:109
+#: .\schools\forms.py:494 .\subjects\forms.py:70 .\subjects\forms.py:109
 #: .\subjects\forms.py:300
 msgid ""
 "Select the departments where this level is available. Press the Ctrl button "
@@ -1059,16 +1066,16 @@ msgstr ""
 "Selecteer de afdelingen waar deze leerweg voorkomt. Houdt de Ctrl toets "
 "ingedrukt om meerdere leerwegen te selecteren."
 
-#: .\schools\forms.py:519
+#: .\schools\forms.py:520
 msgid "Examyear already exists."
 msgstr "Examenjaar komt al voor"
 
-#: .\schools\forms.py:542 .\schools\forms.py:564 .\schools\forms.py:590
-#: .\schools\forms.py:600 .\schools\forms.py:610
+#: .\schools\forms.py:543 .\schools\forms.py:565 .\schools\forms.py:591
+#: .\schools\forms.py:601 .\schools\forms.py:611
 msgid "already exists"
 msgstr "komt al voor."
 
-#: .\schools\forms.py:626
+#: .\schools\forms.py:627
 #, python-format
 msgid "%(value)s exceeds 10 characters."
 msgstr "%(value)s heeft meer dan 10 tekens."
@@ -1164,7 +1171,7 @@ msgstr "Examennummer komt al voor."
 msgid "Gender '\"%s\"' is not allowed."
 msgstr "Geslacht '\"%s\"' is niet toegestaan."
 
-#: .\students\views.py:564
+#: .\students\views.py:592
 msgid "An error occurred. The student data is not saved."
 msgstr "Er is een fout opgetreden. De kandidaat gegveens zijn niet opgeslagen."
 
@@ -1278,12 +1285,12 @@ msgstr "Vak komt al voor."
 msgid "Abbreviation of default subject already exists."
 msgstr "Afkorting van dit vak komt al voor."
 
-#: .\subjects\models.py:1165
+#: .\subjects\models.py:1240
 msgid "Sets subject sequence in reports. Required. Maximum value is {}."
 msgstr ""
 "Bepaalt volgorde van de vakken in rapporten. Verplicht. Maximum waarde is {}."
 
-#: .\subjects\models.py:1167
+#: .\subjects\models.py:1242
 msgid "Value must be less or equal to {}."
 msgstr "Waarde moet minder dan of gelijk zijn aan {}."
 
@@ -1293,12 +1300,14 @@ msgstr "Wis gebruiker"
 
 #: .\templates\accounts\user_confirm_delete.html:23
 #: .\templates\schools\country_confirm_delete.html:20
+#: .\templates\schools\examyear_delete.html:23
 msgid "Yes, delete"
 msgstr "Ja, wis"
 
 #: .\templates\accounts\user_confirm_delete.html:24
 #: .\templates\schools\country_confirm_delete.html:21
 #: .\templates\schools\country_lock.html:29
+#: .\templates\schools\examyear_delete.html:24
 #: .\templates\schools\examyear_lock.html:31
 msgid "No, cancel"
 msgstr "Nee, annuleer"
@@ -1319,6 +1328,8 @@ msgstr "Inloggen"
 #: .\templates\importing\import_birthcountry.html:32
 #: .\templates\importing\import_department.html:32
 #: .\templates\importing\import_level.html:32
+#: .\templates\importing\import_package.html:32
+#: .\templates\importing\import_packageitem.html:32
 #: .\templates\importing\import_scheme.html:32
 #: .\templates\importing\import_schemeitem.html:70
 #: .\templates\importing\import_sector.html:32
@@ -1393,7 +1404,7 @@ msgstr "Land toevoegen"
 #: .\templates\subjects\scheme_edit.html:25
 #: .\templates\subjects\schemeitem_add.html:31
 #: .\templates\subjects\schemeitem_edit.html:29
-#: .\templates\subjects\schemeitem_list.html:123
+#: .\templates\subjects\schemeitem_list.html:120
 #: .\templates\subjects\sector_add.html:25
 #: .\templates\subjects\sector_edit.html:25
 #: .\templates\subjects\subject_add.html:28
@@ -1436,7 +1447,7 @@ msgstr "Ja, vergrendel"
 
 #: .\templates\schools\department_add.html:15
 #: .\templates\schools\examyear_add.html:11
-#: .\templates\subjects\schemeitem_list.html:122
+#: .\templates\subjects\schemeitem_list.html:119
 msgid "Add"
 msgstr "Toevoegen"
 
@@ -1509,6 +1520,10 @@ msgstr "Examenjaar toevoegen"
 #: .\templates\schools\examyear_delete.html:21
 msgid "Delete exam year"
 msgstr "Examenjaar wissen"
+
+#: .\templates\schools\examyear_delete.html:22
+msgid "Are you sure you want to delete exam year"
+msgstr ""
 
 #: .\templates\schools\examyear_edit.html:21
 msgid "Edit exam year "
@@ -1714,40 +1729,57 @@ msgstr ""
 
 #: .\templates\students\studentsubject.html:53
 #: .\templates\subjects\schemeitem_list.html:68
-#: .\templates\subjects\schemeitem_list.html:125
+#: .\templates\subjects\schemeitem_list.html:122
 msgid "Remove"
 msgstr "Verwijderen"
 
-#: .\templates\students\studentsubject.html:79
+#: .\templates\students\studentsubject.html:77
 msgid "Package"
 msgstr "Vakkenpakket"
 
-#: .\templates\students\studentsubject.html:89
+#: .\templates\students\studentsubject.html:87
 msgid "Subjects of student"
 msgstr "Vakken van kandidaat"
 
-#: .\templates\students\studentsubject.html:101
+#: .\templates\students\studentsubject.html:91
+#: .\templates\students\studentsubject.html:108
+msgid "filter subject..."
+msgstr "filter vak..."
+
+#: .\templates\students\studentsubject.html:104
 msgid "Available subjects"
 msgstr "Beschikbare vakken"
 
-#: .\templates\students\studentsubject.html:121
+#: .\templates\students\studentsubject.html:124
 msgid "Select student"
 msgstr "Selecteer kandidaat"
 
-#: .\templates\students\studentsubject.html:139
+#: .\templates\students\studentsubject.html:128
+msgid "filter name..."
+msgstr "filter naam..."
+
+#: .\templates\students\studentsubject.html:142
+msgid "Subject has practical exam."
+msgstr "Dit vak heeft praktijkexamen"
+
+#: .\templates\students\studentsubject.html:143
+msgid "Subject is mandatory."
+msgstr "Dit vak is verplicht"
+
+#: .\templates\students\studentsubject.html:144
 msgid "Is extra subject, counts in result."
 msgstr "Is extra vak, telt mee voor uitslag"
 
-#: .\templates\students\studentsubject.html:140
+#: .\templates\students\studentsubject.html:145
 msgid "Is extra subject, does not count in result."
 msgstr "Is extra vak, telt niet mee voor uitslag"
 
-#: .\templates\students\studentsubject.html:141
+#: .\templates\students\studentsubject.html:146
 msgid "Is choice-combi subject."
 msgstr "Is keuze-combinatievak."
 
-#: .\templates\students\studentsubject.html:143
-#: .\templates\subjects\schemeitem_list.html:138
+#: .\templates\students\studentsubject.html:148
+#: .\templates\subjects\schemeitem_list.html:135
 msgid "An error occurred."
 msgstr "Er is een fout opgetreden."
 
@@ -1821,7 +1853,7 @@ msgid "Fields"
 msgstr "Velden"
 
 #: .\templates\subjects\schemeitem_edit.html:15
-#: .\templates\subjects\schemeitem_list.html:89
+#: .\templates\subjects\schemeitem_list.html:88
 msgid "Scheme-items"
 msgstr "Vakschema items"
 
@@ -1841,26 +1873,26 @@ msgstr "SE-weging"
 msgid "CE weighing factor"
 msgstr "CE-weging"
 
-#: .\templates\subjects\schemeitem_list.html:97
+#: .\templates\subjects\schemeitem_list.html:95
 msgid "Subject-scheme subjects"
 msgstr "Vakken van het vakschema"
 
-#: .\templates\subjects\schemeitem_list.html:101
+#: .\templates\subjects\schemeitem_list.html:99
 msgid "Select subject scheme"
 msgstr "Selecteer vakschema"
 
-#: .\templates\subjects\schemeitem_list.html:104
+#: .\templates\subjects\schemeitem_list.html:102
 msgid ""
 "Select department and leerweg/sector or profiel to select subject scheme."
 msgstr ""
 "Selecteer een afdeling en leerweg/sector of profiel om een vakschema te "
 "selecteren."
 
-#: .\templates\subjects\schemeitem_list.html:110
+#: .\templates\subjects\schemeitem_list.html:107
 msgid "Scheme items"
 msgstr "Vakschema items"
 
-#: .\templates\subjects\schemeitem_list.html:113
+#: .\templates\subjects\schemeitem_list.html:110
 msgid ""
 "Click available subject to add to scheme, click scheme subject to remove it "
 "fom scheme."
@@ -1868,53 +1900,53 @@ msgstr ""
 "Klik op een beschikbaar vak om het aan het vakschema toe te voegen, klik op "
 "een vak in het vakschema om het te verwijderen."
 
-#: .\templates\subjects\schemeitem_list.html:126
+#: .\templates\subjects\schemeitem_list.html:123
 msgid "Subject is mandatory"
 msgstr "Dit vak is verplicht"
 
-#: .\templates\subjects\schemeitem_list.html:127
+#: .\templates\subjects\schemeitem_list.html:124
 msgid ""
 "This subject cannot be mandatory, because it already exists in this scheme."
 msgstr ""
 "Dit vak kan niet verplicht zijn, omdat het al in het vakschema voorkomt."
 
-#: .\templates\subjects\schemeitem_list.html:128
+#: .\templates\subjects\schemeitem_list.html:125
 msgid "Subject is combination subject"
 msgstr "Dit vak is een combinatievak"
 
-#: .\templates\subjects\schemeitem_list.html:129
+#: .\templates\subjects\schemeitem_list.html:126
 msgid "Choice combination allowed"
 msgstr "Keuze-combinatie toegestaan"
 
-#: .\templates\subjects\schemeitem_list.html:130
+#: .\templates\subjects\schemeitem_list.html:127
 msgid "Subject has practical exam"
 msgstr "Dit vak heeft praktijkexamen"
 
-#: .\templates\subjects\schemeitem_list.html:134
+#: .\templates\subjects\schemeitem_list.html:131
 msgid "This subject already exists in the scheme as a mandatory subject."
 msgstr "Dit vak komt al voor in het vakschema als een verplicht vak."
 
-#: .\templates\subjects\schemeitem_list.html:135
+#: .\templates\subjects\schemeitem_list.html:132
 msgid "Mandatory subjects can only occur once in a scheme."
 msgstr "Verplichte vakken kunnen maar eenmaal voorkomen in een vakschema."
 
-#: .\templates\subjects\schemeitem_list.html:136
+#: .\templates\subjects\schemeitem_list.html:133
 msgid "Select a subject type and grade type, set the characteristics and click"
 msgstr "Selecteer een vaktype en cijfertype, vul de kenmerken in en klik op"
 
-#: .\templates\subjects\schemeitem_list.html:137
+#: .\templates\subjects\schemeitem_list.html:134
 msgid "This subject wil be removed from the scheme."
 msgstr "Dit vak wordt van het vakschema verwijderd."
 
-#: .\templates\subjects\schemeitem_list.html:139
+#: .\templates\subjects\schemeitem_list.html:136
 msgid "This subject is not added to the scheme."
 msgstr "Dit vak is miet van het vakschema verwijderd."
 
-#: .\templates\subjects\schemeitem_list.html:140
+#: .\templates\subjects\schemeitem_list.html:137
 msgid "The characteristics of this subject are not updated."
 msgstr "De kenmerken van dit vak zijn niet bijgewerkt."
 
-#: .\templates\subjects\schemeitem_list.html:141
+#: .\templates\subjects\schemeitem_list.html:138
 msgid "This subject is not removed from the scheme."
 msgstr "Dit vak is niet van het vakschema verwijderd."
 

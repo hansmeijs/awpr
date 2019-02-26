@@ -497,7 +497,6 @@ class StudentImportUploadDataView(View):  # PR2018-12-04
                         data['e_lastname'] = msg_dont_add
                         data['e_firstname'] = msg_dont_add
 
-
     # ---   validate if examnumber is not None and if it already exists in this school and examyear
                     if 'examnumber' in student:
                         if student['examnumber']:
@@ -506,6 +505,27 @@ class StudentImportUploadDataView(View):  # PR2018-12-04
                     if msg_dont_add:
                         dont_add = True
                         data['e_examnumber'] = msg_dont_add
+
+    # ---   validate level / sector
+                    level = None
+                    sector = None
+                    if 'level' in student:
+                        if student['level']:
+                            # logger.debug('student[level]: ' + str(student['level']))
+                            if student['level'].isnumeric():
+                                level_id = int(student['level'])
+                                level = Level.objects.filter(id=level_id, examyear=request.user.examyear).first()
+                    if 'sector' in student:
+                        if student['sector']:
+                            # logger.debug('student[sector]: ' + str(student['sector']) + str(type(student['sector'])))
+                            if student['sector'].isnumeric():
+                                sector_id = int(student['sector'])
+                                sector = Sector.objects.filter(id=sector_id, examyear=request.user.examyear).first()
+                                logger.debug('sector: ' + str(sector.name))
+                    scheme = Scheme.get_scheme(department, level, sector)
+
+                    if scheme:
+                        logger.debug('scheme: ' + str(scheme))
 
     # ========== create new student, but only if no errors found
                     if dont_add:
@@ -523,14 +543,22 @@ class StudentImportUploadDataView(View):  # PR2018-12-04
                         # stud_log['fullname'] = "Student '" + fullname + "' created."
                         # stud_log['fullname'] = _("Student created.")
 
+                        if level:
+                            new_student.level = level
+                        if sector:
+                            new_student.sector = sector
+                        if scheme:
+                            new_student.scheme = scheme
+
                     # calculate birthdate from  if lastname / firstname already exist in this school and examyear
                         if birthdate:
                             new_student.birthdate = birthdate
 
-                        for field in ('prefix', 'gender', 'birthcountry', 'birthcity',
-                                  'level', 'sector', 'classname'):
+
+                        for field in ('prefix', 'gender', 'birthcountry', 'birthcity', 'classname'):
                             if field in student:
                                 value = student[field]
+                                data['o_' + field] = value
                                 skip = False
 
                                 # validate 'gender'
@@ -582,9 +610,9 @@ class StudentImportUploadDataView(View):  # PR2018-12-04
                             if new_student.birthcity:
                                 data['s_birthcity'] = new_student.birthcity
                             if new_student.level:
-                                data['s_level'] = new_student.level
+                                data['s_level'] = new_student.level.abbrev
                             if new_student.sector:
-                                data['s_sector'] = new_student.sector
+                                data['s_sector'] = new_student.sector.abbrev
                             if new_student.classname:
                                 data['s_classname'] = new_student.classname
                             if new_student.examnumber:
@@ -667,7 +695,7 @@ class StudentImportUploadSettingView(View):  # PR2018-12-03
 class StudentsubjectDownloadView(View):  # PR2019-02-08
 
     def post(self, request, *args, **kwargs):
-        # logger.debug(' ============= StudentsubjectDownloadView ============= ')
+        logger.debug(' ============= StudentsubjectDownloadView ============= ')
         # logger.debug('request.POST' + str(request.POST) )
 
         params = {}
@@ -680,7 +708,7 @@ class StudentsubjectDownloadView(View):  # PR2019-02-08
                     student_id = request.POST['stud_id']
                     student = Student.objects.filter(id=student_id, school=school, department=dep).first()
                     # PR2019-02-09 debug: get level and sector from scheme, just in case scheme is None in student
-                    #logger.debug('student: ' + str(student))
+                    # logger.debug('student: ' + str(student))
                     if student:
                         student_dict ={'stud_id': student.id, 'name': student.full_name}  # full_name cannot be None
 
@@ -721,11 +749,11 @@ class StudentsubjectDownloadView(View):  # PR2019-02-08
                             # make list of all Subjects from this department and examyear (included in dep)
                             schemeitems = Schemeitem.get_schemeitem_list(scheme)
                             params.update({'schemeitems': schemeitems})
-                            # logger.debug('schemeitems: ' + str(schemeitems))
+                            logger.debug('schemeitems: ' + str(schemeitems))
 
                             studentsubjects = Studentsubject.get_studsubj_list(student)
                             params.update({'studentsubjects': studentsubjects})
-                            # logger.debug('studentsubjects: ' + str(studentsubjects))
+                            logger.debug('studentsubjects: ' + str(studentsubjects))
 
         json_dumps_params = json.dumps(params)
 
@@ -743,7 +771,7 @@ class StudentsubjectUploadView(View):  # PR2019-02-09
         if request.user is not None and request.user.examyear is not None and request.user.schoolbase is not None:
             # get sybject scheme item from  request.POST
             studentsubjects = json.loads(request.POST['studentsubjects'])
-            #logger.debug("studentsubjects: " + str(studentsubjects))
+            logger.debug("studentsubjects: " + str(studentsubjects))
 
             for item in studentsubjects:
                 # convert values

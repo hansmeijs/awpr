@@ -185,7 +185,7 @@ class StudentsubjectAddForm(ModelForm):  # PR2018-11-27
     class Meta:
         model = Studentsubject
         fields = ( 'schemeitem',  'cluster',
-            'is_extra_subject', 'is_extra_subject_counts', 'is_choice_combi',
+            'is_extra_nocount', 'is_extra_counts', 'is_choice_combi',
             'pws_title', 'pws_subjects',
             'has_exemption', 'has_reex', 'has_reex03', 'has_pok', 'has_pok_status'
         )

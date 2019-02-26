@@ -66,12 +66,26 @@ menu_reports = {'caption': 'Reports',  'width': 120, 'height': height,  'pos_x':
                 'style_sel': style_sel, 'style_unsel': style_unsel, 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
                 'submenu': ('subjlst', 'subjtyplst', 'schemlst')
                 }
-menus = {'mn_schl': menu_school, 'mn_subj': menu_subjects, 'mn_stud': menu_students, 'mn_pack': menu_package,
-               'mn_se': menu_schoolexam, 'mn_ce': menu_centalexam, 'mn_reex': menu_reexam, 'mns_res': menu_results, 'mn_rep': menu_reports}
+menus = {'mn_schl': menu_school,
+         'mn_subj': menu_subjects,
+         'mn_pack': menu_package,
+         'mn_stud': menu_students,
+         'mn_se': menu_schoolexam,
+         'mn_ce': menu_centalexam,
+         'mn_reex': menu_reexam,
+         'mns_res': menu_results,
+         'mn_rep': menu_reports}
 
-
-menu_default = {'menu': 'mn_schl', 'mn_schl': 'schllst', 'mn_subj': 'subjlst', 'mn_stud': 'studlst', 'mn_pack': 'subjlst',
-              'mn_se': 'subjlst', 'mn_ce': 'subjlst', 'mn_reex': 'subjlst', 'mns_res': 'subjlst', 'mn_rep': 'subjlst'
+menu_default = {'menu': 'mn_schl',
+                'mn_schl': 'schllst',
+                'mn_subj': 'subjlst',
+                'mn_pack': 'subjlst',
+                'mn_stud': 'studlst',
+                'mn_se': 'subjlst',
+                'mn_ce': 'subjlst',
+                'mn_reex': 'subjlst',
+                'mns_res': 'subjlst',
+                'mn_rep': 'subjlst'
               }
 menubuttons = {
 'home': {'caption': 'Home', 'href': 'home',  'viewpermits': {'all': 'all'}},

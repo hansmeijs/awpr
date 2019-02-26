@@ -19,9 +19,9 @@
       {% csrf_token %}
        <input type="hidden" name="next" value="{{ next }}">
         <h4>{% trans 'Delete exam year' %} {{ examyear.examyear }}</h4>
-        <p>Are you sure you want to delete exam year {{ object }}?</p>
-      <button type="submit" class="btn btn-outline-danger"  name='delete_this' value='DelThis'>Yes, delete</button>
-      <a href="{% url 'examyear_list_url' %}" class="btn btn-outline-primary">No, cancel</a>
+        <p>{% trans 'Are you sure you want to delete exam year' %} {{ object }}?</p>
+      <button type="submit" class="btn btn-outline-danger"  name='delete_this' value='DelThis'>{% trans 'Yes, delete' %}</button>
+      <a href="{% url 'examyear_list_url' %}" class="btn btn-outline-primary">{% trans 'No, cancel' %}</a>
     </form>
   {% else %}
     <div class="alert alert-danger">{{ user.message_examyear_modify }}</div>

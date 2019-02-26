@@ -192,6 +192,7 @@ def get_headerbar_param(request, params):
 
     return  headerbar
 
+
 def get_country_list(request_user):
     # PR2018-12-17   country_list: [{'pk': '1', 'country': 'Curaçao', 'selected': False},
     #                               {'pk': '2', 'country': 'Sint Maarten', 'selected': True}]
@@ -206,6 +207,7 @@ def get_country_list(request_user):
             row_dict = {'pk': str(country.id), 'country':country.name, 'selected': selected}
             country_list.append(row_dict)
     return country_list
+
 
 def get_examyear_list(request_user):
     # PR2018-05-14 objects.order_by('-examyear').all() not necessary, because model class Meta: ordering=['-examyear',]
@@ -264,6 +266,7 @@ def get_examyear_list(request_user):
 
     return examyear_list, rowcount
 
+
 def get_school_list(request_user):
     # PR2018-05-28 school_list: [{'pk': '1', 'school': 'SXM01 -  Milton Peters College', 'selected': False}
     # PR2018-08-04 omit schoolcode when user is School
@@ -309,6 +312,7 @@ def get_school_list(request_user):
                                 school_list.append(row_dict)
 
     return school_list
+
 
 def get_depbase_list(request):  # PR2018-08-24  PR2018-11-23
     # PR2018-10-15 function is only called by get_headerbar_param
@@ -391,13 +395,13 @@ def get_depbase_list(request):  # PR2018-08-24  PR2018-11-23
 
                             department = Department.objects.filter(id=row_dict_pk_int).first()
                             # logger.debug('department: ' + str(department) + ' Type: ' + str(type(department)))
+                            if department:
+                                request.user.depbase = department.base
+                                # logger.debug('request.user.depbase: ' + str(request.user.depbase) + ' Type: ' + str(type(request.user.depbase)))
 
-                            request.user.depbase = department.base
-                            # logger.debug('request.user.depbase: ' + str(request.user.depbase) + ' Type: ' + str(type(request.user.depbase)))
-
-                            request_user_depbase_is_modified = True
-                            # set is_cur_dep true
-                            depbase_list[0]['is_cur_dep'] = True
+                                request_user_depbase_is_modified = True
+                                # set is_cur_dep true
+                                depbase_list[0]['is_cur_dep'] = True
                         else:
                             # if there are multiple allowed deps: remove current dep, because it is not in the allowed deps
                             if request.user.depbase is not None:
@@ -587,11 +591,10 @@ def get_tuple_from_list_str(list_str):  # PR2018-08-28
     return list_tuple
 
 
-def id_found_in_list(id_str='', list_str='', value_at_empty_list = False):  # PR2018-11-22
+def id_found_in_list(id_str='', list_str='', value_at_empty_list=False):  # PR2018-11-22
     # Function searches for id in string,
-    # e.g.: id '2' will serach ';1' in ';1;2;3;'
+    # e.g.: id '2' will serach ';2;' in ';1;2;3;'
     found = value_at_empty_list
-    # PR2018-11-23 debug: error 'must be str, not int', argument changes form str to int, don't now why. Usse str()
     if list_str:
         found = False
         if id_str:

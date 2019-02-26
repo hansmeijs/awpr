@@ -3,16 +3,16 @@
 {% load static %}
 
 {% block stylesheet %}
-  <link rel="stylesheet" href="{% static 'css/awpr_table.css' %}">
+   <link rel="stylesheet" href="{% static 'css/awpr_table.css' %}">
 {% endblock %}
 
 {% block script %}
   <script src="{% static 'js/subjects/schemeitem_list.js' %}"></script>
 {% endblock %}
 
-
 {% block modal %}
 <div class="container">
+
   <!-- Modal -->
   <div class="modal fade" id="id_modal_cont" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg " role="document">
@@ -71,29 +71,27 @@
       </div>
     </div>
   </div>
-
-
 </div>
 {% endblock %}
-  {% block breadcrumb %}
-  <!--
-    <ol class="breadcrumb my-3">
-      <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
-      <li class="breadcrumb-item">{{ user.country }}
-        {% if user.country_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
-      </li>
-      <li class="breadcrumb-item">{{ user.examyear_str }}
-        {% if user.examyear_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
-      </li>
-      <li class="breadcrumb-item">{{ scheme.name }}</li>
-      <li class="breadcrumb-item active">{% trans 'Scheme-items' %}</li>
-    </ol>
-  -->
-  {% endblock %}
+
+{% block breadcrumb %}
+<!--
+  <ol class="breadcrumb my-3">
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item">{{ user.country }}
+      {% if user.country_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item">{{ user.examyear_str }}
+      {% if user.examyear_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
+    </li>
+    <li class="breadcrumb-item">{{ scheme.name }}</li>
+    <li class="breadcrumb-item active">{% trans 'Scheme-items' %}</li>
+  </ol>
+-->
+{% endblock %}
+
 {% block content %}
-
   {% if user.enable_schemes_view %}
-
     <h4 id="id_schemeitem_header" >{% trans 'Subject-scheme subjects' %}</h4>
 
     <div id="id_sel" class="search_container">
@@ -103,7 +101,6 @@
       <div id="id_sel_tables" class="search_table_div"></div>
       <p>{% trans 'Select department and leerweg/sector or profiel to select subject scheme.' %}  </p>
     </div>
-
 
     <div id="id_ssi" class="search_container">
       <div id="id_ssi_header" class="search_container_header">

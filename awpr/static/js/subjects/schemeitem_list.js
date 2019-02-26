@@ -90,7 +90,6 @@ console.log("===>  HandleTableRowClicked  =====") ;
 
                 // sel_id contains id of dep, lvl or sct
                 if(row_clicked.hasAttribute("sel_id")){row_clicked_sel_id = row_clicked.getAttribute("sel_id");}
-
                 if(row_clicked.hasAttribute("subj_id")){row_clicked_subj_id = row_clicked.getAttribute("subj_id");}
                 if(row_clicked.hasAttribute("ssi_id")){row_clicked_ssid = row_clicked.getAttribute("ssi_id");}
                 let table_body_clicked = document.getElementById(row_clicked.parentNode.id);
@@ -143,7 +142,6 @@ console.log("===>  HandleTableRowClicked  =====") ;
 
 // ---  if row is already selected: deselect row
                 if(row_clicked.classList.contains(cls_hl)) {
-
                     row_clicked.classList.remove(cls_hl, cls_hv);
                     row_clicked.classList.add(cls_tr);
 
@@ -301,26 +299,26 @@ console.log("======== handle_mod_btn_ok  ===========");
         mod_data["grtp_id"] = grtp_id;
 
 // ---  get info of weightSE, weightCE.  weightSE and weightCE are strings
-        mod_data["wtse"] = document.getElementById("id_weightSE").value;
-        mod_data["wtce"] = document.getElementById("id_weightCE").value;
+        mod_data["ssi_wtse"] = document.getElementById("id_weightSE").value;
+        mod_data["ssi_wtce"] = document.getElementById("id_weightCE").value;
 
 // the checked attribute simply tells you whether the checkbox is checked or not by default when the page is rendered.
 // To check the current state of the checkbox you must instead use the checked property.
-        mod_data["mand"] = "0";
+        mod_data["ssi_mand"] = 0;
         let chk_mand  = document.getElementById("id_mod_mand_chk");
-        if(!!chk_mand && chk_mand.checked){mod_data["mand"] = "1"; }
+        if(!!chk_mand && chk_mand.checked){mod_data["ssi_mand"] = 1; }
 
-        mod_data["comb"] = "0";
+        mod_data["ssi_comb"] = 0;
         let chk_comb = document.getElementById("id_mod_comb_chk");
-        if(!!chk_comb && chk_comb.checked){mod_data["comb"] = "1"; }
+        if(!!chk_comb && chk_comb.checked){mod_data["ssi_comb"] = 1; }
 
-        mod_data["chal"] = "0";
+        mod_data["ssi_chal"] = 0;
         let chk_chal  = document.getElementById("id_mod_chal_chk");
-        if(!!chk_chal && chk_chal.checked){mod_data["chal"] = "1"; }
+        if(!!chk_chal && chk_chal.checked){mod_data["ssi_chal"] = 1; }
 
-        mod_data["prac"] = "0";
+        mod_data["ssi_prac"] = 0;
         let chk_prac  = document.getElementById("id_mod_prac_chk");
-        if(!!chk_prac && chk_prac.checked){ mod_data["prac"] = "1"; }
+        if(!!chk_prac && chk_prac.checked){ mod_data["ssi_prac"] = 1; }
 
 console.log("mod_data: ", mod_data);
 
@@ -602,13 +600,18 @@ console.log("item_list ", item_list);
 
     }
 
-
 //========= function openModal  ============================= PR2019-01-22
-    function openModal(item_list, sel_subj_id, sel_ssi_id, tblContainer, tableName ) {
+    function openModal(item_list, sel_subj_id_str, sel_ssi_id_str, tblContainer, tableName ) {
         console.log("=========  openModal ========= ");
-        console.log("sel_subj_id:", sel_subj_id, typeof sel_subj_id, "sel_ssi_id:", sel_ssi_id, typeof sel_ssi_id);
         console.log("tblContainer:", tblContainer, "tableName:", tableName);
+        console.log("sel_subj_id_str:", sel_subj_id_str, typeof sel_subj_id_str);
+        console.log("sel_ssi_id_str:", sel_ssi_id_str, typeof sel_ssi_id_str);
         console.log("item_list:", item_list);
+
+// convert to number
+        let sel_subj_id = 0, sel_ssi_id = 0;
+        if (!isNaN(sel_subj_id_str)) {sel_subj_id = parseInt(sel_subj_id_str)};
+        if (!isNaN(sel_ssi_id_str)) {sel_ssi_id = parseInt(sel_ssi_id_str)};
 
 // ---  loop through item_list (either subjects or schemeitems) to get selected item and put attr.values in variables
 
@@ -635,10 +638,16 @@ console.log("item_list ", item_list);
                 let found = false;
                 switch (tableName){
                 case "subj":
-                    found = (!!item_list[i].subj_id && item_list[i].subj_id === sel_subj_id);
+                    if (!isNaN(sel_subj_id)) {
+                        let subj_id_int = parseInt(sel_subj_id);
+                        found = (!!item_list[i].subj_id && item_list[i].subj_id === subj_id_int);
+                    };
                     break;
                 case "ssis":
-                    found = (!!item_list[i].ssi_id && item_list[i].ssi_id === sel_ssi_id);
+                    if (!isNaN(sel_ssi_id)) {
+                        let ssi_id_int = parseInt(sel_ssi_id);
+                        found = (!!item_list[i].ssi_id && item_list[i].ssi_id === ssi_id_int);
+                    }
                 }
                 if(found){
                     row = item_list[i];
@@ -665,12 +674,12 @@ console.log("row:", row);
             if (!!row.subj_sequ){mod_data ["subj_sequ"] = row.subj_sequ;} else {mod_data ["subj_sequ"] = '';};
             if (!!row.sjtp_name){mod_data ["sjtp_name"] = row.sjtp_name;} else {mod_data ["sjtp_name"] = '';};
 
-            if (!!row.wtse){mod_data ["wtse"] = row.wtse;} else {mod_data ["wtse"] = '1';};
-            if (!!row.wtce){mod_data ["wtce"] = row.wtce;} else {mod_data ["wtce"] = '1';};
-            if (!!row.mand){mod_data ["mand"] = row.mand;} else {mod_data ["mand"] = '0';};
-            if (!!row.comb){mod_data ["comb"] = row.comb;} else {mod_data ["comb"] = '0';};
+            if (!!row.ssi_wtse){mod_data ["ssi_wtse"] = row.ssi_wtse;} else {mod_data ["ssi_wtse"] = 0;};
+            if (!!row.ssi_wtce){mod_data ["ssi_wtce"] = row.ssi_wtce;} else {mod_data ["ssi_wtce"] = 0;};
+            if (!!row.ssi_mand){mod_data ["ssi_mand"] = row.ssi_mand;} else {mod_data ["ssi_mand"] = 0;};
+            if (!!row.ssi_comb){mod_data ["ssi_comb"] = row.ssi_comb;} else {mod_data ["ssi_comb"] = 0;};
             if (!!row.chal){mod_data ["chal"] = row.chal;} else {mod_data ["chal"] = '0';};
-            if (!!row.prac){mod_data ["prac"] = row.prac;} else {mod_data ["prac"] = '0';};
+            if (!!row.sjtp_hasprac){mod_data ["sjtp_hasprac"] = row.sjtp_hasprac;} else {mod_data ["sjtp_hasprac"] = 0;};
 
 console.log("mod_data:", mod_data, typeof mod_data);
 
@@ -727,22 +736,22 @@ console.log("mod_data:", mod_data, typeof mod_data);
                 }
 
         // ---  set selectbox subjecttype
-                let sel_subjecttype_id = "";
-                if (!!mod_data ["subj_id"]){sel_subjecttype_id = mod_data ["subj_id"];};  // schemeitem.subjecttype.id
+                let sel_subjecttype_id = 0;
+                if (!!mod_data ["sjtp_id"]){sel_subjecttype_id = mod_data ["sjtp_id"];};  // schemeitem.subjecttype.id
                 FillListSubjectypes(lst_sjtp_occupied, sel_subjecttype_id, current_sjtp_id);
 
         // ---  set selectbox gradetypes
                 FillListGradetypes(gradetypes, mod_data ["grtp_id"]);
 
         // ---  set input box id_weightSE and id_weightCE
-                document.getElementById("id_weightSE").value = mod_data ["wtse"];
-                document.getElementById("id_weightCE").value = mod_data ["wtce"];
+                document.getElementById("id_weightSE").value = mod_data ["ssi_wtse"];
+                document.getElementById("id_weightCE").value = mod_data ["ssi_wtce"];
 
         // ---  set check boxes
-                let ssi_mand = (!!mod_data ["mand"] && mod_data ["mand"] === "1");
-                let ssi_comb = (!!mod_data ["comb"] && mod_data ["comb"] === "1");
-                let ssi_chal = (!!mod_data ["chal"] && mod_data ["chal"] === "1");
-                let ssi_prac = (!!mod_data ["prac"] && mod_data ["prac"] === "1");
+                let ssi_mand = (!!mod_data ["ssi_mand"] && mod_data ["ssi_mand"] === 1);
+                let ssi_comb = (!!mod_data ["ssi_comb"] && mod_data ["ssi_comb"] === 1);
+                let ssi_chal = (!!mod_data ["ssi_chal"] && mod_data ["ssi_chal"] === 1);
+                let ssi_prac = (!!mod_data ["ssi_prac"] && mod_data ["ssi_prac"] === 1);
 
                 let sel_checkbox = $("#id_sel_checkbox");
                 sel_checkbox.empty();
@@ -832,12 +841,12 @@ console.log("======== function upload_ssi  ===========");
             if(!!mod_data["subj_id"]){ ssi["subj_id"] = mod_data["subj_id"];};
             if(!!mod_data["sjtp_id"]){ ssi["sjtp_id"] = mod_data["sjtp_id"];};
             if(!!mod_data["grtp_id"]){ ssi["grtp_id"] = mod_data["grtp_id"];};
-            if(!!mod_data["wtse"]){ ssi["wtse"] = mod_data["wtse"];};
-            if(!!mod_data["wtce"]){ ssi["wtce"] = mod_data["wtce"];};
-            if(!!mod_data["mand"]){ ssi["mand"] = mod_data["mand"];};
-            if(!!mod_data["comb"]){ ssi["comb"] = mod_data["comb"];};
-            if(!!mod_data["chal"]){ ssi["chal"] = mod_data["chal"];};
-            if(!!mod_data["prac"]){ ssi["prac"] = mod_data["prac"];};
+            if(!!mod_data["ssi_wtse"]){ ssi["ssi_wtse"] = mod_data["ssi_wtse"];};
+            if(!!mod_data["ssi_wtce"]){ ssi["ssi_wtce"] = mod_data["ssi_wtce"];};
+            if(!!mod_data["ssi_mand"]){ ssi["ssi_mand"] = mod_data["ssi_mand"];};
+            if(!!mod_data["ssi_comb"]){ ssi["ssi_comb"] = mod_data["ssi_comb"];};
+            if(!!mod_data["ssi_chal"]){ ssi["ssi_chal"] = mod_data["ssi_chal"];};
+            if(!!mod_data["ssi_prac"]){ ssi["ssi_prac"] = mod_data["ssi_prac"];};
             if(!!mod_data["subj_name"]){ ssi["name"] = mod_data["subj_name"];};
             if(!!mod_data["subj_sequ"]){ ssi["sequ"] = mod_data["subj_sequ"];};
         }
@@ -936,7 +945,10 @@ console.log("+++++++++ schemeitems ==>", schemeitems);
 
 //========= FillListSubjectypes  ============= PR2019-01-28
     function FillListSubjectypes(lst_sjtp_occupied, sel_subjecttype_id, current_sjtp_id) {
-console.log("== FillListSubjectypes  =======");
+//console.log("------- FillListSubjectypes  ---------")
+//console.log("lst_sjtp_occupied: ", lst_sjtp_occupied, typeof lst_sjtp_occupied)
+//console.log("sel_subjecttype_id: ", sel_subjecttype_id, typeof sel_subjecttype_id)
+//console.log("current_sjtp_id: ", current_sjtp_id, typeof current_sjtp_id)
 
         let el_select_sjtp = $("#id_select_sjtp");
 
@@ -956,7 +968,6 @@ console.log("== FillListSubjectypes  =======");
                 } else {
                     is_disabled = found_in_array(lst_sjtp_occupied, row.sjtp_id);
                 }
-
                 $("<option>").appendTo(el_select_sjtp)
                     .attr({"id": idSelectRow, "sjtp_id": row.sjtp_id, "sjtp_sequ": row.sequ})
                     .prop("selected", is_selected)
@@ -973,7 +984,10 @@ console.log("== FillListSubjectypes  =======");
 //========= FillListGradetypes  ============= PR2019-01-28
     function FillListGradetypes(gradetypes, sel_gradetype_id) {
     // fill list gradetypes
-
+//console.log("------- FillListGradetypes  ---------")
+//console.log("sel_gradetype_id: ", sel_gradetype_id, typeof sel_gradetype_id)
+//console.log("gradetypes: ")
+//console.log(gradetypes)
         let el_select_gradetype = $("#id_select_grtp");
 
 // ---  remove all options from el_select_gradetype
@@ -1022,25 +1036,27 @@ console.log("== FillListSubjectypes  =======");
 
 //========= GetListSjtpOccupied  ============= PR2019-01-28
     function GetListSjtpOccupied(schemeitems, sel_subj_id, sel_ssi_id) {
-        // function loops through schemeitems to find schemeitems of selected subject
-        // function loops through schemeitems to find subjecttypes of sel_subj_id
-        // subjecttypes in lst_sjtp_occupied will be disabled in subjecttypes list
-        // except for current schemeitem, because current schemeitem is updatable
-//console.log("== GetListSjtpOccupied  =======")
+        // function loops through schemeitems and filters schemeitems of selected subject
+        // the subjecttypes of this subject will be disabled in the subjecttypes list. They are stored in lst_sjtp_occupied
+        // except for the subjecttypes of the selected schemeitem, because selected schemeitem is updatable
+
 //console.log("schemeitems", schemeitems)
 //console.log("sel_subj_id", sel_subj_id, "sel_ssi_id", sel_ssi_id)
 
         let lst_sjtp_occupied = [];
         let is_subj_mand = false;
-        let current_sjtp_id = "";
+        let current_sjtp_id = 0;
         let returnvalue = {};
         if(!!sel_subj_id){
             for (let i = 0, len = schemeitems.length ; i < len; i++) {
                 let row = schemeitems[i];
 // ---  only if row.subject equals selected subject
                 if (!!row.subj_id && !!sel_subj_id && row.subj_id === sel_subj_id){
+
 // ---  check if subject is mandatory
-                    is_subj_mand = (!!row.mand && row.mand === "1");
+                    if (!!row.ssi_mand && row.ssi_mand === 1) {
+                        is_subj_mand = true;
+                    };
                     if (!!row.sjtp_id){
 // ---  add  subjecttype to list of occupied subjecttypes
                         lst_sjtp_occupied.push(row.sjtp_id);
@@ -1049,6 +1065,7 @@ console.log("== FillListSubjectypes  =======");
                             current_sjtp_id = row.sjtp_id;
                         }
          }}}}
+
          returnvalue["lst_sjtp_occupied"] = lst_sjtp_occupied;
          returnvalue["is_subj_mand"] = is_subj_mand;
          returnvalue["current_sjtp_id"] = current_sjtp_id;

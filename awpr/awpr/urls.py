@@ -232,10 +232,12 @@ urlpatterns = [
     url(r'^department/import/$', import_views.ImportDepartmentView.as_view(), name='import_department_url'),
     url(r'^level/import/$', import_views.ImportLevelView.as_view(), name='import_level_url'),
     path('sector/import/', import_views.ImportSectorView.as_view(), name='import_sector_url'),  # PR2018-09-04
-    path('scheme/import/', import_views.ImportSchemeView.as_view(), name='import_scheme_url'),  # PR2018- 11-10
     path('subjecttype/import/', import_views.ImportSubjecttypeView.as_view(), name='import_subjecttype_url'),  # PR2018-11-10
     url(r'^subject/import/$', import_views.ImportSubjectView.as_view(), name='import_subject_url'),
-    path('schemeitem/import/', import_views.ImportSchemeitemView.as_view(), name='import_schemeitem_url'),  # PR2018- 11-10
+    path('scheme/import/', import_views.ImportSchemeView.as_view(), name='import_scheme_url'),  # PR2018- 11-10
+    path('schemeitem/import/', import_views.ImportSchemeitemView.as_view(), name='import_schemeitem_url'),  # PR2018-11-10
+    path('package/import/', import_views.ImportPackageView.as_view(), name='import_package_url'),  # PR2019-02-24
+    path('packageitem/import/', import_views.ImportPackageitemView.as_view(), name='import_packageitems_url'),  # PR2019-02-25
     url(r'^school/import/$', import_views.ImportSchoolView.as_view(), name='import_school_url'),
 
     # PR2018- 11-10

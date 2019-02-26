@@ -17,7 +17,7 @@ $(function() {
 
     let databox = $("#id_data");
     const student_list = databox.data("student_list");
-console.log(student_list);
+// console.log(student_list);
 
 // ---  add 'onclick' event handler to all table bodies
         // PR2019-02-09 debug. jQ fired event twice, JS works fine.
@@ -31,6 +31,8 @@ console.log(student_list);
                 delay(function(){HandleSearchFilterEvent("search");}, 150 );});
     document.getElementById("id_picker_filter").addEventListener("keyup", function() {
                 delay(function(){HandleSearchFilterEvent("picker");}, 150 );});
+    document.getElementById("id_data_filter").addEventListener("keyup", function() {
+                delay(function(){HandleSearchFilterEvent("data");}, 150 );});
 
         $("#id_mod_btn_ok").on("click", function(){handle_mod_btn_ok();});
         $("#id_mod_btn_del").on("click", function(){handle_mod_btn_del();});
@@ -56,6 +58,9 @@ console.log(student_list);
             break;
         case "picker":
             item_list = schemeitems;
+            break;
+        case "data":
+            item_list = studentsubjects;
         }
 
         FillTableRows(TableName, item_list, filter_str);
@@ -120,16 +125,17 @@ console.log("===  HandleTableRowClicked  =====") ;
 //========= OpenModal  ====================================
     function OpenModal(tr_clicked) {
 console.log("===  OpenModal  =====") ;
-console.log("tr_clicked", tr_clicked);
+//console.log("tr_clicked", tr_clicked);
 
 // ---  reset variables of selected studentsubject
         sel_studsubj_id = 0;
         sel_studsubj = {};
 
-
 // ---  empty input boxes
-        document.getElementById("id_input_pws_title").value = "";
-        document.getElementById("id_input_pws_subjects").value = "";
+        let pws_title = "";
+        let pws_subjects = "";
+
+
 
 // ---  get attr 'studsubj_id' of tr_clicked (attribute is always string, function converts it to number)
         // new new_studsubj_id is negative ssi_id: -1592
@@ -151,22 +157,49 @@ console.log( sel_studsubj);
             //document.getElementById("id_input_pws_title").value = sel_studsubj.pws_title;
             //document.getElementById("id_input_pws_subjects").value = sel_studsubj.pws_subjects;
 
-sel_studsubj.has_
-$('#contest_numofwinners').hide();
-
-            $("#id_input_pws_title").val(sel_studsubj.pws_title);
-            $("#id_input_pws_subjects").val(sel_studsubj.pws_subjects);
+            let show_pws = false;
+            if (!!sel_studsubj.sjtp_has_pws) {
+                show_pws = true;
+                pws_title = sel_studsubj.pws_title;
+                pws_subjects = sel_studsubj.pws_subjects;
+            }
 
             let extra_counts = true // (!!sel_studsubj.extra_counts && sel_studsubj.extra_counts === 1);
             let mod_checkbox = $("#id_mod_checkbox");
             // remove all checkboxes
             mod_checkbox.empty();
+            if (!!sel_studsubj.sjtp_has_prac) {
+                CreateInfo(mod_checkbox, "hasprac", databox.data("info_hasprac_cap"))
+            }
+            if (!!sel_studsubj.mand) {
+                CreateInfo(mod_checkbox, "ismand", databox.data("info_ismand_cap"))
+            }
             // check if "chal" in scheme.fields, if so: add checkbox
 
             // CreateCheckbox(sel_checkbox, field, caption, is_checked, disabled, tooltiptext)
             CreateCheckbox(mod_checkbox, "extracounts", databox.data("chk_extracounts_cap"), sel_studsubj.extra_counts, false);
             CreateCheckbox(mod_checkbox, "extranocount", databox.data("chk_extranocount_cap"), sel_studsubj.extra_nocount, false);
             CreateCheckbox(mod_checkbox, "choicecombi", databox.data("chk_choicecombi_cap"), sel_studsubj.choice_combi, false);
+
+            let input_pws_title = $("#id_input_pws_title")
+            let label_pws_title = $("#id_label_pws_title")
+            let input_pws_subjects = $("#id_input_pws_subjects")
+            let label_pws_subjects = $("#id_label_pws_subjects")
+            input_pws_title.val(pws_title);
+            input_pws_subjects.val(pws_subjects);
+console.log("show_pws:" , show_pws)
+            if (show_pws) {
+                input_pws_title.show();
+                label_pws_title.show();
+                input_pws_subjects.show();
+                label_pws_subjects.show();
+            } else {
+                input_pws_title.hide();
+                label_pws_title.hide();
+                input_pws_subjects.hide();
+                label_pws_subjects.hide();
+            }
+
 
 
 // ---  show modal
@@ -222,8 +255,8 @@ console.log("-------------- response  --------------");
                 if (response.hasOwnProperty("studentsubjects")){studentsubjects = response.studentsubjects;}
                 if (response.hasOwnProperty("schemeitems")){schemeitems = response.schemeitems;}
 
-console.log("student");
-console.log(student);
+//console.log("student");
+//console.log(student);
 console.log("schemeitems");
 console.log(schemeitems);
 console.log("studentsubjects");
@@ -246,7 +279,7 @@ console.log(studentsubjects);
 console.log("===  StudentSubject_add  =====") ;
         // PR2019-02-11 add studsubj to studentsubjects
         // tr_clicked from table pickers, has ssi_id (string type), does not have studsubj_id
-console.log("tr_clicked:", tr_clicked);
+//console.log("tr_clicked:", tr_clicked);
 
 // ---  reset variables
         sel_studsubj_id = 0;
@@ -254,14 +287,13 @@ console.log("tr_clicked:", tr_clicked);
 
 // ---  get ssi_id from tr_clicked
         const tr_clicked_ssi_id = get_attr_from_tablerow(tr_clicked, "ssi_id");
-console.log("tr_clicked_ssi_id:", tr_clicked_ssi_id);
+//console.log("tr_clicked_ssi_id:", tr_clicked_ssi_id);
 
 // ---  check if studentsubject with the same ssi exists in studentsubjects
         // PR2019-02-10 DEBUG: !!sel_studsubj = true when sel_studsubj = {}, therefore check sel_studsubj.studsubj_id
-        // changed to found_id_in_studsub
-        let ssi_id_exists = found_id_in_studsub(tr_clicked_ssi_id, "ssi_id", false); //skip_del = false: include deleted records
+        // changed to exists_keyvalue_in_studsub
 
-console.log("ssi_id_exists", ssi_id_exists);
+        let ssi_id_exists = exists_keyvalue_in_studsub(tr_clicked_ssi_id, "ssi_id", false); //skip_del = false: include deleted records
 
         if (ssi_id_exists) {
             // if  ssi_id exists in studsubj it must be a deleted row. Set mode to 'c'.
@@ -276,6 +308,9 @@ console.log("ssi_id_exists", ssi_id_exists);
             // lookup schemeitem with this ssi_id
             let schemeitem = get_schemeitem(tr_clicked_ssi_id)
             if (!!schemeitem.ssi_id){
+
+console.log("schemeitem")
+console.log(schemeitem)
                 let new_studentsubject = {
                     "mode": "c",
                     "studsubj_id": new_studsubj_id,
@@ -285,13 +320,39 @@ console.log("ssi_id_exists", ssi_id_exists);
                     "subj_name": schemeitem.subj_name,
                     "sjtp_id": schemeitem.sjtp_id,
                     "sjtp_name": schemeitem.sjtp_name,
-                    "sjtp_one": 0,
                     "sequence": schemeitem.sequence,
-                    "extra_nocount": 0,
-                    "extra_counts": 0,
-                    "choice_combi": 0,
-                    "pws_title": "",
-                    "pws_subjects": ""
+                }
+// 'ssi_mand' 'ssi_comb' 'ssi_exal' 'ssi_exna' 'ssi_chal' 'sjtp_hasprac' 'sjtp_onlyone'
+
+                if (!!schemeitem.ssi_mand) {
+                    new_studentsubject["ssi_mand"] = 1
+                }
+                if (!!schemeitem.ssi_comb) {
+                    new_studentsubject["ssi_comb"] = 1
+                }
+                if (!!schemeitem.ssi_exal) {
+                    new_studentsubject["ssi_exal"] = 1
+                    new_studentsubject["extra_counts"] = 0
+                }
+                if (!!schemeitem.ssi_exna) {
+                    new_studentsubject["ssi_exna"] = 1
+                    new_studentsubject["extra_nocount"] = 0
+                }
+                if (!!schemeitem.ssi_chal) {
+                    new_studentsubject["ssi_chal"] = 1
+                    new_studentsubject["choice_combi"] = 0
+                }
+                if (!!schemeitem.sjtp_hasprac) {
+                    new_studentsubject["sjtp_hasprac"] = 1
+                    new_studentsubject["prac"] = 0
+                }
+                if (!!schemeitem.sjtp_haspws) {
+                    new_studentsubject["sjtp_haspws"] = 1
+                    new_studentsubject["pws_title"] = ""
+                    new_studentsubject["pws_subjects"] = ""
+                }
+                if (!!schemeitem.sjtp_onlyone) {
+                    new_studentsubject["sjtp_onlyone"] = 1
                 }
 //console.log("new_studentsubject", new_studentsubject);
 
@@ -311,10 +372,12 @@ console.log("ssi_id_exists", ssi_id_exists);
 // ---  add row at end of list
                     studentsubjects.push(new_studentsubject);
                 }
-                console.log("new_studentsubject", new_studentsubject);
+console.log("new_studentsubject");
+console.log(new_studentsubject);
+
                 UploadStudsubj(new_studentsubject);
-            }
-        }
+            }  // if (!!schemeitem.ssi_id)
+        }  // if (ssi_id_exists)
         FillTableRows("picker", schemeitems, "", tr_clicked_ssi_id);
         FillTableRows("data", studentsubjects, "", tr_clicked_ssi_id);
 
@@ -383,8 +446,8 @@ console.log("===  UploadStudsubj  =====") ;
                 success: function (response) {
     console.log("========== response UploadStudentSubject ==>", typeof response,  response);
 
-                    studentsubjects = response["studentsubjects"];
-                    schemeitems = response["schemeitems"];
+                    //studentsubjects = response["studentsubjects"];
+                    //schemeitems = response["schemeitems"];
                     err_code = response["err_code"];
 
     // ---  fill TableRows
@@ -407,7 +470,7 @@ console.log("===  UploadStudsubj  =====") ;
 //========= FillTableRows  ==================================== PR2019-02-07
     function FillTableRows(TableName, item_list, filter_str, just_clicked_ssi_id) {
 console.log("++++++++ FillTableRows +++++++++", TableName);
-console.log(item_list);
+console.log(filter_str);
 
 // ---  remove all tablerows
         let tblBody = $("#id_" + TableName + "_tbody");
@@ -427,18 +490,35 @@ console.log(item_list);
 
 // ---  when filter: filter by filter_str
                 let skip_row = false;
-                if (!!filter_str && !!row.name) {
-                    // make search case insensitive
-                    let add_row = row.name.toLowerCase().indexOf(filter_str.toLowerCase()) >= 0;
-                    skip_row = !add_row;
+                if (!!filter_str ) {
+                    let row_name;
+                    if (TableName === "search"){
+                        row_name = row.name
+                    } else {
+                        row_name = row.subj_name
+                    }
+                    if (!!row_name) {
+                        // make search case insensitive
+                        let found = row_name.toLowerCase().indexOf(filter_str.toLowerCase()) >= 0;
+                        skip_row = !found;
+                    }
                 }
 
-// ---  when picker: skip items who's ssi_id are already in studentsubjects and are not deleted
-                let subj_id_exists = false, sjtp_one_allowed = false;
+                let subj_id_exists = false, sjtp_onlyone = false;
                 switch (TableName) {
                 case "picker":
-                    skip_row = (found_id_in_studsub(row.ssi_id, "ssi_id", true)); //skip_del = true
+// ---  when picker: skip items who's ssi_id are already in studentsubjects and are not deleted
+                    skip_row = exists_keyvalue_in_studsub(row.ssi_id, "ssi_id", true) //skip_del = true
+
+// ---   subjects that are already in studentsubjects will be disabled in list available subjects
+                    subj_id_exists = exists_keyvalue_in_studsub(row.subj_id, "subj_id", true) //skip_del = true
+
+// ---  subjects with type 'one-allowed' will be disabled if there is already one in studentsubjects
+                    if (!!row.sjtp_onlyone) {
+                        sjtp_onlyone = exists_sjtpid_in_studsub(row.sjtp_id, true)  //skip_del = true
+                    }
                     break;
+
 // ---  when data: skip deleted items
                 case "data":
                     if (row.mode === "d"){
@@ -471,9 +551,9 @@ console.log(item_list);
                         sel_id_found = true;
                     };
 
-// ---  disable picker TableRow when subject is already in studentsubjects or  sjtp_one_allowed
+// ---  disable picker TableRow when subject is already in studentsubjects and sjtp_onlyone
                     if (TableName === "picker"){
-                        if (subj_id_exists || sjtp_one_allowed){
+                        if (subj_id_exists || sjtp_onlyone){
                             TableRow.addClass(cls_disabled);
                         } else {
                             TableRow.mouseenter(function(){TableRow.addClass(cls_hover);});
@@ -550,6 +630,21 @@ console.log(item_list);
 
     }
 
+//========= CreateInfo  ============= PR2019-02-21
+    function CreateInfo(sel_checkbox, field, caption) {
+        const id_chk = "id_mod_" + field;
+        $("<div>").appendTo(sel_checkbox)
+            .attr({"id": id_chk + "_div"})
+            .addClass("checkbox ");
+        let chk_div = $("#" +id_chk + "_div");
+
+        $("<p>").appendTo("#" + id_chk + "_div")
+             .html(caption);
+    }
+
+
+
+
 //========= get_schemeitem  =============
     function get_schemeitem(sel_ssi_id_int) {
 //console.log("==== get_schemeitem  ====")
@@ -605,49 +700,35 @@ console.log(item_list);
         return return_row;
     };
 
-//========= ExistsInStudentsubjects  ============= PR2019-02-11
-    function ExistsInStudentsubjects(sel_subj_id, sel_ssi_id, sjtp_id, sjtp_one) {
-        // function loops through studentsubjects to find subject of selected schemeitems
-        // subjects that are already in studentsubjects will be disabled in list available subjects
+//========= exists_sjtpid_in_studsub  ============= PR2019-02-21
+    function exists_sjtpid_in_studsub(sjtp_id, skip_del) {
+        // function loops through studentsubjects to find subject of selected sjtp_id
         // subjects with type 'one-allowed' will be disabled if there is already one in studentsubjects
 
-        let subj_id_exists = false, ssi_id_exists = false, sjtp_one_allowed = false;
-        for (let i = 0, len = studentsubjects.length ; i < len; i++) {
-            let row = studentsubjects[i];
-
-
-// ---  check if sel_subj_id exists in studentsubjects - check also the deleted items
-            if (!!sel_subj_id && !!row.subj_id && row.subj_id === sel_subj_id) {
-                subj_id_exists = true;
-            };
-// ---  skip deleted studentsubjects
-            if (!!row.mode && row.mode !== 'd'){
-
-// ---  check if ssi exists
-                if (!!sel_ssi_id && !!row.ssi_id && row.ssi_id === sel_ssi_id) {
-                    ssi_id_exists = true;
-                };
-// ---  check if this subject had subjecttype 'one_allowed' sjtp_one
-                if (!!sjtp_id && !!row.sjtp_id && row.sjtp_id === sjtp_id){
-                    if (!!sjtp_one && sjtp_one === 1) {
-                        sjtp_one_allowed = true;
+        let exists = false;
+        if (!!sjtp_id) {
+            for (let i = 0, len = studentsubjects.length ; i < len; i++) {
+                let row = studentsubjects[i];
+    // ---  skip deleted studentsubjects, only if skip_del = true
+                let skip = (skip_del && !!row.mode && row.mode === 'd');
+                if (!skip){
+    // ---  check if this subject has this subjecttype ( is 'one_allowed' sjtp_one)
+                    if (!!row.sjtp_id && row.sjtp_id === sjtp_id){
+                        exists = true;
                     };
                 };
-            }
+            };
         };
-        return {"subj_id_exists": subj_id_exists,
-                "ssi_id_exists": ssi_id_exists,
-                "sjtp_one_allowed": sjtp_one_allowed};
-    }
+        return exists;
+    };
 
-//========= found_ssi_in_studsub  ============= PR2019-02-12
-    function found_id_in_studsub(sel_ssi_id, key, skip_del) {
-        // function loops through studentsubjects to find ssi_id of selected schemeitems
-        // subjects that are already in studentsubjects will be disabled in list available subjects
-        // subjects with type 'one-allowed' will be disabled if there is already one in studentsubjects
-//console.log("found_id_in_studsub", sel_ssi_id, key, skip_del  )
-        let found = false;
-        if (!!sel_ssi_id) {
+//========= exists_keyvalue_in_studsub  ============= PR2019-02-12
+    function exists_keyvalue_in_studsub(value, key, skip_del) {
+        // function loops through studentsubjects to find value of key in  studentsubjects
+
+//console.log("exists_keyvalue_in_studsub", value, key, skip_del  )
+        let exists = false;
+        if (!!value && !!key) {
             for (let i = 0, len = studentsubjects.length ; i < len; i++) {
                 let row = studentsubjects[i];
 //console.log("row", row)
@@ -657,16 +738,15 @@ console.log(item_list);
 // ---  skip deleted studentsubjects
                     if (!skip){
 // ---  check if value of key exists
-                        if (row[key] === sel_ssi_id) {
-                            found = true;
+                        if (row[key] === value) {
+                            exists = true;
                             break;
                         };
                     };
                 };
             };
         };
-//console.log("found", found)
-        return found;
+        return exists;
     };
 
 //========= get_tablename  =============

@@ -14,11 +14,12 @@ from django.utils.decorators import method_decorator
 from django.views.generic import UpdateView, DeleteView, View, ListView, CreateView, FormView
 
 from awpr.menus import get_saved_menubutton_url
-from schools.models import Country, Country_log, Examyear, Examyear_log, Department, Departmentbase, Department_log, Schoolbase, School, School_log
+from schools.models import Country, Country_log, Examyear, Examyear_log, Department, Department_log, Schoolbase, School, School_log
 from schools.forms import CountryFormSet, CountryAddForm, CountryEditForm, ExamyearAddForm, ExamyearEditForm, \
     DepartmentAddForm, DepartmentEditForm, SchoolAddForm, SchoolEditForm
 
 from awpr import functions as f
+from schools import functions as sf
 from awpr import menus
 
 # PR2018-04-27
@@ -388,86 +389,19 @@ class ExamyearAddView(CreateView):
             # PR2018-06-07 datetime.now() is timezone naive, whereas timezone.now() is timezone aware, based on the USE_TZ setting
             self.new_examyear.modified_at = timezone.now()
 
+            # save examyear with commit
             # PR2018-08-04 debug: don't forget argument (request), otherwise gives error 'tuple index out of range' at request = args[0]
             self.new_examyear.save(request=self.request)
+
             self.new_examyear_id = self.new_examyear.id
             self.modified_at = timezone.now()
 
-            # get previous examyear
-            self.prev_examyear_int = int(self.new_examyear.examyear) - 1
-            self.prev_examyear = Examyear.objects.filter(country=self.new_examyear.country, examyear=self.prev_examyear_int).first()
-
-            # copy departments from previous prev_examyear if it exists
-            if self.prev_examyear is not None:
-                if self.request.user.is_role_insp_or_system_and_perm_admin:
-                    self.prev_examyear_id = self.prev_examyear.id
-
-                    cursor = connection.cursor()
-
-            # copy departments from previous year
-                    cursor.execute(
-                        'INSERT INTO schools_department (base_id, examyear_id, name, abbrev, sequence, modified_by_id, modified_at) ' + \
-                        'SELECT dep.base_id, %s AS examyear_id, dep.name, dep.abbrev, dep.sequence, %s AS modified_by_id, %s AS modified_at ' + \
-                        'FROM schools_department as dep WHERE dep.examyear_id = %s;',
-                        [self.new_examyear.id, self.new_examyear.modified_by_id, self.modified_at, self.prev_examyear_id])
-                    connection.commit()
-                # copy new departments to department_log
-                    cursor.execute(
-                        'INSERT INTO schools_department_log (department_id, base_id, examyear_id, name, abbrev, sequence, mode, modified_by_id, modified_at) ' + \
-                        'SELECT dep.id, dep.base_id, %s AS examyear_id, dep.name, dep.abbrev, dep.sequence, %s AS mode, %s AS modified_by_id, %s AS modified_at ' + \
-                        'FROM schools_department as dep WHERE dep.examyear_id = %s;',
-                        [self.new_examyear.id, 'c', self.new_examyear.modified_by_id, self.modified_at, self.new_examyear_id])
-                    connection.commit()
-
-            # copy levels from previous examyear to new examyear
-                    cursor.execute(
-                        'INSERT INTO subjects_level (base_id, examyear_id, name, abbrev, sequence, depbase_list, modified_by_id, modified_at) ' + \
-                        'SELECT lvl.base_id, %s AS examyear_id, lvl.name, lvl.abbrev, lvl.sequence, lvl.depbase_list, %s AS modified_by_id, %s AS modified_at ' + \
-                        'FROM subjects_level as lvl WHERE lvl.examyear_id = %s;',
-                        [self.new_examyear.id, self.new_examyear.modified_by_id, self.modified_at, self.prev_examyear_id])
-                    connection.commit()
-                # copy levels from new_examyear to level_log
-                    cursor.execute(
-                        'INSERT INTO subjects_level_log (level_id, base_id, examyear_id, name, abbrev, sequence, depbase_list, mode, modified_by_id, modified_at) ' + \
-                        'SELECT lvl.id, lvl.base_id, %s AS examyear_id, lvl.name, lvl.abbrev, lvl.sequence, %s AS mode, %s AS modified_by_id, %s AS modified_at ' + \
-                        'FROM subjects_level as lvl WHERE lvl.examyear_id = %s;',
-                        [self.new_examyear.id, 'c', self.new_examyear.modified_by_id, self.modified_at, self.new_examyear_id])
-                    connection.commit()
-
-            # copy sectors from previous examyear to new examyear
-                    cursor.execute(
-                        'INSERT INTO subjects_sector (base_id, examyear_id, name, abbrev, sequence, depbase_list, modified_by_id, modified_at) ' + \
-                        'SELECT sct.base_id, %s AS examyear_id, sct.name, sct.abbrev, sct.sequence, sct.depbase_list, %s AS modified_by_id, %s AS modified_at ' + \
-                        'FROM subjects_sector as sct WHERE sct.examyear_id = %s;',
-                        [self.new_examyear.id, self.new_examyear.modified_by_id, self.modified_at, self.prev_examyear_id])
-                    connection.commit()
-
-                    # copy sectors from new_examyear to sector_log
-                    cursor.execute(
-                        'INSERT INTO subjects_sector_log (sector_id, base_id, examyear_id, name, abbrev, sequence, depbase_list, mode, modified_by_id, modified_at) ' + \
-                        'SELECT sct.id, sct.base_id, %s AS examyear_id, sct.name, sct.abbrev, sct.sequence, %s AS mode, %s AS modified_by_id, %s AS modified_at ' + \
-                        'FROM subjects_sector as sct WHERE sct.examyear_id = %s;',
-                        [self.new_examyear.id, 'c', self.new_examyear.modified_by_id, self.modified_at, self.new_examyear_id])
-                    connection.commit()
-
-            # copy schemes from previous examyear to new examyear
-                    # isrt get dep_id, level_id and sector of this examyear
-                    cursor.execute(
-                        'INSERT INTO Scheme(department_id, level_id, sector_id, name, modified_by_id, modified_at) ' +
-                        'SELECT sch.department_id, sch.level_id, sch.sector_id, sch.name, %s AS modified_by_id, %s AS modified_at ' +
-                        'FROM Department AS dep INNER JOIN Scheme AS sch ON dep.department_id = sch.department_id ' +
-                        'WHERE dep.examyear_id = %s;',
-                        [self.new_examyear.id, self.new_examyear.modified_by_id, self.modified_at,
-                         self.prev_examyear_id])
-                    connection.commit()
-                    # copy sectors from new_examyear to sector_log
-                    cursor.execute(
-                        'INSERT INTO subjects_scheme_log (level_id, base_id, examyear_id, name, abbrev, sequence, depbase_list, mode, modified_by_id, modified_at) ' + \
-                        'SELECT sch.id, sch.base_id, %s AS examyear_id, sch.name, sch.abbrev, sch.sequence, %s AS mode, %s AS modified_by_id, %s AS modified_at ' + \
-                        'FROM subjects_scheme as sch WHERE sch.examyear_id = %s;',
-                        [self.new_examyear.id, 'c', self.new_examyear.modified_by_id, self.modified_at,
-                         self.new_examyear_id])
-                    connection.commit()
+            # copy general tables from previous examyear # PR2019-02-23
+            sf.copy_deps_from_prev_examyear(request.user, self.new_examyear)
+            sf.copy_levels_from_prev_examyear(request.user, self.new_examyear)
+            sf.copy_sectors_from_prev_examyear(request.user, self.new_examyear)
+            sf.copy_subjecttypes_from_prev_examyear(request.user, self.new_examyear)
+            sf.copy_subjects_from_prev_examyear(request.user, self.new_examyear)
 
 
             #elif self.request.user.is_role_school_perm_admin:
@@ -485,7 +419,7 @@ class ExamyearAddView(CreateView):
 
             # ======  Add schools from previous examyear from this country to table school with new examyear  ============
 
-                """
+            """
             # if previous examyear exists: copy schools
             if self.prev_examyear:
             self.prev_examyear_id = self.prev_examyear.id

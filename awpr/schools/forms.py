@@ -208,7 +208,7 @@ class ExamyearAddForm(ModelForm):
     class Meta:
         model = Examyear
         fields = ('examyear', 'country')
-        labels = {'examyear': _('Exam year')}
+        labels = {'examyear': _('Exam year'), 'country': _('Country')}
 
     def __init__(self, *args, **kwargs):
         # request is added as parameter in ExamyearAddView by form = ExamyearAddForm(request=request)
@@ -220,6 +220,7 @@ class ExamyearAddForm(ModelForm):
         if self.request.user.country is not None:
     # ======= field 'Examyear' ============
             self.fields['examyear'] = IntegerField(
+                label=_('Exam year'),
                 min_value=2000,max_value=2099,
                 validators=[validate_unique_examyear(self.request.user.country)])
 

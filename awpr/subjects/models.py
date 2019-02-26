@@ -1,16 +1,12 @@
 # PR2018-07-20
-from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
-from django.db.models import CharField, IntegerField, PositiveIntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, DateField
+from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE
+from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField
 from django.core.validators import MaxValueValidator
 from django.utils import timezone
-# from django.core.exceptions import ObjectDoesNotExist, ValidationError, NON_FIELD_ERRORS
-# PR2018-05-05 use AUTH_USER_MODEL
-#from django.contrib.auth.models import User
-#from accounts.models import User
 from django.utils.translation import ugettext_lazy as _
 
 from awpr.settings import AUTH_USER_MODEL
-from schools.models import Country, Examyear, Department, Department_log, School, School_log
+from schools.models import Examyear, Examyear_log, Department, Department_log, School, School_log
 from awpr import constants as c
 
 import logging
@@ -68,10 +64,10 @@ class Level(Model): # PR2018-08-12
 
         # private variable __original checks if data_has_changed, to prevent update record when no changes are made.
         # Otherwise a logrecord is created every time the save button is clicked without changes
-        self.original_name = self.name
-        self.original_abbrev = self.abbrev
-        self.original_sequence = self.sequence
-        self.original_depbase_list = self.depbase_list
+        self.o_name = self.name
+        self.o_abbrev = self.abbrev
+        self.o_sequence = self.sequence
+        self.o_depbase_list = self.depbase_list
 
         # PR2018-10-19 initialize here, otherwise delete gives error: 'Examyear' object has no attribute 'examyear_mod'
         self.name_mod = False
@@ -105,13 +101,18 @@ class Level(Model): # PR2018-08-12
         self.save_to_log()
         super(Level, self).delete(*args, **kwargs)
 
-    def save_to_log(self):  # PR2018-08-27
+    def save_to_log(self):  # PR2018-08-27 PR2019-02-24
+        # get latest Examyear_log row that corresponds with self.examyear
+        examyear_log = None
+        if self.examyear is not None:
+            examyear_log = Examyear_log.objects.filter(examyear_id=self.examyear.id).order_by('-id').first()
+
         # Create method also saves record
         Level_log.objects.create(
-            level_id=self.id,  # self.id gets its value in super(Level, self).save
+            level_id=self.pk,  # self.id gets its value in super(Level, self).save
 
             base = self.base,
-            examyear = self.examyear,
+            examyear_log = examyear_log,
 
             name=self.name,
             abbrev=self.abbrev,
@@ -132,10 +133,10 @@ class Level(Model): # PR2018-08-12
         # returns True when the value of one or more fields has changed PR2018-08-26
         self.is_update = self.id is not None # self.id is None before new record is saved
 
-        self.name_mod = self.original_name != self.name
-        self.abbrev_mod = self.original_abbrev != self.abbrev
-        self.sequence_mod = self.original_sequence != self.sequence
-        self.depbase_list_mod = self.original_depbase_list != self.depbase_list
+        self.name_mod = self.o_name != self.name
+        self.abbrev_mod = self.o_abbrev != self.abbrev
+        self.sequence_mod = self.o_sequence != self.sequence
+        self.depbase_list_mod = self.o_depbase_list != self.depbase_list
 
         data_changed_bool = (
             not self.is_update or
@@ -233,6 +234,23 @@ class Level(Model): # PR2018-08-12
                     select_list.append(level_dict)
         return select_list
 
+    @classmethod
+    def get_lvl_by_abbrev(cls, abbrev, dep, examyear):  # PR2019-02-26
+        # function gets Level with this abbrev and examyear, returns None if multiple found
+        # also checks if depbase_id is in depbase_list
+        lvl = None
+        if examyear and dep and abbrev:
+            depbase_id_delim = ';' + dep.base.id + ';'
+            if cls.objects.filter(
+                    examyear=examyear,
+                    depbase_list__contains=depbase_id_delim,
+                    abbrev__iexact=abbrev).count() == 1:
+                lvl = cls.objects.filter(
+                        examyear=examyear,
+                        depbase_list__contains=depbase_id_delim,
+                        abbrev__iexact=abbrev).first()
+        return lvl
+
     """
     @classmethod
     def level_list_choices(cls, user_examyear=None, user_dep=None, init_list_str=None, skip_none=False):
@@ -302,8 +320,7 @@ class Level_log(Model):
 
     base = ForeignKey(Levelbase, related_name='+', on_delete=PROTECT)
 
-    # TODO: refer to log table
-    examyear = ForeignKey(Examyear, related_name='+', on_delete=PROTECT)
+    examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=PROTECT)
 
     name = CharField(max_length=50, null=True)
     abbrev = CharField(max_length=8, null=True)
@@ -362,10 +379,10 @@ class Sector(Model):  # PR2018-06-06
 
         # private variable __original checks if data_has_changed, to prevent update record when no changes are made.
         # Otherwise a logrecord is created every time the save button is clicked without changes
-        self.original_name = self.name
-        self.original_abbrev = self.abbrev
-        self.original_sequence = self.sequence
-        self.original_depbase_list = self.depbase_list
+        self.o_name = self.name
+        self.o_abbrev = self.abbrev
+        self.o_sequence = self.sequence
+        self.o_depbase_list = self.depbase_list
 
         # PR2018-10-19 initialize here, otherwise delete gives error: 'Examyear' object has no attribute 'examyear_mod'
         self.name_mod = False
@@ -399,12 +416,17 @@ class Sector(Model):  # PR2018-06-06
         super(Sector, self).delete(*args, **kwargs)
 
     def save_to_log(self): #, *args, **kwargs):
+        # get latest Examyear_log row that corresponds with self.examyear
+        examyear_log = None
+        if self.examyear is not None:
+            examyear_log = Examyear_log.objects.filter(examyear_id=self.examyear.id).order_by('-id').first()
+
         # Create method also saves record
         Sector_log.objects.create(
-            sector_id=self.id,
+            sector_id=self.pk,
 
-            base = self.base,
-            examyear = self.examyear,
+            base=self.base,
+            examyear_log=examyear_log,
 
             name=self.name,
             abbrev=self.abbrev,
@@ -425,10 +447,10 @@ class Sector(Model):  # PR2018-06-06
         # returns True when the value of one or more fields has changed PR2018-08-26
         self.is_update = self.id is not None  # self.id is None before new record is saved
 
-        self.name_mod = self.original_name != self.name
-        self.abbrev_mod = self.original_abbrev != self.abbrev
-        self.sequence_mod = self.original_sequence != self.sequence
-        self.depbase_list_mod = self.original_depbase_list != self.depbase_list
+        self.name_mod = self.o_name != self.name
+        self.abbrev_mod = self.o_abbrev != self.abbrev
+        self.sequence_mod = self.o_sequence != self.sequence
+        self.depbase_list_mod = self.o_depbase_list != self.depbase_list
 
         data_changed_bool = (
                 not self.is_update or
@@ -581,6 +603,25 @@ class Sector(Model):  # PR2018-06-06
                     select_list.append(sector_dict)
         return select_list
 
+
+    @classmethod
+    def get_sct_by_abbrev(cls, abbrev, dep, examyear):  # PR2019-02-26
+        # function gets Sector with this abbrev and examyear, returns None if multiple found
+        # also checks if depbase_id is in depbase_list
+        sct = None
+        if examyear and dep and abbrev:
+            depbase_id_delim = ';' + dep.base.id + ';'
+            if cls.objects.filter(
+                    examyear=examyear,
+                    depbase_list__contains=depbase_id_delim,
+                    abbrev__iexact=abbrev).count() == 1:
+                sct = cls.objects.filter(
+                        examyear=examyear,
+                        depbase_list__contains=depbase_id_delim,
+                        abbrev__iexact=abbrev).first()
+        return sct
+
+
     @classmethod
     def get_caption(cls, request_user):  #  # PR2019-01-01
         # caption Sector/Profiel depends on department
@@ -602,8 +643,8 @@ class Sector_log(Model):
     sector_id = IntegerField(db_index=True)
 
     base = ForeignKey(Sectorbase, related_name='+', on_delete=PROTECT)
-    # TODO: refer to log table
-    examyear = ForeignKey(Examyear, related_name='+', on_delete=PROTECT)
+
+    examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=PROTECT)
 
     name = CharField(max_length=50, null=True)
     abbrev = CharField(max_length=8, null=True)
@@ -664,14 +705,14 @@ class Subjecttype(Model):
 
         # private variable __original checks if data_has_changed, to prevent update record when no changes are made.
         # Otherwise a logrecord is created every time the save button is clicked without changes
-        self.original_name = self.name
-        self.original_abbrev = self.abbrev
-        self.original_code = self.code
-        self.original_sequence = self.sequence
-        self.original_depbase_list = self.depbase_list
-        self.original_has_prac = self.has_prac
-        self.original_has_pws = self.has_pws
-        self.original_one_allowed = self.one_allowed
+        self.o_name = self.name
+        self.oiginal_abbrev = self.abbrev
+        self.o_code = self.code
+        self.o_sequence = self.sequence
+        self.o_depbase_list = self.depbase_list
+        self.o_has_prac = self.has_prac
+        self.o_has_pws = self.has_pws
+        self.o_one_allowed = self.one_allowed
 
         # PR2018-10-19 initialize here, otherwise delete gives error: 'Examyear' object has no attribute 'examyear_mod'
         self.name_mod = False
@@ -705,12 +746,17 @@ class Subjecttype(Model):
         super(Subjecttype, self).delete(*args, **kwargs)
 
     def save_to_log(self):  # PR2018-08-27
+        # get latest Examyear_log row that corresponds with self.examyear PR2019-02-24
+        examyear_log = None
+        if self.examyear is not None:
+            examyear_log = Examyear_log.objects.filter(examyear_id=self.examyear.id).order_by('-id').first()
+
         # Create method also saves record
         Subjecttype_log.objects.create(
-            subjecttype_id=self.id,  # self.id gets its value in super(Level, self).save
+            subjecttype_id=self.pk,  # self.id gets its value in super(Level, self).save
 
             base=self.base,
-            examyear=self.examyear,
+            examyear_log=examyear_log,
 
             name=self.name,
             abbrev=self.abbrev,
@@ -737,16 +783,16 @@ class Subjecttype(Model):
 
     def data_has_changed(self, mode = None):  # PR2018-07-21 # PR2018-08-24
         # returns True when the value of one or more fields has changed PR2018-08-26
-        self.is_update = self.id is not None # self.id is None before new record is saved
+        self.is_update = self.pk is not None # self.id is None before new record is saved
 
-        self.name_mod = self.original_name != self.name
-        self.abbrev_mod = self.original_abbrev != self.abbrev
-        self.code_mod = self.original_code != self.code
-        self.sequence_mod = self.original_sequence != self.sequence
-        self.depbase_list_mod = self.original_depbase_list != self.depbase_list
-        self.has_prac_mod = self.original_has_prac != self.has_prac
-        self.has_pws_mod = self.original_has_pws != self.has_pws
-        self.one_allowed_mod = self.original_one_allowed != self.one_allowed
+        self.name_mod = self.o_name != self.name
+        self.abbrev_mod = self.o_abbrev != self.abbrev
+        self.code_mod = self.o_code != self.code
+        self.sequence_mod = self.o_sequence != self.sequence
+        self.depbase_list_mod = self.o_depbase_list != self.depbase_list
+        self.has_prac_mod = self.o_has_prac != self.has_prac
+        self.has_pws_mod = self.o_has_pws != self.has_pws
+        self.one_allowed_mod = self.o_one_allowed != self.one_allowed
 
         data_changed_bool = (
             not self.is_update or
@@ -789,7 +835,7 @@ class Subjecttype(Model):
         subjecttype_list = []
         for item in subjecttypes:
             subjecttype_list.append({
-                'sjtp_id': str(item.id),
+                'sjtp_id': item.id,
                 'name': item.name,
                 'abbrev': item.abbrev,
                 'sequ': item.sequence,
@@ -815,8 +861,8 @@ class Subjecttype_log(Model):
     subjecttype_id = IntegerField(db_index=True)
 
     base = ForeignKey(Subjecttypebase, related_name='+', on_delete=CASCADE)
-    # TODO: refer to log table
-    examyear = ForeignKey(Examyear, related_name='+', on_delete=PROTECT)
+
+    examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=PROTECT)
 
     name = CharField(max_length=50, null=True)
     abbrev = CharField(max_length=20,null=True)
@@ -875,20 +921,20 @@ class Scheme(Model):
     def __init__(self, *args, **kwargs):
         super(Scheme, self).__init__(*args, **kwargs)
         try:
-            self.original_department = self.department
+            self.o_department = self.department
         except:
-            self.original_department = None
+            self.o_department = None
         try:
-            self.original_level = self.level
+            self.o_level = self.level
         except:
-            self.original_level = None
+            self.o_level = None
         try:
-            self.original_sector = self.sector
+            self.o_sector = self.sector
         except:
-            self.original_sector = None
+            self.o_sector = None
 
-        self.original_name = self.name
-        self.original_fields = self.fields
+        self.o_name = self.name
+        self.o_fields = self.fields
 
     def save(self, *args, **kwargs):  # called by subjectdefault.save(self.request) in SubjectdefaultEditView.form_valid
         self.request = kwargs.pop('request', None)
@@ -926,7 +972,7 @@ class Scheme(Model):
 
         # Create method also saves record
         Scheme_log.objects.create(
-            scheme_id=self.id,  # self.id gets its value in super(Level, self).save
+            scheme_id=self.pk,  # self.id gets its value in super(Level, self).save
 
             dep_log=dep_log,
             level_log=level_log,
@@ -948,13 +994,13 @@ class Scheme(Model):
 
     def data_has_changed(self, mode = None):  # PR2018-09-07 PR2018-11-07
         # returns True when the value of one or more fields has changed
-        self.is_update = self.id is not None  # self.id is None before new record is saved
+        self.is_update = self.pk is not None  # self.id is None before new record is saved
 
-        self.dep_mod = self.original_department != self.department
-        self.level_mod = self.original_level != self.level
-        self.sector_mod = self.original_sector != self.sector
-        self.name_mod = self.original_name != self.name
-        self.fields_mod = self.original_fields != self.fields
+        self.dep_mod = self.o_department != self.department
+        self.level_mod = self.o_level != self.level
+        self.sector_mod = self.o_sector != self.sector
+        self.name_mod = self.o_name != self.name
+        self.fields_mod = self.o_fields != self.fields
 
         data_changed_bool = (
             not self.is_update or
@@ -1065,13 +1111,41 @@ class Scheme(Model):
                     scheme = Scheme.objects.filter(department=department).first()
         return scheme
 
+    @classmethod
+    def get_scheme_by_abbrevs(cls, dep_abbrev, lvl_abbrev, sct_abbrev, examyear): # PR2019-02-08
+        # lookup scheme by examyear and abbrev of department, level (if required) and sector (if required)
+        scheme = None
+        department = Department.get_dep_by_abbrev(dep_abbrev, examyear)
+        if department:
+            if department.level_req:
+                lvl = Level.get_lvl_by_abbrev(lvl_abbrev, department, examyear)
+                if lvl:
+                    if department.sector_req:
+                        sct = Sector.get_sct_by_abbrev(sct_abbrev, department, examyear)
+                        if sct:
+                            if Scheme.objects.filter( department=department, level=lvl, sector=sct).count() == 1:
+                                scheme = Scheme.objects.filter(department=department, level=lvl, sector=sct).first()
+                    else:
+                        if Scheme.objects.filter(department=department, level=lvl).count() == 1:
+                            scheme = Scheme.objects.filter(department=department, level=lvl).first()
+            else:
+                if department.sector_req:
+                    sct = Sector.get_sct_by_abbrev(sct_abbrev, department, examyear)
+                    if sct:
+                        if Scheme.objects.filter( department=department, sector=sct).count() == 1:
+                            scheme = Scheme.objects.filter(department=department, sector=sct).first()
+                    else:
+                        if Scheme.objects.filter( department=department).count() == 1:
+                            scheme = Scheme.objects.filter(department=department).first()
+        return scheme
+
 
     @classmethod
     def get_lookup_scheme_list(cls, examyear): # PR2019-02-17
         # makre list of dicts with scheme_id and abbrev.lower of dep, lvl and sct
         # {'id': 93, 'dep': 'vsbo', 'lvl': 'pbl', 'sct': 'ec'}
         schemes_list = []
-        schemes = Scheme.objects.filter(department__examyear = examyear)
+        schemes = Scheme.objects.filter(department__examyear=examyear)
         for scheme in schemes:
             scheme_dict = {}
             scheme_dict['id'] = scheme.id
@@ -1087,6 +1161,7 @@ class Scheme(Model):
 
             schemes_list.append(scheme_dict)
         return schemes_list
+
 
 class Scheme_log(Model):
     # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
@@ -1181,10 +1256,10 @@ class Subject(Model):  # PR1018-11-08
 
         # private variable __original checks if data_has_changed, to prevent update record when no changes are made.
         # Otherwise a logrecord is created every time the save button is clicked without changes
-        self.original_name = self.name
-        self.original_abbrev = self.abbrev
-        self.original_sequence = self.sequence  # Was: = (None, self.sequence)[bool(self.sequence)]  # result = (on_false, on_true)[condition]
-        self.original_depbase_list = self.depbase_list
+        self.o_name = self.name
+        self.o_abbrev = self.abbrev
+        self.o_sequence = self.sequence  # Was: = (None, self.sequence)[bool(self.sequence)]  # result = (on_false, on_true)[condition]
+        self.o_depbase_list = self.depbase_list
 
         # PR2018-10-19 initialize here, otherwise delete gives error: 'Examyear' object has no attribute 'examyear_mod'
         self.name_mod = False
@@ -1213,12 +1288,17 @@ class Subject(Model):  # PR1018-11-08
         super(Subject, self).delete(*args, **kwargs)
 
     def save_to_log(self):  # PR2018-08-29
+        # get latest Examyear_log row that corresponds with self.examyear PR2019-02-24
+        examyear_log = None
+        if self.examyear is not None:
+            examyear_log = Examyear_log.objects.filter(examyear_id=self.examyear.id).order_by('-id').first()
+
         # Create method also saves record
         Subject_log.objects.create(
-            subject_id=self.id,  # self.id gets its value in super(Subject, self).save
+            subject_id=self.pk,  # self.id gets its value in super(Subject, self).save
 
             base=self.base,
-            examyear=self.examyear,
+            examyear_log=examyear_log,
 
             name=self.name,
             abbrev=self.abbrev,
@@ -1237,12 +1317,12 @@ class Subject(Model):  # PR1018-11-08
 
     def data_has_changed(self, mode = None):  # PR2018-07-21  PR2018-11-08
         # returns True when the value of one or more fields has changed PR2018-08-26
-        self.is_update = self.id is not None # self.id is None before new record is saved
+        self.is_update = self.pk is not None # self.id is None before new record is saved
 
-        self.name_mod = self.original_name != self.name
-        self.abbrev_mod = self.original_abbrev != self.abbrev
-        self.sequence_mod = self.original_sequence != self.sequence
-        self.depbase_list_mod = self.original_depbase_list != self.depbase_list
+        self.name_mod = self.o_name != self.name
+        self.abbrev_mod = self.o_abbrev != self.abbrev
+        self.sequence_mod = self.o_sequence != self.sequence
+        self.depbase_list_mod = self.o_depbase_list != self.depbase_list
 
         data_changed_bool = (
             not self.is_update or
@@ -1303,8 +1383,8 @@ class Subject_log(Model):
     subject_id = IntegerField(db_index=True)
 
     base = ForeignKey(Subjectbase, related_name='+', on_delete=PROTECT)
-    # TODO: refer to log table
-    examyear = ForeignKey(Examyear, related_name='+', on_delete=PROTECT)
+
+    examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=PROTECT)
 
     name = CharField(max_length=50, null=True)
     abbrev = CharField(max_length=10, null=True)
@@ -1348,6 +1428,7 @@ class Schemeitem(Model):
     extra_nocount_allowed = BooleanField(default=False)
     choicecombi_allowed = BooleanField(default=False)
     has_practexam = BooleanField(default=False)
+    is_core = BooleanField(default=False) # PR2019-02-26 is core subject
 
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
     modified_at = DateTimeField()
@@ -1355,25 +1436,25 @@ class Schemeitem(Model):
     def __init__(self, *args, **kwargs):
         super(Schemeitem, self).__init__(*args, **kwargs)
         try:
-            self.original_scheme = self.scheme
-            self.original_subject = self.subject
-            self.original_subjecttype = self.subjecttype
+            self.o_scheme = self.scheme
+            self.o_subject = self.subject
+            self.o_subjecttype = self.subjecttype
         except:
-            self.original_scheme = None
-            self.original_subject = None
-            self.original_subjecttype = None
+            self.o_scheme = None
+            self.o_subject = None
+            self.o_subjecttype = None
 
-        self.original_gradetype = self.gradetype
-        self.original_weightSE = self.weightSE
-        self.original_weightCE = self.weightCE
+        self.o_gradetype = self.gradetype
+        self.o_weightSE = self.weightSE
+        self.o_weightCE = self.weightCE
 
-        self.original_is_mandatory = self.is_mandatory
-        self.original_is_combi = self.is_combi
+        self.o_is_mandatory = self.is_mandatory
+        self.o_is_combi = self.is_combi
 
-        self.original_extra_count_allowed = self.extra_count_allowed
-        self.original_extra_nocount_allowed = self.extra_nocount_allowed
-        self.original_choicecombi_allowed = self.choicecombi_allowed
-        self.original_has_practexam = self.has_practexam
+        self.o_extra_count_allowed = self.extra_count_allowed
+        self.o_extra_nocount_allowed = self.extra_nocount_allowed
+        self.o_choicecombi_allowed = self.choicecombi_allowed
+        self.o_is_core = self.is_core  # PR2019-02-26 is core subject
 
         # PR2018-10-19 initialize here, otherwise delete gives error: 'Examyear' object has no attribute 'examyear_mod'
         self.scheme_mod = False
@@ -1389,7 +1470,7 @@ class Schemeitem(Model):
         self.extra_count_allowed_mod = False
         self.extra_nocount_allowed_mod = False
         self.choicecombi_allowed_mod = False
-        self.has_practexam_mod = False
+        self.is_core_mod = False  # PR2019-02-26 is core subject
 
     def save(self, *args, **kwargs):  # called by subjectdefault.save(self.request) in SubjectdefaultEditView.form_valid
         self.request = kwargs.pop('request', None)
@@ -1421,67 +1502,70 @@ class Schemeitem(Model):
         if self.subjecttype is not None:
             subjecttype_log = Subjecttype_log.objects.filter(subjecttype_id=self.subjecttype.id).order_by('-id').first()
 
-        # Create method also saves record
-        Schemeitem_log.objects.create(
-            schemeitem_id=self.id,  # self.id gets its value in super(Level, self).save
+        if scheme_log and subject_log and subjecttype_log:
+            # Create method also saves record
+            Schemeitem_log.objects.create(
+                schemeitem_id=self.id,  # self.id gets its value in super(Level, self).save
 
-            scheme_log=scheme_log,
-            subject_log=subject_log,
-            subjecttype_log=subjecttype_log,
+                scheme_log=scheme_log,
+                subject_log=subject_log,
+                subjecttype_log=subjecttype_log,
 
-            gradetype=self.gradetype,
-            weightSE=self.weightSE,
-            weightCE=self.weightCE,
+                gradetype=self.gradetype,
+                weightSE=self.weightSE,
+                weightCE=self.weightCE,
 
-            is_mandatory=self.is_mandatory,
-            is_combi=self.is_combi,
+                is_mandatory=self.is_mandatory,
+                is_combi=self.is_combi,
 
-            extra_count_allowed=self.extra_count_allowed,
-            extra_nocount_allowed=self.extra_nocount_allowed,
-            choicecombi_allowed=self.choicecombi_allowed,
-            has_practexam=self.has_practexam,
+                extra_count_allowed=self.extra_count_allowed,
+                extra_nocount_allowed=self.extra_nocount_allowed,
+                choicecombi_allowed=self.choicecombi_allowed,
+                has_practexam=self.has_practexam,
+                is_core=self.is_core,
 
-            scheme_mod=self.scheme_mod,
-            subject_mod=self.subject_mod,
-            subjecttype_mod=self.subjecttype_mod,
+                scheme_mod=self.scheme_mod,
+                subject_mod=self.subject_mod,
+                subjecttype_mod=self.subjecttype_mod,
 
-            gradetype_mod=self.gradetype_mod,
-            weightSE_mod=self.weightSE_mod,
-            weightCE_mod=self.weightCE_mod,
+                gradetype_mod=self.gradetype_mod,
+                weightSE_mod=self.weightSE_mod,
+                weightCE_mod=self.weightCE_mod,
 
-            is_mandatory_mod=self.is_mandatory_mod,
-            is_combi_mod=self.is_combi_mod,
+                is_mandatory_mod=self.is_mandatory_mod,
+                is_combi_mod=self.is_combi_mod,
 
-            extra_count_allowed_mod=self.extra_count_allowed_mod,
-            extra_nocount_allowed_mod=self.extra_nocount_allowed_mod,
-            choicecombi_allowed_mod=self.choicecombi_allowed_mod,
-            has_practexam_mod=self.has_practexam_mod,
+                extra_count_allowed_mod=self.extra_count_allowed_mod,
+                extra_nocount_allowed_mod=self.extra_nocount_allowed_mod,
+                choicecombi_allowed_mod=self.choicecombi_allowed_mod,
+                has_practexam_mod=self.has_practexam_mod,
+                is_core_mod=self.is_core_mod,
 
-            mode=self.mode,
-            modified_by=self.modified_by,
-            modified_at=self.modified_at
-        )
+                mode=self.mode,
+                modified_by=self.modified_by,
+                modified_at=self.modified_at
+            )
 
     def data_has_changed(self, mode = None):  # PR2018-11-10
         # returns True when the value of one or more fields has changed
         self.is_update = self.id is not None  # self.id is None before new record is saved
 
-        self.scheme_mod = self.original_scheme != self.scheme
-        self.subject_mod = self.original_subject != self.subject
-        self.subjecttype_mod = self.original_subjecttype != self.subjecttype
+        self.scheme_mod = self.o_scheme != self.scheme
+        self.subject_mod = self.o_subject != self.subject
+        self.subjecttype_mod = self.o_subjecttype != self.subjecttype
 
-        self.gradetype_mod = self.original_gradetype != self.gradetype
-        self.weightSE_mod = self.original_weightSE != self.weightSE
-        self.weightCE_mod = self.original_weightCE != self.weightCE
+        self.gradetype_mod = self.o_gradetype != self.gradetype
+        self.weightSE_mod = self.o_weightSE != self.weightSE
+        self.weightCE_mod = self.o_weightCE != self.weightCE
 
-        self.is_mandatory_mod = self.original_is_mandatory != self.is_mandatory
-        self.is_combi_mod = self.original_is_combi != self.is_combi
+        self.is_mandatory_mod = self.o_is_mandatory != self.is_mandatory
+        self.is_combi_mod = self.o_is_combi != self.is_combi
 
-
-        self.extra_count_allowed_mod = self.original_extra_count_allowed != self.extra_count_allowed
-        self.extra_nocount_allowed_mod = self.original_extra_nocount_allowed != self.extra_nocount_allowed
-        self.choicecombi_allowed_mod = self.original_choicecombi_allowed != self.choicecombi_allowed
-        self.has_practexam_mod = self.original_has_practexam != self.has_practexam
+        self.extra_count_allowed_mod = self.o_extra_count_allowed != self.extra_count_allowed
+        self.extra_nocount_allowed_mod = self.o_extra_nocount_allowed != self.extra_nocount_allowed
+        self.choicecombi_allowed_mod = self.o_choicecombi_allowed != self.choicecombi_allowed
+        self.has_practexam_mod = self.o_has_practexam != self.has_practexam
+        self.is_core_mod = self.o_is_core != self.is_core
 
         data_changed_bool = (
             not self.is_update or
@@ -1498,7 +1582,8 @@ class Schemeitem(Model):
             self.extra_count_allowed_mod or
             self.extra_nocount_allowed_mod or
             self.choicecombi_allowed_mod or
-            self.has_practexam_mod
+            self.has_practexam_mod or
+            self.is_core_mod
         )
 
         if data_changed_bool:
@@ -1539,6 +1624,9 @@ class Schemeitem(Model):
     def has_practexam_str(self):
         return c.YES_NO_BOOL_DICT.get(self.has_practexam)
 
+    @property
+    def is_core_mod_str(self):
+        return c.YES_NO_BOOL_DICT.get(self.is_core_mod)
 
 
 #  ++++++++++  Class methods  +++++++++++++++++++++++++++
@@ -1550,28 +1638,50 @@ class Schemeitem(Model):
         schemeitem_list = []
         for item in schemeitems:
             sequence = item.subject.sequence * 1000 + item.subjecttype.sequence
-            schemeitem_list.append({
+            item_dict = {
                 'mode': '-',
                 'ssi_id': item.id,
                 'scm_id': item.scheme.id,
-                'subj_id': item.subject.id,
-                'sjtp_id': item.subjecttype.id,
                 'grtp_id': item.gradetype,
-                'wtse': item.weightSE,
-                'wtce': item.weightCE,
-                'mand': (0, 1)[item.is_mandatory],
-                'comb': (0, 1)[item.is_combi],
-                'exal': (0, 1)[item.extra_count_allowed],
-                'exna': (0, 1)[item.extra_nocount_allowed],
-                'chal': (0, 1)[item.choicecombi_allowed],
-                'prac': (0, 1)[item.has_practexam],
-                'subj_name': item.subject.name,
-                'subj_sequ': item.subject.sequence,
-                'sjtp_name': item.subjecttype.abbrev,
-                'sjtp_pws': (0, 1)[item.subjecttype.has_pws],
-                'sjtp_one': (0, 1)[item.subjecttype.one_allowed],
-                'sequence': sequence
-            })
+                'ssi_wtse': item.weightSE,
+                'ssi_wtce': item.weightCE,
+            }
+
+            if item.is_mandatory:
+                item_dict['ssi_mand'] = 1 # was: (0, 1)[item.is_mandatory]
+            if item.is_combi:
+                item_dict['ssi_comb'] = 1 # was: (0, 1)[item.is_combi]
+            if item.extra_count_allowed:
+                item_dict['ssi_exal'] = 1 # was: (0, 1)[item.extra_count_allowed]
+            if item.extra_nocount_allowed:
+                item_dict['ssi_exna'] = 1 # was: (0, 1)[item.extra_nocount_allowed]
+            if item.choicecombi_allowed:
+                item_dict['ssi_chal'] = 1 # was: (0, 1)[item.choicecombi_allowed]
+            if item.is_core:
+                item_dict['ssi_core'] = 1 # PR2019-02-26 is core subject
+
+            if item.subject:
+                item_dict['subj_id'] = item.subject.id
+                item_dict['subj_name'] = item.subject.name
+                item_dict['subj_sequ'] = item.subject.sequence
+
+            if item.subjecttype:
+                item_dict['sjtp_id'] = item.subjecttype.id
+                item_dict['sjtp_name'] = item.subjecttype.abbrev
+
+                if item.subjecttype.has_prac:
+                    item_dict['sjtp_hasprac'] = 1
+                    # schemeitem.has_practexam only when subjecttype.has_prac
+                    item_dict['prac'] = (0, 1)[item.has_practexam]
+
+                if item.subjecttype.has_pws:
+                    item_dict['sjtp_haspws'] = 1
+
+                if item.subjecttype.one_allowed:
+                    item_dict['sjtp_onlyone'] = 1
+
+            item_dict['sequence'] = sequence
+            schemeitem_list.append(item_dict)
 
 
         return schemeitem_list
@@ -1586,7 +1696,7 @@ class Schemeitem_log(Model):
 
     scheme_log = ForeignKey(Scheme_log, null=True, related_name='+', on_delete=PROTECT)
     subject_log = ForeignKey(Subject_log, null=True, related_name='+', on_delete=PROTECT)
-    subjecttype_log = ForeignKey(Subjecttype_log,null=True,  related_name='+', on_delete=PROTECT)
+    subjecttype_log = ForeignKey(Subjecttype_log, null=True,  related_name='+', on_delete=PROTECT)
 
     gradetype = PositiveSmallIntegerField(null=True)
     weightSE = PositiveSmallIntegerField(null=True)
@@ -1596,26 +1706,33 @@ class Schemeitem_log(Model):
     is_combination = BooleanField(default=False)
     is_combi = BooleanField(default=False)
 
+#   extra_count_allowed: only at Havo Vwo) 'PR2017-01-28
+#   extra_nocount_allowed: at Vsbo TKL and Havo Vwo)) 'PR2017-01-28
+#   choicecombi_allowed: only at Vwo and subject du fr sp 'PR2017-01-28
+#   has_practexam: only at Vsbo PBL and PKL, all sectorprogramma's except uv 'PR2017-01-28
+
     extra_count_allowed = BooleanField(default=False)
     extra_nocount_allowed = BooleanField(default=False)
     choicecombi_allowed = BooleanField(default=False)
     has_practexam = BooleanField(default=False)
+    is_core = BooleanField(default=False)
 
-    scheme_mod =  BooleanField(default=False)
-    subject_mod =  BooleanField(default=False)
+    scheme_mod = BooleanField(default=False)
+    subject_mod = BooleanField(default=False)
     subjecttype_mod = BooleanField(default=False)
 
-    gradetype_mod =  BooleanField(default=False)
-    weightSE_mod =  BooleanField(default=False)
-    weightCE_mod =  BooleanField(default=False)
+    gradetype_mod = BooleanField(default=False)
+    weightSE_mod = BooleanField(default=False)
+    weightCE_mod = BooleanField(default=False)
 
-    is_mandatory_mod =  BooleanField(default=False)
-    is_combi_mod =  BooleanField(default=False)
+    is_mandatory_mod = BooleanField(default=False)
+    is_combi_mod = BooleanField(default=False)
 
-    extra_count_allowed_mod =  BooleanField(default=False)
-    extra_nocount_allowed_mod =  BooleanField(default=False)
-    choicecombi_allowed_mod =  BooleanField(default=False)
-    has_practexam_mod =  BooleanField(default=False)
+    extra_count_allowed_mod = BooleanField(default=False)
+    extra_nocount_allowed_mod = BooleanField(default=False)
+    choicecombi_allowed_mod = BooleanField(default=False)
+    has_practexam_mod = BooleanField(default=False)
+    is_core_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
@@ -1644,15 +1761,15 @@ class Package(Model):
     def __init__(self, *args, **kwargs):
         super(Package, self).__init__(*args, **kwargs)
         try:
-            self.original_school = self.school
+            self.o_school = self.school
         except:
-            self.original_school = None
+            self.o_school = None
         try:
-            self.original_scheme = self.scheme
+            self.o_scheme = self.scheme
         except:
-            self.original_scheme = None
+            self.o_scheme = None
 
-        self.original_name = self.name
+        self.o_name = self.name
 
     def save(self, *args, **kwargs):  # called by subjectdefault.save(self.request) in SubjectdefaultEditView.form_valid
         self.request = kwargs.pop('request', None)
@@ -1676,37 +1793,36 @@ class Package(Model):
         school_log = None
         if self.school is not None:
             school_log = School_log.objects.filter(school_id=self.school.id).order_by('-id').first()
-
         # get latest Scheme_log row that corresponds with self.scheme
         scheme_log = None
         if self.scheme is not None:
             scheme_log = Scheme_log.objects.filter(scheme_id=self.scheme.id).order_by('-id').first()
             # scheme_id = self.scheme.id if self.scheme is not None else None
+        if school_log and scheme_log:
+            # Create method also saves record
+            Package_log.objects.create(
+                package_id=self.pk,  # self.id gets its value in super(Package, self).save
 
-        # Create method also saves record
-        Package_log.objects.create(
-            package_id=self.id,  # self.id gets its value in super(Package, self).save
+                school_log=school_log,
+                scheme_log=scheme_log,
+                name=self.name,
 
-            school_log=school_log,
-            scheme_log=scheme_log,
-            name=self.name,
+                school_mod=self.school_mod,
+                scheme_mod=self.scheme_mod,
+                name_mod=self.name_mod,
 
-            school_mod=self.school_mod,
-            scheme_mod=self.scheme_mod,
-            name_mod=self.name_mod,
-
-            mode=self.mode,
-            modified_by=self.modified_by,
-            modified_at=self.modified_at
-        )
+                mode=self.mode,
+                modified_by=self.modified_by,
+                modified_at=self.modified_at
+            )
 
     def data_has_changed(self, mode = None):  # PR2018-09-07 PR2018-11-07
         # returns True when the value of one or more fields has changed
-        self.is_update = self.id is not None  # self.id is None before new record is saved
+        self.is_update = self.pk is not None  # self.id is None before new record is saved
 
-        self.school_mod = self.original_school != self.school
-        self.scheme_mod = self.original_scheme != self.scheme
-        self.name_mod = self.original_name != self.name
+        self.school_mod = self.o_school != self.school
+        self.scheme_mod = self.o_scheme != self.scheme
+        self.name_mod = self.o_name != self.name
 
         data_changed_bool = (
             not self.is_update or
@@ -1739,6 +1855,10 @@ class Package_log(Model):
 
     name = CharField(max_length=50, null=True)
 
+    school_mod = BooleanField(default=False)
+    scheme_mod = BooleanField(default=False)
+    name_mod = BooleanField(default=False)
+
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
     modified_at = DateTimeField(db_index=True)
@@ -1765,16 +1885,14 @@ class Package_item_log(Model):
     objects = CustomManager()
 
     package_item_id = IntegerField(db_index=True)
+
     # TODO: refer to log table
-    package = ForeignKey(Package, null=True, related_name='+', on_delete=PROTECT)
-    scheme_item = ForeignKey(Schemeitem, null=True, related_name='+', on_delete=PROTECT)
+    package_log = ForeignKey(Package_log, related_name='+', on_delete=PROTECT)
+    schemeitem_log = ForeignKey(Schemeitem_log, related_name='+', on_delete=PROTECT)
+
     mode = CharField(max_length=1, null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
     modified_at = DateTimeField(db_index=True)
-
-
-
-
 
 
 
@@ -1815,8 +1933,8 @@ class Norm_log(Model):
     norm_id = IntegerField(db_index=True)
 
     # TODO: refer to log table
-    scheme = ForeignKey(Scheme, null=True, related_name='+', on_delete=PROTECT)
-    subject = ForeignKey(Subject, null=True, related_name='+', on_delete=PROTECT)
+    scheme_log = ForeignKey(Scheme_log, related_name='+', on_delete=PROTECT)
+    subject_log = ForeignKey(Subject_log, related_name='+', on_delete=PROTECT)
 
     is_etenorm = BooleanField(default=False)
     is_primarynorm = BooleanField(default=False)
@@ -1857,8 +1975,8 @@ class Cluster_log(Model):
     cluster_id = IntegerField(db_index=True)
 
     # TODO: refer to log table
-    school = ForeignKey(School, related_name='+', on_delete=PROTECT)
-    subject = ForeignKey(Subject, null=True, related_name='+', on_delete=PROTECT)
+    school_log = ForeignKey(School_log, related_name='+', on_delete=PROTECT)
+    subject_log = ForeignKey(Subject_log, related_name='+', on_delete=PROTECT)
 
     name = CharField(max_length=50, null=True)
     abbrev = CharField(max_length=20, null=True)
