@@ -706,7 +706,7 @@ class Subjecttype(Model):
         # private variable __original checks if data_has_changed, to prevent update record when no changes are made.
         # Otherwise a logrecord is created every time the save button is clicked without changes
         self.o_name = self.name
-        self.oiginal_abbrev = self.abbrev
+        self.o_abbrev = self.abbrev
         self.o_code = self.code
         self.o_sequence = self.sequence
         self.o_depbase_list = self.depbase_list
@@ -1454,6 +1454,7 @@ class Schemeitem(Model):
         self.o_extra_count_allowed = self.extra_count_allowed
         self.o_extra_nocount_allowed = self.extra_nocount_allowed
         self.o_choicecombi_allowed = self.choicecombi_allowed
+        self.o_has_practexam = self.has_practexam
         self.o_is_core = self.is_core  # PR2019-02-26 is core subject
 
         # PR2018-10-19 initialize here, otherwise delete gives error: 'Examyear' object has no attribute 'examyear_mod'
@@ -1470,10 +1471,13 @@ class Schemeitem(Model):
         self.extra_count_allowed_mod = False
         self.extra_nocount_allowed_mod = False
         self.choicecombi_allowed_mod = False
+        self.has_practexam_mod = False
         self.is_core_mod = False  # PR2019-02-26 is core subject
 
     def save(self, *args, **kwargs):  # called by subjectdefault.save(self.request) in SubjectdefaultEditView.form_valid
         self.request = kwargs.pop('request', None)
+        logger.debug('save self.request: ' + str(self.request) + ' type: ' + str(type(self.request)))
+
         if self.data_has_changed():
             super(Schemeitem, self).save(force_insert = not self.is_update, force_update = self.is_update, **kwargs)
             self.save_to_log()
@@ -1546,7 +1550,7 @@ class Schemeitem(Model):
                 modified_at=self.modified_at
             )
 
-    def data_has_changed(self, mode = None):  # PR2018-11-10
+    def data_has_changed(self, mode=None):  # PR2018-11-10
         # returns True when the value of one or more fields has changed
         self.is_update = self.id is not None  # self.id is None before new record is saved
 

@@ -615,7 +615,9 @@ class AjaxImportSSIupload(View):  # PR2019-02-15
                         # get scheme
                         scheme = Scheme.objects.filter(id=scheme_id).first()
 
-                        if scheme :
+                        if scheme:
+                            logger.debug('scheme: ' + str(scheme) + ' type: ' + str(type(scheme)))
+
                             # get subject fom abbrev and depbase_id
                             # subject_id = int(subject_dict.get(str(subj_abbrev), '-1'))
                             subject = None
@@ -628,6 +630,7 @@ class AjaxImportSSIupload(View):  # PR2019-02-15
                                             subject = Subject.objects.filter(id=subject_id).first()
                                             break
                             if subject:
+                                logger.debug('subject: ' + str(subject) + ' type: ' + str(type(subject)))
                                 # get subjecttype
                                 subjtype_name = str(row[4])
                                 subjtype_id = get_subjtype_id_from_name(subjtype_name, subjtype_list)
@@ -638,10 +641,27 @@ class AjaxImportSSIupload(View):  # PR2019-02-15
                                 #one_allowed = BooleanField(
 
                                 if subjecttype:
+                                    logger.debug('subjecttype: ' + str(subjecttype) + ' type: ' + str(type(subjecttype)))
+
                                     #  0 Scheme 1 subject 2 Subjecttype 3 Gradetype 4 Sequence 5 weightSE 6 weightCE
                                     # 7 is_mandatory 8 is_combi 9 choicecombi_allowed 10 has_practexam
                                     rowcount = rowcount + 1
                                     logger.debug(str(rowcount) + ': ' + str(scheme.name) + ' ' + str(subject.abbrev) + ' ' + str(subjecttype.abbrev))
+
+                                    gradetype = int(row[5])
+                                    weightSE = int(row[6])
+                                    weightCE = int(row[7])
+                                    is_mandatory = True if str(row[8]) == '1' else False
+                                    is_combi = True if str(row[9]) == '1' else False
+                                    logger.debug('is_combi: ' + str(is_combi) + ' type: ' + str(type(is_combi)))
+
+                                    extra_count_allowed = True if str(row[10]) == '1' else False
+                                    extra_nocount_allowed = True if str(row[11]) == '1' else False
+
+                                    choicecombi_allowed = True if str(row[12]) == '1' else False
+                                    has_practexam = True if str(row[13]) == '1' else False
+                                    sequence = int(str(row[14]))
+                                    logger.debug('sequence: ' + str(sequence) + ' type: ' + str(type(sequence)))
 
                                     # create new schemeitem
                                     schemeitem = Schemeitem()
@@ -650,18 +670,18 @@ class AjaxImportSSIupload(View):  # PR2019-02-15
                                     schemeitem.subject = subject
                                     schemeitem.subjecttype = subjecttype
 
-                                    schemeitem.gradetype = int(row[5])
-                                    schemeitem.weightSE = int(row[6])
-                                    schemeitem.weightCE = int(row[7])
-                                    schemeitem.is_mandatory = True if str(row[8]) == '1' else False
-                                    schemeitem.is_combi = True if str(row[9]) == '1' else False
+                                    schemeitem.gradetype = gradetype
+                                    schemeitem.weightSE = weightSE
+                                    schemeitem.weightCE = weightCE
+                                    schemeitem.is_mandatory = is_mandatory
+                                    schemeitem.is_combi = is_combi
 
-                                    schemeitem.extra_count_allowed = True if str(row[10]) == '1' else False
-                                    schemeitem.extra_nocount_allowed = True if str(row[11]) == '1' else False
+                                    schemeitem.extra_count_allowed = extra_count_allowed
+                                    schemeitem.extra_nocount_allowed = extra_nocount_allowed
 
-                                    schemeitem.choicecombi_allowed = True if str(row[12]) == '1' else False
-                                    schemeitem.has_practexam = True if  str(row[13]) == '1' else False
-                                    schemeitem.sequence = int(str(row[14]))
+                                    schemeitem.choicecombi_allowed = choicecombi_allowed
+                                    schemeitem.has_practexam = has_practexam
+                                    schemeitem.sequence = sequence
 
                                     logger.debug('schemeitem.sequence: ' + str(schemeitem.sequence))
                                     # save new schemeitem

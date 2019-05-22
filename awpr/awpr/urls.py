@@ -25,6 +25,7 @@ from importing import views as import_views
 from schools import views as school_views
 from subjects import views as subject_views
 from students import views as student_views
+from reports import views as report_views
 
 from awpr.decorators import user_examyear_is_correct
 
@@ -121,13 +122,17 @@ urlpatterns = [
         path('<int:pk>/log/', school_views.ExamyearLogView.as_view(), name='examyear_log_url'),
         path('<int:pk>/lock', school_views.ExamyearLockView.as_view(), name='examyear_lock_url'),
     ])),
-# department PR2018-08-11
-    url(r'^department/$', school_views.DepartmentListView.as_view(), name='department_list_url'),
-    url(r'^department/add/$', school_views.DepartmentAddView.as_view(), name='department_add_url'),
-    url(r'^department/(?P<pk>\d+)/selected/$', school_views.DepartmentSelectView.as_view(), name='department_selected_url'),
-    url(r'^department/(?P<pk>\d+)/edit$', school_views.DepartmentEditView.as_view(), name='department_edit_url'),
-    url(r'^department/(?P<pk>\d+)/delete/$', school_views.DepartmentDeleteView.as_view(), name='department_delete_url'),
-    url(r'^department/(?P<pk>\d+)/log$', school_views.DepartmentLogView.as_view(), name='department_log_url'),
+# department PR2018-08-11 PR2019-02-27
+    path('department/', include([
+        path('', school_views.DepartmentListView.as_view(), name='department_list_url'),
+        path('add', school_views.DepartmentAddView.as_view(), name='department_add_url'),
+        path('<int:pk>/', include([
+            path('select', school_views.DepartmentSelectView.as_view(), name='department_select_url'),
+            path('edit', school_views.DepartmentEditView.as_view(), name='department_edit_url'),
+            path('delete', school_views.DepartmentDeleteView.as_view(), name='department_delete_url'),
+            path('log', school_views.DepartmentLogView.as_view(), name='department_log_url'),
+        ])),
+    ])),
 
 # school  PR2018-08-25 PR2018-12-20
     path('school/', include([
@@ -175,12 +180,15 @@ urlpatterns = [
     path('scheme/load_levels/', subject_views.load_levels, name='load_levels_url'),  # PR2018-10-03
     path('scheme/load_sectors/', subject_views.load_sectors, name='load_sectors_url'),  # PR2018-10-03
 
-# scheme PR2018-11-09
+# schemeitem PR2018-11-09
     url(r'^schemeitem/$', subject_views.SchemeitemListView.as_view(), name='schemeitem_list_url'),
     url(r'^schemeitem/add/$', subject_views.SchemeitemAddView.as_view(), name='schemeitem_add_url'),
     url(r'^schemeitem/(?P<pk>\d+)/edit$', subject_views.SchemeitemEditView.as_view(), name='schemeitem_edit_url'),
     url(r'^schemeitem/(?P<pk>\d+)/delete/$', subject_views.SchemeitemDeleteView.as_view(), name='schemeitem_delete_url'),
     url(r'^schemeitem/(?P<pk>\d+)/log$', subject_views.SchemeitemLogView.as_view(), name='schemeitem_log_url'),
+
+# package PR2019-02-27
+   # url(r'^package/$', subject_views.PackageView.as_view(), name='scheme_list_url'),
 
 # subject # PR2018-08-23
     url(r'^subject/$', subject_views.SubjectListView.as_view(), name='subject_list_url'),
@@ -243,6 +251,10 @@ urlpatterns = [
     # PR2018- 11-10
     url(r'^birthcountry/import/$', import_views.ImportBirthcountryView.as_view(), name='import_birthcountry_url'),
     url(r'^birthcity/import/$', import_views.ImportBirthcityView.as_view(), name='import_birthcity_url'),
+
+    # PR2019-02-25
+    path('downloads/', report_views.download, name='downloads_url'),
+
 
 # ajax PR2018-12-02
     path('ajax/', include([

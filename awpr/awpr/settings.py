@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'schools',   # PR2018-04-13
     'subjects',  # PR2018-07-20
     'students',  # PR2018-07-20
+    'reports',  # PR2018-07-20
 
     'session_security', # PR2018-05-10
     'anymail', # PR2018-12-28
@@ -79,6 +80,7 @@ TEMPLATES = [
         'DIRS': [
             os.path.join(BASE_DIR, 'templates'),
             os.path.join(BASE_DIR, 'templates/importing'),
+            os.path.join(BASE_DIR, 'templates/reports'),
             os.path.join(BASE_DIR, 'templates/schools'),
             os.path.join(BASE_DIR, 'templates/students'),
             os.path.join(BASE_DIR, 'templates/subjects'),

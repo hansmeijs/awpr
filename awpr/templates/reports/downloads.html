@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block breadcrumb %}
+{% endblock %}
+
+{% block content %}
+  <h3>{% trans 'AWP downloads' %}</h3>
+
+    <table class="table">
+      <thead class="thead-inverse">
+        <tr>
+          <th>{% trans 'Description' %}</th>
+          <th>{% trans 'Download' %}</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr>
+            <td class="align-left">
+              {% trans 'AWP 2019.01' %}
+            </td>
+            <td class="align-middle">
+              <a href="{% static 'data/AWP 2019.01 dd 2019-05-22.accdb' %}" class="btn btn-primary">{% trans 'Download' %}</a>
+            </td>
+          </tr>
+          <tr>
+            <td class="align-left">
+              <a>{% trans 'PRPW' %}</a>
+            </td>
+            <td class="align-middle">
+              <a href="{% static 'data/PRPW  8 aug 10.txt' %}" class="btn btn-primary">{% trans 'Download' %}</a>
+            </td>
+          </tr>
+
+      </tbody>
+    </table>
+{% endblock %}

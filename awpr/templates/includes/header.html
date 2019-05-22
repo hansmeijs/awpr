@@ -99,7 +99,7 @@
                                     {% if row.is_cur_dep %}
                                         <a class="dropdown-item" style="color:darkgrey;">{{ row.dep_name }}</a>
                                     {% else %}
-                                        <a  href="{% url 'department_selected_url' row.pk %}" class="dropdown-item">{{ row.dep_name }}</a>
+                                        <a  href="{% url 'department_select_url' row.pk %}" class="dropdown-item">{{ row.dep_name }}</a>
                                     {% endif %}
                                 {% endfor %}
                             </div>

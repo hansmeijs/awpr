@@ -62,9 +62,8 @@ menu_results = {'caption': 'Results', 'width': 120, 'height': height, 'pos_x': 6
                 }
 menu_reports = {'caption': 'Reports',  'width': 120, 'height': height,  'pos_x': 60,  'pos_y': pos_y,
                'indent_left': indent_10, 'indent_right': indent_none,
-
                 'style_sel': style_sel, 'style_unsel': style_unsel, 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
-                'submenu': ('subjlst', 'subjtyplst', 'schemlst')
+                'submenu': ('rptlst',)
                 }
 menus = {'mn_schl': menu_school,
          'mn_subj': menu_subjects,
@@ -85,7 +84,7 @@ menu_default = {'menu': 'mn_schl',
                 'mn_ce': 'subjlst',
                 'mn_reex': 'subjlst',
                 'mns_res': 'subjlst',
-                'mn_rep': 'subjlst'
+                'mn_rep': 'rptlst'
               }
 menubuttons = {
 'home': {'caption': 'Home', 'href': 'home',  'viewpermits': {'all': 'all'}},
@@ -101,6 +100,7 @@ menubuttons = {
 'schemitemlst': {'caption': 'Subject scheme items', 'href': 'schemeitem_list_url', 'viewpermits': {'all': 'all'}},
 'studlst': {'caption': 'Students', 'href': 'student_list_url', 'viewpermits': {'all': 'all'}},
 'studsubj': {'caption': 'Student subjects', 'href': 'studentsubject_url', 'viewpermits': {'system': 'admin', 'school': 'write'}},
+'rptlst': {'caption': 'Downloads', 'href': 'downloads_url', 'viewpermits': {'system': 'admin'}},
 
 'impstud': {'caption': 'Import students', 'href': 'import_student_url', 'viewpermits': {'school': 'admin', 'insp': 'none','system': 'admin'}}
 }

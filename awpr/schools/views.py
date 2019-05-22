@@ -573,21 +573,15 @@ class DepartmentSelectView(View):  # PR2018-08-24 PR2018-11-23
         #logger.debug('=== DepartmentSelectView ============================')
         #logger.debug('request.user: ' + str(request.user) + ' Type: ' + str(type(request.user)))
         #logger.debug('pk: ' + str(pk) + ' Type: ' + str(type(pk)))
-
+        # PR2019-02-27 debug: pk is dep_base.id, not dep_id
         if pk is not None:
-            # PR2018-05-18 getting school from object not necessary, but let it stay for safety
-            try:
-                department = Department.objects.get(id=pk)
-                #logger.debug('department: ' + str(department) + ' Type: ' + str(type(department)))
-
+            department = Department.objects.filter(base__id=pk).first()
+            if department:
+                #  save new depbase in user.depbase
                 request.user.depbase = department.base
-                #logger.debug('request.user.depbase: ' + str(request.user.depbase) + ' Type: ' + str(type(request.user.depbase)))
-
                 request.user.save(request=self.request)  # PR 2018-11-23 debug: was: request.user.save(self.request)  PR 2018-08-04 debug: was: request.user.save()
+                #logger.debug('request.user.depbase saved: ' + str(request.user.depbase) + ' Type: ' + str(type(request.user.depbase)))
 
-                #logger.debug('department saved: ' + str(request.user.department.id))
-            finally:
-                return redirect('home')
         return redirect('home')
 
 

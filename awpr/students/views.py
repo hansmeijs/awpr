@@ -408,8 +408,10 @@ class StudentsubjectFormsetView(ListView):  # PR2018-11-29
 @method_decorator([login_required], name='dispatch')
 class ImportStudentView(View):  # PR2018-12-01
 
+    logger.debug('===== Import Students =========' )
     def get(self, request):
         mapped_coldefs = get_mapped_coldefs_student(request.user)  # PR2018-12-01
+        logger.debug('mapped_coldefs: ' + str(mapped_coldefs) + ' Type: ' + str(type(mapped_coldefs)))
         param = {
             'display_school': True,
             'display_dep': True,
@@ -417,7 +419,7 @@ class ImportStudentView(View):  # PR2018-12-01
             'mapped_coldefs': mapped_coldefs
         }
         headerbar_param = f.get_headerbar_param(request, param)
-        # logger.debug('headerbar_param: ' + str(headerbar_param) + ' Type: ' + str(type(headerbar_param)))
+
 
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'import_student.html', headerbar_param)
@@ -1019,7 +1021,7 @@ def get_mapped_coldefs_student(request_user):  # PR2018-12-01
     #     "mapped_coldef_list": [{"awpKey": "idnumber", "caption": "ID nummer", "excKey": "ID"},
     #                            {"awpKey": "lastname", "caption": "Achternaam", "excKey": "ANAAM"}, ....]
 
-    # logger.debug('==============get_mapped_coldefs_student ============= ' )
+    logger.debug('==============get_mapped_coldefs_student ============= ' )
 
     # get mapped excelColDef from table Schoolsetting
     mapped_coldefs = {}
@@ -1059,7 +1061,7 @@ def get_mapped_coldefs_student(request_user):  # PR2018-12-01
             #                {'base_id': 8, 'abbrev': 'PKL'},
             #                {'base_id': 9, 'abbrev': 'PBL'}]
             level_list = Level.get_abbrev_list(request_user)
-            #logger.debug('level_list: ' + str(level_list) + ' type: ' + str(type(level_list)))
+            logger.debug('level_list: ' + str(level_list) + ' type: ' + str(type(level_list)))
 
             mapped_level_list = []
             for level in level_list:
@@ -1077,7 +1079,7 @@ def get_mapped_coldefs_student(request_user):  # PR2018-12-01
                             level_dict['excKey'] = excKey
                 if level_dict:
                     mapped_level_list.append(level_dict)
-            #logger.debug('mapped_level_list: ' + str(mapped_level_list) + ' type: ' + str(type(mapped_level_list)))
+            logger.debug('mapped_level_list: ' + str(mapped_level_list) + ' type: ' + str(type(mapped_level_list)))
 
 
             # sector_list is list of sectors of this school, dep and examyear
@@ -1113,6 +1115,7 @@ def get_mapped_coldefs_student(request_user):  # PR2018-12-01
             if mapped_sector_list:
                 mapped_coldefs['mapped_sector_list'] = mapped_sector_list
 
+            logger.debug('mapped_coldefs: ' + str(mapped_coldefs) + ' type: ' + str(type(mapped_coldefs)))
             mapped_coldefs = json.dumps(mapped_coldefs)
     return mapped_coldefs
 
@@ -1180,7 +1183,7 @@ def get_student_column_list(request_user):
     return coldef_list
 
 def get_student_mapped_coldefs(request_user):
-
+    logger.debug(        '---  get_student_mapped_coldefs  ------- ' + str(request_user))
     # get mapped excelColDef from table Schoolsetting
 
     no_header = False
@@ -1191,7 +1194,7 @@ def get_student_mapped_coldefs(request_user):
 
     if request_user is not None:
         if request_user.schoolbase is not None:
-           # logger.debug('request_user.schoolbase: ' + str(request_user.schoolbase) + ' type: ' + str(type(request_user.schoolbase)))
+            logger.debug('request_user.schoolbase: ' + str(request_user.schoolbase) + ' type: ' + str(type(request_user.schoolbase)))
             setting = Schoolsetting.objects.filter(
                 schoolbase=request_user.schoolbase,
                 key_str=c.KEY_STUDENT_MAPPED_COLDEFS
@@ -1220,6 +1223,7 @@ def get_student_mapped_coldefs(request_user):
                         setting_sectors = json.loads(setting.char04)
                     except:
                         pass
+            logger.debug('setting_columns: ' + str(setting_columns) + ' type: ' + str(type(setting_columns)))
     return  no_header, worksheetname, setting_columns, setting_levels, setting_sectors
 
 

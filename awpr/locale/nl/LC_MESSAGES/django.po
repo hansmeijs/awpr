@@ -122,7 +122,7 @@ msgstr "Schrijven"
 
 #: .\accounts\models.py:391 .\accounts\models.py:466
 msgid "Authorize"
-msgstr "Authoriseren"
+msgstr "Autoriseren"
 
 #: .\accounts\models.py:392 .\accounts\models.py:467
 msgid "Admin"
@@ -708,7 +708,7 @@ msgstr "Gewijzigd"
 
 #: .\awpr\constants.py:95
 msgid "Authorized"
-msgstr "Geauthoriseerd"
+msgstr "Geautoriseerd"
 
 #: .\awpr\constants.py:96
 msgid "Approved"
