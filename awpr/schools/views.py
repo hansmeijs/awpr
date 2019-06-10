@@ -52,10 +52,11 @@ def home(request):
         'display_dep': _display_dep
     })
     # PR2019-02-15 go to login form if user is not authenticated
-    if request.user.is_authenticated:    # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'home.html', _param)
-    else:
-        return redirect('login')
+    # PR2019-02-15 temporary disabled
+    #if request.user.is_authenticated:    # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
+    return render(request, 'home.html', _param)
+    #else:
+     #   return redirect('login')
 
 
 def Loggedin(request):

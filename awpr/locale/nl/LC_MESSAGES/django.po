@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-02-26 19:50-0400\n"
+"POT-Creation-Date: 2019-06-10 16:05-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -912,15 +912,15 @@ msgstr "<Geen afdeling gevonden>"
 msgid "<Select department>"
 msgstr "<Selecteer afdeling"
 
-#: .\awpr\settings.py:194 .\templates\includes\header.html:136
+#: .\awpr\settings.py:196 .\templates\includes\header.html:136
 msgid "English"
 msgstr "Engels"
 
-#: .\awpr\settings.py:195 .\templates\includes\header.html:137
+#: .\awpr\settings.py:197 .\templates\includes\header.html:137
 msgid "Dutch"
 msgstr "Nederlands"
 
-#: .\importing\views.py:672
+#: .\importing\views.py:692
 msgid "An error occurred. This action cannot be completed."
 msgstr "Er is een fout opgetreden. Deze bewerking kan niet worden afgerond."
 
@@ -1171,7 +1171,7 @@ msgstr "Examennummer komt al voor."
 msgid "Gender '\"%s\"' is not allowed."
 msgstr "Geslacht '\"%s\"' is niet toegestaan."
 
-#: .\students\views.py:592
+#: .\students\views.py:594
 msgid "An error occurred. The student data is not saved."
 msgstr "Er is een fout opgetreden. De kandidaat gegveens zijn niet opgeslagen."
 
@@ -1312,17 +1312,27 @@ msgstr "Ja, wis"
 msgid "No, cancel"
 msgstr "Nee, annuleer"
 
-#: .\templates\home.html:10
-msgid "Welcome at"
-msgstr "Welkom bij"
+#: .\templates\home.html:7
+msgid "Welcome at AWP-online"
+msgstr "Welkom bij AWP-online"
 
-#: .\templates\home.html:11
-msgid "AWP-online"
+#: .\templates\home.html:8 .\templates\reports\downloads.html:9
+msgid "AWP downloads"
+msgstr "AWP download bestanden"
+
+#: .\templates\home.html:12 .\templates\reports\downloads.html:14
+msgid "Description"
+msgstr "Omschrijving"
+
+#: .\templates\home.html:13 .\templates\home.html:22
+#: .\templates\reports\downloads.html:15 .\templates\reports\downloads.html:24
+#: .\templates\reports\downloads.html:32
+msgid "Download"
+msgstr "Downloaden"
+
+#: .\templates\home.html:19
+msgid "Installatieprogramma AWP 2019.04"
 msgstr ""
-
-#: .\templates\home.html:12
-msgid "Please log in"
-msgstr "Inloggen"
 
 #: .\templates\importing\import_birthcity.html:32
 #: .\templates\importing\import_birthcountry.html:32
@@ -1365,6 +1375,14 @@ msgstr "Kandidaatresultaten "
 #: .\templates\students\grade_list.html:25
 msgid "Student grades"
 msgstr "Cijfers van kandidaten"
+
+#: .\templates\reports\downloads.html:21
+msgid "AWP 2019.01"
+msgstr ""
+
+#: .\templates\reports\downloads.html:29
+msgid "PRPW"
+msgstr ""
 
 #: .\templates\schools\country_add.html:7
 #: .\templates\schools\country_confirm_delete.html:7
@@ -1724,7 +1742,7 @@ msgid "Titel van het werkstuk"
 msgstr ""
 
 #: .\templates\students\studentsubject.html:38
-msgid "Vakken waarop het werkstuk betrekking heeft"
+msgid "Vakken waar het werkstuk betrekking op heeft"
 msgstr ""
 
 #: .\templates\students\studentsubject.html:53
@@ -2009,6 +2027,12 @@ msgstr "Vaktype wijzigen"
 msgid "Code"
 msgstr ""
 
+#~ msgid "Welcome at"
+#~ msgstr "Welkom bij"
+
+#~ msgid "Please log in"
+#~ msgstr "Inloggen"
+
 #~ msgid "F"
 #~ msgstr "V"
 
@@ -2073,12 +2097,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Klik op de Download knop om het nieuwe AWP-downloadprogramma en de "
 #~ "handleiding voor het installeren ervan downloaden."
-
-#~ msgid "Description"
-#~ msgstr "Omschrijving"
-
-#~ msgid "Download"
-#~ msgstr "Downloaden"
 
 #~ msgid "Download the AWP-download program"
 #~ msgstr "Download het AWP-downloadprogramma"

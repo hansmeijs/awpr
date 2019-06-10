@@ -1,21 +1,30 @@
 {% extends 'base.html' %}
 {% load i18n %}
+{% load static %}
 
 {% block content %}
-    {% if not user.is_authenticated %}
-        <div class="row justify-content-center">
-            <div class="col-lg-4 col-md-6 col-sm-8">
-              <div class="card mt-5">
-                <div class="card-body">
-                  <h2 class="card-title"><b>{% trans 'Welcome at' %}</b></h2>
-                  <h2 class="card-title">{% trans 'AWP-online' %}</h2>
-                  <h5 >{% trans 'Please log in' %}</h5>
 
-                </div>
-              </div>
-            </div>
-        </div>
-    {% endif %}
+  <h2 class="card-title my-5"><b>{% trans 'Welcome at AWP-online' %}</b></h2>
+  <h3>{% trans 'AWP downloads' %}</h3>
+    <table class="table">
+      <thead class="thead-inverse">
+        <tr>
+          <th>{% trans 'Description' %}</th>
+          <th>{% trans 'Download' %}</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr>
+            <td class="align-left">
+              {% trans 'Installatieprogramma AWP 2019.04' %}
+            </td>
+            <td class="align-middle">
+              <a href="{% static 'data/AWPinstall_2019_04.exe' %}" class="btn btn-primary">{% trans 'Download' %}</a>
+            </td>
+          </tr>
+
+      </tbody>
+    </table>
 {% endblock %}
 
 
