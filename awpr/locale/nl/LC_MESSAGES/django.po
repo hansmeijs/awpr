@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-06-10 16:05-0400\n"
+"POT-Creation-Date: 2019-06-11 19:37-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1324,15 +1324,23 @@ msgstr "AWP download bestanden"
 msgid "Description"
 msgstr "Omschrijving"
 
-#: .\templates\home.html:13 .\templates\home.html:22
-#: .\templates\reports\downloads.html:15 .\templates\reports\downloads.html:24
-#: .\templates\reports\downloads.html:32
+#: .\templates\home.html:13 .\templates\home.html:22 .\templates\home.html:30
+#: .\templates\home.html:38 .\templates\reports\downloads.html:15
+#: .\templates\reports\downloads.html:24 .\templates\reports\downloads.html:32
 msgid "Download"
 msgstr "Downloaden"
 
 #: .\templates\home.html:19
-msgid "Installatieprogramma AWP 2019.04"
-msgstr ""
+msgid "Installation program AWP 2019.05 for MS Access 2007"
+msgstr "Installatieprogramma AWP 2019.05 voor MS access 2007"
+
+#: .\templates\home.html:27
+msgid "Installation program AWP 2019.05 for MS Access 2010"
+msgstr "Installatieprogramma AWP 2019.05 voor MS access 2010"
+
+#: .\templates\home.html:35
+msgid "Installation program AWP 2019.05 for MS Access 64 bit"
+msgstr "Installatieprogramma AWP 2019.05 voor MS access 64 bit"
 
 #: .\templates\importing\import_birthcity.html:32
 #: .\templates\importing\import_birthcountry.html:32
