@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-06-11 19:37-0400\n"
+"POT-Creation-Date: 2019-06-12 22:20-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1316,13 +1316,13 @@ msgstr "Nee, annuleer"
 msgid "Welcome at AWP-online"
 msgstr "Welkom bij AWP-online"
 
-#: .\templates\home.html:8 .\templates\reports\downloads.html:9
-msgid "AWP downloads"
-msgstr "AWP download bestanden"
+#: .\templates\home.html:8
+msgid "Download de nieuwste versie van AWP"
+msgstr ""
 
-#: .\templates\home.html:12 .\templates\reports\downloads.html:14
-msgid "Description"
-msgstr "Omschrijving"
+#: .\templates\home.html:12
+msgid "Kies de juiste versie en klik 'Downloaden'"
+msgstr ""
 
 #: .\templates\home.html:13 .\templates\home.html:22 .\templates\home.html:30
 #: .\templates\home.html:38 .\templates\reports\downloads.html:15
@@ -1335,12 +1335,23 @@ msgid "Installation program AWP 2019.05 for MS Access 2007"
 msgstr "Installatieprogramma AWP 2019.05 voor MS access 2007"
 
 #: .\templates\home.html:27
-msgid "Installation program AWP 2019.05 for MS Access 2010"
-msgstr "Installatieprogramma AWP 2019.05 voor MS access 2010"
+
+msgid "Installation program AWP 2019.06 for MS Access 2010"
+msgstr "Installatieprogramma AWP 2019.06 voor MS access 2010"
 
 #: .\templates\home.html:35
-msgid "Installation program AWP 2019.05 for MS Access 64 bit"
-msgstr "Installatieprogramma AWP 2019.05 voor MS access 64 bit"
+msgid "Installation program AWP 2019.06 for MS Access 64 bit"
+msgstr "Installatieprogramma AWP 2019.06 voor MS access 64 bit"
+
+#: .\templates\home.html:44
+msgid ""
+"Als het 'Windows Defender' scherm verschijnt: klik op 'More info', daarna op "
+"'Run anyway'."
+msgstr ""
+
+#: .\templates\home.html:51
+msgid "Als het 'User Account Control' scherm verschijnt klikt u op 'Yes':"
+msgstr ""
 
 #: .\templates\importing\import_birthcity.html:32
 #: .\templates\importing\import_birthcountry.html:32
@@ -1383,6 +1394,14 @@ msgstr "Kandidaatresultaten "
 #: .\templates\students\grade_list.html:25
 msgid "Student grades"
 msgstr "Cijfers van kandidaten"
+
+#: .\templates\reports\downloads.html:9
+msgid "AWP downloads"
+msgstr "AWP download bestanden"
+
+#: .\templates\reports\downloads.html:14
+msgid "Description"
+msgstr "Omschrijving"
 
 #: .\templates\reports\downloads.html:21
 msgid "AWP 2019.01"
