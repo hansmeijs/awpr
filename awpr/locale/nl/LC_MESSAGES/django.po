@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-06-12 22:20-0400\n"
+"POT-Creation-Date: 2019-06-13 11:23-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1331,11 +1331,12 @@ msgid "Download"
 msgstr "Downloaden"
 
 #: .\templates\home.html:19
-msgid "Installation program AWP 2019.05 for MS Access 2007"
-msgstr "Installatieprogramma AWP 2019.05 voor MS access 2007"
+#, fuzzy
+#| msgid "Installation program AWP 2019.06 for MS Access 2010"
+msgid "Installation program AWP 2019.06 for MS Access 2007"
+msgstr "Installatieprogramma AWP 2019.06 voor MS access 2010"
 
 #: .\templates\home.html:27
-
 msgid "Installation program AWP 2019.06 for MS Access 2010"
 msgstr "Installatieprogramma AWP 2019.06 voor MS access 2010"
 
@@ -2053,6 +2054,9 @@ msgstr "Vaktype wijzigen"
 #: .\templates\subjects\subjecttype_list.html:30
 msgid "Code"
 msgstr ""
+
+#~ msgid "Installation program AWP 2019.05 for MS Access 2007"
+#~ msgstr "Installatieprogramma AWP 2019.05 voor MS access 2007"
 
 #~ msgid "Welcome at"
 #~ msgstr "Welkom bij"
