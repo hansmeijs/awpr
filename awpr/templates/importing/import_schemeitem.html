@@ -62,7 +62,7 @@
         </table>
     {% else %}
       <form class="form-inline ml-auto">
-        <a href="{% url 'home' %}" class="btn btn-outline-secundary">{% trans "You don't have permission to view this page." %}</a>
+        <a href="{% url 'home_url' %}" class="btn btn-outline-secundary">{% trans "You don't have permission to view this page." %}</a>
       </form>
     {% endif %}
   {% else %}

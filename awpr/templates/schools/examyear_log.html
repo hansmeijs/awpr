@@ -3,9 +3,9 @@
 
 {% block breadcrumb %}
   <ol class="breadcrumb my-3">
-    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'home_url' %}">AWP online</a></li>
     <li class="breadcrumb-item"><a >{{ examyear.country }}</a></li>
-    <li class="breadcrumb-item"><a href="{% url 'examyear_list_url' %}">{% trans 'Exam years' %}</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'examyears_url' %}">{% trans 'Exam years' %}</a></li>
     <li class="breadcrumb-item"><a href="{% url 'examyear_edit_url' examyear.pk %}">{{ examyear.examyear }}</a></li>
     <li class="breadcrumb-item active">{% trans 'Log' %}</li>
   </ol>
@@ -40,9 +40,9 @@
         {% endfor %}
       </tbody>
     </table>
-    <a href="{% url 'examyear_list_url' %}" class="btn btn-outline-primary mb-3">{% trans 'Close' %}</a>
+    <a href="{% url 'examyears_url' %}" class="btn btn-outline-primary mb-3">{% trans 'Close' %}</a>
   {% else %}
     <div class="alert alert-danger">{{ user.message_examyear_modify }}</div>
-    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+    <a href="{% url 'home_url' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
   {% endif %}
 {% endblock %}l>

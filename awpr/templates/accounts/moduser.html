@@ -1,0 +1,104 @@
+{% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL SELECT USER FROM SCHOOL  =================== -->
+    <div class="modal" id="id_mod_user" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 id="id_MUA_header" class="modal-title mx-2" ></h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="modal_container">
+<!-- modal_body_left contains employee select table -->
+                        <div class="modal_body_left tab_show tab_addnew_may_select_school display_hide">
+                            <div class="content_subheader_left mx-1 my-1">
+                                <h6 class="mx-2 my-1">{% trans 'Schools' %}</h6>
+                                 <!-- this div is necessary to get standard structure for FilterTableRows -->
+                                <!-- <div style="overflow-x:hidden;overflow-y:auto;height:400px;width:220px"> -->
+                                <div class="tbl_MUA_h390_w280">
+                                    <table class="table tsa_tbl mx-1 my-1">
+                                        <tbody id="id_MUA_tbody_select">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+<!-- modal_body_right contains input elements -->
+                        <div id="id_div_form_controls" class="modal_body_right mx-2 my-2">
+                            <div class="content_subheader_left mx-1 tab_show tab_addnew_may_select_school display_hide">
+                                <label for="id_MUA_input_school" class="tsa_margin_form_label">{% trans 'School' %}:</label>
+                                <input id="id_MUA_input_school" type="text" data-field="schoolcode"
+                                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+                                    class="form-control"
+                                    placeholder="{% trans 'Type a few letters and select a school in the list ...' %}">
+                            </div>
+
+                            <div id="id_msg_container" class="border_bg_valid m-4 tab_show tab_ok display_hide">
+                                <p id="id_msg_01" class="tsa_margin_form_label mx-4"></p>
+                                <p id="id_msg_02" class="tsa_margin_form_label mx-4"></p>
+                                <p id="id_msg_03" class="tsa_margin_form_label mx-4"></p>
+                                <p id="id_msg_04" class="tsa_margin_form_label mx-4 mb-4"></p>
+                            </div>
+
+                            <div id="id_MUA_loader" class="image_container visibility_hide">
+                                <img  src="{% static 'img/loader.gif' %}" height="24" width="24">
+                            </div>
+
+                            <div class="tab_show tab_addnew_may_select_school tab_addnew_noschool tab_update display_hide">
+                                <div class="content_subheader_left mx-1">
+                                    <label for="id_MUA_username" class="mx-2 ">{% trans 'Username' %}:</label>
+                                    <input id="id_MUA_username" type="text" data-field="username"
+                                    autocomplete="off" ondragstart="return false;" ondrop="return false;" class="form-control">
+                                </div>
+                                <div class="content_subheader_left mx-1">
+                                    <small id="id_MUA_msg_username" class="text-danger tsa_margin_form_label"></small>
+                                </div>
+                                <div class="content_subheader_left mx-1">
+                                    <label for="id_MUA_last_name" class="tsa_margin_form_label">{% trans 'Name' %}:</label>
+                                    <input id="id_MUA_last_name" type="text" data-field="last_name"
+                                    autocomplete="off" ondragstart="return false;" ondrop="return false;" class="form-control">
+                                </div>
+                                <div class="content_subheader_left mx-1">
+                                    <small id="id_MUA_msg_last_name" class="tsa_margin_form_label"></small>
+                                </div>
+                                <div class="content_subheader_left mx-1 ">
+                                    <label for="id_MUA_email" class="tsa_margin_form_label">{% trans 'Email address' %}:</label>
+                                    <input id="id_MUA_email" type="text" data-field="email"
+                                    autocomplete="off" ondragstart="return false;" ondrop="return false;" class="form-control">
+                                </div>
+                                <div class="content_subheader_left mx-1">
+                                    <small id="id_MUA_msg_email" class="tsa_margin_form_label"></small>
+                                </div>
+                                <div class="content_header mx-2 mt-2 tab_show tab_addnew_may_select_school tab_addnew_noschool display_hide">
+                                    <div class="content_subheader_left mx-1">
+                                        <small id="id_info_footer01" ></small>
+                                    </div>
+                                </div>
+                                <div class="content_header mx-2 tab_show tab_addnew_may_select_school tab_addnew_noschool display_hide">
+                                    <div class="content_subheader_left mx-1">
+                                        <small id="id_info_footer02" ></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="content_subheader_left mx-1">
+                        <button id="id_MUA_btn_delete" type="button" data-dismiss="modal" class="btn btn-outline-danger tab_show tab_update display_hide">{% trans 'Delete user' %}</button>
+                    </div>
+                    <div class="content_subheader_right">
+                        <button id="id_MUA_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MUA_btn_submit" class="btn btn-primary tab_show tab_addnew_may_select_school tab_update display_hide">{% trans 'Submit' %}</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>

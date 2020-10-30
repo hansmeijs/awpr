@@ -150,7 +150,7 @@
 
   {% else %}
     <div class="alert alert-danger">{{ user.message_students_view }}</div>
-    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+    <a href="{% url 'home_url' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
   {% endif %}
 
 {% endblock %}l>

@@ -1,0 +1,899 @@
+/* GENERAL */
+* {
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    text-decoration: none;
+}
+
+html {
+    font-family: "Lucida Sans", sans-serif;
+    /*font-family: "segoe-ui", "open-sans", tahoma, arial;*/
+}
+p {
+    margin: 4px 8px;
+}
+
+ul {
+    margin: 0px; /*these dont work: margin: none; margin: 0;*/
+    padding: 0em 0.6em; /*padding: 0 8px;*/
+}
+li {
+    list-style-type: none;
+}
+
+/* MENU */
+a {
+    font-size: 14px;
+    font-weight: loadold;
+    /*line-height: 32px;
+    display: inline-block;*/
+    padding: 0.2em 0.4em 0.15em 0.4em;/*padding: 4px 8px;*/
+    color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw*/
+    background-color: transparent /* #B8CCE4; 'TextboxBackColor Default Schema Blauw lichtblauw*/
+    border: 1px solid #B8CCE4; /*rgba(0,0,0,0.25);*/
+    float: left;
+    cursor: pointer;
+}
+a:hover{
+    /*background: darken($red, 1.5%);*/
+    border: 1px solid rgba(0,0,0,.05);
+    -webkit-box-shadow: 1px 1px 2px rgba(255,255,255,0.2);
+            box-shadow: 1px 1px 2px rgba(255,255,255,0.2);
+    color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    background-color: #ddd;
+    /*text-shadow: -1px -1px 0 darken($red, 9.5%);*/
+    -webkit-transition: all 50ms linear;
+    -o-transition: all 50ms linear;
+    transition: all 50ms linear;
+}
+/* INDEX */
+
+.c_gridcontainer {
+
+}
+/* ------------------- c_header ----------------------*/
+.c_header {
+    grid-area: c_header;
+        -ms-grid-row: 1;
+        -ms-grid-column: 1;
+        -ms-grid-column-span: 5;
+    display: grid;/*display: inline-block;*/
+    /*height: 36px;*/
+    width: 100%;
+    padding: 8px 16px;
+    /*  background-color:  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+    color: #ffffff;
+}
+
+.c_header h1 {
+    font-size: 18px;
+    padding: 0px 0px;/*padding: 4px 16px;*/
+    margin: 0px 0px;
+    color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    /*color: #376191;  FooterBackColor Default Schema Blauw donkerblauw */
+    background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    text-decoration: none;
+}
+
+/* ------------------- c_menu ----------------------*/
+.c_menu {
+        -ms-grid-row: 3;
+        -ms-grid-column: 1;
+        -ms-grid-column-span: 5;
+    grid-area: c_menu;
+
+    display: inline-block;
+
+    /*height: 24px;*/
+    width: 100%;
+    padding: 0px; /*padding: 0 8px;*/
+    margin: 0px; /*these dont work: margin: none; margin: 0;*/
+    background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */ /* #4A7DBB; /* 'TextboxBackColor Default Schema Blauw medium blauw */
+    color: #ffffff;
+}
+
+.c_school_name {
+        float: left;
+}
+.c_school_year {
+        float: right;
+}
+
+.c_header button {
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 32px;
+    margin: 0px 8px;
+    /*max-width: 40px; */
+    width: 40px; /*width: 100%; */
+    border: 1px solid #B8CCE4; /*rgba(0,0,0,0.25);*/
+    color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+    background-color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    cursor: pointer;
+    float: right;
+}
+.c_header button:hover{
+    /*background: darken($red, 1.5%);*/
+     border: 1px solid rgba(0,0,0,.05);
+     -webkit-box-shadow: 1px 1px 2px rgba(255,255,255,0.2);
+             box-shadow: 1px 1px 2px rgba(255,255,255,0.2);
+     color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+     background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+    /*text-shadow: -1px -1px 0 darken($red, 9.5%);*/
+     -webkit-transition: all 100ms linear;
+     -o-transition: all 100ms linear;
+     transition: all 100ms linear;
+}
+/* ------------------- c_select_file ----------------------*/
+.c_select_file {
+/*
+    grid-area: c_select_file;
+        -ms-grid-row: 5;
+        -ms-grid-column: 1;
+
+    display: -ms-grid;
+    display: grid;
+    grid-gap: 8px;
+
+
+    -webkit-box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+*/
+    font-size: 14px;
+    line-height: 1.25;
+    text-align: center;
+    padding: 4px 8px;
+    color: #376191;  /*FooterBackColor Default Schema Blauw donkerblauw */
+    /* background-color: #F5FAFF; /*licht licht blauw; */
+    background: transparent; /* #f8f8f8; /*licht licht grijs; */
+
+}
+
+/* ------------------- c_link_columns ----------------------*/
+
+/* PR2019-01-05 try flexbox */
+
+.ea_flex {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around /*center /* space-between;  space-around PR2019-01-05 try flexbox */
+    align-items: flex-start;
+    border: none;
+}
+
+.ea_flex > div {
+    flex: 1;
+    border: 1px solid #2D4E77; /* #2D4E77 HeaderBackColor Default Schema Blauw donkerblauw */
+}
+
+.li_flex {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around /* center /* space-between;  space-around PR2019-01-05 try flexbox */
+    align-items: flex-start
+/*
+    font-size: 14px;
+    line-height: 1.25;
+    text-align: center;
+    padding: 4px 8px;
+*/
+    /*color: #fff;*/
+    /*background-color: #F5FAFF; *//*licht licht blauw; */
+    /*padding: 20px;*/
+    /*border: 2px solid #376191;*/
+    /*width: 100%;*/
+}
+.li_flex > div {
+    flex: 1;
+    border: 1px solid #800000 /* background-color: #800000; dark red*/
+}
+
+
+
+.c_link_columns {
+    font-size: 14px;
+    line-height: 1.25;
+    text-align: center;
+    padding: 4px 8px;
+
+    color: #376191;  /*FooterBackColor Default Schema Blauw donkerblauw */
+    /*background-color: #F5FAFF; */ /*licht licht blauw; */
+
+    background-color: #f5f5f5; /* #f5f5f5 = 245 245 245  licht licht licht grijs;
+    -webkit-box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+
+    /* to prevent text selection */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.c_columns_header {
+    font-size: 18px;
+    line-height: 1.25;
+    padding: 0px;
+
+    color: #376191;  /*FooterBackColor Default Schema Blauw donkerblauw */
+
+}
+
+.c_grid_colExcel {
+   background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+   /*  background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+
+    color: #ffffff;
+    width: 100%
+}
+
+.c_grid_colAwp {
+    background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    color: #ffffff;
+    width: 100%
+}
+
+.c_colExcelTsa_tr {
+    /*background-color: #a5c2ff; /*lighter blueish*/
+    /*background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */ /* #4A7DBB; /* 'TextboxBackColor Default Schema Blauw medium blauw */
+    /* color: #ffffff; */
+
+    color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+    /*background-color: #f5f5f5; /* #f5f5f5 = 245 245 245  licht licht licht grijs; */
+    /*background-color:  #d8d8d8;  /* light grey 218 218 218 100%  /*  #e0e0e0; light grey 224 224 224 */
+    text-align: left;
+    padding: 4px 8px;
+
+    /* to prevent text selection */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+
+    -webkit-transition: background-color 0.25s ease;
+    -o-transition: background-color 0.25s ease;
+    transition: background-color 0.25s easet;
+}
+
+
+.c_columns_tr{
+    background-color: #a5c2ff; /*lighter blueish*/
+
+    color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+
+    padding: 4px 8px;
+        /* to prevent text selection */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+
+    -webkit-transition: background-color 0.25s ease-in-out;
+    -o-transition: background-color 0.25s ease-in-out;
+    transition: background-color 0.25s ease-in-out;
+}
+.c_colAwpExcel_highlighted {
+    background-color: #6083cc; /*blueish*/
+    background-color: #a5c2ff; /*lighter blueish*/
+    background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    color: #ffffff;
+    padding: 4px 18px;
+}
+.c_colAwpExcel_hover {
+    background-color: #7e98b5; /*lgreyish lightblue PR2019-01-05*/
+    color: #ffffff;
+    -webkit-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */  /* Firefox 3.5 - 3.6 */
+    /* box-shadow: [horizontal offset] [vertical offset] [blur radius] [optional spread radius] [color]; */
+    box-shadow:         3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
+}
+
+
+.c_grid_colLinked { /* <table class="c_grid_colLinked" id="idTableLinked"> */
+    -ms-grid-row: 5;
+    -ms-grid-column: 1;
+    -ms-grid-column-span: 3;
+    grid-area: c_grid_colLinked;
+    /*background-color: #a21313; /*reddish*/
+    background-color: #800000; /*dark red*/
+    color: #ffffff;
+    width: 100%
+}
+
+.c_colLinked_tr {
+    background-color: #bd7f7f; /*lighter reddish*/
+    text-align: left;
+    padding: 4px 18px;
+    /* to prevent text selection */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+
+    -webkit-transition: background-color 0.25s ease-in-out;
+    -o-transition: background-color 0.25s ease-in-out;
+    transition: background-color 0.25s ease-in-out;
+
+}
+
+.c_colLinked_highlighted {
+    background-color: #a21313; /*reddish*/
+}
+
+.c_colLinked_hover {
+
+    background-color: #a75050;  /* geryis red PR2019-01-05
+    /* background-color: #a21313; *//*reddish   Needed for IEs */
+
+    -webkit-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */  /* Firefox 3.5 - 3.6 */
+    /* box-shadow: [horizontal offset] [vertical offset] [blur radius] [optional spread radius] [color]; */
+    box-shadow:         3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
+}
+
+/* ------------------- c_select_leerweg ----------------------*/
+.c_select_leerweg {
+    grid-area: c_select_leerweg;
+        -ms-grid-row: 5;
+        -ms-grid-column: 5;
+
+    display: -ms-grid;
+    display: grid;
+    grid-gap: 8px;
+
+    font-size: 14px;
+    line-height: 1.25;
+    text-align: center;
+    padding: 4px 8px;
+    color: #376191;  /*FooterBackColor Default Schema Blauw donkerblauw */
+    background-color: #F5FAFF; /*licht licht blauw; */
+
+    -webkit-box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+.NIUc_form_text {
+    font-size: 14px;
+    margin: 8px;
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    color: #376191;  /*FooterBackColor Default Schema Blauw donkerblauw */
+}
+
+.NIUc_form_select {
+    font-size: 14px;
+    margin: 8px;
+    width: 360px;
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    color: #376191;  /*FooterBackColor Default Schema Blauw donkerblauw */
+}
+
+
+/* ==================TABLE ==================================== */
+.tsa_tbl_exctsa {
+    /*margin: 16px;*/
+    font-size: 14px;
+    background-color: #F5FAFF /* licht licht blauw; /*#B8CCE4 = 'TextboxBackColor Default Schema Blauw lichtblauw */
+}
+
+/* Table Header */
+.tsa_tbl_exctsa thead  {
+    /* background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */ /* #4A7DBB; /* 'TextboxBackColor Default Schema Blauw medium blauw */
+    color: #ffffff; /*color: #FFFFFF; white */
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    /*color: #376191;  FooterBackColor Default Schema Blauw donkerblauw */
+    background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+
+        border-color: #6ea1cc !important; /* #6ea1cc medium blue
+        /*text-transform: uppercase;*/
+
+        padding: 7px 17px;
+}
+
+.tsa_tbl_exctsaXX td:hover {
+    color: #ffffff;
+    background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    -webkit-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */  /* Firefox 3.5 - 3.6 */
+    /* box-shadow: [horizontal offset] [vertical offset] [blur radius] [optional spread radius] [color]; */
+    box-shadow:         3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
+     -webkit-transition: all 100ms linear;
+     -o-transition: all 100ms linear;
+     transition: all 100ms linear;
+}
+
+
+.tsa_tbl_unlinkedXX {
+    /* font-size: 14px; not working on table */
+    color: #ffffff; /*color: #FFFFFF; white */
+    /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+    /*background-color: #f5f5f5; /* #f5f5f5 = 245 245 245  licht licht licht grijs; */
+    background-color: #f5f5f5; /* #f5f5f5 = 245 245 245  licht licht licht grijs; */
+}
+.tsa_tbl_linkedXX {
+    /* font-size: 14px; not working on table */
+    color: #ffffff; /*color: #FFFFFF; white */
+    /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+    /*background-color: #f5f5f5; /* #f5f5f5 = 245 245 245  licht licht licht grijs; */
+    background-color:  #d8d8d8;  /* light grey 218 218 218 100%  /*  #e0e0e0; light grey 224 224 224 */
+
+}
+.tsa_tbl_hdr_linked {
+    font-size: 14px;
+    padding: 2px 4px; /*padding: 2px 4px 2px 4px;  /* top, right, bottom, left:*/
+    color: #ffffff; /*color: #FFFFFF; white */
+    background-color: #800000; /* background-color: #800000; dark red*/
+    border-bottom: 1px solid #f3f3f3; /* offwhite */
+}
+.tsa_tbl_hdr_unlinked {
+    font-size: 14px;
+    padding: 2px 4px; /*padding: 2px 4px 2px 4px;  /* top, right, bottom, left:*/
+    color: #ffffff; /*color: #FFFFFF; white */
+    background-color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    border-bottom: 1px solid #f3f3f3; /* offwhite */
+}
+
+/* The child combinator (>) see https://developer.mozilla.org/en-US/docs/Web/CSS/Child_combinator */
+
+.tsa_td_linked {
+        color: #800000;  /*dark red*/
+        background-color: #f9f2f2; /* #f9f2f2 lightlight reddish*/
+        /*width: 50%;*/
+        padding: 2px 8px; /* top right bottom left*/
+            transition: all 150ms ease;
+     -webkit-transition: all 150ms ease;
+     -o-transition: all 150ms ease;
+}
+.tsa_td_unlinked {
+        color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+        background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+        padding: 2px 8px; /* top right bottom left*/
+            transition: all 150ms ease;
+     -webkit-transition: all 150ms ease;
+     -o-transition: all 150ms ease;
+}
+.tsa_td_linked_selected {
+        color: #ffffff; /*!important; /*white*/
+        background-color: #800000;  /*!important; /*dark red*/
+        padding: 2px 8px; /* top right bottom left*/
+    transition: all 150ms ease;
+     -webkit-transition: all 150ms ease;
+     -o-transition: all 150ms ease;
+}
+.tsa_tw_100perc {
+        width: 100%;
+}
+.tsa_tw_50perc {
+        width: 50%;
+}
+.tsa_td_unlinked_selected {
+        color: #ffffff; /*!important; /*white*/
+        background-color: #2D4E77; /*!important; /* HeaderBackColor Default Schema Blauw donkerblauw */
+        padding: 2px 8px; /* top right bottom left*/
+            transition: all 150ms ease;
+     -webkit-transition: all 150ms ease;
+     -o-transition: all 150 ease;
+}
+
+.tsa_td_linked_hover {
+    color: #ffffff; /*!important;*/
+    /*background-color: #a21313; /*reddish*/
+   /* background-color: #e04040; /* #e04040 rgba: 224-64-64-1 medium red*/
+    background-color: #c56d6d; /* #c56d6d  rgba: 197-109-109-1 medium red*/
+    /*background-color: #c54040; /* #c54040 rgba: 197-64-64-1 medium red*/
+
+    /*background-color: #800000; /*!important; /* rgba: 128-64-64-1 dark red*/
+    transition: all 150ms ease;
+     -webkit-transition: all 150ms ease;
+     -o-transition: all 150ms ease;
+}
+.tsa_td_unlinked_hover {
+    color: #ffffff; /*!important;*/
+    /*background-color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    background-color: #4c74a7; /* #4c74a7 rgba: 76-116-167-1 medium blue*/
+    transition: all 150ms ease;
+     -webkit-transition: all 150ms ease;
+     -o-transition: all 150ms ease;
+}
+
+/* Table Body */
+.c_table_stud tbody td {
+        color: #353535;/* donker grijs RGB(53,53,53)) */
+        /*border: 1px solid #e1edff;*/
+        padding: 2px 4px;
+}
+
+/*
+.c_table_stud tbody td:nth-child(1) {
+        text-align: center;
+        background-color: #F5FAFF; /* RGB 245, 250, 255 #F5FAFF = licht licht blauw; #B8CCE4 = 'TextboxBackColor Default Schema Blauw lichtblauw */
+
+/*}
+*/
+/*
+.c_table_stud tbody tr:nth-child(even) td {
+        /*background-color: #f4fbff; /* RGB(244,251,255) heel licht blauw */
+       /* background-color: #F5FAFF; /* RGB 245, 250, 255 #F5FAFF = licht licht blauw; #B8CCE4 = 'TextboxBackColor Default Schema Blauw lichtblauw */
+
+        /*background-color: rgba(0, 169, 230, 0.1)*/
+/*}
+*/
+
+/* Table Footer */
+.c_table_stud tfoot th {
+        background-color: #376191;  /* RGB(55,97,145) FooterBackColor Default Schema Blauw medium blauw  */
+        text-align: left;
+}
+/*
+.c_table_stud tfoot th:first-child {
+        text-align: left;
+}
+*/
+/*.c_table_stud tbody td:empty {
+        background-color: #ffcccc;
+}*/
+
+.submit-button {
+    font-size: 18px;
+    /*font-weight: bold;*/
+    line-height: 32px;
+    padding: 4px 8px;
+    margin: 4px;
+    line-height: 1.25;
+    color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+    border: 1px solid rgba(0,0,0,0.25);
+    cursor: pointer;
+    width: 18em;
+    display: -ms-grid;
+    display: grid;
+}
+.submit-button:hover {
+    /*background: darken($red, 1.5%);*/
+    border: 1px solid rgba(0,0,0,.05);
+    background-color: #ddd;
+    -webkit-box-shadow: 1px 1px 2px rgba(255,255,255,0.2);
+            box-shadow: 1px 1px 2px rgba(255,255,255,0.2);
+}
+
+.c_footer {
+    font-size: 12px;
+     /* grid-area: grid-footer;*/
+    text-align: center;
+    padding: 2px 8px;
+    color: #ffffff;
+    background-color: #2D4E77; /* AWP donkerblauw */
+}
+
+@media only screen and (max-width: 480px) {/* 768px) {*/
+    /* For mobile phones: */
+
+    [class="c_gridcontainer"] {
+        -ms-grid-columns: 1fr;
+        grid-template-columns: 1fr;
+            grid-template-areas:
+            "c_header"
+            "c_menu"
+            "c_select_file"
+            "c_link_columns"
+            "c_select_leerweg"
+            "c_table_stud";
+        }
+
+    [class="c_gridcontainer"] > .c_header {
+        -ms-grid-row: 1;
+        -ms-grid-column: 1;
+        -ms-grid-column-span: 1;
+        }
+
+    [class="c_gridcontainer"] > .c_menu {
+        -ms-grid-row: 2;
+        -ms-grid-column: 1;
+        -ms-grid-column-span: 1;
+        }
+
+    [class="c_gridcontainer"] > .c_select_file {
+        -ms-grid-row: 3;
+        -ms-grid-column: 1;
+        }
+
+    [class="c_gridcontainer"] > .c_link_columns {
+        -ms-grid-row: 4;
+        -ms-grid-column: 1;
+        }
+
+    [class="c_gridcontainer"] > .c_select_leerweg {
+        -ms-grid-row: 5;
+        -ms-grid-column: 1;
+        }
+
+    [class="c_gridcontainer"] > .c_table_stud {
+        -ms-grid-row: 6;
+        -ms-grid-column: 1;
+        -ms-grid-column-span: 1;
+        }
+    }
+
+
+/* SEARCH */
+.search_container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around /*center /* space-between;  space-around PR2019-01-05 try flexbox */
+    align-items: flex-start;
+
+    /*height: 24px;*/
+    /*width: 100%;*/
+    padding: 4px 8px;
+    margin: 0px; /*these dont work: margin: none; margin: 0;*/
+    /*background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */ /* #4A7DBB; /* 'TextboxBackColor Default Schema Blauw medium blauw */
+
+    background-color: #F5FAFF; */ /*licht licht blauw; */
+    color: #376191;  /* Default Schema Blauw donkerblauw */
+    border: 1px solid #2D4E77;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+}
+
+.search_container_header {
+    display: inline-block;
+    /*height: 36px;*/
+    width: 100%;
+    margin: 0px;
+    padding: 0px 8px;
+    /*  background-color:  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+    /* color: #376191;  /* Default Schema Blauw donkerblauw */
+    /* border: 1px solid #2D4E77;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+}
+
+
+.search_table_div {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+/*    overflow-y: auto;    /* Trigger vertical scroll    */
+/*    overflow-x: hidden;  /* Hide the horizontal scroll */
+/*    border: 1px solid #2D4E77;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+}
+
+.search_table {
+    display: table;
+    padding: 4px 8px;
+    /*margin: 4px 8px;*/
+    border: 1px solid ;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+
+    /*background-color: #800000; /*dark red*/
+    /*background-color: #a21313; /*reddish*/
+    /*background-color: #d7e4f3;/* is even lighter blueish */
+    background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    color: #376191;  /* Default Schema Blauw donkerblauw */
+
+    /* to prevent text selection */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.search_table > thead {
+    display: block;
+   /* background-color: #800000; /*dark red*/
+    color: #ffffff;
+    padding: 2px 8px;
+    border: 1px solid #2D4E77;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
+    width: 100%
+
+}
+.search_table > tbody {
+    display: block;
+    /*height: 120px;* set at runtime  */
+    overflow-y: auto;    /* Trigger vertical scroll    */
+    overflow-x: hidden;  /* Hide the horizontal scroll */
+    /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+    /*background-color: #800000; /*dark red*/
+
+}
+
+.search_table_tr {
+    display: block;
+    background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+    background-color: #2d4e7705;
+
+
+    margin-right: auto;
+    margin-left: auto;
+        /*border: #7e98b5 1px solid;*/
+}
+/*.search_table_td {*/
+.search_table_tr > td {
+   /*display:block;*/
+   box-sizing:border-box;
+   padding: 0px 8px;
+}
+
+.search_table_hover {
+    background-color: #7e98b5; /*lgreyish lightblue PR2019-01-05*/
+    background-color: #2d4e7780;
+
+    color: #ffffff;
+    -webkit-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */  /* Firefox 3.5 - 3.6 */
+    /* box-shadow: [horizontal offset] [vertical offset] [blur radius] [optional spread radius] [color]; */
+    box-shadow:         3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
+}
+
+.search_table_highlighted {
+    background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    background-color:  #2d4e77cc;
+    color: #ffffff;
+}
+
+.color_tblhead_grey {
+    /*background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    /*background-color:  #2d4e77cc;*/
+    /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+
+    /*background-color: #7e98b5; /*lgreyish lightblue PR2019-01-05*/
+    /*background-color: #2d4e7780;
+    /*background-color: #F5FAFF; */ /*licht licht blauw; */
+
+    /*background-color: #800000; /*dark red*/
+    background-color: #68696b; /*dark grey */
+    /*background-color: #e4e8ec;  /*light grey */
+
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    /*color: #ffffff;
+    /*color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    /*color: #376191;  /* Default Schema Blauw donkerblauw */
+    /*color: #800000;  /* Default Schema Blauw donkerblauw */
+    color: #68696b; /*dark grey */
+}
+
+.color_tblbody_grey {
+
+    /*background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    /*background-color:  #2d4e77cc;*/
+    /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+
+    /*background-color: #7e98b5; /*lgreyish lightblue PR2019-01-05*/
+    /*background-color: #2d4e7780;
+    /*background-color: #F5FAFF; */ /*licht licht blauw; */
+
+    /*background-color: #800000; /*dark red*/
+    /*background-color: #68696b; /*dark grey */
+    background-color: #e4e8ec;  /*light grey */
+
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    /*color: #ffffff;
+    /*color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    /*color: #376191;  /* Default Schema Blauw donkerblauw */
+    /*color: #800000;  /* Default Schema Blauw donkerblauw */
+    color: #68696b; /*dark grey */
+}
+
+
+
+.color_tblbody_blue {
+
+    /*background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    /*background-color:  #2d4e77cc;*/
+
+    /*background-color: #7e98b5; /*lgreyish lightblue PR2019-01-05*/
+    /*background-color: #2d4e7780;*/
+
+    /*background-color: #e4e8ec;  /*light grey */
+    /*background-color: #800000; /*dark red*/
+    /*background-color: #68696b; /*dark grey */
+    /*background-color: #F5FAFF; */ /*licht licht blauw; */
+    background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    /*color: #ffffff;*/
+    color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+
+    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
+    /*color: #376191;  /* Default Schema Blauw donkerblauw */
+    /*color: #800000;  /* Default Schema Blauw donkerblauw */
+}
+
+
+
+
+/* ============   popup window  =================== */
+.stp_container_div {
+    width: 100%;
+    height: 100%;
+    z-index:40;
+    position: absolute;
+    visibility:hidden;
+    display:none;
+    background-color: rgba(11,11,11,0.2);
+}
+.stp_container_show {
+    width: 100%;
+    height: 100%;
+    margin: auto
+    z-index:10;
+    position: relative;
+    visibility: visible;
+    display: block;
+    background-color: rgba(11,11,11,0.2);
+}
+
+.stp_popup {
+    background-color: white;
+    margin: auto;
+    width:300px;
+    position:relative;
+    z-index:11;
+    top: 25%;
+    padding:30px;
+    -webkit-box-shadow:0 0 10px rgba(0,0,0,0.4);
+    -moz-box-shadow:0 0 10px rgba(0,0,0,0.4);
+    box-shadow:0 0 10px rgba(0,0,0,0.4);
+}
+
+.mod_flex {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around /*center /* space-between;  space-around PR2019-01-05 try flexbox */
+    align-items: flex-start;
+    border: none;
+}
+
+/* > will target elements which are DIRECT children of a particular element. */
+.mod_flex > div {
+    flex: 1;
+    padding: 4px 16px;
+    border: none;
+}
+
+.display_show {
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
+}
+.display_hide {
+  display:none;
+}
+
+.cell_error_odd {
+    background: #ffcccc;
+}
+.cell_error_even {
+    background: #ffefef;
+}
+
+.cell_saved_odd {
+    background: #ccffcc; /* light green*/
+}
+.cell_saved_even {
+    background: #deffde;  /* light light green*/
+}
+
+.cell_unchanged_odd {
+    background: #e0e0e0;  /* light grey */
+
+}
+.cell_unchanged_even {
+    /* background: #f8f8f8;  /* light light grey */
+    /* background: #e8e8e880; /*licht licht grijs 232 232 232 50% */
+    background-color: #f5f5f5;  /* #f5f5f5 licht licht licht grijs 245 245 245;  this is reddish: background-color: #f8f8f8;*/
+}
+
+
+
+/*
+.cell_error tr:nth-child(even) td {
+        background-color: #f4fbff; /* RGB(244,251,255) heel licht blauw */
+        /*background-color: #F5FAFF; /* RGB 245, 250, 255 #F5FAFF = licht licht blauw; #B8CCE4 = 'TextboxBackColor Default Schema Blauw lichtblauw */
+    /*background: #ffcccc
+        /*background-color: rgba(0, 169, 230, 0.1)*/
+/*}*/

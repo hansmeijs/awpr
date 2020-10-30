@@ -3,7 +3,7 @@
 
 {% block breadcrumb %}
   <ol class="breadcrumb my-3">
-    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'home_url' %}">AWP online</a></li>
     <li class="breadcrumb-item">
       {{ user.examyear.country }}
       {% if user.country_locked %}
@@ -30,13 +30,13 @@
       {% include 'includes/form.html' %}
       <button type="submit" class="btn btn-success">{% trans 'Save' %}</button>
       <a href="{% url 'subject_log_url' subject.pk %}" class="btn btn-outline-primary">{% trans 'View log' %}</a>
-      {% if subject.has_no_linked_data %}
+      {% if subject.has_no_child_rows %}
         <a href="{% url 'subject_delete_url' subject.pk %}" class="btn btn-outline-danger">{% trans 'Delete' %}</a>
       {% endif %}
       <a href="{% url 'subject_list_url' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
     </form>
   {% else %}
     <div class="alert alert-danger">{{ user.message_schemes_modify }}</div>
-    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+    <a href="{% url 'home_url' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
   {% endif %}
 {% endblock %}

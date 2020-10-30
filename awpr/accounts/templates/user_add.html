@@ -5,7 +5,7 @@
 
 {% block breadcrumb %}
   <ol class="breadcrumb my-3">
-    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'home_url' %}">AWP online</a></li>
     <li class="breadcrumb-item"><a href="{% url 'user_list_url' %}">{% trans 'Users' %}</a></li>
     <li class="breadcrumb-item active">{% trans 'Add user' %}</li>
   </ol>
@@ -33,7 +33,7 @@
     </form>
   {% else %}
     <div class="alert alert-danger">{{ user.message_user_view_modify }}</div>
-    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+    <a href="{% url 'home_url' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
   {% endif %}
 
   <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>

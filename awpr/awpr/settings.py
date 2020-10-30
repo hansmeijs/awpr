@@ -71,6 +71,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+#PR2020-10-12 from https://stackoverflow.com/questions/5401118/django-messages-being-displayed-twice/9121754
+# to prevent messages to show multiple times - don't know yet if it works
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
+
 ROOT_URLCONF = 'awpr.urls'
 
 TEMPLATES = [
@@ -79,6 +83,7 @@ TEMPLATES = [
 # PR2018-03-02
         'DIRS': [
             os.path.join(BASE_DIR, 'templates'),
+            os.path.join(BASE_DIR, 'templates/accounts'),
             os.path.join(BASE_DIR, 'templates/importing'),
             os.path.join(BASE_DIR, 'templates/reports'),
             os.path.join(BASE_DIR, 'templates/schools'),
@@ -158,11 +163,11 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # PR 2018-03-27
 LOGIN_URL = 'login'
 # PR 2018-03-20
-# LOGIN_REDIRECT_URL = 'home'
+# LOGIN_REDIRECT_URL = 'home_url'
 LOGIN_REDIRECT_URL = 'loggedin_url' # PR 2018-12-23
 
 # PR 2018-03-19
-LOGOUT_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'home_url'
 
 # In global.settings.py: PR2018-07-30
 # The number of days a password reset link is valid for

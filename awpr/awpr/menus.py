@@ -1,288 +1,320 @@
 from django.shortcuts import render
 from django.urls import reverse_lazy
-from django.utils.translation import ugettext_lazy as _
+
+from django.utils.translation import activate, ugettext_lazy as _
+from django.utils import timezone
+
+#from django.contrib import messages
 
 import json #PR2018-12-21
-import logging
 
-from accounts.models import Usersetting
+from accounts import models as acc_mod
 from awpr import constants as c
+from awpr import functions as af
+from schools import models as sch_mod
+from schools import dicts as sch_dicts
 
+import logging
 logger = logging.getLogger(__name__)
 
 
 height = 32
 indent_none = 0
 indent_10 = 10
-pos_y = 20
-style_sel = 'fill:#2d4e77;stroke:#2d4e77;stroke-width:1'
-style_unsel = 'fill:#bacee6;stroke:#bacee6;stroke-width:1'
+pos_y = 18
+class_sel = 'fill:#2d4e77;stroke:#2d4e77;stroke-width:1'
+class_unsel = 'fill:#bacee6;stroke:#bacee6;stroke-width:1'
 fill_sel = '#EDF2F8'
 fill_unsel = '#212529'
 
-menu_school = {'caption': 'School', 'width': 90, 'height': height, 'pos_x': 45, 'pos_y': pos_y,
+menus = {
+'examyear': {'href': 'examyears_url',
+               'caption': str(_('Exam year')), 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
                'indent_left': indent_none, 'indent_right': indent_10,
-               'style_sel': style_sel, 'style_unsel': style_unsel, 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
+               'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
                'submenu': ('cntrlst', 'exyrlst', 'schllst', 'deplst','levllst', 'sectlst')
-               }
-menu_subjects = {'caption': 'Subjects', 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
-                 'indent_left': indent_10, 'indent_right': indent_10,
-                 'style_sel': style_sel, 'style_unsel': style_unsel, 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
-                 'submenu': ('subjlst', 'subjtyplst', 'schemlst', 'schemitemlst')
-                 }
-menu_students = {'caption': 'Students', 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
-                 'indent_left': indent_10, 'indent_right': indent_10,
-                 'style_sel': style_sel, 'style_unsel': style_unsel, 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
-                 'submenu': ('studlst', 'impstud', 'studsubj', 'schemlst')
-                 }
-menu_package = {'caption': 'Study program', 'width': 140, 'height': height, 'pos_x': 70, 'pos_y': pos_y,
-                      'indent_left': indent_10, 'indent_right': indent_10,
-                     'style_sel': style_sel, 'style_unsel': style_unsel, 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
-                     'submenu': ('subjlst', 'subjtyplst', 'schemlst')
-                     }
-menu_schoolexam = {'caption': 'School exam', 'width': 140, 'height': height, 'pos_x': 70, 'pos_y': pos_y,
-                   'indent_left': indent_10, 'indent_right': indent_10,
-                   'style_sel': style_sel, 'style_unsel': style_unsel, 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
-                   'submenu': ('subjlst', 'subjtyplst', 'schemlst')
-                   }
-menu_centalexam = {'caption': 'Central exam', 'width': 140, 'height': height, 'pos_x': 70, 'pos_y': pos_y,
-                   'indent_left': indent_10, 'indent_right': indent_10,
-                   'style_sel': style_sel, 'style_unsel': style_unsel, 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
-                   'submenu': ('subjlst', 'subjtyplst', 'schemlst')
-                   }
-menu_reexam = {'caption': 'Re-exam', 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
+                },
+'schools': {'href': 'school_list_url',
+               'caption': str(_('School')), 'width': 90, 'height': height, 'pos_x': 45, 'pos_y': pos_y,
                'indent_left': indent_10, 'indent_right': indent_10,
-               'style_sel': style_sel, 'style_unsel': style_unsel, 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
-               'submenu': ('subjlst', 'subjtyplst', 'schemlst')
-               }
-menu_results = {'caption': 'Results', 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
+               'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
+               'submenu': ('cntrlst', 'exyrlst', 'schllst', 'deplst','levllst', 'sectlst')
+               },
+'subjects': {'href': 'subjects_url',
+               'caption': str(_('Subjects')), 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
+                 'indent_left': indent_10, 'indent_right': indent_10,
+                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
+                 'submenu': ('subjlst', 'subjtyplst', 'schemlst', 'schemitemlst')
+                 },
+'students': {'href': 'students_url',
+               'caption': str(_('Students')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
+                 'indent_left': indent_10, 'indent_right': indent_10,
+                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
+                 },
+'grades': {'href': 'students_url',
+               'caption': str(_('Grades')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
+                 'indent_left': indent_10, 'indent_right': indent_10,
+                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
+                 },
+'results': {'href': 'subjects_url',
+               'caption': str(_('Results')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
                 'indent_left': indent_10, 'indent_right': indent_10,
-                'style_sel': style_sel, 'style_unsel': style_unsel, 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
-                'submenu': ('subjlst', 'subjtyplst', 'schemlst')
-                }
-menu_reports = {'caption': 'Reports',  'width': 120, 'height': height,  'pos_x': 60,  'pos_y': pos_y,
+                'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
+                },
+'reports': {'href': 'subjects_url',
+               'caption': str(_('Reports')), 'width': 120, 'height': height,  'pos_x': 60,  'pos_y': pos_y,
+               'indent_left': indent_10, 'indent_right': indent_10,
+                'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
+                },
+'analysis': {'href': 'subjects_url',
+               'caption':  str(_('Analysis')), 'width': 120, 'height': height,  'pos_x': 60,  'pos_y': pos_y,
                'indent_left': indent_10, 'indent_right': indent_none,
-                'style_sel': style_sel, 'style_unsel': style_unsel, 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
-                'submenu': ('rptlst',)
+                'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                 }
-menus = {'mn_schl': menu_school,
-         'mn_subj': menu_subjects,
-         'mn_pack': menu_package,
-         'mn_stud': menu_students,
-         'mn_se': menu_schoolexam,
-         'mn_ce': menu_centalexam,
-         'mn_reex': menu_reexam,
-         'mns_res': menu_results,
-         'mn_rep': menu_reports}
-
-menu_default = {'menu': 'mn_schl',
-                'mn_schl': 'schllst',
-                'mn_subj': 'subjlst',
-                'mn_pack': 'subjlst',
-                'mn_stud': 'studlst',
-                'mn_se': 'subjlst',
-                'mn_ce': 'subjlst',
-                'mn_reex': 'subjlst',
-                'mns_res': 'subjlst',
-                'mn_rep': 'rptlst'
-              }
-menubuttons = {
-'home': {'caption': 'Home', 'href': 'home',  'viewpermits': {'all': 'all'}},
-'cntrlst': {'caption': 'Countries', 'href': 'country_list_url', 'viewpermits': {'insp': 'all', 'system': 'auth admin'}},
-'exyrlst': {'caption': 'Exam years', 'href': 'examyear_list_url',  'viewpermits': {'all': 'all'}},
-'schllst': {'caption': 'Schools', 'href': 'school_list_url', 'viewpermits': {'all': 'all'}},
-'deplst': {'caption': 'Departments', 'href': 'department_list_url', 'viewpermits': {'all': 'all'}},
-'levllst': {'caption': 'Levels', 'href': 'level_list_url', 'viewpermits': {'all': 'all'}},
-'sectlst': {'caption': 'Sectors', 'href': 'sector_list_url', 'viewpermits': {'all': 'all'}},
-'subjlst': {'caption': 'Subjects', 'href': 'subject_list_url', 'viewpermits': {'all': 'all'}},
-'subjtyplst': {'caption': 'Subject types', 'href': 'subjecttype_list_url', 'viewpermits': {'all': 'all'}},
-'schemlst': {'caption': 'Subject schemes', 'href': 'scheme_list_url', 'viewpermits': {'all': 'all'}},
-'schemitemlst': {'caption': 'Subject scheme items', 'href': 'schemeitem_list_url', 'viewpermits': {'all': 'all'}},
-'studlst': {'caption': 'Students', 'href': 'student_list_url', 'viewpermits': {'all': 'all'}},
-'studsubj': {'caption': 'Student subjects', 'href': 'studentsubject_url', 'viewpermits': {'system': 'admin', 'school': 'write'}},
-'rptlst': {'caption': 'Downloads', 'href': 'downloads_url', 'viewpermits': {'system': 'admin'}},
-
-'impstud': {'caption': 'Import students', 'href': 'import_student_url', 'viewpermits': {'school': 'admin', 'insp': 'none','system': 'admin'}}
 }
+
+"""
+    
+'package': {'href': 'subjects_url',
+               'caption': 'Study program', 'width': 140, 'height': height, 'pos_x': 70, 'pos_y': pos_y,
+                      'indent_left': indent_10, 'indent_right': indent_10,
+                     'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
+                     'submenu': ('subjlst', 'subjtyplst', 'schemlst')
+                     },
+
+'schoolexam': {'href': 'subjects_url',
+               'caption': 'School exam', 'width': 140, 'height': height, 'pos_x': 70, 'pos_y': pos_y,
+                   'indent_left': indent_10, 'indent_right': indent_10,
+                   'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
+                   'submenu': ('subjlst', 'subjtyplst', 'schemlst')
+                   },
+'reexam': {'href': 'subjects_url',
+               'caption': 'Re-exam', 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
+               'indent_left': indent_10, 'indent_right': indent_10,
+               'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
+               'submenu': ('subjlst', 'subjtyplst', 'schemlst')
+               },
+"""
+
 
 # viewpermits: 'none', 'read', 'write', 'auth', 'admin', 'all'
 
 
-# ---- get  get_saved_submenu_url
-def get_saved_menubutton_url(request):  # PR2018-12-25
+
+def get_headerbar_param(request, params):
+    # PR2018-05-28 set values for headerbar
+    # params.get() returns an element from a dictionary, second argument is default when not found
+    # this is used for arguments that are passed to headerbar
+    #logger.debug('===== get_headerbar_param ===== ')
+    #logger.debug('params: ' + str(params))
+
+
+    # - _select_department is allway True for now - TODO set _select_department when allowed_depbase_list has multiple departments PR2020-10-13
+
+    headerbar = {}
+    req_user = request.user
+    if req_user.is_authenticated:
+        awp_messages = []
+
+# +++ set language # PR2018-05-11
+        req_user_lang = req_user.lang if req_user.lang else 'nl'
+        activate(req_user_lang)
+
+    # - set flag in headerbar to proper language
+        _class_flag, _class_flag0_hidden, _class_flag1_hidden, _class_flag2_hidden = '', '', '', ''
+        if req_user_lang == 'nl':
+            _class_flag = 'flag_1_0'
+            _class_flag0_hidden = 'display_hide'
+        elif req_user_lang == 'en':
+            _class_flag = 'flag_1_1'
+            _class_flag1_hidden = 'display_hide'
+        elif req_user_lang == 'pm':
+            _class_flag = 'flag_1_2'
+            _class_flag2_hidden = 'display_hide'
+
+# +++ display selected examyear of req_usr, show warning when examyear is not this_examyear
+        _examyear = req_user.examyear
+        _examyear_int = _examyear.examyear if _examyear.examyear else 0
+        _examyear_str = str(_('Exam year')) + ' ' + str(_examyear_int) \
+            if _examyear_int else ' <' + str(_('Select exam year')) + '>'
+
+        now = timezone.now()
+        this_examyear = now.year
+        if now.month > 7:
+            this_examyear = now.year + 1
+
+        _class_examyear_warning = 'navbar-item-warning' if _examyear_int != this_examyear else ''
+        if _examyear_int != this_examyear:
+            # PR2018-08-24 debug: in base.html  href="#" is needed,
+            # because bootstrap line 233: a:not([href]):not([tabindex]) overrides navbar-item-warning
+            awp_message = {'info': _("Please note: selected exam year is different from the current exam year."),
+                           'class': 'alert-warning',
+                           'id': 'id_diff_exyr'}
+            awp_messages.append(awp_message)
+
+# +++ display_school -------- PR2029-10-27
+        # <PERMIT> PR2020-10-27
+        # - select_school is True when user can change the selected school PR2018-12-15:
+        #   - user can only change school when req_user is_role_insp, is_role_admin or is_role_system:
+        #   - otherwise sel_schoolbase_pk is equal to _req_user_schoolbase_pk
+        # note: select_school only sets hover of school. Permissions are set in JS HandleHdrbarSelect
+        display_school = params.get('display_school', True)
+        select_school = False
+        class_select_school = 'awp_navbar_item'
+        _schoolname = ''
+        req_user_school_depbases = []
+        if display_school:
+            if req_user.is_role_insp or req_user.is_role_admin or req_user.is_role_system:
+                select_school = True
+                class_select_school = 'awp_navbar_item_with_hover'
+
+        if display_school:
+            # when user can select school the value is retrieved from usersettings and set in JS, display here:' Select school'
+            # when user cannot select school de req_user school is displayed
+            if select_school:
+                _schoolname = ' <' + str(_('Select school')) + '>'
+            else:
+                req_user_schoolbase = req_user.schoolbase
+                if req_user_schoolbase is None:
+                    _schoolname = ' <' + str(_('No school selected')) + '>'
+                else:
+                    _schoolname = req_user_schoolbase.code
+                    req_user_examyear = req_user.examyear
+                    if req_user_examyear is None:
+                        _schoolname += ' <' + str(_('No exam year selected')) + '>'
+                    else:
+                        req_user_school = sch_mod.School.objects.get_or_none(
+                            base=req_user_schoolbase,
+                            examyear=req_user_examyear
+                        )
+                        if req_user_school is not None:
+                            _schoolname += ' - ' + req_user_school.name
+                        else:
+                            _schoolname += ' <' + str(_('School not found in this exam year')) + '>'
+                        if req_user_school.depbases:
+                            req_user_school_depbases = req_user_school.depbases
+# +++ display department -------- PR2029-10-27
+        display_dep = params.get('display_dep', False)
+        _select_dep = True
+        depbase_list = get_depbase_list(req_user_school_depbases, req_user.allowed_depbase_list)
+        #logger.debug('depbase_list: ' + str(depbase_list))
+
+        # params.pop() removes and returns an element from a dictionary, second argument is default when not found
+        # this is used for arguments that are not passed to headerbar
+        #override_school = params.pop('override_school', None)
+
+        # These are arguments that are added to headerbar in this function
+
+        _depname = '-'
+        depbases = []
+
+        menu_items = {}
+
+
+
+# PR2018-08-24 select department PR2020-10-13
+
+        if display_dep:
+            if req_user.depbase is None:
+                if _select_dep:
+                    _depname = '<' + str(_('Select department')) + '>'
+                    # messages.warning(request, _('Please select a school.'))
+                else:
+                    _depname = '<' + str(_('No department selected')) + '>'
+            else:
+                if req_user.examyear is None:
+                    _depname = '<' + str(_('No exam year selected')) + '>'
+                else:
+                    _department = sch_mod.Department.objects.filter(
+                        base=req_user.depbase,
+                        examyear=req_user.examyear).first()
+                    if _department is not None:
+                        _depname = _department.abbrev
+                    else:
+                        _depname = '<' + str(_('Department not found in this exam year')) + '>'
+
+# ------- set menu_items -------- PR2018-12-21
+        # get selected menu_key and selected_button_key from request.GET, settings or default, check viewpermit
+        #XXX return_dict = lookup_button_key_with_viewpermit(request)
+        #XXX setting = return_dict['setting']
+        #XXX selected_menu_key = return_dict['menu_key']
+        selected_menu_key = params.get('menu_key', 'examyear')  # default is 'examyear'
+
+        menu_items = set_menu_items(selected_menu_key)
+
+        # return_dict: {'setting': None, 'menu_key': 'mn_exyr', 'button_key': None}
+        # selected_menu_key: mn_exyr
+        #logger.debug('selected_menu_key: ' + str(selected_menu_key))
+        #logger.debug('menu_items: ' + str(menu_items))
+
+
+        headerbar = {
+            'request': request,
+            'examyear': _examyear_str, 'class_examyear_warning': _class_examyear_warning,
+            'display_school': display_school, 'class_select_school': class_select_school, 'school': _schoolname,
+            'display_dep': display_dep, 'select_dep': _select_dep, 'department': _depname, 'depbase_list': depbases,
+            'class_flag': _class_flag,
+            'class_flag0_hidden': _class_flag0_hidden,
+            'class_flag1_hidden': _class_flag1_hidden,
+            'class_flag2_hidden': _class_flag2_hidden,
+            'menu_items': menu_items,
+            'awp_messages': awp_messages
+        }
+
+        # append the rest of the dict 'params' to the dict 'headerbar'.
+        # the rest can be for instance: {'form': form},  {'countries': countries}
+        headerbar.update(params)
+
+    return headerbar
+
+
+
+def get_saved_page_url(sel_page):  # PR2018-12-25 PR2020-10-22
     # only called by schools.views.Loggedin,
     # retrieves submenu_href for: return HttpResponseRedirect(reverse_lazy(saved_href))
+    lookup_page = sel_page if sel_page else 'examyear'
+    page_url = None
+    menu_btn = menus.get(lookup_page)
+    if menu_btn:
+        page_url = menu_btn.get('href')
 
-    # get selected menu_key and selected_button_key from request.GET, settings or default, check viewpermit
-    return_dict = lookup_button_key_with_viewpermit(request)
-    button_key = return_dict['button_key']
+    if page_url is None:
+        page_url = 'home_url'
 
-    submenu_href = None
-    # get menubutton with key button_key from menubuttons
-    menubutton = get_value_from_dict(button_key, menubuttons)
-    if menubutton:
-        # PR2018-12-23 submenus are only visible when user_role and user_permit have view_permit
-        # !!! this does not block user from viewing page via url !!!
-
-        # 'viewpermit': {'insp': 'all', 'system': 'auth admin'}},
-        viewpermits = get_value_from_dict('viewpermits', menubutton)
-        # set href, only when request has view_permit
-        if has_view_permit(request, viewpermits):
-            submenu_href = get_value_from_dict('href', menubutton)
-
-    if not submenu_href:
-        submenu_href = 'home'
-
-    return submenu_href
-
-
-def save_setting(request, setting, menu_key, button_key):  # PR2018-12-25
-    # function is called by get_headerbar_param, creates and saves usersetting
-    # logger.debug('===== save_setting ===== ')
-    # logger.debug('       menu_key: ' + str(menu_key) + '  button_key: ' + str(button_key)  )
-
-    if request.user:
-    # update setting with new value of menu_key
-        setting['menu'] = menu_key
-
-    # update setting with new value of button_key
-        if menu_key and button_key:
-            setting[menu_key] = button_key
-
-    # get usersetting
-        if Usersetting.objects.filter(user=request.user, key_str=c.KEY_USER_MENU_SELECTED).exists():
-            usersetting = Usersetting.objects.filter(user=request.user, key_str=c.KEY_USER_MENU_SELECTED).first()
-        else:
-    # create new usersetting if it doesn't exist
-            usersetting = Usersetting(user=request.user, key_str=c.KEY_USER_MENU_SELECTED)
-
-    # save setting in usersetting
-        if setting:
-            usersetting.char01 = json.dumps(setting)
-            usersetting.save()
+    return page_url
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-def lookup_button_key_with_viewpermit(request):
-    # function searches for menu_key and button_key in request, setting and default
-    # and checks if button havs view_permits
-    # returns menu_key and button_key and menubutton  # PR2018-12-25
-    # logger.debug('===== lookup_button_key_with_viewpermit ===== ')
-
-    setting = {}
-    menu_key = None
-    button_key = None
-
-    if request.user.is_authenticated:
-
-    # get menu_key and button_key from request.GET, if not found: return None
-        # request.GET: '/student/?menu=mn_stud&sub=studlst'>
-        request_menu_key, request_button_key = get_menu_keys_from_GET(request)
-        # logger.debug('   request_menu_key: ' + str(request_menu_key) + '  request_button_key: ' + str(request_button_key))
-
-    # get setting_dict from get_setting_from_usersetting, if not found: return None
-        #setting_dict: {'menu': 'mn_schl', 'mn_schl': 'schllst'}
-        setting = get_setting_from_usersetting(request)
-        saved_menu_key = get_value_from_dict('menu', setting)
-        saved_button_key = get_value_from_dict(saved_menu_key, setting)
-
-        default_menu_key = get_value_from_dict('menu', menu_default)
-
-        is_request_key = False
-        is_saved_key = False
-
-        if request_menu_key in menus: # 'in' gives false when key = '' of key = None, no error
-            # check if request-keys exist, if so: make selected
-            menu_key = request_menu_key
-            is_request_key = True
-        elif saved_menu_key in menus:
-            # if menu_key not found in request.GET: lookup in usersetting. This is the case when a user logs in
-            menu_key = saved_menu_key
-            is_saved_key = True
-        elif default_menu_key in menus:
-            # get default meny_key at first login
-            menu_key = default_menu_key
-
-        if menu_key:
-            menu = get_value_from_dict(menu_key, menus)
-            # show only pages with viewpermit
-            buttons_keys_with_viewpermit = get_buttons_keys_with_viewpermit(request, menu)
-
-            if is_request_key:
-                if request_button_key in buttons_keys_with_viewpermit:
-                    button_key = request_button_key
-            if not button_key:
-                if is_request_key or is_saved_key:
-                    if saved_button_key in buttons_keys_with_viewpermit:
-                        button_key = saved_button_key
-            if not button_key:
-                default_button_key = get_value_from_dict(menu_key, menu_default)
-                if default_button_key in buttons_keys_with_viewpermit:
-                    button_key = default_button_key
-    # show home page if no other found, should not happen
-    if not button_key:
-        button_key = 'home' # default if no other found, should not happen
-
-    # logger.debug('       return setting: ' + str(setting))
-    # logger.debug('       return menu_key: ' + str(menu_key) + '  button_key: ' + str(button_key))
-
-    return {'setting': setting,
-            'menu_key': menu_key,
-            'button_key': button_key}
-
-def set_menu_items(request, setting, selected_menu_key, selected_button_key):
+def set_menu_items(selected_menu_key):
     # function is called by get_headerbar_param, creates template tags menu_items and submenus
     # setting: {'menu': 'mn_schl', 'mn_schl': 'schllst'}
 
-    # logger.debug('===== set_menu_items ===== ')
-    # logger.debug('setting: ' + str(setting))
+    #logger.debug('===== set_menu_items ===== ')
+    #logger.debug('selected_menu_key: ' + str(selected_menu_key))
 
     menu_item_tags = []
-    submenu_tags = []
 
     # loop through all menus in menus, to retrieve href from all menu-buttons
     # from https://treyhunner.com/2016/04/how-to-loop-with-indexes-in-python/
     for menu_index, menu_key in enumerate(menus):
-        # logger.debug('-----------------------------')
-        # logger.debug('menu_key: "' + str(menu_key) + '"')
+        #logger.debug('-----------------------------')
+        #logger.debug('menu_key: "' + str(menu_key) + '"')
 
         # get menu_dict with key menu_key from menus, if not found: menu_dict = None
         # menu = {'caption': 'Subjects', ....,
         #         'submenu': ('cntrlst', 'exyrlst', 'schllst', 'deplst','levllst', 'sectlst')
         menu = get_value_from_dict(menu_key, menus)
-
-        # show only buttons with view_permit
-        # button_keys: ('cntrlst', 'exyrlst', 'schllst', 'deplst','levllst', 'sectlst')
-        buttons_keys_with_viewpermit =  get_buttons_keys_with_viewpermit(request, menu)
-        # logger.debug('buttons_keys_with_viewpermit: "' + str(buttons_keys_with_viewpermit) + '" + type: ' + str(type(buttons_keys_with_viewpermit)))
-
-        button_key = None
-        # get saved_button_key from setting, if not found: return None
-        # setting_dict: {'menu': 'mn_schl', 'mn_schl': 'schllst'}
-        saved_button_key = get_value_from_dict(menu_key, setting)
-        if saved_button_key in buttons_keys_with_viewpermit:
-            button_key = saved_button_key
-        if not button_key:
-            default_button_key = get_value_from_dict(menu_key, menu_default)
-            if default_button_key in buttons_keys_with_viewpermit:
-                button_key = default_button_key
-        if not button_key:
-            button_key = 'home'  # default if no other found, should not happen
-
-        # logger.debug('--> button_key: ' + str(saved_button_key))
-        # get menubutton with key button_key from menubuttons
-        menubutton = get_value_from_dict(button_key, menubuttons)
-
-        # button_key = 'schllst'
-        # menubutton: {'caption': 'Schools', 'href': 'school_list_url', 'visib': {'all': 'all'}}
-        # logger.debug('menubutton: ' + str(menubutton))
+        #logger.debug('menu: ' + str(menu))
 
         # lookup the href that belongs to this index in submenus_tuple
-        submenu_href = menubutton.get('href', '')
-        # logger.debug('submenu_href: "' + str(submenu_href) + '"')
+        menu_href = menu.get('href', '')
+        #logger.debug('menu_href: "' + str(menu_href) + '"')
 
     # ------------ get menu ------------
-        svg_index = 'id_svg0' + str(menu_index)
+        index_str = '0' + str(menu_index)
+        svg_id = 'id_svg' + index_str[-2]
+        polygon_id = 'id_plg' + index_str[-2]
+
         caption = menu.get('caption', '-')
 
     # add menu_key to GET parameters of menu link
@@ -292,86 +324,33 @@ def set_menu_items(request, setting, selected_menu_key, selected_button_key):
         # GET parameters are needed to mark the buttons in the menu and submenu as 'selected'
 
         h_ref_reverse = ''
-        if submenu_href:
-            h_ref_reverse = reverse_lazy(submenu_href) + '?menu=' + str(menu_key) + '&sub=' + str(button_key)
+        if menu_href:
+           h_ref_reverse = reverse_lazy(menu_href)
 
         # highlight selected menu
         if menu_key == selected_menu_key:
-            style = menu.get('style_sel', '')
-            fill = menu.get('fill_sel', '')
+            polygon_class = menu.get('class_sel', '')
+            text_fill = menu.get('fill_sel', '')
         else:
-            style = menu.get('style_unsel', '')
-            fill = menu.get('fill_unsel', '')
+            polygon_class = menu.get('class_unsel', '')
+            text_fill = menu.get('fill_unsel', '')
+        #logger.debug('polygon_class: ' + str(polygon_class))
+        #logger.debug('caption: ' + str(caption))
 
         # add menu settings to parameter 'menu_item'
-        indent_left =  menu.get('indent_left', 0)
-        indent_right =  menu.get('indent_right', 0)
-        height =  menu.get('height', 0)
-        width =  menu.get('width', 0)
+        indent_left = menu.get('indent_left', 0)
+        indent_right = menu.get('indent_right', 0)
+        height = menu.get('height', 0)
+        width = menu.get('width', 0)
         points = get_svg_arrow(width, height, indent_left, indent_right)
-        pos_y =  menu.get('pos_y', 0)
-        pos_x =  menu.get('pos_x', 0)
-        menu_item_tag= {'svg_index': svg_index, 'caption': _(caption), 'href': h_ref_reverse,
+        pos_y = menu.get('pos_y', 0)
+        pos_x = menu.get('pos_x', 0)
+        menu_item_tag= {'svg_id': svg_id, 'caption': caption, 'href': h_ref_reverse, 'polygon_id': polygon_id,
                    'width': str(width), 'height':  str(height), 'points': points,
-                    'style': style, 'x': str(pos_x), 'y': pos_y, 'fill': fill}
+                    'class': polygon_class, 'x': str(pos_x), 'y': pos_y, 'fill': text_fill}
         menu_item_tags.append(menu_item_tag)
-        # logger.debug('menu_item_tag: "' + str(menu_item_tag))
 
-        # logger.debug('menu_key: ' + str(menu_key) + ' h_ref_reverse: ' + str(h_ref_reverse))
-    # ------------ get submenus ------------
-        if menu_key == selected_menu_key:
-            class_navlink = 'nav-link'
-            # for submenu_index, button_key in enumerate(menubuttons):
-            # logger.debug('.buttons_keys_with_viewpermit: ' + str(buttons_keys_with_viewpermit) )
-            # logger.debug('........... for button_key in buttons_keys:  menu_key: "' + str(menu_key) + '"')
-            for button_key in buttons_keys_with_viewpermit:
-
-                # menubutton = {'caption': 'Countries', 'href': 'country_list_url', 'viewpermit': {'insp': 'all', 'system': 'auth admin'}},
-                menubutton = get_value_from_dict(button_key, menubuttons)
-
-                sub_caption = menubutton.get('caption', '-')
-                sub_href = menubutton.get('href', '')
-
-                # add sub_index to GET parameter of submenu
-                sub_h_ref_reverse = reverse_lazy(sub_href) + '?menu=' + str(menu_key) + '&sub=' + str(button_key)
-
-                # highlight selected submenu
-                class_item = class_navlink
-                if button_key == selected_button_key:
-                    class_item += ' active'
-                submenu_tag = {'caption': _(sub_caption), 'href': sub_h_ref_reverse, 'class': class_item}
-
-                # logger.debug('       button_key: "' + str(button_key) + '"  sub_h_ref_reverse: "' + str(sub_h_ref_reverse) + '"  class_item: "' + str(class_item) + '"')
-
-                submenu_tags.append(submenu_tag)
-
-    return menu_item_tags, submenu_tags
-
-
-def get_buttons_keys_with_viewpermit(request, menu):
-    # filter only submenus that have view_permit PR2018-12-25
-
-    # button_keys: ('cntrlst', 'exyrlst', 'schllst', 'deplst','levllst', 'sectlst')
-    button_keys = get_value_from_dict('submenu', menu)
-
-    button_keys_with_permit = []
-    for index, button_key in enumerate(button_keys):
-        # check if user_role/permit may view page, skip submenu if user has no view_permit
-        # get button from menubuttons
-        menubutton = get_value_from_dict(button_key, menubuttons)
-
-        if menubutton:
-            # PR2018-12-23 submenus are only visible when user_role and user_permit have view_permit
-            # !!! this does not block user from viewing page via url !!!
-
-            # 'viewpermit': {'insp': 'all', 'system': 'auth admin'}},
-            viewpermits = get_value_from_dict('viewpermits', menubutton)
-
-            if has_view_permit(request, viewpermits):
-                button_keys_with_permit.append (button_key)
-
-    return tuple(button_keys_with_permit)
-
+    return menu_item_tags
 
 def menubutton_has_view_permit(request, menubutton):
     # PR2018-12-23 submenus are only visible when user_role and user_permit have view_permit
@@ -390,23 +369,23 @@ def has_view_permit(request, viewpermits):
     allowed = False
     if viewpermits:
         # allowed if key 'all' in viewpermits: {'all': 'all'}
-        allowed = c.PERMIT_STR_15_ALL in viewpermits
+        allowed = False  # c.PERMIT_STR_15_ALL in viewpermits
         if not allowed:
             # role_abbr: 'system'
             role_abbr = c.ROLE_DICT.get(request.user.role, '')
             if role_abbr in viewpermits:
-                # logger.debug('role_abbr "' + str(role_abbr) + '" found in : "' + str(permits_view) + '"')
+                #logger.debug('role_abbr "' + str(role_abbr) + '" found in : "' + str(permits_view) + '"')
                 permits = viewpermits.get(role_abbr, '')
                 if permits:
                     # is_allowed = True when 'all' in permits
-                    allowed = c.PERMIT_STR_15_ALL in permits
+                    allowed =  False  # c.PERMIT_STR_15_ALL in permits
                     if not allowed:
                         # is_allowed = True when user_permit found in permits
                         if request.user.permits_str_tuple is not None:
-                            # logger.debug('permits_str_tuple: "' + str(request.user.permits_str_tuple) + '" type: ' + str(type(request.user.permits_str_tuple)))
+                            #logger.debug('permits_str_tuple: "' + str(request.user.permits_str_tuple) + '" type: ' + str(type(request.user.permits_str_tuple)))
                             for permit in request.user.permits_str_tuple:
                                 if permit in permits:
-                                    # logger.debug('permit "' + str(permit) + '" found in : "' + str(permits) + '"')
+                                    #logger.debug('permit "' + str(permit) + '" found in : "' + str(permits) + '"')
                                     allowed = True
                                     break
     return allowed
@@ -429,28 +408,18 @@ def get_svg_arrow(width, height, indent_left, indent_right):
 
 
 def get_menu_keys_from_GET(request):
-    # get selected menu_key and selected_button_key from request.GET  # PR2018-12-25
+    # get selected menu_key and selected_button_key from request.GET  # PR2018-12-25 PR2020-10-05
+    # look for 'page_' in key 'setting'
+    # setting: {page_examyear: {mode: "get"}, },
     menu_key = None
-    button_key = None
     if request.user:
-        menu_key = request.GET.get('menu')  # returns None if not found
-        # get button_key, but only when menu_key exists
-        if menu_key:
-            button_key = request.GET.get('sub')  # returns None if not found
-    return menu_key, button_key
-
-
-def get_setting_from_usersetting(request):  # PR2018-12-24
-    # function loads usersetting 'KEY_USER_MENU_SELECTED" into setting_dict
-    # in settings: first item is selected menu_item, followed by selected submenus
-    # setting: {'menu': 'mn_schl', 'mn_schl': 'exyrlst', 'mn_subj': 'subjtyplst', ....}
-    setting = {}
-    if request.user:
-        if Usersetting.objects.filter(user=request.user, key_str=c.KEY_USER_MENU_SELECTED).exists():
-            usersetting = Usersetting.objects.filter(user=request.user, key_str=c.KEY_USER_MENU_SELECTED).first()
-            if usersetting.char01:
-                setting = json.loads(usersetting.char01)
-    return setting
+        request_get = request.GET
+        # loop through request_get
+        for key, value in request_get.items():
+            if len(key) > 5:
+                if key[0,5] == 'page_':
+                    menu_key = 'mn_' +  key[5]
+    return menu_key
 
 
 def get_value_from_dict(key_str, dict):
@@ -466,3 +435,98 @@ def get_menu_from_menus(menu_index):
     if menu_index in menus:
         menu = menus.get(menu_index, {})
     return menu
+
+
+def get_depbase_list(req_user_school_depbases, req_user_allowed_depbase_list):  # PR2018-08-24  PR2018-11-23 PR2020-10-28
+    # PR2018-10-15 function is only called by get_headerbar_param
+    # function creates list of available deps in selected school and schoolyear,
+    # function filters deps of user_allowed_depbase_list
+    # functions sets current department, which cannot be selected in dropdown list
+    # depbase_list: [{'pk': '1', 'department': 'Vsbo', 'is_cur_dep': False}
+
+    depbase_list = []
+    has_cur_dep = False
+    allowed_dep_count = 0
+    request_user_depbase_is_modified = False
+
+# get depbase_list of school
+    if req_user_school_depbases:
+        logger.debug('school.depbases: <' + str(req_user_school_depbases) + '> type: ' + str(type(req_user_school_depbases)) + '')
+# make array of school_depbase_list
+        school_depbase_array = req_user_school_depbases
+        logger.debug('school_depbase_array: <' + str(school_depbase_array) + '> type: ' + str(type(school_depbase_array)) + '')
+# get allowed departments of request user
+        logger.debug('req_user_allowed_depbase_list: ' + str(req_user_allowed_depbase_list))
+# count departments of depbase_array and check if user_dep is in school_depbase_list
+        # TODO check school_depbase_array
+        school_depbase_array = []
+# iterate through departments of this school
+        for base_id_str in school_depbase_array:
+            logger.debug('req_user_allowed_depbase_list: ' + str(base_id_str))
+            if base_id_str:
+# if req_user_allowed_depbase_list has value: check if dep is in req_user_allowed_depbase_list, otherwise allowed = True
+                is_allowed = af.id_found_in_list(
+                    id_str=base_id_str,
+                    list_str=req_user_allowed_depbase_list,
+                    value_at_empty_list=True
+                )
+                logger.debug('base_id_str: ' + str(base_id_str) + ' is_allowed: ' + str(is_allowed))
+                if is_allowed:
+# if dep is_allowed: get department
+                    base_id_int = int(base_id_str)
+                    dep = sch_mod.Department.objects.filter(base__id=base_id_int, examyear=request.user.examyear).first()
+                    if dep is not None:
+# give value to is_cur_dep: current department cannot be selected in dropdown list
+                        is_cur_dep = False
+                        if request.user.depbase is not None:
+                            if dep.base.pk == request.user.depbase.pk:
+                                is_cur_dep = True
+                                has_cur_dep = True
+                                #logger.debug('is_cur_dep = True dep.base.pk: ' + str(dep.base.pk))
+# get dep.shortname
+                        dep_name = ''
+                        if dep.abbrev:
+                            dep_name = dep.abbrev
+                        #logger.debug('dep_name: ' + str(dep_name))
+# add row to depbase_list
+                        row_dict = {'pk': base_id_str, 'dep_name': dep_name, 'is_cur_dep': is_cur_dep}
+                        #logger.debug('row_dict: ' + str(row_dict))
+                        depbase_list.append(row_dict)
+
+                        allowed_dep_count += 1
+                        #logger.debug('allowed_dep_count: ' + str(allowed_dep_count))
+
+# if request_user.depbase is not found and school has only 1 dep: set user_dep = this dep
+
+# if there are allowed deps and current_dep is an allowed dep: do nothing
+        if not has_cur_dep:
+            # there are no allowed deps or current_dep is not an allowed dep:
+            if allowed_dep_count == 1:
+                # if there is only 1 allowed dep: make this dep the current dep
+                row_dict_pk_int = int(depbase_list[0]['pk'])
+
+                department = sch_mod.Department.objects.filter(id=row_dict_pk_int).first()
+                #logger.debug('department: ' + str(department) + ' Type: ' + str(type(department)))
+                if department:
+                    request.user.depbase = department.base
+                    #logger.debug('request.user.depbase: ' + str(request.user.depbase) + ' Type: ' + str(type(request.user.depbase)))
+
+                    request_user_depbase_is_modified = True
+                    # set is_cur_dep true
+                    depbase_list[0]['is_cur_dep'] = True
+            else:
+                # if there are multiple allowed deps: remove current dep, because it is not in the allowed deps
+                if request.user.depbase is not None:
+                    request.user.depbase = None
+                    request_user_depbase_is_modified = True
+    if request_user_depbase_is_modified:
+        request.user.save(request=request)
+
+    #logger.debug('depbase_list: ' + str(depbase_list) + ' allowed_dep_count: '  + str(allowed_dep_count))
+    #logger.debug('request.user.depbase: ' + str(request.user.depbase))
+    #logger.debug('---------get_depbase_list END -------------')
+    #logger.debug('   ')
+
+    return depbase_list, allowed_dep_count
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+

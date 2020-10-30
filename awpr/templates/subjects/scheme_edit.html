@@ -3,7 +3,7 @@
 
 {% block breadcrumb %}
   <ol class="breadcrumb my-3">
-    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'home_url' %}">AWP online</a></li>
     <li class="breadcrumb-item">{{ user.country }}
       {% if user.country_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
     </li>
@@ -24,14 +24,14 @@
       {% include 'includes/form.html' %}
       <button type="submit" class="btn btn-success">{% trans 'Save' %}</button>
       <a  href="{% url 'scheme_log_url' scheme.pk %}" class="btn btn-outline-primary">{% trans 'View log' %}</a>
-      {% if scheme.has_no_linked_data %}
+      {% if scheme.has_no_child_rows %}
         <a href="{% url 'scheme_delete_url' scheme.pk %}" class="btn btn-outline-danger">{% trans 'Delete' %}</a>
       {% endif %}
       <a href="{% url 'scheme_list_url' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
     </form>
   {% else %}
     <div class="alert alert-danger">{{ user.message_schemes_modify }}</div>
-    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+    <a href="{% url 'home_url' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
   {% endif %}
 
 <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>

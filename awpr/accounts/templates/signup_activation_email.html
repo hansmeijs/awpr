@@ -1,0 +1,17 @@
+{% load i18n %}
+
+{% autoescape off %}
+{% trans 'Hello ' %}{{ user.last_name }},
+
+{{ user.schoolname }} {% trans 'has made the following AWP-online account for you:' %}
+
+  - {% trans 'Schoolcode' %}:  {{ user.schoolbase.code }}
+  - {% trans 'Username' %}:  {{ user.username_sliced }}
+
+{% trans 'Please click on the link below to activate your AWP-online account.' %}
+
+http://{{ domain }}{% url 'signup_activate_url' uidb64=uid token=token %}
+
+{% trans 'The AWP-online team' %}
+
+{% endautoescape %}

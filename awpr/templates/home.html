@@ -2,28 +2,49 @@
 {% load i18n %}
 {% load static %}
 
-{% block content %}
+<!-- SIDE BAR -->
+{% block sidebar %}
+    <nav id="id_sidebar" class="awp_sidebar">
+        <div class="content_subheader_left tab_show tab_init mx-4 my-4">
+            <h3>{% trans 'Welkom' %}</h3>
+            <h3>{% trans 'bij' %}</h3>
+            <h3>{% trans 'AWP-online' %}</h3>
+        </div>
+        <div class="content_subheader_left tab_show tab_init mx-4 my-4">
+            <span>
+                <img src="{% static 'img/ETE_logo2020.png' %}" height="80" width="160"  >
+            </span>
+        </div>
 
-  <h1 class="card-title mx-2 my-4"><b>{% trans 'Welcome at AWP-online' %}</b></h1>
+    </nav>
+{% endblock %}
+<!-- END SIDE BAR -->
+
+{% block content %}
+<div class="awp_content_container_home">
+
+{% if user.is_authenticated or not user.is_authenticated %}
     <table class="table">
       <thead >
         <tr>
-          <th> <h3>{% trans 'Download AWP Corona versie 2020.01' %}</h3></th>
+          <th><h3>{% trans 'Download AWP versie 2021.01' %}</h3></th>
         </tr>
       </thead>
       <tbody>
-          <tr>
+        <tr>
             <td class="align-left">
               <h6 class="my-2">{% trans "Klik op de knop 'Downloaden' om het installatie-programma te downloaden." %}</h6>
             </td>
-            <td class="align-middle">
-              <a href="{% static 'data/AWPinstall_2020_01b.exe' %}" class="btn btn-primary">{% trans 'Download' %}</a>
+        </tr>
+        <tr>
+            <td class="align-left">
+              <a href="{% static 'data/AWPinstall_2021_01.exe' %}" class="btn btn-secondary py-2 px-4 ">{% trans 'Downloaden' %}</a>
             </td>
-          </tr>
-       <tr>
-        <td class="align-left"> <h6 class="my-2">{% trans "Als het 'Windows Defender' scherm verschijnt: klik op 'More info'." %}</h6> </td>
-        <td class="align-left"> <img src="{% static 'img/WindowsDefender1.png' %}" height="112" width="240">  </td>
-       </tr>
+        </tr>
+        <tr>
+            <td class="align-left"> <h6 class="my-2">{% trans "Als het 'Windows Defender' scherm verschijnt: klik op 'More info'." %}</h6> </td>
+            <td class="align-left"> <img src="{% static 'img/WindowsDefender1.png' %}" height="112" width="240">  </td>
+        </tr>
         <tr>
             <td class="align-left"> <h6 class="my-2">{% trans "Klik daarna op 'Run anyway'." %}</h6> </td>
             <td class="align-left"> <img src="{% static 'img/WindowsDefender2.png' %}" height="112" width="240"> </td>
@@ -36,6 +57,12 @@
         </tr>
       </tbody>
     </table>
+    </div>
+
+  {% else %}
+    <h1 class="card-title mx-2 my-4"><b>{% trans 'Welcome at AWP-online' %}</b></h1>
+      <h5 class="mx-4">{% trans "Click 'Log in' on the menubar to log in." %}</h5>
+  {% endif %}
 {% endblock %}
 
 

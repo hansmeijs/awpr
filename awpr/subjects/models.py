@@ -1,13 +1,17 @@
 # PR2018-07-20
-from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE
+from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
 from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField
+
+from django.contrib.postgres.fields import ArrayField
+
 from django.core.validators import MaxValueValidator
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 from awpr.settings import AUTH_USER_MODEL
-from schools.models import Examyear, Examyear_log, Department, Department_log, School, School_log
+from schools.models import AwpModelManager, AwpBaseModel
 from awpr import constants as c
+from schools import models as sch_mod
 
 import logging
 logger = logging.getLogger(__name__)
@@ -20,38 +24,26 @@ logger = logging.getLogger(__name__)
 # This method returns the clean data, which is then inserted into the cleaned_data dictionary of the form.
 
 
-# PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
-# CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-class CustomManager(Manager):
-    def get_or_none(self, **kwargs):
-        try:
-            return self.get(**kwargs)
-        except:
-            return None
-
-
 # === Level =====================================
 class Levelbase(Model):  # PR2018-10-17
-    objects = CustomManager()
+    objects = AwpModelManager()
 
 
-class Level(Model): # PR2018-08-12
-    # CustomManager adds function get_or_none to prevent DoesNotExist exception
-    objects = CustomManager()
+class Level(AwpBaseModel): # PR2018-08-12
+    # AwpModelManager adds function get_or_none to prevent DoesNotExist exception
+    objects = AwpModelManager()
 
     # base and examyear cannot be changed PR2018-10-17
     base = ForeignKey(Levelbase, related_name='levels', on_delete=PROTECT)
-    examyear = ForeignKey(Examyear, related_name='levels', on_delete=PROTECT)
+    examyear = ForeignKey(sch_mod.Examyear, related_name='levels', on_delete=CASCADE)
 
     name = CharField(max_length=50, # PR2018-10-20 set Unique per Examyear True.
         help_text=_('Required. {} characters or fewer.'.format('50')),)
     abbrev = CharField(max_length=8, # PR2018-10-20 set Unique per Examyear True.
         help_text=_('Required. {} characters or fewer.'.format('8')),)
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
-    depbase_list = CharField(max_length=20, null=True)
+    depbases = ArrayField(IntegerField(), null=True)
 
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
 
     class Meta:
         ordering = ['sequence',]
@@ -105,7 +97,7 @@ class Level(Model): # PR2018-08-12
         # get latest Examyear_log row that corresponds with self.examyear
         examyear_log = None
         if self.examyear is not None:
-            examyear_log = Examyear_log.objects.filter(examyear_id=self.examyear.id).order_by('-id').first()
+            examyear_log = sch_mod.Examyear_log.objects.filter(examyear_id=self.examyear.id).order_by('-id').first()
 
         # Create method also saves record
         Level_log.objects.create(
@@ -125,8 +117,8 @@ class Level(Model): # PR2018-08-12
             depbase_list_mod=self.depbase_list_mod,
 
             mode=self.mode,
-            modified_by=self.modified_by,
-            modified_at=self.modified_at
+            modifiedby=self.modifiedby,
+            modifiedat=self.modifiedat
         )
 
     def data_has_changed(self, mode = None):  # PR2018-07-21 # PR2018-08-24  PR2018-11-08
@@ -147,8 +139,8 @@ class Level(Model): # PR2018-08-12
         )
 
         if data_changed_bool:
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()
+            self.modifiedby = self.request.user
+            self.modifiedat = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
 
         if mode:
@@ -158,7 +150,7 @@ class Level(Model): # PR2018-08-12
         return data_changed_bool
 
     @property  # PR2018-08-11
-    def has_no_linked_data(self):
+    def has_no_child_rows(self):
         # TODO find records in linked tables
         # PR2018-10-20 from http://blog.etianen.com/blog/2013/06/08/django-querysets/
         # No rows were fetched from the database, so we save on bandwidth and memory.
@@ -168,7 +160,7 @@ class Level(Model): # PR2018-08-12
 
     @property
     def depbase_list_str(self): # PR108-08-27 PR2018-11-06
-        return Department.depbase_list_str(depbase_list=self.depbase_list, examyear=self.examyear)
+        return sch_mod.Department.depbase_list_str(depbase_list=self.depbase_list, examyear=self.examyear)
 
     @property
     def depbase_list_tuple(self):
@@ -312,20 +304,19 @@ class Level(Model): # PR2018-08-12
 
 
 # PR2018-08-12
-class Level_log(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Level_log(AwpBaseModel):
+    objects = AwpModelManager()
 
     level_id = IntegerField(db_index=True)
 
     base = ForeignKey(Levelbase, related_name='+', on_delete=PROTECT)
 
-    examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=PROTECT)
+    examyear_log = ForeignKey(sch_mod.Examyear_log, related_name='+', on_delete=CASCADE)
 
     name = CharField(max_length=50, null=True)
     abbrev = CharField(max_length=8, null=True)
     sequence = PositiveSmallIntegerField(null=True)
-    depbase_list = CharField(max_length=20, null=True)
+    depbases = ArrayField(IntegerField(), null=True)
 
     name_mod = BooleanField(default=False)
     abbrev_mod = BooleanField(default=False)
@@ -333,12 +324,10 @@ class Level_log(Model):
     depbase_list_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
 
     @property
     def depbase_list_str(self): # PR108-08-27
-        return Department.depbase_list_str(self.depbase_list, self.examyear)
+        return sch_mod.Department.depbase_list_str(self.depbase_list, self.examyear)
 
     @property
     def mode_str(self):
@@ -347,26 +336,22 @@ class Level_log(Model):
 
 # === Sector =====================================
 class Sectorbase(Model):  # PR2018-10-17
-    objects = CustomManager()
+    objects = AwpModelManager()
 
 
-class Sector(Model):  # PR2018-06-06
-    # CustomManager adds function get_or_none to prevent DoesNotExist exception
-    objects = CustomManager()
+class Sector(AwpBaseModel):  # PR2018-06-06
+    objects = AwpModelManager()
 
     # levelbase and examyear cannot be changed PR2018-10-17
     base = ForeignKey(Sectorbase, related_name='sectors', on_delete=PROTECT)
-    examyear = ForeignKey(Examyear, related_name='sectors', on_delete=PROTECT)
+    examyear = ForeignKey(sch_mod.Examyear, related_name='sectors', on_delete=CASCADE)
 
     name = CharField(max_length=50, # PR2018-10-20 set Unique per Examyear True.
         help_text=_('Required. {} characters or fewer.'.format('50')),)
     abbrev = CharField(max_length=8, # PR2018-10-20 set Unique per Examyear True.
         help_text=_('Required. {} characters or fewer.'.format('8')),)
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
-    depbase_list = CharField(max_length=20, null=True)
-
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    depbases = ArrayField(IntegerField(), null=True)
 
     class Meta:
         ordering = ['sequence',]
@@ -419,7 +404,7 @@ class Sector(Model):  # PR2018-06-06
         # get latest Examyear_log row that corresponds with self.examyear
         examyear_log = None
         if self.examyear is not None:
-            examyear_log = Examyear_log.objects.filter(examyear_id=self.examyear.id).order_by('-id').first()
+            examyear_log = sch_mod.Examyear_log.objects.filter(examyear_id=self.examyear.id).order_by('-id').first()
 
         # Create method also saves record
         Sector_log.objects.create(
@@ -439,8 +424,8 @@ class Sector(Model):  # PR2018-06-06
             depbase_list_mod=self.depbase_list_mod,
 
             mode=self.mode,
-            modified_by=self.modified_by,
-            modified_at=self.modified_at
+            modifiedby=self.modifiedby,
+            modifiedat=self.modifiedat
         )
 
     def data_has_changed(self, mode=None):  # PR2018-07-21 # PR2018-08-24  PR2018-11-11
@@ -461,8 +446,8 @@ class Sector(Model):  # PR2018-06-06
         )
 
         if data_changed_bool:
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()
+            self.modifiedby = self.request.user
+            self.modifiedat = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
 
         if mode:
@@ -472,14 +457,14 @@ class Sector(Model):  # PR2018-06-06
         return data_changed_bool
 
     @property  # PR2018-08-11
-    def has_no_linked_data(self):
+    def has_no_child_rows(self):
         linked_items_count = Scheme.objects.filter(sector_id=self.pk).count()
-        # logger.debug('SubjectDefault Model has_no_linked_data linked_items_count: ' + str(linked_items_count))
+        # logger.debug('SubjectDefault Model has_no_child_rows linked_items_count: ' + str(linked_items_count))
         return not bool(linked_items_count)
 
     @property
     def depbase_list_str(self): # PR108-08-27 PR2018-11-06
-        return Department.depbase_list_str(depbase_list=self.depbase_list, examyear=self.examyear)
+        return sch_mod.Department.depbase_list_str(depbase_list=self.depbase_list, examyear=self.examyear)
 
     @property
     def depbase_list_tuple(self):
@@ -636,20 +621,19 @@ class Sector(Model):  # PR2018-06-06
 
 
 # PR2018-06-06
-class Sector_log(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Sector_log(AwpBaseModel):
+    objects = AwpModelManager()
 
     sector_id = IntegerField(db_index=True)
 
     base = ForeignKey(Sectorbase, related_name='+', on_delete=PROTECT)
 
-    examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=PROTECT)
+    examyear_log = ForeignKey(sch_mod.Examyear_log, related_name='+', on_delete=CASCADE)
 
     name = CharField(max_length=50, null=True)
     abbrev = CharField(max_length=8, null=True)
     sequence = PositiveSmallIntegerField(null=True)
-    depbase_list = CharField(max_length=20, null=True)
+    depbases = ArrayField(IntegerField(), null=True)
 
     name_mod = BooleanField(default=False)
     abbrev_mod = BooleanField(default=False)
@@ -657,12 +641,10 @@ class Sector_log(Model):
     depbase_list_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
 
     @property
     def depbase_list_str(self): # PR108-08-27
-        return Department.depbase_list_str(self.depbase_list, self.examyear)
+        return sch_mod.Department.depbase_list_str(self.depbase_list, self.examyear)
 
     @property
     def mode_str(self):
@@ -671,28 +653,24 @@ class Sector_log(Model):
 
 # === Subjecttype =====================================
 class Subjecttypebase(Model): # PR2018-10-17
-    objects = CustomManager()
+    objects = AwpModelManager()
 
 
 # PR2018-06-06
-class Subjecttype(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Subjecttype(AwpBaseModel):
+    objects = AwpModelManager()
 
     base = ForeignKey(Subjecttypebase, related_name='characters', on_delete=CASCADE)
-    examyear = ForeignKey(Examyear, related_name='characters', on_delete=PROTECT)
+    examyear = ForeignKey(sch_mod.Examyear, related_name='characters', on_delete=CASCADE)
 
     name = CharField(max_length=50)
     abbrev = CharField(db_index=True,max_length=20)
     code = CharField(db_index=True,max_length=4)
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
-    depbase_list = CharField(max_length=20, null=True)
+    depbases = ArrayField(IntegerField(), null=True)
     has_prac = BooleanField(default=False) # has practical exam
     has_pws = BooleanField(default=False) # has profielwerkstuk or sectorwerkstuk
     one_allowed = BooleanField(default=False) # if true: only one subject with this Subjecttype allowed per student
-
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
 
     class Meta:
         ordering = ['sequence',]
@@ -749,7 +727,7 @@ class Subjecttype(Model):
         # get latest Examyear_log row that corresponds with self.examyear PR2019-02-24
         examyear_log = None
         if self.examyear is not None:
-            examyear_log = Examyear_log.objects.filter(examyear_id=self.examyear.id).order_by('-id').first()
+            examyear_log = sch_mod.Examyear_log.objects.filter(examyear_id=self.examyear.id).order_by('-id').first()
 
         # Create method also saves record
         Subjecttype_log.objects.create(
@@ -777,8 +755,8 @@ class Subjecttype(Model):
             one_allowed_mod=self.one_allowed_mod,
 
             mode=self.mode,
-            modified_by=self.modified_by,
-            modified_at=self.modified_at
+            modifiedby=self.modifiedby,
+            modifiedat=self.modifiedat
         )
 
     def data_has_changed(self, mode = None):  # PR2018-07-21 # PR2018-08-24
@@ -806,8 +784,8 @@ class Subjecttype(Model):
             self.one_allowed_mod
         )
         if data_changed_bool:
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()
+            self.modifiedby = self.request.user
+            self.modifiedat = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
 
         if mode:
@@ -818,7 +796,7 @@ class Subjecttype(Model):
 
     @property
     def depbase_list_str(self): # PR108-08-27 PR2018-11-06
-        return Department.depbase_list_str(depbase_list=self.depbase_list, examyear=self.examyear)
+        return sch_mod.Department.depbase_list_str(depbase_list=self.depbase_list, examyear=self.examyear)
 
     @property
     def depbase_list_tuple(self):
@@ -854,21 +832,20 @@ class Subjecttype(Model):
             subjtype_list.append ({'id': subjtype.id, 'name': subjtype.name.lower()})
         return subjtype_list
 
-class Subjecttype_log(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Subjecttype_log(AwpBaseModel):
+    objects = AwpModelManager()
 
     subjecttype_id = IntegerField(db_index=True)
 
     base = ForeignKey(Subjecttypebase, related_name='+', on_delete=CASCADE)
 
-    examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=PROTECT)
+    examyear_log = ForeignKey(sch_mod.Examyear_log, related_name='+', on_delete=CASCADE)
 
     name = CharField(max_length=50, null=True)
     abbrev = CharField(max_length=20,null=True)
     code = CharField(max_length=4,null=True)
     sequence = PositiveSmallIntegerField(null=True)
-    depbase_list = CharField(max_length=20, null=True)
+    depbases = ArrayField(IntegerField(), null=True)
     has_prac = BooleanField(default=False)
     has_pws = BooleanField(default=False)
     one_allowed = BooleanField(default=False)
@@ -883,12 +860,10 @@ class Subjecttype_log(Model):
     one_allowed_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
 
     @property
     def depbase_list_str(self): # PR108-08-27
-        return Department.depbase_list_str(self.depbase_list, self.examyear)
+        return sch_mod.Department.depbase_list_str(self.depbase_list, self.examyear)
 
     @property
     def mode_str(self):
@@ -896,21 +871,16 @@ class Subjecttype_log(Model):
 
 
 # PR2018-06-06 There is one Scheme per department/level/sector per year per country
-class Scheme(Model):
-    # PR2018-09-07
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Scheme(AwpBaseModel):
+    objects = AwpModelManager()
 
     # PR2018-11-07 blank=True is necessary otherwise blank field gives error 'Dit veld is verplicht.'
     # PR2019-02-16 scheme is linked with department, level and sector . get s examyear from department
-    department = ForeignKey(Department, related_name='schemes', on_delete=PROTECT)
-    level = ForeignKey(Level, null=True, blank=True, related_name='schemes', on_delete=PROTECT)
-    sector = ForeignKey(Sector, null=True,  blank=True, related_name='schemes', on_delete=PROTECT)
+    department = ForeignKey(sch_mod.Department, related_name='schemes', on_delete=CASCADE)
+    level = ForeignKey(Level, null=True, blank=True, related_name='schemes', on_delete=CASCADE)
+    sector = ForeignKey(Sector, null=True,  blank=True, related_name='schemes', on_delete=CASCADE)
     name = CharField(max_length=50)  # TODO set department+level+sector Unique per examyear True.
     fields = CharField(max_length=50, null=True,  blank=True, choices=c.SCHEMEFIELD_CHOICES)
-
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
 
     class Meta:
         ordering = ['name',]
@@ -957,7 +927,7 @@ class Scheme(Model):
         # get latest Department_log row that corresponds with self.department
         dep_log = None
         if self.department is not None:
-            dep_log = Department_log.objects.filter(department_id=self.department.id).order_by('-id').first()
+            dep_log = sch_mod.Department_log.objects.filter(department_id=self.department.id).order_by('-id').first()
 
         # get latest Level_log row that corresponds with self.level
         level_log = None
@@ -988,8 +958,8 @@ class Scheme(Model):
             fields_mod=self.fields_mod,
 
             mode=self.mode,
-            modified_by=self.modified_by,
-            modified_at=self.modified_at
+            modifiedby=self.modifiedby,
+            modifiedat=self.modifiedat
         )
 
     def data_has_changed(self, mode = None):  # PR2018-09-07 PR2018-11-07
@@ -1012,8 +982,8 @@ class Scheme(Model):
         )
 
         if data_changed_bool:
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()
+            self.modifiedby = self.request.user
+            self.modifiedat = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
 
         if mode:
@@ -1023,9 +993,9 @@ class Scheme(Model):
         return data_changed_bool
 
     @property  # PR2018-08-11
-    def has_no_linked_data(self):
+    def has_no_child_rows(self):
         linked_items_count = Scheme.objects.filter(level_id=self.pk).count()
-        # logger.debug('SubjectDefault Model has_no_linked_data linked_items_count: ' + str(linked_items_count))
+        # logger.debug('SubjectDefault Model has_no_child_rows linked_items_count: ' + str(linked_items_count))
         return not bool(linked_items_count)
 
     @property
@@ -1115,7 +1085,7 @@ class Scheme(Model):
     def get_scheme_by_abbrevs(cls, dep_abbrev, lvl_abbrev, sct_abbrev, examyear): # PR2019-02-08
         # lookup scheme by examyear and abbrev of department, level (if required) and sector (if required)
         scheme = None
-        department = Department.get_dep_by_abbrev(dep_abbrev, examyear)
+        department = sch_mod.Department.get_dep_by_abbrev(dep_abbrev, examyear)
         if department:
             if department.level_req:
                 lvl = Level.get_lvl_by_abbrev(lvl_abbrev, department, examyear)
@@ -1163,15 +1133,14 @@ class Scheme(Model):
         return schemes_list
 
 
-class Scheme_log(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Scheme_log(AwpBaseModel):
+    objects = AwpModelManager()
 
     scheme_id = IntegerField(db_index=True)
 
-    dep_log = ForeignKey(Department_log, related_name='+', on_delete=PROTECT)
-    level_log = ForeignKey(Level_log, null=True, related_name='+', on_delete=PROTECT)
-    sector_log = ForeignKey(Sector_log, null=True, related_name='+', on_delete=PROTECT)
+    dep_log = ForeignKey(sch_mod.Department_log, related_name='+', on_delete=CASCADE)
+    level_log = ForeignKey(Level_log, null=True, related_name='+', on_delete=CASCADE)
+    sector_log = ForeignKey(Sector_log, null=True, related_name='+', on_delete=CASCADE)
 
     name = CharField(max_length=50, null=True)
     fields = CharField(max_length=50, null=True)
@@ -1183,8 +1152,6 @@ class Scheme_log(Model):
     fields_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
 
     @property
     def mode_str(self):
@@ -1193,7 +1160,7 @@ class Scheme_log(Model):
     @property
     def dep_str(self):
         dep_abbrev = '-'
-        dep = Department_log.objects.filter(id=self.dep_log.id).first()
+        dep = sch_mod.Department_log.objects.filter(id=self.dep_log.id).first()
         if dep is not None:
             dep_abbrev = dep.abbrev
         return dep_abbrev
@@ -1216,21 +1183,24 @@ class Scheme_log(Model):
             sector_abbrev = sector.abbrev + ' (' + str(sector.id) + ')'
         return sector_abbrev
 
+
 # =============  Subject Model  =====================================
 class Subjectbase(Model):
-    objects = CustomManager()
+    objects = AwpModelManager()
+
+    country = ForeignKey(sch_mod.Country, related_name='+', on_delete=PROTECT)
+    code = CharField(max_length=c.MAX_LENGTH_SUBJECTCODE)
 
 
-class Subject(Model):  # PR1018-11-08
+class Subject(AwpBaseModel):  # PR1018-11-08
     # PR2018-06-05 Subject has one subject per examyear per country
     # Subject has no country field: country is a field in examyear
 
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+    objects = AwpModelManager()
 
     # base and examyear cannot be changed PR2018-10-17
     base = ForeignKey(Subjectbase, related_name='subjects', on_delete=PROTECT)
-    examyear = ForeignKey(Examyear, related_name='subjects', on_delete=PROTECT)
+    examyear = ForeignKey(sch_mod.Examyear, related_name='subjects', on_delete=CASCADE)
 
     name = CharField(max_length=50, # PR2018-08-08 set Unique per Examyear True.
         help_text=_('Required. {} characters or fewer.'.format('50')),)
@@ -1240,10 +1210,7 @@ class Subject(Model):  # PR1018-11-08
         help_text=_('Sets subject sequence in reports. Required. Maximum value is {}.'.format(9999)),
         validators=[MaxValueValidator(9999),],
         error_messages={'max_value': _('Value must be less or equal to {}.'.format(9999))})
-    depbase_list = CharField(max_length=20, null=True)
-
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    depbases = ArrayField(IntegerField(), null=True)
 
     class Meta:
         ordering = ['sequence',]
@@ -1251,47 +1218,11 @@ class Subject(Model):  # PR1018-11-08
     def __str__(self):
         return self.name
 
-    def __init__(self, *args, **kwargs):
-        super(Subject, self).__init__(*args, **kwargs)
-
-        # private variable __original checks if data_has_changed, to prevent update record when no changes are made.
-        # Otherwise a logrecord is created every time the save button is clicked without changes
-        self.o_name = self.name
-        self.o_abbrev = self.abbrev
-        self.o_sequence = self.sequence  # Was: = (None, self.sequence)[bool(self.sequence)]  # result = (on_false, on_true)[condition]
-        self.o_depbase_list = self.depbase_list
-
-        # PR2018-10-19 initialize here, otherwise delete gives error: 'Examyear' object has no attribute 'examyear_mod'
-        self.name_mod = False
-        self.abbrev_mod = False
-        self.sequence_mod = False
-        self.depbase_list_mod = False
-
-    def save(self, *args, **kwargs):  # called by subject.save(self.request) in SubjectEditView.form_valid
-        self.request = kwargs.pop('request', None)
-
-    # check if data has changed. If so: save object
-        if self.data_has_changed():
-            # First create base record. base.id is used in Department. Create also saves new record
-            if not self.is_update:
-                self.base = Subjectbase.objects.create()
-            # when adding record: self.id=None, set force_insert=True; otherwise: set force_update=True PR2018-06-09
-            super(Subject, self).save(force_insert = not self.is_update, force_update = self.is_update, **kwargs)
-            # self.id gets its value in super(Subject, self).save
-            self.save_to_log()
-
-    def delete(self, *args, **kwargs):
-        self.request = kwargs.pop('request', None)
-        self.data_has_changed('d')
-        # save to logfile before deleting record
-        self.save_to_log()
-        super(Subject, self).delete(*args, **kwargs)
-
     def save_to_log(self):  # PR2018-08-29
         # get latest Examyear_log row that corresponds with self.examyear PR2019-02-24
         examyear_log = None
         if self.examyear is not None:
-            examyear_log = Examyear_log.objects.filter(examyear_id=self.examyear.id).order_by('-id').first()
+            examyear_log = sch_mod.Examyear_log.objects.filter(examyear_id=self.examyear.id).order_by('-id').first()
 
         # Create method also saves record
         Subject_log.objects.create(
@@ -1311,8 +1242,8 @@ class Subject(Model):  # PR1018-11-08
             depbase_list_mod=self.depbase_list_mod,
 
             mode=self.mode,
-            modified_by=self.modified_by,
-            modified_at=self.modified_at
+            modifiedby=self.modifiedby,
+            modifiedat=self.modifiedat
         )
 
     def data_has_changed(self, mode = None):  # PR2018-07-21  PR2018-11-08
@@ -1332,8 +1263,8 @@ class Subject(Model):  # PR1018-11-08
             self.depbase_list_mod
         )
         if data_changed_bool:
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()
+            self.modifiedby = self.request.user
+            self.modifiedat = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
 
         if mode:
@@ -1343,15 +1274,15 @@ class Subject(Model):  # PR1018-11-08
         return data_changed_bool
 
     @property  # PR2018-07-19
-    def has_no_linked_data(self):
+    def has_no_child_rows(self):
         # TODO find records in linked tables
         linked_items_count = False  # Subject.objects.filter(subject_id=self.pk).count()
-        # logger.debug('SubjectDefault Model has_no_linked_data linked_items_count: ' + str(linked_items_count))
+        # logger.debug('SubjectDefault Model has_no_child_rows linked_items_count: ' + str(linked_items_count))
         return not bool(linked_items_count)
 
     @property
     def depbase_list_str(self): # PR108-08-27 PR2018-11-06
-        return Department.depbase_list_str(depbase_list=self.depbase_list, examyear=self.examyear)
+        return sch_mod.Department.depbase_list_str(depbase_list=self.depbase_list, examyear=self.examyear)
 
     @property
     def depbase_list_tuple(self):
@@ -1376,20 +1307,19 @@ class Subject(Model):  # PR1018-11-08
 
 
 # PR2018-06-05 Subject is the base Model of all subjects
-class Subject_log(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Subject_log(AwpBaseModel):
+    objects = AwpModelManager()
 
     subject_id = IntegerField(db_index=True)
 
     base = ForeignKey(Subjectbase, related_name='+', on_delete=PROTECT)
 
-    examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=PROTECT)
+    examyear_log = ForeignKey(sch_mod.Examyear_log, related_name='+', on_delete=CASCADE)
 
     name = CharField(max_length=50, null=True)
     abbrev = CharField(max_length=10, null=True)
     sequence = PositiveSmallIntegerField(null=True)
-    depbase_list = CharField(max_length=20, null=True)
+    depbases = ArrayField(IntegerField(), null=True)
 
     name_mod = BooleanField(default=False)
     abbrev_mod = BooleanField(default=False)
@@ -1397,12 +1327,10 @@ class Subject_log(Model):
     depbase_list_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
 
     @property
     def depbase_list_str(self): # PR2018-11-04
-        return Department.depbase_list_str(self.depbase_list, self.examyear)
+        return sch_mod.Department.depbase_list_str(self.depbase_list, self.examyear)
 
     @property
     def mode_str(self):
@@ -1410,13 +1338,12 @@ class Subject_log(Model):
 
 
 # PR2018-06-05
-class Schemeitem(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Schemeitem(AwpBaseModel):
+    objects = AwpModelManager()
 
-    scheme = ForeignKey(Scheme, related_name='schemeitems', on_delete=PROTECT)
-    subject = ForeignKey(Subject, related_name='schemeitems', on_delete=PROTECT)
-    subjecttype = ForeignKey(Subjecttype, related_name='schemeitems', on_delete=PROTECT)
+    scheme = ForeignKey(Scheme, related_name='schemeitems', on_delete=CASCADE)
+    subject = ForeignKey(Subject, related_name='schemeitems', on_delete=CASCADE)
+    subjecttype = ForeignKey(Subjecttype, related_name='schemeitems', on_delete=CASCADE)
 
     gradetype = PositiveSmallIntegerField(default=0, choices = c.GRADETYPE_CHOICES)
     weightSE = PositiveSmallIntegerField(default=0)
@@ -1429,9 +1356,6 @@ class Schemeitem(Model):
     choicecombi_allowed = BooleanField(default=False)
     has_practexam = BooleanField(default=False)
     is_core = BooleanField(default=False) # PR2019-02-26 is core subject
-
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
 
     def __init__(self, *args, **kwargs):
         super(Schemeitem, self).__init__(*args, **kwargs)
@@ -1472,6 +1396,8 @@ class Schemeitem(Model):
         self.extra_nocount_allowed_mod = False
         self.choicecombi_allowed_mod = False
         self.has_practexam_mod = False
+
+
         self.is_core_mod = False  # PR2019-02-26 is core subject
 
     def save(self, *args, **kwargs):  # called by subjectdefault.save(self.request) in SubjectdefaultEditView.form_valid
@@ -1546,8 +1472,8 @@ class Schemeitem(Model):
                 is_core_mod=self.is_core_mod,
 
                 mode=self.mode,
-                modified_by=self.modified_by,
-                modified_at=self.modified_at
+                modifiedby=self.modifiedby,
+                modifiedat=self.modifiedat
             )
 
     def data_has_changed(self, mode=None):  # PR2018-11-10
@@ -1591,8 +1517,8 @@ class Schemeitem(Model):
         )
 
         if data_changed_bool:
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()
+            self.modifiedby = self.request.user
+            self.modifiedat = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
 
         if mode:
@@ -1692,15 +1618,14 @@ class Schemeitem(Model):
 
 
 # PR2018-06-08
-class Schemeitem_log(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Schemeitem_log(AwpBaseModel):
+    objects = AwpModelManager()
 
     schemeitem_id = IntegerField(db_index=True)
 
-    scheme_log = ForeignKey(Scheme_log, null=True, related_name='+', on_delete=PROTECT)
-    subject_log = ForeignKey(Subject_log, null=True, related_name='+', on_delete=PROTECT)
-    subjecttype_log = ForeignKey(Subjecttype_log, null=True,  related_name='+', on_delete=PROTECT)
+    scheme_log = ForeignKey(Scheme_log, null=True, related_name='+', on_delete=CASCADE)
+    subject_log = ForeignKey(Subject_log, null=True, related_name='+', on_delete=CASCADE)
+    subjecttype_log = ForeignKey(Subjecttype_log, null=True,  related_name='+', on_delete=CASCADE)
 
     gradetype = PositiveSmallIntegerField(null=True)
     weightSE = PositiveSmallIntegerField(null=True)
@@ -1739,22 +1664,16 @@ class Schemeitem_log(Model):
     is_core_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
 
 
 # PR2018-06-06 # PR2019-02-17
-class Package(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Package(AwpBaseModel):
+    objects = AwpModelManager()
 
-    school = ForeignKey(School, related_name='packages', on_delete=PROTECT)
-    scheme = ForeignKey(Scheme, related_name='packages', on_delete=PROTECT)
+    school = ForeignKey(sch_mod.School, related_name='packages', on_delete=CASCADE)
+    scheme = ForeignKey(Scheme, related_name='packages', on_delete=CASCADE)
 
     name = CharField(max_length=50)
-
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
 
     class Meta:
         ordering = ['name',]
@@ -1796,7 +1715,7 @@ class Package(Model):
         # get latest School_log row that corresponds with self.school
         school_log = None
         if self.school is not None:
-            school_log = School_log.objects.filter(school_id=self.school.id).order_by('-id').first()
+            school_log = sch_mod.School_log.objects.filter(school_id=self.school.id).order_by('-id').first()
         # get latest Scheme_log row that corresponds with self.scheme
         scheme_log = None
         if self.scheme is not None:
@@ -1816,8 +1735,8 @@ class Package(Model):
                 name_mod=self.name_mod,
 
                 mode=self.mode,
-                modified_by=self.modified_by,
-                modified_at=self.modified_at
+                modifiedby=self.modifiedby,
+                modifiedat=self.modifiedat
             )
 
     def data_has_changed(self, mode = None):  # PR2018-09-07 PR2018-11-07
@@ -1836,8 +1755,8 @@ class Package(Model):
         )
 
         if data_changed_bool:
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()
+            self.modifiedby = self.request.user
+            self.modifiedat = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
 
         if mode:
@@ -1848,14 +1767,13 @@ class Package(Model):
 
 
 # PR2018-06-06
-class Package_log(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Package_log(AwpBaseModel):
+    objects = AwpModelManager()
 
     package_id = IntegerField(db_index=True)
 
-    school_log = ForeignKey(School_log, related_name='+', on_delete=PROTECT)
-    scheme_log = ForeignKey(Scheme_log, null=True, related_name='+', on_delete=PROTECT)
+    school_log = ForeignKey(sch_mod.School_log, related_name='+', on_delete=CASCADE)
+    scheme_log = ForeignKey(Scheme_log, null=True, related_name='+', on_delete=CASCADE)
 
     name = CharField(max_length=50, null=True)
 
@@ -1864,8 +1782,6 @@ class Package_log(Model):
     name_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
 
     @property
     def mode_str(self):
@@ -1873,40 +1789,32 @@ class Package_log(Model):
 
 
 # PR2018-06-06
-class Package_item(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Package_item(AwpBaseModel):
+    objects = AwpModelManager()
 
-    package = ForeignKey(Package, related_name='packageschemes', on_delete=PROTECT)
-    scheme_item = ForeignKey(Schemeitem, related_name='packageschemes', on_delete=PROTECT)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    package = ForeignKey(Package, related_name='packageschemes', on_delete=CASCADE)
+    scheme_item = ForeignKey(Schemeitem, related_name='packageschemes', on_delete=CASCADE)
 
 
 # PR2018-06-06
-class Package_item_log(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Package_item_log(AwpBaseModel):
+    objects = AwpModelManager()
 
     package_item_id = IntegerField(db_index=True)
 
     # TODO: refer to log table
-    package_log = ForeignKey(Package_log, related_name='+', on_delete=PROTECT)
-    schemeitem_log = ForeignKey(Schemeitem_log, related_name='+', on_delete=PROTECT)
+    package_log = ForeignKey(Package_log, related_name='+', on_delete=CASCADE)
+    schemeitem_log = ForeignKey(Schemeitem_log, related_name='+', on_delete=CASCADE)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
-
 
 
 # PR2018-08-23
-class Norm(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Norm(AwpBaseModel):
+    objects = AwpModelManager()
 
-    scheme = ForeignKey(Scheme, related_name='norms', on_delete=PROTECT)
-    subject = ForeignKey(Subject, related_name='norms', on_delete=PROTECT)
+    scheme = ForeignKey(Scheme, related_name='norms', on_delete=CASCADE)
+    subject = ForeignKey(Subject, related_name='norms', on_delete=CASCADE)
 
     is_etenorm = BooleanField(default=False)
     is_primarynorm = BooleanField(default=False)
@@ -1916,9 +1824,6 @@ class Norm(Model):
     norm_reex = CharField(max_length=10, null=True)
     scalelength_practex = CharField(max_length=10, null=True)
     norm_practex = CharField(max_length=10, null=True)
-
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
 
     def __str__(self):
         subjectscheme_str = ''
@@ -1930,15 +1835,14 @@ class Norm(Model):
 
 
 # PR2018-08-23
-class Norm_log(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Norm_log(AwpBaseModel):
+    objects = AwpModelManager()
 
     norm_id = IntegerField(db_index=True)
 
     # TODO: refer to log table
-    scheme_log = ForeignKey(Scheme_log, related_name='+', on_delete=PROTECT)
-    subject_log = ForeignKey(Subject_log, related_name='+', on_delete=PROTECT)
+    scheme_log = ForeignKey(Scheme_log, related_name='+', on_delete=CASCADE)
+    subject_log = ForeignKey(Subject_log, related_name='+', on_delete=CASCADE)
 
     is_etenorm = BooleanField(default=False)
     is_primarynorm = BooleanField(default=False)
@@ -1950,45 +1854,38 @@ class Norm_log(Model):
     norm_practex = CharField(max_length=10, null=True)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
+
 
 # PR2018-06-06
-class Cluster(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Cluster(AwpBaseModel):
+    objects = AwpModelManager()
 
-    school = ForeignKey(School, related_name='clusters', on_delete=PROTECT)
-    subject = ForeignKey(Subject, related_name='clusters', on_delete=PROTECT)
+    school = ForeignKey(sch_mod.School, related_name='clusters', on_delete=CASCADE)
+    subject = ForeignKey(Subject, related_name='clusters', on_delete=CASCADE)
 
     name = CharField(max_length=50)
     abbrev = CharField(max_length=20)
-    depbase_list = CharField(max_length=20, null=True)
+    depbases = ArrayField(IntegerField(), null=True)
 
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
 
     def __str__(self):
         return self.abbrev
 
 # PR2018-06-06
-class Cluster_log(Model):
-    # CustomManager adds function get_or_none. Used in  Subjectdefault to prevent DoesNotExist exception
-    objects = CustomManager()
+class Cluster_log(AwpBaseModel):
+    objects = AwpModelManager()
 
     cluster_id = IntegerField(db_index=True)
 
     # TODO: refer to log table
-    school_log = ForeignKey(School_log, related_name='+', on_delete=PROTECT)
-    subject_log = ForeignKey(Subject_log, related_name='+', on_delete=PROTECT)
+    school_log = ForeignKey(sch_mod.School_log, related_name='+', on_delete=CASCADE)
+    subject_log = ForeignKey(Subject_log, related_name='+', on_delete=CASCADE)
 
     name = CharField(max_length=50, null=True)
     abbrev = CharField(max_length=20, null=True)
-    depbase_list = CharField(max_length=20, null=True)
+    depbases = ArrayField(IntegerField(), null=True)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
 
     def __str__(self):
         return self.abbrev
@@ -2031,7 +1928,7 @@ def get_list_str(list, model):
                         if _id_int:
                             # logger.debug('def get_list_str _id_int: ' + str(_id_int))
                             if model =='Department':
-                                _instance = Department.objects.filter(pk=_id_int).first()
+                                _instance = sch_mod.Department.objects.filter(pk=_id_int).first()
                                 _field = _instance.shortname
                             elif model == 'Level':
                                 _instance = Level.objects.filter(pk=_id_int).first()

@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.generic import UpdateView, DeleteView, View, ListView, CreateView
 
-import datetime
+from datetime import datetime
 
 import json # PR2018-12-03
 
@@ -16,6 +16,7 @@ from subjects.models import Subject, Level, Sector, Subjecttype, Scheme, Schemei
 from students.models import Birthcountry, Birthcity, Student
 from awpr import functions as f
 from awpr import constants as c
+from awpr import menus as am
 
 # PR2018-04-27
 import logging
@@ -37,7 +38,7 @@ class ImportSchoolView(View):
     def get(self, request):
         # permission: user.is_authenticated AND user.is_role_system_perm_admin
         param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = f.get_headerbar_param(request, param)
+        headerbar_param = am.get_headerbar_param(request, param)
         return render(request, 'import_school.html', headerbar_param)
 
     def post(self, request):
@@ -110,7 +111,7 @@ class ImportDepartmentView(View):
     def get(self, request):
         # permission: user.is_authenticated AND user.is_role_system_perm_admin
         param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = f.get_headerbar_param(request, param)
+        headerbar_param = am.get_headerbar_param(request, param)
 
         logger.debug('ImportDepartmentView headerbar_param: ' + str(headerbar_param))
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
@@ -172,7 +173,7 @@ class ImportLevelView(View):
     def get(self, request):
         # permission: user.is_authenticated AND user.is_role_system_perm_admin
         param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = f.get_headerbar_param(request, param)
+        headerbar_param = am.get_headerbar_param(request, param)
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'import_level.html', headerbar_param)
 
@@ -230,7 +231,7 @@ class ImportSectorView(View):
     def get(self, request):
         # permission: user.is_authenticated AND user.is_role_system_perm_admin
         param = {'display_school': True}
-        headerbar_param = f.get_headerbar_param(request, param)
+        headerbar_param = am.get_headerbar_param(request, param)
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'import_sector.html', headerbar_param)
 
@@ -292,7 +293,7 @@ class ImportSubjecttypeView(View):
     def get(self, request):
         # permission: user.is_authenticated AND user.is_role_system_perm_admin
         param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = f.get_headerbar_param(request, param)
+        headerbar_param = am.get_headerbar_param(request, param)
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'import_subjecttype.html', headerbar_param)
 
@@ -355,7 +356,7 @@ class ImportSubjectView(View):
     def get(self, request):
         # permission: user.is_authenticated AND user.is_role_system
         param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = f.get_headerbar_param(request, param)
+        headerbar_param = am.get_headerbar_param(request, param)
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'import_subject.html', headerbar_param)
 
@@ -416,7 +417,7 @@ class ImportSchemeView(View): # PR2018-11-10
     def get(self, request):
         # permission: user.is_authenticated AND user.is_role_system
         param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = f.get_headerbar_param(request, param)
+        headerbar_param = am.get_headerbar_param(request, param)
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'import_scheme.html', headerbar_param)
 
@@ -543,7 +544,7 @@ class ImportSchemeitemView(View):  # PR2018-11-10
             'display_dep': True,
             'display_user': True
         }
-        headerbar_param = f.get_headerbar_param(request, param)
+        headerbar_param = am.get_headerbar_param(request, param)
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'import_schemeitem.html', headerbar_param)
 
@@ -704,7 +705,7 @@ class ImportPackageView(View): # PR2019-02-24
     def get(self, request):
         # permission: user.is_authenticated AND user.is_role_system
         param = {'display_school': True, 'display_user': True}
-        headerbar_param = f.get_headerbar_param(request, param)
+        headerbar_param = am.get_headerbar_param(request, param)
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'import_package.html', headerbar_param)
 
@@ -774,7 +775,7 @@ class ImportPackageitemView(View): # PR2019-02-24
     def get(self, request):
         # permission: user.is_authenticated AND user.is_role_system
         param = {'display_school': True, 'display_user': True}
-        headerbar_param = f.get_headerbar_param(request, param)
+        headerbar_param = am.get_headerbar_param(request, param)
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'import_packageitem.html', headerbar_param)
 
@@ -889,7 +890,7 @@ class ImportBirthcountryView(View):  # PR2018-08-31
     def get(self, request):
         # permission: user.is_authenticated AND user.is_role_system_perm_admin
         param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = f.get_headerbar_param(request, param)
+        headerbar_param = am.get_headerbar_param(request, param)
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'import_birthcountry.html', headerbar_param)
 
@@ -936,7 +937,7 @@ class ImportBirthcityView(View):  # PR2018-09-01
     def get(self, request):
         # permission: user.is_authenticated AND user.is_role_system_perm_admin
         param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = f.get_headerbar_param(request, param)
+        headerbar_param = am.get_headerbar_param(request, param)
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'import_birthcity.html', headerbar_param)
 

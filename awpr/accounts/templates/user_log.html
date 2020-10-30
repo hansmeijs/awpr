@@ -4,7 +4,7 @@
 
 {% block breadcrumb %}
   <ol class="breadcrumb my-3">
-    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'home_url' %}">AWP online</a></li>
     <li class="breadcrumb-item"><a href="{% url 'user_list_url' %}">{% trans 'Users' %}</a></li>
     <li class="breadcrumb-item"><a href="{% url 'user_edit_url' user.pk %}">{{ user.username }}</a></li>
     <li class="breadcrumb-item active">{% trans 'Log' %}</li>
@@ -63,6 +63,6 @@
       <a href="{% url 'user_list_url' %}" class="btn btn-outline-primary mb-3">{% trans 'Close' %}</a>
   {% else %}
     <div class="alert alert-danger">{{ user.message_user_view_modify }}</div>
-    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+    <a href="{% url 'home_url' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
   {% endif %}
 {% endblock %}l>

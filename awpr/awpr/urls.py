@@ -5,10 +5,10 @@ The `urlpatterns` list routes URLs to views. For more information please see:
 Examples:
 Function views
     1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
+    2. Add a URL to urlpatterns:  path('', views.home, name='home_url')
 Class-based views
     1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home_url')
 Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
@@ -20,20 +20,29 @@ from django.contrib.auth import views as auth_views
 from django.urls import include, path, re_path
 # PR2018-03-16; PR2018-03-31 don't add doubledot, gives error 'attempted relative import beyond top-level package'
 from django.views.generic import RedirectView
+
 from accounts import views as account_views
+
+from awpr import downloads as awpr_downloads
 from importing import views as import_views
 from schools import views as school_views
 from subjects import views as subject_views
 from students import views as student_views
 from reports import views as report_views
 
+from accounts.forms import SchoolbaseAuthenticationForm
+
 from awpr.decorators import user_examyear_is_correct
 
 urlpatterns = [
 # PR2018-03-20
-    url(r'^login/$', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
+    #url(r'^login/$', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
+# PR2020-09-25
+    path('login', auth_views.LoginView.as_view(authentication_form=SchoolbaseAuthenticationForm), name='login'),
+    # TODO create custom message when user that is not is_active wants to login - PR2020-08-18
+    #      now a 'username password not correct' message appears, that is confusing
 
-# PR2018-03-19
+    # PR2018-03-19
     url(r'^logout/$', auth_views.LogoutView.as_view(), name='logout'),
 # PR2018-03-27
     url(r'^reset/$',
@@ -52,10 +61,15 @@ urlpatterns = [
     url(r'^reset/complete/$',
         auth_views.PasswordResetCompleteView.as_view(template_name='password_reset_complete.html'),
         name='password_reset_complete'),
+
     url(r'^settings/password/$', auth_views.PasswordChangeView.as_view(template_name='password_change.html'),
         name='password_change'),
     url(r'^settings/password/done/$', auth_views.PasswordChangeDoneView.as_view(template_name='password_change_done.html'),
         name='password_change_done'),
+
+# ++++ SIGN UP +++++++++++++++++++++++++++++++++++++++ PR2020-09-25
+    url(r'^signup_activate/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+        account_views.SignupActivateView, name='signup_activate_url'),
 
 # PR2018-04-24
     url(r'^account_activation_sent/$', account_views.account_activation_sent, name='account_activation_sent_url'),
@@ -77,20 +91,24 @@ urlpatterns = [
     # PR2018-03-09 path is new in django2.0 See: https://docs.djangoproject.com/en/2.0/releases/2.0/#whats-new-2-0
     path('admin/', admin.site.urls, name='admin_url'),
 
-# PR2018-03-21
+# PR2018-03-21 PR2020-09-17
     # PR2018-04-21 debug: don't forget the .as_view() with brackets in the urlpattern!!!
-    url(r'^users/$', account_views.UserListView.as_view(), name='user_list_url'),
-    url(r'^users/add$', account_views.UserAddView.as_view(), name='user_add_url'),
-    url(r'^users/(?P<pk>\d+)/edit$', account_views.UserEditView.as_view(), name='user_edit_url'),
-    url(r'^users/(?P<pk>\d+)/delete$', account_views.UserDeleteView.as_view(), name='user_delete_url'),
-    url(r'^users/(?P<pk>\d+)/log$', account_views.UserLogView.as_view(), name='user_log_url'),
+    path('user/', include([
+        path('users', account_views.UserListView.as_view(), name='users_url'),
+        path('user_upload', account_views.UserUploadView.as_view(), name='user_upload_url'),
+        path('settings_upload', account_views.UserSettingsUploadView.as_view(), name='settings_upload_url'),
+
+        #url(r'^users/(?P<pk>\d+)/log$', account_views.UserLogView.as_view(), name='user_log_url'),
+    ])),
 
     url(r'session_security/', include('session_security.urls')),
 # PR2018-05-11
-    url(r'^users/(?P<pk>\d+)/language/(?P<lang>[A-Za-z]{2})/$', account_views.UserLanguageView.as_view(), name='language_set_url'),
+    url(r'^users/language/(?P<lang>[A-Za-z]{2})/$', account_views.UserLanguageView.as_view(), name='language_set_url'),
 
-# PR2018-03-11
-    url('^$', school_views.home,  name='home'),
+    path('datalist_download', awpr_downloads.DatalistDownloadView.as_view(), name='datalist_download_url'),
+
+    # PR2018-03-11
+    url('^$', school_views.home,  name='home_url'),
     # path('',  auth_views.LoginView.as_view(template_name='login.html'), name='login'),
     path('loggedin/', school_views.Loggedin, name='loggedin_url'),
     # url(r'^favicon\.ico$',RedirectView.as_view(url='/static/img/favicon.ico')),
@@ -108,60 +126,40 @@ urlpatterns = [
     # url(r'^country/logdeleted$', school_views.CountryLogDeletedView.as_view(), name='country_log_deleted_url'),
     url(r'^country/(?P<pk>\d+)/lock$', school_views.CountryLockView.as_view(), name='country_lock_url'),
 
-    url(r'^country/formset$', school_views.CountyFormsetView.as_view(), name='country_formset_url'),
-
 # PR2018-03-14
     # PR2018-04-17 debug: don't forget the brackets at the end of as_view() !!\
 
-    path('examyear/', include([
-        path('', school_views.ExamyearListView.as_view(), name='examyear_list_url'),
-        path('add/', school_views.ExamyearAddView.as_view(), name='examyear_add_url'),
-        path('<int:pk>/selected/', school_views.ExamyearSelectView.as_view(), name='examyear_selected_url'),
-        path('<int:pk>/edit/', school_views.ExamyearEditView.as_view(), name='examyear_edit_url'),
-        path('<int:pk>/delete/', school_views.ExamyearDeleteView.as_view(), name='examyear_delete_url'),
-        path('<int:pk>/log/', school_views.ExamyearLogView.as_view(), name='examyear_log_url'),
-        path('<int:pk>/lock', school_views.ExamyearLockView.as_view(), name='examyear_lock_url'),
-    ])),
 # department PR2018-08-11 PR2019-02-27
     path('department/', include([
         path('', school_views.DepartmentListView.as_view(), name='department_list_url'),
-        path('add', school_views.DepartmentAddView.as_view(), name='department_add_url'),
         path('<int:pk>/', include([
             path('select', school_views.DepartmentSelectView.as_view(), name='department_select_url'),
-            path('edit', school_views.DepartmentEditView.as_view(), name='department_edit_url'),
-            path('delete', school_views.DepartmentDeleteView.as_view(), name='department_delete_url'),
             path('log', school_views.DepartmentLogView.as_view(), name='department_log_url'),
         ])),
     ])),
 
 # school  PR2018-08-25 PR2018-12-20
-    path('school/', include([
-        path('', school_views.SchoolListView.as_view(), name='school_list_url'),
-        path('add/', school_views.SchoolAddView.as_view(), name='school_add_url'),
+    path('schools/', include([
+        path('examyears', school_views.ExamyearListView.as_view(), name='examyears_url'),
+        path('examyear_upload', school_views.ExamyearUploadView.as_view(), name='examyear_upload_url'),
+
+        path('school', school_views.SchoolListView.as_view(), name='school_list_url'),
+        path('school_upload', school_views.SchoolUploadView.as_view(), name='school_upload_url'),
+        path('school_import', school_views.SchoolImportView.as_view(), name='school_import_url'),
+        path('uploadsetting', school_views.SchoolImportUploadSetting.as_view(), name='school_uploadsetting_url'),
+        path('uploaddata', school_views.SchoolImportUploadData.as_view(), name='school_uploaddata_url'),
+
+
         path('<int:pk>/', include([
             path('select/', school_views.SchoolSelectView.as_view(), name='school_selected_url'),
-            path('edit/', school_views.SchoolEditView.as_view(), name='school_edit_url'),
-            path('delete/', school_views.SchoolDeleteView.as_view(), name='school_delete_url'),
             path('log', school_views.SchoolLogView.as_view(), name='school_log_url'),
         ])),
     ])),
 
-    # level PR2018-08-12
-    url(r'^level/$', subject_views.LevelListView.as_view(), name='level_list_url'),
-    url(r'^level/add/$', subject_views.LevelAddView.as_view(), name='level_add_url'),
-    url(r'^level/(?P<pk>\d+)/edit$', subject_views.LevelEditView.as_view(), name='level_edit_url'),
-    url(r'^level/(?P<pk>\d+)/delete/$', subject_views.LevelDeleteView.as_view(), name='level_delete_url'),
-    url(r'^level/(?P<pk>\d+)/log$', subject_views.LevelLogView.as_view(), name='level_log_url'),
 
     # PR 2018-08-31 from https://simpleisbetterthancomplex.com/tutorial/2018/01/29/how-to-implement-dependent-or-chained-dropdown-list-with-django.html
     # re_path(r'^ajax/load-levels/$', subject_views.load_levels, name='ajax_load_levels'),
 
-# sector PR2018-08-23
-    url(r'^sector/$', subject_views.SectorListView.as_view(), name='sector_list_url'),
-    url(r'^sector/add/$', subject_views.SectorAddView.as_view(), name='sector_add_url'),
-    url(r'^sector/(?P<pk>\d+)/edit$', subject_views.SectorEditView.as_view(), name='sector_edit_url'),
-    url(r'^sector/(?P<pk>\d+)/delete/$', subject_views.SectorDeleteView.as_view(), name='sector_delete_url'),
-    url(r'^sector/(?P<pk>\d+)/log$', subject_views.SectorLogView.as_view(), name='sector_log_url'),
 
 # level PR2018-11-10
     url(r'^subjecttype/$', subject_views.SubjecttypeListView.as_view(), name='subjecttype_list_url'),
@@ -190,51 +188,31 @@ urlpatterns = [
 # package PR2019-02-27
    # url(r'^package/$', subject_views.PackageView.as_view(), name='scheme_list_url'),
 
-# subject # PR2018-08-23
-    url(r'^subject/$', subject_views.SubjectListView.as_view(), name='subject_list_url'),
-    url(r'^subject/add/$', subject_views.SubjectAddView.as_view(), name='subject_add_url'),
-    url(r'^subject/(?P<pk>\d+)/edit$', subject_views.SubjectEditView.as_view(), name='subject_edit_url'),
-    url(r'^subject/(?P<pk>\d+)/delete/$', subject_views.SubjectDeleteView.as_view(), name='subject_delete_url'),
-    url(r'^subject/(?P<pk>\d+)/log$', subject_views.SubjectLogView.as_view(), name='subject_log_url'),
 
+
+# subject # PR2018-08-23 PR2020-10-20
+    path('subjects/', include([
+        path('subject', subject_views.SubjectListView.as_view(), name='subjects_url'),
+        path('subject_upload', subject_views.SubjectUploadView.as_view(), name='subject_upload_url'),
+        path('subject_import', subject_views.SubjectImportView.as_view(), name='subject_import_url'),
+        path('uploadsetting', subject_views.SubjectImportUploadSetting.as_view(), name='subject_uploadsetting_url'),
+        path('uploaddata', subject_views.SubjectImportUploadData.as_view(), name='subject_uploaddata_url'),
+
+    ])),
 
 # student  PR2018-09-02 PR2018-11-19
-    path('student/', include([
-        path('', student_views.StudentListView.as_view(), name='student_list_url'),
-        path('add/', student_views.StudentAddView.as_view(), name='student_add_url'),
-        path('<int:pk>/', include([
-            path('edit/', student_views.StudentEditView.as_view(), name='student_edit_url'),
-            path('delete/', student_views.StudentDeleteView.as_view(), name='student_delete_url'),
-            path('log', student_views.StudentLogView.as_view(), name='student_log_url'),
-        ])),
+    path('students/', include([
+        path('student', student_views.StudentListView.as_view(), name='students_url'),
+
+        path('student_upload', student_views.StudentUploadView.as_view(), name='student_upload_url'),
+        path('student_import', student_views.StudentImportView.as_view(), name='student_import_url'),
+        path('uploadsetting', student_views.StudentImportUploadSetting.as_view(), name='student_uploadsetting_url'),
+        path('uploaddata', student_views.StudentImportUploadData.as_view(), name='student_uploaddata_url'),
+
         path('import/', student_views.ImportStudentView.as_view(), name='import_student_url'),
         path('load_cities/', student_views.load_cities, name='load_cities_url'),  # PR2018-09-03
     ])),
 
-# result PR2018-11-21
-    path('result/', include([
-        path('', student_views.ResultListView.as_view(), name='result_list_url'),
-        path('<int:pk>/', include([
-            path('edit/', student_views.ResultEditView.as_view(), name='result_edit_url'),
-            path('log/', student_views.ResultLogView.as_view(), name='result_log_url'),
-        ])),
-    ])),
-
-# studentsubject PR2018-11-27
-    path('studentsubject/', include([
-        path('', student_views.StudentsubjectListView.as_view(), name='studentsubject_url'),
-        path('add/', student_views.StudentsubjectAddView.as_view(), name='studentsubject_add_url'),
-        path('<int:pk>/edit/', student_views.StudentsubjectEditView.as_view(), name='studentsubject_edit_url'),
-        path('<int:pk>/formset/', student_views.StudentsubjectFormsetView.as_view(), name='studentsubject_formset_url'),
-    ])),
-
-# grade PR2018-11-28
-    path('grade/', include([
-        path('', student_views.GradeListView.as_view(), name='grade_list_url'),
-        path('add/', student_views.GradeAddView.as_view(), name='grade_add_url'),
-        path('<int:pk>/edit/', student_views.GradeEditView.as_view(), name='grade_edit_url'),
-        path('<int:pk>/log/', student_views.GradeLogView.as_view(), name='grade_log_url')
-    ])),
 
     # PR2018-05-06 debug: don't forget the brackets at the end of as_view() !!
     url(r'^department/import/$', import_views.ImportDepartmentView.as_view(), name='import_department_url'),
@@ -258,11 +236,8 @@ urlpatterns = [
 
 # ajax PR2018-12-02
     path('ajax/', include([
-        path('upload_user_settings/', account_views.DownloadSubmenusView.as_view(), name='download_submenus_url'),
         path('import_student_load/', student_views.StudentImportUploadDataView.as_view(), name='import_student_load_url'),
         path('import_student_awpcoldef/', student_views.StudentImportUploadSettingView.as_view(), name='upload_student_mapping_url'),
-        path('ajax_studsubj_download/', student_views.StudentsubjectDownloadView.as_view(), name='ajax_studsubj_download_url'),
-        path('ajax_studsubj_upload/', student_views.StudentsubjectUploadView.as_view(), name='ajax_studsubj_upload_url'),
         path('ajax_importssi_upload/', import_views.AjaxImportSSIupload.as_view(), name='ajax_importssi_upload_url'),
         path('ajax_schemeitems_download/', subject_views.SchemeitemsDownloadView.as_view(), name='ajax_schemeitems_download_url'),
         path('ajax_ssi_upload/', subject_views.SchemeitemUploadView.as_view(), name='ajax_ssi_upload_url'),

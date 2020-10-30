@@ -1,0 +1,170 @@
+
+/* ---------------------------------------------------
+    SIDEBAR STYLE
+----------------------------------------------------- */
+
+.wrapper {
+    display: flex;
+    width: 100%;
+}
+
+.awp_sidebar {
+    width: 220px;
+    position: fixed;
+    top: 48px;
+    left: 0;
+    height: 100vh;  /* means the height of this element is equal to 100% of the viewport height. */
+    margin-top: 0; /*31px; /* margin-top: 38px; */
+
+    z-index: 1040; /* header has z-indez 1030  dropdown z-indez 1030 = 1000*/
+
+    background-color: #a5a5a5; /* medium grey; 165 165 165*/
+    color: #fff;
+    transition: all 0.3s;
+}
+
+.awp_sidebar .active {
+    margin-left: -220px;
+}
+
+.awp_sidebar .sidebar_header {
+    padding: 20px 12px 12px 12px;;  /* top, right, bottom, left:
+    /*background: #6d7fcc;   kind of pale blue */
+    background-color: #a5a5a5; /* medium grey; 165 165 165*/
+}
+.awp_sidebar .sidebar_btngroup {
+    padding: 20px 0px 12px 0px;  /* top, right, bottom, left:
+    /*background: #6d7fcc;   kind of pale blue */
+    background-color: #a5a5a5; /* medium grey; 165 165 165*/
+}
+
+.awp_sidebar .sidebar_filter {
+    /*padding: 20px 12px 12px 12px;;  /* top, right, bottom, left:*/
+    padding: .5rem; /* mx-2 my-2 = 0.5rem (8px if font-size is 16px)*/
+    /*background: #6d7fcc;   kind of pale blue */
+    background-color: #a5a5a5; /* medium grey; 165 165 165*/
+}
+.awp_sidebar .components {
+    padding: 20px 0;
+    border-bottom: 1px solid #47748b;
+}
+
+.awp_sidebar ul p {
+    color: #fff;
+    padding: 10px;
+}
+
+.awp_sidebar ul li a {
+    padding: 10px;
+    font-size: 1.1em;
+    display: block;
+}
+
+.awp_sidebar ul li a:hover {
+    color: #7386D5;
+    background: #fff;
+}
+
+.awp_sidebar ul li.active>a,
+a[aria-expanded="true"] {
+    color: #fff;
+    /*background: #6d7fcc;   kind of pale blue */
+    background-color: #a5a5a5; /* medium grey; 165 165 165*/
+}
+
+
+.awp_sidebar_hover {
+   background-color: #e0e0e0; /* licht grijs; tsa_tr_selected*/
+   color: #a5a5a5; /* dark grey */
+    /*color: #000000;*/
+    -moz-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);
+    -webkit-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */  /* Firefox 3.5 - 3.6 */
+    /* box-shadow: [horizontal offset] [vertical offset] [blur radius] [optional spread radius] [color]; */
+    box-shadow:         3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
+}
+
+
+a[data-toggle="collapse"] {
+    position: relative;
+}
+/*
+PR2020-09-14 this one caused the dropdown arrow to be in the middle of text
+.dropdown-toggle::after {
+    display: block;
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+}
+*/
+ul ul a {
+    font-size: 0.9em !important;
+    padding-left: 30px !important;
+    background: #6d7fcc;
+}
+
+ul.CTAs {
+    padding: 20px;
+}
+
+ul.CTAs a {
+    text-align: center;
+    font-size: 0.9em !important;
+    display: block;
+    border-radius: 5px;
+    margin-bottom: 5px;
+}
+
+.download {
+    background: #fff;
+    color: #7386D5;
+}
+
+a.article,
+a.article:hover {
+    background: #6d7fcc !important;
+    color: #fff !important;
+}
+
+/* ---------------------------------------------------
+    CONTENT STYLE
+----------------------------------------------------- */
+
+#id_content {
+    width: calc(100% - 220px);
+    height: calc(100vh - 48px);
+    padding: 0;
+    /*min-height: 100vh;*/
+    transition: all 0.3s;
+    position: absolute;
+    top:  48px; /*31px; /* top: 38px; */
+    right: 0;
+
+}
+
+#id_content.active {
+    width: 100%;
+}
+
+/* ---------------------------------------------------
+    MEDIAQUERIES
+----------------------------------------------------- */
+
+@media (max-width: 768px) {
+    .awp_sidebar {
+        margin-left: -220px;
+    }
+    .awp_sidebar .active {
+        margin-left: 0;
+    }
+    #id_content {
+        width: 100%;
+        height: auto;
+    }
+    #id_content.active {
+        width: calc(100% - 220px);
+    }
+    .awp_sidebar span {
+        display: none;
+    }
+}

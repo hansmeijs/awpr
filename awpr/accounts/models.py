@@ -1,7 +1,10 @@
-# PR2018-04-22
+# PR2018-04-22 PR2020-09-14
 from django.db.models import Model, ForeignKey, PROTECT, CASCADE, SET_NULL
 from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, EmailField
 from django.contrib.auth.models import AbstractUser, UserManager
+
+from django.contrib.postgres.fields import JSONField
+
 from django.core.validators import RegexValidator
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
@@ -14,25 +17,6 @@ from awpr.settings import AUTH_USER_MODEL
 # PR2018-05-10
 import logging
 logger = logging.getLogger(__name__)
-
-"""
-Preferable attributes and methods order in a model (an empty string between the points).
-    constants (for choices and other)
-    fields of the model
-    custom manager indication
-    meta
-    def __unicode__ (python 2) or def __str__ (python 3)
-    other special methods
-    def clean
-    def save
-    def get_absolut_url
-    other methods
-"""
-
-IS_ACTIVE_DICT = {
-    0: _('Inactive'),
-    1: _('Active')
-}
 
 # === USER =====================================
 # PR2018-05-22 added to create a case-insensitive username
@@ -56,7 +40,7 @@ class User(AbstractUser):
         max_length=c.USERNAME_MAX_LENGTH,
         unique=True,
         # help_text=_('Required. {} characters or fewer. Letters, digits and @/./+/-/_ only.'.format(c.USERNAME_MAX_LENGTH)),
-        help_text=_('Required. 30 characters or fewer. Letters, digits and @/./+/-/_ only.'),
+        help_text=_('Required, %(len)s characters or fewer. Letters, digits and @/./+/-/_ only.') % {'len': c.USERNAME_SLICED_MAX_LENGTH},
         validators=[
             RegexValidator(r'^[\w.@+-]+$',
             _('Enter a valid username. '
@@ -66,7 +50,6 @@ class User(AbstractUser):
         error_messages={
             'unique': _("A user with that username already exists."),
         })
-
     last_name = CharField(
         max_length=50,
         help_text=_('Required. {} characters or fewer.'.format(50)),
@@ -76,14 +59,9 @@ class User(AbstractUser):
             'This value may contain only letters, numbers '
             'and \'/./-/_ characters.'), 'invalid'),
         ],)
-
     email = EmailField( _('email address'),)
     # PR2018-08-01 role choices cannot be set in Model, because allowed values depend on request_user. Use role_list in Form instead
-    role = PositiveSmallIntegerField(
-        default=0,
-        # choises must be tuple or list, dictionary gives error: 'int' object is not iterable
-        choices=c.CHOICES_ROLE
-    )
+    role = PositiveSmallIntegerField(default=0)
     permits = PositiveSmallIntegerField(default=0)
     allowed_depbase_list = CharField(max_length=255, null=True, blank=True)
     allowed_levelbase_list = CharField(max_length=255, null=True, blank=True)
@@ -97,43 +75,16 @@ class User(AbstractUser):
     schoolbase = ForeignKey(Schoolbase, null=True, blank=True, related_name='+', on_delete=PROTECT)
     depbase = ForeignKey(Departmentbase, null=True, blank=True, related_name='+', on_delete=PROTECT)
     lang = CharField(max_length=4, null=True, blank=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    created_by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    created_at = DateTimeField(null=True)
+    modified_by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
     modified_at = DateTimeField(null=True)
 
     class Meta:
         ordering = ['username',]
 
     def __str__(self):
-        return self.username
-
-    def __init__(self, *args, **kwargs):
-        super(User, self).__init__(*args, **kwargs)
-        # private variable __original checks if data_has_changed, to prevent update record when no changes are made.
-        # otherwise a logrecord would be created every time the save button is clicked without changes
-        self.original_username = self.username
-        self.original_password = self.password
-        self.original_last_name = self.last_name
-        self.original_email = self.email
-        self.original_last_login = self.last_login
-        self.original_is_superuser = self.is_superuser
-        self.original_is_staff = self.is_staff
-        self.original_is_active = self.is_active
-        self.original_date_joined = self.date_joined
-
-        self.original_role = self.role
-        self.original_permits = self.permits
-        self.original_allowed_depbase_list = self.allowed_depbase_list
-        self.original_allowed_levelbase_list = self.allowed_levelbase_list
-        self.original_allowed_subjectbase_list = self.allowed_subjectbase_list
-        self.original_allowed_clusterbase_list = self.allowed_clusterbase_list
-
-        self.original_activated = self.activated
-        self.original_activated_at = self.activated_at
-        self.original_country = self.country
-        self.original_examyear = self.examyear
-        self.original_schoolbase = self.schoolbase
-        self.original_depbase = self.depbase
-        self.original_lang = self.lang
+        return self.username[6:]
 
     def save(self, *args, **kwargs):
         # when request_user changes his own settings: self = request_user
@@ -146,30 +97,30 @@ class User(AbstractUser):
         #     request = args[0]  # user.save(self.request)  # was: user.save() in UserEditView.post
         #     request_user = request.user
         # logger.debug('class User(AbstractUser) save self.request: ' + str(self.request))
+        request_user = None
+        if self.request:
+            if self.request.user:
+                request_user = self.request.user
+                self.modified_by = request_user
+        # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+        self.modified_at = timezone.now()
 
-    # check if data has changed. If so: save object
-        if self.data_has_changed:
-            if self.request:
-                if self.request.user:
-                    self.modified_by = self.request.user
-            # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
-            self.modified_at = timezone.now()
-            self.mode = ('c', 'u')[self.is_update]  # result = (on_false, on_true)[condition]
-            # logger.debug('class User(AbstractUser) save _is_update ' + str(_is_update) + ' self.mode ' + str(self.mode))
+        # logger.debug('class User(AbstractUser) save _is_update ' + str(_is_update) + ' self.mode ' + str(self.mode))
 
-            # when adding record: self.id=None, set force_insert=True; otherwise: set force_update=True PR2018-06-09
-            # super(User, self).save(force_insert=not is_update, force_update=is_update, **kwargs)
-            # self.id gets its value in super(Country, self).save
-            # save to logfile
+        # self.id gets its value in super(Country, self).save
+        # save to logfile
 
-            # PR2018-06-07 self.modified_by is updated in View, couldn't get Country object passed to save function
-            # self.modified_at = timezone.now()
+        self.is_update = self.pk is not None  # self.id is None before new record is saved
+        self.mode = ('c', 'u')[self.is_update]  # result = (on_false, on_true)[condition]
 
-            # when adding record: self.id=None, set force_insert=True; otherwise: set force_update=True PR2018-06-09
-            super(User, self).save(force_insert=not self.is_update, force_update=self.is_update, **kwargs)
-            # self.id gets its value in super(Country, self).save
+        # PR2018-06-07 self.modified_by is updated in View, couldn't get Country object passed to save function
+        # self.modified_at = timezone.now()
 
-            self.save_to_user_log()
+        # when adding record: self.id=None, set force_insert=True; otherwise: set force_update=True PR2018-06-09
+        super(User, self).save(force_insert=not self.is_update, force_update=self.is_update, **kwargs)
+        # self.id gets its value in super(Country, self).save
+
+        self.save_to_user_log()
 
         """
         # PR2018-06-07 self.modified_by is updated in View, couldn't get Country object passed to save function
@@ -180,9 +131,9 @@ class User(AbstractUser):
         self.save_to_user_log(self)
         """
     def save_to_user_log(self):
-        # Create method also saves record
+        #Create method also saves record
         User_log.objects.create(
-            user_id=self.id,
+            user_id=self.pk,
             username=self.username,
             last_name=self.last_name,
             email=self.email,
@@ -195,49 +146,21 @@ class User(AbstractUser):
 
             role=self.role,
             permits=self.permits,
-            allowed_depbase_list=self.allowed_depbase_list,
-            allowed_levelbase_list=self.allowed_levelbase_list,
-            allowed_subjectbase_list=self.allowed_subjectbase_list,
-            allowed_clusterbase_list=self.allowed_clusterbase_list,
 
             activated=self.activated,
             activated_at=self.activated_at,
 
             country=self.country,
-            examyear=self.examyear,
             schoolbase=self.schoolbase,
-            depbase=self.depbase,
-            lang=self.lang,
-
-            username_mod=self.username_mod,
-            last_name_mod=self.last_name_mod,
-            email_mod=self.email_mod,
-            last_login_mod=self.last_login_mod,
-            is_superuser_mod=self.is_superuser_mod,
-            is_staff_mod=self.is_staff_mod,
-            is_active_mod=self.is_active_mod,
-            date_joined_mod=self.date_joined_mod,
-
-            role_mod=self.role_mod,
-            permits_mod=self.permits_mod,
-            allowed_depbase_list_mod=self.allowed_depbase_list_mod,
-            allowed_levelbase_list_mod=self.allowed_levelbase_list_mod,
-            allowed_subjectbase_list_mod=self.allowed_subjectbase_list_mod,
-            allowed_clusterbase_list_mod=self.allowed_clusterbase_list_mod,
-
-            activated_mod=self.activated_mod,
-            activated_at_mod=self.activated_at_mod,
-
-            country_mod=self.country_mod,
-            examyear_mod=self.examyear_mod,
-            schoolbase_mod=self.schoolbase_mod,
-            depbase_mod=self.depbase_mod,
-            lang_mod=self.lang_mod,
 
             mode=self.mode,
-            modified_by=self,
+            created_at=self.created_at,
+            created_by=self.created_by,
+
+            modified_by=self.modified_by,
             modified_at=self.modified_at
         )
+    #created_by = request_user if mode == 'c'
 
     @property
     def data_has_changed(self):
@@ -296,14 +219,20 @@ class User(AbstractUser):
             self.depbase_mod or \
             self.lang_mod
 
+
+    @property
+    def username_sliced(self):
+        # PR2019-03-13 Show username 'Hans' instead of '000001Hans'
+        return self.username[6:]
+
     @property
     def role_str(self):
         # PR2018-05-31 NB: self.role = False when None or value = 0
-        #if self.role == c.ROLE_00_SCHOOL:
+        #if self.role == c.ROLE_08_SCHOOL:
         #    _role_str = _('School')
-        #elif self.role == c.ROLE_01_INSP:
+        #elif self.role == c.ROLE_16_INSP:
         #    _role_str = _('Inspection')
-        #elif self.role == c.ROLE_02_SYSTEM:
+        #elif self.role == c.ROLE_64_SYSTEM:
         #    _role_str = _('System')
         _role_str = c.CHOICES_ROLE_DICT.get(self.role,'')
         return _role_str
@@ -343,20 +272,51 @@ class User(AbstractUser):
                     _examyear_locked = True
         return _examyear_locked
 
-    # TODO check if in in use
-    #@property
-    #def school(self): # PR2018-09-15
-    #    school = None
-    #    if self.country and self.examyear and self.schoolbase:
-    #        # get school from this schoolbase and this examyear. Countr is field of Examyear, therefore filter Counrry not necessary
-    #        school= School.objects.filter(base=self.schoolbase, examyear=self.examyear).first()
-    #    return school
+    @property
+    def schoolcode(self): # PR2020-09-29
+        schoolcode = None
+        if self.schoolbase:
+            schoolcode = self.schoolbase.code
+        return schoolcode
 
+    @property
+    def schoolname(self): # PR2018-09-15  PR2020-09-29
+        schoolname = None
+        if self.country and self.schoolbase:
+            if self.examyear:
+                # get school from this schoolbase and this examyear.
+                # Country is field of Examyear, therefore filter Country not necessary
+                school = School.objects.get_or_none(base=self.schoolbase, examyear=self.examyear)
+            else:
+                #if examyear is None: get school from latest examyear
+                school = School.objects.get_or_none(country=self.country, base=self.schoolbase).order_by('-examyear').first()
+            if school:
+                schoolname = school.name
+        return schoolname
+
+    @property
+    def schoolnamewithArticle(self): # PR2020-09-29
+        schoolname = None
+        if self.country and self.schoolbase:
+            if self.examyear:
+                # get school from this schoolbase and this examyear.
+                # Country is field of Examyear, therefore filter Country not necessary
+                school = School.objects.get_or_none(base=self.schoolbase, examyear=self.examyear)
+            else:
+                #if examyear is None: get school from latest examyear
+                school = School.objects.get_or_none(country=self.country, base=self.schoolbase).order_by('-examyear').first()
+            if school and school.name:
+                schoolname = school.name
+                if school.article:
+                    schoolname = school.article.capitalize() + ' ' + school.name
+                else:
+                    schoolname = school.name
+        return schoolname
     @property
     def schoolabbrev(self): # PR2018-12-18 used in user_list
         abbrev = '-'
         if self.country and self.examyear and self.schoolbase:
-            school= School.objects.filter(base=self.schoolbase, examyear=self.examyear).first()
+            school= School.objects.get_or_none(base=self.schoolbase, examyear=self.examyear)
             if school:
                 if school.abbrev:
                     abbrev = school.abbrev
@@ -387,9 +347,9 @@ class User(AbstractUser):
         # PR2018-05-26 permits_str displays list of permits un UserListForm, e.g.: 'Schooladmin, Authorize, Write'
         permits_all_dict = {
             c.PERMIT_01_READ: _('Read'),
-            c.PERMIT_02_WRITE: _('Write'),
-            c.PERMIT_04_AUTH: _('Authorize'),
-            c.PERMIT_08_ADMIN: _('Admin'),
+            c.PERMIT_02_EDIT: _('Write'),
+            c.PERMIT_04_AUTH1: _('Authorize'),
+            c.PERMIT_32_ADMIN: _('Admin'),
         }
         permits_str = ''
         if self.permits_tuple is not None:
@@ -405,7 +365,7 @@ class User(AbstractUser):
                     permits_str = permits_str + ', ' + str(list_item)
                     # stop when write permission is found . 'Read' will then not be displayed
                     # PR2018-07-26 debug: doesn't work, because tuple is not in reverse order
-                    # if permit_int == c.PERMIT_02_WRITE:
+                    # if permit_int == c.PERMIT_02_EDIT:
                     #    break
         if not permits_str: # means: if permits_str == '':
             permits_str = ', None'
@@ -440,13 +400,6 @@ class User(AbstractUser):
         return tuple(permits_list)
 
 
-
-
-
-
-
-
-
     # PR2018-05-30 list of permits that user can be assigned to:
     # - System users can only have permits: 'Admin' and 'Read'
     # - System users can add all roles: 'System', Insp', School', but other roles olny with 'Admin' and 'Read' permit
@@ -462,9 +415,9 @@ class User(AbstractUser):
         if self.role is not None:  # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
             choices = [
                 (c.PERMIT_01_READ, _('Read')),
-                (c.PERMIT_02_WRITE, _('Write')),
-                (c.PERMIT_04_AUTH, _('Authorize')),
-                (c.PERMIT_08_ADMIN, _('Admin'))
+                (c.PERMIT_02_EDIT, _('Write')),
+                (c.PERMIT_04_AUTH1, _('Authorize')),
+                (c.PERMIT_32_ADMIN, _('Admin'))
             ]
         else:
             # get permit 'None'
@@ -612,7 +565,7 @@ class User(AbstractUser):
         if usersettings:
             for usersetting in usersettings:
                 # TODO: remove filter and get all settings
-                if usersetting.key_str == c.KEY_USER_MENU_SELECTED:
+                if usersetting.key == c.KEY_USER_MENU_SELECTED:
                     if usersetting.char01:
                         settings[c.KEY_USER_MENU_SELECTED] = usersetting.char01
                         # logger.debug('user_settings: ' + str(user_settings) + ' type: ' +  str(type(user_settings)))
@@ -634,56 +587,55 @@ class User(AbstractUser):
         return Department.depbase_list_str(depbase_list=self.allowed_depbase_list, examyear=self.examyear)
 
     @property
-    def is_active_str(self): # PR108-08-09
-        return str(c.IS_ACTIVE_DICT.get(int(self.is_active)))
-
-    @property
     def is_active_choices(self): # PR108-06-22
         return c.IS_ACTIVE_CHOICES.get(int(self.is_active))
 
-    # PR2018-05-27 property returns True when user has ROLE_02_SYSTEM
+    # PR2018-05-27 property returns True when user has ROLE_64_SYSTEM
     @property
     def is_role_system(self):
-        _has_role = False
-        if self.is_authenticated:
-            if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_02_SYSTEM:
-                    _has_role = True
-        return _has_role
+        # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
+        return self.is_authenticated and self.role is not None and self.role == c.ROLE_64_SYSTEM
 
     @property
     def is_role_system_perm_admin(self):
         _has_permit = False
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_02_SYSTEM:
-                    _has_permit = (c.PERMIT_08_ADMIN in self.permits_tuple)
+                if self.role == c.ROLE_64_SYSTEM:
+                    _has_permit = (c.PERMIT_32_ADMIN in self.permits_tuple)
         return _has_permit
 
     @property
+    def is_role_admin(self):
+        # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
+        # PR220-09-24 system has also admin rights
+        return (self.is_authenticated) and (self.role is not None) and \
+               (self.role == c.ROLE_32_ADMIN)
+
+    @property
     def is_role_insp(self):
-        _has_role = False
-        if self.is_authenticated:
-            if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_01_INSP:
-                    _has_role = True
-        return _has_role
+        # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
+        return self.is_authenticated and self.role is not None and self.role == c.ROLE_16_INSP
 
     @property
     def is_role_school(self):
-        _has_role = False
-        if self.is_authenticated:
-            if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_00_SCHOOL:
-                    _has_role = True
-        return _has_role
+        # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
+        return self.is_authenticated and self.role is not None and self.role == c.ROLE_08_SCHOOL
 
     @property
-    def is_role_insp_or_system(self):
+    def is_role_teacher(self):
+        return self.is_authenticated and self.role is not None and self.role == c.ROLE_04_TEACHER
+
+    @property
+    def is_role_student(self):
+        return self.is_authenticated and self.role is not None and self.role == c.ROLE_02_STUDENT
+
+    @property
+    def is_role_insp_or_admin_or_system(self):
         _has_permit = False
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_02_SYSTEM or self.role == c.ROLE_01_INSP:
+                if self.role == c.ROLE_64_SYSTEM or self.role == c.ROLE_32_ADMIN or self.role == c.ROLE_16_INSP:
                     _has_permit = True
         return _has_permit
 
@@ -692,48 +644,58 @@ class User(AbstractUser):
         _has_permit = False
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_02_SYSTEM or self.role == c.ROLE_01_INSP:
+                if self.role == c.ROLE_64_SYSTEM or self.role == c.ROLE_16_INSP:
                     if self.is_perm_admin:
                         _has_permit = True
         return _has_permit
 
+    @property
+    def is_role_adm_or_sys_and_perm_adm_or_sys_(self):
+        _has_permit = False
+        if self.is_authenticated:
+            if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
+                if self.role == c.ROLE_32_ADMIN or self.role == c.ROLE_64_SYSTEM:
+                    if self.is_perm_admin or self.is_perm_system:
+                        _has_permit = True
+        return _has_permit
 
     @property
     def is_role_school_perm_admin(self):
         _has_permit = False
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_00_SCHOOL:
-                    _has_permit = (c.PERMIT_08_ADMIN in self.permits_tuple)
+                if self.role == c.ROLE_08_SCHOOL:
+                    _has_permit = (c.PERMIT_32_ADMIN in self.permits_tuple)
         return _has_permit
+
+    @property
+    def is_perm_system(self):
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_64_SYSTEM in self.permits_tuple
 
     @property
     def is_perm_admin(self):
-        _has_permit = False
-        if self.is_authenticated:
-            _has_permit = c.PERMIT_08_ADMIN in self.permits_tuple
-        return _has_permit
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_32_ADMIN in self.permits_tuple
 
     @property
-    def is_perm_auth(self):
-        _has_permit = False
-        if self.is_authenticated:
-            _has_permit = c.PERMIT_04_AUTH in self.permits_tuple
-        return _has_permit
+    def is_perm_docs(self):
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_16_ANALYZE in self.permits_tuple
 
     @property
-    def is_perm_write(self):
-        _has_permit = False
-        if self.is_authenticated:
-            _has_permit = c.PERMIT_02_WRITE in self.permits_tuple
-        return _has_permit
+    def is_perm_auth2(self):
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_08_AUTH2 in self.permits_tuple
 
     @property
-    def is_perm_read_only(self):
-        _has_permit = False
-        if self.is_authenticated:
-            _has_permit = c.PERMIT_01_READ in self.permits_tuple
-        return _has_permit
+    def is_perm_auth1(self):
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_04_AUTH1 in self.permits_tuple
+
+    @property
+    def is_perm_edit(self):
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_02_EDIT in self.permits_tuple
+
+    @property
+    def is_perm_read(self):
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_01_READ in self.permits_tuple
+
 
     @property
     def may_add_or_edit_users(self):
@@ -911,7 +873,7 @@ class User(AbstractUser):
                 return _("You are not connected to a country. You cannot view this page.")
 
 # ===== every school user must have a school PR2018-09-15
-        if not self.is_role_insp_or_system:
+        if not self.is_role_insp_or_admin_or_system:
             if not self.schoolbase:
                 return _("You are not connected to a school. You cannot view this page.")
 
@@ -960,7 +922,7 @@ class User(AbstractUser):
     # - examyear_list, can only be viewed by role_system and role_insp
         if page_name == 'examyear_view':
             # logger.debug('page: examyear_view')
-            if not self.is_role_insp_or_system:
+            if not self.is_role_insp_or_admin_or_system:
                 # logger.debug('page: is_role_insp_or_system_and_perm_admin')
                 return _("You don't have permission to view exam years.")
             else:
@@ -992,7 +954,7 @@ class User(AbstractUser):
 
         # - departments / levels / sectors:  can only be viewed by role_system and role_insp
         if page_name == 'default_items_view':
-            if not self.is_role_insp_or_system:
+            if not self.is_role_insp_or_admin_or_system:
                 # logger.debug('page: is_role_insp_or_system_and_perm_admin')
                 return _("You don't have permission to view these items.")
             else:
@@ -1052,7 +1014,7 @@ class User(AbstractUser):
                 # filter that role-school users can only modify their own school is part of form-get
                 return _("You don't have permission to modify schools.")
             elif page_name == 'school_add_delete':
-                if not self.is_role_insp_or_system:
+                if not self.is_role_insp_or_admin_or_system:
                     return _("You don't have permission to add or delete schools.")
                 else:
                     return None
@@ -1092,59 +1054,34 @@ class User_log(Model):
     objects = CustomUserManager()
 
     user_id = IntegerField(db_index=True)
-
-    username = CharField(max_length=150, null=True)
-    # Field is not in use: first_name = CharField(max_length=30, null=True)
-    # Field is not in use: first_name_mod = BooleanField(default=False)
+    username = CharField(max_length=c.USERNAME_MAX_LENGTH, null=True)
     last_name = CharField( max_length=150, null=True)
     email = EmailField(null=True)
+
     last_login = DateTimeField(null=True)
     is_superuser = BooleanField(default=False)
     is_staff = BooleanField(default=False)
     is_active = BooleanField(default=False)
     date_joined = DateTimeField(null=True)
-    permits = PositiveSmallIntegerField(null=True)
+
     role = PositiveSmallIntegerField(null=True)
-    allowed_depbase_list = CharField(max_length=255, null=True)
-    allowed_levelbase_list = CharField(max_length=255, null=True)
-    allowed_subjectbase_list = CharField(max_length=255, null=True)
-    allowed_clusterbase_list = CharField(max_length=255, null=True)
+    permits = PositiveSmallIntegerField(null=True)
 
     activated = BooleanField(default=False)
     activated_at = DateTimeField(null=True)
+
     country = ForeignKey(Country, null=True, related_name='+', on_delete=PROTECT)
-    examyear = ForeignKey(Examyear, null=True, related_name='+', on_delete=SET_NULL)
     schoolbase = ForeignKey(Schoolbase, null=True, related_name='+', on_delete=PROTECT)
-    depbase = ForeignKey(Departmentbase, null=True, related_name='+', on_delete=SET_NULL)
-    lang = CharField(max_length=4, null=True)
-
-    username_mod = BooleanField(default=False)
-    last_name_mod = BooleanField(default=False)
-    email_mod = BooleanField(default=False)
-    last_login_mod = BooleanField(default=False)
-    is_superuser_mod = BooleanField(default=False)
-    is_staff_mod = BooleanField(default=False)
-    is_active_mod = BooleanField(default=False)
-    date_joined_mod = BooleanField(default=False)
-
-    permits_mod = BooleanField(default=False)
-    role_mod = BooleanField(default=False)
-    allowed_depbase_list_mod = BooleanField(default=False)
-    allowed_levelbase_list_mod = BooleanField(default=False)
-    allowed_subjectbase_list_mod = BooleanField(default=False)
-    allowed_clusterbase_list_mod = BooleanField(default=False)
-
-    activated_mod = BooleanField(default=False)
-    activated_at_mod = BooleanField(default=False)
-    country_mod = BooleanField(default=False)
-    examyear_mod = BooleanField(default=False)
-    schoolbase_mod = BooleanField(default=False)
-    depbase_mod = BooleanField(default=False)
-    lang_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(auto_now=True)
+
+    created_at = DateTimeField(null=True)
+    created_by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    created_username = CharField(max_length=c.USERNAME_MAX_LENGTH, null=True)
+
+    modified_at = DateTimeField(null=True)
+    modified_by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modified_username = CharField(max_length=c.USERNAME_MAX_LENGTH, null=True)
 
     def __str__(self):
         return self.username
@@ -1156,21 +1093,56 @@ class User_log(Model):
             mode_str = c.MODE_DICT.get(str(self.mode))
         return mode_str
 
-    @property
-    def is_active_str(self): # PR108-08-29
-        return str(c.IS_ACTIVE_DICT.get(int(self.is_active)))
-
 # PR2018-05-06
 class Usersetting(Model):
     objects = CustomUserManager()
 
-    user = ForeignKey(User, related_name='usr_settings', on_delete=CASCADE)
-    key_str = CharField(max_length=20)
-    char01 = CharField(max_length=2048, null=True)
-    char02 = CharField(max_length=2048, null=True)
-    int01 = IntegerField(null=True)
-    int02 = IntegerField(null=True)
-    bool01 = BooleanField(default=False)
-    bool02 = BooleanField(default=False)
-    date01 = DateTimeField(null=True)
-    date02 = DateTimeField(null=True)
+    user = ForeignKey(User, related_name='+', on_delete=CASCADE)
+    key = CharField(db_index=True, max_length=c.MAX_LENGTH_CODE)
+
+    jsonsetting = JSONField(null=True)
+
+    #key_str = CharField(max_length=20)
+    #char01 = CharField(max_length=2048, null=True)
+    #char02 = CharField(max_length=2048, null=True)
+    #int01 = IntegerField(null=True)
+   # int02 = IntegerField(null=True)
+   # bool01 = BooleanField(default=False)
+   # bool02 = BooleanField(default=False)
+    #date01 = DateTimeField(null=True)
+    #date02 = DateTimeField(null=True)
+
+    @classmethod
+    def get_jsonsetting(cls, key_str, user):  # PR2019-07-02
+        setting_dict = {}
+        if user and key_str:
+            row = cls.objects.filter(user=user, key=key_str).first()
+            if row:
+                if row.jsonsetting:
+                     # no need to use json.loads: Was: setting_dict = json.loads(row.jsonsetting)
+                    setting_dict = row.jsonsetting
+
+        return setting_dict
+
+    @classmethod
+    def set_jsonsetting(cls, key_str, setting_dict, user):  # PR2019-07-02 PR2020-07-12
+        #logger.debug('---  set_jsonsetting  ------- ')
+        #logger.debug('key_str: ' + str(key_str))
+        #logger.debug('setting_dict: ' + str(setting_dict))
+        # No need to use json.dumps. Was: new_setting_json = json.dumps(setting_dict)
+        if user and key_str:
+            rowcount = cls.objects.filter(user=user, key=key_str).count()
+            #logger.debug('rowcount: ' + str(rowcount))
+            #rows = cls.objects.filter(user=user, key=key_str)
+            #for item in rows:
+                #logger.debug('row key: ' + str(item.key) + ' jsonsetting: ' + str(item.jsonsetting))
+
+            # don't use get_or_none, gives none when multiple settings exist and will create extra setting.
+            row = cls.objects.filter(user=user, key=key_str).first()
+            if row:
+                #logger.debug('row exists')
+                row.jsonsetting = setting_dict
+            elif setting_dict:
+                #logger.debug('row does not exist')
+                row = cls(user=user, key=key_str, jsonsetting=setting_dict)
+            row.save()

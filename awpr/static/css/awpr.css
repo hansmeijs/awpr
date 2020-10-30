@@ -1,0 +1,323 @@
+
+
+ul::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+a:hover {
+  color: #a8c1e0;
+   text-decoration: none;
+}
+
+.navbar .nav-link {
+    padding-top:.3125rem;
+    padding-bottom:.3125rem;
+}
+
+.awp_navbar {
+  background-color: #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+
+  /*color: #ffffff /* #ffffff is white;#edf2f8; is light light blue /*95% #233d5c */
+  background-image: none;
+  background-repeat: no-repeat;
+  text-decoration: none;
+  list-style: none;
+
+  padding: 2px 8px;  /* top, right, bottom, left: */
+  border-bottom: 1px #f3f3f3; /* offwhite */
+ }
+
+
+.awp_navbar_item, .awp_navbar_item_with_hover { /* PR20202-09-29 */
+    background:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+
+    color: #ffffff; /* #ffffff is white; #edf2f8; is light light blue*/
+   /* font-size: 1.1rem;*/
+    font-size: 18px;
+    padding: 0px 8px 0px 8px;  /* top, right, bottom, left: */
+    margin: 4px 8px 4px 8px;
+}
+
+.awp_navbar_item_with_hover:hover {
+  color: #a8c1e0;
+  text-decoration: none;
+  list-style: none;
+  cursor: pointer;
+ }
+
+
+
+.navbar-item-default {
+  background-color: transparent; /* #233d5c; /* #2d4e77; */
+  color: #edf2f8; /*95% #233d5c */
+  font-size: 1.25rem;
+  line-height: inherit;
+  background-image: none;
+  background-repeat: no-repeat;
+  text-decoration: none;
+  list-style: none;
+  white-space: nowrap;
+ }
+ /*
+.navbar-item-default:hover {
+  color: #a8c1e0;
+  text-decoration: none;
+  list-style: none;
+ }
+*/
+.navbar-item-warning {
+  background-color: transparent;/*#233d5c;  #2d4e77; */
+  color: #ff7e00; /* #ff7e00 is orange; #ff3300 is orange-red */
+  background-image: none;
+  background-repeat: no-repeat;
+  text-decoration: none;
+  list-style: none;
+ }
+
+.navbar-otheryear {
+  background-color: grey; /* #2d4e77; */
+  color: #edf2f8; /*95% #233d5c */
+  background-image: none;
+  background-repeat: no-repeat;
+  list-style: none;
+ }
+/* change the brand and text color */
+.navbar-custom .navbar-brand,
+.navbar-custom .navbar-text {
+    background-color: #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    color: #e3ebf4;
+    list-style: none;
+    /*line-height: 24px; */
+    overflow: hidden; /* Add this */
+}
+
+/* change the link color */
+.navbar-custom .navbar-nav .nav-link {
+    color: rgba(255,255,255,.5);
+}
+
+/* change the color of active or hovered links */
+.navbar-custom .nav-item.active .nav-link,
+.navbar-custom .nav-item:hover .nav-link {
+    color: #ffffff;
+}
+
+/* for dropdown only - change the color of droodown */
+.navbar-custom .dropdown-menu {
+    background-color: #ff5500;
+}
+.navbar-custom .dropdown-item {
+    color: #ffffff;
+}
+.navbar-custom .dropdown-item:hover,
+.navbar-custom .dropdown-item:focus {
+    color: #333333;
+    background-color: rgba(255,255,255,.5);
+}
+
+
+.awp_dropdown_divider {
+  height: 0;
+  margin: 0.5rem 0;
+  overflow: hidden;
+  border-top: 1px solid #e9ecef;
+  border-top: 4px solid  #2d4e77;
+}
+
+
+/* PR2018-05-12 Style the menubar */
+
+nav.menubar {
+    background-color: green; /*95% #233d5c */
+    color: red; /*95% #233d5c */
+    clear: both;
+    overflow: hidden; // Add this
+}
+ul.menubar {
+    padding: 4px 16px;
+    list-style: none;
+    background-color: #edf2f8; /*95% #233d5c */
+    color: #2d4e77;
+}
+
+/* Display list items side by side */
+ul.menubar li {
+    display: inline;
+    font-size: 1rem;  /* font-size: 18px;*/
+    color: #he3ebf4;
+}
+
+/* Add a slash symbol (/) before/behind each list item */
+ul.menubar li+li:before {
+    padding: 8px;
+    color: black;
+    content: "/\00a0";
+}
+
+/* Add a color to all links inside the list */
+ul.menubar li a {
+    color: #0275d8;
+    text-decoration: none;
+}
+
+/* Add a color on mouse-over */
+ul.menubar li a:hover {
+    color: #01447e;
+    text-decoration: underline;
+}
+
+/* define tables */
+.td, .th {
+    padding-top:.3125rem;
+    padding-bottom:.3125rem;
+}
+
+
+/* changes to Bootstrap */
+body {
+  line-height: 1.25; /* PR2018-08-17 was: line-height: 1.5; */
+}
+
+label {
+  margin-bottom: .125rem; /* PR2018-08-17 was: margin-bottom: .5rem; */
+}
+
+.form-control {
+  padding: 0.125rem 0.375rem; /* PR2018-08-17 was: padding: 0.375rem 0.75rem; */
+  line-height: 1.25; /* PR2018-08-17 was: line-height: 1.5; */
+}
+
+/* PR2018-08-17 was:
+select.form-control:not([size]):not([multiple]) {
+  height: calc(2.25rem + 2px);
+}
+*/
+
+.form-group {
+  margin-bottom: 0.5rem; /* PR2018-08-17 was: margin-bottom: 1rem; */
+}
+
+.btn {
+  padding: 0.1rem 0.25rem; //* PR2018-12-15 was: DEFAULT padding: 0.375rem 0.75rem; */
+}
+
+.navbar {
+  padding: 2px 4px; /* 0.25rem 0.25rem; /* PR2018-12-15 was: padding: 0.25rem 1rem; */
+
+}
+
+.close {
+  line-height: .75;  /* PR2018-08-18 was: line-height: 1; */
+}
+
+
+
+
+.content_margin_top78 {
+   margin-top: 78px;
+   margin-left: 16px;
+}
+
+.menubar_fixed_top {
+  position: fixed;
+  top: 96;
+  right: 0;
+  left: 48;
+  z-index: 1020;
+}
+
+
+.menubar_navbar {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-left: 212px;
+    margin-right: auto;
+    padding: 0px 8px;
+    z-index: 990 /* headerbar dropdown item has z-index 1000. This one must have lower z-index. Was  1020; PR2020-10-03*/
+    background-color: #f8f9fa /* bootstrap bg-light  */
+}
+
+
+.awp_nav_bg_submenu {
+    /* background-color: #646464 !important;;  /* #f5f5f5; /* this is reddish: background-color: #f8f8f8;*/
+    /* background-color:  #e2e2e2 !important; /* #f5f5f5 = 245 245 245  licht licht licht grijs; */
+    background-color: #f8f9fa /* bootstrap bg-light  */
+}
+
+
+.awp_navbar_submenu {
+    list-style: none;
+    display: block;
+
+    top: 60px;
+    left: 175px;
+    overflow: hidden;
+    text-decoration: none;
+    list-style: none;
+
+
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-left: 212px;
+    margin-right: auto;
+    padding: 2px 8px;
+    z-index: 990 /* headerbar dropdown item has z-index 1000. This one must have lower z-index. Was  1020; PR2020-10-03*/
+}
+
+.awp_navbar_submenu a {
+  float: left;
+  color: #212529;
+  text-align: center;
+  padding: 4px 4px; /*padding: 0 .5rem;*/
+  text-decoration: none;
+  font-size: 14px;
+  border-radius: .25rem;
+}
+
+.awp_navbar_submenu a:hover {
+  background-color: #c4c4c4;
+  color: black;
+}
+.awp_navbar_submenu a.active {
+  background-color: #646464; /* #606060; */
+  color: white;
+}
+.svg_menu_item {
+    margin: 2px 0px;
+    padding: 0;
+}
+.menu_polygon_selected {
+    fill: #2d4e77;
+    stroke: #2d4e77;
+    stroke-width: 1;
+}
+.menu_polygon_unselected {
+    fill: #bacee6;
+    stroke: #bacee6;
+    stroke-width: 1;
+}
+
+.awp_content_container {
+    /* margin: <top><right><bottom><left> */
+   margin-top: 196px;
+   margin-left: 248px;
+  /* background-color: #fbedba !important; /* lighter shade of tsa yellow */
+}
+.awp_content_container_home {
+    /* margin: <top><right><bottom><left> */
+   margin-top: 72px;
+   margin-left: 248px;
+  /* background-color: #fbedba !important; /* lighter shade of tsa yellow */
+}
+.border_bg_invalid {
+    border: 1px solid #dc3545;    /*  red like in django is-invalid */
+    border-radius: .25rem;
+    /*background-color: #f1b5b5;*/
+    background: #ffe8e8; /* licht lichtrood; */
+}
+.border_invalid {
+    border: 1px solid #dc3545;    /*  red like in django is-invalid */
+    border-radius: .25rem;
+}

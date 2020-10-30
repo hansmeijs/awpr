@@ -1,5 +1,5 @@
 # PR2018-07-20
-from django.db.models import Model, Manager, ForeignKey, OneToOneField, PROTECT, CASCADE
+from django.db.models import Model, Manager, ForeignKey, OneToOneField, PROTECT, CASCADE, SET_NULL
 from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, DecimalField, BooleanField, DateField, DateTimeField
 
 from django.db.models.functions import Lower
@@ -43,8 +43,8 @@ class Birthcountry(Model):
     objects = CustomManager()
 
     name = CharField(max_length=50, unique=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField()
 
     class Meta:
         ordering = ['name',]
@@ -61,14 +61,14 @@ class Birthcountry(Model):
         self.request = kwargs.pop('request', None)
         # logger.debug('Birthcountry(Model) save self.request.user: ' + str(self.request.user))
         if self.data_has_changed():
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()
+            self.modifiedby = self.request.user
+            self.modifiedat = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
             super(Birthcountry, self).save(force_insert = not self.is_update, force_update = self.is_update, **kwargs)
             self.save_to_log()
 
     def delete(self, *args, **kwargs):
-        self.modified_at = timezone.now()
+        self.modifiedat = timezone.now()
         self.mode = 'd'
         self.data_has_changed()
         # First save to logfile
@@ -82,8 +82,8 @@ class Birthcountry(Model):
             name=self.name,
             name_mod=self.name_mod,
             mode=self.mode,
-            modified_by=self.modified_by,
-            modified_at=self.modified_at
+            modifiedby=self.modifiedby,
+            modifiedat=self.modifiedat
         )
 
     def data_has_changed(self):  # PR2018-08-31
@@ -100,8 +100,8 @@ class Birthcountry_log(Model):
     name = CharField(max_length=50, null=True)
     name_mod = BooleanField(default=False)
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField(db_index=True)
 
     def __str__(self):
         return self.name
@@ -118,10 +118,10 @@ class Birthcountry_log(Model):
 class Birthcity(Model):
     objects = CustomManager()
 
-    birthcountry = ForeignKey(Birthcountry, related_name='birthcities', on_delete=PROTECT)
+    birthcountry = ForeignKey(Birthcountry, related_name='birthcities', on_delete=CASCADE)
     name = CharField(max_length=50, unique=False)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField()
 
     class Meta:
         ordering = ['name',]
@@ -137,15 +137,15 @@ class Birthcity(Model):
         logger.debug('Birthcity(Model) save kwargs: ' + str(kwargs) + ' Type: ' + str(type(kwargs)))
         self.request = kwargs.pop('request', None)
         if self.data_has_changed():
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()
+            self.modifiedby = self.request.user
+            self.modifiedat = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
             super(Birthcity, self).save(force_insert = not self.is_update, force_update = self.is_update, **kwargs)
             self.save_to_log()
 
     def delete(self, *args, **kwargs):
 
-        self.modified_at = timezone.now()
+        self.modifiedat = timezone.now()
         self.mode = 'd'
         self.data_has_changed()
         # First save to logfile
@@ -159,8 +159,8 @@ class Birthcity(Model):
             name=self.name,
             name_mod=self.name_mod,
             mode=self.mode,
-            modified_by=self.modified_by,
-            modified_at=self.modified_at
+            modifiedby=self.modifiedby,
+            modifiedat=self.modifiedat
         )
 
     def data_has_changed(self):  # PR2018-08-31
@@ -183,8 +183,8 @@ class Birthcity_log(Model):
     name = CharField(max_length=50, null=True)
     name_mod = BooleanField(default=False)
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField(db_index=True)
 
     def __str__(self):
         return self.name
@@ -207,12 +207,12 @@ class Student(Model):# PR2018-06-06, 2018-09-05
 
     base = ForeignKey(Studentbase, related_name='students', on_delete=PROTECT)
 
-    school = ForeignKey(School, related_name='students', on_delete=PROTECT)
-    department = ForeignKey(Department, related_name='students', on_delete=PROTECT)
-    level = ForeignKey(Level, null=True, blank=True, related_name='students', on_delete=PROTECT)
-    sector = ForeignKey(Sector, null=True,blank=True, related_name='students', on_delete=PROTECT)
-    scheme = ForeignKey(Scheme, null=True, blank=True, related_name='students', on_delete=PROTECT)
-    package = ForeignKey(Package, null=True, blank=True, related_name='students', on_delete=PROTECT)
+    school = ForeignKey(School, related_name='students', on_delete=CASCADE)
+    department = ForeignKey(Department, related_name='students', on_delete=CASCADE)
+    level = ForeignKey(Level, null=True, blank=True, related_name='students', on_delete=SET_NULL)
+    sector = ForeignKey(Sector, null=True,blank=True, related_name='students', on_delete=SET_NULL)
+    scheme = ForeignKey(Scheme, null=True, blank=True, related_name='students', on_delete=SET_NULL)
+    package = ForeignKey(Package, null=True, blank=True, related_name='students', on_delete=SET_NULL)
 
     lastname = CharField(db_index=True, max_length=80)
     firstname= CharField(db_index=True, max_length=80)
@@ -229,13 +229,15 @@ class Student(Model):# PR2018-06-06, 2018-09-05
     diplomanumber = CharField(db_index=True, max_length=10, null=True, blank=True)
     gradelistnumber = CharField(db_index=True, max_length=10, null=True, blank=True)
 
+    iseveningstudent = BooleanField(default=False)
+
     locked =  BooleanField(db_index=True,default=False)
     has_reex= BooleanField(db_index=True,default=False)
     bis_exam= BooleanField(db_index=True,default=False)
     withdrawn = BooleanField(db_index=True,default=False)
 
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField()
 
     class Meta:
         ordering = [Lower('lastname'), Lower('firstname')]
@@ -328,8 +330,8 @@ class Student(Model):# PR2018-06-06, 2018-09-05
 
     # check if data has changed. If so: save object
         if self.data_has_changed():
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()
+            self.modifiedby = self.request.user
+            self.modifiedat = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
 
         # When new record:First create base record. base.id is used in Student. Create also saves new record
@@ -442,8 +444,8 @@ class Student(Model):# PR2018-06-06, 2018-09-05
             withdrawn_mod = self.withdrawn_mod,
 
             mode=self.mode,
-            modified_by=self.modified_by,
-            modified_at=self.modified_at
+            modifiedby=self.modifiedby,
+            modifiedat=self.modifiedat
         )
 
     def data_has_changed(self, mode_override=None):  # PR2018-11-20
@@ -509,8 +511,8 @@ class Student(Model):# PR2018-06-06, 2018-09-05
         )
 
         if data_changed_bool:
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()
+            self.modifiedby = self.request.user
+            self.modifiedat = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
 
         if mode_override:
@@ -578,7 +580,7 @@ class Student(Model):# PR2018-06-06, 2018-09-05
         return value
 
     @property
-    def has_no_linked_data(self):  # PR2018-11-20
+    def has_no_child_rows(self):  # PR2018-11-20
         # TODO add search for linked data
         return True
 
@@ -599,12 +601,12 @@ class Student_log(Model):
 
     base = ForeignKey(Studentbase, related_name='+', on_delete=PROTECT)
 
-    school_log = ForeignKey(School_log, related_name='+', on_delete=PROTECT)
-    dep_log = ForeignKey(Department_log, related_name='+', on_delete=PROTECT)
-    level_log = ForeignKey(Level_log, null=True, related_name='+', on_delete=PROTECT)
-    sector_log = ForeignKey(Sector_log, null=True, related_name='+', on_delete=PROTECT)
-    scheme_log = ForeignKey(Scheme_log, null=True, related_name='+', on_delete=PROTECT)
-    package_log = ForeignKey(Package_log, null=True, related_name='+', on_delete=PROTECT)
+    school_log = ForeignKey(School_log, related_name='+', on_delete=CASCADE)
+    dep_log = ForeignKey(Department_log, related_name='+', on_delete=CASCADE)
+    level_log = ForeignKey(Level_log, null=True, related_name='+', on_delete=SET_NULL)
+    sector_log = ForeignKey(Sector_log, null=True, related_name='+', on_delete=SET_NULL)
+    scheme_log = ForeignKey(Scheme_log, null=True, related_name='+', on_delete=SET_NULL)
+    package_log = ForeignKey(Package_log, null=True, related_name='+', on_delete=SET_NULL)
 
     lastname = CharField(db_index=True, max_length=80)
     firstname = CharField(db_index=True, max_length=80)
@@ -620,6 +622,8 @@ class Student_log(Model):
     regnumber = CharField(db_index=True, max_length=20, null=True, blank=True)
     diplomanumber = CharField(max_length=10, null=True, blank=True)
     gradelistnumber = CharField(max_length=10, null=True, blank=True)
+
+    iseveningstudent = BooleanField(default=False)
 
     locked = BooleanField(default=False)
     has_reex = BooleanField(default=False)
@@ -655,8 +659,8 @@ class Student_log(Model):
     withdrawn_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField(db_index=True)
 
     @property
     def mode_str(self):
@@ -668,7 +672,7 @@ class Student_log(Model):
 class Result(Model):# PR2018-11-10
     objects = CustomManager()
 
-    student = ForeignKey(Student, related_name='results', on_delete=PROTECT)
+    student = ForeignKey(Student, related_name='results', on_delete=CASCADE)
     period = PositiveSmallIntegerField(db_index=True, default=0, choices=c.PERIOD_CHOICES) # 1 = period 1, 2 = period 2, 3 = period 3
 
     grade_ce_avg = DecimalField(max_digits=5, decimal_places=2, default = 0)
@@ -684,8 +688,8 @@ class Result(Model):# PR2018-11-10
     result_info = CharField(db_index=True, max_length=80, null=True, blank=True)
     result_status = CharField(max_length=12, null=True, blank=True)
 
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField()
 
     def __init__(self, *args, **kwargs):
         super(Result, self).__init__(*args, **kwargs)
@@ -771,8 +775,8 @@ class Result(Model):# PR2018-11-10
             result_status_mod = self.result_status_mod,
 
             mode=self.mode,
-            modified_by=self.modified_by,
-            modified_at=self.modified_at
+            modifiedby=self.modifiedby,
+            modifiedat=self.modifiedat
         )
 
     def data_has_changed(self, mode=None):  # PR2018-07-21  PR2018-11-10
@@ -813,8 +817,8 @@ class Result(Model):# PR2018-11-10
         )
 
         if data_changed_bool:
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()
+            self.modifiedby = self.request.user
+            self.modifiedat = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
 
         if mode:
@@ -858,23 +862,23 @@ class Result_log(Model):
     result_status_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField(db_index=True)
 
 # PR2018-106-17
 class Resultnote(Model):
     objects = CustomManager()
 
     # PR2019-02-14 changed: refer to log table student_log instead of student, to prevent ref_int with table student
-    student = ForeignKey(Student, null=True, related_name='+', on_delete=PROTECT)
+    student = ForeignKey(Student, null=True, related_name='+', on_delete=CASCADE)
 
     resultnote =  CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
 
     is_insp = BooleanField(default=False)
 
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField()
 
 # PR2018-106-17
 class Resultnote_log(Model):
@@ -883,7 +887,7 @@ class Resultnote_log(Model):
     resultnote_id = IntegerField(db_index=True)
     # TODO: refer to log table
     # PR2019-02-14 changed: refer to log table student_log instead of student, to prevent ref_int with table student
-    student_log = ForeignKey(Student_log, null=True, related_name='+', on_delete=PROTECT)
+    student_log = ForeignKey(Student_log, null=True, related_name='+', on_delete=CASCADE)
 
     resultnote = CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
@@ -891,8 +895,8 @@ class Resultnote_log(Model):
     is_insp = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField(db_index=True)
 
 # ======= Student subject ======================================================================
 
@@ -900,9 +904,9 @@ class Resultnote_log(Model):
 class Studentsubject(Model):
     objects = CustomManager()
 
-    student = ForeignKey(Student, related_name='studres_studsubs', on_delete=PROTECT)
+    student = ForeignKey(Student, related_name='studres_studsubs', on_delete=CASCADE)
     schemeitem = ForeignKey(Schemeitem, related_name='schemeitem_studsubs', on_delete=PROTECT)
-    cluster = ForeignKey(Cluster, null=True, blank=True, related_name='cluster_studsubs', on_delete=PROTECT)
+    cluster = ForeignKey(Cluster, null=True, blank=True, related_name='cluster_studsubs', on_delete=SET_NULL)
 
     is_extra_nocount = BooleanField(default=False)
     is_extra_counts = BooleanField(default=False)
@@ -917,8 +921,8 @@ class Studentsubject(Model):
     has_pok = BooleanField(default=False)  # proof of knowledge
     has_pok_status = CharField(max_length=12, null=True)
 
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField()
 
     def __init__(self, *args, **kwargs): # PR2018-11-24
         super(Studentsubject, self).__init__(*args, **kwargs)
@@ -1027,8 +1031,8 @@ class Studentsubject(Model):
             has_pok_status = self.has_pok_status,
 
             mode=self.mode,
-            modified_by=self.modified_by,
-            modified_at=self.modified_at
+            modifiedby=self.modifiedby,
+            modifiedat=self.modifiedat
         )
 
     def data_has_changed(self, mode=None):  # PR2018-11-24
@@ -1068,8 +1072,8 @@ class Studentsubject(Model):
         )
 
         if data_changed_bool:
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()
+            self.modifiedby = self.request.user
+            self.modifiedat = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
 
         if mode:
@@ -1165,9 +1169,9 @@ class Studentsubject_log(Model):
     studentsubject_id = IntegerField(db_index=True)
 
     # PR2019-02-14 changed: refer to log table student_log instead of student, to prevent ref_int with table student
-    student_log = ForeignKey(Student_log, null=True, related_name='+', on_delete=PROTECT)
-    schemeitem_log = ForeignKey(Schemeitem_log, null=True, related_name='+', on_delete=PROTECT)
-    cluster_log = ForeignKey(Cluster_log,null=True,  related_name='+', on_delete=PROTECT)
+    student_log = ForeignKey(Student_log, null=True, related_name='+', on_delete=CASCADE)
+    schemeitem_log = ForeignKey(Schemeitem_log, null=True, related_name='+', on_delete=SET_NULL)
+    cluster_log = ForeignKey(Cluster_log,null=True,  related_name='+', on_delete=SET_NULL)
 
     is_extra_nocount = BooleanField(default=False)
     is_extra_counts = BooleanField(default=False)
@@ -1201,21 +1205,21 @@ class Studentsubject_log(Model):
     has_pok_status_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField(db_index=True)
 
 # PR2018-106-17
 class Studentsubjectnote(Model):
     objects = CustomManager()
 
-    studentsubject = ForeignKey(Studentsubject, related_name='+', on_delete=PROTECT)
+    studentsubject = ForeignKey(Studentsubject, related_name='+', on_delete=CASCADE)
 
     note =  CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
     is_insp = BooleanField(default=False)
 
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField()
 
     # TODO: refer to log table studentsubject_log
 
@@ -1225,7 +1229,7 @@ class Studentsubjectnote_log(Model):
 
     studentsubjectnote_id = IntegerField(db_index=True)
 
-    studentsubject_log = ForeignKey(Studentsubject_log, related_name='+', on_delete=PROTECT)
+    studentsubject_log = ForeignKey(Studentsubject_log, related_name='+', on_delete=CASCADE)
 
     note = CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
@@ -1237,8 +1241,8 @@ class Studentsubjectnote_log(Model):
     is_insp_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField(db_index=True)
 
 #==== GRADES ======================================================
 
@@ -1246,7 +1250,7 @@ class Studentsubjectnote_log(Model):
 class Grade(Model):
     objects = CustomManager()
 
-    studentsubject = ForeignKey(Studentsubject, related_name='grades', on_delete=PROTECT)
+    studentsubject = ForeignKey(Studentsubject, related_name='grades', on_delete=CASCADE)
 
     examcode = PositiveSmallIntegerField(db_index=True, default=0, choices=c.EXAMCODE_CHOICES)  # 1:se, 2:pe 3:ce, 4:ce2, 5:ce3, 6:se-exemption, 7:ce-exemption
     gradecode = PositiveSmallIntegerField(db_index=True, default=0, choices=c.GRADECODE_CHOICES) # s = score, g = grade, pe-ce, f = final grade
@@ -1255,8 +1259,8 @@ class Grade(Model):
     status = CharField(db_index=True, max_length=12, null=True, blank=True)
     published = BooleanField(db_index=True, default=False)
 
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField()
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField()
 
     def __init__(self, *args, **kwargs): # PR2018-11-24
         super(Grade, self).__init__(*args, **kwargs)
@@ -1298,9 +1302,9 @@ class Grade(Model):
     def delete(self, *args, **kwargs):  # PR2018-11-28
         request_user = kwargs.pop('request_user')
 
-        # update modified_by and modified_at, so it can be stored in log
-        self.modified_by = request_user
-        self.modified_at = timezone.now()
+        # update modifiedby and modifiedat, so it can be stored in log
+        self.modifiedby = request_user
+        self.modifiedat = timezone.now()
         self.mode = 'd'
         self.data_has_changed()
 
@@ -1336,8 +1340,8 @@ class Grade(Model):
             published_mod=self.published_mod,
 
             mode=self.mode,
-            modified_by=self.modified_by,
-            modified_at=self.modified_at
+            modifiedby=self.modifiedby,
+            modifiedat=self.modifiedat
         )
 
     def data_has_changed(self, mode=None):  # PR2018-11-24
@@ -1365,8 +1369,8 @@ class Grade(Model):
         )
 
         if data_changed_bool:
-            self.modified_by = self.request.user
-            self.modified_at = timezone.now()
+            self.modifiedby = self.request.user
+            self.modifiedat = timezone.now()
             self.mode = ('c', 'u')[self.is_update]
 
         if mode:
@@ -1381,7 +1385,7 @@ class Grade_log(Model):
 
     grade_id = IntegerField(db_index=True)
 
-    studentsubject_log = ForeignKey(Studentsubject_log, related_name='+', on_delete=PROTECT)
+    studentsubject_log = ForeignKey(Studentsubject_log, related_name='+', on_delete=CASCADE)
 
     examcode = PositiveSmallIntegerField(default=0)
     gradecode = PositiveSmallIntegerField(default=0)
@@ -1396,8 +1400,8 @@ class Grade_log(Model):
     status_mod = BooleanField(default=False)
 
     mode = CharField(max_length=1, null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=PROTECT)
-    modified_at = DateTimeField(db_index=True)
+    modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modifiedat = DateTimeField(db_index=True)
 
     @property
     def mode_str(self):

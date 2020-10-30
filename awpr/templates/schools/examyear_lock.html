@@ -3,7 +3,7 @@
 
 {% block breadcrumb %}
   <ol class="breadcrumb my-3">
-    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'home_url' %}">AWP online</a></li>
     <li class="breadcrumb-item">{{ user.country }}
       {% if user.country_locked %}<img src="{% static 'img/locked.gif' %}" height="16" width="16">{% endif %}
     </li>
@@ -28,10 +28,10 @@
         <p>Are you sure you want to lock examyear {{ examyear.examyear }}?</p>
         <button type="submit" class="btn btn-outline-danger"  name='delete_this' value='LockThis'>{% trans 'Yes, lock' %}</button>
       {% endif %}
-      <a href="{% url 'examyear_list_url' %}" class="btn btn-outline-primary">{% trans 'No, cancel' %}</a>
+      <a href="{% url 'examyears_url' %}" class="btn btn-outline-primary">{% trans 'No, cancel' %}</a>
     </form>
   {% else %}
     <div class="alert alert-danger">{{ user.message_examyear_modify }}</div>
-    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+    <a href="{% url 'home_url' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
   {% endif %}
 {% endblock %}

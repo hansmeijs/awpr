@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load i18n %}{% load static %}
+
+{% block stylesheet %}
+    <link rel="stylesheet" href="{% static 'css/awpr_import201020.css' %}">
+{% endblock %}
+
+{% block script %}
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+          integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+          crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/es5-shim/4.5.9/es5-shim.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xls/0.7.4-a/xls.core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.11.8/xlsx.core.min.js"></script>
+
+    <script src="{% static 'js/subjectimport201020.js' %}"></script>
+    <script src="{% static 'js/reports201020.js' %}"></script>
+{% endblock %}
+
+{% block sidebar %}
+    <nav id="id_sidebar" class="awp_sidebar">
+        <div class="sidebar_header">
+            <h3>{% trans 'Upload subjects' %}</h3>
+                    <!-- BUTTON GROUP -->
+                <div id="id_btn_container" class="sidebar_btngroup btn-group-vertical btn-block" role="group" aria-label="Choose option" >
+                    <button data-btn="btn_step1" class="btn btn-secondary">{% trans 'Step' %} 1: <br>{% trans 'Select file' %}</button>
+                    <button data-btn="btn_step2" class="btn btn-secondary">{% trans 'Step' %} 2: <br>{% trans 'Link colums' %}</button>
+                    <button data-btn="btn_step3" class="btn btn-secondary">{% trans 'Step' %} 3: <br>{% trans 'Upload data' %}</button>
+                </div>
+            <!-- end BUTTON GROUP -->
+        </div>
+    </nav>
+{% endblock %}
+<!-- END SIDE BAR -->
+
+{% block content %}
+
+<div id="id_content" class="content_margin_top78">
+  {% if user.is_authenticated %}
+        {% if user.is_role_adm_or_sys_and_perm_adm_or_sys_ %}
+        <!-- =================== MODAL CONFIRM  =================== -->
+            {% include 'includes/modconfirm.html' %}
+            <h4 class="ta_l mx-4 mt-4">{% trans 'Upload subjects' %}</h4>
+
+            <div id="id_header_container" class="mx-4 mt-4">
+                <h4 data-btn="btn_step1">{% trans 'Step' %} 1: {% trans 'Select file' %}</h4>
+                <h4 data-btn="btn_step2" class="display_hide">{% trans 'Step' %} 2: {% trans 'Link colums' %}</h4>
+                <h4 data-btn="btn_step3" class="display_hide">{% trans 'Step' %} 3: {% trans 'Upload data' %}</h4>
+            </div>
+<!-- STEP 1 -->
+            <div class="ta_l m-4 btn_show btn_step1">
+                <h6 class="m-2">{% trans 'Select an Excel file with subjects' %}:</h6>
+                <div class="content_subheader_left mx-1">
+                    <input id="id_filedialog" type="file"  name="file" class="mb-0" accept=".xlsx, .xls, csv">
+                </div>
+                <div class="mx-2 my-0"><small id="id_msg_filedialog" class="text-danger display_hide"></small></div>
+
+                <h6 class="mx-2 mt-4 mb-2">{% trans 'Select a worksheet' %}:</h6>
+                <div class="content_header">
+                    <div class="content_subheader_left mx-1">
+                            <select id="id_worksheet_list" type="text"
+                            autocomplete="off" ondragstart="return false;" ondrop="return false;"
+                            class="form-control mb-0"></select>
+                    </div>
+                    <div class="content_subheader_left mx-2 my-0"></div>
+                </div>
+
+                <div class="content_header">
+                    <div class="content_subheader_left mx-2 my-0">
+                        <small id="id_msg_worksheet" class="text-danger display_hide"></small>
+                    </div>
+                </div>
+
+                <h6 class="mx-2 mt-4 mb-2">{% trans 'Select if the worksheet has a header row:' %}</h6>
+                <div class="content_subheader_left mx-1">
+                    <span>
+                        <input id="checkBoxID" type="checkbox" value="true" class="tw_032 mx-2">
+                        <label for="checkBoxID" class="mx-2 my-1">{% trans 'Worksheet has a header row' %}</label>
+                    </span>
+                 </div>
+            </div>
+
+<!-- STEP 2 -->
+            <div class="m-4 btn_show btn_step2 display_hide">
+                <div class="mt-4">
+                    <div><small>{% trans "Click corresponding names in the left and right list to link an Excel column to an AWP-column." %}</small></div>
+                    <div><small >{% trans "Click linked names in the lower list to unlink these columns." %}</small></div>
+                    <div><small>{% trans "The field 'Subject abbreviation' must be linked and contain unique values." %}</small></div>
+
+                    <div class="mt-2">
+                        <div class="content_header tsa_bc_lightlightgrey">
+                            <div class="content_subheader_left ea_flex">
+                                <table class="tsa_tbl_unlinked" width="100%">
+                                    <thead class="tsa_tbl_hdr_unlinked">
+                                        <tr><th class="ta_c">{% trans 'AWP columns' %}</th></tr>
+                                    </thead>
+                                    <tbody id="id_tbody_awp" data-tbody="awp">
+                                        <tr><td class="px-2">{% trans 'AWP columns' %}</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="content_subheader_left excel-columns ">
+                                <table class="tsa_tbl_unlinked" width="100%">
+                                    <thead class="tsa_tbl_hdr_unlinked">
+                                        <tr><th class="ta_c">{% trans 'Excel columns' %}</th></tr>
+                                    </thead>
+                                    <tbody id="id_tbody_exc" data-tbody="exc">
+                                        <tr><td class="px-2">{% trans 'Excel columns' %}</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="content_header">
+                            <div class="content_subheader_left linked-columns">
+                                 <table class="tsa_tbl_linked" width="100%">
+                                    <thead class="tsa_tbl_hdr_linked">
+                                        <tr><th class="ta_c" colspan="2">{% trans 'Linked columns' %}</th></tr>
+                                    </thead>
+                                    <tbody id="id_tbody_lnk" data-tbody="lnk">
+                                        <tr>
+                                            <td class="px-2">{% trans 'AWP columns' %}</td>
+                                            <td class="px-2">{% trans 'Excel columns' %}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="id_msg_err_no_identifier_linked" class="m-0 px-2 py-0" >
+                        <small class="text-danger">{% trans "The field 'Subject abbreviation' must be linked and contain unique values." %}</small>
+                    </div>
+                </div>
+            </div>
+
+<!-- STEP 3-->
+            <div class="ta_l m-4 btn_show btn_step3 display_hide">
+                <h6 class="ta_l mx-2 mt-4 mb-2">{% trans 'Upload subjects' %}</h6>
+                <div class="content_subheader_left mx-2 my-2">
+                    <button id="id_btn_test" type="button" class="btn btn-secondary">{% trans 'Test upload' %}</button>
+                    <button id="id_btn_upload" type="button" class="btn btn-secondary">{% trans 'Upload' %}</button>
+                    <span>
+                        <img id="id_loader" src="{% static 'img/loader.gif' %}" height="24" width="24" class="mx-4 visibility_hide" >
+                    </span>
+                </div>
+                <div >
+                    <small class="text-muted">
+                        {% trans "'Test upload' validates the new data and compares it with the existing database. It will not save the new data." %}
+                        {% trans "You can review the results in a log file that will be downloaded." %}
+                    </small>
+                </div>
+            </div>
+
+            <div class="content_header">
+                <div class="content_subheader_left mx-4 mb-4">
+                    <div id="id_btn_container2" class="sidebar_btngroup btn-group btn-block" role="group" aria-label="Choose option" >
+                        <button id="id_btn_mod_prev" type="button" class="btn btn-secondary"> &lt;  {% trans 'Previous step' %}</button>
+                        <button id="id_btn_mod_next"  type="button" class="btn btn-secondary">{% trans 'Next step' %} &gt; </button>
+                    </div>
+                    <div id="id_msg_err01" class="m-0 px-2 py-0" >
+                        <small class="text-danger">
+                            {% trans "You must select a valid Excel file before you can proceed." %}
+                        </small>
+                    </div>
+                </div>
+                <div class="content_subheader_left mx-2 my-0">
+                </div>
+            </div>
+
+            <div class="mx-4 mb-0 btn_show btn_step1 btn_step3 display_hide">
+                <div>
+                    <h6 class="mb-0">{% trans 'Excel file data' %}:</h6>
+                </div>
+                <div >
+                    <small class="text-muted">
+                        {% trans "The columns with a red header will be uploaded." %}
+                    </small>
+                </div>
+                <div class="mb-4">
+                    <table id="id_table" class="tsa_tbl_blue" width="100%">
+                        <thead id="id_thead" class="c_theadXX"></thead>
+                        <tbody id="id_tbody" class="c_tbody"></tbody>
+                        <tfoot id="id_tfoot" class="c_tfoot"></tfoot>
+                    </table>
+                </div>
+            </div>
+
+<!-- DIV ID DATA -->
+            <div id="id_data"
+                data-datalist_download_url="{% url 'datalist_download_url' %}"
+                data-settings_upload_url="{% url 'settings_upload_url' %}"
+                data-subject_uploadsetting_url= "{% url 'subject_uploadsetting_url' %}"
+                data-subject_uploaddata_url= "{% url 'subject_uploaddata_url' %}"
+            ></div>
+
+    {% else %}
+        <div class="mx-4">
+            <div class="alert alert-danger">{% trans "You don't have permission to view this page." %}</div>
+        </div>
+    {% endif %}
+  {% else %}
+    <div class="mx-4">
+        <div class="alert alert-danger">{% trans "You must be logged in to view this page." %}</div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

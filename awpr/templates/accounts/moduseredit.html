@@ -1,0 +1,68 @@
+{% load i18n %} {% load l10n %}
+{% load static %}
+
+<!-- =================== MODAL FORM USER  =================== -->
+    <div class="modal" id="id_mod_form_user" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg " role="document">
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 id="id_MUF_hdr_user" class="modal-title mx-2" >{% trans 'User' %}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div id="id_div_form_controls" class="modal-body">
+                     <div class="content_header">
+                         <div class="content_subheader_left mx-1">
+                            <label for="id_MUF_username" class="tsa_margin_form_label">{% trans 'Username' %}:</label>
+                            <input id="id_MUF_username" type="text" data-field="username"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;" class="form-control">
+                         </div>
+                      </div>
+                     <div class="content_header display_hide">
+                         <div class="content_subheader_left mx-1">
+                              <small id="id_MUF_err_username" class="text-danger tsa_margin_form_label">{% trans "The username cannot be blank." %}</small>
+                         </div>
+                     </div>
+
+                     <div class="content_header">
+                         <div class="content_subheader_left mx-1">
+                            <label for="id_MUF_namelast" class="tsa_margin_form_label">{% trans 'Name' %}:</label>
+                            <input id="id_MUF_namelast" type="text" data-field="namelast"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;" class="form-control">
+                         </div>
+                      </div>
+                     <div class="content_header display_hide">
+                         <div class="content_subheader_left mx-1">
+                              <small id="id_MUF_err_lastname" class="text-danger tsa_margin_form_label">{% trans "The name cannot be blank." %}</small>
+                         </div>
+                     </div>
+                     <div class="content_header">
+                         <div class="content_subheader_left mx-1 ">
+                            <label for="id_MUF_email" class="tsa_margin_form_label">{% trans 'Email address' %}:</label>
+                            <input id="id_MUF_email" type="text" data-field= "email"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;" class="form-control">
+                         </div>
+                     </div>
+                     <div class="content_header display_hide">
+                         <div class="content_subheader_left mx-1">
+                              <small id="id_MUF_err_email" class="text-danger tsa_margin_form_label">{% trans "The email address cannot be blank." %}</small>
+                         </div>
+                     </div>
+                </div>
+
+                <div class="modal-footer pr-4">
+                    <div class="content_subheader_left mx-1">
+                        <button id="id_MUF_btn_delete" type="button" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete employee' %}</button>
+                    </div>
+                    <div class="content_subheader_right">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MUF_btn_save" type="button" data-dismiss="modal" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- =================== END MODAL user  =================== -->

@@ -1,22 +1,156 @@
-from django.forms import ModelForm, CharField, ChoiceField, MultipleChoiceField, SelectMultiple, Select
-from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import get_user_model, authenticate
+
+from django.contrib.auth.forms import (AuthenticationForm,  UserCreationForm)
 from django.contrib.auth import password_validation # PR2018-10-10
 from django.core.validators import RegexValidator
+
+from django.forms import Form, ModelForm, CharField, PasswordInput, ChoiceField, MultipleChoiceField, TextInput, SelectMultiple, Select
+
+from collections import OrderedDict
+
 from django.shortcuts import render
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import activate, get_language_info, ugettext_lazy as _
+from django.utils.text import capfirst
 
 from awpr import constants as c
 from awpr import functions as f
-from schools.models import School
-from subjects.models import Department
+from schools.models import Schoolbase
+from accounts import models as acc_mod
+
+from schools import models as sch_mod
 from django.forms.widgets import PasswordInput
 from django.core.exceptions import ValidationError
 
+import unicodedata
+
+UserModel = get_user_model()
 
 # PR2018-05-04
 import logging
 logger = logging.getLogger(__name__)
+
+
+
+class UsernameField(CharField):
+    def to_python(self, value):
+        return unicodedata.normalize('NFKC', super().to_python(value))
+
+
+class SchoolbaseAuthenticationForm(Form):
+    """
+    This code is based on class AuthenticationForm PR2020-09-25 PR2020-10-22
+    """
+    schoolcode = CharField(
+        required=True,
+        label=_("School code"),
+        widget=TextInput(attrs={'autofocus': True})
+    )
+
+    username = UsernameField(
+        widget=TextInput(attrs={'autofocus': True}),
+        label = _("Username"),
+    )
+    password = CharField(
+        label=_("Password"),
+        strip=False,
+        widget=PasswordInput,
+    )
+
+    error_messages = {
+        'invalid_login': _(
+            "Please enter a correct school code, username and password. Note that the password is case-sensitive."
+        ),
+        'inactive': _("This account is inactive. You cannot login."),
+    }
+
+    def __init__(self, request=None, *args, **kwargs):
+        """
+        The 'request' parameter is set for custom auth use by subclasses.
+        The form data comes in via the standard 'data' kwarg.
+        """
+        self.request = request
+        self.user_cache = None
+        super().__init__(*args, **kwargs)
+
+        # Set the max length and label for the "username" field.
+        self.username_field = UserModel._meta.get_field(UserModel.USERNAME_FIELD)
+        self.fields['username'].max_length = self.username_field.max_length or 254
+        if self.fields['username'].label is None:
+            self.fields['username'].label = capfirst(self.username_field.verbose_name)
+
+    def clean(self):
+        schoolcode = self.cleaned_data.get('schoolcode')
+        username = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
+
+        if username is not None and password:
+            # put schoolprefix in front of username PR2019-03-13
+            schoolbase = None
+            if schoolcode:
+                schoolbase = sch_mod.Schoolbase.objects.filter(
+                    code__iexact=schoolcode
+                ).first()
+            if schoolbase:
+                username = schoolbase.prefix + username
+            else:
+                username = "xxxxxx" + username
+
+            self.user_cache = authenticate(self.request, username=username, password=password)
+
+            # PR2020-10-22 from https://stackoverflow.com/questions/46459258/how-to-inform-a-user-that-he-is-not-active-in-django-login-view
+            if self.user_cache is None:
+                try:
+                    user_temp = acc_mod.User.objects.get(username=username)
+                except:
+                    user_temp = None
+
+            # - set language so the return message can be sent in the language of the user
+                if user_temp is not None:
+                    user_lang = user_temp.lang if user_temp.lang else c.LANG_DEFAULT
+                    activate(user_lang)
+
+                if user_temp is not None and user_temp.check_password(password):
+                    self.confirm_login_allowed(user_temp)
+                else:
+                    raise self.get_invalid_login_error()
+#//////////////////////////////////////////////////
+        return self.cleaned_data
+
+    def confirm_login_allowed(self, user):
+        """
+        Controls whether the given User may log in. This is a policy setting,
+        independent of end-user authentication. This default behavior is to
+        allow login by active users, and reject login by inactive users.
+
+        If the given user cannot log in, this method should raise a
+        ``forms.ValidationError``.
+
+        If the given user may log in, this method should return None.
+        """
+        if not user.is_active:
+            raise ValidationError(
+                self.error_messages['inactive'],
+                code='inactive',
+            )
+        logger.debug('SchoolbaseAuthenticationForm self.error_messages : ' + str(self.error_messages) + ' Type: ' + str(type(self.error_messages)))
+
+    def get_user(self):
+        return self.user_cache
+
+    def get_invalid_login_error(self):
+        return ValidationError(
+            self.error_messages['invalid_login'],
+            code='invalid_login',
+            params={'username': self.username_field.verbose_name},
+        )
+
+    def get_inactive_login_error(self):
+        # PR2020-10-22 added, to show 'user is inactive' message in login form
+        return ValidationError(
+            self.error_messages['inactive'],
+            code='inactive',
+            params={'username': self.username_field.verbose_name},
+        )
 
 
 # PR2018-04-23
@@ -63,11 +197,11 @@ class UserAddForm(UserCreationForm):
         # request.user with role=Insp can set role=Insp and role=School
         # request.user with role=System can set all roles
         # PR2018-08-04
-        self.choices = [(c.ROLE_00_SCHOOL, _('School')), ]
-        if self.request_user.is_role_insp_or_system:
-            self.choices.append((c.ROLE_01_INSP, _('Inspection')))
+        self.choices = [(c.ROLE_08_SCHOOL, _('School')), ]
+        if self.request_user.is_role_insp_or_admin_or_system:
+            self.choices.append((c.ROLE_16_INSP, _('Inspection')))
         if self.request_user.is_role_system:
-            self.choices.append((c.ROLE_02_SYSTEM, _('System')))
+            self.choices.append((c.ROLE_64_SYSTEM, _('System')))
 
         self.fields['role_list'] = ChoiceField(
             required=True,
@@ -88,7 +222,7 @@ class UserAddForm(UserCreationForm):
             label=_('School')
         )
 
-        if not self.request_user.is_role_insp_or_system:
+        if not self.request_user.is_role_insp_or_admin_or_system:
             # when role = school: initial value of field schooldefault is request_user_schooldefault.id
             if self.request_user_schoolbase:
                 self.fields['schoolbase'].initial = self.request_user_schoolbase.id
@@ -133,7 +267,7 @@ class UserAddForm(UserCreationForm):
         role_choice = self.cleaned_data['role_choice']
         #raise ValidationError(" ValidationError role " + str(role_choice))
         if role_choice is None:
-            role_choice = [str(c.ROLE_00_SCHOOL)]
+            role_choice = [str(c.ROLE_08_SCHOOL)]
         logger.debug('UserAddForm  def clean_role(self) clean_role_choice = ' + str(role_choice))
 
         # Always return a value to use as the new cleaned data, even if this method didn't change it.
@@ -244,7 +378,7 @@ class UserEditForm(ModelForm):
             initial=self.selected_user_schoolbase_id
         )
         self.is_disabled = True
-        if self.request_user.is_role_insp_or_system:
+        if self.request_user.is_role_insp_or_admin_or_system:
             if self.request_user == self.this_instance:
                 self.is_disabled = False
 

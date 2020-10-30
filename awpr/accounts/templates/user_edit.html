@@ -5,7 +5,7 @@
 
 {% block breadcrumb %}
   <ol class="breadcrumb my-3">
-    <li class="breadcrumb-item"><a href="{% url 'home' %}">AWP online</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'home_url' %}">AWP online</a></li>
     <li class="breadcrumb-item"><a href="{% url 'user_list_url' %}">{% trans 'Users' %}</a></li>
     <li class="breadcrumb-item active">{% trans 'Edit user' %}{{selected_username}}</li>
   </ol>
@@ -13,8 +13,8 @@
 
 {% block content %}
   {% if user.enable_user_view_modify %}
-    <h4>{% trans 'Edit user:' %} {{selected_username}}</h4>
-    <h4>{% trans 'Request user:' %} {{user.username}}</h4>
+    <h4>{% trans 'Edit user' %} {{selected_username}}</h4>
+    <h4>{% trans 'Request user' %} {{user.username}}</h4>
       <form method="post" novalidate>
         {% csrf_token %}
          <input type="hidden" name="next" value="{{ next }}">
@@ -30,6 +30,6 @@
       </form>
   {% else %}
     <div class="alert alert-danger">{{ user.message_user_view_modify }}</div>
-    <a href="{% url 'home' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
+    <a href="{% url 'home_url' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
   {% endif %}
 {% endblock %}

@@ -16,14 +16,14 @@ p {
 
 ul {
     margin: 0px; /*these dont work: margin: none; margin: 0;*/
-    padding: 0em 0.6em; /*padding: 0 8px;*/
+    padding: 0; /*padding: 0 8px;*/
 }
 li {
     list-style-type: none;
 }
 
 /* MENU */
-a {
+aXX {
     font-size: 14px;
     font-weight: loadold;
     /*line-height: 32px;
@@ -35,7 +35,7 @@ a {
     float: left;
     cursor: pointer;
 }
-a:hover{
+aXX:hover{
     /*background: darken($red, 1.5%);*/
     border: 1px solid rgba(0,0,0,.05);
     -webkit-box-shadow: 1px 1px 2px rgba(255,255,255,0.2);
@@ -853,3 +853,394 @@ a:hover{
     /*background: #ffcccc
         /*background-color: rgba(0, 169, 230, 0.1)*/
 /*}*/
+
+
+
+.tr_hover .tr_hover_yellow {
+    color: #000000;
+    -moz-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);
+    -webkit-box-shadow: 3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */  /* Firefox 3.5 - 3.6 */
+    /* box-shadow: [horizontal offset] [vertical offset] [blur radius] [optional spread radius] [color]; */
+    box-shadow:         3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
+}
+.tr_hover {
+   background-color: #e0e0e0 !important; /* licht grijs; tsa_tr_selected*/
+}
+.tr_hover_yellow {
+   background: #fbedba !important; /* tsa_bc_yellow_light lighter shade of tsa yellow */
+}
+
+.tr_highlighted {
+    /* background-color:   #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    /* background:  #2d4e77cc;*/
+    background-color: #808080 ;
+    color: #ffffff;
+    font-weight: bold;
+        -moz-transition: background 0.25s ease-in-out;
+        -webkit-transition: background 0.25s ease-in-out;
+               -o-transition: background 0.25s ease-in-out;
+               transition: background 0.25s ease-in-out;
+}
+
+.tsa_bc_lightlightgrey {
+    /*background: #f8f8f8; /*licht licht licht grijs 248 248 248 */
+    /*background: #e8e8e880; /*licht licht grijs 232 232 232 50% */
+    background-color: #f5f5f5; /* #f5f5f5 = 245 245 245  licht licht licht grijs; */
+}
+
+.tsa_btn_selected  {
+    background-color: #fbedba; /* lighter shade of tsa yellow */
+    /*background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */ /* #4A7DBB; /* 'TextboxBackColor Default Schema Blauw medium blauw */
+    color: #303024; /* dark dark Panta Rhei grey 48 48 36 */
+}
+.tsa_tr_selected {
+    background: #e0e0e0; /* light grey; tsa_tr_selected*/
+}
+
+.tsa_tr_error {
+   /* background: #f1b5b5; /* licht rood; */
+    background: #ffe8e8; /* licht lichtrood; */
+}
+.tsa_tr_ok {
+    background: #d7f4de; /* licht groen; */
+}
+
+
+
+/* PR2019-04-06 from https://css-tricks.com/fixing-tables-long-strings/ */
+.tsa_tbl  {
+    /*table-layout: auto;*/
+    table-layout: fixed;
+    width: 100%; /* must have this set instead of 'auto'*/
+    /* try: */
+    /* word-break: break-all; */
+    word-break: break-word;
+    display: block;
+    overflow: auto;
+    /* PR2020-06-17 see https://stackoverflow.com/questions/41421512/why-does-flex-box-work-with-a-div-but-not-a-table */
+    /* TEST
+    position: absolute;
+    height: 100%;
+    left: 0;
+    top: 0;
+    border-collapse: collapse;
+    */
+}
+
+.tsa_tbl th  {
+    padding: 0.2rem 0.25rem 0.05rem 0.25rem;
+    margin: 0;
+    /*background: #f8f8f8; /*licht licht licht grijs 248 248 248 100%; */
+    /*background: #e8e8e880; /*licht licht grijs 232 232 232 50% */
+    background-color: #f5f5f5; /* this is reddish: background-color: #f8f8f8;*/
+    white-space: normal;
+    overflow-wrap: break-word; /* TODO not working*/
+    word-wrap: break-word;
+    /*overflow: hidden;
+    text-overflow: ellipsis;*/
+}
+
+.tsa_tbl tr {
+    padding: 0.2rem 0.25rem 0.05rem 0.25rem;
+    margin: 0;
+}
+
+.tsa_tbl td {
+    /* display: table-cell; /* PR2020-05-28 problems with right align offset field in datatable om planning page */
+    /*width: 100%;*/
+    padding: 0.2rem 0.25rem 0.05rem 0.25rem;
+    margin: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    vertical-align: top;/* from bootstrap table td */
+    border-top: 1px solid #dee2e6; /* from bootstrap table td */
+}
+
+.tsa_margin_form_label {
+    margin: 16px 8px 4px 8px; /* mx-2 = .5 rem, mx-1 = .25 rem, 1 rem = 16 px  <top><right><bottom><left> */
+}
+
+.tw_360 { width: 360px; }
+.tw_300 { width: 300px; }
+.tw_270 { width: 270px; }
+.tw_240 { width: 240px; }
+.tw_220 { width: 220px; }
+.tw_200 { width: 200px; }
+.tw_180 { width: 180px; }
+.tw_150 { width: 150px; }
+.tw_120 { width: 120px; }
+.tw_110 { width: 110px; }
+.tw_100 { width: 100px; }
+.tw_090 { width: 90px; }
+.tw_075 { width: 75px; }
+.tw_060 { width: 60px; }
+.tw_032 { width: 32px; }
+.tw_020 { width: 20px; }
+.tw_016 { width: 16px; }
+
+.tbl_MUA_h390_w280 {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 390px;
+    width: 280px;
+}
+.tbl_h140_w270 {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 140px;
+    width: 270px;
+    padding: 4px;
+}
+
+.tbl_h140_w220 {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 140px;
+    width: 220px;
+    padding: 4px;
+}
+.input_text, .tsa_transparent {
+    background: transparent;
+    border: none;
+    margin: 0;
+	padding: 0;
+}
+
+
+.display_hide {
+  display: none;
+}
+
+.visibility_hide {
+  visibility: hidden;
+}
+
+.test_color {
+   background-color: orange;
+
+}
+.pointer_show {
+    cursor: pointer;
+}
+
+.image_container {
+  display: flex;
+  justify-content: center;
+  /*padding: 8px;*/
+}
+
+.icon_24 {
+    width: 24px;
+    height: 24px;
+}
+.icon_18 {
+    width: 18px;
+    height: 18px;
+}
+
+
+
+.nopadding {
+    padding-top: 0.05rem;;
+    padding-bottom: 0.05rem;
+}
+
+.border_none {
+    border: 0;
+    /*background-color: transparent;*/
+}
+.border_right {
+    border-right: 1px solid #dc3545;    /*  red like in django is-invalid */
+    border-color: #a5a5a5; /* medium grey; 165 165 165 */
+}
+
+.border_bg_invalid {
+    border: 1px solid #dc3545;    /*  red like in django is-invalid */
+    border-radius: .25rem;
+    /*background-color: #f1b5b5;*/
+    background: #ffe8e8; /* licht lichtrood; */
+}
+.border_invalid {
+    border: 1px solid #dc3545;    /*  red like in django is-invalid */
+    border-radius: .25rem;
+}
+
+
+.color_invalid {
+    color: #dc3545;    /*  red like in django is-invalid */
+}
+
+.border_bg_valid {
+    border: 1px solid  #4cbd67 !important;  /*  #28a745; is green like in django is-valid */
+    border-radius: .25rem  !important;
+    background-color: #d7f4de !important; /*#ade8bb;*/
+}
+.border_bg_transparent {
+    border: 1px solid #303024; /* dark dark Panta Rhei grey 48 48 36 */
+    border-radius: .25rem;
+    background-color: transparent;
+}
+.border_bg_message {
+    border: 1px solid #303024; /* dark dark Panta Rhei grey 48 48 36 */
+    border-radius: .25rem;
+    background-color: #f5f5f5;  /* licht licht licht grijs 245 245 245 */
+}
+
+
+/* SPRITES PR2020-08-17 */
+
+.stat_0_0, .stat_0_1, .stat_0_2, .stat_0_3, .stat_0_4, .stat_0_5, .stat_0_6,
+.stat_1_0, .stat_1_1, .stat_1_2, .stat_1_3, .stat_1_4, .stat_1_5, .stat_1_6,
+.inactive_0_0, .inactive_0_1, .inactive_0_2, .inactive_0_3,
+.inactive_1_0, .inactive_1_1, .inactive_1_2, .inactive_1_3,
+.edit_0_0, .edit_0_1, .edit_0_2, .edit_0_3, .edit_0_4,
+.edit_1_0, .edit_1_1, .edit_1_2, .edit_1_3, .edit_1_4,
+.xmark_0_0, .xmark_0_1, .xmark_0_2, .xmark_0_3,
+.exclamation_0_0, .exclamation_0_1, .exclamation_0_2,
+.tickmark_0_0, .tickmark_0_1, .tickmark_0_2,
+.tickmark_1_0, .tickmark_1_1, .tickmark_1_2,
+.delete_0_0, .delete_0_1, .delete_0_2 {
+    background-repeat: no-repeat;
+    height: 20px;
+    width: 20px;
+    margin: auto;
+    padding-top: 2px;
+    /*cursor: pointer*/;
+}
+
+.stat_0_0, .stat_0_1, .stat_0_2, .stat_0_3, .stat_0_4, .stat_0_5, .stat_0_6,
+.stat_1_0, .stat_1_1, .stat_1_2, .stat_1_3, .stat_1_4, .stat_1_5, .stat_1_6 {
+    background-image: url('/static/img/status.png');
+    background-size: 140px 40px;
+}
+.stat_0_0 { background-position: -0px -0px;}
+.stat_0_1 { background-position: -20px -0px;}
+.stat_0_2 { background-position: -40px -0px;}
+.stat_0_3 { background-position: -60px -0px;}
+.stat_0_4 { background-position: -80px -0px;}
+.stat_0_5 { background-position: -100px -0px;}
+.stat_0_6 { background-position: -120px -0px;}
+.stat_1_0 { background-position: -0px -20px;}
+.stat_1_1 { background-position: -20px -20px;}
+.stat_1_2 { background-position: -40px -20px;}
+.stat_1_3 { background-position: -60px -20px;}
+.stat_1_4 { background-position: -80px -20px;}
+.stat_1_5 { background-position: -100px -20px;}
+.stat_1_6 { background-position: -120px -20px;}
+
+.inactive_0_0, .inactive_0_1, .inactive_0_2, .inactive_0_3,
+.inactive_1_0, .inactive_1_1, .inactive_1_2, .inactive_1_3 {
+    background-image: url('/static/img/inactive.png');
+    background-size: 80px 40px;
+}
+.inactive_0_0 { background-position: -0px -0px;}
+.inactive_0_1 { background-position: -20px -0px;}
+.inactive_0_2 { background-position: -40px -0px;}
+.inactive_0_3 { background-position: -60px -0px;}
+.inactive_1_0 { background-position: -0px -20px;}
+.inactive_1_1 { background-position: -20px -20px;}
+.inactive_1_2 { background-position: -40px -20px;}
+.inactive_1_3 { background-position: -60px -20px;}
+
+.edit_0_0, .edit_0_1, .edit_0_2, .edit_0_3, .edit_0_4,
+.edit_1_0, .edit_1_1, .edit_1_2, .edit_1_3, .edit_1_4 {
+    background-image: url('/static/img/editor.png');
+    background-size: 100px 40px;
+}
+.edit_0_0 { background-position: -0px -0px;}
+.edit_0_1 { background-position: -20px -0px;}
+.edit_0_2 { background-position: -40px -0px;}
+.edit_0_3 { background-position: -60px -0px;}
+.edit_0_4 { background-position: -80px -0px;}
+.edit_1_0 { background-position: -0px -20px;}
+.edit_1_1 { background-position: -20px -20px;}
+.edit_1_2 { background-position: -40px -20px;}
+.edit_1_3 { background-position: -60px -20px;}
+.edit_1_4 { background-position: -80px -20px;}
+
+.xmark_0_0, .xmark_0_1, .xmark_0_2, .xmark_0_3 {
+    background-image: url('/static/img/xmark.png');
+    background-size: 80px 20px;
+}
+.xmark_0_0 { background-position: -0px -0px;}
+.xmark_0_1 { background-position: -20px -0px;}
+.xmark_0_2 { background-position: -40px -0px;}
+.xmark_0_3 { background-position: -60px -0px;}
+
+.exclamation_0_0, .exclamation_0_1, .exclamation_0_2 {
+    background-image: url('/static/img/exclamation.png');
+    background-size: 60px 20px;
+}
+.exclamation_0_0 { background-position: -0px -0px;}
+.exclamation_0_1 { background-position: -20px -0px;}
+.exclamation_0_2 { background-position: -40px -0px;}
+
+.tickmark_0_0, .tickmark_0_1, .tickmark_0_2,
+.tickmark_1_0, .tickmark_1_1, .tickmark_1_2 {
+    background-image: url('/static/img/tickmark.png');
+    background-size: 60px 40px;
+}
+.tickmark_0_0 { background-position: -0px -0px;}
+.tickmark_0_1 { background-position: -20px -0px;}
+.tickmark_0_2 { background-position: -40px -0px;}
+.tickmark_1_0 { background-position: -0px -20px;}
+.tickmark_1_1 { background-position: -20px -20px;}
+.tickmark_1_2 { background-position: -40px -20px;}
+
+.delete_0_0, .delete_0_1, .delete_0_2 {
+    background-image: url('/static/img/btn_del.png');
+    background-size: 60px 20px;
+}
+.delete_0_0 { background-position: -0px -0px;}
+.delete_0_1 { background-position: -20px -0px;}
+.delete_0_2 { background-position: -40px -0px;}
+
+.btn_del_0_1, .btn_del_0_2 {
+    background-image: url('/static/img/btn_del.png');
+    background-size: 84px 28px;
+    background-repeat: no-repeat;
+
+    border: 1px solid #808080;  /* #2d2400 = 45 36 0 Panta Rhei grijs;*/  /* #808080; /* dark grey 128 128 128 */
+    border-radius: .1rem;
+    box-shadow: 2px 2px #808080;
+
+    height: 28px;
+    width: 28px;
+    margin: 0;
+    padding-top: 0px;
+}
+.btn_del_0_1 { background-position: -28px -0px;}
+.btn_del_0_2 { background-position: -56px -0px;}
+
+
+.flag_0_0, .flag_0_1, .flag_0_2,
+.flag_1_0, .flag_1_1, .flag_1_2 {
+    background-image: url('/static/img/flags.png');
+    background-size: 108px 48px;
+    background-repeat: no-repeat;
+    height: 24px;
+    width: 36px;
+    margin: 8px 4px 8px 4px;
+    cursor: pointer;
+}
+.flag_0_0 { background-position: -0px -0px;}
+.flag_0_1 { background-position: -36px -0px;}
+.flag_0_2 { background-position: -72px -0px;}
+.flag_1_0 { background-position: -0px -24px;}
+.flag_1_1 { background-position: -36px -24px;}
+.flag_1_2 { background-position: -72px -24px;}
+
+
+.awplogo {
+    background-image: url('/static/img/awplogo.png');
+    background-size: 36px 24px;
+    background-repeat: no-repeat;
+    height: 24px;
+    width: 36px;
+    margin: 8px 4px;
+    cursor: pointer;
+    background-position: -0px -0px;
+}
+
+/* END OF SPRITES */

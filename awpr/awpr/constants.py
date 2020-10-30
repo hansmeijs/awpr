@@ -3,44 +3,66 @@
 from django.utils.translation import ugettext as _
 
 USERNAME_MAX_LENGTH = 30
+USERNAME_SLICED_MAX_LENGTH = 24
+USER_LASTNAME_MAX_LENGTH = 50
+MAX_LENGTH_SUBJECTCODE = 8  # number is also hardcoded in _()
+MAX_LENGTH_CODE = 24  # number is also hardcoded in _()
+MAX_LENGTH_NAME = 50
+MAX_LENGTH_SCHOOLCODE = 8
+MAX_LENGTH_SCHOOLABBREV = 30
+MAX_LENGTH_SCHOOLARTICLE = 3
 
 # PR2018-05-07
-ROLE_00_SCHOOL = 0
-ROLE_01_INSP = 1
-ROLE_02_SYSTEM = 2
+ROLE_00_NONE = 0
+ROLE_02_STUDENT = 2
+ROLE_04_TEACHER = 4
+ROLE_08_SCHOOL = 8
+ROLE_16_INSP = 16
+ROLE_32_ADMIN = 32
+ROLE_64_SYSTEM = 64
 
 # PR2018-12-23 used in set_menu_items
-ROLE_STR_00_SCHOOL = 'school'
-ROLE_STR_01_INSP = 'insp'
-ROLE_STR_02_SYSTEM = 'system'
+ROLE_STR_08_SCHOOL = 'school'
+ROLE_STR_16_INSP = 'insp'
+ROLE_STR_32_ADMIN = 'admin'
+ROLE_STR_64_SYSTEM = 'system'
 
 ROLE_DICT = {
-    ROLE_00_SCHOOL: ROLE_STR_00_SCHOOL,
-    ROLE_01_INSP: ROLE_STR_01_INSP,
-    ROLE_02_SYSTEM: ROLE_STR_02_SYSTEM
+    ROLE_08_SCHOOL: ROLE_STR_08_SCHOOL,
+    ROLE_16_INSP: ROLE_STR_16_INSP,
+    ROLE_32_ADMIN: ROLE_STR_32_ADMIN,
+    ROLE_64_SYSTEM: ROLE_STR_64_SYSTEM
     }
 
 # PR2018-05-21
 PERMIT_00_NONE = 0
 PERMIT_01_READ = 1
-PERMIT_02_WRITE = 2
-PERMIT_04_AUTH = 4
-PERMIT_08_ADMIN = 8
+PERMIT_02_EDIT = 2
+PERMIT_04_AUTH1 = 4
+PERMIT_08_AUTH2 = 8
+PERMIT_16_ANALYZE = 16
+PERMIT_32_ADMIN = 32
+PERMIT_64_SYSTEM = 64
 
 # PR2018-12-23 used in set_menu_items
 PERMIT_STR_00_NONE = 'none'
 PERMIT_STR_01_READ = 'read'
-PERMIT_STR_02_WRITE = 'write'
-PERMIT_STR_04_AUTH = 'auth'
-PERMIT_STR_08_ADMIN = 'admin'
-PERMIT_STR_15_ALL = 'all'
+PERMIT_STR_02_EDIT = 'edit'
+PERMIT_STR_04_AUTH1 = 'auth1'
+PERMIT_STR_08_AUTH2 = 'auth2'
+PERMIT_STR_16_ANALYZE = 'anlz'
+PERMIT_STR_32_ADMIN = 'admin'
+PERMIT_STR_64_SYSTEM = 'system'
 
 PERMIT_DICT = {
     PERMIT_00_NONE: PERMIT_STR_00_NONE,
     PERMIT_01_READ: PERMIT_STR_01_READ,
-    PERMIT_02_WRITE: PERMIT_STR_02_WRITE,
-    PERMIT_04_AUTH: PERMIT_STR_04_AUTH,
-    PERMIT_08_ADMIN: PERMIT_STR_08_ADMIN
+    PERMIT_02_EDIT: PERMIT_STR_02_EDIT,
+    PERMIT_04_AUTH1: PERMIT_STR_04_AUTH1,
+    PERMIT_08_AUTH2: PERMIT_STR_08_AUTH2,
+    PERMIT_16_ANALYZE: PERMIT_STR_16_ANALYZE,
+    PERMIT_32_ADMIN: PERMIT_STR_32_ADMIN,
+    PERMIT_64_SYSTEM: PERMIT_STR_64_SYSTEM
 }
 
 
@@ -61,24 +83,21 @@ GRADETYPE_00_NONE = 0
 GRADETYPE_01_NUMBER = 1
 GRADETYPE_02_CHARACTER = 2 # goed / voldoende / onvoldoende
 
-
-
-
-
 # PR2018-08-01
 CHOICES_ROLE = (
-    (ROLE_00_SCHOOL, _('School')),
-    (ROLE_01_INSP, _('Inspection')),
-    (ROLE_02_SYSTEM, _('System'))
+    (ROLE_08_SCHOOL, _('School')),
+    (ROLE_16_INSP, _('Inspection')),
+    (ROLE_32_ADMIN, _('Administrator')),
+    (ROLE_64_SYSTEM, _('System'))
 )
 
 # PR2018-08-07
 CHOICES_ROLE_DICT = {
-    ROLE_00_SCHOOL: _('School'),
-    ROLE_01_INSP: _('Inspection'),
-    ROLE_02_SYSTEM: _('System')
+    ROLE_08_SCHOOL: _('School'),
+    ROLE_16_INSP: _('Inspection'),
+    ROLE_32_ADMIN: _('Administrator'),
+    ROLE_64_SYSTEM: _('System')
 }
-
 
 MODE_C_CREATED = 'c'
 MODE_L_COPIED = 'l'
@@ -204,9 +223,6 @@ GRADETYPE_ABBREV = {
     GRADETYPE_02_CHARACTER: _('g/s/i')
 }
 
-
-
-
 # PR2019-01-19
 SCHEMEFIELD_MANDATORY = 'mand'
 SCHEMEFIELD_COMBI = 'comb'
@@ -236,7 +252,7 @@ PRACTICALEXAM = 2
 CENTRALEXAM = 3
 CENTRALEXAM2 = 4
 CENTRALEXAM3 = 5
-SCHOOLEXAM_EXEMPTION = 6
+SCHOOLEXAM_EXEMPTION = 6  # vrijstelling
 CENTRALEXAM_EXEMPTION = 7
 
 EXAMCODE_CHOICES = (
@@ -278,12 +294,14 @@ PERIOD_CHOICES = (
 NORESULT_RESULT = 0
 PASSED_RESULT = 1
 FAILED_RESULT = 2
-WITHDRAWN_RESULT = 3
+REEXAM_RESULT = 3
+WITHDRAWN_RESULT = 4
 
 RESULT_CHOICES = (
     (NORESULT_RESULT, _('No result')),
     (PASSED_RESULT, _('Passed')),
     (FAILED_RESULT, _('Failed')),
+    (REEXAM_RESULT, _('Re-examination')),
     (WITHDRAWN_RESULT, _('Withdrawn'))
 )
 
@@ -292,3 +310,45 @@ KEY_STUDENT_MAPPED_COLDEFS = "student_mapped_coldefs"
 
 # USER SETTING KEYS PR2018-12-19
 KEY_USER_MENU_SELECTED = "menu_selected"
+
+KEY_SUBJECT_MAPPED_COLDEFS = "subject_mapped_coldefs"
+COLDEF_SUBJECT = ( {'awpKey': 'code', 'caption': _('Subject abbreviation')},
+                    {'awpKey': 'name', 'caption': _('Subject name')},
+                    {'awpKey': 'sequence', 'caption': _('Sequence')},
+                    {'awpKey': 'depbases', 'caption': _('Departments, in which this subject occurs')}
+                   )
+
+CAPTION_IMPORT = {'no_file': _('No file is currently selected'),
+                                 'link_columns': _('Link columns'),
+                                 'click_items': _('Click items to link or unlink columns'),
+                                 'excel_columns': _('Excel columns'),
+                                 'awp_columns': _('AWP columns'),
+                                 'linked_columns': _('Linked columns')}
+
+
+LANG_NL = 'nl'
+LANG_EN = 'en'
+
+LANG_DEFAULT = LANG_NL
+
+#PR2019-03-23
+MONTHS_ABBREV = {LANG_EN: ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'),
+             LANG_NL: ('', 'jan', 'feb', 'mrt', 'apr', 'mei', 'juni', 'juli', 'aug', 'sep', 'okt', 'nov', 'dec')
+             }
+MONTHS_LONG = {LANG_EN: ('', 'January', 'February', 'March', 'April', 'May', 'June',
+                         'July', 'August', 'September', 'October', 'November', 'December'),
+             LANG_NL: ('', 'januari', 'februari', 'maart', 'april', 'mei', 'juni',
+                       'juli', 'augustus', 'september', 'oktober', 'november', 'december')
+             }
+#PR2019-04-13
+WEEKDAYS_ABBREV = {LANG_EN: ('', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'),
+             LANG_NL: ('', 'ma', 'di', 'wo', 'do', 'vr', 'za', 'zo')
+             }
+WEEKDAYS_LONG = {LANG_EN: ('', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'),
+             LANG_NL: ('', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag')
+             }
+#PR2020-10-06
+FIELDS_EXAMYEAR = ('country', 'examyear', 'published', 'locked',
+                   'createdat', 'publishedat', 'lockedat', 'modifiedby', 'modifiedat')
+FIELDS_SCHOOL = ('base', 'examyear', 'name', 'abbrev','article', 'depbases', 'activated', 'locked', 'activatedat', 'lockedat', 'istemplate', 'modifiedby', 'modifiedat')
+FIELDS_SUBJECT = ('base', 'examyear', 'name', 'abbrev','sequence', 'depbases', 'modifiedby', 'modifiedat')

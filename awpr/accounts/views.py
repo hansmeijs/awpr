@@ -4,6 +4,10 @@ from django.contrib.auth.mixins import UserPassesTestMixin  # PR2018-11-03
 from django.contrib.sites.shortcuts import get_current_site
 from django.contrib import messages
 from django.core.mail import send_mail
+
+from django.db import connection
+from django.http import HttpResponse
+
 from django.shortcuts import render, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
@@ -11,7 +15,7 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import activate, ugettext_lazy as _
 from django.views.generic import ListView, View, CreateView, UpdateView, DeleteView
 from django.contrib.auth.views import PasswordResetConfirmView # PR2018-10-14
 from django.contrib.auth.forms import SetPasswordForm # PR2018-10-14
@@ -27,12 +31,21 @@ from django.contrib.auth import (
 from .forms import UserAddForm, UserEditForm, UserActivateForm
 from .tokens import account_activation_token
 from .models import User, User_log, Usersetting
-from schools.models import Examyear, Schoolbase
-from subjects.models import Department
-from awpr import constants as c
-from awpr import functions as f
-from schools.models import School
 
+from accounts import models as am
+from awpr import constants as c
+from awpr import validators as v
+
+from awpr import functions as f
+from awpr import menus as awpr_menu
+
+from schools import models as sch_mod
+from schools import functions as sch_fnc
+
+
+from datetime import datetime
+import pytz
+import json
 import logging
 logger = logging.getLogger(__name__)
 
@@ -42,7 +55,7 @@ class UserListView(ListView):
 
     def get(self, request, *args, **kwargs):
         User = get_user_model()
-
+        logger.debug(" =====  UserListView  =====")
         #PR2018-04-24 get all user of the country of the current user (for inspection users)
         #users = User.objects.filter(id__schoolcode_id__country=request_country)
 
@@ -61,18 +74,18 @@ class UserListView(ListView):
             elif request.user.is_role_insp:
                 if request.user.country is not None:
                     # filter only users from this country, with role == insp
-                    users = User.objects.filter(country=request.user.country, role__lte=c.ROLE_01_INSP).order_by('username')
+                    users = User.objects.filter(country=request.user.country, role__lte=c.ROLE_16_INSP).order_by('username')
             else:
                 if request.user.schoolbase is not None:
                     # filter only users from this school, with role == school
-                    users = User.objects.filter(schoolbase=request.user.schoolbase, role=c.ROLE_00_SCHOOL).order_by('username')
+                    users = User.objects.filter(schoolbase=request.user.schoolbase, role=c.ROLE_08_SCHOOL).order_by('username')
         else:
             messages.error(request, _("User has no role."))
 
         _override_school = ''
-        if request.user.is_role_insp_or_system:
+        if request.user.is_role_insp_or_admin_or_system:
             _override_school = request.user.role_str
-        headerbar_param = f.get_headerbar_param(request,
+        headerbar_param = awpr_menu.get_headerbar_param(request,
             {'users': users, 'display_school': True, 'override_school': _override_school})
         # logger.debug('home headerbar_param: ' + str(headerbar_param))
         """
@@ -97,308 +110,213 @@ class UserListView(ListView):
         }
         """
 
+        logger.debug('headerbar_param: ' + str(headerbar_param))
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'user_list.html', headerbar_param)
+        return render(request, 'users.html', headerbar_param)
 
 # How To Create Users Without Setting Their Password PR2018-10-09
 # from https://django-authtools.readthedocs.io/en/latest/how-to/invitation-email.html
 
+########################################################################
+# === UserUploadView ===================================== PR2020-08-02
+@method_decorator([login_required], name='dispatch')
+class UserUploadView(View):
+    #  UserUploadView is called from Users form when the sysadmin has filled in username and email and clicked on 'Submit'
+    #  it returns a HttpResponse, with ok_msg or err-msg
+    #  when ok: it also sends an email to the user
+
+    def post(self, request):
+        logger.debug('  ')
+        logger.debug(' ========== UserUploadView ===============')
+
+        update_wrap = {}
+        err_dict = {}
+        updated_dict = {}
+        if request.user is not None and request.user.country is not None and request.user.schoolbase is not None:
+            has_permit_this_school = False
+            has_permit_all_schools = False
+            # <PERMIT> PR220-09-24
+            #  - only perm_admin and perm_system can add/edit/delete users
+            #  - only role_system and role_admin (ETE) can add users of other schools
+            #  - also role_insp and role_school can add users of their own school
+            if request.user.is_perm_admin or request.user.is_perm_system:
+                has_permit_all_schools = request.user.is_role_admin or request.user.is_role_system
+                has_permit_this_school = request.user.is_role_insp or request.user.is_role_school
+            if has_permit_this_school or has_permit_all_schools:
+# - get upload_dict from request.POST
+                upload_json = request.POST.get("upload")
+                if upload_json:
+                    upload_dict = json.loads(upload_json)
+                    logger.debug('upload_dict: ' + str(upload_dict))
+
+                    # upload_dict: {'mode': 'validate', 'company_pk': 3, 'pk_int': 114, 'user_ppk': 3,
+                    # 'employee_pk': None, 'employee_code': None, 'username': 'Giterson_Lisette', 'last_name': 'Lisette Sylvia enzo Giterson', 'email': 'hmeijs@gmail.com'}
+    # upload_dict: {'mode': 'delete', 'user_pk': 169, 'user_ppk': 3, 'mapid': 'user_169'}
+
+    # - reset language
+                    # PR2019-03-15 Debug: language gets lost, get request.user.lang again
+                    user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                    activate(user_lang)
+
+    # - check if this user schoolbase is same as request.user.schoolbase
+                    pk_int = f.get_dict_value(upload_dict, ('id', 'pk'))
+                    ppk_int = f.get_dict_value(upload_dict, ('id', 'ppk'))
+                    map_id = f.get_dict_value(upload_dict, ('id', 'mapid'))
+
+# - check if the user schoolbase exists
+                    user_schoolbase = sch_mod.Schoolbase.objects.get_or_none(id=ppk_int, country=request.user.country)
+                    # <PERMIT> PR220-09-24
+                    is_same_schoolbase = (user_schoolbase and user_schoolbase == request.user.schoolbase)
+                    if (user_schoolbase) and (has_permit_all_schools or is_same_schoolbase):
+
+                        mode = f.get_dict_value(upload_dict, ('id', 'mode'))
+                        is_validate_only = (mode == 'validate')
+                        update_wrap['mode'] = mode
+
+    # ++++  resend activation email ++++++++++++
+                        if mode == 'resend_activation_email':
+                            resend_activation_email(pk_int, update_wrap, err_dict, request)
+    # ++++  delete user ++++++++++++
+                        elif mode == 'delete':
+                            if pk_int:
+                                instance = None
+                                if has_permit_all_schools:
+                                    instance = am.User.objects.get_or_none(id=pk_int, country=request.user.country)
+                                elif has_permit_this_school:
+                                    instance = am.User.objects.get_or_none(
+                                        id=pk_int,
+                                        country=request.user.country,
+                                        schoolbase=request.user.schoolbase
+                                    )
+                                #logger.debug('instance: ' + str(instance))
+                                if instance:
+                                    deleted_instance_list = create_user_list(request, instance.pk)
+                                    if deleted_instance_list:
+                                        updated_dict = deleted_instance_list[0]
+                                        updated_dict['mapid'] = map_id
+
+                                    if (request.user.is_perm_system or request.user.is_perm_admin) \
+                                            and (instance == request.user):
+                                        err_dict['msg01'] = _("System administrators cannot delete their own account.")
+                                    else:
+                                        try:
+                                            instance.delete()
+                                        except:
+                                            err_dict['msg01'] = _('An error occurred. This user could not be deleted.')
+                                        else:
+                                            updated_dict['deleted'] = True
+
+    # ++++  create or validate new user ++++++++++++
+                        elif mode in ('create', 'validate'):
+                            new_user_pk, err_dict, ok_dict = create_or_validate_user_instance(user_schoolbase, upload_dict, pk_int, is_validate_only, user_lang, request)
+                            if err_dict:
+                                update_wrap['msg_err'] = err_dict
+                            if ok_dict:
+                                update_wrap['msg_ok'] = ok_dict
+                            # - new_user_pk has only value when new user is created, not when is_validate_only
+                            # - create_user_list returns list of only 1 user
+                            if new_user_pk:
+                                created_instance_list = create_user_list(request, new_user_pk)
+                                if created_instance_list:
+                                    updated_dict = created_instance_list[0]
+                                    updated_dict['created'] = True
+
+                        else:
+    # - +++++++++ is update ++++++++++++
+                            instance = None
+                            if has_permit_all_schools:
+                                instance = am.User.objects.get_or_none(id=pk_int, country=request.user.country)
+                            elif has_permit_this_school:
+                                instance = am.User.objects.get_or_none(
+                                    id=pk_int,
+                                    country=request.user.country,
+                                    schoolbase=request.user.schoolbase
+                                )
+                            if instance:
+                                err_dict, ok_dict = update_user_instance(instance, pk_int, upload_dict, is_validate_only, request)
+                                if err_dict:
+                                    update_wrap['msg_err'] = err_dict
+                                if ok_dict:
+                                    update_wrap['msg_ok'] = ok_dict
+                                # - create_user_list returns list of only 1 user
+                                updated_instance_list = create_user_list(request, instance.pk)
+                                updated_dict = updated_instance_list[0]
+                                updated_dict['updated'] = True
+                                updated_dict['mapid'] = map_id
+
+    # - +++++++++ en of is update ++++++++++++
+                        if updated_dict:
+                            update_wrap['updated_list'] = [updated_dict]
+                        if err_dict:
+                            update_wrap['msg_err'] = err_dict
+                        else:
+                            update_wrap['validation_ok'] = True
+
+        # - create_user_list returns list of only 1 user
+        #update_wrap['user_list'] = ad.create_user_list(request, instance.pk)
+# - return update_wrap
+        update_wrap_json = json.dumps(update_wrap, cls=f.LazyEncoder)
+        return HttpResponse(update_wrap_json)
+# === end of UserUploadView =====================================
+
 
 @method_decorator([login_required], name='dispatch')
-class UserAddView(CreateView):
-    # model = User
-    # form_class = UserAddForm
-    # template_name = 'user_add.html' # without template_name Django searches for user_form.html
-    # pk_url_kwarg = 'pk'
-    # context_object_name = 'UserAddForm' # "context_object_name" changes the original parameter name "object_list"
-
-    def get(self, request, *args, **kwargs):
-        # required: user.is_authenticated and user.may_add_or_edit_users
-        # PR2018-05-30  user may_add_or_edit_users if:
-        # role system: if perm admin
-        # role insp:   if perm_admin and country not None
-        # role school: if perm_admin and country not None and schooldefault not None
-
-        form = UserAddForm(request=request)
-
-        _params = f.get_headerbar_param(request, {
-            'form': form,
-            'display_school': True
-        })
-        # render(request, template_name, context=None (A dictionary of values to add to the template context), content_type=None, status=None, using=None)
-        return render(request, 'user_add.html', _params)
-
-        # Every field in the form will have a field_name_clean() method created automatically by Django.\
-        # This method is called when you do form.is_valid().
-        # def clean_password1(self):
-        #    password_default = 'default'
-        #    self.cleaned_data['password1'] = password_default
-        #    return password_default
+class UserSettingsUploadView(UpdateView):  # PR2019-10-09
 
     def post(self, request, *args, **kwargs):
-        # data = request.POST.copy()
-        # logger.debug('UserAddView def post(self, request:data = ' + str(data))
-        form = UserAddForm(request.POST, request=request)  # form = UserAddForm(request.POST)
-        logger.debug('UserAddView post form.data: ' + str(form.data))
+        #logger.debug(' ============= UserSettingsUploadView ============= ')
 
-        if form.is_valid():
-            logger.debug('UserAddView post is_valid form.data: ' + str(form.data))
+        update_wrap = {}
+        if request.user is not None and request.user.country is not None:
 
-        # create random password
-            randompassword = User.objects.make_random_password() + User.objects.make_random_password()
-            form.cleaned_data['password1'] = randompassword
-            form.cleaned_data['password2'] = randompassword
+# 1. get upload_dict from request.POST
+            upload_json = request.POST.get('upload')
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                #logger.debug('upload_dict: ' + str(upload_dict))
+                # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
+                # PR2020-10-04 not any more, don't know why
+                for key, new_setting_dict in upload_dict.items():
+                    # key = 'page_examyear', dict = {'sel_btn': 'examyear'}
+                    saved_settings_dict = Usersetting.get_jsonsetting(key, request.user)
+                    logger.debug('new_setting_dict: ' + str(new_setting_dict))
+                    logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
+                    # loop through saved settings
+                    for subkey, value in new_setting_dict.items():
+                        # subkey: sel_btn,  value: examyear
+                        # if subkey has value in saved_settings_dict: replace saved value with new value
+                        if subkey in saved_settings_dict:
+                            if value:
+                                saved_settings_dict[subkey] = value
+                            else:
+                        # if subkey has no value in saved_settings_dict: remove key from dict
+                                saved_settings_dict.pop(subkey)
+                        else:
+                        # if subkey not found in saved_settings_dict and value is not None: create subkey with value
+                            if value:
+                                saved_settings_dict[subkey] = value
+                    #logger.debug('Usersetting.set_jsonsetting from UserSettingsUploadView')
+                    Usersetting.set_jsonsetting(key, saved_settings_dict, request.user)
 
-        # save user without commit
-            user = form.save(commit=False)
-            # logger.debug('UserAddView post form.save after commit=False')
+        # c. add update_dict to update_wrap
+                    update_wrap['setting'] = {'result': 'ok'}
+# F. return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=f.LazyEncoder))
 
-# ======  save field 'Role'  ============
-        # only request.user with role=System and role=Insp kan set different role, School can only set its own role
-            logger.debug('UserAddView post form.is_valid request.user.role: '+ str(request.user.role))
-            if request.user.is_role_insp_or_system:
-                _role_int = form.cleaned_data.get('role_list')
-            else:
-                _role_int = request.user.role
-            user.role = _role_int
-            # logger.debug('UserAddView post form.is_valid user.username: '+ str(user.username))
-            # logger.debug('UserAddView post form.is_valid user.role: '+ str(user.role))
-
-# ======  save field 'Country'  ============ PR2018-08-17
-        # user.country cannot be changed, except for users with role.system. They can switch country in headerbar.
-            user.country = request.user.country
-            # PR2018-08-17 was:
-            # get request_user.country, set as initial in UserAddForm:  initial = request.user.country.id
-            # country_list = form.cleaned_data.get('country_list')
-            # try:
-            #     country_id = int( country_list)
-            #     # PR2018-06-08 objects.get gives error: 'matching query does not exist' when record not found (should not be possible)
-            #     # use Country.objects.filter instead
-            #     country = Country.objects.get(id=country_id)
-            #     if country:
-            #         user.country = country
-            # except:
-            #     pass
-
-# ======  save field 'Schoolbase'  ============ PR2018-08-17
-            # user with role school needs a schoolbase, otherwise don't save
-            #
-
-            schoolbase_id = form.cleaned_data.get('schoolbase')
-            logger.debug('_schoolbase: '+ str(schoolbase_id))
-
-            if schoolbase_id:
-                school= School.objects.filter(base=schoolbase_id, examyear=request.user.examyear).first()
-                if school:
-                    user.schoolbase = school.base
-
-            user.examyear = request.user.examyear
-
-
-
-# ======  save field 'schoolbase'  ============ PR2018-08-17
-            # when request.user.role=System: schoolbase = None, when Insp and School:  schoolbase= request.user.schoolbase
-            if not request.user.is_role_system:
-                if request.user.schoolbase:
-                    user.schoolbase = request.user.schoolbase
-            # logger.debug('UserAddView post form.is_valid user.role: '+ str(user.role))
-
-        # save field 'Permit'
-            permit_sum = 0
-            permit_list = form.cleaned_data.get('permit_list')
-            if permit_list:
-                for item in permit_list:
-                    try:
-                        permit_sum = permit_sum + int(item)
-                    except:
-                        pass
-            user.permits = permit_sum
-
-            user.is_active = False
-            user.activated = False
-
-            user.save(self.request)  # PR 2018-08-04 debug: was: user.save()
-            # logger.debug('UserAddView post password: ' +  str(user.password))
-
-            current_site = get_current_site(request)
-            # logger.debug('UserAddView post current_site: ' +  str(current_site))
-
-            # domain = current_site.domain
-            # logger.debug('UserAddView post domain: ' +  str(domain) + '\n')
-
-            # uid_code = urlsafe_base64_encode(force_bytes(user.pk))
-            # logger.debug('UserAddView post uid_code: ' + str(uid_code))
-
-            # token = account_activation_token.make_token(user)
-            # logger.debug('UserAddView post token: ' + str(token))
-
-            subject = 'Activate Your AWP online Account'
-            from_email = 'AWP online <noreply@awponline.net>'
-            message = render_to_string('account_activation_email.html', {
-                'user': user,
-                'domain': current_site.domain,
-                # PR2018-04-24 debug: In Django 2.0 you should call decode() after base64 encoding the uid, to convert it to a string:
-                # 'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-                'uid': urlsafe_base64_encode(force_bytes(user.pk)).decode(),
-                'token': account_activation_token.make_token(user),
-            })
-            logger.debug('UserAddView post subject: ' + str(subject))
-            # PR2018-12-31 moved from accounts_user to here
-            # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
-            send_mail(subject, message, from_email, [user.email], fail_silently=False)
-
-            logger.debug('UserAddView post message sent. ')
-            return redirect('account_activation_sent_url')
-        else:
-            logger.debug('UserAddView post NOT is_valid form.data: ' + str(form.data))
-            return render(request, 'user_add.html', {'form': form})
-
-
-@method_decorator([login_required], name='dispatch')
-class UserEditView(UserPassesTestMixin, UpdateView):
-    User = get_user_model()
-    model = User
-    form_class = UserEditForm
-    template_name = 'user_edit.html' # without template_name Django searches for user_form.html
-    # PR2018-08-02 debug: omitting context_object_name = 'UserEditView' has a weird effect:
-    # the selected_user becomes the request_user
-    context_object_name = 'UserEditView' # "context_object_name" changes the original parameter name "object_list"
-
-    # +++ VULNERABILITY !!! +++++++++++++++++++++++++++++++++++++++
-    # PR2018-08-19
-    # VULNERABILITY: User Insp / School can access other users by entering: http://127.0.0.1:8000/users/6/edit
-    # must check if country is same as country of insp OR selected_school is same as school of role_school
-
-    # PR2018-11-03 from: https://python-programming.com/django/permission-checking-django-views/
-    # UserPassesTestMixin uses test_func to check permissions
-    def test_func(self):
-        is_ok = False
-        if self.request.user is not None:
-            request_user = self.request.user
-        # request_user must be active
-            if request_user.is_active:
-        # is_role_system is_ok
-                if self.request.user.is_role_system:
-                    is_ok = True
-        # request_user must have country
-                elif request_user.country is not None:
-                    selected_user_id = self.kwargs['pk']
-                    if selected_user_id is not None:
-                        selected_user = User.objects.filter(id=selected_user_id).first()
-                        if selected_user is not None:
-        # selected_user must have country
-                            if selected_user.country is not None:
-        # request_user.country and selected_user.country must be the same
-                                if selected_user.country.id == request_user.country.id:
-        # is_role_insp is_ok
-                                    if self.request.user.is_role_insp:
-                                        is_ok = True
-        # request_user and selected_user must have schoolbase
-                                    elif request_user.schoolbase is not None and selected_user.schoolbase is not None:
-        # request_user.schoolbase and selected_user.schoolbase must be the same
-                                        is_ok = selected_user.schoolbase.id == request_user.schoolbase.id
-        return is_ok
-
-    # from https://stackoverflow.com/questions/7299973/django-how-to-access-current-request-user-in-modelform?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
-    # PR 2018-05-25 add request to kwargs, so it passes request to the form
-    def get_form_kwargs(self):
-        """
-        FormMixin
-            kwargs = {
-                'initial': self.get_initial(),
-                'prefix': self.get_prefix(),}
-            if self.request.method in ('POST', 'PUT'):
-                kwargs.update({
-                    'data': self.request.POST,
-                    'files': self.request.FILES,})
-        ModelFormMixin
-            if hasattr(self, 'object'):
-                kwargs.update({
-                    'instance': self.object})
-        """
-        kwargs = super(UserEditView, self).get_form_kwargs()
-        #  add request to kwargs, so it can be passed to form
-        kwargs.update({'request': self.request})
-
-        # eg: kwargs: {'initial': {}, 'prefix': None, 'instance': <User: Ad>, 'request': <WSGIRequest: GET '/users/18/edit'>}
-        # logger.debug('UserEditView get_form_kwargs kwargs: ' + str(kwargs))
-        return kwargs
-
-
-    def form_valid(self, form):
-        user = form.save(commit=False)
-
-# ======  save field 'Permit_list'  ============
-    # ATTENTION user with permission admin cannot cancel this, otherwise he could lock himself out
-    # get selected permits from permit_list, convert it to permit_sum, save it in user.permits
-        # check if regusat user is changing himself
-        user_equals_requestuser = user == self.request.user
-        cleaned_permit_has_admin = False
-
-        permit_list = form.cleaned_data.get('permit_list')
-        permit_sum = 0
-        if permit_list:
-            for item in permit_list:
-                try:
-                    if int(item) == c.PERMIT_08_ADMIN:
-                        cleaned_permit_has_admin = True
-                    permit_sum = permit_sum + int(item)
-                except:
-                    pass
-
-        # add admin to permit if admin user has removed admin from his own permit list PR2018-08-25
-        if user_equals_requestuser:
-            if not cleaned_permit_has_admin:
-                permit_sum = permit_sum + c.PERMIT_08_ADMIN
-
-        user.permits = permit_sum
-
-# ======  save field 'field_is_active'  ============
-        # PR2018-08-09 get value from field 'field_is_active', save it in user.is_active
-        # value in field_is_active is stored as str: '0'=False, '1'=True
-        field_is_active = form.cleaned_data.get('field_is_active')
-        # logger.debug('UserEditView form_valid field_is_active: ' +  str(field_is_active) + ' Type: ' + str(type(field_is_active)))
-        _is_active = bool(int(field_is_active))
-        user.is_active = _is_active
-
-        user.modified_by = self.request.user
-        # user.modified_at will be updated in model.save
-
-        user.save(self.request)  # was: user.save()
-        return redirect('user_list_url')
-
-
-@method_decorator([login_required], name='dispatch')
-class UserLogView(View):
-    # PR 2018-04-22 template_name is not necessary, Django looks for <appname>/<model>_list.html
-    # template_name = 'country_list.html'
-    # context_object_name = 'countries'
-    # paginate_by = 10  After this /country_list/?page=1 will return first 10 countries.
-# TODO not working yet, is copy of country_log PR2018-07-19
-    def get(self, request, pk):
-        users_log = User_log.objects.filter(user_id=pk).order_by('-modified_at')
-        user = User.objects.get(id=pk)
-
-        param = {'display_school': True, 'override_school': request.user.role_str}
-        headerbar_param = f.get_headerbar_param(request, param)
-        headerbar_param['users_log'] = users_log
-        headerbar_param['user'] = user
-        # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'user_log.html', headerbar_param)
-
+###########################################
 
 @method_decorator([login_required], name='dispatch')
 class UserLanguageView(View):
 
-    def get(self, request, lang, pk):
-        logger.debug('UserLanguageView get self: ' + str(self) + 'request: ' + str(request) + ' lang: ' + str(lang) + ' pk: ' + str(pk))
+    def get(self, request, lang):
+        logger.debug('UserLanguageView get self: ' + str(self) + 'request: ' + str(request) + ' lang: ' + str(lang))
         if request.user is not None :
             logger.debug('UserLanguageView get request.user: ' + str(request.user))
             request.user.lang = lang
             logger.debug('UserLanguageView get request.user.language: ' + str(request.user.lang))
             request.user.save(self.request)
             logger.debug('UserLanguageView get saved.language: ' + str(request.user.lang))
-        return redirect('home')
+        return redirect('home_url')
 
 
 # PR2018-04-24
@@ -407,6 +325,100 @@ def account_activation_sent(request):
     # PR2018-05-27
     # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
     return render(request, 'account_activation_sent.html')
+
+# Create Advanced User Sign Up View in Django | Step-by-Step  PR2020-03-29
+# from https://dev.to/coderasha/create-advanced-user-sign-up-view-in-django-step-by-step-k9m
+# from https://simpleisbetterthancomplex.com/tutorial/2017/02/18/how-to-create-user-sign-up-view.html
+
+# === SignupActivateView ===================================== PR2020-09-29
+def SignupActivateView(request, uidb64, token):
+    #logger.debug('  === SignupActivateView =====')
+    #logger.debug('request: ' + str(request))
+
+    # SignupActivateView is called when user clicks on link 'Activate your AWP-online account'
+    # it returns the page 'signup_setpassword'
+    # when error: it sends err_msg to this page
+
+    activation_token_ok = False
+    update_wrap = {'activation_token_ok': activation_token_ok}
+
+# - get user
+    try:
+        uid = force_text(urlsafe_base64_decode(uidb64))
+        user = User.objects.get_or_none(pk=uid)
+    except (TypeError, ValueError, OverflowError):
+        user = None
+
+    if user is None:
+        update_wrap['msg_01'] = _('Sorry, we could not find your account.')
+        update_wrap['msg_02'] = _('Your account cannot be activated.')
+    else:
+        user_name = user.username_sliced
+        update_wrap['username'] = user_name
+        update_wrap['schoolcode'] = user.schoolbase.code
+        update_wrap['schoolname'] = user.schoolname
+
+# - get language from user
+        # PR2019-03-15 Debug: language gets lost, get request.user.lang again
+        user_lang = user.lang if user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - check activation_token
+        activation_token_ok = account_activation_token.check_token(user, token)
+        if activation_token_ok:
+            update_wrap['activation_token_ok'] = activation_token_ok
+            # don't activate user and company until user has submitted valid password
+            #update_wrap['uidb64'] = uidb64
+        else:
+            update_wrap['msg_01'] = _('The link to active the account is valid for 7 days and has expired.')
+            update_wrap['msg_02'] = _('You cannot activate your account.')
+
+    #logger.debug('update_wrap: ' + str(update_wrap))
+
+    if request.method == 'POST':
+        #logger.debug('request.POST' + str(request.POST))
+        form = SetPasswordForm(user, request.POST)
+
+        form_is_valid = form.is_valid()
+
+        non_field_errors = f.get_dict_value(form, ('non_field_errors',))
+        field_errors = [(field.label, field.errors) for field in form]
+        #logger.debug('non_field_errors' + str(non_field_errors))
+        #logger.debug('field_errors' + str(field_errors))
+
+        if form_is_valid:
+            user = form.save()
+            update_session_auth_hash(request, user)  # Important!
+
+            # request has no user, add user to request
+            request.user = user
+            # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+            datetime_activated = timezone.now()
+
+# - activate user, after he has submitted valid password
+            user.is_active = True
+            user.activated = True
+            user.activatedat = datetime_activated
+            user.save()
+
+            #login_user = authenticate(username=user.username, password=password1)
+            #login(request, login_user)
+            login(request, user)
+            #logger.debug('user.login' + str(user))
+            if request.user:
+                update_wrap['msg_01'] = _("Congratulations.")
+                update_wrap['msg_02'] = _("Your account is succesfully activated.")
+                update_wrap['msg_03'] = _('You are now logged in to AWP-online.')
+    else:
+        form = SetPasswordForm(user)
+
+    update_wrap['form'] = form
+
+    # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
+    return render(request, 'signup_setpassword.html', update_wrap)
+# === end of SignupActivateView =====================================
+
+
 
 
 # PR2018-04-24
@@ -456,7 +468,7 @@ class UserActivateView(UpdateView):
                         display_school = True
 
             param = {'display_school': display_school, 'display_user': True, }
-            headerbar_param = f.get_headerbar_param(request, param)
+            headerbar_param = awpr_menu.get_headerbar_param(request, param)
             headerbar_param['form'] = form
             logger.debug('def home(request) headerbar_param: ' + str(headerbar_param))
 
@@ -535,35 +547,418 @@ class UserDeleteView(DeleteView):
     success_url = reverse_lazy('user_list_url')
 
 
+def create_user_list(request, user_pk=None):
+    # --- create list of all users of this company, or 1 user with user_pk PR2020-07-31
+    #logger.debug(' =============== create_user_list ============= ')
 
-@method_decorator([login_required], name='dispatch')
-class DownloadSubmenusView(View):  # PR2018-12-19
-    # function updates Usersettings
-    def post(self, request, *args, **kwargs):
-        # logger.debug(' ============= DownloadSubmenusView ============= ')
-        if request.user is not None:
-            for key in request.POST.keys():
-                # logger.debug('request.POST[' + str(key) + ']: ' + request.POST[key] + ' type: ' + str(type(request.POST[key])))
-                if key == c.KEY_USER_MENU_SELECTED:
-                    selected_index = request.POST[key]
-                    if Usersetting.objects.filter(
-                            user=request.user, key_str=c.KEY_USER_MENU_SELECTED).exists():
-                        setting = Usersetting.objects.filter(
-                            user=request.user, key_str=c.KEY_USER_MENU_SELECTED).first()
+    ROLE_08_SCHOOL = 8
+    ROLE_16_INSP = 16
+    ROLE_32_ADMIN = 32
+    ROLE_64_SYSTEM = 64
+
+    # <PERMIT> PR2020-10-12
+    # PR2018-05-27 list of users in UserListView:
+    # - when role is system or admin (ETE): show all users
+    # - when role is inspection or school: all users with role <= request.user.role and schoolbase = request.user.schoolbase
+    # - else (teacher, student) : no access
+    #  - only perm_system can create user_list
+    #  - when user_pk has value the school of user_pk can be different from the school of request user (in case of admin(ETE) )
+    has_permit_school_users, has_permit_all_users = False, False
+    if request.user.country and request.user.is_perm_system :
+        if request.user.is_role_system or request.user.is_role_admin:
+            has_permit_all_users = True
+        elif request.user.is_role_insp or request.user.is_role_school:
+            has_permit_school_users = True
+
+    user_list = []
+
+    if has_permit_school_users or has_permit_all_users:
+        sql_is_ok = False
+        sql_keys = {'country_id': request.user.country.pk}
+        sql_list = [""" SELECT 
+            u.id, 
+            u.schoolbase_id, 
+            CONCAT('user_', u.id) AS mapid,
+            'user' AS table,
+    
+            SUBSTRING(u.username, 7) AS username,
+            u.last_name, u.email, u.role, u.permits,
+    
+            (TRUNC(u.permits / 64) = 1) AS perm64_system, 
+            (TRUNC( MOD(u.permits, 64) / 32) = 1) AS perm32_admin, 
+            (TRUNC( MOD(u.permits, 32) / 16) = 1) AS perm16_anlz, 
+            (TRUNC( MOD(u.permits, 16) / 8) = 1) AS perm08_auth2, 
+            (TRUNC( MOD(u.permits, 8) / 4) = 1) AS perm04_auth1, 
+            (TRUNC( MOD(u.permits, 4) / 2) = 1) AS perm02_write, 
+            (MOD(u.permits, 2) = 1) AS perm01_read, 
+    
+            u.activated,
+            u.activated_at,
+            u.is_active,
+            u.last_login,
+            u.date_joined,
+    
+            u.country_id,
+            c.abbrev AS c_abbrev,
+            sb.code AS sb_code,
+            u.examyear_id,
+            u.schoolbase_id,
+            u.depbase_id,
+    
+            u.lang,
+            u.modified_by_id,
+            u.modified_at
+    
+            FROM accounts_user AS u 
+            INNER JOIN schools_country AS c ON (c.id = u.country_id) 
+            LEFT JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id) 
+            WHERE u.country_id = %(country_id)s::INT
+            """]
+        if user_pk:
+            sql_keys['u_id'] = user_pk
+            sql_list.append('AND u.id = %(u_id)s::INT')
+            sql_is_ok = True
+        else:
+            if has_permit_all_users:
+                sql_is_ok = True
+            elif has_permit_school_users:
+                schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
+                sql_keys['sb_id'] = schoolbase_pk
+                sql_keys['max_role'] = request.user.role
+                sql_list.append('AND u.schoolbase_id = %(sb_id)s::INT AND role <= %(max_role)s::INT')
+                sql_is_ok = True
+        if sql_is_ok:
+            sql_list.append('ORDER BY LOWER(u.username)')
+            sql = ' '.join(sql_list)
+            newcursor = connection.cursor()
+            newcursor.execute(sql, sql_keys)
+            user_list = sch_mod.dictfetchall(newcursor)
+    return user_list
+
+
+########################################################################
+
+# === create_or_validate_user_instance ========= PR2020-08-16
+def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, is_validate_only, user_lang, request):
+    logger.debug('-----  create_or_validate_user_instance  -----')
+    logger.debug('upload_dict: ' + str(upload_dict))
+    logger.debug('user_pk: ' + str(user_pk))
+    logger.debug('is_validate_only: ' + str(is_validate_only))
+
+    country = request.user.country
+
+    has_error = False
+    err_dict = {}
+    ok_dict = {}
+    new_user_pk = None
+
+    # <PERMIT> PR220-09-24
+    #  - only system and admin (ETE) can add users of other schools (system has also admin rights)
+    #  - only insp and school can add users of their own school
+
+
+# - check if this username already exists in this schoolbase
+    # user_pk is pk of user that will be validated when the user already exist.
+    # user_pk is None when new user is created or validated
+    username = f.get_dict_value(upload_dict, ('username', 'value'))
+    #logger.debug('username: ' + str(username))
+    msg_err = v.validate_unique_username(username, user_schoolbase.prefix, user_pk)
+    if msg_err:
+        err_dict['username'] = msg_err
+        has_error = True
+
+# - check if namelast is blank
+    last_name = f.get_dict_value(upload_dict, ('last_name', 'value'))
+    #logger.debug('last_name: ' + str(last_name))
+    msg_err = v.validate_notblank_maxlength(last_name, c.MAX_LENGTH_NAME, _('The name'))
+    if msg_err:
+        err_dict['last_name'] = msg_err
+        has_error = True
+
+# - check if this is a valid email address:
+    email = f.get_dict_value(upload_dict, ('email', 'value'))
+    #logger.debug('email: ' + str(email))
+    msg_err = v.validate_email_address(email)
+    if msg_err:
+        err_dict['email'] = msg_err
+        has_error = True
+
+# - check if this email address already exists
+    else:
+        msg_err = v.validate_unique_useremail(email, country, user_schoolbase, user_pk)
+        if msg_err:
+            err_dict['email'] = msg_err
+            has_error = True
+
+    #logger.debug('employee: ' + str(employee))
+
+    if not is_validate_only and not has_error:
+        # - get now without timezone
+        now_utc_naive = datetime.utcnow()
+        now_utc = now_utc_naive.replace(tzinfo=pytz.utc)
+
+        todays_examyear = sch_fnc.get_todays_examyear
+        examyear = None
+        # check if exists, get latest examyear if todays_examyear does not exist
+        if not sch_mod.Examyear.objects.filter(country=country, examyear=examyear).exists():
+            examyear = sch_mod.Examyear.objects.filter(country=country).order_by('-examyear').first()
+
+        # -  create new user
+        prefixed_username = user_schoolbase.prefix + username
+        new_user = am.User(
+            country=country,
+            examyear=examyear,
+            schoolbase=user_schoolbase,
+            username=prefixed_username,
+            last_name=last_name,
+            email=email,
+            role=c.ROLE_08_SCHOOL,
+            permits=0,
+            is_active=True,
+            activated=False,
+            lang=user_lang,
+            modified_by=request.user,
+            modified_at=now_utc)
+        new_user.save()
+
+        #logger.debug('new_user: ' + str(new_user))
+        if new_user:
+            new_user_pk = new_user.pk
+
+            current_site = get_current_site(request)
+
+            # -  send email 'Activate your account'
+            subject = _('Activate your AWP-online account')
+            from_email = 'AWP-online <noreply@awponline.net>'
+            message = render_to_string('signup_activation_email.html', {
+                'user': new_user,
+                'domain': current_site.domain,
+                # PR2018-04-24 debug: In Django 2.0 you should call decode() after base64 encoding the uid, to convert it to a string:
+                # 'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'uid': urlsafe_base64_encode(force_bytes(new_user.pk)).decode(),
+                'token': account_activation_token.make_token(new_user),
+            })
+            # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
+            mails_sent = send_mail(subject, message, from_email, [new_user.email], fail_silently=False)
+            #logger.debug('mails sent: ' + str(mails_sent))
+            # - return message 'We have sent an email to user'
+            msg01 = _("User '%(usr)s' is registered successfully at %(school)s.") % {'usr': new_user.username_sliced, 'school': new_user.username_sliced}
+            msg02 = _("We have sent an email to the email address '%(email)s'.") % {'email': new_user.email}
+            msg03 = _(
+                'The user must click the link in that email to verify the email address and create a password.')
+            msg04 = _("This user has no permissions yet. Don't forget to grant permissions.")
+
+            ok_dict = {'msg01': msg01, 'msg02': msg02, 'msg03': msg03, 'msg04': msg04}
+
+    return new_user_pk, err_dict, ok_dict
+
+# - +++++++++ end of create_or_validate_user_instance ++++++++++++
+
+# === update_user_instance ========== PR2020-08-16 PR2020-09-24
+def update_user_instance(instance, user_pk, upload_dict, is_validate_only, request):
+    #logger.debug('-----  update_user_instance  -----')
+    #logger.debug('upload_dict: ' + str(upload_dict))
+    has_error = False
+    err_dict = {}
+    ok_dict = {}
+    field_changed_list = []
+    if instance:
+        country = request.user.country
+        schoolbase = request.user.schoolbase
+        data_has_changed = False
+        fields = ('username', 'last_name', 'email', 'permits', 'is_active')
+        for field in fields:
+            # --- get field_dict from  item_dict  if it exists
+            field_dict = upload_dict[field] if field in upload_dict else {}
+            if field_dict and 'update' in field_dict:
+# - check if this username already exists
+                if field == 'username':
+                    new_username = field_dict.get('value')
+                    msg_err = v.validate_unique_username(new_username, schoolbase.prefix, user_pk)
+                    if msg_err:
+                        err_dict[field] = msg_err
+                        has_error = True
+                    if not has_error and new_username and new_username != instance.username:
+                        prefixed_username = schoolbase.prefix + new_username
+                        instance.username = prefixed_username
+                        data_has_changed = True
+# - check if namelast is blank
+                elif field == 'last_name':
+                    new_last_name = field_dict.get('value')
+                    msg_err = v.validate_notblank_maxlength(new_last_name, c.MAX_LENGTH_NAME, _('The name'))
+                    if msg_err:
+                        err_dict[field] = msg_err
+                        has_error = True
+                    if not has_error and new_last_name and new_last_name != instance.last_name:
+                        instance.last_name = new_last_name
+                        data_has_changed = True
+# - check if this is a valid email address:
+                elif field == 'email':
+                    new_email = field_dict.get('value')
+                    msg_err = v.validate_email_address(new_email)
+                    if msg_err:
+                        err_dict[field] = msg_err
+                        has_error = True
+# - check if this email address already exists
                     else:
-                        setting = Usersetting(
-                            user=request.user, key_str=c.KEY_USER_MENU_SELECTED)
-                    setting.char01 = selected_index
-                    setting.save()
-                    href = reverse_lazy('import_student_url')
-                    caption = _('Import students')
-                    item = '<li class="nav-item active"><a class="nav-link" href="/">' + selected_index + ' <span class="sr-only"></span></a></li>'
-        submenus = [{'class': 'nav-item active', 'caption': caption, 'href': href},
-                    {'class': 'nav-item active', 'caption': _('Subjects'), 'href': href},
-                    {'class': 'nav-item active', 'caption': _('Student subjects'), 'href': href},
-                    ]
-        return render(request, 'includes/menubar_submenu.html', {'submenus': submenus})
+                        msg_err = v.validate_unique_useremail(new_email, country, schoolbase, user_pk)
+                        if msg_err:
+                            err_dict[field] = msg_err
+                            has_error = True
 
+                    if not has_error and new_email and new_email != instance.email:
+                        instance.email = new_email
+                        data_has_changed = True
+
+                elif field == 'permits':
+                    new_permits = field_dict.get('value', 0)
+                    # sysadmins cannot remove sysadmin permission from their own account
+                    if request.user.is_perm_admin and instance == request.user:
+                        if new_permits < c.PERMIT_64_SYSTEM:
+                            err_dict[field] = _("System administrators cannot remove their own 'system administrator' permission.")
+                            has_error = True
+                        elif new_permits % 2:  # % modulus returns the decimal part (remainder) of the quotient
+                            err_dict[field] = _("System administrators cannot set their own permission to 'read-only'.")
+                            has_error = True
+                    if not has_error and new_permits != instance.permits:
+
+            # - validation: user cannot have perm04_auth1 and perm08_auth2 at the same time - resert other auth field
+                        has_new_permit_auth1 = get_permit(c.PERMIT_04_AUTH1, new_permits)
+                        has_new_permit_auth2 = get_permit(c.PERMIT_08_AUTH2, new_permits)
+                        if has_new_permit_auth1 and has_new_permit_auth2:
+                            has_saved_permit_auth1 = get_permit(c.PERMIT_04_AUTH1, instance.permits)
+                            has_saved_permit_auth2 = get_permit(c.PERMIT_08_AUTH2, instance.permits)
+                            if has_saved_permit_auth2:
+                                # remove PERMIT_08_AUTH2 from new_permits
+                                new_permits -= c.PERMIT_08_AUTH2
+                            elif has_saved_permit_auth1:
+                                # remove PERMIT_04_AUTH1 from new_permits
+                                new_permits -= c.PERMIT_04_AUTH1
+
+                        instance.permits = new_permits
+                        data_has_changed = True
+
+                elif field == 'is_active':
+                    new_isactive = field_dict.get('value', False)
+                    # sysadmins cannot remove is_active from their own account
+                    if request.user.is_perm_admin and instance == request.user:
+                        if not new_isactive:
+                            err_dict[field] = _("System administrators cannot make their own account inactive.")
+                            has_error = True
+                    if not has_error and new_isactive != instance.is_active:
+                        instance.is_active = new_isactive
+                        data_has_changed = True
+
+# -  update user
+        if not is_validate_only and not has_error:
+            if data_has_changed:
+# - get now without timezone
+                now_utc_naive = datetime.utcnow()
+                now_utc = now_utc_naive.replace(tzinfo=pytz.utc)
+
+                try:
+                    instance.modifiedby = request.user
+                    instance.modifiedat = now_utc
+                    instance.save()
+                    ok_dict['msg_ok'] = _("The changes have been saved successfully.")
+                except:
+                    err_dict['save'] = _('An error occurred. The changes have not been saved.')
+
+    return err_dict, ok_dict
+# - +++++++++ end of update_user_instance ++++++++++++
+
+
+# === resend_activation_email ===================================== PR2020-08-15
+def resend_activation_email(user_pk, update_wrap, err_dict, request):
+    #  resend_activation_email is called from table Users, field 'activated' when the activation link has expired.
+    #  it sends an email to the user
+    #  it returns a HttpResponse, with ok_msg or err-msg
+
+    user = am.User.objects.get_or_none(id=user_pk, country= request.user.country)
+    #logger.debug('user: ' + str(user))
+    has_error = False
+    if user:
+        update_wrap['user'] = {'pk': user.pk, 'username': user.username}
+
+        current_site = get_current_site(request)
+
+# - check if user.email is a valid email address:
+        msg_err = v.validate_email_address(user.email)
+        if msg_err:
+            err_dict['msg01'] = _("'%(email)s' is not a valid email address.") % {'email': user.email}
+            has_error = True
+
+# -  send email 'Activate your account'
+        if not has_error:
+            try:
+                subject = 'Activate your TSA-secure account'
+                from_email = 'TSA-secure <noreply@tsasecure.com>'
+                message = render_to_string('signup_activation_email.html', {
+                    'user': user,
+                    'domain': current_site.domain,
+                    # PR2018-04-24 debug: In Django 2.0 you should call decode() after base64 encoding the uid, to convert it to a string:
+                    # 'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                    'uid': urlsafe_base64_encode(force_bytes(user.pk)).decode(),
+                    'token': account_activation_token.make_token(user),
+                })
+                # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
+                mail_count = send_mail(subject, message, from_email, [user.email], fail_silently=False)
+                if not mail_count:
+                    err_dict['msg01'] = _('An error occurred.')
+                    err_dict['msg0'] = _('The activation email has not been sent.')
+                else:
+                # - return message 'We have sent an email to user'
+                    msg01 = _("We have sent an email to the email address '%(email)s' of user '%(usr)s'.") % \
+                                                    {'email': user.email, 'usr': user.username_sliced}
+                    msg02 = _('The user must click the link in that email to verify the email address and create a password.')
+                    msg03 = _("This user has no permissions yet. Don't forget to grant permissions.")
+
+                    update_wrap['msg_ok'] = {'msg01': msg01, 'msg02': msg02, 'msg03': msg03}
+
+            except:
+                err_dict['msg01'] = _('An error occurred.')
+                err_dict['msg0'] = _('The activation email has not been sent.')
+
+# - reset expiration date by setting the field 'date_joined', to now
+        if not has_error:
+            now_utc_naive = datetime.utcnow()
+            now_utc = now_utc_naive.replace(tzinfo=pytz.utc)
+            #user.date_joined = now_utc
+
+            #user.modifiedby = request.user
+            #user.modifiedat = now_utc
+
+            #user.save()
+# === end of resend_activation_email =====================================
+
+
+def get_permit(permit_value, permits_int): # PR2020-10-12
+    has_permit = False
+    if permits_int and permit_value:
+        permits_tuple = get_permits_tuple(permits_int)
+        has_permit = permit_value in permits_tuple
+    return has_permit
+
+def has_permit_auth1(permits_int): # PR2020-10-12 separate function made
+    has_permit = False
+    if permits_int:
+        permits_tuple = get_permits_tuple(permits_int)
+        has_permit =  c.PERMIT_04_AUTH1 in permits_tuple
+    return has_permit
+
+def get_permits_tuple(permits_int): # PR2020-10-12 separate function made
+    # PR2018-05-27 permits_tuple converts self.permits string into tuple, e.g.: permits=15 will be converted to permits_tuple=(1,2,4,8)
+    permits_list = []
+    if permits_int is not None:
+        if permits_int != 0:
+            for i in range(6, -1, -1): # range(start_value, end_value, step), end_value is not included!
+                power = 2 ** i
+                if permits_int >= power:
+                    permits_int = permits_int - power
+                    permits_list.insert(0, power) # list.insert(0,value) adds at the beginning of the list
+    if not permits_list:
+        permits_list = [0]
+    return tuple(permits_list)
 
 
 

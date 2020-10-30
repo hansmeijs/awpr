@@ -1,7 +1,7 @@
 # PR2019-02-17
 from django.utils.translation import ugettext_lazy as _
 
-import datetime
+from datetime import datetime
 import logging
 logger = logging.getLogger(__name__)
 

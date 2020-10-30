@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load i18n %} {% load l10n %}
+{% load static %}
+
+{% block title %}{% trans 'Exam years' %}{% endblock %}
+
+{% block script %}
+    <script src="{% static 'js/examyears201004.js' %}"></script>
+{% endblock %}
+
+<!-- SIDE BAR -->
+{% block sidebar %}
+    <nav id="id_sidebar" class="awp_sidebar">
+        <div class="content_subheader_left tab_show tab_init mx-2 my-4">
+            <h5>{% trans 'Exam years' %}</h5>
+        </div>
+    </nav>
+{% endblock %}
+<!-- END SIDE BAR -->
+
+{% block content %}
+    <div id="id_content">
+        {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
+    <!-- =================== MODAL CONFIRM  =================== -->
+            {% include 'includes/modconfirm.html' %}
+    <!-- =================== MODAL EXAMYEAR =================== -->
+            {% include 'schools/modexamyear.html' %}
+
+            <div class="content_margin_top78">
+                {% include 'includes/messages.html' %}
+
+                <div class="content_header flex_container">
+            <!-- header_text -->
+                    <div class="content_subheader_left mx-4">
+                        <h5 id="id_hdr_text">{{examyear}}  {{school}}</h5>
+                    </div>
+            <!-- loader -->
+                    <div class="content_header_middle ">
+                        <div id="id_loader" class="image_container visibility_hideXX">
+                            <img src="{% static 'img/loader.gif' %}" class="icon_24">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <!-- end content_header -->
+    <!-- BUTTON GROUP -->
+                <div id="id_btn_container" class="btn-group btn-block mx-2 my-2" role="group" aria-label="Choose option" >
+                    <button data-btn="examyear" class="btn btn-secondary ">{% trans 'Exam years' %}</button>
+                    <button data-btn="scheme" class="btn btn-secondary ">{% trans 'Subject schemes' %}</button>
+                    <button data-btn="level" class="btn btn-secondary ">{% trans 'Levels' %}</button>
+                    <button data-btn="sector" class="btn btn-secondary ">{% trans 'Sectors' %}</button>
+                </div>
+    <!-- end BUTTON GROUP -->
+    <!-- END OF CONTENT HEADER -->
+
+    <!-- CONTENT BODY -->
+            <div class="content_body ml-2 mr-0">
+    <!-- =================== DATA TABLE  =================== -->
+                <table class="table tsa_tbl">
+                    <thead id="id_tblHead_datatable"></thead>
+                    <tbody id="id_tblBody_datatable"></tbody>
+                </table>
+    <!-- =================== END DATA TABLE  =================== -->
+            </div>
+    <!-- END OF CONTENT BODY -->
+            </div>
+            <div id="id_data"
+                data-datalist_download_url="{% url 'datalist_download_url' %}"
+                data-settings_upload_url="{% url 'settings_upload_url' %}"
+                data-examyear_upload_url="{% url 'examyear_upload_url' %}"
+            >
+            </div>
+
+        {% else %}
+            <div class="mx-4 mt-5 pt-5">
+                <div class="alert alert-danger">{% trans "You don't have permission to view this page." %}</div>
+            </div>
+        {% endif %}
+        </div>
+
+{% endblock %}
