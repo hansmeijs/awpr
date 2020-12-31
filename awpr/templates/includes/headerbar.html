@@ -18,21 +18,18 @@
         </div>
 
         <div id="collapsibleNavbar1" class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
-            <ul class="navbar-nav mr-autoXX">
-                <li id="id_hdrbar_examyear" class="nav-item awp_navbar_item_with_hover mr-0 pr-0">
-                    {{examyear}}
+            <ul class="navbar-nav">
+                <li id="id_hdrbar_examyear" class="nav-item awp_navbar_item mr-0 pr-0">
+                    <div>{{examyear_code}}</div>
                 </li>
                 <li id="id_hdrbar_examyear_locked1" class="nav-item awp_navbar ml-0 mt-1">
                     <div class="stat_0_0"></div>
                 </li>
-            <!-- <li class="nav-item">
-                    <div class="awp_navbar_item_with_hover">{{school}}</div>
-                </li>     -->
-                <li id="id_hdrbar_school" class="nav-item {{class_select_school}}">
-                    {{school}}
-                </li>
-                <li id="id_hdrbar_department" class="nav-item awp_navbar_item_with_hover">
+                <li id="id_hdrbar_department" class="nav-item awp_navbar_item">
                     {{department}}
+                </li>
+                <li id="id_hdrbar_school" class="nav-item awp_navbar_item">
+                    {{school}}
                 </li>
             </ul>
         </div>
@@ -123,5 +120,3 @@
     </nav>
 
 </div>
-    <!-- =================== MODAL SELECT  =================== -->
-            {% include 'includes/modselectexamyear.html' %}

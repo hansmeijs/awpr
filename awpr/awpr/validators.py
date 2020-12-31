@@ -5,8 +5,9 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 
 from accounts import models as am
-from students import models as student_models
-from schools import models as school_models
+from students import models as stud_mod
+from schools import models as sch_mod
+from subjects import models as subj_mod
 from awpr import constants as c
 
 import logging
@@ -98,7 +99,6 @@ def validate_notblank_maxlength(value, max_length, caption):
     return msg_err
 
 
-
 # === validate_unique_examyear ======== PR2020-10-05
 def validate_unique_examyear(examyear_int, request):
     logger.debug ('=== validate_unique_examyear ====')
@@ -108,9 +108,9 @@ def validate_unique_examyear(examyear_int, request):
         caption = _('Exam year')
         msg_err = _('%(caption)s cannot be blank.') % {'caption': caption}
     elif request.user.country:
-        examyear_exists = school_models.Examyear.objects.filter(
+        examyear_exists = sch_mod.Examyear.objects.filter(
             country=request.user.country,
-            examyear=examyear_int).exists()
+            code=examyear_int).exists()
         if examyear_exists:
             caption = _('This exam year')
             msg_err = _('%(caption)s already exists.') % {'caption': caption}
@@ -125,15 +125,15 @@ def validate_delete_examyear(examyear):
     if examyear:
 # - check if examyear is closed
         if examyear.locked:
-            msg_err = _('Exam year %(exyr)s is closed and cannot be deleted.') % {'exyr': examyear.examyear}
+            msg_err = _('Exam year %(exyr)s is closed and cannot be deleted.') % {'exyr': examyear.code}
         else:
 # - check if schools have activated or locked their school of this exam year  - can only happen when examyear.published =True
             crit = Q(examyear=examyear) & \
                    Q(istemplate__isnull=True) & \
                    (Q(activated=True) | Q(locked=True))
-            exists = school_models.School.objects.filter(crit).exists()
+            exists = sch_mod.School.objects.filter(crit).exists()
             if exists:
-                msg_err = _('There are schools that have activated this exam year. Exam year %(exyr)s cannot be deleted.') % {'exyr': examyear.examyear}
+                msg_err = _('There are schools that have activated this exam year. Exam year %(exyr)s cannot be deleted.') % {'exyr': examyear.code}
 
     return msg_err
 
@@ -153,18 +153,19 @@ def validate_locked_activated_examyear(examyear):
             crit = Q(examyear=examyear) & \
                    Q(istemplate__isnull=True) & \
                    (Q(activated=True) | Q(locked=True))
-            exists = school_models.School.objects.filter(crit).exists()
+            exists = sch_mod.School.objects.filter(crit).exists()
             if exists:
                 examyear_has_activated_schools = True
 
     return examyear_is_locked, examyear_has_activated_schools
 
+
 def message_diff_exyr(examyear):  #PR2020-10-30
     # check if selected examyear is the same as this examyear,
     # return warning when examyear is different from this_examyear
     awp_message = {}
-    if examyear.examyear:
-        examyear_int = examyear.examyear
+    if examyear.code:
+        examyear_int = examyear.code
 
         now = timezone.now()
         this_examyear = now.year
@@ -173,7 +174,36 @@ def message_diff_exyr(examyear):  #PR2020-10-30
         if examyear_int != this_examyear:
             # PR2018-08-24 debug: in base.html  href="#" is needed,
             # because bootstrap line 233: a:not([href]):not([tabindex]) overrides navbar-item-warning
-            awp_message = {'info': _("Please note: selected exam year is different from the current exam year."),
+            awp_message = {'info': _("Please note: the selected exam year is different from the current exam year."),
                            'class': 'alert-warning',
                            'id': 'id_diff_exyr'}
     return awp_message
+
+
+# ============ SUBJECTS
+def validate_subject_code(code, cur_subject=None):  # PR2020-12-11
+    #logger.debug ('validate_unique_company_name', value)
+    # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
+    msg_err = None
+    value_exists = False
+    is_locked = False
+    if not code:
+        msg_err = _('Abbreviation cannot be blank.')
+    elif len(code) > c.MAX_LENGTH_SCHOOLCODE:
+        value_too_long_str = str(_("Value '%(val)s' is too long.") % {'val': code})
+        max_str = str(_("Max %(fld)s characters.") % {'fld': c.MAX_LENGTH_SCHOOLCODE})
+        msg_err = ' '.join((value_too_long_str, max_str))
+    elif cur_subject is None:
+        value_exists = subj_mod.Subjectbase.objects.filter(code__iexact=code).exists()
+    else:
+        # check if current subject is in locked examyears
+        is_locked = subj_mod.Subject.objects.filter(base__pk=cur_subject.base.pk, examyear__locked=True).exists()
+        if is_locked:
+            msg_err = _('This subject appears in locked exam years. The abbreviation cannot be changed.')
+        else:
+            value_exists = subj_mod.Subjectbase.objects.filter(code__iexact=code).exclude(pk=cur_subject.base.pk).exists()
+    if value_exists:
+        msg_err = str(_("Abbreviation '%(val)s' already exists.") % {'val': code})
+    return msg_err
+
+

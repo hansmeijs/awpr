@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'schools',   # PR2018-04-13
     'subjects',  # PR2018-07-20
     'students',  # PR2018-07-20
+    'grades',  # PR2020-12-16
     'reports',  # PR2018-07-20
 
     'session_security', # PR2018-05-10
@@ -269,6 +270,13 @@ LOGGING = {
             'filename': config('LOGGER_BASEDIR') + 'students.log',
             'formatter': 'verbose'
         },
+        'grades_log': {
+            'level': 'DEBUG',
+            'filters': ['require_debug_true'],
+            'class': 'logging.FileHandler',
+            'filename': config('LOGGER_BASEDIR') + 'grades.log',
+            'formatter': 'verbose'
+        },
         'subjects_log': {
             'level': 'DEBUG',
             'filters': ['require_debug_true'],
@@ -301,6 +309,7 @@ LOGGING = {
         'schools': {'handlers': ['schools_log'], 'level': 'DEBUG', 'propagate': True,},
         'awpr': {'handlers': ['awpr_log'], 'level': 'DEBUG', 'propagate': True,},
         'students': {'handlers': ['students_log'], 'level': 'DEBUG', 'propagate': True,},
+        'grades': {'handlers': ['grades_log'], 'level': 'DEBUG', 'propagate': True,},
         'subjects': {'handlers': ['subjects_log'], 'level': 'DEBUG', 'propagate': True,},
     }
 }

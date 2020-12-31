@@ -7,7 +7,7 @@
     <li class="breadcrumb-item">{{ user.country }}
       {% if user.country_locked %}<img src="{% static 'img/locked.gif' %}" height="16" width="16">{% endif %}
     </li>
-    <li class="breadcrumb-item">{{ examyear.examyear }}</li>
+    <li class="breadcrumb-item">{{ examyear.code }}</li>
     <li class="breadcrumb-item active">{% trans 'Lock' %}</li>
   </ol>
 {% endblock %}
@@ -19,13 +19,13 @@
       <input type="hidden" name="next" value="{{ next }}">
 
       {% if examyear.locked %}
-        <h4>{% trans 'Unlock examyear' %} {{ examyear.examyear }}</h4>
-        <p>Are you sure you want to unlock examyear {{ examyear.examyear }}?</p>
+        <h4>{% trans 'Unlock examyear' %} {{ examyear.code }}</h4>
+        <p>Are you sure you want to unlock examyear {{ examyear.code }}?</p>
         <button type="submit" class="btn btn-success"  name='delete_this' value='UnlockThis'>{% trans 'Yes, unlock' %}</button>
       {% else %}
 
-        <h4>{% trans 'Lock examyear' %} {{ examyear.examyear }}</h4>
-        <p>Are you sure you want to lock examyear {{ examyear.examyear }}?</p>
+        <h4>{% trans 'Lock examyear' %} {{ examyear.code }}</h4>
+        <p>Are you sure you want to lock examyear {{ examyear.code }}?</p>
         <button type="submit" class="btn btn-outline-danger"  name='delete_this' value='LockThis'>{% trans 'Yes, lock' %}</button>
       {% endif %}
       <a href="{% url 'examyears_url' %}" class="btn btn-outline-primary">{% trans 'No, cancel' %}</a>

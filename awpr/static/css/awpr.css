@@ -27,10 +27,10 @@ a:hover {
 
   padding: 2px 8px;  /* top, right, bottom, left: */
   border-bottom: 1px #f3f3f3; /* offwhite */
+
  }
 
-
-.awp_navbar_item, .awp_navbar_item_with_hover { /* PR20202-09-29 */
+.awp_navbar_item, .awp_navbaritem_may_select { /* PR20202-09-29 */
     background:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
 
     color: #ffffff; /* #ffffff is white; #edf2f8; is light light blue*/
@@ -38,9 +38,19 @@ a:hover {
     font-size: 18px;
     padding: 0px 8px 0px 8px;  /* top, right, bottom, left: */
     margin: 4px 8px 4px 8px;
+/* PR2020-11-09 prevents selecting text. From https://stackoverflow.com/questions/826782/how-to-disable-text-selection-highlighting */
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+
+
 }
 
-.awp_navbar_item_with_hover:hover {
+.awp_navbaritem_may_select:hover {
   color: #a8c1e0;
   text-decoration: none;
   list-style: none;
@@ -177,7 +187,7 @@ ul.menubar li a:hover {
 
 /* changes to Bootstrap */
 body {
-  line-height: 1.25; /* PR2018-08-17 was: line-height: 1.5; */
+  line-height: 1.5; /* PR2020-11-18 was: line-height: 1.25;/* PR2018-08-17 was: line-height: 1.5; */
 }
 
 label {
@@ -199,10 +209,11 @@ select.form-control:not([size]):not([multiple]) {
   margin-bottom: 0.5rem; /* PR2018-08-17 was: margin-bottom: 1rem; */
 }
 
+/*
 .btn {
   padding: 0.1rem 0.25rem; //* PR2018-12-15 was: DEFAULT padding: 0.375rem 0.75rem; */
 }
-
+*/
 .navbar {
   padding: 2px 4px; /* 0.25rem 0.25rem; /* PR2018-12-15 was: padding: 0.25rem 1rem; */
 
@@ -321,3 +332,4 @@ select.form-control:not([size]):not([multiple]) {
     border: 1px solid #dc3545;    /*  red like in django is-invalid */
     border-radius: .25rem;
 }
+

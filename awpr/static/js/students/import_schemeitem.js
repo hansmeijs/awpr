@@ -435,8 +435,7 @@ console.log("=========  function FillDataTable =========");
     function handle_upload_data () {
 console.log ("==========  UPLOAD DATA ==========");
 
-        const ajax_importssi_upload_url = $(this).data("ajax_importssi_upload_url"); // get the url of the `Student_Import_Load` view
-console.log(ajax_importssi_upload_url);
+        const ajax_importssi_upload_url = $(this).data("ajax_importssi_upload_url"); // get the url of the
 
         if(!!worksheet_data){
             var parameters = {

@@ -8,12 +8,23 @@
     <script src="{% static 'js/examyears201004.js' %}"></script>
 {% endblock %}
 
+
+
 <!-- SIDE BAR -->
 {% block sidebar %}
     <nav id="id_sidebar" class="awp_sidebar">
         <div class="content_subheader_left tab_show tab_init mx-2 my-4">
             <h5>{% trans 'Exam years' %}</h5>
         </div>
+        {% if user.is_authenticated %}
+            <div class="tw_200 mx-2 mt-2 mb-4">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Select exam year' %}:</h6>
+                <input id="id_SBR_examyear"
+                    type="text"
+                    class="tw_200 border_none pointer_show px-2"
+                    readonly>
+            </div>
+        {% endif %}
     </nav>
 {% endblock %}
 <!-- END SIDE BAR -->
@@ -21,6 +32,8 @@
 {% block content %}
     <div id="id_content">
         {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
+    <!-- =================== MODAL SELECT EXAM YEAR =================== -->
+            {% include 'schools/modselectexamyear.html' %}
     <!-- =================== MODAL CONFIRM  =================== -->
             {% include 'includes/modconfirm.html' %}
     <!-- =================== MODAL EXAMYEAR =================== -->
@@ -32,7 +45,7 @@
                 <div class="content_header flex_container">
             <!-- header_text -->
                     <div class="content_subheader_left mx-4">
-                        <h5 id="id_hdr_text">{{examyear}}  {{school}}</h5>
+                        <h5 id="id_hdr_text"></h5>
                     </div>
             <!-- loader -->
                     <div class="content_header_middle ">
@@ -64,7 +77,6 @@
     <!-- =================== END DATA TABLE  =================== -->
             </div>
     <!-- END OF CONTENT BODY -->
-            </div>
             <div id="id_data"
                 data-datalist_download_url="{% url 'datalist_download_url' %}"
                 data-settings_upload_url="{% url 'settings_upload_url' %}"
@@ -77,6 +89,6 @@
                 <div class="alert alert-danger">{% trans "You don't have permission to view this page." %}</div>
             </div>
         {% endif %}
-        </div>
+    </div>
 
 {% endblock %}

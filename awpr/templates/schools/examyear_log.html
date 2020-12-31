@@ -6,14 +6,14 @@
     <li class="breadcrumb-item"><a href="{% url 'home_url' %}">AWP online</a></li>
     <li class="breadcrumb-item"><a >{{ examyear.country }}</a></li>
     <li class="breadcrumb-item"><a href="{% url 'examyears_url' %}">{% trans 'Exam years' %}</a></li>
-    <li class="breadcrumb-item"><a href="{% url 'examyear_edit_url' examyear.pk %}">{{ examyear.examyear }}</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'examyear_edit_url' examyear.pk %}">{{ examyear.code }}</a></li>
     <li class="breadcrumb-item active">{% trans 'Log' %}</li>
   </ol>
 {% endblock %}
 
 {% block content %}
   {% if user.enable_examyear_modify %}
-    <h4>{% trans 'Log of exam year ' %}{{ examyear.examyear }} {{ examyear.country }}</h4>
+    <h4>{% trans 'Log of exam year ' %}{{ examyear.code }} {{ examyear.country }}</h4>
     <table class="table table table-condensed">
       <thead class="thead-inverse">
         <tr>

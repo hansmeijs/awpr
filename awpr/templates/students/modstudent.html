@@ -1,0 +1,196 @@
+ {% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL STUDENT  =================== -->
+    <div class="modal" id="id_mod_student" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 id="id_MSTUD_hdr" class="modal-title mx-2" ></h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div id="id_MSTUD_div_form_controls" class="modal-body">
+                     <div class="content_header">
+                         <div class="flex_3 mx-1">
+                            <label for="id_MSTUD_lastname" class="tsa_margin_form_label">{% trans 'Last name' %}:</label>
+                            <input id="id_MSTUD_lastname" type="text" data-field="lastname" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                         <div class="flex_4  mx-1">
+                            <label for="id_MSTUD_firstname" class="tsa_margin_form_label">{% trans 'First names' %}:</label>
+                            <input id="id_MSTUD_firstname" type="text" data-field="firstname" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                         <div class="flex_1 mx-1">
+                            <label for="id_MSTUD_prefix" class="tsa_margin_form_label">{% trans 'Prefix' %}:</label>
+                            <input id="id_MSTUD_prefix" type="text" data-field="prefix" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                         <div class="flex_1 mx-1">
+                            <label for="id_MSTUD_gender" class="tsa_margin_form_label">{% trans 'Gender' %}:</label>
+                             <select id="id_MSTUD_gender" data-field= "gender" class="form-control"
+                                   autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                 <option value="">-</option>
+                                 <option value="m">{% trans 'M' %}</option>
+                                 <option value="v">{% trans 'F' %}</option>
+                            </select>
+                         </div>
+
+                      </div>
+                     <div class="content_header">
+                         <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_lastname" class="text-danger"></small>
+                         </div>
+                         <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_firstname" class="text-danger"></small>
+                         </div>
+                         <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_prefix" class="text-danger"></small>
+                         </div>
+                         <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_gender" class="text-danger"></small>
+                         </div>
+                     </div>
+                     <div class="content_header">
+                         <div class="content_subheader_left mx-1">
+                            <label for="id_MSTUD_idnumber" class="tsa_margin_form_label">{% trans 'ID-number' %}:</label>
+                            <input id="id_MSTUD_idnumber" type="text" data-field="idnumber" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                         <div class="content_subheader_left mx-1 ">
+                            <label for="id_MSTUD_birthdate" class="tsa_margin_form_label">{% trans 'Birth date' %}:</label>
+                            <input id="id_MSTUD_birthdate" type="date" data-field= "birthdate" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                         <div class="content_subheader_left mx-1 ">
+                            <label for="id_MSTUD_birthcountry" class="tsa_margin_form_label">{% trans 'Birth country' %}:</label>
+                            <input id="id_MSTUD_birthcountry" type="text" data-field= "birthcountry" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                         <div class="content_subheader_left mx-1 ">
+                            <label for="id_MSTUD_birthcity" class="tsa_margin_form_label">{% trans 'Place of birth' %}:</label>
+                            <input id="id_MSTUD_birthcity" type="text" data-field= "birthcity" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                     </div>
+                     <div class="content_header">
+                         <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_idnumber" class="text-danger"></small>
+                         </div>
+                         <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_birthdate" class="text-danger"></small>
+                         </div>
+                         <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_birthcountry" class="text-danger"></small>
+                         </div>
+                         <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_birthcity" class="text-danger"></small>
+                         </div>
+                     </div>
+                     <div class="content_header">
+                         <div class="content_subheader_left mx-1">
+                            <label for="id_MSTUD_examnumber" class="tsa_margin_form_label">{% trans 'Exam number' %}:</label>
+                            <input id="id_MSTUD_examnumber" type="text" data-field= "examnumber" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                         <div class="content_subheader_left mx-1 ">
+                            <label for="id_MSTUD_regnumber" class="tsa_margin_form_label">{% trans 'Registration number' %}:</label>
+                            <input id="id_MSTUD_regnumber" type="text" data-field= "regnumber" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                         <div class="content_subheader_left mx-1">
+                            <label for="id_MSTUD_diplomanumber" class="tsa_margin_form_label">{% trans 'Diploma number' %}:</label>
+                            <input id="id_MSTUD_diplomanumber" type="text" data-field= "diplomanumber" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                         <div class="content_subheader_left mx-1">
+                            <label for="id_MSTUD_gradelistnumber" class="tsa_margin_form_label">{% trans 'Grade list number' %}:</label>
+                            <input id="id_MSTUD_gradelistnumber" type="text" data-field= "gradelistnumber" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                     </div>
+                     <div class="content_header">
+                         <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_examnumber"  class="text-danger"></small>
+                         </div>
+                         <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_regnumber" class="text-danger"></small>
+                         </div>
+                         <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_diplomanumber" class="text-danger"></small>
+                         </div>
+                         <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_gradelistnumber" class="text-danger"></small>
+                         </div>
+                     </div>
+                     <div class="content_header">
+                         <div class="flex_1 mx-1 ">
+                            <label for="id_MSTUD_department" class="tsa_margin_form_label">{% trans 'Department' %}:</label>
+                            <input id="id_MSTUD_department" data-field= "dep_abbrev" class="form-control"
+                                   readonly autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                         <div id="id_MSTUD_level_div" class="flex_1 mx-1">
+                            <label id="id_MSTUD_level_label" for="id_MSTUD_level_select" class="tsa_margin_form_label"></label>
+                            <select id="id_MSTUD_level_select" data-field= "lvl_id" class="form-control"
+                                   autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                            </select>
+                         </div>
+                         <div id="id_MSTUD_sector_div" class="flex_1 mx-1">
+                            <label id="id_MSTUD_sector_label" for="id_MSTUD_sector_select" class="tsa_margin_form_label"></label>
+                            <select id="id_MSTUD_sector_select" data-field= "sct_id" class="form-control"
+                                   autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                            </select>
+                        </div>
+                        <div class="flex_1 mx-1">
+                            <label for="id_MSTUD_classname" class="tsa_margin_form_label">{% trans 'Class' %}:</label>
+                            <input id="id_MSTUD_classname" data-field= "classname" class="form-control"
+                                   autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                     </div>
+
+                     <div class="content_header">
+
+                         <div class="flex_1 mx-1">
+                            <label for="id_MSTUD_bis_exam" class="tsa_margin_form_label">{% trans 'Bis candidate' %}:</label>
+                            <input id="id_MSTUD_bis_exam" type="text" data-field= "bis_exam" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                         <div class="content_subheader_left mx-1 display_hide">
+                            <label for="id_MSTUD_evening_candidate" class="tsa_margin_form_label">{% trans 'Evening cand.' %}:</label>
+                            <input id="id_MSTUD_evening_candidate" type="text" data-field= "iseveningstudent" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
+                         <div class="flex_3 mx-1">
+                            <label for="id_MSTUD_notes" class="tsa_margin_form_label">{% trans 'Notes' %}:</label>
+                            <input id="id_MSTUD_notes" type="text" data-field= "notes" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                            <div class="mx-2">
+                                <small id="id_MSTUD_err_workhoursperday"  class="text-danger"></small>
+                            </div>
+                         </div>
+                     </div>
+
+                     <div class="mx-3 mt-2 mb-0">
+                        <small id="id_MSTUD_msg_modified"></small>
+                     </div>
+                </div>
+
+
+                <div class="modal-footer">
+                    <div class="content_subheader_left mx-1 tab_show tab_update display_hideX">
+                        <button id="id_MSTUD_btn_delete" type="button" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete subject' %}</button>
+                        <button id="id_MSTUD_btn_log" class="btn btn-outline-secondary" >{% trans 'Show logfile' %}</button>
+                    </div>
+                    <div class="content_subheader_right">
+                        <button id="id_MSTUD_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MSTUD_btn_save" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>

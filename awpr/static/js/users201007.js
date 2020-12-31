@@ -616,7 +616,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             const cell_permit = fldName.slice(4, 6);
                             input_value = (Number(cell_permit)) ? Number(cell_permit) : 0;
     // --- user cannot have perm08_auth1 and  perm04_auth1 and perm08_auth2 at the same time - resert other auth field
-                            // moved to server, because of ajax it is still possible to set both PR2020-10-12
+                            // moved to server, because of asynchrone ajax it is still possible to set both PR2020-10-12
                         }
     // ---  put new value in el_input attribute 'data-value'
                         el_input.setAttribute("data-value", input_value)

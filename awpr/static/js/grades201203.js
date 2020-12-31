@@ -20,17 +20,20 @@ console.log("document.addEventListener students" )
     const cls_hover = "tr_hover";
     const cls_visible_hide = "visibility_hide";
     const cls_selected = "tsa_tr_selected";
+    const cls_bc_transparent = "tsa_bc_transparent";
 
 // ---  id of selected customer and selected order
-    let selected_btn = "btn_user_list";
+    let selected_btn = null;
     let selected_period = {};
     let setting_dict = {};
 
     let selected_student_pk = null;
+    let selected_subject_pk = null;
 
     let loc = {};  // locale_dict
     let mod_dict = {};
     let mod_MSTUD_dict = {};
+    let mod_MSSS_dict = {};
 
     let mod_MSTUDSUBJ_dict = {}; // stores general info of selected candidate in MSTUDSUBJ PR2020-11-21
     //let mod_studsubj_dict = {};  // stores studsubj of selected candidate in MSTUDSUBJ
@@ -43,39 +46,45 @@ console.log("document.addEventListener students" )
     let user_list = [];
     let examyear_map = new Map();
     let school_map = new Map();
-    // PR2020-12-26 These variable defintions are moved to import.js, so they can also be used in that file
-    //let department_map = new Map();
-    //let level_map = new Map();
-    //let sector_map = new Map();
+    let department_map = new Map();
+    let level_map = new Map();
+    let sector_map = new Map();
     let student_map = new Map();
     let subject_map = new Map();
-    let studentsubject_map = new Map()
+    let grade_map = new Map()
     let schemeitem_map = new Map()
 
     let filter_dict = {};
     let filter_mod_employee = false;
 
+    let el_focus = null; // stores id of element that must get the focus after cloosing mod message PR2020-12-20
+
+
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
     const url_datalist_download = get_attr_from_el(el_data, "data-datalist_download_url");
     const url_settings_upload = get_attr_from_el(el_data, "data-settings_upload_url");
-    const url_student_upload = get_attr_from_el(el_data, "data-student_upload_url");
+    const url_subject_upload = get_attr_from_el(el_data, "data-subject_upload_url");
     const url_studsubj_upload = get_attr_from_el(el_data, "data-studsubj_upload_url");
-    // importdata_upload_url is stored in id_MIMP_data of modimport.html
+    const url_grade_upload = get_attr_from_el(el_data, "data-grade_upload_url");
+    const url_subject_import = get_attr_from_el(el_data, "data-subject_import_url");
 
 // --- get field_settings
+    const columns_shown = {examnumber: true, fullname: true, subj_code: true, subj_name: true,
+                           pescore: false, cescore: false, segrade: true, pegrade: false, cegrade: false,
+                            pecegrade: false, finalgrade: false}
     const field_settings = {
-        student: {  field_caption: ["", "Examnumber_twolines", "Last_name", "First_name", "Gender", "ID_number", "Department", "Leerweg", "SectorProfiel_twolines"],
-                    field_names: ["select", "examnumber", "lastname", "firstname", "gender", "idnumber", "dep_abbrev", "lvl_abbrev", "sct_abbrev"],
-                    filter_tags: ["select", "text", "text",  "text", "text", "text", "text", "text", "text"],
-                    field_width:  ["032", "090", "180", "240", "090", "120", "120", "090", "090"],
-                    field_align: ["c", "r", "l", "l", "c", "l", "c","c", "c"]},
-        studsubj: { field_caption: ["", "Examnumber_twolines", "Candidate", "Abbreviation", "Subject", "Character"],
-                    field_names: ["select", "examnumber", "fullname", "subj_code", "subj_name", "sjt_abbrev"],
-                    filter_tags: ["select", "text", "text", "text", "text", "text", "text", "text", "text", "text"],
-                    field_width:  ["032", "075", "360", "100", "240", "120"],
-                    field_align: ["c", "r", "l", "l", "l"]}
+        grades: { field_caption: ["Ex_nr", "Candidate", "Abbreviation", "Subject",
+                             "PE_score", "CE_score", "SE_grade", "PE_grade",
+                             "CE_grade", "PECE_grade", "Final_grade"],
+                    field_names: ["examnumber", "fullname",  "subj_code", "subj_name",
+                             "pescore", "cescore", "segrade", "pegrade", "cegrade", "pecegrade", "finalgrade"],
+                    field_tags: ["div", "div", "div", "div", "input", "input", "input", "input", "input", "div", "div"],
+                    filter_tags: ["text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text"],
+                    field_width:  ["100", "240", "100", "120", "075", "075", "075", "075", "075", "075", "075"],
+                     field_align: ["r", "l", "l", "l", "l", "l", "l", "l", "l", "l", "l"]},
         };
+
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
 
@@ -96,8 +105,7 @@ console.log("document.addEventListener students" )
         }
 // --- header bar elements
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
-            el_hdrbar_examyear.addEventListener("click", function() {
-                t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, MSESD_Response)}, false )
+            el_hdrbar_examyear.addEventListener("click", function() {ModSelectExamyear_Open()}, false )
         const el_hdrbar_school = document.getElementById("id_hdrbar_school")
             el_hdrbar_school.addEventListener("click", function() {
                 t_MSESD_Open(loc, "school", school_map, setting_dict, MSESD_Response)}, false )
@@ -105,10 +113,30 @@ console.log("document.addEventListener students" )
             el_hdrbar_department.addEventListener("click", function() {
                 t_MSESD_Open(loc, "department", department_map, setting_dict, MSESD_Response)}, false )
 
-// ---  MODAL SIDEBAR FILTER ------------------------------------
+// --- side bar elements
+        const el_SBR_select_examperiod = document.getElementById("id_SBR_select_period");
+            el_SBR_select_examperiod.addEventListener("change", function() {HandleSbrPeriod(el_SBR_select_examperiod)}, false )
+        const el_SBR_select_examtype = document.getElementById("id_SBR_select_examtype");
+            el_SBR_select_examtype.addEventListener("change", function() {HandleSbrExamtype(el_SBR_select_examtype)}, false )
+        const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
+            el_SBR_select_subject.addEventListener("click", function() {MSSS_Open("subject")}, false )
+        const el_SBR_select_student = document.getElementById("id_SBR_select_student");
+            el_SBR_select_student.addEventListener("click", function() {MSSS_Open("student")}, false )
+        const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
+            el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false )
 
+// ---  MOD SELECT EXAM YEAR ------------------------------------
+        let el_MSEY_tblBody_select = document.getElementById("id_MSEY_tblBody_select");
         const el_SBR_filter = document.getElementById("id_SBR_filter")
-            el_SBR_filter.addEventListener("keyup", function() {MSTUD_InputKeyup(el_SBR_filter)}, false );
+        //    el_SBR_filter.addEventListener("keyup", function() {MSTUD_InputKeyup(el_SBR_filter)}, false );
+
+// ---  MSSS MOD SELECT SUBJECT / STUDENT ------------------------------
+        const el_MSSS_input = document.getElementById("id_MSSS_input")
+            el_MSSS_input.addEventListener("keyup", function(event){
+                setTimeout(function() {MSSS_InputKeyup()}, 50)});
+        const el_MSSS_tblBody = document.getElementById("id_MSSS_tbody_select");
+        const el_MSSS_btn_save = document.getElementById("id_MSSS_btn_save")
+            el_MSSS_btn_save.addEventListener("click", function() {MSSS_Save()}, false )
 
 // ---  MODAL STUDENT
         const el_MSTUD_div_form_controls = document.getElementById("id_MSTUD_div_form_controls")
@@ -117,11 +145,7 @@ console.log("document.addEventListener students" )
             el = form_elements[i];
             if(el){el.addEventListener("keyup", function() {MSTUD_InputKeyup(el)}, false )};
         }
-        form_elements = el_MSTUD_div_form_controls.querySelectorAll(".awp_input_select")
-        for (let i = 0, el, len = form_elements.length; i < len; i++) {
-            el = form_elements[i];
-            if(el){el.addEventListener("change", function() {MSTUD_InputSelect(el)}, false )};
-        }
+
         const el_MSTUD_abbrev = document.getElementById("id_MSTUD_abbrev")
         const el_MSTUD_name = document.getElementById("id_MSTUD_name")
         const el_MSTUD_sequence = document.getElementById("id_MSTUD_sequence")
@@ -150,37 +174,8 @@ console.log("document.addEventListener students" )
         const el_MSTUDSUBJ_btn_save = document.getElementById("id_MSTUDSUBJ_btn_save")
             el_MSTUDSUBJ_btn_save.addEventListener("click", function() {MSTUDSUBJ_Save()}, false);
 
-        const el_tblBody_studsubjects = document.getElementById("id_MSTUDSUBJ_tblBody_studsubjects");
-        const el_tblBody_schemeitems = document.getElementById("id_MSTUDSUBJ_tblBody_schemeitems");
-
-// ---  MOD IMPORT ------------------------------------
-// --- create EventListener for select dateformat element
-// --- create EventListener for buttons in btn_container
-    const el_MIMP_btn_container = document.getElementById("id_MIMP_btn_container");
-    if(el_MIMP_btn_container){
-        const btns = el_MIMP_btn_container.children;
-        for (let i = 0, btn; btn = btns[i]; i++) {
-            const data_btn = get_attr_from_el(btn,"data-btn")
-            btn.addEventListener("click", function() {MIMP_btnSelectClicked(data_btn)}, false )
-        }
-    }
-    const el_filedialog = document.getElementById("id_MIMP_filedialog");
-        el_filedialog.addEventListener("change", function() {HandleFiledialog(el_filedialog, loc)}, false )
-    const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
-        el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false);
-    const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
-        el_MIMP_checkboxhasheader.addEventListener("change", MIMP_CheckboxHasheaderChanged) //, false);
-    const el_select_dateformat = document.getElementById("id_MIMP_dateformat");
-        el_select_dateformat.addEventListener("change", function() {MIMP_Selectdateformat(el_select_dateformat)}, false )
-   const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
-        el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false )
-   const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
-        el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false )
-   const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
-        el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test")}, false )
-   const el_MIMP_btn_upload = document.getElementById("id_MIMP_btn_upload");
-        el_MIMP_btn_upload.addEventListener("click", function() {MIMP_Save("save")}, false )
-
+        const el_tblBody_studsubjects = document.getElementById("id_tblBody_studsubjects");
+        const el_tblBody_schemeitems = document.getElementById("id_tblBody_schemeitems");
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_confirm_header");
@@ -194,31 +189,38 @@ console.log("document.addEventListener students" )
         let el_confirm_btn_save = document.getElementById("id_confirm_btn_save");
         if(has_view_permit){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
 
+// ---  MOD MESSAGE ------------------------------------
+        let el_mod_message_header = document.getElementById("id_mod_message_header");
+        let el_mod_message_text = document.getElementById("id_mod_message_text");
+        let el_modmessage_btn_cancel = document.getElementById("id_modmessage_btn_cancel");
+            el_modmessage_btn_cancel.addEventListener("click", function() {ModMessageClose()}, false);
+
 // ---  set selected menu button active
     SetMenubuttonActive(document.getElementById("id_hdr_users"));
     if(has_view_permit){
         // period also returns emplhour_list
         const datalist_request = {
-                setting: {page_student: {mode: "get"}},
-                schoolsetting: {setting_key: "import_student"},
-                locale: {page: "students"},
+                setting: {page_grade: {mode: "get"}},
+                locale: {page: "grades"},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true},
-                level_rows: {get: true},
-                sector_rows: {get: true},
+                subject_rows: {get: true},
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},
+                grade_rows: {get: true},
+                level_rows: {get: true},
+                sector_rows: {get: true},
                 schemeitem_rows: {get: true}
             };
 
-        DatalistDownload(datalist_request, "DOMContentLoaded");
+        DatalistDownload(datalist_request);
     }
 //  #############################################################################################################
 
 //========= DatalistDownload  ===================== PR2020-07-31
-    function DatalistDownload(datalist_request, called_by) {
-        console.log( "=== DatalistDownload ", called_by)
+    function DatalistDownload(datalist_request) {
+        console.log( "=== DatalistDownload ")
         console.log("request: ", datalist_request)
 
 // ---  Get today's date and time - for elapsed time
@@ -245,7 +247,6 @@ console.log("document.addEventListener students" )
                 if ("locale_dict" in response) { refresh_locale(response.locale_dict)};
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict
-                    mimp_setting_dict = setting_dict;
                     // <PERMIT> PR220-10-02
                     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
                     //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_write'
@@ -259,29 +260,40 @@ console.log("document.addEventListener students" )
                                                 setting_dict.requsr_role_system);
                     selected_btn = (setting_dict.sel_btn)
 
-                    b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
-                };
+                    UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school );
 
-                if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
+                    const sel_examperiod_pk = setting_dict.sel_examperiod_pk;
+                    t_FillOptionsFromList(el_SBR_select_examperiod, loc.options_examperiod, null,
+                        loc.Select_examperiod, loc.No_examperiods_found, sel_examperiod_pk);
+
+                    const sel_examtype_pk = setting_dict.sel_examtype_pk;
+                    const filter_value = sel_examperiod_pk;
+                    t_FillOptionsFromList(el_SBR_select_examtype, loc.options_examtype, filter_value,
+                        loc.Select_examtype, loc.No_examtypes_found, sel_examtype_pk);
+
+                    document.getElementById("id_hdr_textright1").innerText = setting_dict.sel_examperiod_caption
+                };
 
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
                 if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows) };
-                if ("department_rows" in response) {
-                    b_fill_datamap(department_map, response.department_rows);
-                };
-                if ("level_rows" in response)  {
-                    b_fill_datamap(level_map, response.level_rows);
-                };
-                if ("sector_rows" in response) {
-                    b_fill_datamap(sector_map, response.sector_rows);
-                };
+                if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows) };
 
+                if ("level_rows" in response)  { b_fill_datamap(level_map, response.level_rows) };
+                if ("sector_rows" in response) { b_fill_datamap(sector_map, response.sector_rows) };
+                if ("subject_rows" in response) { b_fill_datamap(subject_map, response.subject_rows) };
+                if ("student_rows" in response) { b_fill_datamap(student_map, response.student_rows) };
+/*
                 if ("student_rows" in response) {
                     const tblName = "student";
                     const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
                     RefreshDataMap(tblName, field_names, response.student_rows, student_map)
                 }
-                if ("studentsubject_rows" in response)  { b_fill_datamap(studentsubject_map, response.studentsubject_rows) };
+*/
+                if ("grade_rows" in response)  {
+                    b_fill_datamap(grade_map, response.grade_rows)
+                    console.log("response.grade_rows: ", response.grade_rows)
+                    console.log("grade_map: ", grade_map)
+                };
                 if ("schemeitem_rows" in response)  { b_fill_datamap(schemeitem_map, response.schemeitem_rows) };
 
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
@@ -300,7 +312,6 @@ console.log("document.addEventListener students" )
     function refresh_locale(locale_dict) {
         //console.log ("===== refresh_locale ==== ")
         loc = locale_dict;
-        mimp_loc = locale_dict;
         CreateSubmenu()
     }  // refresh_locale
 
@@ -309,13 +320,14 @@ console.log("document.addEventListener students" )
         //console.log("===  CreateSubmenu == ");
         //console.log("loc.Add_subject ", loc.Add_subject);
         //console.log("loc ", loc);
-
+/*
         let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Add_candidate, function() {MSTUD_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete")}, ["mx-2"]);
-            AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open("import_student")}, ["mx-2"], "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Upload_candidates, null, ["mx-2"], "id_submenu_subjectimport", url_subject_import);
 
          el_submenu.classList.remove(cls_hide);
+*/
     };//function CreateSubmenu
 
 //###########################################################################
@@ -327,7 +339,7 @@ console.log("document.addEventListener students" )
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
-            const upload_dict = {page_student: {sel_btn: selected_btn}};
+            const upload_dict = {page_grade: {sel_btn: selected_btn}};
             UploadSettings (upload_dict, url_settings_upload);
         };
 
@@ -337,23 +349,19 @@ console.log("document.addEventListener students" )
 // ---  show only the elements that are used in this tab
         show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
-// ---  fill sidebar selecttable students
-        SBR_FillSelectTable();
-
 // ---  fill datatable
-        CreateTblHeader();
         FillTblRows();
 
 // --- update header text
         UpdateHeaderText();
     }  // HandleBtnSelect
 
-//=========  HandleTableRowClicked  ================ PR2020-08-03
-    function HandleTableRowClicked(tr_clicked) {
-        //console.log("=== HandleTableRowClicked");
+//=========  HandleTblRowClicked  ================ PR2020-08-03
+    function HandleTblRowClicked(tr_clicked) {
+        //console.log("=== HandleTblRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
-        selected_student_pk = null;
+        //selected_student_pk = null;
 
 // ---  deselect all highlighted rows - also tblFoot , highlight selected row
         DeselectHighlightedRows(tr_clicked, cls_selected);
@@ -364,10 +372,93 @@ console.log("document.addEventListener students" )
         const row_id = tr_clicked.id
         if(row_id){
             const map_dict = get_mapdict_from_datamap_by_id(student_map, row_id)
-            selected_student_pk = map_dict.id;
+            //selected_student_pk = map_dict.id;
         }
-    }  // HandleTableRowClicked
+    }  // HandleTblRowClicked
 
+//=========  HandleSelectRowClicked  ================ PR2020-12-16
+    function HandleSelectRowClicked(tr_clicked) {
+        console.log("=== HandleSelectRowClicked");
+        console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
+        const tblName = get_attr_from_el(tr_clicked, "data-table")
+        console.log( "tblName: ", tblName);
+
+        if (tblName === "select_student") {
+             selected_student_pk = null;
+        } else if (tblName === "select_subject") {
+            selected_subject_pk = null;
+        }
+
+// ---  deselect all highlighted rows - also tblFoot , highlight selected row
+        DeselectHighlightedRows(tr_clicked, cls_selected);
+        tr_clicked.classList.add(cls_selected)
+
+// ---  update selected_student_pk or selected_subject_pk
+        // only select employee from select table
+        const row_id = tr_clicked.id
+        if(row_id){
+            const data_map = (tblName === "select_student") ? student_map :
+                              (tblName === "select_subject") ? subject_map : null;
+            const map_dict = get_mapdict_from_datamap_by_id(data_map, row_id)
+            if (tblName === "select_student") {
+                 selected_student_pk = map_dict.id;
+            } else if (tblName === "select_subject") {
+                selected_subject_pk = map_dict.id;
+            }
+        }
+        console.log( "selected_student_pk: ", selected_student_pk);
+        console.log( "selected_subject_pk: ", selected_subject_pk);
+
+        FillTblRows();
+    }  // HandleSelectRowClicked
+
+
+//=========  HandleSbrPeriod  ================ PR2020-12-20
+    function HandleSbrPeriod(el_select) {
+        console.log("=== HandleSbrPeriod");
+        console.log( "el_select.value: ", el_select.value, typeof el_select.value)
+        const sel_examperiod_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
+        const filter_value = sel_examperiod_pk;
+
+        console.log( "loc.options_examtype: ", loc.options_examtype)
+// --- fill seelctbox examtype with examtypes of this period
+        t_FillOptionsFromList(el_SBR_select_examtype, loc.options_examtype, filter_value,
+            loc.Select_examtype, loc.No_examtypes_found);
+
+// ---  upload new setting
+        let new_setting = {page_grade: {mode: "get"}};
+        new_setting.selected_pk = {sel_examperiod_pk: sel_examperiod_pk}
+        const datalist_request = {setting: new_setting};
+
+// also retrieve the tables that have been changed because of the change in school / dep
+        datalist_request.grade_rows = {get: true};
+        DatalistDownload(datalist_request);
+
+    }  // HandleSbrPeriod
+
+//=========  HandleSbrExamtype  ================ PR2020-12-20
+    function HandleSbrExamtype(el_select) {
+        console.log("=== HandleSbrExamtype");
+        console.log( "el_select.value: ", el_select.value, typeof el_select.value)
+        const selected_value = el_select.value;
+        const filter_value = Number(el_select.value);
+        t_FillOptionsFromList(el_SBR_select_examtype, loc.options_examtype, filter_value,
+            loc.Select_examtype, loc.No_examtypes_found, selected_value);
+
+// ---  upload new setting
+        const upload_dict = {page_grade: {sel_btn: selected_btn}};
+        UploadSettings (upload_dict, url_settings_upload);
+
+    }  // HandleSbrExamtype
+
+//=========  HandleShowAll  ================ PR2020-12-17
+    function HandleShowAll() {
+        console.log("=== HandleShowAll");
+        selected_student_pk =  null;
+        selected_subject_pk =  null;
+        //MSSS_display_in_sbr();
+        FillTblRows();
+    }
 
 //========= UpdateHeaderText  ================== PR2020-07-31
     function UpdateHeaderText(){
@@ -381,172 +472,193 @@ console.log("document.addEventListener students" )
         //document.getElementById("id_hdr_text").innerText = header_text;
     }   //  UpdateHeaderText
 
-//=========  CreateTblHeader  === PR2020-07-31
-    function CreateTblHeader() {
-        //console.log("===  CreateTblHeader ===== ");
-        const tblName = get_tblName_from_selectedBtn();
+//========= FillTblRows  ====================================
+    function FillTblRows() {
+        //console.log( "===== FillTblRows  === ");
+        //console.log( "selected_student_pk", selected_student_pk);
+        //console.log( "selected_subject_pk", selected_subject_pk);
+
+        columns_shown.examnumber = (!selected_student_pk);
+        columns_shown.fullname = (!selected_student_pk);
+        columns_shown.subj_code = (!selected_subject_pk);
+        columns_shown.subj_name = (!selected_subject_pk);
 
 // --- reset table
         tblHead_datatable.innerText = null;
         tblBody_datatable.innerText = null;
 
-        const field_setting = field_settings[tblName]
-        //console.log("tblName", tblName);
-        //console.log("field_setting", field_setting);
-        if(field_setting){
-            const column_count = field_setting.field_names.length;
+// --- create table header
+        CreateTblHeader();
 
-//--- insert table rows
-            let tblRow_header = tblHead_datatable.insertRow (-1);
-            let tblRow_filter = tblHead_datatable.insertRow (-1);
+// --- loop through grade_map
+        if(grade_map){
+          for (const [map_id, map_dict] of grade_map.entries()) {
+          // only show rows of selected student / subject
 
-//--- insert th's to tblHead_datatable
-            for (let j = 0; j < column_count; j++) {
-                const key = field_setting.field_caption[j];
-                const caption = (loc[key]) ? loc[key] : key;
-
-                const field_name = field_setting.field_names[j];
-                const filter_tag = field_setting.filter_tags[j];
-                const class_width = "tw_" + field_setting.field_width[j] ;
-                const class_align = "ta_" + field_setting.field_align[j];
-
-// ++++++++++ create header row +++++++++++++++
-// --- add th to tblRow.
-                let th_header = document.createElement("th");
-// --- add div to th, margin not working with th
-                    const el_header = document.createElement("div");
-                        if (j === 0 ){
-// --- add checked image to first column
-                           // TODO add multiple selection
-                            //AppendChildIcon(el_header, imgsrc_stat00);
-                        } else {
-// --- add innerText to el_div
-                            if(caption) {el_header.innerText = caption};
-                            if(field_name === "examnumber"){el_header.classList.add("pr-2")}
-                        };
-// --- add width, text_align
-                        el_header.classList.add(class_width, class_align);
-                    th_header.appendChild(el_header)
-                tblRow_header.appendChild(th_header);
-
-// ++++++++++ create filter row +++++++++++++++
-// --- add th to tblRow_filter.
-                const th_filter = document.createElement("th");
-// --- create element with tag from field_tags
-                const el_tag = (filter_tag === "text") ? "input" : "div";
-                const el_filter = document.createElement(el_tag);
-// --- add EventListener to el_filter
-                    const event_str = (filter_tag === "text") ? "keyup" : "click";
-                    el_filter.addEventListener(event_str, function(event){HandleFilterField(el_filter, j, event)});
-// --- add data-field Attribute.
-                    el_filter.setAttribute("data-field", field_name);
-                    el_filter.setAttribute("data-filtertag", filter_tag);
-// --- add other attributes
-                    if (filter_tag === "text") {
-                        el_filter.setAttribute("type", "text")
-                        el_filter.classList.add("input_text");
-
-                        el_filter.setAttribute("autocomplete", "off");
-                        el_filter.setAttribute("ondragstart", "return false;");
-                        el_filter.setAttribute("ondrop", "return false;");
-                    } else if (["toggle", "activated", "inactive"].indexOf(filter_tag) > -1) {
-                        // default empty icon necessary to set pointer_show
-                        // default empty icon necessary to set pointer_show
-                        append_background_class(el_filter,"tickmark_0_0");
-                    }
-
-// --- add width, text_align
-                    el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
-                th_filter.appendChild(el_filter)
-                tblRow_filter.appendChild(th_filter);
-            }  // for (let j = 0; j < column_count; j++)
-
-        }  // if(field_settings[tblName]){
-    };  //  CreateTblHeader
-
-//========= FillTblRows  ====================================
-    function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
-        const tblName = get_tblName_from_selectedBtn()
-        const data_map = get_datamap_from_tblName(tblName);
-        //console.log( "tblName", tblName);
-        //console.log( "data_map", data_map);
-
-// --- reset table
-        tblBody_datatable.innerText = null
-        if(data_map){
-// --- loop through data_map
-          for (const [map_id, map_dict] of data_map.entries()) {
-
-                //console.log( "map_dict ", map_dict);
+                let show_row = (!selected_student_pk || map_dict.student_id === selected_student_pk) &&
+                               (!selected_subject_pk ||map_dict.subject_id === selected_subject_pk);
+                if(show_row){
           // --- insert row at row_index
-                const schoolcode_lc_trail = ( (map_dict.sb_code) ? map_dict.sb_code.toLowerCase() : "" ) + " ".repeat(8) ;
-                const schoolcode_sliced = schoolcode_lc_trail.slice(0, 8);
-                const order_by = schoolcode_sliced +  ( (map_dict.username) ? map_dict.username.toLowerCase() : "");
-                const row_index = -1; // t_get_rowindex_by_orderby(tblBody_datatable, order_by)
-                let tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, map_dict, row_index)
+                    //const schoolcode_lc_trail = ( (map_dict.sb_code) ? map_dict.sb_code.toLowerCase() : "" ) + " ".repeat(8) ;
+                    //const schoolcode_sliced = schoolcode_lc_trail.slice(0, 8);
+                    //const order_by = schoolcode_sliced +  ( (map_dict.username) ? map_dict.username.toLowerCase() : "");
+                    const row_index = -1; // t_get_rowindex_by_orderby(tblBody_datatable, order_by)
+                    let tblRow = CreateTblRow(map_id, map_dict, row_index)
+                }
           };
-        }  // if(!!data_map)
+        }  // if(!!grade_map)
 
     }  // FillTblRows
 
+//=========  CreateTblHeader  === PR2020-12-03 PR2020-12-18
+    function CreateTblHeader() {
+        //console.log("===  CreateTblHeader ===== ");
+
+        const tblName = "grades";
+        const field_setting = field_settings[tblName];
+        const column_count = field_setting.field_names.length;
+
+
+// +++  insert header and filter row ++++++++++++++++++++++++++++++++
+        let tblRow_header = tblHead_datatable.insertRow (-1);
+        let tblRow_filter = tblHead_datatable.insertRow (-1);
+    // --- loop through columns
+        for (let j = 0; j < column_count; j++) {
+            const key = field_setting.field_caption[j];
+            const caption = (loc[key]) ? loc[key] : key;
+
+            const field_name = field_setting.field_names[j];
+            const field_tag = field_setting.field_tags[j];
+            const filter_tag = field_setting.filter_tags[j];
+            const class_width = "tw_" + field_setting.field_width[j] ;
+            const class_align = "ta_" + field_setting.field_align[j];
+
+            // skip columns if not in columns_shown
+            if (columns_shown[field_name]){
+    // ++++++++++ insert columns in header row +++++++++++++++
+        // --- add th to tblRow_header +++
+                let th_header = document.createElement("th");
+        // --- add div to th, margin not working with th
+                    const el_header = document.createElement("div");
+                        el_header.innerText = caption;
+        // --- add width, text_align, right padding in examnumber
+                        el_header.classList.add(class_width, class_align);
+                        if(field_name === "examnumber"){el_header.classList.add("pr-4")}
+                    th_header.appendChild(el_header)
+                tblRow_header.appendChild(th_header);
+
+    // ++++++++++ create filter row +++++++++++++++
+        // --- add th to tblRow_filter.
+                const th_filter = document.createElement("th");
+                    const el_filter = document.createElement(field_tag);
+                        el_filter.setAttribute("data-field", field_name);
+                        el_filter.setAttribute("data-filtertag", filter_tag);
+
+        // --- add EventListener to el_filter
+                        const event_str = (filter_tag === "text") ? "keyup" : "click";
+                        el_filter.addEventListener(event_str, function(event){HandleFilterField(el_filter, j, event)});
+
+        // --- add other attributes
+                        if (filter_tag === "text") {
+                            el_filter.setAttribute("type", "text")
+                            el_filter.classList.add("input_text");
+
+                            el_filter.setAttribute("autocomplete", "off");
+                            el_filter.setAttribute("ondragstart", "return false;");
+                            el_filter.setAttribute("ondrop", "return false;");
+                        } else if (["toggle", "activated", "inactive"].indexOf(filter_tag) > -1) {
+                            // default empty icon necessary to set pointer_show
+                            // default empty icon necessary to set pointer_show
+                            append_background_class(el_filter,"tickmark_0_0");
+                        }
+
+        // --- add width, text_align
+                        el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
+                    th_filter.appendChild(el_filter)
+                tblRow_filter.appendChild(th_filter);
+
+            }  //  if (columns_shown.inludes(field_name))
+        }  // for (let j = 0; j < column_count; j++)
+
+    };  //  CreateTblHeader
+
 //=========  CreateTblRow  ================ PR2020-06-09
-    function CreateTblRow(tblBody, tblName, map_id, map_dict, row_index) {
+    function CreateTblRow(map_id, map_dict, row_index) {
         //console.log("=========  CreateTblRow =========", tblName);
         //console.log("map_dict", map_dict);
 
-        let tblRow = null;
+        const tblName = "grades";
 
         const field_setting = field_settings[tblName]
-        if(field_setting){
-            const field_names = field_setting.field_names;
-            const field_align = field_setting.field_align;
-            const column_count = field_names.length;
+        const field_names = field_setting.field_names;
+        const field_tags = field_setting.field_tags;
+        const field_align = field_setting.field_align;
+        const field_width = field_setting.field_width;
+        const column_count = field_names.length;
 
 // --- insert tblRow into tblBody at row_index
-            tblRow = tblBody.insertRow(row_index);
-            tblRow.id = map_id
-            const order_by = (map_dict.fullname) ? map_dict.fullname.toLowerCase() : null;
+        let tblRow = tblBody_datatable.insertRow(row_index);
+        tblRow.id = map_id
+
 // --- add data attributes to tblRow
-            tblRow.setAttribute("data-table", tblName);
-            if (tblName === "student"){
-                tblRow.setAttribute("data-pk", map_dict.id);
-                //tblRow.setAttribute("data-ppk", map_dict.company_id);
-            }
-            tblRow.setAttribute("data-orderby", order_by);
+        tblRow.setAttribute("data-pk", map_dict.id);
+
+// ---  add data-orderby attribute to tblRow, for ordering new rows
+        // happens in UpdateTblRow
+        const order_by_stud = (map_dict.fullname) ? map_dict.fullname.toLowerCase() : null;
+        const order_by_subj = (map_dict.subj_name) ? map_dict.subj_name.toLowerCase() : null;
+        tblRow.setAttribute("data-orderby_stud", order_by_stud);
+        tblRow.setAttribute("data-orderby_subj", order_by_subj);
 
 // --- add EventListener to tblRow
-            tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
+        tblRow.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
 
 // +++  insert td's into tblRow
-            for (let j = 0; j < column_count; j++) {
-                const field_name = field_names[j];
-// --- insert td element,
-                let el_td = tblRow.insertCell(-1);
-// --- add data-field attribute
-                el_td.setAttribute("data-field", field_name);
+        for (let j = 0; j < column_count; j++) {
+            const field_name = field_names[j];
+        // skip columns if not in columns_shown
+            if (columns_shown[field_name]){
+        // --- insert td element,
+                let td = tblRow.insertCell(-1);
+        // --- create element with tag from field_tags
+                const field_tag = field_tags[j];
+                let el = document.createElement(field_tag);
+            // --- add data-field attribute
+                    el.setAttribute("data-field", field_name);
+            // --- add data-field Attribute when input element
+                        if (field_tag === "input") {
+                            el.setAttribute("type", "text")
+                            el.setAttribute("autocomplete", "off");
+                            el.setAttribute("ondragstart", "return false;");
+                            el.setAttribute("ondrop", "return false;");
+                // --- add EventListener
+                            //el.addEventListener("keyup", function() {delay(function(){HandleEventKey(el)}, 1000 );});
+                            el.addEventListener("change", function(){HandleEventKey(el)});
+                            el.addEventListener("keydown", function(event){HandleArrowEvent(el, event)});
+                        }
 
-                if (field_name === "select") {
-                    // TODO add select multiple users option PR2020-08-18
-                } else if (["examnumber", "lastname", "firstname", "gender", "idnumber", "dep_abbrev", "lvl_abbrev", "sct_abbrev",
-                            "fullname", "subj_code", "subj_name", "sjt_abbrev"].indexOf(field_name) > -1){
-                    if(tblName === "student"){
-                        el_td.addEventListener("click", function() {MSTUD_Open(el_td)}, false)
-                    } else if(tblName === "studsubj"){
-                        el_td.addEventListener("click", function() {MSTUDSUBJ_Open(el_td)}, false)
+        // --- add class 'input_text' and text_align
+                        // class 'input_text' contains 'width: 100%', necessary to keep input field within td width
+                        el.classList.add("input_text", "ta_" + field_setting.field_align[j]);
+                        if(field_name === "examnumber"){el.classList.add("pr-4")}
 
-                    }
-                    el_td.classList.add("pointer_show");
-                    add_hover(el_td);
+                    td.appendChild(el);
+               if (["examnumber", "fullname"].indexOf(field_name) > -1){
+                    td.addEventListener("click", function() {MSTUD_Open(td)}, false)
+                    add_hover(td);
+               } else if (["subj_code", "subj_name"].indexOf(field_name) > -1){
+                    td.addEventListener("click", function() {MSTUDSUBJ_Open(td)}, false)
+                    add_hover(td);
+               }
+               //td.classList.add("pointer_show", "px-2");
+    // --- add field_width and text_align
+                //el.classList.add("tw_XX" + field_width[j], "ta_" + field_align[j]);
+    // --- put value in field
+               UpdateField(el, map_dict)
 
-                    if(field_name === "examnumber"){el_td.classList.add("pr-4")}
-                }
-// --- add  text_align
-               el_td.classList.add("ta_" + field_align[j]);
-// --- put value in field
-               UpdateField(el_td, map_dict)
-            }  // for (let j = 0; j < 8; j++)
-        }  // if(field_settings_table)
+            }  //  if (columns_shown[field_name])
+        }  // for (let j = 0; j < 8; j++)
+
         return tblRow
     };  // CreateTblRow
 
@@ -560,108 +672,131 @@ console.log("document.addEventListener students" )
         }
     };  // UpdateTblRow
 
-//=========  UpdateField  ================ PR2020-08-16
-    function UpdateField(el_div, map_dict) {
-        //console.log("=========  UpdateField =========");
-        //console.log("map_dict", map_dict);
-        if(el_div){
-            const field_name = get_attr_from_el(el_div, "data-field");
+//=========  UpdateField  ================ PR2020-12-18
+    function UpdateField(el, map_dict) {
+        console.log("=========  UpdateField =========");
+        console.log("map_dict", map_dict);
+        if(el){
+            const field_name = get_attr_from_el(el, "data-field");
             const fld_value = map_dict[field_name];
-            if(field_name){
-                if (field_name === "select") {
-                    // TODO add select multiple users option PR2020-08-18
-                } else if (["examnumber", "lastname", "firstname", "gender", "idnumber", "dep_abbrev", "lvl_abbrev", "sct_abbrev",
-                            "fullname", "subj_code", "subj_name", "sjt_abbrev"].indexOf(field_name) > -1){
-                    el_div.innerText = (fld_value) ? fld_value : null;
-                }
-            }  // if(field_name)
-        }  // if(el_div)
-    };  // UpdateField
-
-
-// +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
-
-//========= UploadNewUser  ============= PR2020-08-02 PR2020-08-15
-   function UploadNewUser(args) {
-        console.log("=== UploadNewUser");
-        let mode = null, init_time_stamp = null, skip = false;
-        if(Number(args)){
-            //skip if a new key is enetered in the elapsed period of 500 ms
-            init_time_stamp = Number(args)
-            skip =  (time_stamp !== init_time_stamp)
-            mode = "validate"
-        } else {
-            mode = args
-        }
-        if(!skip){
-            // mod_dict modes are:  addnew, select, update
-            let url_str = url_subject_upload
-
-            const upload_mode = (mode === "validate") ? "validate" :
-                                (mode === "resend_activation_email" ) ? "resend_activation_email" :
-                                (mod_MSTUD_dict.mode === "update") ? "update" :
-                                (mod_MSTUD_dict.mode === "addnew") ? "create" : null;
-
-        console.log("mod_MSTUD_dict", mod_MSTUD_dict);
-    // ---  create mod_dict
-            let upload_dict = {}
-            if (upload_mode === "resend_activation_email" ){
-                upload_dict = { id: {pk: map_dict.id,
-                                   ppk: map_dict.schoolbase_pk,
-                                   table: "user",
-                                   mode: upload_mode,
-                                   mapid: "user_" + map_dict.id},
-                              username: {value: map_dict.username}
-                              };
-            } else if (upload_mode === "update" ){
-
-            } else if (["validate", "create"].indexOf(upload_mode) > -1){
-                upload_dict = { id: {ppk: mod_MSTUD_dict.schoolbase_pk,
-                                   table: "user",
-                                   mode: upload_mode},
-                              username: {value: el_MSTUD_abbrev.value, update: true},
-                              last_name: {value: el_MSTUD_last_name.value, update: true},
-                              email: {value: el_MSTUD_sequence.value, update: true}
-                              };
+        console.log("field_name", field_name);
+        console.log("fld_value", fld_value);
+            if (el.nodeName === "INPUT"){
+                 el.value = (fld_value) ? fld_value : null;
+            } else {
+                el.innerText = (fld_value) ? fld_value : null;
             }
-            console.log("upload_dict: ", upload_dict);
-
-
-            // must loose focus, otherwise green / red border won't show
-            //el_input.blur();
-
-            const el_loader =  document.getElementById("id_MSTUD_loader");
-            el_loader.classList.remove(cls_visible_hide);
-
-            const parameters = {"upload": JSON.stringify (upload_dict)}
-            let response = "";
-            $.ajax({
-                type: "POST",
-                url: url_str,
-                data: parameters,
-                dataType:'json',
-                success: function (response) {
-                    console.log( "response");
-                    console.log( response);
-
-                    el_loader.classList.add(cls_visible_hide);
-
-                    MSTUD_SetMsgElements(response);
-
-                    if ("updated_list" in response){
-                        for (let i = 0, updated_dict; updated_dict = response.updated_list[i]; i++) {
-                            refresh_usermap_item(updated_dict);
-                        }
-                    }
-
-                },  // success: function (response) {
-                error: function (xhr, msg) {
-                    console.log(msg + '\n' + xhr.responseText);
-                    alert(msg + '\n' + xhr.responseText);
-                }  // error: function (xhr, msg) {
-            });  // $.ajax({
         }
-    };  // UploadNewUser
+    };
+
+// +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-12-15
+
+//========= HandleArrowEvent  ================== PR2020-12-20
+    function HandleArrowEvent(el, event){
+        //console.log(" --- HandleArrowEvent ---")
+        //console.log("event.key", event.key, "event.shiftKey", event.shiftKey)
+        // This is not necessary: (event.key === "Tab" && event.shiftKey === true)
+        // Tab and shift-tab move cursor already to next / prev element
+        if (["Enter", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(event.key) > -1) {
+// --- get move_horizontal and move_vertical based on event.key and event.shiftKey
+            let move_horizontal = (event.key === "ArrowRight" || (event.key === "Enter" && !event.shiftKey)) ? 1 :
+                                    (event.key === "ArrowLeft" || (event.key === "Enter" && event.shiftKey)) ? -1 : 0
+            let move_vertical = (event.key === "ArrowDown") ? 1 :
+                                    (event.key === "ArrowUp") ? -1 : 0
+
+            const td = el.parentNode
+            let tblRow = td.parentNode
+            const tblBody = tblRow.parentNode
+// --- get the first and last index of imput columns
+            let max_colindex = null,  min_colindex = null;
+            for (let i = 0, fldName, cell, td; td = tblRow.cells[i]; i++) {
+                cell = td.children[0];
+                fldName = get_attr_from_el(cell, "data-field")
+                if ( ["pescore", "cescore", "segrade", "pegrade", "cegrade", "pecegrade", "finalgrade"].includes(fldName) ) {
+                    if(min_colindex == null) {min_colindex = td.cellIndex}
+                    max_colindex = td.cellIndex;
+                }
+            }
+// --- set move up / down 1 row when min / max index is reached
+            let new_col_index = td.cellIndex + move_horizontal;
+            if(new_col_index > max_colindex) {
+                new_col_index = min_colindex
+                move_vertical += 1
+            } else  if(new_col_index < min_colindex) {
+                new_col_index = max_colindex
+                move_vertical -= 1
+            }
+// --- set focus to next / previous cell
+            // apparently you must deduct number of header rows from row_index
+            let new_row_index = tblRow.rowIndex + move_vertical - 2;
+            const new_tblRow = tblBody.rows[new_row_index]
+            if(new_tblRow){
+                const next_el = new_tblRow.cells[new_col_index].children[0];
+                if(next_el){next_el.focus()}
+            }
+        }
+    }  // HandleArrowEvent
+
+//========= HandleEventKey  ===============PR2020-08-16
+    function HandleEventKey(el_input){
+        console.log(" --- HandleEventKey ---")
+
+        // event_shiftKey = true when shift key is pressed. Used for Shift+Tab (not in use yet
+        const tblRow = get_tablerow_selected(el_input)
+        const map_id = tblRow.id
+        if (map_id){
+            const map_dict = get_mapdict_from_datamap_by_id(grade_map, map_id)
+            const fldName = get_attr_from_el(el_input, "data-field")
+            const map_value = map_dict[fldName];
+            const new_value = el_input.value;
+            if(new_value !== map_value){
+                const arr = ValidateGrade(loc, fldName, new_value, map_dict);
+                const value_text = arr[0];
+                const msg_err = arr[1];
+                if (msg_err){
+                    //alert(msg_err)
+    // ---  show modal
+                    // TODO header, set focus after clsing messagebox
+                    // el_mod_message_header.innerText = loc.Enter_grade;
+                    el_mod_message_text.innerText = msg_err;
+                    $("#id_mod_message").modal({backdrop: false});
+                    set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
+
+                    el_focus = el_input;
+                    el_input.value = null;
+
+                } else {
+
+                    //>>>>>>>>>>>el_input.value = value_text;
+                    let url_str = url_grade_upload;
+
+                    // must loose focus, otherwise green / red border won't show
+                    //el_input.blur();
+
+                    //const el_loader =  document.getElementById("id_MSTUD_loader");
+                   // el_loader.classList.remove(cls_visible_hide);
+
+            // ---  upload changes
+                    const upload_dict = { table: map_dict.table,
+                                           mode: "update",
+                                           mapid: map_id,
+
+                                           sel_examyear_pk: setting_dict.sel_examyear_pk,
+                                           sel_schoolbase_pk: setting_dict.sel_schoolbase_pk,
+                                           sel_depbase_pk: setting_dict.sel_depbase_pk,
+                                           sel_examperiod_pk: setting_dict.sel_examperiod_pk,
+
+                                           grade_pk: map_dict.id,
+                                           student_pk: map_dict.student_id,
+                                           studsubj_pk: map_dict.studsubj_id,
+                                           examperiod_pk: map_dict.examperiod};
+                    upload_dict[fldName] = value_text;
+                    UploadChanges(upload_dict, url_grade_upload);
+                }
+            }
+        }
+
+    };  // HandleEventKey
 
 //========= UploadToggle  ============= PR2020-07-31
     function UploadToggle(el_input) {
@@ -756,10 +891,10 @@ console.log("document.addEventListener students" )
                     };
                     $("#id_mod_student").modal("hide");
 
-                    if ("updated_studsubj_rows" in response) {
-                        const tblName = "studsubj";
+                    if ("updated_grade_rows" in response) {
+                        const tblName = "grades";
                         const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                        RefreshDataMap(tblName, field_names, response.updated_studsubj_rows, studentsubject_map);
+                        RefreshDataMap(tblName, field_names, response.updated_grade_rows, grade_map);
                     }
 
                 },  // success: function (response) {
@@ -797,26 +932,6 @@ console.log("document.addEventListener students" )
             console.log("mod_MSTUD_dict", mod_MSTUD_dict)
     // ---  set header text
             MSTUD_headertext(is_addnew, tblName, mod_MSTUD_dict.name);
-
-    // ---  fill level and sector options, set select team in selectbox
-            const selected_pk = null;
-            const department_pk = (is_addnew) ? setting_dict.requsr_department_pk : mod_MSTUD_dict.dep_id;
-            const dep_dict = get_mapdict_from_datamap_by_tblName_pk(mimp_department_map, "department", department_pk);
-            const depbase_pk = dep_dict.base_id;
-            const lvl_req = (dep_dict.lvl_req) ? dep_dict.lvl_req : false;
-            const sct_req = (dep_dict.sct_req) ? dep_dict.sct_req : false;
-            document.getElementById("id_MSTUD_level_label").innerText = dep_dict.lvl_caption + ':';
-            document.getElementById("id_MSTUD_sector_label").innerText = dep_dict.sct_caption + ':';
-            document.getElementById("id_MSTUD_level_select").innerHTML = t_FillOptionLevelSectorFromMap("level", level_map, depbase_pk, selected_pk)
-            document.getElementById("id_MSTUD_sector_select").innerHTML = t_FillOptionLevelSectorFromMap("sector", sector_map, depbase_pk, selected_pk)
-
-            const el_MSTUD_level_div = document.getElementById("id_MSTUD_level_div")
-            add_or_remove_class(el_MSTUD_level_div, cls_hide, !lvl_req)
-            add_or_remove_class(el_MSTUD_level_div, "flex_2", !sct_req, "flex_1")
-
-            const el_MSTUD_sector_div = document.getElementById("id_MSTUD_sector_div")
-            add_or_remove_class(el_MSTUD_sector_div, cls_hide, !sct_req)
-            add_or_remove_class(el_MSTUD_sector_div, "flex_2", !lvl_req, "flex_1")
 
     // ---  remove value from el_mod_employee_input
             MSTUD_SetElements();  // true = also_remove_values
@@ -857,52 +972,46 @@ console.log("document.addEventListener students" )
         if(has_permit_edit){
             const is_delete = (crud_mode === "delete")
 
-            let upload_dict = {
-                table: 'student',
-                sel_examyear_pk: setting_dict.sel_examyear_pk,
-                sel_schoolbase_pk: setting_dict.sel_schoolbase_pk,
-                sel_department_pk: setting_dict.sel_department_pk,
-                }
+            let upload_dict = {id: {table: 'subject', ppk: mod_MSTUD_dict.examyear_id} }
             if(mod_MSTUD_dict.is_addnew) {
-                upload_dict.create = true;
+                upload_dict.id.create = true;
             } else {
-                upload_dict.student_pk = mod_MSTUD_dict.id;
-                upload_dict.mapid = mod_MSTUD_dict.mapid;
-                if(is_delete) {upload_dict.delete = true}
+                upload_dict.id.pk = mod_MSTUD_dict.id;
+                upload_dict.id.mapid = mod_MSTUD_dict.mapid;
+                if(is_delete) {upload_dict.id.delete = true}
             }
     // ---  put changed values of input elements in upload_dict
-            //let form_elements = document.getElementById("id_MSTUDSUBJ_div_form_controls").querySelectorAll(".awp_input_text, .awp_input_select")
-            let el_MSTUD_div_form_controls = document.getElementById("id_MSTUD_div_form_controls")
-            let form_elements = el_MSTUD_div_form_controls.getElementsByClassName("form-control")
-
+            let form_elements = document.getElementById("id_MSTUDSUBJ_div_form_controls").querySelectorAll(".awp_input_text")
             for (let i = 0, el_input; el_input = form_elements[i]; i++) {
                 const fldName = get_attr_from_el(el_input, "data-field");
+    //console.log( "fldName: ", fldName);
                 let new_value = (el_input.value) ? el_input.value : null;
                 let old_value = (mod_MSTUD_dict[fldName]) ? mod_MSTUD_dict[fldName] : null;
+    //console.log( "new_value: ", new_value);
+    //console.log( "old_value: ", old_value);
                 if(fldName === "sequence"){
                     new_value = (new_value && Number(new_value)) ? Number(new_value) : null;
                     old_value = (old_value && Number(old_value)) ? Number(old_value) : null;
                 }
                 if (new_value !== old_value) {
-                    const field = (fldName === "lvl_id") ? "level" :
-                                  (fldName === "sct_id") ? "sector" : fldName;
-                    upload_dict[field] = {value: new_value, update: true}
+                    upload_dict[fldName] = {value: new_value, update: true}
+
     // put changed new value in tblRow before uploading
-                    //const tblRow = document.getElementById(mod_MSTUD_dict.mapid);
-                    //if(tblRow){
-                    //    const el_tblRow = tblRow.querySelector("[data-field=" + fldName + "]");
-                    //    if(el_tblRow){el_tblRow.innerText = new_value };
-                    //}
+                    const tblRow = document.getElementById(mod_MSTUD_dict.mapid);
+                    if(tblRow){
+                        const el_tblRow = tblRow.querySelector("[data-field=" + fldName + "]");
+                        if(el_tblRow){el_tblRow.innerText = new_value };
+                    }
                 };
             };
     // ---  get selected departments
-            //let dep_list = MSTUD_get_selected_depbases();
-            //upload_dict['depbases'] = {value: dep_list, update: true}
-    console.log( "upload_dict: ", upload_dict);
+            let dep_list = MSTUD_get_selected_depbases();
+
+            upload_dict['depbases'] = {value: dep_list, update: true}
             // TODO add loader
             //document.getElementById("id_MSTUD_loader").classList.remove(cls_visible_hide)
             // modal is closed by data-dismiss="modal"
-            UploadChanges(upload_dict, url_student_upload);
+            UploadChanges(upload_dict, url_subject_upload);
         };
     }  // MSTUD_Save
 
@@ -929,16 +1038,9 @@ console.log("document.addEventListener students" )
 
 //========= MSTUD_InputKeyup  ============= PR2020-10-01
     function MSTUD_InputKeyup(el_input){
-        console.log( "===== MSTUD_InputKeyup  ========= ");
+        //console.log( "===== MSTUD_InputKeyup  ========= ");
         MSTUD_validate_and_disable();
     }; // MSTUD_InputKeyup
-
-
-//========= MSTUD_InputSelect  ============= PR2020-12-11
-    function MSTUD_InputSelect(el_input){
-        console.log( "===== MSTUD_InputSelect  ========= ");
-        MSTUD_validate_and_disable();
-    }; // MSTUD_InputSelect
 
 //=========  MSTUD_validate_and_disable  ================  PR2020-10-01
     function MSTUD_validate_and_disable() {
@@ -1036,7 +1138,7 @@ console.log("document.addEventListener students" )
     function MSTUD_SetElements(also_remove_values){
         //console.log( "===== MSTUD_SetElements  ========= ");
 // --- loop through input elements
-        let form_elements = el_MSTUD_div_form_controls.querySelectorAll(".form-control")
+        let form_elements = el_MSTUD_div_form_controls.querySelectorAll(".awp_input_text")
         for (let i = 0, el, fldName, fldValue, len = form_elements.length; i < len; i++) {
             el = form_elements[i];
             if(el){
@@ -1044,11 +1146,11 @@ console.log("document.addEventListener students" )
                 el.value = (mod_MSTUD_dict[fldName]) ? mod_MSTUD_dict[fldName] : null;
             };
         }
+        const lastname = (mod_MSTUD_dict.lastname) ? mod_MSTUD_dict.lastname : "";
+        const firstname = (mod_MSTUD_dict.firstname) ? mod_MSTUD_dict.firstname : "";
+        document.getElementById("id_MSTUD_hdr").innerText = lastname + ", " + firstname;
 
-        let full_name = (mod_MSTUD_dict.lastname) ? mod_MSTUD_dict.lastname : "";
-        if (mod_MSTUD_dict.prefix) {full_name = mod_MSTUD_dict.prefix + " " + full_name}
-        if (mod_MSTUD_dict.firstname) {full_name += ", " + mod_MSTUD_dict.firstname}
-        document.getElementById("id_MSTUD_hdr").innerText = full_name;
+
     }  // MSTUD_SetElements
 
 //========= MSTUD_SetMsgElements  ============= PR2020-08-02
@@ -1174,10 +1276,8 @@ console.log("document.addEventListener students" )
             const studsubj_pk_int = (Number(arr[2])) ? Number(arr[2]) : null;
             const map_dict = get_mapdict_from_datamap_by_tblName_pk(student_map, "student", stud_pk_int);
 
-            console.log("stud_pk_int", stud_pk_int)
-            console.log("map_dict", map_dict)
             if(!isEmpty(map_dict)) {
-                mod_MSTUDSUBJ_dict.stud_id = map_dict.id;
+                mod_MSTUDSUBJ_dict.student_id = map_dict.id;
                 mod_MSTUDSUBJ_dict.scheme_id = map_dict.scheme_id;
 
     // ---  set header text
@@ -1220,14 +1320,8 @@ console.log("document.addEventListener students" )
         console.log(" -----  MSTUDSUBJ_Save   ----")
         console.log( "mod_studsubj_map: ", mod_studsubj_map);
 
-        if(has_permit_edit && mod_MSTUDSUBJ_dict.stud_id){
-            const upload_dict = {
-            table: 'studentsubject',
-            sel_examyear_pk: setting_dict.sel_examyear_pk,
-            sel_schoolbase_pk: setting_dict.sel_schoolbase_pk,
-            sel_departmentbase_pk: setting_dict.sel_departmentbase_pk,
-            sel_student_pk: mod_MSTUDSUBJ_dict.stud_id
-            }
+        if(has_permit_edit && mod_MSTUDSUBJ_dict.student_id){
+            const upload_dict = {id: {table: 'studentsubject', student_pk: mod_MSTUDSUBJ_dict.student_id}}
             const studsubj_list = []
 // ---  loop through mod_studsubj_map
 
@@ -1250,11 +1344,9 @@ console.log("document.addEventListener students" )
                     if (mode){
                         studsubj_list.push({
                                 mode: mode,
-                                sel_examyear_pk: setting_dict.sel_examyear_pk,
-                                sel_schoolbase_pk: setting_dict.sel_schoolbase_pk,
                                 studsubj_id: ss_dict.studsubj_id,
                                 schemeitem_id: ss_dict.schemeitem_id,
-                                stud_id: ss_dict.stud_id,
+                                student_id: ss_dict.student_id,
                                 is_extra_nocount: ss_dict.is_extra_nocount,
                                 is_extra_counts: ss_dict.is_extra_counts,
                                 is_elective_combi: ss_dict.is_elective_combi,
@@ -1264,9 +1356,10 @@ console.log("document.addEventListener students" )
                     }  //  if (mode)
                     if (mode === "delete"){
 // - make to_be_deleted tblRow red
-                        const row_id = "studsubj_" + ss_dict.stud_id + "_" + ss_dict.studsubj_id
+                        const row_id = "studsubj_" + ss_dict.student_id + "_" + ss_dict.studsubj_id
+        console.log("row_id", row_id);
                         const tblRow = document.getElementById(row_id);
-
+        console.log("tblRow", tblRow);
                         ShowClassWithTimeout(tblRow, "tsa_tr_error")
                     }
                 }  // if(!isEmpty(ss_dict)){
@@ -1278,7 +1371,7 @@ console.log("document.addEventListener students" )
                 console.log("upload_dict: ", upload_dict)
                 UploadChanges(upload_dict, url_studsubj_upload);
             }
-        };  // if(has_permit_edit && mod_MSTUDSUBJ_dict.stud_id){
+        };  // if(has_permit_edit && mod_MSTUDSUBJ_dict.student_id){
 
 // ---  hide modal
         $("#id_mod_studentsubject").modal("hide");
@@ -1303,16 +1396,16 @@ console.log("document.addEventListener students" )
 //  list mod_studsubj_dict contains the existing, added and deleted subjects of the student
 //  list mod_schemeitem_dict contains all schemitems of the student's scheme
 
-        const student_pk = mod_MSTUDSUBJ_dict.stud_id
+        const student_pk = mod_MSTUDSUBJ_dict.student_id
         const scheme_pk = mod_MSTUDSUBJ_dict.scheme_id
 
         //mod_studsubj_dict = {};
         mod_studsubj_map.clear();
-// ---  loop through studentsubject_map
-        for (const [map_id, ss_dict] of studentsubject_map.entries()) {
+// ---  loop through grade_map
+        for (const [map_id, ss_dict] of grade_map.entries()) {
 
         // add only studsubj from this student
-            if (student_pk === ss_dict.stud_id) {
+            if (student_pk === ss_dict.student_id) {
                 const item = deepcopy_dict(ss_dict);
                 if(item.schemeitem_id){
                     //mod_studsubj_dict[item.schemeitem_id] = item
@@ -1406,7 +1499,7 @@ console.log("document.addEventListener students" )
 
             const tblRow = tblBody_select.insertRow(-1);
             tblRow.setAttribute("data-pk", schemeitem_pk);
-            //if(dict.mapid) { tblRow.id = "MSTUDSUBJ_" + dict.mapid }
+            if(dict.mapid) { tblRow.id = dict.mapid }
             const selected_int = 0
             tblRow.setAttribute("data-selected", selected_int);
 
@@ -1428,7 +1521,7 @@ console.log("document.addEventListener students" )
     // --- add second td to tblRow.
             td = tblRow.insertCell(-1);
             el_div = document.createElement("div");
-                el_div.classList.add("tw_120")
+                el_div.classList.add("tw_120", "pl-4")
                 el_div.innerText = subj_code;
                 tblRow.title = subj_name;
                 td.appendChild(el_div);
@@ -1581,7 +1674,7 @@ console.log("document.addEventListener students" )
 // if it exists it must be a deleted row, remove 'isdeleted'
                     ss_map_dict.isdeleted = false;
                 } else {
-                    const student_pk = mod_MSTUDSUBJ_dict.stud_id
+                    const student_pk = mod_MSTUDSUBJ_dict.student_id
 // add row to mod_studsubj_dict if it does not yet exist
                     //const si_dict = mod_schemeitem_dict[pk_int];
                     //const si_dict = get_mapdict_from_datamap_by_id(mod_schemeitem_map, pk_int)
@@ -1592,9 +1685,9 @@ console.log("document.addEventListener students" )
                         si_map_dict.schemeitem_id = si_dict.id;
                         delete si_map_dict.id;
                         // si_map_dict.mapid overrides si_dict.mapid
-                        si_map_dict.mapid = "studsubj_" + student_pk + "_"// mapid: "studsubj_29_2" = "studsubj_" + stud_id + "_" + studsubj_id
+                        si_map_dict.mapid = "studsubj_" + student_pk + "_"// mapid: "studsubj_29_2" = "studsubj_" + student_id + "_" + studsubj_id
                         // adding keys that do't exist in si_dict
-                        si_map_dict.stud_id = mod_MSTUDSUBJ_dict.student_pk;
+                        si_map_dict.student_id = mod_MSTUDSUBJ_dict.student_pk;
                         si_map_dict.studsubj_id = null;
 
                         si_map_dict.is_elective_combi = false;
@@ -1695,6 +1788,212 @@ console.log("document.addEventListener students" )
     }  // MSTUDSUBJ_CheckboxEdit
 
 // +++++++++ END MOD STUDENT SUBJECT +++++++++++++++++++++++++++++++++
+
+// +++++++++++++++++ MODAL SELECT SUBJECT STUDENT ++++++++++++++++++++++++++++++++
+//========= MSSS_Open ====================================  PR2020-12-17
+    function MSSS_Open (tblName) {
+        console.log(" ===  MSSS_Open  =====", tblName) ;
+        // dont reset mod_MSSS_dict
+        mod_MSSS_dict = {sel_table: tblName,
+                         sel_pk:  -1,  // -1 = all, 0 = shift without employee
+                         sel_code: null};
+
+// fill select table
+        MSSS_Fill_SelectTable(tblName)
+
+// set header text
+        const label_text = loc.Filter + ( (tblName === "student") ?  loc.Candidate.toLowerCase() : loc.Subject.toLowerCase() );
+        document.getElementById("id_MSSS_header").innerText = label_text;
+        document.getElementById("id_MSSS_input_label").innerText = label_text;
+        const fields = (tblName === "student") ? loc.a_candidate : loc.a_subject;
+        const msg_text = (tblName === "student") ? loc.Type_afew_letters_candidate : loc.Type_afew_letters_subject;
+        document.getElementById("id_MSSS_msg_input").innerText = msg_text
+
+        set_focus_on_el_with_timeout(el_MSSS_input, 50);
+// ---  show modal
+         $("#id_mod_select_subject_student").modal({backdrop: true});
+    }; // MSSS_Open
+
+//=========  MSSS_Save  ================ PR2020-01-29
+    function MSSS_Save() {
+        console.log("===  MSSS_Save =========");
+
+        console.log("mod_MSSS_dict", mod_MSSS_dict);
+
+        if (mod_MSSS_dict.sel_table === "student") {
+            selected_student_pk = (mod_MSSS_dict.sel_pk) ? mod_MSSS_dict.sel_pk : null;
+        } else if (mod_MSSS_dict.sel_table === "subject") {
+            selected_subject_pk = (mod_MSSS_dict.sel_pk) ? mod_MSSS_dict.sel_pk : null;
+        }
+
+        console.log("selected_student_pk", selected_student_pk);
+        console.log("selected_subject_pk", selected_subject_pk);
+        MSSS_display_in_sbr();
+
+        FillTblRows();
+
+// hide modal
+        $("#id_mod_select_subject_student").modal("hide");
+
+    }  // MSSS_Save
+
+//========= MSSS_Fill_SelectTable  ============= PR2020--09-17
+    function MSSS_Fill_SelectTable(tblName) {
+        console.log("===== MSSS_Fill_SelectTable ===== ", tblName);
+        const data_map = (tblName === "subject") ? subject_map : student_map
+        console.log("data_map", data_map);
+
+        const tblBody_select = el_MSSS_tblBody;
+        tblBody_select.innerText = null;
+
+// ---  add All to list when multiple employees / functions exist
+        if(data_map.size){
+            const caption = (tblName === "student") ? loc.Candidates : loc.Subjects;
+            const add_all_text = "<" + loc.All + caption.toLowerCase() + ">";
+            const add_all_dict = (tblName === "student") ? {id: -1, examnumber: "", fullname: add_all_text} :  {id: -1,  code: "", name: add_all_text};
+            MSSS_Create_SelectRow(tblName, tblBody_select, add_all_dict, mod_MSSS_dict.sel_pk)
+        }
+// ---  loop through dictlist
+        for (const [map_id, map_dict] of data_map.entries()) {
+            MSSS_Create_SelectRow(tblName, tblBody_select, map_dict, mod_MSSS_dict.sel_pk)
+
+        }
+    } // MSSS_Fill_SelectTable
+
+//========= MSSS_Create_SelectRow  ============= PR2020-12-18
+    function MSSS_Create_SelectRow(tblName, tblBody_select, dict, selected_pk) {
+        console.log("===== MSSS_Create_SelectRow ===== ", tblName);
+
+//--- get info from item_dict
+        //[ {pk: 2608, code: "Colpa de, William"} ]
+        const pk_int = dict.id;
+        const code = (tblName === "student") ? dict.examnumber : dict.code
+        const name = (tblName === "student") ? dict.fullname : dict.name
+        const is_selected_row = (pk_int === selected_pk);
+
+//--------- insert tblBody_select row at end
+        const map_id = "sel_" + tblName + "_" + pk_int
+        const tblRow = tblBody_select.insertRow(-1);
+
+        tblRow.id = map_id;
+        tblRow.setAttribute("data-pk", pk_int);
+        tblRow.setAttribute("data-code", code);
+        tblRow.setAttribute("data-value", name);
+        tblRow.setAttribute("data-table", tblName);
+        const class_selected = (is_selected_row) ? cls_selected: cls_bc_transparent;
+        tblRow.classList.add(class_selected);
+
+//- add hover to select row
+        add_hover(tblRow)
+
+// --- add td to tblRow.
+        let td = tblRow.insertCell(-1);
+        let el_div = document.createElement("div");
+            el_div.classList.add("pointer_show")
+            el_div.innerText = code;
+            el_div.classList.add("tw_075", "px-1")
+            td.appendChild(el_div);
+
+        td.classList.add("tsa_bc_transparent")
+// --- add td to tblRow.
+        td = tblRow.insertCell(-1);
+        el_div = document.createElement("div");
+            el_div.classList.add("pointer_show")
+            el_div.innerText = name;
+            el_div.classList.add("tw_270", "px-1")
+            td.appendChild(el_div);
+        td.classList.add("tsa_bc_transparent")
+
+//--------- add addEventListener
+        tblRow.addEventListener("click", function() {MSSS_HandleSelectRow(tblRow, event.target)}, false);
+    } // MSSS_Create_SelectRow
+
+//========= MSSS_display_in_sbr  ====================================
+    function MSSS_display_in_sbr() {
+        console.log( "===== MSSS_display_in_sbr  ========= ");
+        console.log( "mod_MSSS_dict ",mod_MSSS_dict);
+
+        let student_text = "",  subject_text = "";
+        if (mod_MSSS_dict.sel_table === "student") {
+            selected_student_pk = (mod_MSSS_dict.sel_pk) ? mod_MSSS_dict.sel_pk: null;
+            if (mod_MSSS_dict.sel_pk) { selected_subject_pk = null};
+            student_text = (selected_student_pk) ? mod_MSSS_dict.sel_value : null;
+        } else if (mod_MSSS_dict.sel_table === "subject") {
+            selected_subject_pk =  (mod_MSSS_dict.sel_pk) ? mod_MSSS_dict.sel_pk : null;
+            if (mod_MSSS_dict.sel_pk) {selected_student_pk = null};
+            subject_text = (selected_subject_pk) ? mod_MSSS_dict.sel_code  : null;
+        }
+
+        el_SBR_select_student.value = student_text;
+        el_SBR_select_subject.value = subject_text;
+
+        let header_text = "";
+        if (selected_student_pk){
+            header_text = mod_MSSS_dict.sel_value
+            if (selected_subject_pk){ header_text +=  " - " + mod_MSSS_dict.sel_value}
+        } else if (selected_subject_pk){
+            header_text = mod_MSSS_dict.sel_value;
+        }
+        document.getElementById("id_hdr_left").innerText = header_text
+
+    }; // MSSS_display_in_sbr
+
+
+//=========  MSSS_HandleSelectRow  ================ PR2020-12-17
+    function MSSS_HandleSelectRow(tblRow) {
+        console.log( "===== MSSS_HandleSelectRow ========= ");
+        //console.log( tblRow);
+        // all data attributes are now in tblRow, not in el_select = tblRow.cells[0].children[0];
+// ---  get clicked tablerow
+        if(tblRow) {
+// ---  deselect all highlighted rows
+            DeselectHighlightedRows(tblRow, cls_selected)
+// ---  highlight clicked row
+            tblRow.classList.add(cls_selected)
+// ---  get pk en code from id of select_tblRow
+            mod_MSSS_dict.sel_pk = get_attr_from_el_int(tblRow, "data-pk");
+            mod_MSSS_dict.sel_code = get_attr_from_el(tblRow, "data-code");
+            mod_MSSS_dict.sel_value = get_attr_from_el(tblRow, "data-value");
+            mod_MSSS_dict.sel_table = get_attr_from_el(tblRow, "data-table");
+// ---  filter rows wth selected pk
+            MSSS_Save()
+        }
+// ---  put value in input box, reste when no tblRow
+            el_MSSS_input.value = get_attr_from_el(tblRow, "data-value")
+
+    }  // MSSS_HandleSelectRow
+
+//=========  MSSS_InputKeyup  ================ PR2020-09-19
+    function MSSS_InputKeyup() {
+        console.log( "===== MSSS_InputKeyup  ========= ");
+
+// ---  get value of new_filter
+        let new_filter = el_MSSS_input.value
+
+        let tblBody = el_MSSS_tblBody;
+        const len = tblBody.rows.length;
+        if (new_filter && len){
+// ---  filter rows in table select_employee
+            const filter_dict = t_Filter_SelectRows(tblBody, new_filter);
+        console.log( "filter_dict", filter_dict);
+// ---  if filter results have only one employee: put selected employee in el_MSSS_input
+            const selected_pk = get_dict_value(filter_dict, ["selected_pk"])
+            const selected_value = get_dict_value(filter_dict, ["selected_value"])
+            if (selected_pk) {
+                el_MSSS_input.value = selected_value;
+// ---  put pk of selected employee mod_MSSS_dict.sel_pk
+                mod_MSSS_dict.sel_pk = selected_pk;
+                mod_MSSS_dict.sel_code = selected_value;
+// ---  Set focus to btn_save
+                el_MSSS_btn_save.focus()
+            }  //  if (!!selected_pk) {
+        }
+    }; // MSSS_InputKeyup
+
+// +++++++++++++++++ END OF MODAL SELECT SUBJECT STUDENT ++++++++++++++++++++++++++++++++
+
+
+
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03
     function ModConfirmOpen(mode, el_input) {
@@ -1892,6 +2191,12 @@ console.log("document.addEventListener students" )
         }
     }  // ModConfirmResponse
 
+//=========  ModMessageClose  ================ PR2020-12-20
+    function ModMessageClose() {
+        console.log(" --- ModMessageClose --- ");
+        //console.log("mod_dict: ", mod_dict);
+
+    }  // ModMessageClose
 //###########################################################################
 // +++++++++++++++++ REFRESH DATA MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -1909,8 +2214,8 @@ console.log("document.addEventListener students" )
 
 //=========  RefreshDatamapItem  ================ PR2020-08-16 PR2020-09-30
     function RefreshDatamapItem(tblName, field_names, update_dict, data_map) {
-        //console.log(" --- RefreshDatamapItem  ---");
-        //console.log("update_dict", update_dict);
+        console.log(" --- RefreshDatamapItem  ---");
+        console.log("update_dict", update_dict);
         if(!isEmpty(update_dict)){
 // ---  update or add update_dict in subject_map
             let updated_columns = [];
@@ -1930,16 +2235,13 @@ console.log("document.addEventListener students" )
     // ---  create row in table., insert in alphabetical order
                 let order_by = (update_dict.fullname) ? update_dict.fullname.toLowerCase() : ""
                 const row_index = t_get_rowindex_by_orderby(tblBody_datatable, order_by)
-                tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, update_dict, row_index)
-
+                tblRow = CreateTblRow(map_id, update_dict, row_index)
     // ---  scrollIntoView,
                 if(tblRow){
                     tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
     // ---  make new row green for 2 seconds,
                     ShowOkElement(tblRow);
                 }
-                // ---  remove the row without subject, if it exists
-                remove_studsubjrow_without_subject(map_id);
 
 // ++++ deleted ++++
             } else if(is_deleted){
@@ -1959,6 +2261,8 @@ console.log("document.addEventListener students" )
     // ---  update item
                 data_map.set(map_id, update_dict)
             }
+
+        console.log("tblRow", tblRow);
     // ---  make update
             // note: when updated_columns is empty, then updated_columns is still true.
             // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
@@ -1968,14 +2272,20 @@ console.log("document.addEventListener students" )
                     ShowOkElement(tblRow);
                 } else {
     // loop through cells of row
-                    for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
-                        if (el){
-                            el_fldName = get_attr_from_el(el, "data-field")
-                            UpdateField(el, update_dict);
-    // make gield green when field name is in updated_columns
-                            if(updated_columns.includes(el_fldName)){
-                                ShowOkElement(el);
-                            }}}}}
+                    for (let i = 1, el_fldName, td, el; td = tblRow.cells[i]; i++) {
+                        if (td){
+                            el = td.children[0];
+                            if(el){
+                                el_fldName = get_attr_from_el(el, "data-field")
+            console.log("updated_columns", updated_columns);
+            console.log("el_fldName", el_fldName);
+                                 if(updated_columns.includes(el_fldName)){
+            console.log("el_fldName", el_fldName);
+                                UpdateField(el, update_dict);
+        // make gield green when field name is in updated_columns
+                                if(updated_columns.includes(el_fldName)){
+                                    ShowOkElement(el);
+             }}}}}}}
         }
     }  // RefreshDatamapItem
 
@@ -1992,29 +2302,10 @@ console.log("document.addEventListener students" )
         return data_list
     }  //  fill_data_list
 
-//=========  remove_studsubjrow_without_subject  ================ PR2020-12-20
-    function remove_studsubjrow_without_subject(map_id) {
-        //console.log(" --- remove_studsubjrow_without_subject  ---");
-        //console.log("map_id", map_id);
-        // function removes row of this student without subject (if it exists)
-        if (map_id) {
-            const arr = map_id.split("_");
-            if (arr.length === 3){
-                const mapid_empty_row =  arr[0] + "_" + arr[1] + "_"
-                const tblRow = document.getElementById(mapid_empty_row);
-    //--- delete tblRow
-                if (tblRow){
-                    const tblBody = tblRow.parentNode
-                    if (tblBody){ tblBody.removeChild(tblRow) };
-                }
-            }
-        }
-    }  //  remove_studsubjrow_without_subject
-
 
 //###########################################################################
 // +++++++++++++++++ SIDEBAR SELECT TABLE STUDENTS ++++++++++++++++++++++++++
-
+/*
 //========= SBR_FillSelectTable  ============= PR2020-11-14
     function SBR_FillSelectTable(selected_pk) {
         //console.log( "=== SBR_FillSelectTable === ");
@@ -2064,7 +2355,7 @@ console.log("document.addEventListener students" )
             td.innerText = loc.No_candidates;
         }
     } // SBR_FillSelectTable
-
+*/
 
 //=========  SBR_SelectRowClicked  ================ PR2020-11-15
     function SBR_SelectRowClicked(sel_tblRow) {
@@ -2184,6 +2475,7 @@ console.log("document.addEventListener students" )
 // ---  loop through tblBody.rows
         for (let i = 0, tblRow, show_row; tblRow = tblBody.rows[i]; i++) {
             show_row = ShowTableRow(tblRow, tblName_settings)
+            show_row = true
             add_or_remove_class(tblRow, cls_hide, !show_row)
         }
     }; // Filter_TableRows
@@ -2288,41 +2580,7 @@ console.log("document.addEventListener students" )
        };
         FillTblRows();
     }  // function ResetFilterRows
-    //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-// +++++++++++++++++ MODAL SELECT EXAMYEAR SCHOOL DEPARTMENT  ++++++++++++++++++++
-// functions are in table.js, except for MSESD_Response
-
-//=========  MSESD_Response  ================ PR2020-12-18
-    function MSESD_Response(tblName, pk_int) {
-        console.log( "===== MSESD_Response ========= ");
-        console.log( "tblName", tblName);
-        console.log( "pk_int", pk_int);
-
-// ---  upload new setting
-        const selected_pk_dict = {}
-        if (tblName === "examyear") {
-            selected_pk_dict.sel_examyear_pk = pk_int;
-        } else if (tblName === "school") {
-            selected_pk_dict.sel_schoolbase_pk = pk_int;
-            selected_pk_dict.sel_depbase_pk = null;
-        } else if (tblName === "department") {
-            selected_pk_dict.sel_depbase_pk = pk_int;
-        }
-        const new_setting = {page_studentsubjects: {mode: "get"}, selected_pk: selected_pk_dict};
-        const datalist_request = {setting: new_setting};
-
-// also retrieve the tables that have been changed because of the change in school / dep
-        datalist_request.student_rows = {get: true};
-        datalist_request.studentsubject_rows = {get: true};
-        datalist_request.grade_rows = {get: true};
-        datalist_request.schemeitem_rows = {get: true};
-
-        DatalistDownload(datalist_request);
-
-    }  // MSESD_Response
 //###########################################################################
-
-
 
 //========= get_tblName_from_selectedBtn  ======== // PR2020-11-14
     function get_tblName_from_selectedBtn() {
@@ -2336,5 +2594,399 @@ console.log("document.addEventListener students" )
                          (tblName === "studsubj") ? studentsubject_map : null;
         return data_map;
     }
+
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// +++++++++++++++++ MODAL SELECT EXAMYEAR ++++++++++++++++++++
+//=========  ModSelectExamyear_Open  ================ PR2020-10-27
+    function ModSelectExamyear_Open() {
+        //console.log( "===== ModSelectExamyear_Open ========= ");
+
+        //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
+        if (!isEmpty(loc)) {
+            mod_dict = {examyear_pk: setting_dict.sel_examyear_pk, table: "examyear"};
+    // ---  fill select table
+            ModSelectExamyear_FillSelectTable(0);  // 0 = selected_pk
+    // ---  show modal
+            $("#id_mod_select_examyear").modal({backdrop: true});
+            }
+    }  // ModSelectExamyear_Open
+
+//=========  ModSelectExamyear_Save  ================ PR2020-10-28
+    function ModSelectExamyear_Save() {
+        console.log("===  ModSelectExamyear_Save =========");
+        console.log("mod_dict", mod_dict);
+// selected_pk: {sel_examyear_pk: 23, sel_schoolbase_pk: 15, sel_depbase_pk: 1}
+
+// ---  upload new setting
+        const datalist_request = {
+            setting: {page_grade: {mode: "get"}, sel_examyear_pk: mod_dict.examyear_pk},
+            examyear_rows: {get: true}
+        };
+        DatalistDownload(datalist_request);
+
+// hide modal
+        $("#id_mod_select_examyear").modal("hide");
+
+    }  // ModSelectExamyear_Save
+
+//=========  ModSelectExamyear_SelectItem  ================ PR2020-10-28
+    function ModSelectExamyear_SelectItem(tblRow) {
+        //console.log( "===== ModSelectExamyear_SelectItem ========= ");
+        //console.log( tblRow);
+        // all data attributes are now in tblRow, not in el_select = tblRow.cells[0].children[0];
+// ---  get clicked tablerow
+        if(tblRow) {
+// ---  deselect all highlighted rows
+            DeselectHighlightedRows(tblRow, cls_selected)
+// ---  highlight clicked row
+            tblRow.classList.add(cls_selected)
+// ---  get pk from id of select_tblRow
+            let data_pk = get_attr_from_el(tblRow, "data-pk", 0)
+            mod_dict.examyear_pk = (Number(data_pk)) ? Number(data_pk) : 0
+
+            ModSelectExamyear_Save()
+        }
+    }  // ModSelectExamyear_SelectItem
+
+//=========  ModSelectExamyear_FillSelectTable  ================ PR2020-08-21
+    function ModSelectExamyear_FillSelectTable(selected_pk) {
+        console.log( "===== ModSelectExamyear_FillSelectTable ========= ");
+        console.log( "selected_pk", selected_pk);
+        const tblBody_select = el_MSEY_tblBody_select;
+        tblBody_select.innerText = null;
+
+        let row_count = 0;
+// --- loop through data_map
+        const data_map = examyear_map;
+        if(data_map){
+            for (const [map_id, map_dict] of data_map.entries()) {
+                ModSelectExamyear_FillSelectRow(map_dict, tblBody_select, selected_pk);
+                row_count += 1;
+            };
+        }  // if(!!data_map)
+
+        if(!row_count){
+            let tblRow = tblBody_select.insertRow(-1);
+            let td = tblRow.insertCell(-1);
+            td.innerText = loc.No_exam_years;
+
+        } else if(row_count === 1){
+            let tblRow = tblBody_select.rows[0]
+            if(tblRow) {
+// ---  highlight first row
+                tblRow.classList.add(cls_selected)
+            }
+        }
+    }  // ModSelectExamyear_FillSelectTable
+
+//=========  ModSelectExamyear_FillSelectRow  ================ PR2020-10-27
+    function ModSelectExamyear_FillSelectRow(map_dict, tblBody_select, selected_pk) {
+        //console.log( "===== ModSelectExamyear_FillSelectRow ========= ");
+        //console.log( "map_dict: ", map_dict);
+
+//--- loop through data_map
+        let pk_int = null, code_value = null, is_selected_pk = false;
+        pk_int = map_dict.examyear_id;
+        code_value = (map_dict.examyear_int) ? map_dict.examyear_int.toString() : "---"
+        is_selected_pk = (selected_pk != null && pk_int === selected_pk)
+// ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
+        let tblRow = tblBody_select.insertRow(-1);
+        tblRow.setAttribute("data-pk", pk_int);
+        //tblRow.setAttribute("data-ppk", ppk_int);
+        tblRow.setAttribute("data-value", code_value);
+// ---  add EventListener to tblRow
+        tblRow.addEventListener("click", function() {ModSelectExamyear_SelectItem(tblRow)}, false )
+// ---  add hover to tblRow
+        add_hover(tblRow);
+// ---  highlight clicked row
+        //if (is_selected_pk){ tblRow.classList.add(cls_selected)}
+// ---  add first td to tblRow.
+        let td = tblRow.insertCell(-1);
+// --- add a element to td., necessary to get same structure as item_table, used for filtering
+        let el_div = document.createElement("div");
+            el_div.innerText = code_value;
+            el_div.classList.add("tw_090", "px-4", "pointer_show" )
+        td.appendChild(el_div);
+// --- add second td to tblRow with icon locked, published or activated.
+        td = tblRow.insertCell(-1);
+        el_div = document.createElement("div");
+            el_div.classList.add("tw_032", "stat_1_6")
+        td.appendChild(el_div);
+    }  // ModSelectExamyear_FillSelectRow
+
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// +++++++++++++++++ MODAL SELECT SCHOOL OR DEPARTMENT ++++++++++++++++++++
+// functions are in table.js, except for MSESD_Response
+
+//=========  MSESD_Response  ================ PR2020-12-18
+    function MSESD_Response(tblName, pk_int) {
+        console.log( "===== MSESD_Response ========= ");
+        console.log( "tblName", tblName);
+        console.log( "pk_int", pk_int);
+
+// ---  upload new setting
+        let new_setting = {page_grade: {mode: "get"}};
+        if (tblName === "school") {
+            new_setting.selected_pk = {sel_schoolbase_pk: pk_int, sel_depbase_pk: null}
+        } else {
+            new_setting.selected_pk = {sel_depbase_pk: pk_int}
+        }
+        const datalist_request = {setting: new_setting};
+
+// also retrieve the tables that have been changed because of the change in school / dep
+        datalist_request.student_rows = {get: true};
+        datalist_request.studentsubject_rows = {get: true};
+        datalist_request.grade_rows = {get: true};
+        datalist_request.schemeitem_rows = {get: true};
+
+        DatalistDownload(datalist_request);
+
+    }  // ModSelSchOrDep_Save
+
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+//========= ValidateGrade  =============== PR2020-12-20
+    function ValidateGrade(loc, fldName, value, dict){
+        console.log(" --- ValidateGrade ---")
+        console.log("fldName", fldName, "value", value)
+        console.log("dict", dict)
+        const err_list = loc.grade_err_list
+        const is_score = (["pescore", "cescore"].indexOf(fldName) > -1);
+        const is_grade = (["segrade", "pegrade", "cegrade"].indexOf(fldName) > -1);
+        //const is_se = (fldName === "segrade");
+        const is_pe_or_ce = (["pescore", "pegrade", "cescore", "cegrade"].indexOf(fldName) > -1);
+        //console.log("is_score", is_score, "is_grade", is_grade)
+// 1. reset output parameters
+        let output_text = null, msg_err = null;
+// 2. exit als strInputValue  niet ingevuld (strMsgText = vbNullString, geen foutmelding)
+        if(value){
+// 3. exit als kandidaat is vergrendeld 'PR2016-03-27
+            if (dict.ey_locked) { msg_err = err_list.examyear_locked} else
+            if (dict.school_locked) { msg_err = err_list.school_locked} else
+            if (dict.stud_locked) {msg_err = err_list.candidate_locked};
+
+            if(!msg_err){
+    // 4. exit als dit vak bewijs van kennis heeft. Dan is invoer gegevens geblokkeerd. Ga naar Rpt_Ex6_BewijsKennis om Bewijs van Kennis te wissen. 'PR2017-01-04
+            // PR2010-06-10 mail Lorraine Wieske: kan geen PE cjfers corrigeren. Weghalen
+            //If KvHasBewijsKennis Then
+            //    strMsgText = "Vak heeft Bewijs van Kennis en is daarom vergrendeld." & vbCrLf & "Ga naar Rapportages Ex6 om Bewijs van Kennis zo nodig te wissen."
+    // 5. exit als VakSchemaItemID niet ingevuld
+            // not possible because of foreign key required
+
+    // 6. Corona: check if no_centralexam
+                if (is_pe_or_ce) {
+                    if(dict.no_centralexam) {
+                        msg_err = err_list.no_ce_this_ey;
+                    } else if(dict.no_thirdperiod) {
+    // 6. Corona: check if no_thirdperiod
+                        msg_err = err_list.no_3rd_period;
+                    }
+                } else if(dict.is_combi){
+    // 6. Corona: reexamination not allowed for combination subjects, except when combi_reex_allowed
+                    if([2, 3].indexOf(dict.examperiod) > -1) {
+                        if(!combi_reex_allowed){
+                            msg_err = err_list.reex_combi_notallowed;
+                        }
+                    }
+                }
+            }
+            if(!msg_err){
+    // 6. afterCorona: check if exemption has no_centralexam,  PR2020-12-16
+                // skip when iseveningstudent school or islexschool
+                if(dict.examperiod === 4) {
+                    if(dict.no_exemption_ce) {
+                        if(!dict.iseveningstudent && !islexschool) {
+                            msg_err = err_list.exemption_no_ce;
+                        }
+                    }
+                }
+            }
+            if(!msg_err){
+        // 6. controleer Praktijkexamen 'PR2019-02-22 'PR2015-12-08
+                //wordt ook ingesteld buiten deze functie, in Form_K_BL_Resultaten.Form_Current en Form_C_CL_Resultaten.Form_Current  'PR2016-03-04
+                if (fldName === "pegrade") {
+                    if(dict.no_practexam) {
+                        msg_err = err_list.no_pe_examyear;
+                    } else if (!dict.has_practexam) {
+                        msg_err = err_list.subject_no_pe;
+                    }
+                }
+            }
+
+    // 7. controleer Herexamen 'PR2015-12-13
+            // not necessary PR2020-12-16
+            // if (dict.examperiod === 2){
+            // } else if (dict.examperiod === 3)
+
+            if(!msg_err){
+        // 8. controleer ce cijfer van combivak
+                // 'PR2019-05-03 keuze-combi weer uitgeschakeld. Was:   Or KvIsKeuzeCombiVak Then 'PR2016-05-30 KeuzeCombi toegevoegd. Was: If VsiIsCombinatieVak Then
+                if (is_pe_or_ce){
+                    if(dict.is_combi){
+            // 6. reexamination not allowed for combination subjects, except when Corona
+                        if(dict.examperiod === 1) {
+                            const caption = (fldName ==="pescore") ? "Praktijkscore" :
+                                (fldName ==="cescore") ? "CE-score" :
+                                (fldName ==="pegrade") ? "Praktijkcijfer" :
+                                (fldName ==="cegrade") ? "CE-cijfer" : null;
+                            msg_err = caption +  err_list.notallowed_in_combi;
+                        } else if([2, 3].indexOf(dict.examperiod) > -1) {
+                            // 'PR2020-05-15 Corona: herkansing wel mogelijk bij combivakken
+                            if(!combi_reex_allowed){
+                                msg_err = err_list.reex_notallowed_in_combi;
+                            }
+                        }
+                    }
+                }
+            }
+            if(!msg_err){
+    // 8. controleer weging
+                if (fldName === "segrade") {
+                    if (!dict.weight_se) {
+                        msg_err = err_list.weightse_is_0;
+                    }
+                } else if (["pescore", "cescore", "pegrade", "cegrade"].indexOf(fldName) > -1){
+                    if (!dict.weight_ce) {
+                        if (is_score){
+                            msg_err = err_list.weightce_0_noscore;
+                        } else {
+                            msg_err = err_list.weightce_0_nograde;
+                        }
+                    }
+                }
+            }
+            if(!msg_err){
+// A. SCORE
+    // 1. controleer score PR2015-12-27 PR2016-01-03
+                if (is_score){
+                    // this is already covered by 'no_practexam' and 'no_centralexam'
+                    // 'PR2020-05-15 Corona: geen scores
+                    // strMsgText = "Er kunnen geen scores ingevuld worden in examenjaar " & ExkExamenjaar & "."
+
+                    //PR2015-12-27 debug: vervang komma door punt, anders wordt komma genegeerd
+                    const value_with_dots = value.replaceAll(",", ".");
+                    const value_number = Number(value_with_dots);
+                    if(!value_number){
+                        msg_err = err_list.score_mustbe_number;
+                    } else if (value_number < 0) {
+                        msg_err = err_list.score_mustbe_gt0; // "Score moet een getal groter dan nul zijn."
+                    } else if (value_number % 1 !== 0 ) {
+                        // the remainder / modulus operator (%) returns the remainder after (integer) division.
+                        msg_err = err_list.score_mustbe_wholenumber;
+                    }
+                    // TODO check if score is within scalelength of norm
+
+                    if (! msg_err ) {output_text = value_number.toString()};
+                //dict.scalelength_ce, dict.scalelength_pe, dict.scalelength_reex
+
+                  //  If Not VsiLschaal = vbNullString Then
+                  //      If IsNumeric(VsiLschaal) Then
+                  //          If CCur(strInputValue) > CCur(VsiLschaal) Then
+                  //              strMsgText = "Score moet kleiner of gelijk zijn aan " & IIf(VsiIsETEnorm, "max. score", "schaallengte") & " (" & VsiLschaal & ")."
+
+//B. CIJFER
+                } else if (is_grade){
+                //1. exit als CijferType VoldoendeOnvoldoende is en inputcijfer niet booIsOvg is
+               //         'PR2014-12-10 debug: gaf fout bij importeren cijfers omdat daar gebruik wordt gemaakt van pssVakSchema, niet van pblVakSchema
+                //            'Was: If pblVakSchema.Vsi_CijferTypeID = conCijferType02_VoldoendeOnvoldoende Then 'PR 3 okt 09 was: Me.cijferTypeID = 2 Then
+
+        //GRADETYPE_00_NONE = 0
+        //GRADETYPE_01_NUMBER = 1
+        //GRADETYPE_02_CHARACTER = 2  # goed / voldoende / onvoldoende
+                    if(value)
+                        if (dict.gradetype === 0) {//GRADETYPE_00_NONE = 0
+                            msg_err = err_list.gradetype_none;//  "Cijfertype 'Geen cijfer'. Er kan geen cijfer ingevuld worden." 'PR2016-02-14
+                        } else if (dict.gradetype === 2) {  //GRADETYPE_02_CHARACTER = 2  # goed / voldoende / onvoldoende
+                            const value_lc = value.toLowerCase();
+                            if (!["o", "v", "g"].includes(value_lc)){
+                                msg_err = err_list.gradetype_ovg;  //"Het cijfer kan alleen g, v of o zijn."
+                            } else {
+                                output_text = value_lc;
+                            }
+                        } else if (dict.gradetype === 1) {  //GRADETYPE_01_NUMBER = 1
+                            // GetNumberFromInputGrade wordt alleen gebruikt om te controleren of cijfer een correct getal is, strMsgText<>"" als fout   'PR2016-03-04
+                            const arr = GetNumberFromInputGrade(loc, value);
+                            output_text = arr[0];
+                            msg_err = arr[1];
+                        }
+                    }  //   if (["segrade",
+                }
+        }  // if(value)
+
+        console.log("output_text", output_text)
+        console.log("msg_err", msg_err)
+       return [output_text, msg_err]
+    }  // ValidateGrade
+////////////////////////////////////////////////
+
+
+//========= GetNumberFromInputGrade  =============== PR2020-12-16
+    function GetNumberFromInputGrade(loc, input_value){
+        console.log(" --- GetNumberFromInputGrade ---")
+        console.log("input_value", input_value)
+        const err_list = loc.grade_err_list
+        //Functie maakt getal van string 15 jan 07, 29 jan 12, 3 mei 13
+        //string heeft formaat "5,6", "5.6", "56"  1 cijfer achter de komma, exit als Cijfer <= 0 of  > 100
+        //Functie wordt aangeroepen door  CalcPassedFailed.Calculations, CalcEindcijfer, CalcEindcijfer_Cijfer, k_v_Calc02_Count 'PR2016-02-07 PR2016-04-16 PR2017-02-28
+        //Functie wordt ook aangeroepen door Functions_ValidateValues.Validate_InputCijfer, alleen om te controleren of cijfer een correct getal is  'PR2016-03-04
+
+        // zowel punt als komma zijn toegestaan als delimiter (delimiter wordt niet meer gebruikt in deze functie PR2016-03-04
+
+        //NB: gebruikt geen Regional Settings meer. Andere benadering, omdat de functie CDbl in Access 2010 foutmelding geeft... PR 3 mei 13
+        //PR2015-06-12 debug: rekenfout bij Double> omgezet in Currency. Was: GetNumericFromInputCijfer(ByVal strNumber As String) As Double en Dim crcNumber As Double
+        //PR2019-03-28 strCaptionText toegevoegd voor Form_C_N_Normen
+        //Functie maakt getal van gemidCSE PR2015-10-04
+        //zowel punt als komma zijn toegestaan als delimiter
+        //PR2016-03-04 debug HvD: LET OP REGIONAL SETTINGS: Access werkt met komma's bij Nederlandse setting. Opgelost door niet meer met decimalen te werken
+
+// 1. reset output variables
+        let output_text = 0, msg_err = null;
+// 2. remove spaces before and after input_value
+        const imput_trim = (input_value) ? input_value.trim() : null;
+// 3. exit if imput_trim has no value, without msg_err
+        if (imput_trim) {
+// 5. vervang komma's door punten
+            const input_with_dots = imput_trim.replaceAll(",", ".");
+// 6. exit als strCijfer niet Numeric is
+            if(!Number(input_with_dots)){
+                msg_err = loc.Grade +  " '" + imput_trim + "' " + err_list.is_not_allowed + "\n" +err_list.Grade_mustbe_between_1_10
+            } else {
+// 7. zet strCijfer om in Currency (crcCijfer is InputCijfer * 10 bv: 5,6 wordt 56 en .2 wordt 2
+                let input_number = Number(input_with_dots);
+// 8. replace '67' bij '6.7', only when it has no decimal places and is between 11 thru 99
+                // the remainder / modulus operator (%) returns the remainder after (integer) division.
+                if (input_number % 1 === 0  && input_number > 10  && input_number < 100  ) {
+                    input_number = input_number / 10;
+                }
+            console.log(">>>>>>>> input_number", input_number)
+// 8. exit als crcCijfer < 10 of als  crcCijfer > 100
+                // allowed numbers are: 1 thru 10, with 1 decimal
+                 if(input_number < 1 || input_number > 10){
+                     msg_err = loc.Grade +  " '" + imput_trim + "' " + err_list.is_not_allowed + "\n" +err_list.Grade_mustbe_between_1_10
+                } else {
+// 10. exit als more than 1 digit after the dot.
+                    // multiply by 10, get remainder after division by 1, check if remainder has value
+                    // the remainder / modulus operator (%) returns the remainder after (integer) division.
+                    if ((input_number * 10) % 1) {
+                        msg_err = loc.Grade +  " '" + imput_trim + "' " + err_list.is_not_allowed + "\n" +err_list.Grade_may_only_have_1_decimal
+                    } else {
+                        output_text = input_number.toString()
+                        // replace dot by comma
+                        output_text = output_text.replaceAll(".", ",");
+                        // add ",0" if integer
+                        if (!output_text.includes(",")){
+                            output_text += ",0";
+                        }
+                    }
+                }  // if(input_number < 0 || input_number > 10)
+            }  // if(!Number(input_with_dots))
+        } // if (imput_trim)
+// 11.reurn array with output number and msg_err
+        console.log("output_text", output_text)
+        console.log("msg_err", msg_err)
+        return [output_text, msg_err]
+    }  // GetNumberFromInputGrade
+/////////////////////////////////////////////////
+
 
 })  // document.addEventListener('DOMContentLoaded', function()

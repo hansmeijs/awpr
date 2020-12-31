@@ -1,4 +1,6 @@
+    "use strict";
 
+// ============================
     // add csrftoken to ajax header to prevent error 403 Forbidden PR2018-12-03
     // from https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
     const csrftoken = Cookies.get('csrftoken');
@@ -24,7 +26,7 @@
         // PR2019-03-03 function highlights clicked menubutton
 
 // ---  get clicked button
-        if(!!btn_clicked) {
+        if(btn_clicked) {
             let menubar = btn_clicked.parentNode
 
 // ---  remove class 'active' from all buttons in this menubar
@@ -86,6 +88,88 @@
             });  // $.ajax({
         }  //  if(!!row_upload)
     };  // UploadSettings
+
+//========= UpdateHeaderbar  ================== PR2020-11-14 PR2020-12-02
+    function b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school){
+        //console.log(" --- UpdateHeaderbar ---" )
+        //console.log("setting_dict", setting_dict )
+
+// --- EXAM YEAR
+       // console.log("setting_dict.sel_examyear_pk", setting_dict.sel_examyear_pk )
+        if(el_hdrbar_examyear) {
+            let examyer_txt = "";
+            if (setting_dict.sel_examyear_pk){
+               examyer_txt = loc.Exam_year + " " + setting_dict.sel_examyear_code
+            } else {
+                // there is always an examyear selected, unless table is empty
+                examyer_txt = "<" + loc.No_examyears + ">"
+            }
+            el_hdrbar_examyear.innerText = examyer_txt;
+
+        //console.log("setting_dict.may_select_examyear", setting_dict.may_select_examyear )
+            add_or_remove_class(el_hdrbar_examyear, "awp_navbaritem_may_select", setting_dict.may_select_examyear, "awp_navbar_item" )
+
+        }
+// --- DEPARTMENT
+        if(el_hdrbar_department) {
+            const allowed_depbases_count = (setting_dict.allowed_depbases) ? setting_dict.allowed_depbases.length : 0
+            const may_select_department = (allowed_depbases_count > 1);
+
+            add_or_remove_class(el_hdrbar_department, "awp_navbaritem_may_select", may_select_department, "awp_navbar_item" )
+            let department_txt = null;
+            if (!setting_dict.sel_depbase_pk){
+                if (may_select_department) {
+                    department_txt = " <" + loc.Select_department + ">";
+                } else if (allowed_depbases_count === 0) {
+                    department_txt = " <" + loc.School_has_no_departments + ">";
+                } else {
+                    department_txt = " <" + loc.No_department_selected + ">"
+                }
+            } else {
+                if (!setting_dict.sel_examyear_pk) {
+                    department_txt = " <" + loc.No_examyear_selected + ">"
+                } else {
+                    if (!setting_dict.sel_department_pk){
+                        department_txt = " <" + loc.department_notfound_thisexamyear + ">"
+                    } else {
+                        department_txt = " " + setting_dict.sel_depbase_code
+                    }
+                }
+            }
+            el_hdrbar_department.innerText = department_txt;
+        }
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        if(el_hdrbar_school) {
+            // set hove when user has permit to goto different school.
+            const permit_select_school = setting_dict.may_select_school;
+            console.log("permit_select_school", permit_select_school )
+            add_or_remove_class(el_hdrbar_school, "awp_navbaritem_may_select", permit_select_school, "awp_navbar_item" )
+
+            let schoolname_txt = null;
+            if (!setting_dict.sel_schoolbase_pk){
+                if (setting_dict.may_select_school) {
+                    schoolname_txt = " <" + loc.Select_school + ">";
+                } else {
+                    schoolname_txt = " <" + loc.No_school + ">";
+                }
+            } else {
+                schoolname_txt = setting_dict.sel_schoolbase_code;
+                if (!setting_dict.sel_examyear_pk) {
+                    schoolname_txt += " <" + loc.No_examyear_selected + ">"
+                } else {
+                    if (!setting_dict.sel_school_pk){
+                        schoolname_txt += " <" + loc.School_notfound_thisexamyear + ">"
+                    } else {
+                        schoolname_txt += " " + setting_dict.sel_school_name
+                    }
+                }
+            }
+            el_hdrbar_school.innerText = schoolname_txt;
+        }
+    }  // UpdateHeaderbar
+
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 
 //========= isEmpty  ============= PR2019-05-11
     //PR2019-05-05 from https://coderwall.com/p/_g3x9q/how-to-check-if-javascript-object-is-empty'
@@ -160,7 +244,6 @@
             dict = default_value}
         return dict
     }  // get_dict_value
-
 
 //========= show_hide_selected_elements_byClass  ====  PR2020-02-19  PR2020-06-20
     function show_hide_selected_elements_byClass(container_classname, contains_classname, container_element) {
@@ -267,7 +350,6 @@
         return list;
     }  // select_elements_in_containerId_byClass
 
-
 //========= select_elements_in_container_byClass  ====  PR2020-10-05
     function select_elements_in_container_byClass(el_container, selectby_class) {
         // this function shows / hides elements on page, based on classnames: example: <div class="tab_show tab_shift tab_team display_hide">
@@ -285,7 +367,6 @@
         };
         return list;
     }  // select_elements_in_container_byClass
-
 
 // ++++++++++++++++ ADD REMOVE CLASS / ATTRIBUTE  +++++++++++++++
 
@@ -369,7 +450,6 @@
         el.classList.add("pointer_show")
     }  // add_hover
 
-
 //=========  append_background_class ================ PR2020-09-10
     function append_background_class(el, default_class, hover_class) {
         if (el) {
@@ -398,7 +478,6 @@
             el.addEventListener("mouseleave", function() {add_or_remove_class (el, default_class, true, hover_class)});
         };
     }  // add_hover_class
-
 
 //=========  add_hover  =========== PR2020-06-09
     function add_hover_image(el, hover_image, default_image) {
@@ -479,18 +558,33 @@
 
 //=========  b_fill_datamap  ================ PR2020-09-06
     function b_fill_datamap(data_map, rows) {
-        console.log(" --- b_fill_datamap  ---");
-        console.log("rows", rows);
+        //console.log(" --- b_fill_datamap  ---");
+        //console.log("rows", rows);
         data_map.clear();
         if (rows && rows.length) {
             for (let i = 0, dict; dict = rows[i]; i++) {
                 data_map.set(dict.mapid, dict);
             }
         }
-        console.log("data_map", data_map);
-        console.log("data_map.size", data_map.size)
+        //console.log("data_map", data_map);
+        //console.log("data_map.size", data_map.size)
     };  // b_fill_datamap
 
+
+//=========  deepcopy_dict  ================ PR2020-05-03
+    let deepcopy_dict = function copy_fnc(data_dict) {
+        //console.log(" === Deepcopy_Dict ===")
+        let dict_clone = {};
+        for(let key in data_dict) {
+            if(data_dict.hasOwnProperty(key)){
+                const value = data_dict[key];
+                if (typeof value==='object' && value!==null && !(value instanceof Array) && !(value instanceof Date)) {
+                   dict_clone[key] = copy_fnc(value);
+                } else {
+                    dict_clone[key] = value;
+        }}};
+        return dict_clone;
+    }  // deepcopy_dict
 
 //#########################################################################
 // +++++++++++++++++ DATE FUNCTIONS +++++++++++++++++++++++++++++++++++++++
@@ -509,6 +603,7 @@
         };
         return copy_JS
     }
+
 //=========  parse_dateJS_from_dateISO ================ PR2020-07-22
     function parse_dateJS_from_dateISO(date_iso) {
         //console.log( "===== parse_dateJS_from_dateISO  ========= ");
@@ -685,7 +780,7 @@
             el_msg_container.innerText = null;
             if (!isEmpty(awp_messages)) {
                 for (let i = 0 ; i <awp_messages.length; i++) {
-                    awp_message = awp_messages[i];
+                    const awp_message = awp_messages[i];
         console.log( "awp_message", awp_message)
                     if (awp_message){
 
@@ -714,3 +809,4 @@
             }
         }
     }  // render_messages
+

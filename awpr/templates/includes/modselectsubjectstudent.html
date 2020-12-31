@@ -1,12 +1,12 @@
  {% load i18n %}
 {% load static %}
 
- <!-- =================== MODAL SELECT =================== -->
-    <div class="modal" id="id_mod_select" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+ <!-- =================== MODAL SELECT SUBJECT OR STUDENT  =================== -->
+    <div class="modal" id="id_mod_select_subject_student" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg " role="document">
             <div class="modal-content">
                 <div class="modal-header tsa_bc_lightlightgrey">
-                    <h4 id="id_ModSelect_header" class="modal-title mx-2" >{% trans 'Employee' %}</h4>
+                    <h4 id="id_MSSS_header" class="modal-title mx-2" ></h4>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -16,30 +16,29 @@
                     <div class="modal_container">
 
 <!-- modal_body_left contains employee select table -->
-                        <div class="modal_body_left">
-                            <div class="content_subheader_left mx-1 my-1">
+                        <div class="modal_body_left  mx-1 my-1">
+
                                  <!-- this div is necessary to get standard structure for FilterTableRows -->
                                 <!-- <div style="overflow-x:hidden;overflow-y:auto;height:400px;width:220px"> -->
-                                <div class="tbl_div_390_220">
+                                <div class="tbl_div_390_420">
                                     <table class="table tsa_tbl mx-1 my-1">
-                                        <tbody id="id_ModSelect_tblBody_select">
+                                        <tbody id="id_MSSS_tbody_select" >
                                         </tbody>
                                     </table>
                                 </div>
-                            </div>
+
                         </div>
 
                         <div class="modal_body_right mx-2 my-2">
                             <div class="mx-2 my-2">
-                                <label id="id_ModSelect_label_input" class="mx-2 my-1"></label>
+                                <label id="id_MSSS_input_label" class="mx-2 my-1"></label>
                                 <div class="form-group">
-                                    <input id="id_ModSelect_input"
-                                        type="text"
-                                        autocomplete="off"
-                                        ondragstart="return false;"
-                                        ondrop="return false;"
-                                        class="form-control">
-                                </div>
+                                    <input id="id_MSSS_input" type="text" class="form-control"
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;"
+                                        >
+                                </div><div class="mx-2">
+                                <small id="id_MSSS_msg_input"></small>
+                                 </div>
                             </div>
                         </div>
                     </div>
@@ -47,7 +46,7 @@
                 <div class="modal-footer">
                     <div class="content_subheader_right">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
-                        <button id="id_ModSelect_btn_save" type="button" class="btn btn-primary">{% trans 'Save' %}</button>
+                        <button id="id_MSSS_btn_save" type="button" class="btn btn-primary">{% trans 'Save' %}</button>
                     </div>
                 </div>
 

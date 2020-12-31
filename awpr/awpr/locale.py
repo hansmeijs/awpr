@@ -21,6 +21,7 @@ def get_locale_dict(table_dict, user_lang):
     dict['months_long'] = TXT_months_long
 
     # select examyear, school, department
+    dict['Filter'] = _('Filter ')
     dict['Select'] = _('Select ')
     dict['Type_few_letters_and_select'] = _('Type a few letters and select ')
     dict['an_examyear'] = _('an exam year')
@@ -30,6 +31,21 @@ def get_locale_dict(table_dict, user_lang):
 
     dict['No__'] = pgettext_lazy('No ... selected', 'No ')
     dict['__selected'] = pgettext_lazy('No ... selected.', ' selected.')
+
+    dict['Select_examyear'] = _('Select an exam year')
+    dict['Select_school'] = _('Select a school')
+    dict['Select_department'] = _('Select a department')
+
+    dict['No_examyear_selected'] = _('No exam year selected')
+    dict['No_school'] = _('No school')
+    dict['No_department_selected'] = _('No department selected')
+
+    dict['No_examyears'] = _('No exam years')
+    dict['No_schools'] = _('No schools')
+    dict['No_departments'] = _('No departments')
+    dict['School_has_no_departments'] = _('School has no departments')
+    dict['School_notfound_thisexamyear'] = _('School not found in this exam year')
+    dict['Department_notfound_thisexamyear'] = _('Department not found in this exam year')
 
     # mod confirm
     dict['will_be_deleted'] = _(' will be deleted.')
@@ -47,15 +63,30 @@ def get_locale_dict(table_dict, user_lang):
     dict['Exam_year'] = _('Exam year')
     dict['Subject'] = _('Subject')
     dict['Subjects'] = _('Subjects')
+    dict['Level'] = _('Level')
     dict['Levels'] = _('Levels')
+    dict['Sector'] = _('Sector')
+    dict['SectorProfiel'] = _('Sector/Profiel')
+    dict['SectorProfiel_twolines'] = _('Sector/\nProfiel')
+    dict['Leerweg'] = _('Leerweg')
     dict['Sectors'] = _('Sectors')
     dict['Abbreviation'] = _('Abbreviation')
+    dict['Candidate'] = _('Candidate')
+    dict['Candidates'] = _('Candidates')
     dict['Name'] = _('Name')
+    dict['Department'] = _('Department')
     dict['Departments'] = _('Departments')
     dict['Sequence'] = _('Sequence')
     dict['Inactive'] = _('Inactive')
     dict['Last_modified_on'] = _('Last modified on ')
     dict['by'] = _(' by ')
+
+    dict['Exemption'] = _('Exemption')
+    dict['Exemptions'] = _('Exemptions')
+    dict['Re_examination'] = _('Re-examination')
+    dict['Re_examinations'] = _('Re-examinations')
+    dict['Re_exam_3rd_2lns'] = _('Re-exam\n3rd period')
+    dict['Proof_of_knowledge_2lns'] = _('Proof of\nknowledge')
 
     dict['Create'] = _('Create')
     dict['Publish'] = _('Publish')
@@ -86,6 +117,11 @@ def get_locale_dict(table_dict, user_lang):
 
     dict['No_item_selected'] = _('No item selected')
 
+    # mod select subject student
+    dict['Type_afew_letters_candidate'] = _('Type a few letters of the name or exam number and select a candidate in the list.')
+    dict['Type_afew_letters_subject'] = _('Type a few letters of the name or abbreviation and select a subject in the list.')
+    dict['All'] = _('All ')
+
 # ====== PAGE UPLOAD =========================
     if page == 'upload':
         dict['Select_valid_Excelfile'] = _('Please select a valid Excel file.')
@@ -96,33 +132,32 @@ def get_locale_dict(table_dict, user_lang):
         dict['No_worksheets'] = _('There are no worksheets.')
         dict['No_worksheets_with_data'] = _('There are no worksheets with data.')
         dict['coldef_list'] = [
-            {'tsaKey': 'custcode', 'caption': _('Customer - Short name')},
-            {'tsaKey': 'custname', 'caption': _('Customer - Name')},
-            {'tsaKey': 'custidentifier', 'caption': _('Customer - Identifier')},
-            # {'tsaKey': 'custcontactname', 'caption': _('Customer - Contact name')},
-            # {'tsaKey': 'custaddress', 'caption': _('Customer - Address')},
-            # {'tsaKey': 'custzipcode', 'caption': _('Customer - Zipcode')},
-            # {'tsaKey': 'custcity', 'caption': _('Customer - City')},
-            # {'tsaKey': 'custcountry', 'caption': _('Customer - Country')},
-            # {'tsaKey': 'custemail', 'caption': _('Customer - Email address')},
-            # {'tsaKey': 'custtelephone', 'caption': _('Customer - Telephone')},
+            {'awpKey': 'custcode', 'caption': _('Customer - Short name')},
+            {'awpKey': 'custname', 'caption': _('Customer - Name')},
+            {'awpKey': 'custidentifier', 'caption': _('Customer - Identifier')},
+            # {'awpKey': 'custcontactname', 'caption': _('Customer - Contact name')},
+            # {'awpKey': 'custaddress', 'caption': _('Customer - Address')},
+            # {'awpKey': 'custzipcode', 'caption': _('Customer - Zipcode')},
+            # {'awpKey': 'custcity', 'caption': _('Customer - City')},
+            # {'awpKey': 'custcountry', 'caption': _('Customer - Country')},
+            # {'awpKey': 'custemail', 'caption': _('Customer - Email address')},
+            # {'awpKey': 'custtelephone', 'caption': _('Customer - Telephone')},
 
-            {'tsaKey': 'ordercode', 'caption': _('Order - Short name')},
-            {'tsaKey': 'ordername', 'caption': _('Order - Name')},
-            {'tsaKey': 'orderidentifier', 'caption': _('Order - Identifier')},
-            # {'tsaKey': 'ordercontactname', 'caption': _('Order - Contact name')},
-            # {'tsaKey': 'orderaddress', 'caption': _('Order - Address')},
-            #  {'tsaKey': 'orderzipcode', 'caption': _('Order - Zipcode')},
-            #  {'tsaKey': 'ordercity', 'caption': _('Order - City')},
-            # {'tsaKey': 'ordercountry', 'caption': _('Order - Country')},
-            # {'tsaKey': 'orderemail', 'caption': _('Order - Email address')},
-            # {'tsaKey': 'ordertelephone', 'caption': _('Order - Telephone')},
-            {'tsaKey': 'orderdatefirst', 'caption': _('Order - First date of order')},
-            {'tsaKey': 'orderdatelast', 'caption': _('Order - Last date of order')}]
+            {'awpKey': 'ordercode', 'caption': _('Order - Short name')},
+            {'awpKey': 'ordername', 'caption': _('Order - Name')},
+            {'awpKey': 'orderidentifier', 'caption': _('Order - Identifier')},
+            # {'awpKey': 'ordercontactname', 'caption': _('Order - Contact name')},
+            # {'awpKey': 'orderaddress', 'caption': _('Order - Address')},
+            #  {'awpKey': 'orderzipcode', 'caption': _('Order - Zipcode')},
+            #  {'awpKey': 'ordercity', 'caption': _('Order - City')},
+            # {'awpKey': 'ordercountry', 'caption': _('Order - Country')},
+            # {'awpKey': 'orderemail', 'caption': _('Order - Email address')},
+            # {'awpKey': 'ordertelephone', 'caption': _('Order - Telephone')},
+            {'awpKey': 'orderdatefirst', 'caption': _('Order - First date of order')},
+            {'awpKey': 'orderdatelast', 'caption': _('Order - Last date of order')}]
 
         dict['The_subject_data_will_be_uploaded'] = _('The subject data will be uploaded.')
         dict['Upload_subjects'] = _('Upload subjects')
-
 
 # ====== PAGE USER ========================= PR2019-11-19
     elif page == 'user':
@@ -177,7 +212,6 @@ def get_locale_dict(table_dict, user_lang):
         dict['We_will_resend_an_email_to_user'] = _('We will email a new activation link to the user.')
         dict['Activation_email_not_sent'] = _('The activation email has not been sent.')
 
-
         dict['Resend_activationlink'] = _('Click to send an email with a new activation link.')
         dict['Activated'] = _('Activated')
         dict['Resend_activation_email'] = _('Resend activation email')
@@ -200,8 +234,14 @@ def get_locale_dict(table_dict, user_lang):
         dict['Not_closed'] = _('Not closed')
         dict['Closed_on'] = _('Closed on ')
 
-        dict['Goto_other_examyear']  = _('Go to other exam year')
         dict['Examyear_successfully_created'] = _('The exam year is successfully created.')
+
+        dict['Create_examyear'] = _('Create exam year')
+        dict['Publish_examyear'] = _('Publish exam year')
+        dict['Close_examyear'] = _('Close exam year')
+        dict['Delete_examyear'] = _('Delete exam year')
+        dict['Undo_publish_examyear'] = _('Undo publish exam year')
+        dict['Undo_closure_examyear'] = _('Undo closure exam year')
 
         dict['msg_info'] = {
         'create': [
@@ -211,15 +251,21 @@ def get_locale_dict(table_dict, user_lang):
                 str(_("Schools will not be able to view the new exam year until you have published it."))
         ],
         'publish': [
-            str(_("The new exam year will be published now.")),
+            str(_("The exam year will be published now.")),
             str(_("When you have published the examyear, schools will be able to activate the new exam year and enter data.")),
             str(_("After a school has activated the new exam year, you can no longer undo the publication."))
         ],
         'close': [
-            str(_("The new exam year will be closed now.")),
+            str(_("The exam year will be closed now.")),
             str(_("After you have closed the examyear, it it no longer possible to add, change or delete data.")),
             str(_("You can undo the closure of an examyear at any time."))
-        ] }
+        ],
+        'locked': [
+            str(_("The exam year is closed.")),
+            str(_("You can undo the closure of the examyear at any time.")),
+            str(_("Click 'Undo closure exam year'."))
+        ],
+        }
 
 # ====== PAGE SUBJECTS ========================= PR2020-09-30
     elif page == 'subjects':
@@ -241,10 +287,6 @@ def get_locale_dict(table_dict, user_lang):
         dict['Delete_package'] = _('Delete package')
         dict['Upload_subjects'] = _('Upload subjects')
 
-        dict['Subject'] = _('Subject')
-        dict['Department'] = _('Department')
-        dict['Level'] = _('Level')
-        dict['Sector'] = _('Sector')
         dict['Subjecttype'] = _('Subject type')
         dict['Scheme'] = _('Scheme')
         dict['Schemeitem'] = _('Scheme item')
@@ -263,7 +305,6 @@ def get_locale_dict(table_dict, user_lang):
         dict['Departments_where'] = _('Departments, in which ')
         dict['occurs'] = _(' occurs')
         dict['All_departments'] = _('All departments')
-        dict['No_departments'] = _('No departments')
         dict['already_exists_in_departments'] = _(' already exists in one of the departments.')
 
 # ====== PAGE SCHOOLS ========================= PR2020-09-30
@@ -276,7 +317,8 @@ def get_locale_dict(table_dict, user_lang):
         dict['School'] = _('School')
         dict['Add_school'] = _('Add school')
         dict['Delete_school'] = _('Delete school')
-        dict['No_school_selected'] = _('No school selected')
+        dict['No_schools'] = _('No schools')
+
         dict['Departments_of_this_school'] = _('Departments of this school')
         dict['All_departments'] = _('All departments')
         dict['School_code'] = _('School code')
@@ -287,12 +329,158 @@ def get_locale_dict(table_dict, user_lang):
 # ====== PAGE STUDENTS ========================= PR2020-10-27
     elif page == 'students':
 
-        dict['Candidate'] = _('Candidate')
         dict['Add_candidate'] = _('Add candidate')
         dict['Delete_candidate'] = _('Delete candidate')
         dict['Upload_candidates'] = _('Upload candidates')
 
         dict['No_candidate_selected'] = _('No candidate selected')
+        dict['This_candidate_has_nosubjects_yet'] = _('This candidate has no subjects yet.')
+
+        dict['Examnumber_twolines'] = _('Exam\nnumber')
+        dict['Last_name'] = _('Last name')
+        dict['First_name'] = _('First name')
+        dict['Gender'] = _('Gender')
+        dict['ID_number'] = _('ID number')
+
+        dict['Abbrev'] = _('Abbrev.')
+        dict['_of_'] = _(' of ')
+
+        dict['No_subject_selected'] = _('No subject selected.')
+
+# - mod upload
+        dict['Upload_candidates'] = _('Upload candidates')
+        dict['Select_Excelfile_with_students'] = _('Select an Excel file with students:')
+        dict['Select_valid_Excelfile'] = _('Please select a valid Excel file.')
+        dict['Not_valid_Excelfile'] = _('This is not a valid Excel file.')
+        dict['Only'] = _('Only ')
+        dict['and'] = _(' and ')
+        dict['are_supported'] = _(' are supported.')
+        dict['No_worksheets'] = _('There are no worksheets.')
+        dict['No_worksheets_with_data'] = _('There are no worksheets with data.')
+        dict['coldef_list'] = [
+            {'awpKey': 'custcode', 'caption': _('Customer - Short name')},
+            {'awpKey': 'custname', 'caption': _('Customer - Name')},
+            {'awpKey': 'custidentifier', 'caption': _('Customer - Identifier')},
+            # {'awpKey': 'custcontactname', 'caption': _('Customer - Contact name')},
+            # {'awpKey': 'custaddress', 'caption': _('Customer - Address')},
+            # {'awpKey': 'custzipcode', 'caption': _('Customer - Zipcode')},
+            # {'awpKey': 'custcity', 'caption': _('Customer - City')},
+            # {'awpKey': 'custcountry', 'caption': _('Customer - Country')},
+            # {'awpKey': 'custemail', 'caption': _('Customer - Email address')},
+            # {'awpKey': 'custtelephone', 'caption': _('Customer - Telephone')},
+
+            {'awpKey': 'ordercode', 'caption': _('Order - Short name')},
+            {'awpKey': 'ordername', 'caption': _('Order - Name')},
+            {'awpKey': 'orderidentifier', 'caption': _('Order - Identifier')},
+            # {'awpKey': 'ordercontactname', 'caption': _('Order - Contact name')},
+            # {'awpKey': 'orderaddress', 'caption': _('Order - Address')},
+            #  {'awpKey': 'orderzipcode', 'caption': _('Order - Zipcode')},
+            #  {'awpKey': 'ordercity', 'caption': _('Order - City')},
+            # {'awpKey': 'ordercountry', 'caption': _('Order - Country')},
+            # {'awpKey': 'orderemail', 'caption': _('Order - Email address')},
+            # {'awpKey': 'ordertelephone', 'caption': _('Order - Telephone')},
+            {'awpKey': 'orderdatefirst', 'caption': _('Order - First date of order')},
+            {'awpKey': 'orderdatelast', 'caption': _('Order - Last date of order')}]
+
+        #dict['The_cancicate_data_will_be_uploaded'] = _('The candidate data will be uploaded.')
+        #dict['Upload_subjects'] = _('Upload subjects')
+        dict['linkunique_The_field'] = _("The field ")
+        dict['linkunique_One_ofthe_fields'] = _("One of the fields ")
+        dict['_or_'] = _(" or ")
+        dict['linkunique_mustbelinked_and_unique'] = _(" must be linked and contain unique values.")
+
+# ====== PAGE STUDENTSUBJECTS ========================= PR2020-12-21
+    elif page == 'studentsubjects':
+        dict['Character'] = _('Character')
+        dict['Examnumber_twolines'] = _('Exam\nnumber')
+        dict['This_candidate_has_nosubjects_yet'] = _('This candidate has no subjects yet.')
+        dict['No_subject_selected'] = _('No subject selected.')
+
+        dict['Authorized_chairman'] = _('Authorized\nchairman')
+        dict['Authorized_secretary'] = _('Authorized\nsecretary')
+        dict['Submitted'] = _('Submitted')
+        dict['Authorized_by'] = _('Authorized by')
+
+        dict['at_'] = pgettext_lazy('at_date', 'at ')
+
+
+# ====== PAGE GRADES ========================= PR2020-10-27
+    elif page == 'grades':
+
+        dict['No_candidate_selected'] = _('No candidate selected')
+        dict['This_candidate_has_nosubjects_yet'] = _('This candidate has no subjects yet.')
+
+        dict['Ex_nr'] = _('Ex.#')
+        dict['Examnumber_twolines'] = _('Exam\nnumber')
+        dict['Last_name'] = _('Last name')
+        dict['First_name'] = _('First name')
+        dict['Gender'] = _('Gender')
+        dict['ID_number'] = _('ID number')
+
+        dict['Abbrev'] = _('Abbrev.')
+
+        dict['Character'] = _('Character')
+        dict['_of_'] = _(' of ')
+
+        dict['Score'] = _('Score')
+        dict['Grade'] = _('Grade')
+        dict['PE_score'] = _('PE score')
+        dict['CE_score'] = _('CE score')
+        dict['SE_grade'] = _('SE grade')
+        dict['PE_grade'] = _('PE grade')
+        dict['CE_grade'] = _('CE grade')
+        dict['PECE_grade'] = _('PE-CE grade')
+        dict['Final_grade'] = _('Final grade')
+
+        dict['PE_score_twolines'] = _('PE-\nscore')
+        dict['CE_score_twolines'] = _('CE-\nscore')
+        dict['SE_grade_twolines'] = _('SE-\ngrade')
+        dict['PE_grade_twolines'] = _('PE-\ngrade')
+        dict['CE_grade_twolines'] = _('CE-\ngrade')
+        dict['PECE_grade_twolines'] = _('PE-CE\ngrade')
+        dict['Final_grade_twolines'] = _('Final\ngrade')
+
+        dict['No_subject_selected'] = _('No subject selected.')
+
+        dict['Select_examperiod'] = _('Select exam period')
+        dict['No_examperiods_found'] = _('No exam periods found')
+        dict['Select_examtype'] = _('Select exam type')
+        dict['No_examtypes_found'] = _('No exam types found')
+
+        # options_examperiod PR2020-12-20
+        dict['options_examperiod'] = c.EXAMPERIOD_OPTIONS
+        dict['options_examtype'] = c.EXAMTYPE_OPTIONS
+
+        dict['grade_err_list'] = {
+            'examyear_locked': _('The exam year is locked.'),
+            'school_locked': _('The school data is locked.'),
+            'candidate_locked': _('The candidate data is locked.'),
+            'no_ce_this_ey': _('There are no central exams this exam year.'),
+            'no_3rd_period': _('There is this exam year no third exam period.'),
+            'reex_combi_notallowed': _('Combination subject has no re-examination.'),
+            'exemption_no_ce': _('Exemption has no central exam this exam year.'),
+            'no_pe_examyear': _('There are no practical exams this exam year.'),
+            'subject_no_pe': _('This subject has no practical exam.'),
+            'notallowed_in_combi': _(' not allowed in combination subject.'),
+            'reex_notallowed_in_combi': _('Re-examination grade not allowed in combination subject.'),
+            'weightse_is_0': _('The SE weighing of this subject is zero.\nYou cannot enter a grade.'),
+            'weightce_0_noscore': _('The CE weighing of this subject is zero.\nYou cannot enter a score.'),
+            'weightce_0_nograde': _('The CE weighing of this subject is zero.\nYou cannot enter a grade.'),
+            'score_mustbe_number': _('The score must be a number.'),
+            'score_mustbe_gt0': _('The score must be a number greater than zero.'),
+            'score_mustbe_wholenumber': _('The score must be a whole number.'),
+            #  strMsgText = "Cijfertype 'Geen cijfer'. Er kan geen cijfer ingevuld worden." 'PR2016-02-14
+            'gradetype_none': _("Grade type has no value.\nGrades cannot be entered."),
+            # //"Het cijfer kan alleen g, v of o zijn."
+            'gradetype_ovg': _("Grade can only be 'g', 'v' or 'o'."),
+
+            'is_not_allowed': _(' is not allowed.'),
+            'Grade_mustbe_between_1_10': _('The grade must be a number between 1 and 10.'),
+            'Grade_may_only_have_1_decimal': _('The grade may only have one digit after the dot.'),
+            'Score_mustbe_between_0_and': _('The score must be a number between 0 and ')
+        }
+        # - mod upload
+
 
     return dict
 

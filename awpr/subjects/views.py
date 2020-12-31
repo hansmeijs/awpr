@@ -18,6 +18,8 @@ from django.views.generic import UpdateView, DeleteView, View, ListView, CreateV
 
 from schools import models as sch_mod
 from awpr import menus as awpr_menu
+from awpr import validators as av
+from awpr import functions as af
 
 from subjects import models as subj_mod
 
@@ -33,6 +35,7 @@ from awpr import downloads as d
 from awpr import functions as af
 from awpr import validators as av
 
+from accounts import models as acc_mod
 from schools import models as sch_mod
 from subjects import models as sbj_mod
 
@@ -681,11 +684,11 @@ class SchemeitemUploadView(View):  # PR2019-01-24
 
                                 # ------------ import values from ssi  -----------------------------------
                                 schemeitem.gradetype = int(ssi.get('grtp_id', '0'))
-                                schemeitem.weightSE = int(ssi.get('wtse', '0'))
-                                schemeitem.weightCE = int(ssi.get('wtce', '0'))
+                                schemeitem.weight_se = int(ssi.get('wtse', '0'))
+                                schemeitem.weight_ce = int(ssi.get('wtce', '0'))
                                 schemeitem.is_mandatory = (ssi.get('mand', '0') == '1')
                                 schemeitem.is_combi = (ssi.get('comb', '0') == '1')
-                                schemeitem.choicecombi_allowed = (ssi.get('chal', '0') == '1')
+                                schemeitem.elective_combi_allowed = (ssi.get('chal', '0') == '1')
                                 schemeitem.has_practexam = (ssi.get('prac', '0') == '1')
 
                                 schemeitem.save(request=self.request)
@@ -724,41 +727,50 @@ class SubjectListView(View):
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
 
-        requsr_examyear = sch_mod.Examyear.objects.get_or_none(country_id=request.user.country_id, pk=request.user.examyear_id)
-        requsr_examyear_text = str(_('Examyear')) + ' ' + str(requsr_examyear) if requsr_examyear else _('<No examyear selected>')
+        #requsr_examyear = sch_mod.Examyear.objects.get_or_none(country_id=request.user.country_id, pk=request.user.examyear_id)
+        #requsr_examyear_text = str(_('Examyear')) + ' ' + str(requsr_examyear) if requsr_examyear else _('<No examyear selected>')
 
-        requsr_school = sch_mod.School.objects.get_or_none( examyear=request.user.examyear, base=request.user.schoolbase)
-        requsr_school_text = requsr_school.base.code + ' ' + requsr_school.name if requsr_school else _('<No school selected>')
+        #requsr_school = sch_mod.School.objects.get_or_none( examyear=request.user.examyear, base=request.user.schoolbase)
+        #requsr_school_text = requsr_school.base.code + ' ' + requsr_school.name if requsr_school else _('<No school selected>')
 
         # set headerbar parameters PR2018-08-06
-        params = awpr_menu.get_headerbar_param(request, {
-            'menu_key': 'subjects',
-            'examyear': requsr_examyear_text,
-            'school': requsr_school_text
-        })
+        page = 'subjects'
+        params = awpr_menu.get_headerbar_param(request, page)
+        # save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
+        acc_mod.Usersetting.set_jsonsetting('sel_page', {'page': page}, request.user)
 
         return render(request, 'subjects.html', params)
 
 
 def create_subject_rows(setting_dict, append_dict, subject_pk):
-    # --- create rows of all subjects of this examyear  PR2020-09-29 PR2020-10-30
+    # --- create rows of all subjects of this examyear  PR2020-09-29 PR2020-10-30 PR2020-12-02
     #logger.debug(' =============== create_subject_rows ============= ')
+
+    sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
+    # TODO filter sel_depbase_pk
+    sel_depbase_pk = af.get_dict_value(setting_dict, ('sel_depbase_pk',))
+
+    # lookup if sel_depbase_pk is in subject.depbases PR2020-12-19
+    # use: AND %(depbase_pk)s::INT = ANY(sj.depbases)
+    # ANY must be on the right side of =
+    # from https://lerner.co.il/2014/05/22/looking-postgresql-arrays/
     subject_rows = []
-    examyear_pk = setting_dict.get('requsr_examyear_pk')
-    if examyear_pk:
-        sql_keys = {'ey_id': examyear_pk}
+    if sel_examyear_pk:
+        sql_keys = {'ey_id': sel_examyear_pk, 'depbase_pk': sel_depbase_pk}
         sql_list = ["""SELECT sj.id, sj.base_id, sj.examyear_id,
             CONCAT('subject_', sj.id::TEXT) AS mapid,
-            sj.name, sj.abbrev, sj.sequence, sj.depbases,
+            sj.name, sb.code, sj.sequence, sj.depbases,
             sj.modifiedby_id, sj.modifiedat,
-            ey.examyear AS examyear,
+            ey.code AS examyear_code,
             SUBSTRING(au.username, 7) AS modby_username
     
             FROM subjects_subject AS sj 
+            INNER JOIN subjects_subjectbase AS sb ON (sb.id = sj.base_id) 
             INNER JOIN schools_examyear AS ey ON (ey.id = sj.examyear_id) 
             LEFT JOIN accounts_user AS au ON (au.id = sj.modifiedby_id) 
             
             WHERE sj.examyear_id = %(ey_id)s::INT
+            AND %(depbase_pk)s::INT = ANY(sj.depbases)
             """]
 
         if subject_pk:
@@ -831,10 +843,10 @@ class SubjectUploadView(View):  # PR2020-10-01
                             examyear_is_locked, examyear_has_activated_schools = av.validate_locked_activated_examyear(examyear)
                             msg_err = None #validate_employee_has_emplhours(employee)
                             if examyear_is_locked:
-                                append_dict['err_delete'] = str(_('Exam year %(exyr)s is closed.') % {'exyr': examyear.examyear} +
+                                append_dict['err_delete'] = str(_('Exam year %(exyr)s is closed.') % {'exyr': examyear.code} +
                                                                 '\n' + _('%(item)s cannot be deleted.') % {'item': this_text})
                             elif examyear_has_activated_schools:
-                                append_dict['err_delete'] = str(_('There are schools that have activated exam year %(exyr)s.') % {'exyr': examyear.examyear} +
+                                append_dict['err_delete'] = str(_('There are schools that have activated exam year %(exyr)s.') % {'exyr': examyear.code} +
                                                                 '\n' + _('%(item)s cannot be deleted.') % {'item': this_text})
                             else:
                     # b. check if there are teammembers with this employee: absence teammembers, remove employee from shift teammembers
@@ -880,20 +892,13 @@ class SubjectUploadView(View):  # PR2020-10-01
                         if error_dict:
                             append_dict['error'] = error_dict
 
-                        logger.debug('subject' + str(subject))
-
                         subject_rows = create_subject_rows(
-                            examyear=examyear,
+                            examyear_pk=examyear.pk,
                             append_dict=append_dict,
                             subject_pk=subject.pk
                         )
-                    logger.debug('subject_rows' + str(subject_rows))
-
                     if subject_rows:
                         update_wrap['updated_subject_rows'] = subject_rows
-
-        logger.debug('update_wrap' + str(update_wrap))
-
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -919,7 +924,8 @@ class SubjectImportView(View):  # PR2020-10-01
 
             # get mapped coldefs from table Companysetting
             # get stored setting from Companysetting
-            settings_json = sch_mod.Schoolsetting.get_jsonsetting(c.KEY_SUBJECT_MAPPED_COLDEFS, request.user.schoolbase)
+    #TODO get_jsonsetting returns dict
+            settings_json = sch_mod.Schoolsetting.get_jsonsetting(c.KEY_IMPORT_SUBJECT, request.user.schoolbase)
             stored_setting = json.loads(settings_json) if settings_json else {}
 
             # don't replace keyvalue when new_setting[key] = ''
@@ -976,7 +982,7 @@ class SubjectImportUploadSetting(View):   # PR2019-03-10
         schoolsetting_dict = {}
         has_permit = False
         if request.user is not None and request.user.examyear is not None and request.user.schoolbase is not None:
-            has_permit = (request.user.is_role_adm_or_sys_and_perm_adm_or_sys_)
+            has_permit = (request.user.is_role_adm_or_sys_and_perm_adm_or_sys)
         if has_permit:
             if request.POST['upload']:
                 new_setting_json = request.POST['upload']
@@ -984,12 +990,13 @@ class SubjectImportUploadSetting(View):   # PR2019-03-10
                 #logger.debug('new_setting_json' + str(new_setting_json))
 
                 new_setting_dict = json.loads(request.POST['upload'])
-                settings_key = c.KEY_SUBJECT_MAPPED_COLDEFS
+                settings_key = c.KEY_IMPORT_SUBJECT
 
                 new_worksheetname = ''
                 new_has_header = True
                 new_code_calc = ''
                 new_coldefs = {}
+    #TODO get_jsonsetting returns dict
                 stored_json = sch_mod.Schoolsetting.get_jsonsetting(settings_key, request.user.schoolbase)
                 if stored_json:
                     stored_setting = json.loads(stored_json)
@@ -1020,6 +1027,7 @@ class SubjectImportUploadSetting(View):   # PR2019-03-10
                 #logger.debug('---  set_jsonsettingg  ------- ')
                 #logger.debug('new_setting_json' + str(new_setting_json))
                 #logger.debug(new_setting_json)
+                # TODO set_jsonsetting parameter changed to dict
                 sch_mod.Schoolsetting.set_jsonsetting(settings_key, new_setting_json, request.user.schoolbase)
 
     # only for testing
@@ -1045,7 +1053,7 @@ class SubjectImportUploadData(View):  # PR2018-12-04 PR2019-08-05 PR2020-06-04
         has_permit = False
         is_not_locked = False
         if request.user is not None and request.user.examyear is not None and request.user.schoolbase is not None:
-            has_permit = (request.user.is_role_adm_or_sys_and_perm_adm_or_sys_)
+            has_permit = (request.user.is_role_adm_or_sys_and_perm_adm_or_sys)
             is_not_locked = not request.user.examyear.locked
 
         if is_not_locked and has_permit:
@@ -1168,9 +1176,9 @@ def upload_subject(subject_list, subject_dict, lookup_field, awpKey_list,
         msg_err = ' '.join((skipped_str, log_str))
 
 # check if lookup_value is not too long
-    elif len(lookup_value) > c.MAX_LENGTH_SUBJECTCODE:
-        value_too_long_str = str(_("Value '%(fld)s' is too long.") % {'fld': lookup_value})
-        max_str = str(_("Max %(fld)s characters.") % {'fld': c.MAX_LENGTH_SUBJECTCODE})
+    elif len(lookup_value) > c.MAX_LENGTH_SCHOOLCODE:
+        value_too_long_str = str(_("Value '%(val)s' is too long.") % {'val': lookup_value})
+        max_str = str(_("Max %(fld)s characters.") % {'fld': c.MAX_LENGTH_SCHOOLCODE})
         log_str = value_too_long_str + ' ' + max_str
         msg_err = ' '.join((skipped_str, value_too_long_str, max_str))
 
@@ -1182,7 +1190,7 @@ def upload_subject(subject_list, subject_dict, lookup_field, awpKey_list,
 
 # check if subject name  is not too long
     elif len(new_name) > c.MAX_LENGTH_NAME:
-        value_too_long_str = str(_("Value '%(fld)s' is too long.") % {'fld': lookup_value})
+        value_too_long_str = str(_("Value '%(val)s' is too long.") % {'val': lookup_value})
         max_str = str(_("Max %(fld)s characters.") % {'fld': c.MAX_LENGTH_NAME})
         log_str = value_too_long_str + ' ' + max_str
         msg_err = ' '.join((skipped_str, value_too_long_str, max_str))
@@ -1339,6 +1347,8 @@ def upload_subject(subject_list, subject_dict, lookup_field, awpKey_list,
                     # priceratejson additionjson
                     try:
                         employee.save(request=request)
+
+
                         update_dict['id']['pk'] = employee.pk
                         update_dict['id']['ppk'] = employee.company.pk
                     except:
@@ -1422,30 +1432,22 @@ def create_subject(examyear, upload_dict, request):
     logger.debug('examyear: ' + str(examyear))
     if examyear:
 
-# - get value of 'abbrev'
-        abbrev = af.get_dict_value(upload_dict, ('abbrev', 'value'))
+# - get values
+        code = af.get_dict_value(upload_dict, ('code', 'value'))
         name = af.get_dict_value(upload_dict, ('name', 'value'))
-        sequence = af.get_dict_value(upload_dict, ('sequence', 'value'))
+        sequence = af.get_dict_value(upload_dict, ('sequence', 'value'), 9999)
         depbases = af.get_dict_value(upload_dict, ('depbases', 'value'))
-        logger.debug('abbrev: ' + str(abbrev))
+        logger.debug('code: ' + str(code))
         logger.debug('name: ' + str(name))
         logger.debug('sequence: ' + str(sequence))
         logger.debug('depbases: ' + str(depbases) + str(type(depbases)))
-        if abbrev and name and sequence:
-# - validate abbrev checks null, max len and exists
-            """
-            msg_err = validate_code_name_identifier(
-                table='subject',
-                field='code',
-                new_value=code,
-                is_absence=False,
-                parent=parent,
-                update_dict={},
-                msg_dict={},
-                request=request,
-                this_pk=None)
-            """
-            msg_err = None
+        if code and name:
+# - validate abbrev checks null, max_len, exists and is_lokced
+            msg_err = av.validate_subject_code(
+                code=code,
+                cur_subject=None
+            )
+
 # - create and save subject
             if not msg_err:
 
@@ -1453,7 +1455,7 @@ def create_subject(examyear, upload_dict, request):
                     # First create base record. base.id is used in Subject. Create also saves new record
                 base = sbj_mod.Subjectbase.objects.create(
                     country=examyear.country,
-                    code =abbrev
+                    code=code
                 )
                 logger.debug('base: ' + str(base))
 
@@ -1461,7 +1463,6 @@ def create_subject(examyear, upload_dict, request):
                     base=base,
                     examyear=examyear,
                     name=name,
-                    abbrev=abbrev,
                     sequence=sequence,
                     depbases=depbases
                 )
@@ -1583,13 +1584,6 @@ def update_subject(instance, parent, upload_dict, msg_dict, request):
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
-
-
-
-
-
-
 @method_decorator([login_required], name='dispatch')
 class SubjectLogView(View):
     def get(self, request, pk):
@@ -1636,7 +1630,6 @@ def load_levels(request):
     return render(request, 'dropdown_list_options.html', {'items': items})
 
 
-
 # PR2018-09-03 from https://simpleisbetterthancomplex.com/tutorial/2018/01/29/how-to-implement-dependent-or-chained-dropdown-list-with-django.html
 def load_sectors(request):
     _dep_id = request.GET.get('department_id')
@@ -1670,3 +1663,102 @@ def load_sectors(request):
     return render(request, 'dropdown_list_options.html', {'items': items})
 
 
+def create_scheme_rows(setting_dict, append_dict, scheme_pk):
+    # --- create rows of all schemes of this examyear PR2020-11-16
+    # logger.debug(' =============== create_scheme_rows ============= ')
+    scheme_rows = []
+    examyear_pk = setting_dict.get('sel_examyear_pk')
+    if examyear_pk:
+        sql_keys = {'ey_id': examyear_pk}
+        sql_list = ["SELECT scheme.id, scheme.department_id, scheme.level_id, scheme.sector_id,",
+            "CONCAT('scheme_', scheme.id::TEXT) AS mapid,",
+            "scheme.name, scheme.fields,",
+            "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
+            "scheme.modifiedby_id, scheme.modifiedat,",
+            "SUBSTRING(au.username, 7) AS modby_username",
+
+            "FROM subjects_scheme AS scheme",
+            "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
+            "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
+            "LEFT JOIN subjects_sector AS sct ON (sct.id = scheme.sector_id)",
+            "LEFT JOIN accounts_user AS au ON (au.id = scheme.modifiedby_id)",
+
+            "WHERE dep.examyear_id = %(ey_id)s::INT"]
+
+        if scheme_pk:
+            # when employee_pk has value: skip other filters
+            sql_list.append('AND scheme.id = %(scheme_id)s::INT')
+            sql_keys['scheme_id'] = scheme_pk
+        else:
+            sql_list.append('ORDER BY scheme.name')
+
+        sql = ' '.join(sql_list)
+
+        newcursor = connection.cursor()
+        newcursor.execute(sql, sql_keys)
+        scheme_rows = sch_mod.dictfetchall(newcursor)
+
+        # - add messages to subject_row
+        if scheme_pk and scheme_rows:
+            # when subject_pk has value there is only 1 row
+            row = scheme_rows[0]
+            if row:
+                for key, value in append_dict.items():
+                    row[key] = value
+
+    return scheme_rows
+# --- end of create_scheme_rows
+
+
+def create_schemeitem_rows(setting_dict, append_dict, scheme_pk):
+    # --- create rows of all schemeitems of this examyear PR2020-11-17
+    logger.debug(' =============== create_schemeitem_rows ============= ')
+    schemeitem_rows = []
+    examyear_pk = setting_dict.get('sel_examyear_pk')
+    depbase_pk = setting_dict.get('sel_depbase_pk')
+    if examyear_pk and depbase_pk:
+        sql_keys = {'ey_id': examyear_pk, 'db_id': depbase_pk}
+        sql_list = ["SELECT si.id, si.scheme_id, scheme.department_id, scheme.level_id, scheme.sector_id,",
+            "CONCAT('schemeitem_', si.id::TEXT) AS mapid,",
+            "si.subject_id AS subj_id, subj.name AS subj_name, subjbase.code AS subj_code,",
+            "si.subjecttype_id, subjtype.name AS sjt_name, subjtype.abbrev AS sjt_abbrev, subjtype.sequence AS sjt_sequence,",
+            "subjtype.has_prac AS sjt_has_prac, subjtype.has_pws AS sjt_has_pws, subjtype.one_allowed AS sjt_one_allowed,",
+            "scheme.name, scheme.fields,",
+            "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
+
+            "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_combi,",
+            "si.extra_count_allowed, si.extra_nocount_allowed, si.elective_combi_allowed, si.has_practexam,",
+
+            "si.modifiedby_id, si.modifiedat,",
+            "SUBSTRING(au.username, 7) AS modby_username",
+
+            "FROM subjects_schemeitem AS si",
+            "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
+            "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
+            "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+            "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+            "INNER JOIN subjects_subjecttype AS subjtype ON (subjtype.id = si.subjecttype_id)",
+            "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
+            "LEFT JOIN subjects_sector AS sct ON (sct.id = scheme.sector_id)",
+            "LEFT JOIN accounts_user AS au ON (au.id = si.modifiedby_id)",
+
+            "WHERE dep.examyear_id = %(ey_id)s::INT",
+            "AND dep.base_id = %(db_id)s::INT"]
+
+        if scheme_pk:
+            # when employee_pk has value: skip other filters
+            sql_list.append('AND scheme.id = %(scheme_id)s::INT')
+            sql_keys['scheme_id'] = scheme_pk
+        else:
+            sql_list.append('ORDER BY subjbase.code, subjtype.sequence')
+
+        sql = ' '.join(sql_list)
+
+        newcursor = connection.cursor()
+        newcursor.execute(sql, sql_keys)
+        schemeitem_rows = sch_mod.dictfetchall(newcursor)
+
+    return schemeitem_rows
+# --- end of create_schemeitem_rows

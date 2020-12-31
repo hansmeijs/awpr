@@ -272,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     FillDataTable(worksheet_range);
                                     UpdateDatatableHeader();
 // ---  upload new settings tsaCaption
-                                    UploadSettingsImport ("workbook");
+                                    UploadImportSetting ("workbook");
                     }}}}
                     let el_msg_err = document.getElementById("id_msg_worksheet")
                     el_msg_err.innerText = msg_err;
@@ -309,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         FillDataTable(worksheet_range);
                         UpdateDatatableHeader();
 // ---  upload new settings
-                        UploadSettingsImport ("worksheetlist");
+                        UploadImportSetting ("worksheetlist");
             }}}
         }
         HighlightAndDisableSelectedButton("HandleWorksheetList");
@@ -329,7 +329,7 @@ console.log(" ========== HandleCheckboxHasheaderChanged ===========");
             FillDataTable(worksheet_range);
             UpdateDatatableHeader();
             // upload new settings tsaCaption
-            UploadSettingsImport ("hasheader");
+            UploadImportSetting ("hasheader");
         }  // if(!!worksheet){
     }; //HandleCheckboxHasheaderChanged
 
@@ -337,7 +337,7 @@ console.log(" ========== HandleCheckboxHasheaderChanged ===========");
     function HandleSelectCodeCalc() {
         console.log("=========   HandleSelectCodeCalc   ======================") ;
         HighlightAndDisableSelectedButton("HandleSelectCodeCalc")
-        UploadSettingsImport ("HandleSelectCodeCalc");
+        UploadImportSetting ("HandleSelectCodeCalc");
     }  // HandleSelectCodeCalc
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -839,7 +839,7 @@ console.log(" ========== HandleCheckboxHasheaderChanged ===========");
                 excel_row["tsaCaption"] = stored_row.caption;};
         }
 
-        UploadSettingsImport("link");
+        UploadImportSetting("link");
         FillAwpExcelLinkTables(stored_row_id);
         UpdateDatatableHeader();
         HighlightAndDisableSelectedButton("LinkColumns");
@@ -850,7 +850,7 @@ console.log(" ========== HandleCheckboxHasheaderChanged ===========");
         // function deletes attribute 'excKey' from stored_coldefs
         // and deletes attributes 'awpKey' and 'tsaCaption' from ExcelDef
         // if type= 'col': UpdateDatatableHeader
-        // calls UploadSettingsImport and
+        // calls UploadImportSetting and
         //console.log("====== UnlinkColumns =======================");
 
 // function removes 'excKey' from stored_coldefs and 'awpKey' from excel_columns
@@ -878,7 +878,7 @@ console.log(" ========== HandleCheckboxHasheaderChanged ===========");
         }  // if (!!stored_row)
 
 // ---  upload new settings
-        UploadSettingsImport("link");
+        UploadImportSetting("link");
         FillAwpExcelLinkTables(null, JustUnlinkedAwpId, JustUnlinkedExcId);
         UpdateDatatableHeader();
         HighlightAndDisableSelectedButton("UnlinkColumns");
@@ -903,8 +903,8 @@ console.log(" ========== HandleCheckboxHasheaderChanged ===========");
    } // function UpdateDatatableHeader
 
 //========= UPLOAD SETTING COLUMNS =====================================
-    function UploadSettingsImport (calledby) {
-        console.log ("==========  UploadSettingsImport");
+    function UploadImportSetting (calledby) {
+        console.log ("==========  UploadImportSetting");
         console.log ("calledby: ", calledby);
         console.log ("stored_coldefs: ", stored_coldefs);
 
@@ -945,14 +945,14 @@ console.log(" ========== HandleCheckboxHasheaderChanged ===========");
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
-                    console.log("UploadSettingsImport response: ", response);
+                    console.log("UploadImportSetting response: ", response);
                 },
                 error: function (xhr, msg) {
                     console.log(msg + '\n' + xhr.responseText);
                 }
             });  // $.ajax
         };
-    }; // function (UploadSettingsImport)
+    }; // function (UploadImportSetting)
 
 //========= has_awpKeys DATA =====================================
     function has_awpKeys(){
@@ -1189,12 +1189,12 @@ console.log(" ========== HandleCheckboxHasheaderChanged ===========");
         //console.log("===== UpdateSettingsImport ===== ")
         //console.log("schoolsetting_dict", schoolsetting_dict)
         if (!isEmpty(schoolsetting_dict)){
-            const coldefs_dict = get_dict_value(schoolsetting_dict, ["coldefs"])
+            const coldefs_dict = get_dict_value(schoolsetting_dict, ["coldef"])
             if (!isEmpty(coldefs_dict)){
                 stored_worksheetname = get_dict_value(coldefs_dict, ["worksheetname"])
                 stored_has_header = get_dict_value(coldefs_dict, ["has_header"])
                 stored_code_calc = get_dict_value(coldefs_dict, ["codecalc"], "linked")
-                stored_coldefs = get_dict_value(coldefs_dict, ["coldefs"])
+                stored_coldefs = get_dict_value(coldefs_dict, ["coldef"])
             };
         };
         //("stored_coldefs", stored_coldefs)
@@ -1203,7 +1203,7 @@ console.log(" ========== HandleCheckboxHasheaderChanged ===========");
     //=====import CSV file ===== PR2020-04-16
     // TODO add csv filetype
     // from https://www.quora.com/What-is-the-best-way-to-read-a-CSV-file-using-JavaScript-not-JQuery
-    function Upload() {
+    function UploadCSV() {
         var fileUpload = document.getElementById("fileUpload");
         var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.csv|.txt)$/;
         // shouldnt it be const regex = RegExp('foo*');

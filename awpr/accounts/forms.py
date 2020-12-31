@@ -82,6 +82,9 @@ class SchoolbaseAuthenticationForm(Form):
         schoolcode = self.cleaned_data.get('schoolcode')
         username = self.cleaned_data.get('username')
         password = self.cleaned_data.get('password')
+        logger.debug('schoolcode: ' + str(schoolcode))
+        logger.debug('username: ' + str(username))
+        logger.debug('password: ' + str(password))
 
         if username is not None and password:
             # put schoolprefix in front of username PR2019-03-13
@@ -94,8 +97,11 @@ class SchoolbaseAuthenticationForm(Form):
                 username = schoolbase.prefix + username
             else:
                 username = "xxxxxx" + username
+            logger.debug('schoolbase: ' + str(schoolbase))
+            logger.debug('username: ' + str(username))
 
             self.user_cache = authenticate(self.request, username=username, password=password)
+            logger.debug('self.user_cache: ' + str(self.user_cache))
 
             # PR2020-10-22 from https://stackoverflow.com/questions/46459258/how-to-inform-a-user-that-he-is-not-active-in-django-login-view
             if self.user_cache is None:
@@ -132,7 +138,7 @@ class SchoolbaseAuthenticationForm(Form):
                 self.error_messages['inactive'],
                 code='inactive',
             )
-        logger.debug('SchoolbaseAuthenticationForm self.error_messages : ' + str(self.error_messages) + ' Type: ' + str(type(self.error_messages)))
+        #logger.debug('SchoolbaseAuthenticationForm self.error_messages : ' + str(self.error_messages) + ' Type: ' + str(type(self.error_messages)))
 
     def get_user(self):
         return self.user_cache
@@ -172,11 +178,11 @@ class UserAddForm(UserCreationForm):
         super(UserAddForm, self).__init__(*args, **kwargs)
 
         self.request_user = self.request.user
-        # logger.debug('UserAddForm: __init__ request_user: ' + str(request_user))
+        #logger.debug('UserAddForm: __init__ request_user: ' + str(request_user))
         self.request_user_schoolbase = None
         if self.request_user.schoolbase:
             self.request_user_schoolbase = self.request_user.schoolbase
-        # logger.debug('UserAddForm self.request_user_schoolbase: ' + str(self.request_user_schoolbase))
+        #logger.debug('UserAddForm self.request_user_schoolbase: ' + str(self.request_user_schoolbase))
 
 
             # ======= field 'username' ============
@@ -184,7 +190,7 @@ class UserAddForm(UserCreationForm):
             # ======= field 'last_name' ============
             # field 'first_name' is not in use
             self.fields['last_name'] = CharField(
-                max_length=50,
+                max_length=c.MAX_LENGTH_NAME,
                 required=True,
                 label=_('Full name'),
                 help_text=_('Required. 50 characters or fewer.'),
@@ -294,9 +300,9 @@ class UserActivateForm(ModelForm):
         fields = ('last_name', 'email') # , 'password1', 'password2',)
 
     def __init__(self, *args, **kwargs):
-        logger.debug('UserActivateForm __init__  kwargs: ' + str(kwargs))
+        #logger.debug('UserActivateForm __init__  kwargs: ' + str(kwargs))
         self.request = kwargs.pop('request', None)  # pop() removes and returns an element from a dictionary, second argument is default when not found
-        logger.debug('UserActivateForm __init__ request: ' + str(self.request))
+        #logger.debug('UserActivateForm __init__ request: ' + str(self.request))
         super(UserActivateForm, self).__init__(*args, **kwargs)
 
         self.fields['password1'] = CharField(max_length=32, label='Password') # label -='' works, but appears again after formerror
@@ -331,23 +337,23 @@ class UserEditForm(ModelForm):
         super(UserEditForm, self).__init__(*args, **kwargs)
 
         self.request_user = self.request.user
-        # logger.debug('UserEditForm __init__ request_user ' + str(self.request_user))
+        #logger.debug('UserEditForm __init__ request_user ' + str(self.request_user))
 
         self.requestuser_countryid = 0
         if self.request_user.country:
             self.requestuser_countryid = self.request_user.country.id
-        # logger.debug('UserEditForm __init__ self.requestuser_countryid ' + str(self.requestuser_countryid))
+        #logger.debug('UserEditForm __init__ self.requestuser_countryid ' + str(self.requestuser_countryid))
 
         self.this_instance = kwargs.get('instance')
-        logger.debug('UserEditForm __init__ instance ' + str(self.this_instance))
+        #logger.debug('UserEditForm __init__ instance ' + str(self.this_instance))
 
         kwargs.update({'selected_username': self.this_instance.username})
-        # logger.debug('UserEditForm __init__ self.kwargs ' + str(kwargs))
+        #logger.debug('UserEditForm __init__ self.kwargs ' + str(kwargs))
 
         self.selecteduser_countryid = 0
         if self.this_instance.country:
             self.selecteduser_countryid = self.this_instance.country.id
-        # logger.debug('UserEditForm __init__ self.selecteduser_countryid ' + str(self.selecteduser_countryid))
+        #logger.debug('UserEditForm __init__ self.selecteduser_countryid ' + str(self.selecteduser_countryid))
 
     # ======= field 'Role' ============
         # PR2018-10-14 lock filed Role. Was: Field 'Role' can only be modified by system + admin users.
@@ -438,7 +444,7 @@ class UserEditForm(ModelForm):
         __initial_is_active = 0
         if self.this_instance.is_active is not None:
             __initial_is_active = int(self.this_instance.is_active)
-        # logger.debug('UserEditForm __init__ instance ' + str(self.this_instance) + ' __initial_is_active: ' + str(__initial_is_active) + ' type : ' + str(type(__initial_is_active)))
+        #logger.debug('UserEditForm __init__ instance ' + str(self.this_instance) + ' __initial_is_active: ' + str(__initial_is_active) + ' type : ' + str(type(__initial_is_active)))
         self.fields['field_is_active'] = ChoiceField(
             choices=c.IS_ACTIVE_CHOICES,
             label=_('Active'),

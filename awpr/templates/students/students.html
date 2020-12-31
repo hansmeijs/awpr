@@ -5,6 +5,7 @@
 {% block title %}{% trans 'Candidates' %}{% endblock %}
 
 {% block script %}
+    <script src="{% static 'js/import201203.js' %}"></script>
     <script src="{% static 'js/students201027.js' %}"></script>
 {% endblock %}
 
@@ -14,6 +15,22 @@
         <div class="content_subheader_left tab_show tab_init mx-2 my-4">
             <h5>{% trans 'Students' %}</h5>
         </div>
+        {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
+            <div class="tw_200 mx-2 mt-2 mb-4">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Filter' %}:</h6>
+                <input id="id_SBR_filter"
+                    type="text"
+                    class="tw_200 border_none px-2">
+            </div>
+
+            <div class="tbl_div_520_200 mx-2 my-2">
+                <table>
+                    <tbody id="id_SBR_tblbody_select"></tbody>
+                </table>
+            </div>
+
+
+        {% endif %}
     </nav>
 {% endblock %}
 <!-- END SIDE BAR -->
@@ -21,56 +38,73 @@
 {% block content %}
     <div id="id_content">
         {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
-    <!-- =================== MODAL SELECT  =================== -->
-            {% include 'includes/modselect.html' %}
+    <!-- =================== MODAL SELECT EXAM YEAR =================== -->
+            {% include 'schools/modselectexamyear.html' %}
+    <!-- =================== MODAL SELECT SCHOOL OR DEPARTMENT=================== -->
+            {% include 'schools/modselectschoolordep.html' %}
     <!-- =================== MODAL CONFIRM  =================== -->
             {% include 'includes/modconfirm.html' %}
-    <!-- =================== MODAL SUBJECT =================== -->
-            {% include 'subjects/modsubject.html' %}
+    <!-- =================== MODAL STUDENT =================== -->
+            {% include 'students/modstudent.html' %}
+    <!-- =================== MODAL STUDENT SUBJECT =================== -->
+            {% include 'students/modstudentsubject.html' %}
+    <!-- =================== MODAL IMPORT  =================== -->
+            {% include 'includes/modimport.html' %}
 
             <div class="content_margin_top78">
     <!-- CONTENT HEADER - LOADER -->
             <!-- content_header -->
                 {% include 'includes/messages.html' %}
-
+        <!-- submenu -->
                 <div class="content_header flex_container">
-                <div id="id_submenu" class="awp_navbar_submenuXX display_hideXX mt-5">
+                    <div id="id_submenu" class="awp_navbar_submenuXX mt-5">
                 </div>
         <!-- header_text -->
-                    <div class="content_subheader_left mx-4">
-                        <h5 id="id_hdr_text">{{examyear}}  {{school}}</h5>
+                    <div class="flex_4 mx-4 visibility_hide">
+                        <h5 id="id_hdr_left"></h5>
                     </div>
         <!-- loader -->
-                    <div class="content_header_middle ">
-                        <div id="id_loader" class="image_container visibility_hideXX">
+                    <div class="flex_1">
+                        <div id="id_loader" class="image_container visibility_hide">
                             <img src="{% static 'img/loader.gif' %}" class="icon_24">
                         </div>
+                    </div>
+        <!-- header_text -->
+                    <div class="flex_2 mx-4 visibility_hide">
+                        <h5 id="id_hdr_textright1"></h5>
+                    </div>
+                    <div class="flex_2 mx-4 visibility_hide">
+                        <h5 id="id_hdr_textright2"></h5>
                     </div>
                 </div>
             <!-- end content_header -->
     <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block mx-2 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="subject" class="btn btn-secondary ">{% trans 'Candidates' %}</button>
+                    <button data-btn="btn_student" class="btn btn-secondary ">{% trans 'Candidates' %}</button>
+                    <button data-btn="btn_studsubj" class="btn btn-secondary ">{% trans 'Subjects' %}</button>
+                    <button data-btn="btn_exemption" class="btn btn-secondary ">{% trans 'Exemptions' %}</button>
+                    <button data-btn="btn_reexamination" class="btn btn-secondary ">{% trans 'Re-examinations' %}</button>
                 </div>
     <!-- end BUTTON GROUP -->
     <!-- END OF CONTENT HEADER -->
 
     <!-- CONTENT BODY -->
-            <div class="content_body ml-2 mr-0">
     <!-- =================== DATA TABLE  =================== -->
+            <div class="content_body mx-2 mt-2">
                 <table class="table tsa_tbl">
                     <thead id="id_tblHead_datatable"></thead>
                     <tbody id="id_tblBody_datatable"></tbody>
                 </table>
-    <!-- =================== END DATA TABLE  =================== -->
             </div>
+    <!-- =================== STUDENT SUBJECTS  =================== -->
+
     <!-- END OF CONTENT BODY -->
             </div>
             <div id="id_data"
                 data-datalist_download_url="{% url 'datalist_download_url' %}"
                 data-settings_upload_url="{% url 'settings_upload_url' %}"
                 data-student_upload_url="{% url 'student_upload_url' %}"
-                data-student_import_url="{% url 'student_import_url' %}"
+                data-studsubj_upload_url="{% url 'studsubj_upload_url' %}"
             >
             </div>
 

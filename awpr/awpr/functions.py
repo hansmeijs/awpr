@@ -1,11 +1,15 @@
 # PR2018-05-28
 from django.contrib import messages
 from django.utils.translation import activate, ugettext_lazy as _
-
+from django.utils import timezone
 from datetime import date, datetime
 
 from awpr import constants as c
 from schools import models as sch_mod
+from accounts import models as acc_mod
+
+
+import re
 import logging
 logger = logging.getLogger(__name__)
 
@@ -41,6 +45,80 @@ def get_date_from_arr(arr_int):  # PR2019-11-17  # PR2020-10-20
     if arr_int:
         date_obj = date(arr_int[0], arr_int[1], arr_int[2])
     return date_obj
+
+# ################### DATE STRING  FUNCTIONS ###################
+
+def get_dateISO_from_string(date_string, format=None):  # PR2019-08-06
+    #logger.debug('... get_dateISO_from_string ...')
+    #logger.debug('date_string: ' + str(date_string), ' format: ' + str(format))
+
+    # function converts string into given format. Used in employee_import
+    if format is None:
+        format = 'yyyy-mm-dd'
+
+    new_dat_str = ''
+    if date_string:
+        # replace / by -
+        try:
+            date_string = date_string.replace('/', '-')
+            if '-' in date_string:
+                arr = date_string.split('-')
+                if len(arr) >= 2:
+                    day_int = 0
+                    month_int = 0
+                    year_int = 0
+                    if format == 'dd-mm-yyyy':
+                        day_int = int(arr[0])
+                        month_int = int(arr[1])
+                        year_int = int(arr[2])
+                    elif format == 'mm-dd-yyyy':
+                        month_int = int(arr[0])
+                        day_int = int(arr[1])
+                        year_int = int(arr[2])
+                    elif format == 'yyyy-mm-dd':
+                        year_int = int(arr[0])
+                        month_int = int(arr[1])
+                        day_int = int(arr[2])
+                    #logger.debug('year_int: ' + str(year_int) + ' month_int: ' + str(month_int) + ' day_int:' + str(day_int))
+
+                    if year_int < 100:
+                        currentYear = datetime.now().year
+                        remainder = currentYear % 100  # 2019 -> 19
+                        year100_int = currentYear // 100  # 2019 -> 20
+                        # currentYear = 2019, remainder = 19. When year_int <=29 convert to 2009, else convert to 1997
+                        if year_int <= remainder + 10:
+                            year_int = year_int + year100_int * 100
+                        else:
+                            year_int = year_int + (year100_int - 1) * 100
+
+                    year_str = '0000' + str(year_int)
+                    year_str = year_str[-4:]
+                    month_str = '00' + str(month_int)
+                    month_str = month_str[-2:]
+
+                    day_str = '00' + str(day_int)
+                    day_str = day_str[-2:]
+                    #logger.debug('year_str: ' + str(year_str) + ' month_str: ' + str(month_str) + ' day_str:' + str(day_str))
+
+                    new_dat_str = '-'.join([year_str, month_str, day_str])
+        except:
+            logger.debug('ERROR: get_dateISO_from_string: ' + str(date_string) + ' new_dat_str: ' + str(new_dat_str))
+    return new_dat_str
+
+# >>>>>> This is the right way, I think >>>>>>>>>>>>>
+def get_date_from_ISO(date_iso):  # PR2019-09-18 PR2020-03-20
+    # this is the simple way, it works though
+    #logger.debug('... get_date_from_ISO ...')
+    #logger.debug('date_iso: ' + str(date_iso))
+    # PR2020-05-04 try is necessary, When creating public holiday schemeitem date_iso = "onph', must return: dte = None
+    dte = None
+    if date_iso:
+        try:
+            arr = date_iso.split('-')
+            dte = date(int(arr[0]), int(arr[1]), int(arr[2]))
+        except:
+            pass
+    return dte
 
 
 def format_WDMY_from_dte(dte, user_lang):  # PR2020-10-20
@@ -85,6 +163,26 @@ def format_DMY_from_dte(dte, lang):  # PR2019-06-09  # PR2020-10-20
 
 # ----------  end of Date functions ---------------
 
+
+def get_dict_value(dictionry, key_tuple, default_value=None):
+    # PR2020-02-04 like in base.js Iterate through key_tuple till value found
+    #logger.debug('  -----  get_dict_value  -----')
+    #logger.debug('     dictionry: ' + str(dictionry))
+    if key_tuple and dictionry:  # don't use 'dictionary' - is PyCharm reserved word
+        for key in key_tuple:
+            #logger.debug('     key: ' + str(key) + ' key_tuple: ' + str(key_tuple))
+            if isinstance(dictionry, dict) and key in dictionry:
+                dictionry = dictionry[key]
+                #logger.debug('     new dictionry: ' + str(dictionry))
+            else:
+                dictionry = None
+                break
+    if dictionry is None and default_value is not None:
+        dictionry = default_value
+    #logger.debug('     return dictionry: ' + str(dictionry))
+    return dictionry
+
+
 def get_mode_str(self):  # PR2018-11-28
     mode_str = '-'
     if self.mode is not None:
@@ -106,108 +204,182 @@ def get_country_choices_all():
     return choices
 
 
-def get_schooldefault_choices_all(request_user):
-    # PR2018-08-01  this function is used in UserAddForm, in UserEditForm
+def get_sel_examyear_instance(request, request_item_setting=None):  # PR2020-12-25
+    #logger.debug('  -----  get_sel_examyear_instance  -----')
+    sel_examyear_instance = None
+    sel_examyear_save = False
+    multiple_examyears = False
+    if request.user and request.user.country:
+        requsr_country = request.user.country
 
-    # RequestUser role = School:
-        # RequestUser cannot change their own country and school
-        # RequestUser Admin: at Add: can only add users with country=RequestUser.country and defaultschool=RequestUser.defaultschool
-        #                    at Edit: country and school cannot be modified
+# - check if there is a new examyear_pk in request_item_setting, check if request_examyear exists
+        if request_item_setting is not None:
+            r_eyr_pk = get_dict_value(request_item_setting, (c.KEY_SELECTED_PK, c.KEY_SEL_EXAMYEAR_PK))
+            sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=r_eyr_pk, country=requsr_country)
+            if sel_examyear_instance is not None:
+                sel_examyear_save = True
 
-    # RequestUser role = Inspection:
-        # Inspection users can change their own school, not their own country
-        # RequestUser Admin: at Add: can only add Inspection users, country is RequestUser's country, leave school blank
-        # RequestUser Admin: at Edit Inspection users: country is locked, RequestUser cannot change school
+        if sel_examyear_instance is None:
+# - get saved_examyear_pk from Usersetting, check if saved_examyear exists
+            selected_dict = acc_mod.Usersetting.get_jsonsetting(c.KEY_SELECTED_PK, request.user)
+            s_ey_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+            sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=s_ey_pk, country=requsr_country)
 
-    # RequestUser role = System:
-        # System Users can edit their own country and school
-        # RequestUser Admin: at Add: can add school users, set country and school of that country
-        #                    at Add: can add Inspection users, set country, leave school blank
-        #                    at Add: can add System users, leave country and school blank
+# - if there is no saved nor request examyear: get latest examyear_pk of table
+        if sel_examyear_instance is None:
+            sel_examyear_instance = sch_mod.Examyear.objects.filter(country=requsr_country).order_by('-code').first()
+            if sel_examyear_instance is not None:
+                sel_examyear_save = True
 
-        # RequestUser Admin: at Edit School users: country and school cannot be modified
-        #                    at Edit Inspection users: country cannot be modified, RequestUser cannot change school
-        #                    at Edit System users: RequestUser cannot change country or school
+# - check if there are multiple examyears, used to enable select examyear
+        multiple_examyears = (sch_mod.Examyear.objects.filter(country=requsr_country).count() > 1)
 
-    # PR2018-07-28  Show only schools from selecteduser.country
-    # self = request_user, not selected_user when called by UserEditForm
-    """
-    if is_AddMode:
-        if request_user.is_role_school:
-            # SelectedUser's country = RequestUser's country
-            # SelectedUser's school = RequestUser's school
-        elif request_user.is_role_insp:
-            if selected_user.is_role_school:
-                # SelectedUser's country = RequestUser's country
-                # SelectedUser's school can be set by RequestUser, only schools of SelectedUser's country
-            if selected_user.is_role_insp:
-                # SelectedUser's country = RequestUser's country
-                # SelectedUser's school = blank
-        elif request_user.is_role_system:
-            if selected_user.is_role_school:
-                # SelectedUser's country can be set by RequestUser
-                # SelectedUser's school can be set by RequestUser, only schools of SelectedUser's country
-            if selected_user.is_role_insp:
-                # SelectedUser's country can be set by RequestUser
-                # SelectedUser's school = blank
-            if selected_user.is_role_system:
-                # SelectedUser's country = blank
-                # SelectedUser's school = blank
-    else: # is_EditMode
-        if request_user == selected_user:
-            # user changes his own country / school
-            if selected_user.is_role_school:
-                # SelectedUser's country cannot be changed
-                # SelectedUser's school cannot be changed
-            if selected_user.is_role_insp:
-                # SelectedUser's country cannot be changed
-                # SelectedUser's school can be set by SelectedUser, only schools of SelectedUser's country
-            if selected_user.is_role_system:
-                # SelectedUser's country can be set by SelectedUser
-                # SelectedUser's school can be set by SelectedUser, only schools of SelectedUser's country
+    return sel_examyear_instance, sel_examyear_save, multiple_examyears
+# --- end of get_sel_examyear_instance
+
+
+def get_sel_schoolbase_instance(request, request_item_setting=None):  # PR2020-12-25
+    #logger.debug('  -----  get_sel_schoolbase_instance  -----')
+    #logger.debug('request_item_setting: ' + str(request_item_setting))
+
+# ===== SCHOOLBASE ======================= PR2020-12-18
+    # - get schoolbase from settings / request when role is insp, admin or system, from req_user otherwise
+    # req_user.schoolbase cannot be changed
+    # Selected schoolbase is stored in {selected_pk: {sel_schoolbase_pk: val}}
+
+    sel_schoolbase_instance = None
+    sel_schoolbase_save = False
+    if request.user and request.user.country:
+        req_user = request.user
+        requsr_country = req_user.country
+        may_select_schoolbase = req_user.is_role_insp or req_user.is_role_admin or req_user.is_role_system
+
+        if may_select_schoolbase:
+
+    # - check if there is a new schoolbase_pk in request_item_setting, check if request_schoolbase exists
+            if request_item_setting is not None:
+                r_sb_pk = get_dict_value(request_item_setting, (c.KEY_SELECTED_PK, c.KEY_SEL_SCHOOLBASE_PK))
+                sel_schoolbase_instance = sch_mod.Schoolbase.objects.get_or_none(pk=r_sb_pk, country=requsr_country)
+                if sel_schoolbase_instance is not None:
+                    sel_schoolbase_save = True
+
+            if sel_schoolbase_instance is None:
+    # - get saved_schoolbase_pk from Usersetting, check if saved_schoolbase exists
+                selected_dict = acc_mod.Usersetting.get_jsonsetting(c.KEY_SELECTED_PK, req_user)
+                s_sb_pk = selected_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
+                sel_schoolbase_instance = sch_mod.Schoolbase.objects.get_or_none(pk=s_sb_pk, country=requsr_country)
+    # - if there is no saved nor request examyear: get schoolbase of this user
+            if sel_schoolbase_instance is None:
+                sel_schoolbase_instance = req_user.schoolbase
+                if sel_schoolbase_instance is not None:
+                    sel_schoolbase_save = True
         else:
-            # RequestUser changes SelectedUser's country / school
-            if request_user.is_role_school:
-                # SelectedUser's country cannot be changed
-                # SelectedUser's school cannot be changed
-            elif request_user.is_role_insp:
-                if selected_user.is_role_school:
-                    # SelectedUser's country cannot be changed
-                    # SelectedUser's school cannot be changed
-                if selected_user.is_role_insp:
-                    # SelectedUser's country cannot be changed
-                    # SelectedUser's school cannot be changed by RequestUser
-            elif request_user.is_role_system:
-                if selected_user.is_role_school:
-                    # SelectedUser's country cannot be changed
-                    # SelectedUser's school cannot be changed
-                if selected_user.is_role_insp:
-                    # SelectedUser's country cannot be changed
-                    # SelectedUser's school cannot be changed by RequestUser
-                if selected_user.is_role_system:
-                    # SelectedUser's country cannot be changed by RequestUser
-                    # SelectedUser's school cannot be changed by RequestUser
-        """
-    choices = [c.CHOICE_NONE] # CHOICE_NONE = (0, _('None'))
+            sel_schoolbase_instance = req_user.schoolbase
 
-    request_user_countryid = 0
-    if request_user:
-        if request_user.country:
-            request_user_countryid = request_user.country.id
+    return sel_schoolbase_instance, sel_schoolbase_save
+# --- end of get_sel_schoolbase_instance
 
-    #if request_user.country:
-    #logger.debug('class User(AbstractUser) self.selecteduser_countryid: ' + str(selecteduser_countryid))
-    #schooldefaults = Schooldefault.objects.filter(country=request_user.country)
-    #for item in schooldefaults:
-    #    item_str = ''
-    #    if item.code is not None:
-    #        item_str = str(item.code) + ' - '
-    #    if item.name is not None:
-    #        item_str = item_str + str(item.name)
-    #    choices.append((item.id, item_str))
 
-    #logger.debug('class User(AbstractUser) schooldefault_choices: ' + str(choices))
-    return choices
+def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  # PR2020-12-26
+    logger.debug('  -----  get_sel_depbase_instance  -----')
+    logger.debug('sel_school: ' + str(sel_school))
+    sel_depbase_instance = None
+    sel_depbase_save = False
+    allowed_depbases = []
+
+    if request.user and request.user.country:
+        req_user = request.user
+        requsr_country = req_user.country
+
+    # - get allowed depbases from school and user
+        may_select_department = False
+        if sel_school and sel_school.depbases:
+            for depbase_pk in sel_school.depbases:
+                # skip if depbase not in list of req_user.allowed_depbases
+                # if req_user.allowed_depbases is empty, all depbases of the
+                # school are allowed
+                skip = req_user.allowed_depbases and depbase_pk not in req_user.allowed_depbases
+                if not skip:
+                    allowed_depbases.append(depbase_pk)
+        logger.debug('allowed_depbases: ' + str(allowed_depbases))
+
+    # - check if there is a new depbase_pk in request_item_setting,
+        if request_item_setting is not None:
+            r_depbase_pk = get_dict_value(request_item_setting, (c.KEY_SELECTED_PK, c.KEY_SEL_DEPBASE_PK))
+            logger.debug('request_item_setting instance: ' + str(request_item_setting))
+            logger.debug('r_depbase_pk instance: ' + str(r_depbase_pk))
+            # check if it is in allowed_depbases,
+            if r_depbase_pk in allowed_depbases:
+                # check if request_depbase exists
+                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=r_depbase_pk, country=requsr_country)
+                if sel_depbase_instance is not None:
+                    sel_depbase_save = True
+
+        logger.debug('request_depbase instance: ' + str(sel_depbase_instance))
+        logger.debug('sel_depbase_save: ' + str(sel_depbase_save))
+
+        if sel_depbase_instance is None:
+    # - get depbase_pk from Usersetting, check if request_depbase exists
+            selected_dict = acc_mod.Usersetting.get_jsonsetting(c.KEY_SELECTED_PK, req_user)
+            s_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
+        # check if it is in allowed_depbases,
+            if s_depbase_pk in allowed_depbases:
+        # check if saved_depbase exists
+                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=s_depbase_pk, country=requsr_country)
+        logger.debug('saved_depbase instance: ' + str(sel_depbase_instance))
+
+    # - if there is no saved nor request examyear: get first allowed depbase_pk
+        if sel_depbase_instance is None:
+            if allowed_depbases and len(allowed_depbases):
+                a_depbase_pk = allowed_depbases[0]
+                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=a_depbase_pk, country=requsr_country)
+                if sel_depbase_instance is not None:
+                    sel_depbase_save = True
+
+        logger.debug('sel_depbase_instance instance: ' + str(sel_depbase_instance))
+    return sel_depbase_instance, sel_depbase_save, allowed_depbases
+# --- end of get_sel_depbase_instance
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+def get_this_examyear_int():
+    # get this year in Jan thru July, get next year in Aug thru Dec PR2020-09-29 PR2020-12-24
+    now = timezone.now()
+    this_examyear_int = now.year
+    if now.month + 1 > c.MONTH_START_EXAMYEAR:
+        this_examyear_int = now.year + 1
+    return this_examyear_int
+
+
+def get_todays_examyear_instance(country):  # PR2020-12-24
+    # get this year in Jan thru July, get next year in Aug thru Dec PR2020-09-29 PR2020-12-24
+    todays_examyear_int = get_this_examyear_int()
+    todays_examyear_instance = sch_mod.Examyear.objects.get_or_none(country=country, code=todays_examyear_int)
+    return todays_examyear_instance
+
+
+def get_todays_examyear_or_latest_instance(country):
+    # get this year in Jan thru July, get next year in Aug thru Dec PR2020-09-29 PR2020-12-24
+    examyear_instance = get_todays_examyear_instance(country)
+# - get latest examyear if todays_examyear does not exist
+    if examyear_instance is None:
+        examyear_instance = sch_mod.Examyear.objects.filter(country=country).order_by('-code').first()
+    return examyear_instance
+
+
+def get_saved_sel_depbase_instance(request):  # PR2020-12-24
+    #logger.debug('  -----  get_saved_sel_depbase_instance  -----')
+    sel_depbase_instance = None
+# - get saved selected_pk's from Usersetting, key: selected_pk
+    selected_dict = acc_mod.Usersetting.get_jsonsetting(c.KEY_SELECTED_PK, request.user)
+
+# - get saved_depbase_pk, check if saved_depbase exists
+    if selected_dict:
+        s_db_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
+# - get selected examyear
+        if s_db_pk:
+            sel_depbase_instance = sch_mod.Department.objects.get_or_none(pk=s_db_pk, country=request.user.country)
+    return sel_depbase_instance
 
 
 def get_depbase_list_field_sorted_zerostripped(depbase_list):  # PR2018-08-23
@@ -240,61 +412,6 @@ def get_depbase_list_field_sorted_zerostripped(depbase_list):  # PR2018-08-23
     else:
         return None
 
-
-def get_tuple_from_list_str(list_str):  # PR2018-08-28
-    # get_tuple_from_list_str converts list_str string into tuple,
-    # e.g.: list_str='1;2' will be converted to list_tuple=(1,2)
-    # empty list = (0,), e.g: 'None'
-    depbase_list_str = str(list_str)
-    list_tuple = tuple()
-    if depbase_list_str:
-        try:
-            depbase_list_split = depbase_list_str.split(';')
-            list_tuple = tuple(depbase_list_split)
-        except:
-            pass
-    #logger.debug('get_tuple_from_list_str tuple list_tuple <' + str(list_tuple) + '> Type: " + str(list_tuple))
-    return list_tuple
-
-
-def id_found_in_list(id_str='', list_str='', value_at_empty_list=False):  # PR2018-11-22
-    # Function searches for id in string,
-    # e.g.: id '2' will serach ';2;' in ';1;2;3;'
-    found = value_at_empty_list
-    if list_str:
-        found = False
-        if id_str:
-    # PR2018-11-23 debug: error 'must be str, not int', argument changes form str to int, don't now why. Usse str()
-            id_delim = ';' + str(id_str) + ';'
-            if id_delim in list_str:
-                found = True
-    return found
-
-
-def slice_firstlast_delim(list_str):  # PR2018-11-22
-    # slice off first and last delimiter from list_str
-    # e.g.: ';1;2;3;' becomes '1;2;3'
-    if list_str:
-        if list_str[0] == ';':
-            list_str = list_str[1:]
-        if list_str:
-            if list_str[-1] == ';':
-                list_str = list_str[:-1]
-    return list_str
-
-
-def get_dict_value(dictionry, key_tuple, default_value=None):
-    # PR2020-02-04 like in base.js Iterate through key_tuple till value found
-    if key_tuple and dictionry:  # don't use 'dictionary' - is PyCharm reserved word
-        for key in key_tuple:
-            if isinstance(dictionry, dict) and key in dictionry:
-                dictionry = dictionry[key]
-            else:
-                dictionry = None
-                break
-    if dictionry is None and default_value is not None:
-        dictionry = default_value
-    return dictionry
 
 
 def system_updates():

@@ -26,8 +26,10 @@ from accounts import views as account_views
 from awpr import downloads as awpr_downloads
 from importing import views as import_views
 from schools import views as school_views
-from subjects import views as subject_views
+from schools import imports as school_imports
 from students import views as student_views
+from subjects import views as subject_views
+from grades import views as grade_views
 from reports import views as report_views
 
 from accounts.forms import SchoolbaseAuthenticationForm
@@ -37,7 +39,7 @@ from awpr.decorators import user_examyear_is_correct
 urlpatterns = [
 # PR2018-03-20
     #url(r'^login/$', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
-# PR2020-09-25
+# PR2020-09-25 redirects to Loggedin
     path('login', auth_views.LoginView.as_view(authentication_form=SchoolbaseAuthenticationForm), name='login'),
     # TODO create custom message when user that is not is_active wants to login - PR2020-08-18
     #      now a 'username password not correct' message appears, that is confusing
@@ -105,7 +107,9 @@ urlpatterns = [
 # PR2018-05-11
     url(r'^users/language/(?P<lang>[A-Za-z]{2})/$', account_views.UserLanguageView.as_view(), name='language_set_url'),
 
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
     path('datalist_download', awpr_downloads.DatalistDownloadView.as_view(), name='datalist_download_url'),
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
     # PR2018-03-11
     url('^$', school_views.home,  name='home_url'),
@@ -114,17 +118,6 @@ urlpatterns = [
     # url(r'^favicon\.ico$',RedirectView.as_view(url='/static/img/favicon.ico')),
     # path('favicon\.ico',RedirectView.as_view(url='/static/img/favicon.ico')),
     url(r'^favicon\.ico$', RedirectView.as_view(url='/static/img/favicon.ico')),
-
-# countries
-    # PR2018-04-17 debug: don't forget the brackets at the end of as_view() !!
-    path('country/', school_views.CountryListView.as_view(), name='country_list_url'),
-    url(r'^country/add/$', school_views.CountryAddView.as_view(), name='country_add_url'),
-    url(r'^country/(?P<pk>\d+)/selected/$', school_views.CountrySelectView.as_view(), name='country_selected_url'),
-    url(r'^country/(?P<pk>\d+)/edit$', school_views.CountryEditView.as_view(), name='country_edit_url'),
-    url(r'^country/(?P<pk>\d+)/log$', school_views.CountryLogView.as_view(), name='country_log_url'),
-    url(r'^country/(?P<pk>\d+)/delete$', school_views.CountryDeleteView.as_view(), name='country_delete_url'),
-    # url(r'^country/logdeleted$', school_views.CountryLogDeletedView.as_view(), name='country_log_deleted_url'),
-    url(r'^country/(?P<pk>\d+)/lock$', school_views.CountryLockView.as_view(), name='country_lock_url'),
 
 # PR2018-03-14
     # PR2018-04-17 debug: don't forget the brackets at the end of as_view() !!\
@@ -188,9 +181,7 @@ urlpatterns = [
 # package PR2019-02-27
    # url(r'^package/$', subject_views.PackageView.as_view(), name='scheme_list_url'),
 
-
-
-# subject # PR2018-08-23 PR2020-10-20
+# ===== SUBJECTS ==========================  PR2018-08-23 PR2020-10-20
     path('subjects/', include([
         path('subject', subject_views.SubjectListView.as_view(), name='subjects_url'),
         path('subject_upload', subject_views.SubjectUploadView.as_view(), name='subject_upload_url'),
@@ -200,35 +191,28 @@ urlpatterns = [
 
     ])),
 
-# student  PR2018-09-02 PR2018-11-19
+# ===== STUDENTS ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
     path('students/', include([
         path('student', student_views.StudentListView.as_view(), name='students_url'),
 
         path('student_upload', student_views.StudentUploadView.as_view(), name='student_upload_url'),
-        path('student_import', student_views.StudentImportView.as_view(), name='student_import_url'),
-        path('uploadsetting', student_views.StudentImportUploadSetting.as_view(), name='student_uploadsetting_url'),
-        path('uploaddata', student_views.StudentImportUploadData.as_view(), name='student_uploaddata_url'),
+        #path('student_import', student_views.StudentImportView.as_view(), name='student_import_url'),
+        #path('uploaddata', student_views.StudentImportUploadData.as_view(), name='student_uploaddata_url'),
 
-        path('import/', student_views.ImportStudentView.as_view(), name='import_student_url'),
+        path('studentsubject', student_views.StudentsubjectListView.as_view(), name='studentsubjects_url'),
+        path('studentsubject_upload', student_views.StudentsubjectUploadView.as_view(), name='studsubj_upload_url'),
+
+        path('grades', grade_views.GradeListView.as_view(), name='grades_url'),
+        path('grade_upload', grade_views.GradeUploadView.as_view(), name='grade_upload_url'),
+
         path('load_cities/', student_views.load_cities, name='load_cities_url'),  # PR2018-09-03
+
+        path('uploadsetting', student_views.StudentImportUploadSetting.as_view(), name='student_uploadsetting_url'),
+
     ])),
 
-
     # PR2018-05-06 debug: don't forget the brackets at the end of as_view() !!
-    url(r'^department/import/$', import_views.ImportDepartmentView.as_view(), name='import_department_url'),
-    url(r'^level/import/$', import_views.ImportLevelView.as_view(), name='import_level_url'),
-    path('sector/import/', import_views.ImportSectorView.as_view(), name='import_sector_url'),  # PR2018-09-04
-    path('subjecttype/import/', import_views.ImportSubjecttypeView.as_view(), name='import_subjecttype_url'),  # PR2018-11-10
-    url(r'^subject/import/$', import_views.ImportSubjectView.as_view(), name='import_subject_url'),
-    path('scheme/import/', import_views.ImportSchemeView.as_view(), name='import_scheme_url'),  # PR2018- 11-10
-    path('schemeitem/import/', import_views.ImportSchemeitemView.as_view(), name='import_schemeitem_url'),  # PR2018-11-10
-    path('package/import/', import_views.ImportPackageView.as_view(), name='import_package_url'),  # PR2019-02-24
-    path('packageitem/import/', import_views.ImportPackageitemView.as_view(), name='import_packageitems_url'),  # PR2019-02-25
-    url(r'^school/import/$', import_views.ImportSchoolView.as_view(), name='import_school_url'),
-
-    # PR2018- 11-10
-    url(r'^birthcountry/import/$', import_views.ImportBirthcountryView.as_view(), name='import_birthcountry_url'),
-    url(r'^birthcity/import/$', import_views.ImportBirthcityView.as_view(), name='import_birthcity_url'),
+    path('import/all/', import_views.ImportAllView.as_view(), name='import_all_url'),
 
     # PR2019-02-25
     path('downloads/', report_views.download, name='downloads_url'),
@@ -236,9 +220,9 @@ urlpatterns = [
 
 # ajax PR2018-12-02
     path('ajax/', include([
-        path('import_student_load/', student_views.StudentImportUploadDataView.as_view(), name='import_student_load_url'),
-        path('import_student_awpcoldef/', student_views.StudentImportUploadSettingView.as_view(), name='upload_student_mapping_url'),
-        path('ajax_importssi_upload/', import_views.AjaxImportSSIupload.as_view(), name='ajax_importssi_upload_url'),
+        #path('import_student_load/', student_views.StudentImportUploadDataView.as_view(), name='import_student_load_url'),
+        path('importsettings_upload/', school_imports.UploadImportSettingView.as_view(), name='importsettings_upload_url'),
+        path('importdata_upload/', school_imports.UploadImportDataView.as_view(), name='importdata_upload_url'),
         path('ajax_schemeitems_download/', subject_views.SchemeitemsDownloadView.as_view(), name='ajax_schemeitems_download_url'),
         path('ajax_ssi_upload/', subject_views.SchemeitemUploadView.as_view(), name='ajax_ssi_upload_url'),
     ])),

@@ -1,0 +1,329 @@
+{% load i18n %}
+{% load static %}
+
+{% block stylesheet %}
+    <link rel="stylesheet" href="{% static 'css/awpr_import201020.css' %}">
+{% endblock %}
+<!-- =================== MODAL IMPORT  =================== -->
+    <div class="modal" id="id_modimport" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 id="id_MIMP_header" class="modal-title mx-2" ></h4>
+                    <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div id="id_MIMP_body" class="modal-body modal_container">
+<!-- modal_body_left contains employee select table -->
+                        <div class="modal_body_right mx-2 my-2">
+                            <div id="id_MIMP_btn_container" class="btn-group btn-block mx-2 my-2" role="group" aria-label="Choose option" >
+                                <button data-btn="btn_step1" class="btn btn-secondary">{% trans 'Step' %} 1: {% trans 'Select file' %}</button>
+                                <button data-btn="btn_step2" class="btn btn-secondary">{% trans 'Step' %} 2: {% trans 'Link colums' %}</button>
+                                <button data-btn="btn_step3" class="btn btn-secondary">{% trans 'Step' %} 3: {% trans 'Link data' %}</button>
+                                <button data-btn="btn_step4" class="btn btn-secondary">{% trans 'Step' %} 4: {% trans 'Upload data' %}</button>
+                            </div>
+
+                            <div class="ta_c">
+                                <img id="id_modroster_employee_loader" src="{% static 'img/loader.gif' %}" height="24" width="24" class="display_hide" >
+                            </div>
+
+                            <h4 id="id_MIMP_step_text" class="mx-4 my-0"></h4>
+<!-- STEP 1 -->
+                            <div class="ta_l mx-4 btn_show btn_step1">
+                                <label id="id_MIMP_filedialog_label" class="m-2"></label>
+                                <div class="content_subheader_left mx-4">
+                                    <input id="id_MIMP_filedialog" type="file" name="file" class="mb-0" accept=".xlsx, .xls, csv">
+                                </div>
+                                <div class="mx-2 my-0"><small id="id_MIMP_msg_filedialog" class="text-danger display_hide"></small></div>
+
+                                <div id="id_msg_novalidfile" class="m-0 px-4 py-0" >
+                                    <small class="text-danger">
+                                        {% trans "You must select a valid Excel file before you can proceed." %}
+                                    </small>
+                                </div>
+
+                                <label class="mx-2 mt-4 mb-2">B. {% trans 'Select a worksheet' %}:</label>
+                                <div class="content_header">
+                                    <div class="content_subheader_left mx-4">
+                                        <select id="id_MIMP_worksheetlist" class="form-control mb-0"
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;"></select>
+                                    </div>
+                                    <div class="content_subheader_left mx-2 my-0"></div>
+                                </div>
+
+                                <div class="content_header">
+                                    <div class="content_subheader_left mx-4 my-0">
+                                        <small id="id_msg_worksheet" class="text-danger display_hide"></small>
+                                    </div>
+                                </div>
+
+                                <label class="mx-2 mt-4 mb-2">C. {% trans 'Select if the worksheet has a header row:' %}</label>
+                                <div class="content_subheader_left mx-4">
+                                    <span>
+                                        <input id="id_MIMP_hasheader" type="checkbox" value="true" class="tw_032">
+                                        <label for="id_MIMP_hasheader" class="mx-2 my-1">{% trans 'Worksheet has a header row' %}</label>
+                                    </span>
+                                 </div>
+                            </div>
+
+<!-- STEP 2 -->
+                            <div class="mx-4 mt-2 btn_show btn_step2 display_hide">
+                                <div class="mx-2"><small>{% trans "Click corresponding names in the left and right list to link an Excel column to an AWP-column." %}</small></div>
+                                <div class="mx-2"><small >{% trans "Click linked names in the lower list to unlink these columns." %}</small></div>
+                                <div class="mx-2"><small id="id_MIMP_msg_link_unique" class="text-danger"></small></div>
+
+                                <div class="flex_container mt-2">
+                                    <div class="flex_1 awp-columnsXX m-2">
+                                        <table class="tsa_tbl_unlinked" width="100%">
+                                            <thead class="tsa_tbl_hdr_unlinked">
+                                                <tr><th class="ta_c">{% trans 'AWP columns' %}</th></tr>
+                                            </thead>
+                                            <tbody id="id_MIMP_tbody_coldef_awp" data-AEL="awp" data-table="coldef">
+                                                <tr><td class="px-2">{% trans 'AWP columns' %}</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="flex_1 excel-columnsXX m-2">
+                                        <table class="tsa_tbl_unlinked" width="100%">
+                                            <thead class="tsa_tbl_hdr_unlinked">
+                                                <tr><th class="ta_c">{% trans 'Excel columns' %}</th></tr>
+                                            </thead>
+                                            <tbody id="id_MIMP_tbody_coldef_exc" data-AEL="exc" data-table="coldef">
+                                                <tr><td class="px-2">{% trans 'Excel columns' %}</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="flex_container mt-2">
+                                    <div class="flex_1 m-2">
+                                         <table class="tsa_tbl_linked" width="100%">
+                                            <thead class="tsa_tbl_hdr_linked">
+                                                <tr><th class="ta_c" colspan="2">{% trans 'Linked columns' %}</th></tr>
+                                            </thead>
+                                            <tbody id="id_MIMP_tbody_coldef_lnk" data-AEL="lnk" data-table="coldef">
+                                                <tr>
+                                                    <td class="px-2">{% trans 'AWP columns' %}</td>
+                                                    <td class="px-2">{% trans 'Excel columns' %}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+<!-- STEP 3-->
+                            <div class="mx-4 mt-2 btn_show btn_step3 display_hide">
+                                <div class="mx-2"><small>{% trans "Click corresponding names in the left and right list to link an Excel value to an AWP value." %}</small></div>
+                                <div class="mx-2"><small >{% trans "Click linked values in the lower list to unlink these values." %}</small></div>
+
+                                <div class="flex_container mt-2">
+                                    <div id="id_MIMP_container_department" class=" flex 1 flex_container mt-2 border_bg_transparent">
+                                        <div class="m-2">
+                                            <div class="mx-2"><h5>{% trans "Link departments" %}</h5></div>
+                                            <div class="flex_container mt-2">
+                                                <div class="flex_1 m-1">
+                                                    <table class="tsa_tbl_unlinked" width="100%">
+                                                        <thead class="tsa_tbl_hdr_unlinked">
+                                                            <tr><th class="ta_c tw_150">{% trans 'AWP values' %}</th></tr>
+                                                        </thead>
+                                                        <tbody id="id_MIMP_tbody_department_awp" data-AEL="awp" data-table="department">
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <div class="flex_1 m-1">
+                                                    <table class="tsa_tbl_unlinked" width="100%">
+                                                        <thead class="tsa_tbl_hdr_unlinked">
+                                                            <tr><th class="ta_c tw_150">{% trans 'Excel values' %}</th></tr>
+                                                        </thead>
+                                                        <tbody id="id_MIMP_tbody_department_exc" data-AEL="exc" data-table="department">
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            <div class="flex_container mt-2">
+                                                <div class="flex_1 m-1">
+                                                     <table class="tsa_tbl_linked" width="100%">
+                                                        <thead class="tsa_tbl_hdr_linked">
+                                                            <tr><th class="ta_c" colspan="2">{% trans 'Linked values' %}</th></tr>
+                                                        </thead>
+                                                        <tbody id="id_MIMP_tbody_department_lnk" data-AEL="lnk" data-table="department">
+                                                            <tr>
+                                                                <td class="px-2">{% trans 'AWP values' %}</td>
+                                                                <td class="px-2">{% trans 'Excel values' %}</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="id_MIMP_container_level" class=" flex 1 flex_container mt-2 border_bg_transparent">
+                                        <div class="m-2">
+                                            <div class="mx-2"><h5>{% trans "Link levels" %}</h5></div>
+                                            <div class="flex_container mt-2">
+                                                <div class="flex_1 m-1">
+                                                    <table class="tsa_tbl_unlinked" width="100%">
+                                                        <thead class="tsa_tbl_hdr_unlinked">
+                                                            <tr><th class="ta_c tw_150">{% trans 'AWP values' %}</th></tr>
+                                                        </thead>
+                                                        <tbody id="id_MIMP_tbody_level_awp" data-AEL="awp" data-table="level">
+                                                            <tr><td class="px-2">{% trans 'AWP values' %}</td></tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <div class="flex_1 m-1">
+                                                    <table class="tsa_tbl_unlinked" width="100%">
+                                                        <thead class="tsa_tbl_hdr_unlinked">
+                                                            <tr><th class="ta_c tw_150">{% trans 'Excel values' %}</th></tr>
+                                                        </thead>
+                                                        <tbody id="id_MIMP_tbody_level_exc" data-AEL="exc" data-table="level">
+                                                            <tr><td class="px-2">{% trans 'Excel values' %}</td></tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            <div class="flex_container mt-2">
+                                                <div class="flex_1 m-1">
+                                                     <table class="tsa_tbl_linked" width="100%">
+                                                        <thead class="tsa_tbl_hdr_linked">
+                                                            <tr><th class="ta_c" colspan="2">{% trans 'Linked values' %}</th></tr>
+                                                        </thead>
+                                                        <tbody id="id_MIMP_tbody_level_lnk" data-AEL="lnk" data-table="level">
+                                                            <tr>
+                                                                <td class="px-2">{% trans 'AWP values' %}</td>
+                                                                <td class="px-2">{% trans 'Excel values' %}</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="id_MIMP_container_sector" class=" flex 1 flex_container mt-2 border_bg_transparent">
+                                        <div class="m-2">
+                                            <div class="mx-2"><h5>{% trans "Link sectors" %}</h5></div>
+                                            <div class="flex_container mt-2">
+                                                <div class="flex_1 m-1">
+                                                    <table class="tsa_tbl_unlinked" width="100%">
+                                                        <thead class="tsa_tbl_hdr_unlinked">
+                                                            <tr><th class="ta_c tw_150">{% trans 'AWP values' %}</th></tr>
+                                                        </thead>
+                                                        <tbody id="id_MIMP_tbody_sector_awp" data-AEL="awp" data-table="sector">
+                                                            <tr><td class="px-2">{% trans 'AWP values' %}</td></tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <div class="flex_1 m-1">
+                                                    <table class="tsa_tbl_unlinked" width="100%">
+                                                        <thead class="tsa_tbl_hdr_unlinked">
+                                                            <tr><th class="ta_c tw_150">{% trans 'Excel values' %}</th></tr>
+                                                        </thead>
+                                                        <tbody id="id_MIMP_tbody_sector_exc" data-AEL="exc" data-table="sector">
+                                                            <tr><td class="px-2">{% trans 'Excel values' %}</td></tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            <div class="flex_container mt-2">
+                                                <div class="flex_1 m-1">
+                                                     <table class="tsa_tbl_linked" width="100%">
+                                                        <thead class="tsa_tbl_hdr_linked">
+                                                            <tr><th class="ta_c" colspan="2">{% trans 'Linked values' %}</th></tr>
+                                                        </thead>
+                                                        <tbody id="id_MIMP_tbody_sector_lnk" data-AEL="lnk" data-table="sector">
+                                                            <tr>
+                                                                <td class="px-2">{% trans 'AWP values' %}</td>
+                                                                <td class="px-2">{% trans 'Excel values' %}</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex_container mt-2 tsa_tr_error">
+                                    XXXXXXXXXXXXXXXXXXXX
+                                    <div id="id_MIMP_div_dateformat" class="flex_1 mx-1 display_hideXX">
+                                        <h6 class="ta_l mt-4 mx-2">{% trans 'Date format' %}</h6>
+                                        <div id="id_MIMP_msg_dateformat"><small class="text-danger mx-2 my-0">
+                                            {% trans "AWP was not able to determine the format of the dates. Please select a date format." %}
+                                        </small></div>
+
+                                        <div class="content_header">
+                                            <div class="tsa_flex_2  mx-1">
+                                                <select id="id_MIMP_dateformat" size="3"
+                                                        autocomplete="off" ondragstart="return false;" ondrop="return false;"
+                                                    class="form-control mt-2">
+                                                    <option value="yyyy-mm-dd">yyyy-mm-dd</option>
+                                                    <option value="dd-mm-yyyy">dd-mm-yyyy</option>
+                                                    <option value="mm-dd-yyyy">mm-dd-yyyy</option>
+                                                </select>
+                                            </div>
+                                            <div class="tsa_flex_1 mx-1">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+<!-- STEP 4-->
+                            <div class="ta_l m-4 btn_show btn_step4 display_hide">
+                                <h6 id="id_MIMP_upload_label"  class="ta_l mx-2 mt-4 mb-2"></h6>
+                                <div class="content_subheader_left mx-2 my-2">
+                                    <button id="id_MIMP_btn_test" type="button" class="btn btn-secondary">{% trans 'Test upload' %}</button>
+                                    <button id="id_MIMP_btn_upload" type="button" class="btn btn-secondary">{% trans 'Upload' %}</button>
+                                    <span>
+                                        <img id="id_MIMP_loader" src="{% static 'img/loader.gif' %}" height="24" width="24" class="mx-4 visibility_hide" >
+                                    </span>
+                                </div>
+                                <div >
+                                    <small class="text-muted">
+                                        {% trans "'Test upload' validates the new data and compares it with the existing database. It will not save the new data." %}
+                                        {% trans "You can review the results in a log file that will be downloaded." %}
+                                    </small>
+                                </div>
+
+                                <div class="flex_container mx-4 mb-0 btn_show btn_step1 btn_step4 display_hide">
+                                <div class="flex_1">
+                                    <div>
+                                        <h6 class="mb-0">{% trans 'Excel file data' %}:</h6>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted">
+                                            {% trans "The columns with a red header will be uploaded." %}
+                                        </small>
+                                    </div>
+                                    <div class="mb-4">
+                                        <table id="id_table" class="awp_import_table" width="100%">
+                                            <thead id="id_MIMP_thead_data" class="c_theadXX"></thead>
+                                            <tbody id="id_MIMP_tbody_data" class="c_tbody"></tbody>
+                                            <tfoot id="id_MIMP_tfoot_data" class="c_tfoot"></tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+
+                </div>
+                <div class="modal-footer pr-4">
+                    <div class="content_subheader_left mx-1 ">
+                        <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                    </div>
+                    <div class="content_subheader_right">
+                        <div id="id_btn_container2" class="sidebar_btngroup btn-group btn-block" role="group" aria-label="Choose option" >
+                            <button id="id_MIMP_btn_prev" type="button" class="btn btn-secondary"> &lt;  {% trans 'Previous step' %}</button>
+                            <button id="id_MIMP_btn_next"  type="button" class="btn btn-secondary">{% trans 'Next step' %} &gt; </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="id_MIMP_data" data-importsettings_upload_url="{% url 'importsettings_upload_url' %}"
+                     data-importdata_upload_url="{% url 'importdata_upload_url' %}"></div>
+            </div>
+        </div>
+    </div>
+

@@ -2,33 +2,33 @@
 {% load i18n %} {% load l10n %}
 {% load static %}
 
-{% block title %}{% trans 'Schools' %}{% endblock %}
+{% block title %}{% trans 'Subjects of candidates' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/schools201020.js' %}"></script>
+    <script src="{% static 'js/import201203.js' %}"></script>
+    <script src="{% static 'js/studentsubjects201222.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
 {% block sidebar %}
     <nav id="id_sidebar" class="awp_sidebar">
         <div class="content_subheader_left tab_show tab_init mx-2 my-4">
-            <h5>{% trans 'Schools' %}</h5>
+            <h5>{% trans 'Subjects of candidates' %}</h5>
         </div>
         {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
             <div class="tw_200 mx-2 mt-2 mb-4">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Select department' %}:</h6>
-                <input id="id_SBR_department"
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Filter' %}:</h6>
+                <input id="id_SBR_filter"
                     type="text"
-                    class="tw_200 border_none pointer_show px-2"
-                    readonly>
+                    class="tw_200 border_none px-2">
             </div>
-            <div class="tw_200 mx-2 mt-2 mb-4">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Select school' %}:</h6>
-                <input id="id_SBR_school"
-                    type="text"
-                    class="tw_200 border_none pointer_show px-2"
-                    readonly>
+
+            <div class="tbl_div_520_200 mx-2 my-2">
+                <table>
+                    <tbody id="id_SBR_tblbody_select"></tbody>
+                </table>
             </div>
+
         {% endif %}
     </nav>
 {% endblock %}
@@ -37,15 +37,18 @@
 {% block content %}
     <div id="id_content">
         {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
-
     <!-- =================== MODAL SELECT EXAM YEAR =================== -->
             {% include 'schools/modselectexamyear.html' %}
     <!-- =================== MODAL SELECT SCHOOL OR DEPARTMENT=================== -->
             {% include 'schools/modselectschoolordep.html' %}
     <!-- =================== MODAL CONFIRM  =================== -->
             {% include 'includes/modconfirm.html' %}
-    <!-- =================== MODAL SCHOOL =================== -->
-            {% include 'schools/modschool.html' %}
+    <!-- =================== MODAL STUDENT =================== -->
+            {% include 'students/modstudent.html' %}
+    <!-- =================== MODAL STUDENT SUBJECT =================== -->
+            {% include 'students/modstudentsubject.html' %}
+    <!-- =================== MODAL IMPORT  =================== -->
+            {% include 'includes/modimport.html' %}
 
             <div class="content_margin_top78">
     <!-- CONTENT HEADER - LOADER -->
@@ -53,43 +56,55 @@
                 {% include 'includes/messages.html' %}
         <!-- submenu -->
                 <div class="content_header flex_container">
-                    <div id="id_submenu" class="awp_navbar_submenuXX display_hide mt-5">
+                    <div id="id_submenu" class="awp_navbar_submenuXX mt-5">
                 </div>
         <!-- header_text -->
-                    <div class="content_subheader_left mx-4 display_hide">
-                        <h5 id="id_hdr_text">{{examyear}}  {{school}}</h5>
+                    <div class="flex_4 mx-4 visibility_hide">
+                        <h5 id="id_hdr_left"></h5>
                     </div>
         <!-- loader -->
-                    <div class="content_header_middle ">
-                        <div id="id_loader" class="image_container visibility_hideXX">
+                    <div class="flex_1">
+                        <div id="id_loader" class="image_container visibility_hide">
                             <img src="{% static 'img/loader.gif' %}" class="icon_24">
                         </div>
+                    </div>
+        <!-- header_text -->
+                    <div class="flex_2 mx-4 visibility_hide">
+                        <h5 id="id_hdr_textright1"></h5>
+                    </div>
+                    <div class="flex_2 mx-4 visibility_hide">
+                        <h5 id="id_hdr_textright2"></h5>
                     </div>
                 </div>
             <!-- end content_header -->
     <!-- BUTTON GROUP -->
-                <div id="id_btn_container" class="btn-group btn-block ml-2 mr-4 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="btn_school" class="btn btn-secondary ">{% trans 'Schools' %}</button>
+                <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
+                    <button data-btn="btn_studsubj" class="btn btn-secondary ">{% trans 'Subjects' %}</button>
+                    <button data-btn="btn_exemption" class="btn btn-secondary ">{% trans 'Exemptions' %}</button>
+                    <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Re-examinations' %}</button>
+                    <button data-btn="btn_reex3" class="btn btn-secondary ">{% trans 'Re-exam 3rd period' %}</button>
+                    <button data-btn="btn_pok" class="btn btn-secondary ">{% trans 'Proof_of_knowledge' %}</button>
                 </div>
     <!-- end BUTTON GROUP -->
     <!-- END OF CONTENT HEADER -->
 
     <!-- CONTENT BODY -->
-            <div class="content_body ml-2 mr-0">
     <!-- =================== DATA TABLE  =================== -->
+            <div class="content_body mx-2 mt-2">
                 <table class="table tsa_tbl">
                     <thead id="id_tblHead_datatable"></thead>
                     <tbody id="id_tblBody_datatable"></tbody>
                 </table>
-    <!-- =================== END DATA TABLE  =================== -->
             </div>
+    <!-- =================== STUDENT SUBJECTS  =================== -->
+
     <!-- END OF CONTENT BODY -->
             </div>
             <div id="id_data"
                 data-datalist_download_url="{% url 'datalist_download_url' %}"
                 data-settings_upload_url="{% url 'settings_upload_url' %}"
-                data-school_upload_url="{% url 'school_upload_url' %}"
-                data-school_import_url="{% url 'school_import_url' %}"
+                data-student_upload_url="{% url 'student_upload_url' %}"
+                data-studsubj_upload_url="{% url 'studsubj_upload_url' %}"
             >
             </div>
 

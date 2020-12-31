@@ -1,1129 +1,818 @@
 # PR2018-04-14
 from django.contrib.auth.decorators import login_required # PR2018-04-01
-from django.http import HttpResponse
+from django.db.models import Q
 from django.shortcuts import render, redirect #, get_object_or_404
-from django.urls import reverse_lazy
-from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.views.generic import UpdateView, DeleteView, View, ListView, CreateView
+from django.utils.translation import ugettext_lazy as _
+from django.views.generic import View
 
-from datetime import datetime
-
-import json # PR2018-12-03
-
-from schools.models import Department, Schoolbase, School, Schoolsetting
-from subjects.models import Subject, Level, Sector, Subjecttype, Scheme, Schemeitem, Package
-from students.models import Birthcountry, Birthcity, Student
-from awpr import functions as f
-from awpr import constants as c
-from awpr import menus as am
+from awpr import functions as af
+from schools import models as sch_mod
+from students import models as stud_mod
+from subjects import models as subj_mod
 
 # PR2018-04-27
 import logging
 logger = logging.getLogger(__name__)
 
 # PR2018-05-06
-from django.utils.translation import activate, get_language_info, ugettext_lazy as _
-
 
 
 # PR2018-04-27 import Excel file from "How to upload and process the Excel file in Django" http://thepythondjango.com/upload-process-excel-file-django/
 import openpyxl
-from tablib import Dataset, import_set
 
 
 @method_decorator([login_required], name='dispatch')
-class ImportSchoolView(View):
+class ImportAllView(View):  #PR2020-12-13
 
     def get(self, request):
-        # permission: user.is_authenticated AND user.is_role_system_perm_admin
-        param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = am.get_headerbar_param(request, param)
-        return render(request, 'import_school.html', headerbar_param)
-
-    def post(self, request):
-        # self.request = request
-        logger.debug('ImportSchoolView post: request.user: ' + str(request.user) + ' type: ' + str(type(request.user)))
-        logger.debug('ImportSchoolView post: self.request.user: ' + str(self.request.user) + ' type: ' + str(type(self.request.user)))
-
-        # Note that request.FILES will only contain data if the request method was POST and
-        # the <form> that posted the request has the attribute enctype="multipart/form-data".
-        # Otherwise, request.FILES will be empty.
-
-        # from https://docs.djangoproject.com/en/2.0/ref/files/uploads/#django.core.files.uploadedfile.UploadedFile.name
-        uploadedfile = request.FILES["excel_file"]
-        # logger.debug('import_school_excel_view uploadedfile.name: ' + str(uploadedfile.name))
-
-        # you may put validations here to check extension or file size
-        wb = openpyxl.load_workbook( uploadedfile)
-
-        # PR2018-04-27 debug: DeprecationWarning: Call to deprecated function get_sheet_names (Use wb.sheetnames). Was:  ws_names = wb.get_sheet_names()
-       #  ws_names = wb.sheetnames
-        # logger.debug('import_school_excel_view ws_names: ' + str(ws_names))
-        worksheet = wb.worksheets[0]
-        # logger.debug('import_school_excel_view worksheet: ' + str(worksheet))
-        excel_data = list()
-
-        # check if request.user.country is parent of request.user.examyear PR2018-10-18
-        if request.user is not None:
-            if request.user.country is not None and request.user.examyear is not None:
-                if request.user.examyear.country.pk == request.user.country.pk:
-
-                    # Map dep.abbrev to dep.base.id  {'vsbo': 1, 'havo': 2, 'vwo': 3}
-                    mapped_depbase_list = get_mapped_depbase_list(request.user.examyear)
-
-                    # iterating over the rows and
-                    # getting value from each cell in row
-                    skip_first_row = True # skip first row, it contains headers PR2019-02-16
-                    for row in worksheet.iter_rows():
-                        if skip_first_row:
-                            skip_first_row = False
-                        else:
-                            row_data = list()
-                            for cell in row:
-                                row_data.append(str(cell.value))
-                            # logger.debug('import_school_excel_view row_data: ' + str(row_data))
-
-                            school = School()
-                            school.examyear = request.user.examyear
-                            school.code = row_data[0]
-                            school.name = row_data[1]
-                            school.abbrev = row_data[2]
-                            school.article = row_data[3]
-                            school.depbase_list = convert_nameslist_to_baseidlist(row_data[4], mapped_depbase_list)
-
-                            # is_template stores the examyear.id. In that way there can only be one template per examyear / country
-                            school_is_template = True if str(row_data[5]) == "1" else False
-                            if school_is_template:
-                                school.is_template = request.user.examyear.id
-
-                            school.save(request=self.request)
-                            # logger.debug('import_school_excel_view _school: ' + str(school.name))
-
-                            excel_data.append(row_data)
-
-        return render(request, 'import_school.html', {"excel_data": excel_data})
-
-
-@method_decorator([login_required], name='dispatch')
-class ImportDepartmentView(View):
-
-    def get(self, request):
-        # permission: user.is_authenticated AND user.is_role_system_perm_admin
-        param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = am.get_headerbar_param(request, param)
-
-        logger.debug('ImportDepartmentView headerbar_param: ' + str(headerbar_param))
-        # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'import_department.html', headerbar_param)
+        # permission: user.is_authenticated AND user.is_role_adm_or_sys_and_perm_adm_or_sys
+        header_text = _('Upload') + ' ' + str(_('All').lower())
+        return render(request, 'import.html', {'header': header_text})
 
     def post(self,request):
-        uploadedfile = request.FILES["excel_file"]
-        # logger.debug('ImportDepartmentView uploadedfile.name: ' + str(uploadedfile.name))
-
-        # you may put validations here to check extension or file size
-        wb = openpyxl.load_workbook(uploadedfile)
-        # PR2018-04-27 debug: DeprecationWarning: Call to deprecated function get_sheet_names (Use wb.sheetnames). Was:  ws_names = wb.get_sheet_names()
-        ws_names = wb.sheetnames
-        worksheet = wb.worksheets[0]
-        excel_data = list()
-
-        # check if request.user.country is parent of request.user.examyear PR2018-10-18
-        if request.user.examyear is not None and request.user.country is not None:
-            if request.user.examyear.country.id == request.user.country.id:
-
-        # iterating over the rows and
-        # getting value from each cell in row
-                skip_first_row = True # skip first row, it contains headers PR2019-02-16
-                for row in worksheet.iter_rows():
-                    if skip_first_row:
-                        skip_first_row = False
-                    else:
-                        row_data = list()
-                        for cell in row:
-                            row_data.append(str(cell.value))
-                        # logger.debug('row_data: ' + str(row_data))
-
-                        #PR2018-04-28 debug: don't forget de brackets when creating an instance of the class
-                        dep = Department()
-
-                        # dep.base: new dep.base is created in dep.save
-                        dep.examyear = request.user.examyear
-
-
-                        dep.name = row_data[0]
-                        dep.abbrev = row_data[1]
-                        dep.sequence = int(str(row_data[2]))
-                        dep.level_req = True if str(row_data[3]) == '1' else False
-                        dep.sector_req = True if str(row_data[4]) == '1' else False
-                        dep.level_caption = row_data[5]
-                        dep.sector_caption = row_data[6]
-
-                        dep.save(request=self.request)
-                        # logger.debug('dep.id: ' + str(dep.id) + ' .name: ' + str(dep.name) + ' .abbrev: ' + str(dep.abbrev) + ' .sequence: ' + str(dep.sequence))
-
-                        excel_data.append(row_data)
-
-        return render(request, 'import_department.html', {"excel_data": excel_data})
-
-
-@method_decorator([login_required], name='dispatch')
-class ImportLevelView(View):
-
-    def get(self, request):
-        # permission: user.is_authenticated AND user.is_role_system_perm_admin
-        param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = am.get_headerbar_param(request, param)
-        # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'import_level.html', headerbar_param)
-
-    def post(self, request):
         uploadedfile = request.FILES["excel_file"]
         logger.debug('ImportDepartmentView uploadedfile.name: ' + str(uploadedfile.name))
-        # you may put validations here to check extension or file size
-        wb = openpyxl.load_workbook(uploadedfile)
-        # PR2018-04-27 debug: DeprecationWarning: Call to deprecated function get_sheet_names (Use wb.sheetnames). Was:  ws_names = wb.get_sheet_names()
-        ws_names = wb.sheetnames
-        worksheet = wb.worksheets[0]
+        logger.debug('request.user.country: ' + str(request.user.country))
+
+# get examyear from settings
+        sel_examyear_instance, selected_dict_has_changed, may_select_examyear = af.get_sel_examyear_instance(request)
+
         excel_data = list()
+        # check if request.user.country is parent of sel_examyear_instance PR2018-10-18
+        if sel_examyear_instance is not None and request.user.country is not None:
+            if sel_examyear_instance.country.id == request.user.country.id:
+                # you may put validations here to check extension or file size
+                wb = openpyxl.load_workbook(uploadedfile)
+                # PR2018-04-27 debug: DeprecationWarning: Call to deprecated function get_sheet_names (Use wb.sheetnames). Was:  ws_names = wb.get_sheet_names()
+                # ws_names = wb.sheetnames
+                mapped = {'depbase': {}, 'level': {}, 'sector': {}, 'subjecttype': {}, 'subject': {}, 'scheme': {},
+                                'package': {}}
 
-        # check if request.user.country is parent of request.user.examyear PR2018-10-18
-        if request.user.examyear is not None and request.user.country is not None:
-            if request.user.examyear.country.id == request.user.country.id:
+                logger.debug('wb.worksheets: ' + str(wb.worksheets))
+                # iterate through trhis tuple to make sure the data are imported in the right order
+                for ws_name in ('department', 'level', 'sector', 'subjecttype', 'subject', 'scheme', 'schemeitem',
+                                'package', 'packageitem', 'birthcountry', 'birthplace', 'schoolCUR', 'schoolSXM'):
 
-                # Map dep.abbrev to dep.base.id  {'vsbo': 1, 'havo': 2, 'vwo': 3}
-                mapped_depbase_list = get_mapped_depbase_list(request.user.examyear)
+                    excel_data.append('----- ' + ws_name)
+                    index = -1
+                    for wb_index, wb_sheetname in enumerate(wb.sheetnames):
+                        if wb_sheetname == ws_name:
+                            index = wb_index
+                            break
+                    worksheet = None
+                    if index > -1:
+                        worksheet = wb.worksheets[index]
 
-                # iterating over the rows and getting value from each cell in row
-                skip_first_row = True # skip first row, it contains headers PR2019-02-16
-                for row in worksheet.iter_rows():
-                    if skip_first_row:
-                        skip_first_row = False
-                    else:
-                        row_data = list()
-                        for cell in row:
-                            row_data.append(str(cell.value))
-                        # row_data: ['Praktisch Basisgerichte Leerweg', 'PBL', '1', 'vsbo']
+                    if worksheet:
+                        # iterating over the rows and getting value from each cell in row
+                        # skip first row, it contains headers PR2019-02-16
+                        skip_first_row = True
+                        for row in worksheet.iter_rows():
+                            if skip_first_row:
+                                skip_first_row = False
+                            else:
+                                row_data = list()
+                                for cell in row:
+                                    row_data.append(str(cell.value))
 
-                        logger.debug('row_data: ' + str(row_data))
+                                ImportData(ws_name, row_data, excel_data, mapped, sel_examyear_instance, request)
 
-                        #PR2018-04-28 debug: don't forget de brackets when creating an instance of the class
-                        level = Level()
-
-                        # new level.base is created in level.save
-                        level.examyear = request.user.examyear
-
-                        level.name = row_data[0]
-                        level.abbrev = row_data[1]
-                        level.sequence = int(str(row_data[2]))
-                        level.depbase_list = convert_nameslist_to_baseidlist(row_data[3], mapped_depbase_list)
-
-                        level.save(request=self.request)
-
-                        excel_data.append(row_data)
-
-        return render(request, 'import_level.html', {"excel_data": excel_data})
+        header_text = _('Upload') + ' ' + str(_('All').lower())
+        return render(request, 'import.html', {"excel_data": excel_data, 'header': header_text})
 
 
-@method_decorator([login_required], name='dispatch')
-class ImportSectorView(View):
+def ImportData(ws_name, row_data, excel_data, mapped, sel_examyear, request):  #PR2020-12-13
 
-    def get(self, request):
-        # permission: user.is_authenticated AND user.is_role_system_perm_admin
-        param = {'display_school': True}
-        headerbar_param = am.get_headerbar_param(request, param)
-        # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'import_sector.html', headerbar_param)
+    #try:
+    if True:
+        requsr_country = request.user.country
+        if ws_name == 'department':
+            logger.debug ('-------------------  department ----------------- sel_examyear: ' + str(sel_examyear))
+            # 0: name 1: code 2: abbrev 3: sequence 4: level_req 5: sector_req 6: level_caption 7:sector_caption
+            code = str(row_data[1]) if row_data[1] else None
+            logger.debug ('code: ' + str(code))
+            if code:
+    # - check if depbase with this code already exists in this country. If not: create
+                depbase = sch_mod.Departmentbase.objects.filter(country=requsr_country, code=code).order_by('-pk').first()
+                logger.debug ('depbase found: ' + str(depbase))
+                if depbase is None:
+                    depbase = sch_mod.Departmentbase.objects.create(country=requsr_country, code=code)
+                    logger.debug ('depbase created: ' + str(depbase))
+    # - check if department with this depbase already exists in this examyear. If not: create
+                department = sch_mod.Department.objects.filter(base=depbase, examyear=sel_examyear).order_by('-pk').first()
+                logger.debug ('department found: ' + str(department))
+                if department is None:
+                    name = str(row_data[0]) if row_data[0] else None
+                    #code = str(row_data[1]) if row_data[1] else None
+                    abbrev = str(row_data[2]) if row_data[1] else None
+                    sequence = int(str(row_data[3])) if row_data[2] else 9999
+                    level_req = True if str(row_data[4]) == '1' else False
+                    sector_req = True if str(row_data[5]) == '1' else False
+                    level_caption = str(row_data[6]) if row_data[5] else None
+                    sector_caption = str(row_data[7]) if row_data[6] else None
+                    logger.debug ('depbase values: abbrev = ' + str(abbrev))
+                    #PR2018-04-28 debug: don't forget de brackets when creating an instance of the class
+                    department = sch_mod.Department(
+                        base=depbase,
+                        examyear=sel_examyear,
+                        name=name,
+                        abbrev=abbrev,
+                        sequence=sequence,
+                        level_req=level_req,
+                        sector_req=sector_req,
+                        level_caption=level_caption,
+                        sector_caption=sector_caption
+                    )
+                    department.save(request=request)
+                    logger.debug ('depbase created = ' + str(department))
+                    excel_data.append(row_data)
+                if department and department.base and department.base.code:
+                    mapped['depbase'][department.base.code.lower()] = department.base.id
 
-    def post(self, request):
-        uploadedfile = request.FILES["excel_file"]
-        # logger.debug('ImportDepartmentView uploadedfile.name: ' + str(uploadedfile.name))
+        elif ws_name == 'level':
+            # check if level already exists
+            abbrev = str(row_data[1]) if row_data[1] else None
+            if abbrev:
+                # check if level already exists
+                levels = subj_mod.Level.objects.filter(
+                    examyear=sel_examyear,
+                    abbrev__iexact=abbrev
+                )
+                if levels:
+                    level = levels[0]
+                else:
+                    # When new record: First create base record. base.id is used in Department. Create also saves new record
+                    base = subj_mod.Levelbase.objects.create(country=requsr_country)
 
-        # you may put validations here to check extension or file size
-        wb = openpyxl.load_workbook(uploadedfile)
-        # PR2018-04-27 debug: DeprecationWarning: Call to deprecated function get_sheet_names (Use wb.sheetnames). Was:  ws_names = wb.get_sheet_names()
-        ws_names = wb.sheetnames
-        worksheet = wb.worksheets[0]
-        excel_data = list()
+                    name = str(row_data[0]) if row_data[0] else None
+                    #abbrev = str(row_data[1]) if row_data[1] else None
+                    sequence = int(str(row_data[2])) if row_data[2] else 9999
+                    depbases = get_depbase_id_list_from_nameslist(row_data[3], mapped)
 
-        # check if request.user.country is parent of request.user.examyear PR2018-10-18
-        if request.user.examyear is not None and request.user.country is not None:
-            if request.user.examyear.country.id == request.user.country.id:
+                    #PR2018-04-28 debug: don't forget de brackets when creating an instance of the class
+                    level = subj_mod.Level(
+                        base=base,
+                        examyear=sel_examyear,
+                        name=name,
+                        abbrev=abbrev,
+                        sequence=sequence,
+                        depbases=depbases
+                    )
+                    level.save(request=request)
+                    excel_data.append(row_data)
+                if level and level.abbrev:
+                    mapped[ws_name][level.abbrev.lower()] = level.pk
 
-                # Map dep.abbrev to dep.base.id  {'vsbo': 1, 'havo': 2, 'vwo': 3}
-                mapped_depbase_list = get_mapped_depbase_list(request.user.examyear)
+        elif ws_name == 'sector':
+            # check if sector already exists
+            abbrev = str(row_data[1]) if row_data[1] else None
+            if abbrev:
+                # check if sector already exists
+                sectors = subj_mod.Sector.objects.filter(
+                    examyear=sel_examyear,
+                    abbrev__iexact=abbrev
+                )
+                if sectors:
+                    sector = sectors[0]
+                else:
+                    # create base record. Create also saves new record
+                    base = subj_mod.Sectorbase.objects.create(country=requsr_country)
 
-                # iterating over the rows and  getting value from each cell in row
-                skip_first_row = True # skip first row, it contains headers PR2019-02-16
-                for row in worksheet.iter_rows():
-                    if skip_first_row:
-                        skip_first_row = False
-                    else:
-                        row_data = list()
-                        for cell in row:
-                            row_data.append(str(cell.value))
-                        # row_data: ['Economie', 'ec', '1', 'vsbo']
+                    name = str(row_data[0]) if row_data[0] else None
+                    #abbrev = str(row_data[1]) if row_data[1] else None
+                    sequence = int(str(row_data[2])) if row_data[2] else 9999
+                    depbases = get_depbase_id_list_from_nameslist(row_data[3], mapped)
+
+                    sector = subj_mod.Sector(
+                        base=base,
+                        examyear=sel_examyear,
+                        name=name,
+                        abbrev=abbrev,
+                        sequence=sequence,
+                        depbases=depbases
+                    )
+                    sector.save(request=request)
+                    excel_data.append(row_data)
+                if sector and sector.abbrev:
+                    mapped[ws_name][sector.abbrev.lower()] = sector.pk
+                #logger.debug('sector.id: ' + str(sector.pk) + ' name: ' + str(sector.name) + ' .abbrev: ' + str(sector.abbrev))
+
+        elif ws_name == 'subjecttype':
+            # check if subjecttype already exists
+            name = str(row_data[0]) if row_data[0] else None
+            if name:
+                # check if subjecttype already exists
+                subjecttypes = subj_mod.Subjecttype.objects.filter(
+                    examyear=sel_examyear,
+                    name__iexact=name
+                )
+                if subjecttypes:
+                    subjecttype = subjecttypes[0]
+                else:
+                    # create base record.
+                    base = subj_mod.Subjecttypebase.objects.create(country=requsr_country)
+
+                    #name = str(row_data[0]) if row_data[0] else None
+                    abbrev = str(row_data[1]) if row_data[1] else None
+                    code = str(row_data[2]) if row_data[2] else None
+                    sequence = int(str(row_data[3])) if row_data[3] else 9999
+                    has_prac = True if str(row_data[4]) == '1' else False  # has practical exam
+                    has_pws = True if str(row_data[5]) == '1' else False  # has profielwerkstuk or sectorwerkstuk
+                    one_allowed = True if str(row_data[6]) == '1' else False  # if true: only one subject with this Subjecttype allowed per student
+                    depbases = get_depbase_id_list_from_nameslist(row_data[7], mapped)
+
+                    subjecttype = subj_mod.Subjecttype(
+                        base=base,
+                        examyear=sel_examyear,
+                        name=name,
+                        abbrev=abbrev,
+                        code=code,
+                        sequence=sequence,
+                        has_prac=has_prac,
+                        has_pws=has_pws,
+                        one_allowed=one_allowed,
+                        depbases=depbases
+                    )
+                    subjecttype.save(request=request)
+                    excel_data.append(row_data)
+                if subjecttype and subjecttype.name:
+                    mapped[ws_name][subjecttype.name.lower()] = subjecttype.pk
+                #logger.debug('subjecttype.id: ' + str(subjecttype.pk) + ' name: ' + str(subjecttype.name) + ' .abbrev: ' + str(subjecttype.abbrev))
+
+        elif ws_name == 'subject':
+            code = str(row_data[1]) if row_data[1] else None
+            if code:
+                # check if subject already exists
+                subject = get_subject(code, sel_examyear)
+                if subject is None:
+                    name = str(row_data[0]) if row_data[0] else None
+                    #code = str(row_data[1]) if row_data[1] else None
+                    sequence = int(str(row_data[2])) if row_data[2] else 9999
+                    depbases = get_depbase_id_list_from_nameslist(row_data[3], mapped)
+
+                    # create base record with code. Create also saves new record
+                    base = subj_mod.Subjectbase.objects.create(
+                        country=requsr_country,
+                        code=code
+                    )
+
+                    # PR2018-04-28 debug: don't forget de brackets when creating an instance of the class
+                    subject = subj_mod.Subject(
+                        base=base,
+                        examyear=sel_examyear,
+                        name=name,
+                        sequence=sequence,
+                        depbases=depbases
+                    )
+                    subject.save(request=request)
+                    excel_data.append(row_data)
+                if subject and subject.base.code:
+                    mapped[ws_name][subject.base.code.lower()] = subject.pk
+                #logger.debug('subject.id: ' + str(subject.pk) + ' name: ' + str(subject.name) + ' .code: ' + str(subject.base.code))
+
+        elif ws_name == 'scheme':
+            # 0: depbase_code 1: level_abbrev 2: sector_abbrev 3: fields
+            logger.debug('------------')
+            depbase_code = str(row_data[0]) if row_data[0] else 'None'
+            logger.debug('depbase_code: ' + str(depbase_code))
+            if depbase_code:
+                level_abbrev = str(row_data[1]) if row_data[1] else 'None'
+                sector_abbrev = str(row_data[2]) if row_data[2] else 'None'
+                logger.debug('row_data[1]: ' + str(row_data[1]) + ' ' + str(type(row_data[1])))
+                logger.debug('level_abbrev: ' + str(level_abbrev) + ' ' + str(type(level_abbrev)))
+                logger.debug('sector_abbrev: ' + str(sector_abbrev))
+                logger.debug('mapped scheme: ' + str(mapped[ws_name]))
+
+                # check if scheme already exists
+                scheme = get_scheme(depbase_code, level_abbrev, sector_abbrev, sel_examyear)
+                logger.debug('>>>>>>>>>> scheme: ' + str(scheme))
+
+                if scheme is None:
+                    logger.debug('>>>>>>>>>> scheme is None:')
+                    logger.debug('mapped: ' + str(mapped))
+                    department = get_department_from_mapped(depbase_code, sel_examyear, mapped)
+                    logger.debug('department: ' + str(department))
+                    level = get_level_from_mapped(level_abbrev, mapped)
+                    sector = get_sector_from_mapped(sector_abbrev, mapped)
+                    scheme_name = create_scheme_name(depbase_code, level_abbrev, sector_abbrev)
+                    fields = str(row_data[3]) if row_data[3] else None
+                    logger.debug('level: ' + str(level))
+                    logger.debug('sector: ' + str(sector))
+                    logger.debug('scheme_name: ' + str(scheme_name))
+
+                    scheme = subj_mod.Scheme(
+                        department=department,
+                        level=level,
+                        sector=sector,
+                        name=scheme_name,
+                        fields=fields
+                    )
+                    scheme.save(request=request)
+                    excel_data.append(row_data)
+                if scheme:
+                    depbase_code_lc = scheme.department.base.code.lower() if scheme.department.base.code else 'none'
+                    level_abbrev_lc = scheme.level.abbrev.lower() if scheme.level else 'none'
+                    sector_abbrev_lc = scheme.sector.abbrev.lower() if scheme.sector else 'none'
+                    key_tuple = (depbase_code_lc, level_abbrev_lc, sector_abbrev_lc)
+                    mapped[ws_name][key_tuple] = scheme.pk
+                logger.debug('scheme.id: ' + str(scheme.pk) + ' name: ' + str(scheme.name))
+
+        elif ws_name == 'schemeitem':
+            code = str(row_data[1]) if row_data[1] else None
+            if code:
+                depbase_code = str(row_data[0]) if row_data[0] else None
+                level_abbrev = str(row_data[1]) if row_data[1] else None
+                sector_abbrev = str(row_data[2]) if row_data[2] else None
+                subject_code = str(row_data[3]) if row_data[3] else None
+                subjtype_name = str(row_data[4]) if row_data[4] else None
+
+                scheme = get_scheme(depbase_code, level_abbrev, sector_abbrev, sel_examyear)
+                subject = get_subject(subject_code, sel_examyear)
+                subjecttype = get_subjecttype(subjtype_name, sel_examyear)
+
+                if scheme and subject and subjecttype:
+                    # check if schemeitem already exists
+                    schemeitem = get_schemeitem(scheme, subject, subjecttype)
+                    if schemeitem is None:
+                        gradetype = int(str(row_data[5])) if row_data[5] else None
+                        weight_se = int(str(row_data[6])) if row_data[6] else None
+                        weight_ce = int(str(row_data[7])) if row_data[7] else None
+
+                        is_mandatory = True if str(row_data[8]) == '1' else False
+                        is_combi = True if str(row_data[9]) == '1' else False
+                        extra_count_allowed = True if str(row_data[10]) == '1' else False
+                        extra_nocount_allowed = True if str(row_data[11]) == '1' else False
+                        elective_combi_allowed = True if str(row_data[12]) == '1' else False
+                        has_practexam = True if str(row_data[13]) == '1' else False
 
                         # PR2018-04-28 debug: don't forget de brackets when creating an instance of the class
-                        sector = Sector()
+                        schemeitem = subj_mod.Schemeitem(
+                            scheme=scheme,
+                            subject=subject,
+                            subjecttype=subjecttype,
+                            gradetype=gradetype,
+                            weight_se=weight_se,
+                            weight_ce=weight_ce,
 
-                        #sector.base = sector_base: New sector.base is created in sector.save
-                        sector.examyear = request.user.examyear
-
-                        sector.name = row_data[0]
-                        sector.abbrev = row_data[1]
-                        sector.sequence = int(str(row_data[2]))
-                        sector.depbase_list = convert_nameslist_to_baseidlist(row_data[3], mapped_depbase_list)
-
-                        sector.modified_by = request.user
-                        sector.modified_at = timezone.now()
-
-                        sector.save(request=self.request)
-
+                            is_mandatory=is_mandatory,
+                            is_combi=is_combi,
+                            extra_count_allowed=extra_count_allowed,
+                            extra_nocount_allowed=extra_nocount_allowed,
+                            elective_combi_allowed=elective_combi_allowed,
+                            has_practexam=has_practexam,
+                        )
+                        schemeitem.save(request=request)
                         excel_data.append(row_data)
 
-        return render(request, 'import_sector.html', {"excel_data": excel_data})
-
-
-# ===== Import Subjecttype ===================
-
-@method_decorator([login_required], name='dispatch')
-class ImportSubjecttypeView(View):
-
-    def get(self, request):
-        # permission: user.is_authenticated AND user.is_role_system_perm_admin
-        param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = am.get_headerbar_param(request, param)
-        # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'import_subjecttype.html', headerbar_param)
-
-
-    def post(self,request):
-        # from https://docs.djangoproject.com/en/2.0/ref/files/uploads/#django.core.files.uploadedfile.UploadedFile.name
-        uploadedfile = request.FILES["excel_file"]
-        wb = openpyxl.load_workbook(uploadedfile)
-
-        # PR2018-04-27 debug: DeprecationWarning: Call to deprecated function get_sheet_names (Use wb.sheetnames). Was:  ws_names = wb.get_sheet_names()
-        ws_names = wb.sheetnames
-        worksheet = wb.worksheets[0]
-        excel_data = list()
-
-        # check if request.user.country is parent of request.user.examyear PR2018-10-18
-        if request.user is not None:
-            if request.user.examyear is not None and request.user.country is not None:
-                if request.user.examyear.country.pk == request.user.country.pk:
-
-                    # Map dep.abbrev to dep.base.id  {'vsbo': 1, 'havo': 2, 'vwo': 3}
-                    mapped_depbase_list = get_mapped_depbase_list(request.user.examyear)
-
-                    # iterating over the rows and getting value from each cell in row
-                    skip_first_row = True # skip first row, it contains headers PR2019-02-16
-                    for row in worksheet.iter_rows():
-                        if skip_first_row:
-                            skip_first_row = False
-                        else:
-                            row_data = list()
-                            for cell in row:
-                                row_data.append(str(cell.value))
-                            # logger.debug('row_data: ' + str(row_data))
-                            # [‘Gemeenschappelijk deel’, ‘Gemeensch. ’, ‘gmd’, ‘1’, ‘vsbo;havo;vwo’]
-
-                            # PR2018-04-28 debug: don't forget de brackets when creating an instance of the class
-                            subjecttype = Subjecttype()
-
-                            # new subjecttype.base is created in subjecttype.save
-                            subjecttype.examyear = request.user.examyear
-                            subjecttype.name = row_data[0]
-                            subjecttype.abbrev = row_data[1]
-                            subjecttype.code = row_data[2]
-                            subjecttype.sequence = int(str(row_data[3]))
-                            subjecttype.has_prac = True if str(row_data[4]) == '1' else False  # has practical exam
-                            subjecttype.has_pws =True if str(row_data[5]) == '1' else False  # has profielwerkstuk or sectorwerkstuk
-                            subjecttype.one_allowed =True if str(row_data[6]) == '1' else False  # if true: only one subject with this Subjecttype allowed per student
-                            subjecttype.depbase_list = convert_nameslist_to_baseidlist(row_data[7], mapped_depbase_list)
-
-                            subjecttype.save(request=self.request)
-
-                            excel_data.append(row_data)
-
-        return render(request, 'import_subjecttype.html', {"excel_data": excel_data})
-
-
-# ===== Import Subjectse ===================
-@method_decorator([login_required], name='dispatch')
-class ImportSubjectView(View):
-
-    def get(self, request):
-        # permission: user.is_authenticated AND user.is_role_system
-        param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = am.get_headerbar_param(request, param)
-        # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'import_subject.html', headerbar_param)
-
-    def post(self,request):
-        # Note that request.FILES will only contain data if the request method was POST and
-        # the <form> that posted the request has the attribute enctype="multipart/form-data".
-        # Otherwise, request.FILES will be empty.
-
-        # from https://docs.djangoproject.com/en/2.0/ref/files/uploads/#django.core.files.uploadedfile.UploadedFile.name
-        uploadedfile = request.FILES["excel_file"]
-        # you may put validations here to check extension or file size
-        wb = openpyxl.load_workbook(uploadedfile)
-
-        # PR2018-04-27 debug: DeprecationWarning: Call to deprecated function get_sheet_names (Use wb.sheetnames). Was:  ws_names = wb.get_sheet_names()
-        ws_names = wb.sheetnames
-        worksheet = wb.worksheets[0]
-        excel_data = list()
-
-        # check if request.user.country is parent of request.user.examyear PR2018-10-18
-        if request.user is not None:
-            if request.user.examyear is not None and request.user.country is not None:
-                if request.user.examyear.country.pk == request.user.country.pk:
-
-                    # Map dep.abbrev to dep.base.id  {'vsbo': 1, 'havo': 2, 'vwo': 3}
-                    mapped_depbase_list = get_mapped_depbase_list(request.user.examyear)
-
-                    # iterating over the rows and getting value from each cell in row
-                    skip_first_row = True # skip first row, it contains headers PR2019-02-16
-                    for row in worksheet.iter_rows():
-                        if skip_first_row:
-                            skip_first_row = False
-                        else:
-                            row_data = list()
-                            for cell in row:
-                                row_data.append(str(cell.value))
-                            # row_data: ['Nederlandse taal', 'ne', '10', 'vsbo']
-
-                            # PR2018-04-28 debug: don't forget de brackets when creating an instance of the class
-                            subject = Subject()
-
-                            # new subject.base is created in subject.save
-                            subject.examyear = request.user.examyear
-                            subject.name = row_data[0]
-                            subject.abbrev = row_data[1]
-                            subject.sequence = int(str(row_data[2]))
-                            subject.depbase_list =  convert_nameslist_to_baseidlist(row_data[3], mapped_depbase_list)
-
-                            subject.save(request=self.request)
-
-                            excel_data.append(row_data)
-
-        return render(request, 'import_subject.html', {"excel_data": excel_data})
-
-# ===== Import Scheme ===================
-@method_decorator([login_required], name='dispatch')
-class ImportSchemeView(View): # PR2018-11-10
-
-    def get(self, request):
-        # permission: user.is_authenticated AND user.is_role_system
-        param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = am.get_headerbar_param(request, param)
-        # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'import_scheme.html', headerbar_param)
-
-    def post(self,request):
-        uploadedfile = request.FILES["excel_file"]
-        wb = openpyxl.load_workbook(uploadedfile)
-        # ws_names = wb.sheetnames
-        worksheet = wb.worksheets[0]
-        excel_data = list()
-
-        # check if request.user.country is parent of request.user.examyear PR2018-10-18
-        if request.user is not None:
-            if request.user.examyear is not None and request.user.country is not None:
-                if request.user.examyear.country.pk == request.user.country.pk:
-
-                    # Map dep.abbrev to base.id  {'vsbo': 1, 'havo': 2, 'vwo': 3}
-                    mapped_depbase_list = get_mapped_depbase_list(request.user.examyear)
-                    # logger.debug('mapped_depbase_list: ' + str(mapped_depbase_list))
-                    mapped_levelbase_list = get_mapped_levelbase_list(request.user.examyear)
-                    # logger.debug('mapped_levelbase_list: ' + str(mapped_levelbase_list))
-                    mapped_sectorbase_list = get_mapped_sectorbase_list(request.user.examyear)
-                    # logger.debug('mapped_sectorbase_list: ' + str(mapped_sectorbase_list))
-
-                    # iterating over the rows and
-                    skip_first_row = True # skip first row, it contains headers PR2019-02-16
-                    for row in worksheet.iter_rows():
-                        if skip_first_row:
-                            skip_first_row = False
-                        else:
-                            # get value from each cell in row
-                            row_data = list()
-                            for cell in row:
-                                row_data.append(str(cell.value))
-                            # row_data: ['vsbo', 'TKL', 'tech']
-                            logger.debug('--- row_data[0]: ' + str(row_data[0]))
-
-                            dep_abbrev = ''
-                            department = None
-                            if row_data[0]:
-                                depbase_id = mapped_depbase_list.get(str(row_data[0]).lower(), None)
-                                # logger.debug('depbase_id: ' + str(depbase_id))
-                                if depbase_id:
-                                    # skip if more than 1 record found
-                                    # logger.debug('count: ' + str(Department.objects.filter(base__id=depbase_id, examyear=request.user.examyear).count()))
-
-                                    if Department.objects.filter(base__id=depbase_id, examyear=request.user.examyear).count() == 1:
-                                        department = Department.objects.filter(base__id=depbase_id, examyear=request.user.examyear).first()
-                                        #logger.debug('department: ' + str(department))
-                                        if department:
-                                            dep_abbrev = department.abbrev
-
-                            level_abbrev = ''
-                            level = None
-                            # logger.debug('--- row_data[1]: ' + str(row_data[1]))
-                            if row_data[1] is not None:
-                                levelbase_id = mapped_levelbase_list.get(str(row_data[1]).lower(), None)
-                                # logger.debug('levelbase_id: ' + str(levelbase_id))
-                                if levelbase_id:
-                                    # skip if more than 1 record found
-                                    # logger.debug('count: ' + str(Level.objects.filter(base__id=levelbase_id, examyear=request.user.examyear).count()))
-
-                                    if Level.objects.filter(base__id=levelbase_id, examyear=request.user.examyear).count() == 1:
-                                        level = Level.objects.filter(base__id=levelbase_id, examyear=request.user.examyear).first()
-                                        # logger.debug('level: ' + str(level))
-                                        if level:
-                                            level_abbrev = level.abbrev.lower()
-                                            logger.debug('level_abbrev: ' + str(level_abbrev))
-
-                            sector_abbrev = ''
-                            sector = None
-                            # logger.debug('--- row_data[2]: ' + str(row_data[2]))
-                            if row_data[2] is not None:
-                                sectorbase_id = mapped_sectorbase_list.get(str(row_data[2]).lower(), None)
-                                # logger.debug('sectorbase_id: ' + str(sectorbase_id))
-                                if sectorbase_id:
-                                    # skip if more than 1 record found
-                                    # logger.debug('count: ' + str(Sector.objects.filter(base__id=sectorbase_id, examyear=request.user.examyear).count()))
-
-                                    if Sector.objects.filter(base__id=sectorbase_id, examyear=request.user.examyear).count() == 1:
-                                        sector = Sector.objects.filter(base__id=sectorbase_id, examyear=request.user.examyear).first()
-                                        # logger.debug('sector: ' + str(sector))
-                                        if sector:
-                                            sector_abbrev = sector.abbrev.lower()
-                                            logger.debug('sector_abbrev: ' + str(sector_abbrev))
-
-                            scheme = Scheme()
-
-                            if department is not None:
-                                scheme.department = department
-                            if level is not None:
-                                scheme.level = level
-                            if sector is not None:
-                                scheme.sector = sector
-
-                            # logger.debug('dep_abbrev: ' + str(dep_abbrev))
-                            #  logger.debug('level_abbrev: ' + str(level_abbrev))
-                            # logger.debug('sector_abbrev: ' + str(sector_abbrev))
-
-                            scheme.name = Scheme.create_scheme_name(
-                                dep_abbrev=dep_abbrev,
-                                level_abbrev=level_abbrev,
-                                sector_abbrev=sector_abbrev )
-
-                            scheme.fields = row_data[3]
-
-                            # logger.debug('scheme.name: ' + str(scheme.name))
-
-                            scheme.save(request=self.request)
-                            # logger.debug('subject.id: ' + str(subject.id) + ' .name: ' + str(subject.name) + ' .abbrev: ' + str(subject.abbrev) + ' .sequence: ' + str(subject.sequence))
-
-                            excel_data.append(row_data)
-
-        return render(request, 'import_scheme.html', {"excel_data": excel_data})
-
-
-# ===== Import Scheme items ===================
-@method_decorator([login_required], name='dispatch')
-class ImportSchemeitemView(View):  # PR2018-11-10
-
-    def get(self, request):
-        # permission: user.is_authenticated AND user.is_role_system
-        param = {
-            'display_school': True,
-            'display_dep': True,
-            'display_user': True
-        }
-        headerbar_param = am.get_headerbar_param(request, param)
-        # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'import_schemeitem.html', headerbar_param)
-
-
-# ===== AjaxImportSSIupload ===================
-@method_decorator([login_required], name='dispatch')
-class AjaxImportSSIupload(View):  # PR2019-02-15
-
-    def post(self,request):
-        logger.debug(' ===== Import Scheme items =========')
-        rowcount = 0
-        # PR2019-02-17 speed test
-        time_start = datetime.datetime.now()
-        params = {}
-        # check if request.user.country is parent of request.user.examyear PR2018-10-18
-        if request.user is not None:
-            if request.user.examyear is not None and request.user.country is not None:
-                if request.user.examyear.country.pk == request.user.country.pk:
-
-                    # logger.debug(request.POST['schemeitems'])
-                    schemeitems = json.loads(request.POST['schemeitems'])
-                    # Excel file colums:
-                    # 0. dep_abbrev,
-                    # 1. lvl_abbrev,
-                    # 2. sct_aabrev,
-                    # 3. subject_abbrev,
-                    # 4. subjecttype_name,
-                    # 5. gradetype_id,
-                    # 6. weightSE,
-                    # 7. weightCE,
-                    # 8. is_mandatory,
-                    # 9. is_combi,
-                    # 10. extra_count_allowed,
-                    # 11. extra_nocount_allowed,
-                    # 12. choicecombi_allowed,
-                    # 13. has_practexam,
-                    # 14. sequence
-
-                    # ['Vwo', '', 'n&t', 'pws', 'Profiel werkstuk', '1', '1', '0', '1', '1', '1', '1', '0', '0', '4200', 0, 0],
-
-                    # logger.debug('schemeitems')
-                    # logger.debug(schemeitems)
-
-                    # Map subject.abbrev to subject.id {'ne': 3}
-                    # because 'ne' is different in Vsbo and Havo/Vwo, also depbase_list must be checked
-                    subject_list = []
-                    for subject in Subject.objects.filter(examyear=request.user.examyear):
-                        subject_list.append({'id': subject.id, 'abbrev': subject.abbrev.lower(),'depbase_list': subject.depbase_list})
-                    # subject_list: [{'id': 95, 'abbrev': 'ne', 'depbase_list': ';11;'}, ...
-
-                    # Map schemes_list by dep, lvl, sct
-                    schemes_list = Scheme.get_lookup_scheme_list(request.user.examyear)  # PR2019-02-17
-                    # logger.debug(str(schemes_list))
-
-                    # Map subjecttype.name
-                    subjtype_list = Subjecttype.get_lookup_subjtype_list(request.user.examyear)  # PR2019-02-17
-                    # logger.debug(str(subjtype_list))
-
-                    # iterating over the rows and getting value from each cell in row
-                    for row in schemeitems:
-                        # get scheme_id from schemes_list
-                        dep_abbrev = row[0]
-                        lvl_abbrev = row[1]
-                        sct_abbrev = row[2]
-                        subj_abbrev = row[3]
-
-                        scheme_id = get_scheme_id_from_abbrevs(dep_abbrev, lvl_abbrev, sct_abbrev, schemes_list) # PR2018-02-14
-                        # logger.debug('scheme_id: ' + str(schemes_list) + ' type: ' + str(type(schemes_list)))
-                        # get scheme
-                        scheme = Scheme.objects.filter(id=scheme_id).first()
-
-                        if scheme:
-                            logger.debug('scheme: ' + str(scheme) + ' type: ' + str(type(scheme)))
-
-                            # get subject fom abbrev and depbase_id
-                            # subject_id = int(subject_dict.get(str(subj_abbrev), '-1'))
-                            subject = None
-                            for dict in subject_list:
-                                if dict['abbrev'] == subj_abbrev:
-                                    if dict['depbase_list']:
-                                        depbase_delim = ';' + str(scheme.department.base_id) + ';'
-                                        if dict['depbase_list'].find(depbase_delim) != -1:
-                                            subject_id = int(dict['id'])
-                                            subject = Subject.objects.filter(id=subject_id).first()
-                                            break
-                            if subject:
-                                logger.debug('subject: ' + str(subject) + ' type: ' + str(type(subject)))
-                                # get subjecttype
-                                subjtype_name = str(row[4])
-                                subjtype_id = get_subjtype_id_from_name(subjtype_name, subjtype_list)
-                                logger.debug('subjtype_name: ' + str(subjtype_name) + ' subjtype_id: ' + str(subjtype_id) + ' type: ' + str(type(subjtype_id)))
-
-                                subjecttype = Subjecttype.objects.filter(id=subjtype_id).first()
-                                #has_pws = BooleanField(default=False)  # has profielwerkstuk or sectorwerkstuk
-                                #one_allowed = BooleanField(
-
-                                if subjecttype:
-                                    logger.debug('subjecttype: ' + str(subjecttype) + ' type: ' + str(type(subjecttype)))
-
-                                    #  0 Scheme 1 subject 2 Subjecttype 3 Gradetype 4 Sequence 5 weightSE 6 weightCE
-                                    # 7 is_mandatory 8 is_combi 9 choicecombi_allowed 10 has_practexam
-                                    rowcount = rowcount + 1
-                                    logger.debug(str(rowcount) + ': ' + str(scheme.name) + ' ' + str(subject.abbrev) + ' ' + str(subjecttype.abbrev))
-
-                                    gradetype = int(row[5])
-                                    weightSE = int(row[6])
-                                    weightCE = int(row[7])
-                                    is_mandatory = True if str(row[8]) == '1' else False
-                                    is_combi = True if str(row[9]) == '1' else False
-                                    logger.debug('is_combi: ' + str(is_combi) + ' type: ' + str(type(is_combi)))
-
-                                    extra_count_allowed = True if str(row[10]) == '1' else False
-                                    extra_nocount_allowed = True if str(row[11]) == '1' else False
-
-                                    choicecombi_allowed = True if str(row[12]) == '1' else False
-                                    has_practexam = True if str(row[13]) == '1' else False
-                                    sequence = int(str(row[14]))
-                                    logger.debug('sequence: ' + str(sequence) + ' type: ' + str(type(sequence)))
-
-                                    # create new schemeitem
-                                    schemeitem = Schemeitem()
-
-                                    schemeitem.scheme = scheme
-                                    schemeitem.subject = subject
-                                    schemeitem.subjecttype = subjecttype
-
-                                    schemeitem.gradetype = gradetype
-                                    schemeitem.weightSE = weightSE
-                                    schemeitem.weightCE = weightCE
-                                    schemeitem.is_mandatory = is_mandatory
-                                    schemeitem.is_combi = is_combi
-
-                                    schemeitem.extra_count_allowed = extra_count_allowed
-                                    schemeitem.extra_nocount_allowed = extra_nocount_allowed
-
-                                    schemeitem.choicecombi_allowed = choicecombi_allowed
-                                    schemeitem.has_practexam = has_practexam
-                                    schemeitem.sequence = sequence
-
-                                    logger.debug('schemeitem.sequence: ' + str(schemeitem.sequence))
-                                    # save new schemeitem
-                                    schemeitem.save(request=self.request)
-
-                                    logger.debug('saved schemeitem.sequence: ' + str(schemeitem.sequence))
-                                    if schemeitem is None:
-                                        params['error'] = _('An error occurred. This action cannot be completed.')
-
-        # PR2019-02-17 speed test
-        params['created'] = str(rowcount)
-        params['elapsed'] = str(datetime.datetime.now() - time_start)
-        return HttpResponse(json.dumps(params, cls=f.LazyEncoder))
-
-
-# ===== Import Package ===================
-@method_decorator([login_required], name='dispatch')
-class ImportPackageView(View): # PR2019-02-24
-
-    def get(self, request):
-        # permission: user.is_authenticated AND user.is_role_system
-        param = {'display_school': True, 'display_user': True}
-        headerbar_param = am.get_headerbar_param(request, param)
-        # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'import_package.html', headerbar_param)
-
-    def post(self,request):
-        uploadedfile = request.FILES["excel_file"]
-        wb = openpyxl.load_workbook(uploadedfile)
-        # ws_names = wb.sheetnames
-        worksheet = wb.worksheets[0]
-        excel_data = list()
-
-        logger.debug('=== Import Package ========')
-
-        # check if request.user.country is parent of request.user.examyear PR2018-10-18
-        if request.user is not None:
-            if request.user.examyear is not None and request.user.country is not None:
-                if request.user.examyear.country.pk == request.user.country.pk:
-                    if request.user.schoolbase is not None:
-                        schoolbase_id = request.user.schoolbase.id
-                        if School.objects.filter(base__id=schoolbase_id, examyear=request.user.examyear).count() == 1:
-                            school = School.objects.filter(base__id=schoolbase_id, examyear=request.user.examyear).first()
-
-                            # Map schemes_list by dep, lvl, sct
-                            schemes_list = Scheme.get_lookup_scheme_list(request.user.examyear)  # PR2019-02-17
-                            # logger.debug(str(schemes_list))
-
-                            # iterating over the rows and
-                            # dep_abbrev, level_abbrev, sector_abbrev, name
-                            skip_first_row = True # skip first row, it contains headers PR2019-02-16
-                            for row in worksheet.iter_rows():
-                                if skip_first_row:
-                                    skip_first_row = False
-                                else:
-                                    # get value from each cell in row
-                                    row_data = list()
-                                    for cell in row:
-                                        row_data.append(str(cell.value))
-                                    # row_data: ['vsbo', 'TKL', 'tech', 'TKL tech alg tech']
-                                    logger.debug('--- row_data[0]: ' + str(row_data[0]))
-
-                                    # get scheme_id from schemes_list
-                                    scheme_id = get_scheme_id_from_abbrevs(row_data[0], row_data[1], row_data[2], schemes_list)
-                                    scheme = Scheme.objects.filter(id=scheme_id).first()
-
-                                    if scheme:
-                                        package = Package()
-
-                                        package.school = school
-                                        package.scheme = scheme
-                                        package.name = row_data[3]
-
-                                        package.modified_by = request.user
-                                        package.modified_at = timezone.now()
-
-                                        package.save(request=self.request)
-
-                                        logger.debug('package.id: ' + str(package.id) + ' .name: ' + str(package.name))
-
-                                        excel_data.append(row_data)
-
-        return render(request, 'import_package.html', {"excel_data": excel_data})
-
-
-# ===== Import Packagiteme ===================
-@method_decorator([login_required], name='dispatch')
-class ImportPackageitemView(View): # PR2019-02-24
-
-    def get(self, request):
-        # permission: user.is_authenticated AND user.is_role_system
-        param = {'display_school': True, 'display_user': True}
-        headerbar_param = am.get_headerbar_param(request, param)
-        # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'import_packageitem.html', headerbar_param)
-
-    def post(self,request):
-        uploadedfile = request.FILES["excel_file"]
-        wb = openpyxl.load_workbook(uploadedfile)
-        # ws_names = wb.sheetnames
-        worksheet = wb.worksheets[0]
-        excel_data = list()
-
-        logger.debug('=== Import Package items ========')
-
-        # check if request.user.country is parent of request.user.examyear PR2018-10-18
-        if request.user is not None:
-            if request.user.examyear is not None and request.user.country is not None:
-                if request.user.examyear.country.pk == request.user.country.pk:
-                    if request.user.schoolbase is not None:
-                        school = School.objects.filter(base__id=request.user.schoolbase.id,
-                                                       examyear=request.user.examyear).first()
-                        if school is not None:
-                            # Map schemes_list by dep, lvl, sct
-                            schemes_list = Scheme.get_lookup_scheme_list(request.user.examyear)  # PR2019-02-17
-                            logger.debug(str(schemes_list))
-
-                            # iterating over the rows
-                            # package_name, dep_abbrev, level_abbrev, sector_abbrev, subject_abbrev, subjecttype
-                            row_count = 0
-                            skip_first_row = True # skip first row, it contains headers PR2019-02-16
-                            for row in worksheet.iter_rows():
-                                if skip_first_row:
-                                    skip_first_row = False
-                                else:
-                                    # get value from each cell in row
-                                    row_data = []
-                                    for cell in row:
-                                        row_data.append(str(cell.value))
-                                    # row_data: ['vsbo', 'TKL', 'tech', 'TKL tech alg tech']
-                                    package_name = row_data[0]
-                                    dep_abbrev = row_data[1]
-                                    lvl_abbrev = str(row_data[2])
-                                    sct_abbrev = row_data[3]
-                                    subject_abbrev = row_data[4]
-                                    subjecttype = row_data[5]
-                                    logger.debug('--- package_name: ' +package_name)
-                                    logger.debug('--- dep_abbrev: ' +dep_abbrev)
-                                    logger.debug('--- lvl_abbrev: <' + lvl_abbrev + '> ' + str(type(lvl_abbrev)))
-                                    logger.debug('--- lvl_abbrev: LEN ' + str(len(lvl_abbrev)))
-                                    logger.debug('--- row_data[2]: <' + str(len(row_data[2])) + '>')
-                                    logger.debug('--- row_data[2]: LEN ' + str(len(row_data[2])))
-                                    logger.debug('--- row_data[2]: type ' + str(type(row_data[2])))
-                                    logger.debug('--- sct_abbrev: ' +sct_abbrev)
-                                    logger.debug('--- subject_abbrev: ' +subject_abbrev)
-                                    logger.debug('--- subjecttype: ' +subjecttype)
-
-                                    logger.debug('-++ lvl_abbrev bool: <' + str(bool(lvl_abbrev)) +'>' )
-
-                                    # get dep
-                                    dep = Department.get_dep_by_abbrev(dep_abbrev, request.user.examyear)  # PR2019-02-26
-
-                                    scheme = Scheme.get_scheme_by_abbrevs(dep_abbrev, lvl_abbrev, sct_abbrev, request.user.examyear)
-
-                                    if scheme is None:
-                                        logger.debug('--- scheme: None')
-                                    else:
-                                        logger.debug('--- scheme: ' + scheme.name)
-
-                                        depbase_id_delim = ';' + str(scheme.department.base.pk) + ';'
-                                        subject = Subject.objects.filter(
-                                            examyear=request.user.examyear,
-                                            abbrev__iexact=subject_abbrev,
-                                            depbase_list__contains=depbase_id_delim).first()
-                                        if subject is None:
-                                            logger.debug('--- subject: None')
-                                        else:
-                                            logger.debug('--- subject: ' + subject.name)
-
-                                        subjecttype = Subjecttype.objects.filter(
-                                            examyear=request.user.examyear,
-                                            name__iexact=subjecttype,
-                                            depbase_list__contains=depbase_id_delim).first()
-                                        if subjecttype:
-                                            logger.debug('--- subjecttype: ' + subjecttype.name)
-                                        else:
-                                            logger.debug('--- subjecttype: None')
-
-
-
-                                        #package = Package()
-
-                                       # package.school = school
-                                        #package.scheme = scheme
-                                        #package.name = row_data[3]
-
-                                        #package.modified_by = request.user
-                                        #package.modified_at = timezone.now()
-
-                                        #package.save(request=self.request)
-
-                                        #logger.debug('package.id: ' + str(package.id) + ' .name: ' + str(package.name))
-
-                                        excel_data.append(row_data)
-                                        row_count = row_count + 1
-                                        logger.debug('--- row_count: ' + str(row_count))
-
-                                    logger.debug('')
-        return render(request, 'import_packageitem.html', {"excel_data": excel_data})
-
-
-@method_decorator([login_required], name='dispatch')
-class ImportBirthcountryView(View):  # PR2018-08-31
-
-    def get(self, request):
-        # permission: user.is_authenticated AND user.is_role_system_perm_admin
-        param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = am.get_headerbar_param(request, param)
-        # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'import_birthcountry.html', headerbar_param)
-
-    def post(self, request):
-        uploadedfile = request.FILES["excel_file"]
-        # logger.debug('ImportDepartmentView uploadedfile.name: ' + str(uploadedfile.name))
-
-        # you may put validations here to check extension or file size
-        wb = openpyxl.load_workbook(uploadedfile)
-        # PR2018-04-27 debug: DeprecationWarning: Call to deprecated function get_sheet_names (Use wb.sheetnames). Was:  ws_names = wb.get_sheet_names()
-        ws_names = wb.sheetnames
-        worksheet = wb.worksheets[0]
-        excel_data = list()
-
-        # iterating over the rows and
-        # getting value from each cell in row
-        self.sequence = 1
-        for row in worksheet.iter_rows():
-            row_data = list()
-            for cell in row:
-                row_data.append(str(cell.value))
-                logger.debug('cell.value: ' + str(cell.value))
-            logger.debug('row_data: ' + str(row_data))
-            row_data.append(self.sequence)
-            logger.debug('row_data: ' + str(row_data))
-            self.sequence += 1
-
-            #PR2018-04-28 debug: don't forget de brackets when creating an instance of the class
-            birthcountry = Birthcountry()
-
-            birthcountry.name = str(row_data[0])
-            birthcountry.modified_by = request.user
-            birthcountry.modified_at = timezone.now()
-
-            birthcountry.save(request=self.request)
-
-            excel_data.append(row_data)
-
-        return render(request, 'import_birthcountry.html', {"excel_data": excel_data})
-
-@method_decorator([login_required], name='dispatch')
-class ImportBirthcityView(View):  # PR2018-09-01
-
-    def get(self, request):
-        # permission: user.is_authenticated AND user.is_role_system_perm_admin
-        param = {'display_school': True, 'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = am.get_headerbar_param(request, param)
-        # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'import_birthcity.html', headerbar_param)
-
-    def post(self, request):
-        uploadedfile = request.FILES["excel_file"]
-        # logger.debug('ImportDepartmentView uploadedfile.name: ' + str(uploadedfile.name))
-
-        # you may put validations here to check extension or file size
-        wb = openpyxl.load_workbook(uploadedfile)
-        # PR2018-04-27 debug: DeprecationWarning: Call to deprecated function get_sheet_names (Use wb.sheetnames). Was:  ws_names = wb.get_sheet_names()
-        ws_names = wb.sheetnames
-        worksheet = wb.worksheets[0]
-        excel_data = list()
-
-        # iterating over the rows and
-        # getting value from each cell in row
-        for row in worksheet.iter_rows():
-            row_data = list()
-            for cell in row:
-                row_data.append(str(cell.value))
-            # logger.debug('row_data: ' + str(row_data))
-
-            #PR2018-04-28 debug: don't forget de brackets when creating an instance of the class
-            birthcity = Birthcity()
-
-            # get birthcountry
-            countryname = str(row_data[0])
-            if countryname is not None:
-                logger.debug('countryname: ' + str(countryname) + ' Type: ' + str(type(countryname)))
-                birthcountry = Birthcountry.objects.filter(name=countryname).first()
-                logger.debug('birthcountry: ' + str(birthcountry) + ' Type: ' + str(type(birthcountry)))
-                if birthcountry:
-
-                    logger.debug('birthcountry: Type: ' + str(type(birthcountry)))
-
-                    if birthcountry is not None:
-                        logger.debug('birthcountry: ' + str(birthcountry) + ' Type: ' + str(type(birthcountry)))
-                        birthcity.birthcountry = birthcountry
-                        birthcity.name = str(row_data[1])
-                        birthcity.modified_by = request.user
-                        birthcity.modified_at = timezone.now()
-
-                        birthcity.save(request=self.request)
-                    else:
-                        row_data[0] +=  " (not found)"
-            else:
-                row_data[0] = "no country"
-            excel_data.append(row_data)
-
-        return render(request, 'import_birthcity.html', {"excel_data": excel_data})
+        elif ws_name == 'package':
+            depbase_code = str(row_data[0]) if row_data[0] else None
+            level_abbrev = str(row_data[1]) if row_data[1] else None
+            sector_abbrev = str(row_data[2]) if row_data[2] else None
+            package_name = str(row_data[3]) if row_data[3] else None
+
+            school = sch_mod.School.objects.get_or_none(
+                base=request.user.schoolbase,
+                examyear=sel_examyear)
+            scheme = get_scheme(depbase_code, level_abbrev, sector_abbrev, sel_examyear)
+
+            if school and scheme and package_name:
+                # check if package already exists
+                package = get_package(school, scheme, package_name)
+                if package is None:
+                    package = subj_mod.Package(
+                        school=school,
+                        scheme=scheme,
+                        name=package_name
+                    )
+                    package.save(request=request)
+                    excel_data.append(row_data)
+
+        elif ws_name == 'packageitem':
+            depbase_code = str(row_data[0]) if row_data[0] else None
+            level_abbrev = str(row_data[1]) if row_data[1] else None
+            sector_abbrev = str(row_data[2]) if row_data[2] else None
+            package_name = str(row_data[3]) if row_data[3] else None
+            subject_code = str(row_data[4]) if row_data[4] else None
+            subjtype_name = str(row_data[5]) if row_data[5] else None
+
+            school = get_school(request.user.schoolbase, sel_examyear)
+            scheme = get_scheme(depbase_code, level_abbrev, sector_abbrev, sel_examyear)
+            package = get_package(school, scheme, package_name)
+
+            subject = get_subject(subject_code, sel_examyear)
+            subjecttype = get_subjecttype(subjtype_name, sel_examyear)
+            schemeitem = get_schemeitem(scheme, subject, subjecttype)
+            if package and schemeitem:
+                # check if packageitem already exists
+                packageitem = get_packageitem(package, schemeitem)
+                if packageitem is None:
+                    packageitem = subj_mod.Packageitem(
+                        package=package,
+                        schemeitem=schemeitem
+                    )
+                    packageitem.save(request=request)
+                    excel_data.append(row_data)
+
+        elif ws_name == 'birthcountry':
+            name = str(row_data[0]) if row_data[0] else None
+            # PR2018-04-28 debug: don't forget de brackets when creating an instance of the class
+            if name:
+
+                # check if birthcountry already exists
+                birthcountry = get_birthcountry(name)
+                if birthcountry is None:
+                    birthcountry = stud_mod.Birthcountry(
+                        name=name
+                    )
+                    birthcountry.save(request=request)
+                    excel_data.append(row_data)
+
+        elif ws_name == 'birthplace':
+            birthcountry_name = str(row_data[0]) if row_data[0] else None
+            birthplace_name = str(row_data[1]) if row_data[1] else None
+
+            birthcountry = get_birthcountry(birthcountry_name)
+            if birthcountry and birthplace_name:
+                birthplace = get_birthplace(birthcountry, birthplace_name)
+                if birthplace is None:
+                    birthplace = stud_mod.Birthplace(
+                        birthcountry=birthcountry,
+                        name=birthplace_name
+                    )
+                    birthplace.save(request=request)
+                    excel_data.append(row_data)
+
+        elif ws_name in ('schoolCUR', 'schoolSXM'):
+            logger.debug ('-------------------  school ----------------- examyear: ' + str(sel_examyear))
+            # 0: country  1: code  2: name  3: abbrev  4: article  5: depbases  6: is_template
+            country_code = str(row_data[0]) if row_data[0] else None
+            school_code = str(row_data[1]) if row_data[1] else None
+            logger.debug ('country_code: ' + str(country_code))
+            logger.debug ('school_code: ' + str(school_code))
+
+    # - get country based on code 'Cur' in excel file, not requsr_country with this code already exists in this country. If not: create
+            exc_country = get_country(country_code)
+
+    # skip if exc_country is different from requsr_country
+            if exc_country and requsr_country and exc_country.pk == requsr_country.pk:
+
+    # - check if schoolbase with this code already exists in this country. If not: create
+                schoolbase = get_schoolbase(exc_country, school_code)
+                if schoolbase is None:
+                    schoolbase = sch_mod.Schoolbase.objects.create(country=exc_country, code=school_code)
+                    logger.debug('schoolbase created: ' + str(schoolbase))
+
+    # - check if school with this schoolbase already exists in this examyear. If not: create
+                school = get_school(schoolbase, sel_examyear)
+                logger.debug('school found: ' + str(school))
+                if schoolbase is not None and school is None:
+                    # 0: country  1: code  2: name  3: abbrev  4: article  5: depbases  6: is_template
+                    name = str(row_data[2]) if row_data[2] else None
+                    abbrev = str(row_data[3]) if row_data[3] else None
+                    article = str(row_data[4]) if row_data[4] else None
+                    depbases = get_depbase_id_list_from_nameslist(row_data[5], mapped)
+                    is_template = True if str(row_data[6]) == "1" else False
+                # is_template stores the examyear.id. In that way there can only be one template per examyear / country
+                    template_examyear_int = None
+                    if is_template and sel_examyear:
+                        template_examyear_int = sel_examyear.pk
+
+                    # PR2018-04-28 debug: don't forget de brackets when creating an instance of the class
+                    school = sch_mod.School(
+                        base=schoolbase,
+                        examyear=sel_examyear,
+                        name=name,
+                        abbrev=abbrev,
+                        article=article,
+                        depbases=depbases,
+                        istemplate=template_examyear_int
+                    )
+                    logger.debug('school: ' + str(school))
+                    school.save(request=request)
+                excel_data.append(row_data)
+    #except:
+    #    row_data[0] = _("An error occurred. '%(fld)s' is not saved.") % {'fld': ws_name}
+    #    excel_data.append(row_data)
 
 
 # ===================== Functions
-def get_mapped_depbase_list(request_user_examyear):  # PR2018-12-12
-    # this function returns a dict of the mapped department names.
-    # it looks for the abbrev in the departments of this examyear
-    # and returns the lowercase abbrev as key and its depbase_id as value
-    # Map dep.abbrev to department.id {'vsbo': 4, 'havo': 5,'vwo': 6}
-    dep_dict = {}
-    deps = Department.objects.filter(examyear=request_user_examyear)
-    for dep in deps:
-        if dep.abbrev:
-            dep_dict[dep.abbrev.lower()] = dep.base.id
-    return dep_dict
 
-def get_mapped_levelbase_list(request_user_examyear):  # PR2018-12-12
-    # this function returns a dict of the mapped level names.
-    # it looks for the abbrev in the levels of this examyear
-    # and returns the lowercase abbrev as key and its levelbase_id as value
-    # Map level.abbrev to level.id {'tkl': 1, 'pkl': 2,'pbl': 3}
-    level_dict = {}
-    levels = Level.objects.filter(examyear=request_user_examyear)
-    for level in levels:
-        if level.abbrev:
-            level_dict[level.abbrev.lower()] = level.base.id
-    return level_dict
-
-
-def get_mapped_sectorbase_list(request_user_examyear):  # PR2018-12-12
-    # this function returns a dict of the mapped sector names.
-    # it looks for the abbrev in the sectors of this examyear
-    # and returns the lowercase abbrev as key and its sectorbase_id as value
-    # Map sector.abbrev to sector.id {'ec': 4, 'z&w': 5,'techn': 6}
-    sector_dict = {}
-    sectors = Sector.objects.filter(examyear=request_user_examyear)
-    for sector in sectors:
-        if sector.abbrev:
-            sector_dict[sector.abbrev.lower()] = sector.base.id
-    return sector_dict
-
-
-def convert_nameslist_to_baseidlist(names_list, mapped_baselist):  # PR2018-12-12
-    # PR2018-12-12 functioen replaces 'tkl,pkl,pbl' with ';1;2;3;'
-    # mapped_sectorlist_dict is a separate function that gets the sectorbaseID's from this examyear
-
-    base_id_list_str = ''
+def get_depbase_id_list_from_nameslist(names_list, mapped):  # PR2018-12-12  PR2020-12-13
+    # PR2018-12-12 function replaces 'tkl,pkl,pbl' with ';1;2;3;'
+    # PR2020-12-09 changed to arrayfield 'depbases' = [1,2,3]
+    # mapped_sectorlist_dict is a separate function that gets the baseID's from this examyear
+    # mapped_baselist = {'vsbo': 4, 'havo': 5,'vwo': 6}
+    mapped_baselist = mapped.get('depbase')
+    base_id_list = []
     if names_list:
         array = names_list.split(';')
         if array:
             for abbrev in array:
-                # look up abbrev in mapped_sectorbaselist_dict
+                # look up abbrev in mapped_baselist
                 if abbrev:
                     base_id = mapped_baselist.get(abbrev.lower())
                     if base_id:
-                        base_id_list_str = base_id_list_str + str(base_id) + ';'
-            # add ';' in font of string
-            if base_id_list_str:
-                base_id_list_str = ';' + base_id_list_str
-    return base_id_list_str
+                        base_id_list.append(base_id)
+    return base_id_list
 
 
-def get_scheme_id_from_abbrevs(dep_abbrev, lvl_abbrev, sct_abbrev, schemes_list):  # PR2018-02-17
-    # logger.debug('get_scheme_id_from_abbrevs: ' + dep_abbrev + ' - ' + lvl_abbrev + ' - ' + sct_abbrev )
-    scheme_id = None
-    for dict in schemes_list:
-        found = False
-        if 'dep' in dict:
-            if dep_abbrev:
-                if dict['dep'] == dep_abbrev.lower():
-                    lvl_is_ok = False
-                    if 'lvl' in dict:
-                        if lvl_abbrev:
-                            lvl_is_ok =( dict['lvl'] == lvl_abbrev.lower())
-                    else:
-                        lvl_is_ok = True
-                    if lvl_is_ok:
-                        if 'sct' in dict:
-                            if sct_abbrev:
-                                 found = (dict['sct'] == sct_abbrev.lower())
-                        else:
-                            found = True
-        if found:
-            if 'id' in dict:
-                scheme_id = dict['id']
-            break
-    return scheme_id
+def get_depbase_from_mapped(depbase_code_lc, examyear, mapped):  # PR2020-12-13
+    depbase = None
+    if depbase_code_lc:
+        depbase_id = af.get_dict_value(mapped, ('depbase', depbase_code_lc))
+        if depbase_id:
+            depbase = sch_mod.Departmentbase.objects.get_or_none(id=depbase_id)
+            if depbase:
+                department = sch_mod.Department.objects.get_or_none(
+                    base=depbase,
+                    examyear=examyear
+                )
+                if department:
+                    depbase = department.base
+    return depbase
 
 
-def get_dep_from_abbrev(abbrev, examyear):  # PR2018-12-13
-    dep = None
-    if abbrev:
-        if Department.objects.filter(abbrev__iexact=abbrev, examyear=examyear).count() == 1:
-            dep = Department.objects.filter(abbrev__iexact=abbrev, examyear=examyear).first()
-    return dep
+def get_department_from_mapped(depbase_code, examyear, mapped):  # PR2020-12-13
+    logger.debug(' ----- get_department_from_mapped -----')
+    logger.debug('depbase_code: ' + str(depbase_code))
+    logger.debug('examyear: ' + str(examyear))
+    logger.debug('mapped: ' + str(mapped.get('depbase', '')))
+    department = None
+    if depbase_code:
+        depbase_code_lc = depbase_code.lower()
+        depbase_id = af.get_dict_value(mapped, ('depbase', depbase_code_lc))
+        logger.debug('depbase_id: ' + str(depbase_id))
+        if depbase_id:
+            depbase = sch_mod.Departmentbase.objects.get_or_none(pk=depbase_id)
+            logger.debug('depbase: ' + str(depbase))
+            if depbase:
+                department = sch_mod.Department.objects.get_or_none(
+                    base=depbase,
+                    examyear=examyear
+                )
+    logger.debug('--------department: ' + str(department))
+    return department
 
 
-def get_level_from_abbrev(abbrev, examyear):  # PR2018-12-13
+def get_level_from_mapped(lvl_abbrev, mapped):  # PR2020-12-13
+    #logger.debug(' ----- get_level_from_mapped -----')
+    #logger.debug('lvl_abbrev: ' + str(lvl_abbrev))
     level = None
-    if abbrev:
-        if Level.objects.filter(abbrev__iexact=abbrev, examyear=examyear).count() == 1:
-            level = Level.objects.filter(abbrev__iexact=abbrev, examyear=examyear).first()
+    if lvl_abbrev:
+        lvl_abbrev_lc = lvl_abbrev.lower()
+        level_id = af.get_dict_value(mapped, ('level', lvl_abbrev_lc))
+        #logger.debug('level_id: ' + str(level_id))
+        if level_id:
+            level = subj_mod.Level.objects.get_or_none(pk=level_id)
+        #logger.debug('level: ' + str(level))
     return level
 
 
-def get_sector_from_abbrev(abbrev, examyear):  # PR2018-12-13
+def get_sector_from_mapped(sct_abbrev, mapped):  # PR2020-12-13
     sector = None
-    if abbrev:
-        if Sector.objects.filter(abbrev__iexact=abbrev, examyear=examyear).count() == 1:
-            sector = Sector.objects.filter(abbrev__iexact=abbrev, examyear=examyear).first()
+    if sct_abbrev:
+        sct_abbrev_lc = sct_abbrev.lower()
+        sector_id = af.get_dict_value(mapped, ('sector', sct_abbrev_lc))
+        if sector_id:
+            sector = subj_mod.Sector.objects.get_or_none(pk=sector_id)
     return sector
 
-def get_subjecttype_from_name(name, scheme):  # PR2018-02-14
+
+def get_subject_from_mapped(subj_code_lc, mapped, examyear=None):  # PR2020-12-13
+    #logger.debug(' ----- get_subject_from_mapped -----')
+    #logger.debug('subj_code_lc: ' + str(subj_code_lc))
+    #logger.debug('mapped_subject: ' + str(mapped.get('subject')))
+    #logger.debug('examyear: ' + str(examyear))
+    subject = None
+    if subj_code_lc:
+        # PR2020-12-09 debug: str() needed, otherwise gets eror:'Cell' object has no attribute 'lower'
+        subject_id = af.get_dict_value(mapped, ('subject', subj_code_lc))
+        #logger.debug('subject_id: ' + str(subject_id) )
+        if subject_id:
+            subject = subj_mod.Subject.objects.get_or_none(pk=subject_id)
+        if subject is None and examyear:
+            subject = subj_mod.Subject.objects.filter(
+                examyear=examyear,
+                base__code__iexact=subj_code_lc
+                ).first()
+    #logger.debug('subject: ' + str(subject) )
+    return subject
+
+
+def get_subjecttype_from_mapped(subjtype_name_lc, mapped, examyear=None):  # PR2020-12-13
+    #logger.debug(' ----- get_subjecttype_from_mapped -----')
+    #logger.debug('subjtype_name_lc: ' + str(subjtype_name_lc))
+    #logger.debug('mapped_subjecttype: ' + str(mapped.get('subjecttype')))
+    #logger.debug('examyear: ' + str(examyear))
+
     subjecttype = None
-    if scheme:
-        depbase_id_delim = ';' + str(scheme.department.base_id) + ';'
-        examyear = scheme.department.examyear
-        subjecttype = Subjecttype.objects.filter(
-            examyear=examyear,
-            name__iexact=name,
-            depbase_list__contains=depbase_id_delim
-        ).first()
+    if subjtype_name_lc:
+    # PR2020-12-09 debug: str() needed, otherwise gets eror:'Cell' object has no attribute 'lower'
+        subjtype_id = af.get_dict_value(mapped, ('subjecttype', subjtype_name_lc))
+        #logger.debug('subjtype_id: ' + str(subjtype_id) )
+        if subjtype_id:
+            subjecttype = subj_mod.Subjecttype.objects.get_or_none(pk=subjtype_id)
+        if subjecttype is None and examyear:
+            subjecttype = subj_mod.Subjecttype.objects.filter(
+                examyear=examyear,
+                name__iexact=subjtype_name_lc
+                ).first()
+    #logger.debug('subjecttype: ' + str(subjecttype) )
     return subjecttype
 
 
+def get_scheme_from_mapped(row_data, mapped, examyear=None):  # PR2020-12-13
+    #logger.debug(' ----- get_scheme_from_mapped -----')
+    scheme = None
 
-def get_subjtype_id_from_name(subjtype_name, subjtype_list):  # PR2018-02-17
-    # logger.debug('get_subjtype_id_from_name: ' + subjtype_name )
-    # {'id': 1, 'name': 'gemeenschappelijk deel'}
-    subjtype_id = None
-    for dict in subjtype_list:
-        found = False
-        if 'id' in dict and 'name' in dict:
-            if dict['name'] == subjtype_name.lower():
-                subjtype_id = dict['id']
-                break
-    return subjtype_id
+    # PR2020-12-09 debug: str() needed, otherwise gets eror:'Cell' object has no attribute 'lower'
+    # PR2020-12-09 debug: null value in tuple key not working, use string 'none' instead. That works
+
+    # dep = row_data[0], lvl = = row_data[1], sct = = row_data[2]
+    dep_lc = str(row_data[0]).lower() if row_data[1] else 'none'
+    lvl_lc = str(row_data[1]).lower() if row_data[2] else 'none'
+    sct_lc = str(row_data[2]).lower() if row_data[3] else 'none'
+    key_tuple = (dep_lc, lvl_lc, sct_lc)
+    #logger.debug('key_tuple: ' + str(key_tuple) )
+
+    #mapped_scheme = mapped.get('scheme')
+    #logger.debug('mapped_scheme: ' + str(mapped_scheme))
+    scheme_id = af.get_dict_value(mapped, ('scheme', key_tuple))
+    #logger.debug('scheme_id: ' + str(scheme_id) )
+
+    if scheme_id:
+        scheme = subj_mod.Scheme.objects.get_or_none(
+            pk=scheme_id
+        )
+    if scheme is None and examyear:
+        scheme = subj_mod.Scheme.objects.filter(
+            department__examyear=examyear,
+            department__base__code__iexact=dep_lc,
+            level__abbrev__iexact=lvl_lc,
+            sector__abbrev__iexact=sct_lc
+        ).first()
+    return scheme
+
+
+def get_package_from_mapped(row_data, mapped):  # PR2020-12-13
+    # logger.debug('get_package_from_mapped: ' + depbase_code + ' - ' + lvl_abbrev + ' - ' + sct_abbrev )
+    # PR2020-12-09 debug: str() needed, otherwise gets eror:'Cell' object has no attribute 'lower'
+    # PR2020-12-09 debug: null value in tuple key not working, use string 'none' instead. That works
+    package = None
+    package_name_lc = str(row_data[0]).lower() if row_data[0] else None
+    if package_name_lc:
+        package_id = af.get_dict_value(mapped, ('package', package_name_lc))
+        if package_id:
+            package = subj_mod.Package.objects.get_or_none(pk=package_id)
+    return package
+
+
+def create_scheme_name(depbase_code, level_abbrev, sector_abbrev ):
+    # PR2018-11-09 create scheme-name i.e.: 'vsbo - tkl - tech' PR2020-12-13
+    scheme_name = ''
+    if depbase_code:
+        scheme_name = depbase_code
+    if level_abbrev and level_abbrev.lower() != 'none':
+        scheme_name = scheme_name + " - " + level_abbrev
+    if sector_abbrev:
+        scheme_name = scheme_name + " - " + sector_abbrev
+    return scheme_name
+
+
+def get_country(country_abbrev):
+    # get existing country PR2020-12-14
+    country = None
+    if country_abbrev:
+        country = sch_mod.Country.objects.filter(
+            abbrev__iexact=country_abbrev
+        ).order_by('-pk').first()
+    return country
+
+
+def get_examyear(country, examyear_int):
+    # lookup examyear of country PR2020-12-14
+    # examyear is integer field of table Examyear
+    examyear = None
+    if country and examyear_int:
+        examyear = sch_mod.Examyear.objects.filter(
+            country=country,
+            code=examyear_int
+        ).order_by('-pk').first()
+    return examyear
+
+
+def get_subjecttype(subjtype_name, examyear):
+    # check if subjecttype already exists
+    subjecttype = None
+    if subjtype_name and examyear:
+        subjecttype = subj_mod.Subjecttype.objects.filter(
+            examyear=examyear,
+            name__iexact=subjtype_name
+        ).order_by('-pk').first()
+    return subjecttype
+
+
+def get_subject(subject_code, examyear):
+    # check if subject already exists
+    subject = None
+    if subject_code and examyear:
+        subject =subj_mod.Subject.objects.filter(
+            examyear=examyear,
+            base__code__iexact=subject_code
+        ).order_by('-pk').first()
+    return subject
+
+
+def get_scheme(depbase_code, level_abbrev, sector_abbrev, examyear):
+    # check if scheme already exists
+    #logger.debug('------- get_scheme -------------')
+
+    scheme = None
+    if depbase_code and examyear:
+        crit = Q(department__examyear=examyear) & \
+               Q(department__base__code__iexact=depbase_code)
+        if level_abbrev and not level_abbrev.lower() == 'none':
+            crit.add(Q(level__abbrev__iexact=level_abbrev), crit.connector)
+        if sector_abbrev and not sector_abbrev.lower() == 'none':
+            crit.add(Q(sector__abbrev__iexact=sector_abbrev), crit.connector)
+        scheme = subj_mod.Scheme.objects.filter(crit).order_by('-pk').first()
+    return scheme
+
+
+def get_schemeitem(scheme, subject, subjecttype):
+    # get existing schemeitem PR2020-12-13
+    schemeitem = None
+    if scheme and subject and subjecttype:
+        schemeitem = subj_mod.Schemeitem.objects.filter(
+            scheme=scheme,
+            subject=subject,
+            subjecttype=subjecttype
+        ).order_by('-pk').first()
+    return schemeitem
+
+
+def get_package(school, scheme, package_name):
+    # get existing schemeitem PR2020-12-13
+    package = None
+    if school and scheme and package_name:
+        package = subj_mod.Package.objects.filter(
+            school=school,
+            scheme=scheme,
+            name__iexact=package_name
+        ).order_by('-pk').first()
+    return package
+
+def get_packageitem(package, schemeitem):
+    # get existing packageitem PR2020-12-13
+    packageitem = None
+    if package and schemeitem:
+        packageitem = subj_mod.Packageitem.objects.filter(
+            package=package,
+            schemeitem=schemeitem
+        ).order_by('-pk').first()
+    return packageitem
 
 
 
+def get_birthcountry(name):
+    # check if subject already exists
+    birthcountry = None
+    if name:
+        birthcountry = stud_mod.Birthcountry.objects.filter(
+            name__iexact=name
+        ).order_by('-pk').first()
+    return birthcountry
+
+
+def get_birthplace(birthcountry, birthplace_name):
+    # check if subject already exists
+    birthplace = None
+    if birthcountry and birthplace_name:
+        birthplace = stud_mod.Birthplace.objects.filter(
+            birthcountry=birthcountry,
+            name__iexact=birthplace_name
+        ).order_by('-pk').first()
+    return birthplace
+
+
+def get_schoolbase(country, code):
+    # get existing schoolbase PR2020-12-14
+    schoolbase = None
+    if country and code:
+        schoolbase = sch_mod.Schoolbase.objects.filter(
+            country=country,
+            code__iexact=code
+        ).order_by('-pk').first()
+    return schoolbase
+
+
+def get_school(schoolbase, examyear):
+    # get existing school from request_user PR2020-12-13
+    school = None
+    if schoolbase and examyear:
+        school = sch_mod.School.objects.filter(
+            base=schoolbase,
+            examyear=examyear
+        ).order_by('-pk').first()
+    return school

@@ -53,11 +53,7 @@
 
 
 /*
-
-          <div  class="d-flex flex-wrap" id="id_dflex"
-              data-user_settings = '{}'
-              data-download_submenus_url= "/ajax/upload_user_settings/"
-              >
+          <div  class="d-flex flex-wrap" id="id_dflex">
 
                 <svg id="id_svg00" height="32" width="90">
                     <a href="/?menu=mn_schl&amp;sub=home" >

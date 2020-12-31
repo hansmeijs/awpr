@@ -16,14 +16,15 @@ from accounts.models import User, Usersetting
 from accounts import views as av
 
 from awpr import constants as c
-from awpr import functions as f
+from awpr import functions as af
 from awpr import validators as val
 from awpr import locale as loc
-from schools import models as school_model
+from schools import models as sch_mod
 from schools import functions as sch_fnc
 from schools import dicts as school_dicts
 from subjects import views as sj_vw
 from students import views as st_vw
+from grades import views as gr_vw
 
 import json
 
@@ -37,269 +38,282 @@ class DatalistDownloadView(View):  # PR2019-05-23
     #logging.disable(logging.CRITICAL)  # logging.CRITICAL disables logging calls with levels <= CRITICAL
     logging.disable(logging.NOTSET)  # logging.NOTSET re-enables logging
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         logger.debug(' ')
         logger.debug(' ++++++++++++++++++++ DatalistDownloadView ++++++++++++++++++++ ')
-        #logger.debug('request.POST' + str(request.POST))
+        logger.debug('request.POST' + str(request.POST))
 
         #logger.debug('request.user' + str(request.user))
         #logger.debug('request.user.country' + str(request.user.country))
         #logger.debug('request.user.schoolbase' + str(request.user.schoolbase))
-        #logger.debug('request.user.examyear' + str(request.user.examyear))
 
         starttime = timer()
         datalists = {}
         awp_messages = []
-        if request.user is not None:
-            if request.user.country and request.user.examyear and request.user.schoolbase:
+        if request.user and request.user.country and  request.user.schoolbase:
+            if request.POST['download']:
+# ----- run system_updates if necessary
+                # if.system_updates()
+
                 country = request.user.country
-                examyear = request.user.examyear
-                schoolbase = request.user.schoolbase
-                if request.POST['download']:
-                    #f.system_updates()
+
 # ----- get user_lang
-                    user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-                    activate(user_lang)
+                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                activate(user_lang)
 
 # ----- get datalist_request
-                    datalist_request = json.loads(request.POST['download'])
-                    logger.debug('datalist_request: ' + str(datalist_request) + ' ' + str(type(datalist_request)))
+                datalist_request = json.loads(request.POST['download'])
+                #logger.debug('datalist_request: ' + str(datalist_request) + ' ' + str(type(datalist_request)))
 
 # ----- get user settings -- first get settings, these are used in other downloads
-                    # download_setting will update usersetting with items in request_item, and retrieve saved settings
-                    request_item = datalist_request.get('setting')
-                    new_setting_dict, awp_message = download_setting(request_item, user_lang, request)
-                    # only add setting_dict to  datalists when called by request_item 'setting'
-                    if request_item and new_setting_dict:
-                        datalists['setting_dict'] = new_setting_dict
-                    if awp_message:
-                        awp_messages.append(awp_message)
-                        datalists['awp_messages'] = awp_messages
+                # download_setting will update usersetting with items in request_item_setting, and retrieve saved settings
+                request_item_setting = datalist_request.get('setting')
+                new_setting_dict, awp_message, sel_examyear, sel_schoolbase = \
+                    download_setting(request_item_setting, user_lang, request)
+                # only add setting_dict to  datalists when called by request_item_setting 'setting'
+                if request_item_setting and new_setting_dict:
+                    datalists['setting_dict'] = new_setting_dict
+                if awp_message:
+                    awp_messages.append(awp_message)
+                    datalists['awp_messages'] = awp_messages
 # ----- get school settings
-                    request_item = datalist_request.get('schoolsetting')
-                    if request_item:
-                        datalists['schoolsetting_dict'] = sch_fnc.get_schoolsetting(request_item, user_lang, request)
+                request_item_setting = datalist_request.get('schoolsetting')
+                if request_item_setting:
+                    datalists['schoolsetting_dict'] = sch_fnc.get_schoolsetting(
+                        request_item_setting, sel_examyear, sel_schoolbase, request)
 
 # ----- locale
-                    request_item = datalist_request.get('locale')
-                    if request_item:
-                        # request_item: {page: "employee"}
-                        datalists['locale_dict'] = loc.get_locale_dict(request_item, user_lang)
+                request_item_setting = datalist_request.get('locale')
+                if request_item_setting:
+                    # request_item_setting: {page: "employee"}
+                    datalists['locale_dict'] = loc.get_locale_dict(request_item_setting, user_lang)
 
-                    # 9. return datalists
-                    # PR2020-05-23 debug: datalists = {} gives parse error.
-                    # elapsed_seconds to the rescue: now datalists will never be empty
+                # 9. return datalists
+                # PR2020-05-23 debug: datalists = {} gives parse error.
+                # elapsed_seconds to the rescue: now datalists will never be empty
 
 # ----- get user_rows
-                    request_item = datalist_request.get('user_rows')
-                    if request_item:
-                        datalists['user_rows'] = av.create_user_list(request)
+                request_item_setting = datalist_request.get('user_rows')
+                if request_item_setting:
+                    datalists['user_rows'] = av.create_user_list(request)
 
 # ----- examyears
-                    if datalist_request.get('examyear_rows'):
-                        datalists['examyear_rows'] = school_dicts.create_examyear_rows(country, {}, None)
+                if datalist_request.get('examyear_rows'):
+                    datalists['examyear_rows'] = school_dicts.create_examyear_rows(country, {}, None)
 # ----- departments
-                    if datalist_request.get('department_rows'):
-                        datalists['department_rows'] = school_dicts.create_department_rows(examyear)
+                if datalist_request.get('department_rows'):
+                    datalists['department_rows'] = school_dicts.create_department_rows(sel_examyear)
+# ----- levels
+                if datalist_request.get('level_rows'):
+                    datalists['level_rows'] = school_dicts.create_level_rows(sel_examyear)
+# ----- sectors
+                if datalist_request.get('sector_rows'):
+                    datalists['sector_rows'] = school_dicts.create_sector_rows(sel_examyear)
 # ----- schools
-                    if datalist_request.get('school_rows'):
-                        datalists['school_rows'] = school_dicts.create_school_rows(examyear)
+                if datalist_request.get('school_rows'):
+                    datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear)
 # ----- subjects
-                    if datalist_request.get('subject_rows'):
-                        datalists['subject_rows'] = sj_vw.create_subject_rows(new_setting_dict, {}, None)
+                if datalist_request.get('subject_rows'):
+                    datalists['subject_rows'] = sj_vw.create_subject_rows(new_setting_dict, {}, None)
 # ----- students
-                    if datalist_request.get('student_rows'):
-                        datalists['student_rows'] = st_vw.create_student_rows(examyear, {}, None)
+                if datalist_request.get('student_rows'):
+                    datalists['student_rows'] = st_vw.create_student_rows(new_setting_dict, {}, None)
+# ----- studentsubjects
+                if datalist_request.get('studentsubject_rows'):
+                    datalists['studentsubject_rows'] = st_vw.create_studentsubject_rows(new_setting_dict, {})
+# ----- grades
+                if datalist_request.get('grade_rows'):
+                    datalists['grade_rows'] = gr_vw.create_grade_rows(new_setting_dict, {})
+# ----- schemes
+                if datalist_request.get('scheme_rows'):
+                    datalists['scheme_rows'] = sj_vw.create_scheme_rows(new_setting_dict, {}, None)
+# ----- schemeitems
+                if datalist_request.get('schemeitem_rows'):
+                    datalists['schemeitem_rows'] = sj_vw.create_schemeitem_rows(new_setting_dict, {}, None)
 
         elapsed_seconds = int(1000 * (timer() - starttime)) / 1000
         datalists['elapsed_seconds'] = elapsed_seconds
 
-        datalists_json = json.dumps(datalists, cls=f.LazyEncoder)
+        datalists_json = json.dumps(datalists, cls=af.LazyEncoder)
 
         return HttpResponse(datalists_json)
 
-def download_setting(request_item, user_lang, request):  # PR2020-07-01
+def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 PR2020-1-14
     logger.debug(' ----- download_setting ----- ' )
-    logger.debug('request_item: ' + str(request_item) )
-    # this function get settingss from request_item.
-    # if not in request_item, it takes the saved settings.
-    new_setting_dict = {'user_lang': user_lang}
-    awp_message = {}
-    if request.user:
-        req_user = request.user
+    logger.debug('request_item_setting: ' + str(request_item_setting) )
+    # this function get settingss from request_item_setting.
+    # if not in request_item_setting, it takes the saved settings.
 
-        if req_user.is_role_student:
-            new_setting_dict['requsr_role_student'] = req_user.is_role_student
-        if req_user.is_role_teacher:
-            new_setting_dict['requsr_role_teacher'] = req_user.is_role_teacher
-        if req_user.is_role_school:
-            new_setting_dict['requsr_role_school'] = req_user.is_role_school
-        if req_user.is_role_insp:
-            new_setting_dict['requsr_role_insp'] = req_user.is_role_insp
-        if req_user.is_role_admin:
-            new_setting_dict['requsr_role_admin'] = req_user.is_role_admin
-        if req_user.is_role_system:
-            new_setting_dict['requsr_role_system'] = req_user.is_role_system
+    req_user = request.user
 
-        if req_user.is_perm_read:
-            new_setting_dict['requsr_perm_read'] = req_user.is_perm_read
-        if req_user.is_perm_edit:
-            new_setting_dict['requsr_perm_edit'] = req_user.is_perm_edit
-        if req_user.is_perm_auth1:
-            new_setting_dict['requsr_perm_auth1'] = req_user.is_perm_auth1
-        if req_user.is_perm_auth2:
-            new_setting_dict['requsr_perm_auth2'] = req_user.is_perm_auth2
-        if req_user.is_perm_docs:
-            new_setting_dict['requsr_perm_anlz'] = req_user.is_perm_docs
-        if req_user.is_perm_admin:
-            new_setting_dict['requsr_perm_admin'] = req_user.is_perm_admin
-        if req_user.is_perm_system:
-            new_setting_dict['requsr_perm_system'] = req_user.is_perm_system
+# - selected_dict contains saved selected_pk's from Usersetting, key: selected_pk
+    # changes are stored in this dict, saved at the end when
+    selected_dict = Usersetting.get_jsonsetting(c.KEY_SELECTED_PK, req_user)
+    selected_dict_has_changed = False
 
-        _req_user_schoolbase_pk = None
-        if req_user.country:
-            req_user_country = req_user.country
-            new_setting_dict['requsr_country_pk'] = req_user_country.pk
-            new_setting_dict['requsr_country'] = req_user_country.name
-            _schoolbase = req_user.schoolbase
-            if _schoolbase:
-                _req_user_schoolbase_pk = _schoolbase.pk
-                new_setting_dict['requsr_schoolbase_pk'] = _req_user_schoolbase_pk
-                new_setting_dict['requsr_schoolbase_code'] = _schoolbase.code
+# - setting_dict contains all info to be sent to client
+    setting_dict = create_settingdict_with_role_and_permits(req_user, user_lang)
 
-# --- first save new selected examyear before retrieving examyear from req_user
-                if request_item:
-                    new_examyear_pk = request_item.get('requsr_examyear_pk')
-                    if new_examyear_pk:
-                        new_examyear = school_model.Examyear.objects.get_or_none(pk=new_examyear_pk)
-                        if new_examyear:
-                            req_user.examyear = new_examyear
-                            req_user.save()
-# --- get selected examyear
-                _examyear = req_user.examyear
-                if _examyear:
-                    new_setting_dict['requsr_examyear_pk'] = _examyear.pk
-                    new_setting_dict['requsr_examyear_examyear'] = _examyear.examyear
-                    if _examyear.published:
-                        new_setting_dict['requsr_examyear_published'] = _examyear.published
-                    if _examyear.locked:
-                        new_setting_dict['requsr_examyear_locked'] = _examyear.locked
+# ==== COUNTRY ========================
+# - get country from req_user
+    requsr_country = req_user.country
+    setting_dict['requsr_country_pk'] = requsr_country.pk
+    setting_dict['requsr_country'] = requsr_country.name
 
-                    awp_message = val.message_diff_exyr(_examyear)  # PR2020-10-30
+# ===== SCHOOLBASE ======================= PR2020-12-18
+# - get schoolbase from settings / request when role is insp, admin or system, from req_user otherwise
+    # req_user.schoolbase cannot be changed
+    # Selected schoolbase is stored in {selected_pk: {sel_schoolbase_pk: val}}
+
+    sel_schoolbase_instance, sel_schoolbase_save = af.get_sel_schoolbase_instance(request, request_item_setting)
+    logger.debug('sel_schoolbase_instance: ' + str(sel_schoolbase_instance) + ' pk: ' + str(sel_schoolbase_instance.pk))
+    if sel_schoolbase_save:
+        # when sel_schoolbase_save=True, there is always a sel_schoolbase_instance
+        selected_dict[c.KEY_SEL_SCHOOLBASE_PK] = sel_schoolbase_instance.pk
+        selected_dict_has_changed = True
+    if sel_schoolbase_instance:
+        setting_dict[c.KEY_SEL_SCHOOLBASE_PK] = sel_schoolbase_instance.pk
+        setting_dict['sel_schoolbase_code'] = sel_schoolbase_instance.code
+
+# ===== EXAMYEAR =======================
+    # every user can change examyear, is stored in Usersetting.
+    # request_item_setting: {'page_school': {'mode': 'get'}, 'sel_examyear_pk': 6}
+# - get selected examyear from request_item_setting, Usersetting or first in list
+    sel_examyear_instance, sel_examyear_save, may_select_examyear = af.get_sel_examyear_instance(request, request_item_setting)
+
+    setting_dict['may_select_examyear'] = may_select_examyear
+
+    logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
+# - update selected_dict when selected_dict_has_changed, will be saved at end of def
+    if sel_examyear_save:
+        # sel_examyear_instance has always value when selected_dict_has_changed
+        selected_dict[c.KEY_SEL_EXAMYEAR_PK] = sel_examyear_instance.pk
+        selected_dict_has_changed = True
+        logger.debug('selected_dict_has_changed: ' + str(selected_dict_has_changed) )
+# - add info to setting_dict, will be sent back to client
+    if sel_examyear_instance:
+        setting_dict[c.KEY_SEL_EXAMYEAR_PK] = sel_examyear_instance.pk
+        setting_dict['sel_examyear_code'] = sel_examyear_instance.code if sel_examyear_instance.code else None
+        if sel_examyear_instance.published:
+            setting_dict['sel_examyear_published'] = sel_examyear_instance.published
+        if sel_examyear_instance.locked:
+            setting_dict['sel_examyear_locked'] = sel_examyear_instance.locked
+# - add message when examyear is different from this eaxamyear
+    awp_message = val.message_diff_exyr(sel_examyear_instance)  # PR2020-10-30
+
+    logger.debug('sel_schoolbase_instance: ' + str(sel_schoolbase_instance) + ' pk: ' + str(sel_schoolbase_instance.pk))
+    logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
+
+# ===== SCHOOL =======================
+# - only roles insp, admin and system may select other schools
+    may_select_school = req_user.is_role_insp or req_user.is_role_admin or req_user.is_role_system
+    setting_dict['may_select_school'] = may_select_school
+
+# get school from sel_schoolbase and sel_examyear_instance
+    sel_school = sch_mod.School.objects.get_or_none(
+        base=sel_schoolbase_instance,
+        examyear=sel_examyear_instance)
+    logger.debug('get_or_none sel_school: ' + str(sel_school) )
+    #sel_school2 = sch_mod.School.objects.filter(
+    #    base=sel_schoolbase_instance,
+    #    examyear=sel_examyear_instance).first()
+    #logger.debug('first sel_school: ' + str(sel_school))
+
+    if sel_school:
+        setting_dict['sel_school_pk'] = sel_school.pk
+        setting_dict['sel_school_name'] = sel_school.name
+        setting_dict['sel_school_abbrev'] = sel_school.abbrev
+        if sel_school.activated:
+            setting_dict['sel_school_activated'] = sel_school.activated
+        if sel_school.locked:
+            setting_dict['sel_school_locked'] = sel_school.locked
+        logger.debug('sel_school.depbases: ' + str(sel_school.depbases) )
+
+# ===== DEPBASE =======================
+    # every user can change depbase, if in .sel_school_depbases and in user allowed_depbases
+
+    sel_depbase_instance, sel_depbase_save, allowed_depbases = \
+        af.get_sel_depbase_instance(sel_school, request, request_item_setting)
+
+    setting_dict['allowed_depbases'] = allowed_depbases
+    allowed_depbases_len = len(allowed_depbases)
+    may_select_department = (allowed_depbases_len > 1)
+    setting_dict['may_select_department'] = may_select_department
+
+    # - update selected_dict when selected_dict_has_changed, will be saved at end of def
+    if sel_depbase_save:
+        # sel_depbase_instance has always value when selected_dict_has_changed
+        selected_dict[c.KEY_SEL_DEPBASE_PK] = sel_depbase_instance.pk
+        selected_dict_has_changed = True
+        logger.debug('selected_dict_has_changed: ' + str(selected_dict[c.KEY_SEL_DEPBASE_PK]))
+    # - add info to setting_dict, will be sent back to client
+    if sel_depbase_instance:
+        setting_dict[c.KEY_SEL_DEPBASE_PK] = sel_depbase_instance.pk
+        setting_dict['sel_depbase_code'] = sel_depbase_instance.code if sel_depbase_instance.code else None
+
+        sel_department_instance = sch_mod.Department.objects.get_or_none(base=sel_depbase_instance, examyear=sel_examyear_instance)
+        if sel_department_instance:
+            setting_dict['sel_department_pk'] = sel_department_instance.pk
+            setting_dict['sel_department_abbrev'] = sel_department_instance.abbrev
+            setting_dict['sel_department_name'] = sel_department_instance.name
+
+        logger.debug('>>>>>>>>>> setting_dict[sel_department_abbrev]: ' + str(setting_dict['sel_department_abbrev']))
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+# ===== EXAM PERIOD =======================
+# every user can change exam period
+
+# - get saved_examperiod_pk
+    saved_examperiod_pk = selected_dict.get(c.KEY_SEL_EXAMPERIOD_PK)
+
+# - check if there is a new examperiod_pk in request_item_setting
+    request_examperiod_pk = af.get_dict_value(request_item_setting,
+                                (c.KEY_SELECTED_PK, c.KEY_SEL_EXAMPERIOD_PK))
+
+    if saved_examperiod_pk is None and request_examperiod_pk is None:
+        request_examperiod_pk = c.EXAMPERIOD_FIRST
+
+    # - use request_examyear when it has value and is different from the saved one
+    if request_examperiod_pk and request_examperiod_pk != saved_examperiod_pk:
+        saved_examperiod_pk = request_examperiod_pk
+        # - update selected_dict, will be saved at end of def
+        selected_dict_has_changed = True
+        selected_dict[c.KEY_SEL_EXAMPERIOD_PK] = saved_examperiod_pk
+
+    # - add info to setting_dict, will be sent back to client
+    setting_dict[c.KEY_SEL_EXAMPERIOD_PK] = saved_examperiod_pk
 
 
-# --- get selected school
-                    _school = school_model.School.objects.get_or_none(base=req_user.schoolbase, examyear=_examyear)
-                    if _school:
-                        new_setting_dict['requsr_school_pk'] = _school.pk
-                        new_setting_dict['requsr_school_name'] = _school.name
-                        new_setting_dict['requsr_school_abbrev'] = _school.abbrev
-                        if _school.activated:
-                            new_setting_dict['requsr_school_activated'] = _school.activated
-                        if _school.locked:
-                            new_setting_dict['requsr_school_locked'] = _school.locked
-# --- get selected department
-                    _department = school_model.Department.objects.get_or_none(base=req_user.depbase, examyear=_examyear)
-                    if _department:
-                        new_setting_dict['requsr_depbase_pk'] = _department.base.pk
-                        new_setting_dict['requsr_department_name'] = _department.name
-                        new_setting_dict['requsr_department_abbrev'] = _department.abbrev
-
-        # request_item: {'selected_pk': {'sel_examyear_pk': 23, 'sel_schoolbase_pk': 15}, 'sel_depbase_pk': 15}}
-        if request_item:
-            #<PERMIT> PR2020-10-27
-            # - user can only change school when req_user is_role_insp, is_role_admin or is_role_system:
-            #  otherwise sel_schoolbase_pk is equal to _req_user_schoolbase_pk
-
-    # - get selected examyear
-            new_examyear_pk = request_item.get('requsr_examyear_pk')
-            if new_examyear_pk:
-                new_examyear = school_model.Examyear.objects.get_or_none(pk=new_examyear_pk)
-                if new_examyear:
-                    req_user.examyear = new_examyear
-                    req_user.save()
+    if saved_examperiod_pk:
+        setting_dict['sel_examperiod_pk'] = saved_examperiod_pk
+        setting_dict['sel_examperiod_caption'] = c.EXAMPERIOD_CAPTION.get(saved_examperiod_pk)
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
-             # - always get selected pks from key 'selected_pk'
-            key = 'selected_pk'
-            has_changed = False
-        # - get saved setting_dict
-            saved_setting_dict = Usersetting.get_jsonsetting(key, req_user)
-            new_selected_pk_dict = {}
-        # - get request_dict
-            request_dict = request_item.get(key)
-            logger.debug('request_dict: ' + str(request_dict))
-            logger.debug('saved_setting_dict: ' + str(saved_setting_dict))
+# ===== SELECTED_PK SETTINGS =======================
+    # request_item_setting: {'selected_pk': {'sel_examyear_pk': 23, 'sel_schoolbase_pk': 15}, 'sel_depbase_pk': 15}}
+    if request_item_setting:
+        #<PERMIT> PR2020-10-27
+        # - user can only change school when req_user is_role_insp, is_role_admin or is_role_system:
+        #  otherwise sel_schoolbase_pk is equal to _requsr_schoolbase_pk
 
-        # - loop through  sel_keys
-            sel_keys = ( 'sel_schoolbase_pk', 'sel_depbase_pk')
-            for sel_key in sel_keys:
-                skip_item = False
-                if sel_key == 'sel_schoolbase_pk':
-                    if not req_user.is_role_insp and not req_user.is_role_admin and not req_user.is_role_system:
-                        skip_item = True
-                        new_setting_dict[sel_key] = _req_user_schoolbase_pk
+################################
+# - get rest of keys
+        for key, request_dict in request_item_setting.items():
+            skip_keys = ('selected_pk',)
+            if key not in skip_keys:
+                has_changed = False
+                new_page_dict = {}
+                saved_setting_dict = Usersetting.get_jsonsetting(key, req_user)
 
-                logger.debug('sel_key: ' + str(sel_key))
-                logger.debug('skip_item: ' + str(skip_item))
-                if not skip_item:
-        # - get saved_value
-                    saved_value = saved_setting_dict.get(sel_key, 0)
-                    new_value = saved_value
-                    logger.debug('saved_value: ' + str(saved_value))
-            # - check if sel_key is in request_dict
-                    if request_dict and sel_key in request_dict:
-            # - get request_value
-                        request_value = request_dict.get(sel_key, 0)
-                        logger.debug('request_value: ' + str(request_value))
-            # - use saved_value if request_value is None
-                        if request_value != saved_value:
-                            new_value = request_value
-                            has_changed = True
-                        logger.debug('new_value: ' + str(new_value))
-            # - store value in dict, also saved value when value has not changed
-                    new_selected_pk_dict[sel_key] = new_value
-                    new_setting_dict[sel_key] = new_value
-                    #logger.debug('new_setting_dict: ' + str(new_setting_dict))
-            logger.debug('has_changed: ' + str(has_changed))
-            if has_changed:
-                Usersetting.set_jsonsetting(key, new_selected_pk_dict, req_user)
-
-    # - get rest of keys
-            for key in request_item:
-                if key != 'selected_pk' and key != 'requsr_examyear_pk':
-                    has_changed = False
-                    new_page_dict = {}
-                    saved_setting_dict = Usersetting.get_jsonsetting(key, req_user)
-
-                    request_dict = request_item.get(key)
-
-    ################################
-    # get page
-                    if key[:4] == 'page':
-                        # if 'page_' in request: and saved_btn == 'planning': also retrieve period
-                        new_setting_dict['sel_page'] = key
-                        #logger.debug('new_setting_dict: ' + str(new_setting_dict))
-                        sel_keys = ('sel_btn', 'period_start', 'period_end', 'grid_range')
-                        for sel_key in sel_keys:
-                            saved_value = saved_setting_dict.get(sel_key)
-                            new_value = saved_value
-                            if request_dict and sel_key in request_dict:
-                                request_value = request_dict.get(sel_key)
-                                if request_value is None:
-                                    if saved_value is not None:
-                                        has_changed = True
-                                elif request_value != saved_value:
-                                    new_value = request_value
-                                    has_changed = True
-                            if new_value is not None:
-                                new_page_dict[sel_key] = new_value
-                                new_setting_dict[sel_key] = new_value
-
-    ###################################
-    # get others, with key = 'value'
-                    else:
-                        sel_key = 'value'
+################################
+# get page settings - keys starting with 'page_'
+                if key[:5] == 'page_':
+                    # if 'page_' in request: and saved_btn == 'planning': also retrieve period
+                    setting_dict['sel_page'] = key
+                    #logger.debug('setting_dict: ' + str(setting_dict))
+                    sel_keys = ('sel_btn', 'period_start', 'period_end', 'grid_range')
+                    for sel_key in sel_keys:
                         saved_value = saved_setting_dict.get(sel_key)
                         new_value = saved_value
                         if request_dict and sel_key in request_dict:
@@ -311,9 +325,50 @@ def download_setting(request_item, user_lang, request):  # PR2020-07-01
                                 new_value = request_value
                                 has_changed = True
                         if new_value is not None:
-                            new_page_dict[key] = new_value
-                            new_setting_dict[key] = new_value
-    # - save
-                    if has_changed:
-                        Usersetting.set_jsonsetting(key, new_page_dict, req_user)
-    return new_setting_dict, awp_message
+                            new_page_dict[sel_key] = new_value
+                            setting_dict[sel_key] = new_value
+                if has_changed:
+                    Usersetting.set_jsonsetting(key, new_page_dict, req_user)
+    #logger.debug('selected_dict_has_changed: ' + str(selected_dict_has_changed))
+
+# - save settings when they have changed
+    if selected_dict_has_changed:
+        logger.debug('>>>>>>> save selected_dict: ' + str(selected_dict))
+        Usersetting.set_jsonsetting(c.KEY_SELECTED_PK, selected_dict, req_user)
+
+    return setting_dict, awp_message, sel_examyear_instance, sel_schoolbase_instance
+# - end of download_setting
+
+def create_settingdict_with_role_and_permits(req_user, user_lang):
+# - get role from req_user, put them in setting_dict PR2020-12-14
+    setting_dict = {'user_lang': user_lang}
+    if req_user.is_role_student:
+        setting_dict['requsr_role_student'] = req_user.is_role_student
+    if req_user.is_role_teacher:
+        setting_dict['requsr_role_teacher'] = req_user.is_role_teacher
+    if req_user.is_role_school:
+        setting_dict['requsr_role_school'] = req_user.is_role_school
+    if req_user.is_role_insp:
+        setting_dict['requsr_role_insp'] = req_user.is_role_insp
+    if req_user.is_role_admin:
+        setting_dict['requsr_role_admin'] = req_user.is_role_admin
+    if req_user.is_role_system:
+        setting_dict['requsr_role_system'] = req_user.is_role_system
+
+# - get permissions from req_user, put them in setting_dict
+    if req_user.is_perm_read:
+        setting_dict['requsr_perm_read'] = req_user.is_perm_read
+    if req_user.is_perm_edit:
+        setting_dict['requsr_perm_edit'] = req_user.is_perm_edit
+    if req_user.is_perm_auth1:
+        setting_dict['requsr_perm_auth1'] = req_user.is_perm_auth1
+    if req_user.is_perm_auth2:
+        setting_dict['requsr_perm_auth2'] = req_user.is_perm_auth2
+    if req_user.is_perm_docs:
+        setting_dict['requsr_perm_anlz'] = req_user.is_perm_docs
+    if req_user.is_perm_admin:
+        setting_dict['requsr_perm_admin'] = req_user.is_perm_admin
+    if req_user.is_perm_system:
+        setting_dict['requsr_perm_system'] = req_user.is_perm_system
+
+    return setting_dict

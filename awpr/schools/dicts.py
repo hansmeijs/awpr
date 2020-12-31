@@ -7,36 +7,24 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def create_examyear_rows(country, append_dict, instance_pk):
+def create_examyear_rows(country, append_dict, examyear_pk):
     # --- create rows of all examyears of this country PR2020-10-04
-    logger.debug(' =============== create_subject_rows ============= ')
+    #logger.debug(' =============== create_examyear_rows ============= ')
 
     sql_keys = {'cntr_id': country.pk}
-    sql_list = ["""SELECT ey.id, ey.country_id, 
-        CONCAT('examyear_', ey.id::TEXT) AS mapid,
-        ey.examyear, 
-        ey.published,
-        ey.locked,
+    sql_list = ["SELECT ey.id AS examyear_id, ey.country_id,  CONCAT('examyear_', ey.id::TEXT) AS mapid,",
+        "ey.code AS examyear_code,  ey.published, ey.locked, ey.createdat, ey.publishedat, ey.lockedat,",
+        "ey.modifiedby_id, ey.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+        "FROM schools_examyear AS ey",
+        "LEFT JOIN accounts_user AS au ON (au.id = ey.modifiedby_id)",
+        "WHERE ey.country_id = %(cntr_id)s::INT"]
 
-        ey.createdat,
-        ey.publishedat,
-        ey.lockedat,
-
-        ey.modifiedby_id, ey.modifiedat,
-        SUBSTRING(au.username, 7) AS modby_username
-
-        FROM schools_examyear AS ey 
-        LEFT JOIN accounts_user AS au ON (au.id = ey.modifiedby_id) 
-
-        WHERE ey.country_id = %(cntr_id)s::INT
-        """]
-
-    if instance_pk:
+    if examyear_pk:
         # when employee_pk has value: skip other filters
         sql_list.append('AND ey.id = %(ey_id)s::INT')
-        sql_keys['ey_id'] = instance_pk
+        sql_keys['ey_id'] = examyear_pk
     else:
-        sql_list.append('ORDER BY -ey.examyear')
+        sql_list.append('ORDER BY -ey.code')
 
     sql = ' '.join(sql_list)
 
@@ -45,7 +33,7 @@ def create_examyear_rows(country, append_dict, instance_pk):
     examyear_rows = sch_m.dictfetchall(newcursor)
 
     # - add messages to subject_row
-    if instance_pk and examyear_rows:
+    if examyear_pk and examyear_rows:
         # when subject_pk has value there is only 1 row
         row = examyear_rows[0]
         if row:
@@ -64,26 +52,79 @@ def create_department_rows(examyear):
 
     sql_keys = {'ey_id': examyear.pk}
 
-    sql_schools = """ SELECT d.id, d.base_id, d.examyear_id, ey.examyear, ey.country_id, 
-        CONCAT('department_', d.id::TEXT) AS mapid,
-        d.name, d.abbrev, d.sequence, d.level_req, d.sector_req, d.level_caption, d.sector_caption,
-        d.modifiedby_id, d.modifiedat,
-        SUBSTRING(au.username, 7) AS modby_username
+    sql_list = ["SELECT dep.id, dep.base_id, dep.examyear_id, ey.code AS examyear_code, ey.country_id,",
+        "CONCAT('department_', dep.id::TEXT) AS mapid, depbase.code AS base_code,",
+        "dep.name, dep.abbrev, dep.sequence, dep.level_req AS lvl_req, dep.sector_req AS sct_req, dep.level_caption AS lvl_caption, dep.sector_caption AS sct_caption,",
+        "dep.modifiedby_id, dep.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
 
-        FROM schools_department AS d 
-        INNER JOIN schools_examyear AS ey ON (ey.id = d.examyear_id) 
-        LEFT JOIN accounts_user AS au ON (au.id = d.modifiedby_id) 
+        "FROM schools_department AS dep",
+        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
+        "LEFT JOIN accounts_user AS au ON (au.id = dep.modifiedby_id)",
 
-        WHERE ey.id = %(ey_id)s::INT
-        ORDER BY d.sequence
-        """
-    newcursor = connection.cursor()
-    newcursor.execute(sql_schools, sql_keys)
-    school_rows = sch_m.dictfetchall(newcursor)
+        "WHERE ey.id = %(ey_id)s::INT",
+        "ORDER BY dep.sequence"]
+    sql = ' '.join(sql_list)
 
-    return school_rows
-# --- end of create_employee_rows
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        rows = sch_m.dictfetchall(cursor)
 
+    return rows
+# --- end of create_department_rows
+
+def create_level_rows(examyear):
+    # --- create rows of all levels of this examyear / country PR2020-12-11
+    #logger.debug(' =============== create_level_rows ============= ')
+
+    sql_keys = {'ey_id': examyear.pk}
+
+    sql_list = ["SELECT lvl.id, lvl.base_id, lvl.examyear_id, ey.code AS examyear_code, ey.country_id,",
+        "CONCAT('level_', lvl.id::TEXT) AS mapid,",
+        "lvl.name, lvl.abbrev, lvl.sequence, lvl.depbases,",
+        "lvl.modifiedby_id, lvl.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+
+        "FROM subjects_level AS lvl ",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = lvl.examyear_id)",
+        "LEFT JOIN accounts_user AS au ON (au.id = lvl.modifiedby_id)",
+
+        "WHERE ey.id = %(ey_id)s::INT",
+        "ORDER BY lvl.sequence"]
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        rows = sch_m.dictfetchall(cursor)
+
+    return rows
+# --- end of create_level_rows
+
+
+def create_sector_rows(examyear):
+    # --- create rows of all sectors of this examyear / country PR2020-12-11
+    #logger.debug(' =============== create_sector_rows ============= ')
+
+    sql_keys = {'ey_id': examyear.pk}
+
+    sql_list = ["SELECT sct.id, sct.base_id, sct.examyear_id, ey.code AS examyear_code, ey.country_id,",
+        "CONCAT('sector_', sct.id::TEXT) AS mapid,",
+        "sct.name, sct.abbrev, sct.sequence, sct.depbases,",
+        "sct.modifiedby_id, sct.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+
+        "FROM subjects_sector AS sct ",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = sct.examyear_id)",
+        "LEFT JOIN accounts_user AS au ON (au.id = sct.modifiedby_id)",
+
+        "WHERE ey.id = %(ey_id)s::INT",
+        "ORDER BY sct.sequence"]
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        rows = sch_m.dictfetchall(cursor)
+
+    return rows
+# --- end of create_sector_rows
 
 def create_school_rows(examyear):
     # --- create rows of all schools of this examyear / country PR2020-09-18
@@ -92,25 +133,22 @@ def create_school_rows(examyear):
 
     sql_keys = {'ey_id': examyear.pk}
 
-    sql_schools = """ SELECT s.id, s.base_id, s.examyear_id, ey.examyear, ey.country_id, c.name AS country,
-        CONCAT('school_', s.id::TEXT) AS mapid,
-        s.name, s.abbrev, s.article, s.depbases,
-        sb.code AS sb_code,
-        s.istemplate, s.locked,
-        s.modifiedby_id, s.modifiedat,
-        SUBSTRING(au.username, 7) AS modby_username
+    sql_list = ["SELECT s.id, s.base_id, s.examyear_id, ey.code AS examyear_code, ey.country_id, c.name AS country,",
+        "CONCAT('school_', s.id::TEXT) AS mapid,",
+        "s.name, s.abbrev, s.article, s.depbases, sb.code AS sb_code, s.istemplate, s.locked, s.depbases,",
+        "s.modifiedby_id, s.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
 
-        FROM schools_school AS s 
-        INNER JOIN schools_schoolbase AS sb ON (sb.id = s.base_id) 
-        INNER JOIN schools_examyear AS ey ON (ey.id = s.examyear_id) 
-        INNER JOIN schools_country AS c ON (c.id = ey.country_id) 
-        LEFT JOIN accounts_user AS au ON (au.id = s.modifiedby_id) 
+        "FROM schools_school AS s",
+        "INNER JOIN schools_schoolbase AS sb ON (sb.id = s.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = s.examyear_id)",
+        "INNER JOIN schools_country AS c ON (c.id = ey.country_id)",
+        "LEFT JOIN accounts_user AS au ON (au.id = s.modifiedby_id)",
 
-        WHERE ey.id = %(ey_id)s::INT
-        ORDER BY LOWER(sb.code)
-        """
+        "WHERE ey.id = %(ey_id)s::INT",
+        "ORDER BY LOWER(sb.code)"]
+    sql = ' '.join(sql_list)
     newcursor = connection.cursor()
-    newcursor.execute(sql_schools, sql_keys)
+    newcursor.execute(sql, sql_keys)
     school_rows = sch_m.dictfetchall(newcursor)
 
     return school_rows

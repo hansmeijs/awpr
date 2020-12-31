@@ -9,7 +9,7 @@
       {% if user.country_locked %}<img src="{% static 'img/padlock.gif' %}" height="16" width="16">{% endif %}
     </li>
     <li class="breadcrumb-item"><a href="{% url 'examyears_url' %}">{% trans 'Exam years' %}</a></li>
-    <li class="breadcrumb-item active"> {{ examyear.examyear }}</li>
+    <li class="breadcrumb-item active"> {{ examyear.code }}</li>
   </ol>
 {% endblock %}
 
@@ -18,7 +18,7 @@
     <form method="post" novalidate>
       {% csrf_token %}
        <input type="hidden" name="next" value="{{ next }}">
-      <h4>{% trans 'Edit exam year ' %}{{ examyear.examyear }}</h4>
+      <h4>{% trans 'Edit exam year ' %}{{ examyear.code }}</h4>
       {% include 'includes/form.html' %}
       <button type="submit" class="btn btn-success">{% trans 'Save' %}</button>
       <a href="{% url 'examyear_log_url' examyear.pk %}" class="btn btn-outline-primary">{% trans 'View log' %}</a>

@@ -1104,6 +1104,79 @@ console.log("---------  function UpdateDatatableHeader ---------");
         }
    } // function UpdateDatatableHeader
 
+//=========   Handle_TEL_row_clicked   ======================
+    function Handle_TEL_row_clicked(event) {  //// EAL: Excel Tsa Linked table
+        // function gets row_clicked.id, row_other_id, row_clicked_key, row_other_key
+        // sets class 'highlighted' and 'hover'
+        // and calls 'LinkColumns' or 'UnlinkColumns'
+        // currentTarget refers to the element to which the event handler has been attached
+        // event.target which identifies the element on which the event occurred.
+        console.log("=========   Handle_TEL_row_clicked   ======================") ;
+        //.log("event.currentTarget", event.currentTarget) ;
+
+        if(!!event.currentTarget) {
+            let tr_selected = event.currentTarget;
+            let table_body_clicked = tr_selected.parentNode;
+            const tbodyName = get_attr_from_el(table_body_clicked, "data-tbody");
+            const cls_selected = (tbodyName === "lnk") ? cls_linked_selected : cls_unlinked_selected;
+
+            const row_clicked_id = tr_selected.id;
+            const row_clicked_key = get_attr_from_el(tr_selected, "data-key");
+            let row_other_id = null, row_other_key = null;
+
+// ---  check if clicked row is already selected
+            const tr_is_not_yet_selected = (!get_attr_from_el(tr_selected, "data-selected", false))
+
+// ---  if tr_is_not_yet_selected: add data-selected and class selected, remove class selected from all other rows in this table
+            const cls_linked_unlinked_hover = (tbodyName === "lnk") ? "tsa_td_linked_hover" : "tsa_td_unlinked_hover";
+            for (let i = 0, row; row = table_body_clicked.rows[i]; i++) {
+                if(tr_is_not_yet_selected && row === tr_selected){
+                    row.setAttribute("data-selected", true);
+                    for (let i = 0, td; td = row.children[i]; i++) {
+                        td.classList.add(cls_selected)
+                        td.classList.remove(cls_linked_unlinked_hover)};
+                } else {
+// ---  remove data-selected and class selected from all other rows in this table, also this row if already selected
+                    row.removeAttribute("data-selected");
+                    for (let i = 0, td; td = row.children[i]; i++) {
+                        td.classList.remove(cls_selected);
+                        td.classList.remove(cls_linked_unlinked_hover)};
+                }
+            }
+// ---  only if clicked on tsa or exc row:
+            if (["tsa", "exc"].indexOf(tbodyName) > -1) {
+// ---  if clicked row was not yet selected: check if other table has also selected row, if so: link
+                if(tr_is_not_yet_selected) {
+// ---  check if other table has also selected row, if so: link
+                    let table_body_other = (tbodyName === "exc") ? el_tbody_tsa : el_tbody_exc;
+// ---  loop through rows of other table
+                    let link_rows = false;
+                    for (let j = 0, row_other; row_other = table_body_other.rows[j]; j++) {
+                       const other_tr_is_selected = get_attr_from_el(row_other, "data-selected", false)
+// ---  set link_rows = true if selected row is found in other table
+                       if(other_tr_is_selected) {
+                           link_rows = true;
+                           row_other_id = get_attr_from_el(row_other, "id");
+                           row_other_key = get_attr_from_el(row_other, "data-key");
+                           break;
+                        }
+                    }
+// ---  link row_clicked with delay of 250ms (to show selected Tsa and Excel row)
+                    if (link_rows){
+                        setTimeout(function () {
+                            LinkColumns(tbodyName, row_clicked_id, row_other_id, row_clicked_key, row_other_key);
+                        }, 250);
+                    }
+                }
+            } else if (tr_is_not_yet_selected) {
+// ---  unlink tr_selected  with delay of 250ms (to show selected Tsa and Excel row)
+                setTimeout(function () {
+                    UnlinkColumns(tbodyName, row_clicked_id, row_clicked_key);
+                    }, 250);
+            }
+       }  // if(!!event.currentTarget) {
+    };  // Handle_TEL_row_clicked
+
 
 //========= linkColumns  ====================================================
     function linkColumns(tableBase, tableName, row_clicked_id, row_other_id, row_clicked_key, row_other_key) {

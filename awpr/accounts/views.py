@@ -36,7 +36,7 @@ from accounts import models as am
 from awpr import constants as c
 from awpr import validators as v
 
-from awpr import functions as f
+from awpr import functions as af
 from awpr import menus as awpr_menu
 
 from schools import models as sch_mod
@@ -126,8 +126,8 @@ class UserUploadView(View):
     #  when ok: it also sends an email to the user
 
     def post(self, request):
-        logger.debug('  ')
-        logger.debug(' ========== UserUploadView ===============')
+        #logger.debug('  ')
+        #logger.debug(' ========== UserUploadView ===============')
 
         update_wrap = {}
         err_dict = {}
@@ -147,7 +147,7 @@ class UserUploadView(View):
                 upload_json = request.POST.get("upload")
                 if upload_json:
                     upload_dict = json.loads(upload_json)
-                    logger.debug('upload_dict: ' + str(upload_dict))
+                    #logger.debug('upload_dict: ' + str(upload_dict))
 
                     # upload_dict: {'mode': 'validate', 'company_pk': 3, 'pk_int': 114, 'user_ppk': 3,
                     # 'employee_pk': None, 'employee_code': None, 'username': 'Giterson_Lisette', 'last_name': 'Lisette Sylvia enzo Giterson', 'email': 'hmeijs@gmail.com'}
@@ -159,9 +159,9 @@ class UserUploadView(View):
                     activate(user_lang)
 
     # - check if this user schoolbase is same as request.user.schoolbase
-                    pk_int = f.get_dict_value(upload_dict, ('id', 'pk'))
-                    ppk_int = f.get_dict_value(upload_dict, ('id', 'ppk'))
-                    map_id = f.get_dict_value(upload_dict, ('id', 'mapid'))
+                    pk_int = af.get_dict_value(upload_dict, ('id', 'pk'))
+                    ppk_int = af.get_dict_value(upload_dict, ('id', 'ppk'))
+                    map_id = af.get_dict_value(upload_dict, ('id', 'mapid'))
 
 # - check if the user schoolbase exists
                     user_schoolbase = sch_mod.Schoolbase.objects.get_or_none(id=ppk_int, country=request.user.country)
@@ -169,7 +169,7 @@ class UserUploadView(View):
                     is_same_schoolbase = (user_schoolbase and user_schoolbase == request.user.schoolbase)
                     if (user_schoolbase) and (has_permit_all_schools or is_same_schoolbase):
 
-                        mode = f.get_dict_value(upload_dict, ('id', 'mode'))
+                        mode = af.get_dict_value(upload_dict, ('id', 'mode'))
                         is_validate_only = (mode == 'validate')
                         update_wrap['mode'] = mode
 
@@ -255,7 +255,7 @@ class UserUploadView(View):
         # - create_user_list returns list of only 1 user
         #update_wrap['user_list'] = ad.create_user_list(request, instance.pk)
 # - return update_wrap
-        update_wrap_json = json.dumps(update_wrap, cls=f.LazyEncoder)
+        update_wrap_json = json.dumps(update_wrap, cls=af.LazyEncoder)
         return HttpResponse(update_wrap_json)
 # === end of UserUploadView =====================================
 
@@ -279,8 +279,8 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
                 for key, new_setting_dict in upload_dict.items():
                     # key = 'page_examyear', dict = {'sel_btn': 'examyear'}
                     saved_settings_dict = Usersetting.get_jsonsetting(key, request.user)
-                    logger.debug('new_setting_dict: ' + str(new_setting_dict))
-                    logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
+                    #logger.debug('new_setting_dict: ' + str(new_setting_dict))
+                    #logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
                     # loop through saved settings
                     for subkey, value in new_setting_dict.items():
                         # subkey: sel_btn,  value: examyear
@@ -301,7 +301,7 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
         # c. add update_dict to update_wrap
                     update_wrap['setting'] = {'result': 'ok'}
 # F. return update_wrap
-        return HttpResponse(json.dumps(update_wrap, cls=f.LazyEncoder))
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 
 ###########################################
 
@@ -309,19 +309,19 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
 class UserLanguageView(View):
 
     def get(self, request, lang):
-        logger.debug('UserLanguageView get self: ' + str(self) + 'request: ' + str(request) + ' lang: ' + str(lang))
+        #logger.debug('UserLanguageView get self: ' + str(self) + 'request: ' + str(request) + ' lang: ' + str(lang))
         if request.user is not None :
-            logger.debug('UserLanguageView get request.user: ' + str(request.user))
+            #logger.debug('UserLanguageView get request.user: ' + str(request.user))
             request.user.lang = lang
-            logger.debug('UserLanguageView get request.user.language: ' + str(request.user.lang))
+            #logger.debug('UserLanguageView get request.user.language: ' + str(request.user.lang))
             request.user.save(self.request)
-            logger.debug('UserLanguageView get saved.language: ' + str(request.user.lang))
+            #logger.debug('UserLanguageView get saved.language: ' + str(request.user.lang))
         return redirect('home_url')
 
 
 # PR2018-04-24
 def account_activation_sent(request):
-    # logger.debug('account_activation_sent request: ' + str(request))
+    #logger.debug('account_activation_sent request: ' + str(request))
     # PR2018-05-27
     # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
     return render(request, 'account_activation_sent.html')
@@ -356,7 +356,18 @@ def SignupActivateView(request, uidb64, token):
         user_name = user.username_sliced
         update_wrap['username'] = user_name
         update_wrap['schoolcode'] = user.schoolbase.code
-        update_wrap['schoolname'] = user.schoolname
+
+# - get schoolname PR2020-12-24
+        # TODO  add correct schoolnames  < schoolname of request user> heeft de volgende AWP-online account
+        #                   voor je aangemaakt: bij <schoolname new user, only if different from request_school>
+        examyear = af.get_todays_examyear_or_latest_instance(user.country)
+        school = sch_mod.School.objects.get_or_none( base=user.schoolbase, examyear=examyear)
+        if school and school.name:
+            if school.article:
+                schoolnamewithArticle = school.article.capitalize() + ' ' + school.name
+            else:
+                schoolnamewithArticle = school.name
+            update_wrap['schoolnamewithArticle'] = schoolnamewithArticle
 
 # - get language from user
         # PR2019-03-15 Debug: language gets lost, get request.user.lang again
@@ -381,7 +392,7 @@ def SignupActivateView(request, uidb64, token):
 
         form_is_valid = form.is_valid()
 
-        non_field_errors = f.get_dict_value(form, ('non_field_errors',))
+        non_field_errors = af.get_dict_value(form, ('non_field_errors',))
         field_errors = [(field.label, field.errors) for field in form]
         #logger.debug('non_field_errors' + str(non_field_errors))
         #logger.debug('field_errors' + str(field_errors))
@@ -431,13 +442,13 @@ class UserActivateView(UpdateView):
     context_object_name = 'UserActivateForm'  # "context_object_name" changes the original parameter name "object_list"
 
     def activate(request, uidb64, token):
-        logger.debug('UserActivateView def activate request: ' +  str(request))
+        #logger.debug('UserActivateView def activate request: ' +  str(request))
 
         #try:
         uid = force_text(urlsafe_base64_decode(uidb64))
 
         user = User.objects.get(pk=uid)
-        logger.debug('UserActivateView def activate user: ' + str(user))
+        #logger.debug('UserActivateView def activate user: ' + str(user))
 
         #except:  #except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         #    logger.debug('def activate except TypeError: ' + str(TypeError))
@@ -446,13 +457,13 @@ class UserActivateView(UpdateView):
         #    logger.debug('def activate except User.DoesNotExist: ' + str(User.DoesNotExist))
         #    user = None
 
-        logger.debug('UserActivateView def activate token: ' + str(token))
+        #logger.debug('UserActivateView def activate token: ' + str(token))
 
         if user is not None and account_activation_token.check_token(user, token):
             user.is_active = True
             user.activated = True
             user.save()
-            logger.debug('UserActivateView def activate user.saved: ' + str(user))
+            #logger.debug('UserActivateView def activate user.saved: ' + str(user))
             # login(request, user)
             # logger.debug('UserActivateView def activate user.loggedin: ' + str(user))
 
@@ -470,24 +481,24 @@ class UserActivateView(UpdateView):
             param = {'display_school': display_school, 'display_user': True, }
             headerbar_param = awpr_menu.get_headerbar_param(request, param)
             headerbar_param['form'] = form
-            logger.debug('def home(request) headerbar_param: ' + str(headerbar_param))
+            #logger.debug('def home(request) headerbar_param: ' + str(headerbar_param))
 
             return render(request, 'user_add.html', headerbar_param)
 
         else:
-            logger.debug('def activate account_activation_token.check_token False')
+            #logger.debug('def activate account_activation_token.check_token False')
             return render(request, 'account_activation_invalid.html')
 
 
 # PR2018-04-24
 def UserActivate(request, uidb64, token):
-    logger.debug('UserActivate def activate request: ' + str(request))
+    #logger.debug('UserActivate def activate request: ' + str(request))
 
     try:
         uid = force_text(urlsafe_base64_decode(uidb64))
-        logger.debug('def activate try uid: ' + str(uid))
+        #logger.debug('def activate try uid: ' + str(uid))
         user = User.objects.get(pk=uid)
-        logger.debug('UserActivate def activate try user: ' + str(user))
+        #logger.debug('UserActivate def activate try user: ' + str(user))
 
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         # logger.debug('UserActivate def activate except TypeError: ' + str(TypeError))
@@ -502,12 +513,12 @@ def UserActivate(request, uidb64, token):
         # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
         user.activated_at = timezone.now()
         user.save()
-        logger.debug('UserActivate def activate user.saved: ' + str(user))
+        #logger.debug('UserActivate def activate user.saved: ' + str(user))
 
         # open setpassword form
 
         # login(request, user)
-        # logger.debug('UserActivate def activate user.loggedin: ' + str(user))
+        #logger.debug('UserActivate def activate user.loggedin: ' + str(user))
 
 
 
@@ -518,7 +529,7 @@ def UserActivate(request, uidb64, token):
         # return render(request, 'password_reset_confirm.html', {'user': user,})
 
     else:
-        logger.debug('def activate account_activation_token.check_token False')
+        #logger.debug('def activate account_activation_token.check_token False')
         return render(request, 'account_activation_invalid.html')
 
 
@@ -528,7 +539,7 @@ class UserActivatedSuccess(View):
 
     def get(self, request):
         def get(self, request):
-            logger.debug('UserActivatedSuccess get request: ' + str(request))
+            #logger.debug('UserActivatedSuccess get request: ' + str(request))
             return self.render(request)
 
         def render(self, request):
@@ -536,7 +547,7 @@ class UserActivatedSuccess(View):
             # TODO I don't think schoolbase is correct PR2018-10-19
             schoolbase = usr.schoolbase
 
-            logger.debug('UserActivatedSuccess render usr: ' + str(usr))
+            #logger.debug('UserActivatedSuccess render usr: ' + str(usr))
 
             return render(request, 'country_list.html', {'user': usr, 'schoolbase': schoolbase})
 
@@ -575,45 +586,26 @@ def create_user_list(request, user_pk=None):
     if has_permit_school_users or has_permit_all_users:
         sql_is_ok = False
         sql_keys = {'country_id': request.user.country.pk}
-        sql_list = [""" SELECT 
-            u.id, 
-            u.schoolbase_id, 
-            CONCAT('user_', u.id) AS mapid,
-            'user' AS table,
+        sql_list = ["SELECT u.id, u.schoolbase_id,",
+            "CONCAT('user_', u.id) AS mapid, 'user' AS table,",
+            "SUBSTRING(u.username, 7) AS username,",
+            "u.last_name, u.email, u.role, u.permits,",
+            "(TRUNC(u.permits / 64) = 1) AS perm64_system,",
+            "(TRUNC( MOD(u.permits, 64) / 32) = 1) AS perm32_admin,",
+            "(TRUNC( MOD(u.permits, 32) / 16) = 1) AS perm16_anlz,",
+            "(TRUNC( MOD(u.permits, 16) / 8) = 1) AS perm08_auth2,",
+            "(TRUNC( MOD(u.permits, 8) / 4) = 1) AS perm04_auth1,",
+            "(TRUNC( MOD(u.permits, 4) / 2) = 1) AS perm02_write,",
+            "(MOD(u.permits, 2) = 1) AS perm01_read,",
     
-            SUBSTRING(u.username, 7) AS username,
-            u.last_name, u.email, u.role, u.permits,
+            "u.activated, u.activated_at, u.is_active, u.last_login, u.date_joined,",
+            "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
+            "u.lang, u.modified_by_id, u.modified_at",
     
-            (TRUNC(u.permits / 64) = 1) AS perm64_system, 
-            (TRUNC( MOD(u.permits, 64) / 32) = 1) AS perm32_admin, 
-            (TRUNC( MOD(u.permits, 32) / 16) = 1) AS perm16_anlz, 
-            (TRUNC( MOD(u.permits, 16) / 8) = 1) AS perm08_auth2, 
-            (TRUNC( MOD(u.permits, 8) / 4) = 1) AS perm04_auth1, 
-            (TRUNC( MOD(u.permits, 4) / 2) = 1) AS perm02_write, 
-            (MOD(u.permits, 2) = 1) AS perm01_read, 
-    
-            u.activated,
-            u.activated_at,
-            u.is_active,
-            u.last_login,
-            u.date_joined,
-    
-            u.country_id,
-            c.abbrev AS c_abbrev,
-            sb.code AS sb_code,
-            u.examyear_id,
-            u.schoolbase_id,
-            u.depbase_id,
-    
-            u.lang,
-            u.modified_by_id,
-            u.modified_at
-    
-            FROM accounts_user AS u 
-            INNER JOIN schools_country AS c ON (c.id = u.country_id) 
-            LEFT JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id) 
-            WHERE u.country_id = %(country_id)s::INT
-            """]
+            "FROM accounts_user AS u",
+            "INNER JOIN schools_country AS c ON (c.id = u.country_id)",
+            "LEFT JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
+            "WHERE u.country_id = %(country_id)s::INT"]
         if user_pk:
             sql_keys['u_id'] = user_pk
             sql_list.append('AND u.id = %(u_id)s::INT')
@@ -660,7 +652,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, is_v
 # - check if this username already exists in this schoolbase
     # user_pk is pk of user that will be validated when the user already exist.
     # user_pk is None when new user is created or validated
-    username = f.get_dict_value(upload_dict, ('username', 'value'))
+    username = af.get_dict_value(upload_dict, ('username', 'value'))
     #logger.debug('username: ' + str(username))
     msg_err = v.validate_unique_username(username, user_schoolbase.prefix, user_pk)
     if msg_err:
@@ -668,7 +660,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, is_v
         has_error = True
 
 # - check if namelast is blank
-    last_name = f.get_dict_value(upload_dict, ('last_name', 'value'))
+    last_name = af.get_dict_value(upload_dict, ('last_name', 'value'))
     #logger.debug('last_name: ' + str(last_name))
     msg_err = v.validate_notblank_maxlength(last_name, c.MAX_LENGTH_NAME, _('The name'))
     if msg_err:
@@ -676,7 +668,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, is_v
         has_error = True
 
 # - check if this is a valid email address:
-    email = f.get_dict_value(upload_dict, ('email', 'value'))
+    email = af.get_dict_value(upload_dict, ('email', 'value'))
     #logger.debug('email: ' + str(email))
     msg_err = v.validate_email_address(email)
     if msg_err:
@@ -690,24 +682,16 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, is_v
             err_dict['email'] = msg_err
             has_error = True
 
-    #logger.debug('employee: ' + str(employee))
-
     if not is_validate_only and not has_error:
-        # - get now without timezone
-        now_utc_naive = datetime.utcnow()
-        now_utc = now_utc_naive.replace(tzinfo=pytz.utc)
+    # - get now
+        # timezone.now() is timezone aware, based on the USE_TZ setting;
+        # datetime.now() is timezone naive. PR2018-06-07
+        now_utc = timezone.now()
 
-        todays_examyear = sch_fnc.get_todays_examyear
-        examyear = None
-        # check if exists, get latest examyear if todays_examyear does not exist
-        if not sch_mod.Examyear.objects.filter(country=country, examyear=examyear).exists():
-            examyear = sch_mod.Examyear.objects.filter(country=country).order_by('-examyear').first()
-
-        # -  create new user
+    # - create new user
         prefixed_username = user_schoolbase.prefix + username
         new_user = am.User(
             country=country,
-            examyear=examyear,
             schoolbase=user_schoolbase,
             username=prefixed_username,
             last_name=last_name,
@@ -742,7 +726,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, is_v
             mails_sent = send_mail(subject, message, from_email, [new_user.email], fail_silently=False)
             #logger.debug('mails sent: ' + str(mails_sent))
             # - return message 'We have sent an email to user'
-            msg01 = _("User '%(usr)s' is registered successfully at %(school)s.") % {'usr': new_user.username_sliced, 'school': new_user.username_sliced}
+            msg01 = _("User '%(usr)s' is registered successfully at %(school)s.") % {'usr': new_user.username_sliced, 'school': user_schoolbase}
             msg02 = _("We have sent an email to the email address '%(email)s'.") % {'email': new_user.email}
             msg03 = _(
                 'The user must click the link in that email to verify the email address and create a password.')
@@ -756,7 +740,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, is_v
 
 # === update_user_instance ========== PR2020-08-16 PR2020-09-24
 def update_user_instance(instance, user_pk, upload_dict, is_validate_only, request):
-    #logger.debug('-----  update_user_instance  -----')
+    #F.debug('-----  update_user_instance  -----')
     #logger.debug('upload_dict: ' + str(upload_dict))
     has_error = False
     err_dict = {}

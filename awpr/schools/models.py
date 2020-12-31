@@ -1,5 +1,8 @@
-#PR2018-04-13
+# PR2018-04-13
 from django.contrib.auth import get_user_model
+
+# PR2020-12-13 Deprecation warning: django.contrib.postgres.fields import JSONField  will be removed from Django 4
+# instead use: django.db.models import JSONField (is added in Django 3)
 from django.contrib.postgres.fields import ArrayField, JSONField
 
 from django.db import connection
@@ -7,7 +10,7 @@ from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_N
 from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField
 from django.utils import timezone
 
-from datetime import datetime, timedelta
+import json
 
 # PR2018-05-05 use AUTH_USER_MODEL
 from awpr.settings import AUTH_USER_MODEL
@@ -27,6 +30,7 @@ logger = logging.getLogger(__name__)
 # If, at any time, any of the methods raise ValidationError, the validation stops and that error is raised.
 # This method returns the clean data, which is then inserted into the cleaned_data dictionary of the form.
 
+
 # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
 # AwpModelManager adds function get_or_none. Used in  Subjectbase to prevent DoesNotExist exception
 class AwpModelManager(Manager):
@@ -43,7 +47,16 @@ class AwpBaseModel(Model):
     objects = AwpModelManager()
 
     modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
-    modifiedat = DateTimeField(default=datetime.now)
+
+    #PR2020-12-11 debug: on migrate (adding modifiedat field) got the warning:
+    # RuntimeWarning: DateTimeField modifiedat received a naive datetime while time zone support is active.
+    # solved by changing 'datetime.now' to 'timezone.now()'
+    # was: modifiedat = DateTimeField(default=datetime.now)
+    # next bug:  HINT: It seems you set a fixed date / time / datetime value as default for this field.
+    # This may not be what you want. If you want to have the current date as default, use `django.utils.timezone.now`
+    # was:  modifiedat = DateTimeField(default=timezone.now())
+    # this one works: modifiedat = DateTimeField(default=timezone.now)
+    modifiedat = DateTimeField(default=timezone.now)
 
     class Meta:
         abstract = True
@@ -67,13 +80,13 @@ class AwpBaseModel(Model):
         #_request = kwargs.pop('request')
         #_request_user = _request.user if _request else None
 
-        logger.debug('AwpBaseModel kwargs: ' + str(kwargs))
+        #logger.debug('AwpBaseModel kwargs: ' + str(kwargs))
         _request = None
         _request_user = None
         if 'request' in kwargs:
             _request = kwargs.pop('request')
             _request_user = _request.user if _request else None
-        logger.debug('AwpBaseModel _request: ' + str(_request))
+        #logger.debug('AwpBaseModel _request: ' + str(_request))
 
         _is_update = self.pk is not None # self.pk is None before new record is saved
         _mode = ('c', 'u')[_is_update]  # result = (on_false, on_true)[condition]
@@ -98,8 +111,8 @@ class Country(AwpBaseModel):
     # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
     objects = AwpModelManager()
 
-    name = CharField(max_length=50, unique=True)
-    abbrev = CharField(max_length=6, unique=True)
+    name = CharField(max_length=c.MAX_LENGTH_NAME, unique=True)
+    abbrev = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, unique=True)
 
     locked = BooleanField(default=False)
 
@@ -113,7 +126,7 @@ class Country(AwpBaseModel):
     def has_no_child_rows(self):
         User = get_user_model()
         linked_users_count = User.objects.filter(country_id=self.pk).count()
-        # logger.debug('Country(Model has_linked_data linked_users_count: ' + str(linked_users_count))
+        #logger.debug('Country(Model has_linked_data linked_users_count: ' + str(linked_users_count))
         # TODO add other dependencies: Subject, Schoolcode etc
         return not bool(linked_users_count)
 
@@ -123,8 +136,8 @@ class Country_log(AwpBaseModel):
 
     country_id = IntegerField(db_index=True)
 
-    name = CharField(max_length=50, null=True)
-    abbrev = CharField(max_length=6, null=True)
+    name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
+    abbrev = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
 
     name_mod = BooleanField(default=False)
     abbrev_mod = BooleanField(default=False)
@@ -132,7 +145,7 @@ class Country_log(AwpBaseModel):
 
     locked = BooleanField(default=False)
 
-    mode = CharField(max_length=1, null=True)
+    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
     def __str__(self):
@@ -156,26 +169,32 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
 
     country = ForeignKey(Country, related_name='examyears', on_delete=PROTECT)
 
-    examyear = PositiveSmallIntegerField()
+    code = PositiveSmallIntegerField()
     published = BooleanField(default=False)
     locked = BooleanField(default=False)
+
+    no_practexam = BooleanField(default=False)
+    no_centralexam = BooleanField(default=False)
+    combi_reex_allowed = BooleanField(default=False)
+    no_exemption_ce = BooleanField(default=False)
+    no_thirdperiod = BooleanField(default=False)
 
     createdat = DateTimeField(null=True)
     publishedat = DateTimeField(null=True)
     lockedat = DateTimeField(null=True)
 
     class Meta:
-        ordering = ['-examyear',]
+        ordering = ['-code',]
 
     def __str__(self):
-        return str(self.examyear)
+        return str(self.code)
 
     @property
     def schoolyear(self):  # PR2018-05-18 calculates schoolyear from this_examyear
         schoolyear = '---'
-        if self.examyear is not None:
-            last_year = int(str(self.examyear)) - 1
-            schoolyear = str(last_year) + '-' + str(self.examyear)
+        if self.code is not None:
+            last_year = int(str(self.code)) - 1
+            schoolyear = str(last_year) + '-' + str(self.code)
         return schoolyear
 
 
@@ -187,15 +206,21 @@ class Examyear_log(AwpBaseModel):
 
     country_log = ForeignKey(Country_log, related_name='+', on_delete=PROTECT)
 
-    examyear = PositiveSmallIntegerField(null=True)
+    code = PositiveSmallIntegerField(null=True)
     published = BooleanField(default=False)
     locked = BooleanField(default=False)
+
+    no_practexam = BooleanField(default=False)
+    no_centralexam = BooleanField(default=False)
+    combi_reex_allowed = BooleanField(default=False)
+    no_exemption_ce = BooleanField(default=False)
+    no_thirdperiod = BooleanField(default=False)
 
     createdat = DateTimeField(null=True)
     publishedat = DateTimeField(null=True)
     lockedat = DateTimeField(null=True)
 
-    mode = CharField(max_length=1, null=True)
+    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
 # === Department Model =====================================
@@ -204,6 +229,10 @@ class Departmentbase(Model):# PR2018-10-17
     objects = AwpModelManager()
 
     country = ForeignKey(Country, related_name='+', on_delete=PROTECT)
+    code = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
+
+    def __str__(self):
+        return str(self.code)
 
 
 class Department(AwpBaseModel):# PR2018-08-10
@@ -213,15 +242,14 @@ class Department(AwpBaseModel):# PR2018-08-10
     base = ForeignKey(Departmentbase, related_name='departments', on_delete=PROTECT)
     examyear = ForeignKey(Examyear, related_name='examyears', on_delete=CASCADE)
 
-    name = CharField(max_length=50, # PR2018-08-06 set Unique per Country True. Was: unique=True,
+    name = CharField(max_length=c.MAX_LENGTH_NAME, # PR2018-08-06 set Unique per Country True. Was: unique=True,
         help_text=_('Required. {} characters or fewer.'.format('50')),)
-    abbrev = CharField(max_length=4, # PR2018-08-06 set Unique per Country True. Was: unique=True,
-        help_text=_('Required. {} characters or fewer.'.format('4')),)
+    abbrev = CharField(max_length=c.MAX_LENGTH_10)
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
     level_req = BooleanField(default=True)
     sector_req = BooleanField(default=True)
-    level_caption = CharField(max_length=20, null=True, blank=True)  # PR2019-01-17
-    sector_caption = CharField(max_length=20, null=True, blank=True)  # PR2019-01-17
+    level_caption = CharField(max_length=c.MAX_LENGTH_20, null=True, blank=True)  # PR2019-01-17
+    sector_caption = CharField(max_length=c.MAX_LENGTH_20, null=True, blank=True)  # PR2019-01-17
 
     class Meta:
         ordering = ['sequence',]
@@ -230,87 +258,7 @@ class Department(AwpBaseModel):# PR2018-08-10
         return self.abbrev
 
         # for k, v in vars(self).items():
-        #     logger.debug('class Department(Model) __init__ for k, v in vars(self).items(): k: ' + str(k) + '_v: ' + str(v))
-
-#  ++++++++++  Class methods  ++++++++++++++++++++++++
-
-    @classmethod
-    def get_dep_attr(cls, request_user):  # PR2018-10-25
-        # function creates dict of attributes of deps in selected schoolyear
-        # It is used to add option attributes to form field select Department
-        # src = {'0': {'abbrev': '', 'level_req': 'false', 'sector_req': 'false'},
-        #            '4': {'abbrev': 'Vsbo', 'level_req': 'true', 'sector_req': 'true'},
-        #            '5': {'abbrev': 'Havo', 'level_req': 'falxse', 'sector_req': 'true'},
-        #            '6': {'abbrev': 'Vwo', 'level_req': 'false', 'sector_req': 'true'},
-        #      }
-        attr = {}
-        if request_user is not None:
-            if request_user.country is not None and request_user.examyear is not None:
-                if request_user.examyear.country.pk == request_user.country.pk:
-                    # filter departments of request_user.examyear
-                    for item in Department.objects.filter(examyear=request_user.examyear):
-                        _id_str = str(item.id)
-                        _abbrev = item.abbrev
-                        _level_req_str = 'true' if item.level_req else 'false'
-                        _sector_req_str = 'true' if item.sector_req else 'false'
-
-                        attr[_id_str] = {
-                            'abbrev': _abbrev,
-                            'level_req':_level_req_str,
-                            'sector_req':_sector_req_str
-                        }
-        # logger.debug('attr: ' + str(attr))
-        return attr
-
-    @classmethod
-    def get_select_list(cls, request_user):  # PR2019-01-14
-    # function creates list of departments of this examyear
-    # when role = school: filter dep_list of school
-    # used in table select_dep in schemeitemlist
-    # select_list: {id: 32, name: "Cultuur en Maatschappij", abbrev: "c&m", depbase_list: ""}
-        select_list = []
-        if request_user is not None:
-            if request_user.examyear is not None:
-        # if role = school: filter by school.deplist: ";11;12;13;"
-                depbase_list = ''
-        # TODO: remove 'or request_user.is_role_insp_or_syst', this is just for testing
-                if request_user.is_role_school or request_user.is_role_insp_or_admin_or_system:
-                    school = School.get_by_user_schoolbase_examyear(request_user)
-                    if school:
-                        depbase_list = school.depbase_list
-                deps = cls.objects.filter(examyear=request_user.examyear)
-                for dep in deps:
-                    skip_add = False
-         # allways add dep when depbase_list of school is empty
-                    if depbase_list:
-                        skip_add = not (';' + str(dep.base.id) + ';') in depbase_list
-                    if not skip_add:
-                        level_caption = '-'
-                        sector_caption = '-'
-                        if dep.level_caption:
-                            level_caption = dep.level_caption
-                        if dep.sector_caption:
-                            sector_caption = dep.sector_caption
-                        select_list.append( {
-                            "id": dep.id,
-                            "name": dep.name,
-                            "abbrev": dep.abbrev,
-                            "level_req": dep.level_req,
-                            "sector_req": dep.sector_req,
-                            "level_caption": level_caption,
-                            "sector_caption": sector_caption,
-                        })
-        return select_list
-
-
-    @classmethod
-    def get_dep_by_abbrev(cls, abbrev, examyear):  # PR2019-02-26
-        # function gets Department with this abbrev and examyear, returns None if multiple found
-        dep = None
-        if examyear and abbrev:
-            if cls.objects.filter(examyear=examyear,abbrev__iexact=abbrev).count() == 1:
-                dep = cls.objects.filter(examyear=examyear,abbrev__iexact=abbrev).first()
-        return dep
+        #     #logger.debug('class Department(Model) __init__ for k, v in vars(self).items(): k: ' + str(k) + '_v: ' + str(v))
 
 
 # PR2018-06-06
@@ -323,13 +271,13 @@ class Department_log(AwpBaseModel):
 
     examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=CASCADE)
 
-    name = CharField(max_length=50, null=True)
-    abbrev = CharField(max_length=4, null=True)
+    name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
+    abbrev = CharField(max_length=c.MAX_LENGTH_04, null=True)
     sequence = PositiveSmallIntegerField()
     level_req = BooleanField(default=True)
     sector_req = BooleanField(default=True)
-    level_caption = CharField(max_length=20, null=True)
-    sector_caption = CharField(max_length=20, null=True)
+    level_caption = CharField(max_length=c.MAX_LENGTH_20, null=True)
+    sector_caption = CharField(max_length=c.MAX_LENGTH_20, null=True)
 
     name_mod = BooleanField(default=False)
     abbrev_mod = BooleanField(default=False)
@@ -339,7 +287,7 @@ class Department_log(AwpBaseModel):
     level_caption_mod = BooleanField(default=False)
     sector_caption_mod = BooleanField(default=False)
 
-    mode = CharField(max_length=1, null=True)
+    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
     def __str__(self):
         return self.name
@@ -365,6 +313,9 @@ class Schoolbase(Model):  # PR2018-05-27 PR2018-11-11
 
     country = ForeignKey(Country, related_name='+', on_delete=PROTECT)
     code = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
+
+    def __str__(self):
+        return self.code
 
     @property
     def prefix(self): # PR2020-09-17
@@ -444,7 +395,7 @@ class School_log(AwpBaseModel):
     # is_template stores the examyear.id. In that way there can only be one template per examyear / country
     istemplate = IntegerField(unique=True, null=True)
 
-    mode = CharField(max_length=1, null=True)
+    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
 # PR2018-106-17
@@ -470,7 +421,7 @@ class School_message_log(AwpBaseModel):
     is_insp = BooleanField(default=False)
     is_unread = BooleanField(default=False)
 
-    mode = CharField(max_length=1, null=True)
+    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
 # PR2018-06-07
@@ -495,44 +446,45 @@ class Schoolsetting(Model):  # PR2020-10-20
     objects = AwpModelManager()
 
     schoolbase = ForeignKey(Schoolbase, related_name='schoolsetting', on_delete=CASCADE)
-    key = CharField(db_index=True, max_length=c.MAX_LENGTH_CODE)
+    key = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
 
     jsonsetting = JSONField(null=True)  # stores invoice dates for this customer
-    datetimesetting = DateTimeField(null=True)  #  for last_emplhour_updated PR2020-08-10
-    datetimesetting2 = DateTimeField(null=True)  #  for last_emplhour_deleted PR2020-08-23
 
 #===========  Classmethods
     @classmethod
-    def get_jsonsetting(cls, key_str, schoolbase, default_setting=None):  # PR2019-03-09 PR2020-10-20
-        setting = None
+    def get_jsonsetting(cls, key_str, schoolbase, default_setting_dict=None):  # PR2019-03-09 PR2020-10-20
+        setting_dict = None
         if schoolbase and key_str:
-            row = cls.objects.get_or_none(schoolbase=schoolbase, key=key_str)
-            if row:
-                if row.jsonsetting:
-                    setting = row.jsonsetting
-        if setting is None:
-            if default_setting:
-                setting = default_setting
-        return setting
+            # dont use get_or_none, it returns None when multiple found PR2020-12-05
+            # get row with highest id if multiple found
+            row = cls.objects.filter(schoolbase=schoolbase, key=key_str).order_by('-id').first()
+            if row and row.jsonsetting:
+                setting_dict = json.loads(row.jsonsetting)
+
+        if setting_dict is None and default_setting_dict:
+            setting_dict = default_setting_dict
+        return setting_dict
 
     @classmethod
-    def set_jsonsetting(cls, key_str, jsonsetting, schoolbase): #PR2019-03-09
+    def set_jsonsetting(cls, key_str, new_setting_dict, schoolbase): #PR2019-03-09
         #logger.debug('---  set_jsonsettingg  ------- ')
-        #logger.debug('key_str: ' + str(key_str) + ' jsonsetting: ' + str(jsonsetting))
+        #logger.debug('key_str: ' + str(key_str) + ' new_setting_dict: ' + str(new_setting_dict))
 
         if schoolbase and key_str:
+            new_setting_json = json.dumps(new_setting_dict)
+
             # don't use get_or_none, gives none when multiple settings exists and will create extra setting.
-            row = cls.objects.filter(schoolbase=schoolbase, key=key_str).first()
+            row = cls.objects.filter(schoolbase=schoolbase, key=key_str).order_by('-id').first()
             if row:
-                row.jsonsetting = jsonsetting
+                row.jsonsetting = new_setting_json
             else:
-                if jsonsetting:
-                    row = cls(schoolbase=schoolbase, key=key_str, jsonsetting=jsonsetting)
+                if new_setting_json:
+                    row = cls(schoolbase=schoolbase, key=key_str, jsonsetting=new_setting_json)
             row.save()
             # test
-            row = None
-            saved_row = cls.objects.filter(schoolbase=schoolbase, key=key_str).first()
-            #logger.debug('saved_row.jsonsetting: ' + str(saved_row.jsonsetting))
+            #row = None
+            #saved_row = cls.objects.filter(schoolbase=schoolbase, key=key_str).order_by('-id').first()
+            ##logger.debug('saved_row.jsonsetting: ' + str(saved_row.jsonsetting))
 
     @classmethod
     def get_datetimesetting(cls, key_str, schoolbase):  # PR2020-08-23
@@ -569,8 +521,7 @@ class Schoolsetting(Model):  # PR2020-10-20
             elif new_datetime:
                 row = cls(schoolbase=schoolbase, key=key_str, datetimesetting2=new_datetime)
             row.save()
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 # +++++++++++++++++++++   Functions Schooldefault  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -623,38 +574,84 @@ def delete_instance(instance, msg_dict, request, this_text=None):
     return deleted_ok
 
 
-def save_to_log(instance, req_mode=None, modifiedby_id=None):
-    logger.debug(' ----- save_to_log  -----')  # PR2019-02-23 PR2020-10-23
+def save_to_log(instance, req_mode, request):
+    #logger.debug(' ----- save_to_log  ----- mode: ' + str(req_mode) )  # PR2019-02-23 PR2020-10-23 PR2020-12-15
 
     if instance:
         model_name = str(instance.get_model_name())
-
-        if req_mode is None:
-            mode = '-'
-        else:
-            mode = req_mode[0:1]
+        #logger.debug('model_name: ' + str(model_name))
+        mode = req_mode[0:1] if req_mode else '-'
 
         modby_id = 'NULL'
         mod_at = 'NULL'
         if mode == 'd':
-            if modifiedby_id:
-                modby_id = str(modifiedby_id)
+            # when log delete: add req_user and now
+            if request and request.user:
+                modby_id = str(request.user.pk)
             mod_at = timezone.now().isoformat()
         else:
+            # when log save: add user and moodat of saved record
             if instance.modifiedby_id:
                 modby_id = str(instance.modifiedby_id)
             if instance.modifiedat:
                 mod_at = instance.modifiedat.isoformat()
+        pk_int = instance.pk
+        #logger.debug('model_name: ' + str(model_name))
+        #logger.debug('mode: <' + str(mode) + '>')
+        #logger.debug('modby_id: ' + str(modby_id))
+        #logger.debug('mod_at: ' + str(mod_at))
+        #logger.debug('model_name == Examyear')
 
-        logger.debug('model_name: ' + str(model_name))
-        logger.debug('mode: <' + str(mode) + '>')
-        logger.debug('modby_id: ' + str(modby_id))
-        logger.debug('mod_at: ' + str(mod_at))
-        logger.debug('model_name == Examyear')
+        if model_name == 'Studentsubject':
+            pass
+        elif model_name == 'Grade':
+            # this one not working, cannot get filter pc.id with LIMIT 1 in query, get info from pricecodelist instead
+            sub_ssl_list = ["SELECT id, studentsubject_id AS studsubj_id,",
+                            "FROM studentsubject_log",
+                            "ORDER BY id DESC NULLS LAST LIMIT 1"]
+            sub_ssl = ' '.join(sub_ssl_list)
+            # note: multiple WITH clause syntax:WITH cte1 AS (SELECT...), cte2 AS (SELECT...) SELECT * FROM ...
+            sql_keys = {'grade_id': pk_int,  'mode': mode, 'modby_id': modby_id, 'mod_at': mod_at}
+            sql_list = ["WITH sub_ssl AS (" + sub_ssl + ")",
+                        "INSERT INTO students_grade_log (id,",
+                            "grade_id, studentsubject_log_id, examperiod,",
+                            "pescore, cescore, segrade, pegrade, cegrade, pecegrade, finalgrade,",
+                            "sepublished, pepublished, cepublished,",
+                            "mode, modifiedby_id, modifiedat)",
+                        "SELECT nextval('students_grade_log_id_seq'),",
+                            "grade_id, sub_ssl.id, examperiod,",
+                            "pescore, cescore, segrade, pegrade, cegrade, pecegrade, finalgrade,",
+                            "sepublished, pepublished, cepublished,",
+                            "%(mode)s::TEXT, %(modby_id)s::INT, %(mod_at)s::DATE",
+                        "FROM students_grade AS grade",
+                        "INNER JOIN sub_ssl ON (sub_ssl.studsubj_id = grade.studentsubject_id)",
+                        "WHERE (grade.id = %(grade_id)s::INT"]
 
-        is_exyr = model_name == 'Examyear'
-        logger.debug('is_exyr: ' + str(is_exyr))
-        if is_exyr:
+            sql_list = ["SELECT nextval('students_grade_log_id_seq') AS sgl_id,",
+                            "grade.id, grade.examperiod,",
+                            "%(mode)s::TEXT AS mode, %(modby_id)s::INT AS modby_id, %(mod_at)s::DATE AS mod_at",
+                        "FROM students_grade AS grade",
+                        "WHERE id = %(grade_id)s::INT"]
+            sql = ' '.join(sql_list)
+            #logger.debug('sql_keys: ' + str(sql_keys))
+            #logger.debug('sql: ' + str(sql))
+
+            #logger.debug('---------------------- ')
+            with connection.cursor() as cursor:
+                #logger.debug('================= ')
+                cursor.execute(sql, sql_keys)
+                #for qr in connection.queries:
+                    #logger.debug('-----------------------------------------------------------------------------')
+                    #logger.debug(str(qr))
+
+                #logger.debug('---------------------- ')
+                #rows = dictfetchall(cursor)
+                #logger.debug('---------------------- ')
+                #for row in rows:
+                    #logger.debug('row: ' + str(row))
+
+
+        if model_name == 'Examyear':
 
             """
             INSERT INTO schools_school (examyear_id, schoolbase_id, name, code, abbrev, article, dep_list, locked, modifiedby_id, modifiedat) ' + \
@@ -693,19 +690,19 @@ def save_to_log(instance, req_mode=None, modifiedby_id=None):
                         ]
             sql = ' '.join(sql_list)
 
-            logger.debug('sql: ' + str(sql))
+            #logger.debug('sql: ' + str(sql))
             sql_keys = {
                 'mode': mode,
                 'mod_by_id': modby_id,
                 'mod_at': mod_at,
                 'instance_pk': instance.pk}
-            logger.debug('sql_keys: ' + str(sql_keys))
+            #logger.debug('sql_keys: ' + str(sql_keys))
 
             newcursor = connection.cursor()
             newcursor.execute(sql, sql_keys)
-            rows = dictfetchall(newcursor)
-            for row in rows:
-                logger.debug('row: ' + str(row))
+            #rows = dictfetchall(newcursor)
+            #for row in rows:
+                #logger.debug('row: ' + str(row))
 
 
 

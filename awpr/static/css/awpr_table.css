@@ -294,7 +294,7 @@ aXX:hover{
 
     -webkit-transition: background-color 0.25s ease;
     -o-transition: background-color 0.25s ease;
-    transition: background-color 0.25s easet;
+    transition: background-color 0.25s ease;
 
 }
 
@@ -806,7 +806,7 @@ aXX:hover{
     align-items: flex-start;
     border: none;
 }
-
+/* > means: select elements that are direct descendants only. */
 .mod_flex > div {
     flex: 1;
     padding: 4px 16px;
@@ -961,9 +961,12 @@ aXX:hover{
     margin: 16px 8px 4px 8px; /* mx-2 = .5 rem, mx-1 = .25 rem, 1 rem = 16 px  <top><right><bottom><left> */
 }
 
+.tw_480 { width: 480px; }
+.tw_420 { width: 420px; }
+.tw_390 { width: 390px; }
 .tw_360 { width: 360px; }
 .tw_300 { width: 300px; }
-.tw_270 { width: 270px; }
+.tw_280 { width: 280px; }
 .tw_240 { width: 240px; }
 .tw_220 { width: 220px; }
 .tw_200 { width: 200px; }
@@ -978,6 +981,20 @@ aXX:hover{
 .tw_032 { width: 32px; }
 .tw_020 { width: 20px; }
 .tw_016 { width: 16px; }
+
+.ta_l {text-align: left;}
+.ta_c {text-align: center;}
+.ta_r {text-align: right;}
+
+.line_height_normal {
+    line-height: normal;
+}
+.tbl_studsubj_h390_w320 {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 390px;
+    width: 320px;
+}
 
 .tbl_MUA_h390_w280 {
     overflow-x: hidden;
@@ -1005,6 +1022,10 @@ aXX:hover{
     border: none;
     margin: 0;
 	padding: 0;
+/* PR2020-12-18 debug. Input element exceeds width of parent td.
+    Solved by add width: 100%, adding  box-sizing: border-box not necessary, already set by default
+    from https://stackoverflow.com/questions/1633522/html-input-element-wider-than-containing-div */
+    width: 100%;
 }
 
 
@@ -1022,6 +1043,12 @@ aXX:hover{
 }
 .pointer_show {
     cursor: pointer;
+    /* to prevent text selection */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .image_container {
@@ -1085,8 +1112,59 @@ aXX:hover{
     border: 1px solid #303024; /* dark dark Panta Rhei grey 48 48 36 */
     border-radius: .25rem;
     background-color: #f5f5f5;  /* licht licht licht grijs 245 245 245 */
+
+}
+.border_bg_lightblue {
+    /* border: 1px solid #303024; /* dark dark Panta Rhei grey 48 48 36 */
+    border: 1px solid #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    border-radius: .25rem;
+    /*background-color: #2d4e77;  /* HeaderBackColor Default Schema Blauw donkerblauw RGB 45,78,119 */
+   /* background-color: #376191;  /*  FooterBackColor Default Schema Blauw medium blauw  RGB 55,97,145)  */
+    background-color: #b8cce4;  /* AWP lichtblauw RGB 184,204,228  */
 }
 
+.bg_selected_blue {
+    background-color: #376191;  /*  FooterBackColor Default Schema Blauw medium blauw  RGB 55,97,145)  */
+    color: #ffffff; /* #ffffff is white; #edf2f8; is light light blue*/
+/*
+    -webkit-transition: background-color 0.25s ease;
+    -o-transition: background-color 0.25s ease;
+    transition: background-color 0.25s ease;
+*/
+}
+.awp_tr_disabled {
+    background-color: #f5f5f5;  /* licht licht licht grijs 245 245 245 */
+    /*color: #808080 !important;  /* dark grey 128 128 128 */
+    color: #a5a5a5 /* !important;  /* medium grey; 165 165 165 */
+}
+
+
+.tbl_div_390_220 {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 390px;
+    width: 220px;
+}
+.tbl_div_390_420 {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 390px;
+    width: 420px;
+}
+
+.tbl_div_450_480 {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 450px;
+    width: 480px;
+}
+
+.tbl_div_520_200 {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 520px;
+    width: 200px;
+}
 
 /* SPRITES PR2020-08-17 */
 
@@ -1100,6 +1178,7 @@ aXX:hover{
 .exclamation_0_0, .exclamation_0_1, .exclamation_0_2,
 .tickmark_0_0, .tickmark_0_1, .tickmark_0_2,
 .tickmark_1_0, .tickmark_1_1, .tickmark_1_2,
+.tickmark_2_0, .tickmark_2_1, .tickmark_2_2,
 .delete_0_0, .delete_0_1, .delete_0_2 {
     background-repeat: no-repeat;
     height: 20px;
@@ -1177,9 +1256,10 @@ aXX:hover{
 .exclamation_0_2 { background-position: -40px -0px;}
 
 .tickmark_0_0, .tickmark_0_1, .tickmark_0_2,
-.tickmark_1_0, .tickmark_1_1, .tickmark_1_2 {
+.tickmark_1_0, .tickmark_1_1, .tickmark_1_2,
+.tickmark_2_0, .tickmark_2_1, .tickmark_2_2 {
     background-image: url('/static/img/tickmark.png');
-    background-size: 60px 40px;
+    background-size: 60px 60px;
 }
 .tickmark_0_0 { background-position: -0px -0px;}
 .tickmark_0_1 { background-position: -20px -0px;}
@@ -1187,6 +1267,9 @@ aXX:hover{
 .tickmark_1_0 { background-position: -0px -20px;}
 .tickmark_1_1 { background-position: -20px -20px;}
 .tickmark_1_2 { background-position: -40px -20px;}
+.tickmark_2_0 { background-position: -0px -40px;}
+.tickmark_2_1 { background-position: -20px -40px;}
+.tickmark_2_2 { background-position: -40px -40px;}
 
 .delete_0_0, .delete_0_1, .delete_0_2 {
     background-image: url('/static/img/btn_del.png');

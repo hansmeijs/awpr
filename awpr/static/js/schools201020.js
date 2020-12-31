@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let mod_dict = {};
     let mod_MSCH_dict = {};
 
+    let examyear_map = new Map();
     let department_list = []; // to fill abbrev in table
     let department_map = new Map();
 
@@ -61,6 +62,27 @@ document.addEventListener('DOMContentLoaded', function() {
              if (event.key === "Escape") { ResetFilterRows()}
         });
 
+// --- header bar elements
+        const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
+            el_hdrbar_examyear.addEventListener("click", function() {ModSelectExamyear_Open()}, false )
+        const el_hdrbar_school = document.getElementById("id_hdrbar_school")
+            el_hdrbar_school.addEventListener("click", function() {ModSelSchOrDep_Open("school")}, false )
+        const el_hdrbar_department = document.getElementById("id_hdrbar_department")
+            el_hdrbar_department.addEventListener("click", function() {ModSelSchOrDep_Open("department")}, false )
+
+// ---  MOD SELECT EXAM YEAR ------------------------------------
+        let el_MSEY_tblBody_select = document.getElementById("id_MSEY_tblBody_select");
+// ---  MOD SELECT SCHOOL OR DEPARTMENT ------------------------------------
+        let el_ModSelSchOrDep_tblBody_select = document.getElementById("id_MSESD_tblBody_select");
+
+
+        // ---  MOD SELECT EXAM YEAR ------------------------------------
+        const el_SBR_school = document.getElementById("id_SBR_school")
+            el_SBR_school.addEventListener("click", function() {ModSelSchOrDep_Open()}, false )
+            add_hover(el_SBR_school);
+        const el_SBR_department = document.getElementById("id_SBR_department")
+            el_SBR_department.addEventListener("click", function() {ModSelect_Open("department")}, false )
+
 // --- buttons in btn_container
         const el_btn_container = document.getElementById("id_btn_container")
         if (has_view_permit){
@@ -70,6 +92,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.addEventListener("click", function() {HandleBtnSelect(data_btn)}, false )
             };
         }
+
+// ---  MOD SELECT SCHOOL ------------------------------------
+        let el_ModSelSch_tblBody_select = document.getElementById("id_MSESD_tblBody_select");
 
 // ---  MODAL SCHOOL
         const el_MSCH_div_form_controls = document.getElementById("id_div_form_controls")
@@ -111,6 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const datalist_request = {
                 setting: {page_school: {mode: "get"}},
                 locale: {page: "schools"},
+                examyear_rows: {get: true},
                 department_rows: {get: true},
                 school_rows: {get: true}
             };
@@ -155,12 +181,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                       (setting_dict.requsr_role_system && setting_dict.requsr_perm_edit);
                     selected_btn = (setting_dict.sel_btn)
 
-        console.log( "setting_dict", setting_dict);
-        console.log( "selected_btn", selected_btn);
                 };
 
+                if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
+
                 if ("department_rows" in response) {
-                    department_list = fill_data_list(response.department_rows)
+                    department_list = fill_depbase_list(response.department_rows)
                     const tblName = "department";
                     const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
                     RefreshDataMap(tblName, field_names, response.department_rows, department_map)
@@ -192,9 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
-        console.log("===  CreateSubmenu == ");
-        console.log("loc.Add_school", loc.Add_school);
-        console.log("loc ", loc);
+        //console.log("===  CreateSubmenu == ");
 
         let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Add_school, function() {MSCH_Open()});
@@ -217,8 +241,6 @@ document.addEventListener('DOMContentLoaded', function() {
             UploadSettings (upload_dict, url_settings_upload);
         };
 
-        console.log( "data_btn: ", data_btn);
-
 // ---  highlight selected button
         highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
 
@@ -231,6 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- update header text
         UpdateHeaderText();
+        UpdateHeaderbar()
     }  // HandleBtnSelect
 
 //=========  HandleTableRowClicked  ================ PR2020-08-03
@@ -255,13 +278,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }  // HandleTableRowClicked
 
-
-//========= UpdateHeaderText  ================== PR2020-07-31
-    function UpdateHeaderText(){
-        //console.log(" --- UpdateHeaderText ---" )
-        let header_text = (selected_btn === "btn_school") ? loc.Schools : null;
-        document.getElementById("id_hdr_text").innerText = header_text;
-    }   //  UpdateHeaderText
 
 //=========  CreateTblHeader  === PR2020-07-31
     function CreateTblHeader() {
@@ -347,13 +363,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= FillTblRows  ====================================
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
+        //console.log( "===== FillTblRows  === ");
         const tblName = get_tblName_from_selectedBtn()
         const data_map = get_datamap_from_tblName(tblName);
 
 // --- reset table
         tblBody_datatable.innerText = null
-        console.log("data_map", data_map);
+        //console.log("data_map", data_map);
         if(data_map){
 // --- loop through data_map
           for (const [map_id, map_dict] of data_map.entries()) {
@@ -363,17 +379,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 let tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, map_dict, row_index)
           };
         }  // if(!!data_map)
-
     }  // FillTblRows
 
 //=========  CreateTblRow  ================ PR2020-06-09
     function CreateTblRow(tblBody, tblName, map_id, map_dict, row_index) {
-        console.log("=========  CreateTblRow =========", tblName);
-        console.log("map_dict", map_dict);
+        //console.log("=========  CreateTblRow =========", tblName);
+        //console.log("map_dict", map_dict);
         let tblRow = null;
 
         const field_setting = field_settings[tblName]
-        console.log("field_setting", field_setting);
+        //console.log("field_setting", field_setting);
         if(field_setting){
             const field_names = field_setting.field_names;
             const field_align = field_setting.field_align;
@@ -458,14 +473,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if ( field_name === "depbases") {
         //console.log("field_name: ", field_name);
         //console.log("fld_value: ", fld_value);
-                    let dep_abbrev = ""
+                    let dep_codes = ""
                     if(fld_value){
                         fld_value.forEach((pk_int, i) => {
-                            if(dep_abbrev) { dep_abbrev += ", "}
-                            dep_abbrev += department_list[pk_int];
+                            if(dep_codes) { dep_codes += ", "}
+                            dep_codes += department_list[pk_int];
                          });
                     }
-                     el_div.innerText = dep_abbrev;
+                     el_div.innerText = dep_codes;
                 } else if (field_name.slice(0, 4) === "perm") {
                     const is_true = (map_dict[field_name]) ? map_dict[field_name] : false;
                     const value_str = field_name.slice(4, 6);
@@ -633,7 +648,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }  //  if(!!row_upload)
     };  // UploadChanges
 
-// +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 // +++++++++ MOD SCHOOL ++++++++++++++++ PR2020-09-30
 // --- also used for level, sector,
@@ -651,14 +666,17 @@ document.addEventListener('DOMContentLoaded', function() {
             let tblName = null;
             if(is_addnew){
                 tblName = get_tblName_from_selectedBtn();
-                mod_MSCH_dict.examyear_id = setting_dict.requsr_examyear_pk;
+                mod_MSCH_dict.examyear_id = setting_dict.sel_examyear_pk;
 
             } else {
                 const tblRow = get_tablerow_selected(el_input);
-                tblName = get_attr_from_el(tblRow, "data-table")
-
+                //tblName = get_attr_from_el(tblRow, "data-table")
+                tblName = "school"
                 const data_map = get_datamap_from_tblName(tblName);
                 const map_dict = get_mapdict_from_datamap_by_id(data_map, tblRow.id);
+            console.log("tblName", tblName)
+            console.log("data_map", data_map)
+            console.log("map_dict", map_dict)
                 if(!isEmpty(map_dict)){
 
                     mod_MSCH_dict.id = map_dict.id
@@ -720,13 +738,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if(has_edit_permit){
             const is_delete = (crud_mode === "delete")
 
-            let upload_dict = {id: {table: 'school', ppk: mod_MSCH_dict.examyear_id} }
+            let upload_dict = {sel_examyear_pk: setting_dict.sel_examyear_pk,
+                    table: 'school',
+
+                }
             if(mod_MSCH_dict.is_addnew) {
-                upload_dict.id.create = true;
+                upload_dict.create = true;
             } else {
-                upload_dict.id.pk = mod_MSCH_dict.id;
-                upload_dict.id.mapid = mod_MSCH_dict.mapid;
-                if(is_delete) {upload_dict.id.delete = true}
+                upload_dict.school_pk = mod_MSCH_dict.id;
+                upload_dict.mapid = mod_MSCH_dict.mapid;
+                if(is_delete) {upload_dict.delete = true}
             }
     // ---  put changed values of input elements in upload_dict
             let form_elements = document.getElementById("id_div_form_controls").querySelectorAll(".awp_input_text")
@@ -742,7 +763,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     old_value = (old_value && Number(old_value)) ? Number(old_value) : null;
                 }
                 if (new_value !== old_value) {
-                    upload_dict[fldName] = {value: new_value, update: true}
+                    upload_dict[fldName] = new_value
 
     // put changed new value in tblRow before uploading
                     const tblRow = document.getElementById(mod_MSCH_dict.mapid);
@@ -755,7 +776,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  get selected departments
             let dep_list = MSCH_get_selected_depbases();
 
-            upload_dict['depbases'] = {value: dep_list, update: true}
+            upload_dict['depbases'] = dep_list;
 
             document.getElementById("id_MSCH_loader").classList.remove(cls_visible_hide)
             // modal is closed by data-dismiss="modal"
@@ -796,7 +817,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             pk_int = dict.base_id;
             map_id = "sel_depbase_" + dict.base_id;
-            abbrev = (dict.abbrev) ? dict.abbrev : "";
+            abbrev = (dict.abbrev) ? dict.base_code : "";
         };
         // check if this dep is in school_depbases. Set tickmark if yes
         let selected_int = 0;
@@ -805,7 +826,7 @@ document.addEventListener('DOMContentLoaded', function() {
                  if (pk_int === obj) { selected_int = 1}
              });
         }
-        const tickmark_class = (selected_int === 1) ? "tickmark_1_2" : "tickmark_0_0";
+        const tickmark_class = (selected_int === 1) ? "tickmark_2_2" : "tickmark_0_0";
 
         const tblRow = tblBody_select.insertRow(-1);
         tblRow.id = map_id;
@@ -889,15 +910,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSCH_set_selected  ============= PR2020-10-01
     function MSCH_set_selected(tblRow, is_selected){
-        console.log( "  ---  MSCH_set_selected  --- ", is_selected);
+        //console.log( "  ---  MSCH_set_selected  --- ", is_selected);
 // ---  put new value in tblRow, show/hide tickmark
         if(tblRow){
             tblRow.setAttribute("data-selected", ( (is_selected) ? 1 : 0) )
-            const img_class = (is_selected) ? "tickmark_1_2" : "tickmark_0_0"
+            const img_class = (is_selected) ? "tickmark_2_2" : "tickmark_0_0"
             const el = tblRow.cells[0].children[0];
-            //if (el){add_or_remove_class(el, "tickmark_1_2", is_selected , "tickmark_0_0")}
+            //if (el){add_or_remove_class(el, "tickmark_2_2", is_selected , "tickmark_0_0")}
             if (el){el.className = img_class}
-            console.log(is_selected, "el ", el);
         }
     }  // MSCH_set_selected
 
@@ -1308,8 +1328,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  RefreshDataMap  ================ PR2020-08-16 PR2020-10-22
     function RefreshDataMap(tblName, field_names, data_rows, data_map) {
-        console.log(" --- RefreshDataMap  ---");
-        console.log("data_rows", data_rows);
+        //console.log(" --- RefreshDataMap  ---");
+        //console.log("data_rows", data_rows);
         if (data_rows) {
             for (let i = 0, update_dict; update_dict = data_rows[i]; i++) {
                 RefreshDatamapItem(field_names, update_dict, data_map);
@@ -1319,18 +1339,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  RefreshDatamapItem  ================ PR2020-08-16 PR2020-09-30
     function RefreshDatamapItem(field_names, update_dict, data_map) {
-        console.log(" --- RefreshDatamapItem  ---");
-        console.log("update_dict", update_dict);
+        //console.log(" --- RefreshDatamapItem  ---");
+        //console.log("update_dict", update_dict);
         if(!isEmpty(update_dict)){
 // ---  update or add update_dict in school_map
             let updated_columns = [];
     // get existing map_item
             const tblName = update_dict.table;
-        console.log("tblName", tblName);
+        //console.log("tblName", tblName);
             const map_id = update_dict.mapid;
-        console.log("map_id", map_id);
+        //console.log("map_id", map_id);
             const code = (tblName === "school") ? update_dict.sb_code : null;
-        console.log("code", code);
+        //console.log("code", code);
             let tblRow = document.getElementById(map_id);
 
             const is_deleted = get_dict_value(update_dict, ["deleted"], false)
@@ -1341,14 +1361,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  insert new item
                 data_map.set(map_id, update_dict);
                 updated_columns.push("created")
-        console.log("updated_columns", updated_columns);
+        //console.log("updated_columns", updated_columns);
     // ---  create row in table., insert in alphabetical order
                 const order_by = (code) ? code.toLowerCase() : null;
-        console.log("order_by", order_by);
+        //console.log("order_by", order_by);
                 const row_index = t_get_rowindex_by_orderby(tblBody_datatable, order_by)
-        console.log("row_index", row_index);
+        //console.log("row_index", row_index);
                 tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, update_dict, row_index)
-        console.log("tblRow", tblRow);
+        //console.log("tblRow", tblRow);
     // ---  scrollIntoView,
                 if(tblRow){
                     tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
@@ -1395,17 +1415,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // RefreshDatamapItem
 
 
-//=========  fill_data_list  ================ PR2020-10-07
-    function fill_data_list(data_rows) {
-        console.log(" --- fill_data_list  ---");
+//=========  fill_depbase_list  ================ PR2020-10-07 PR2020-12-25
+    function fill_depbase_list(data_rows) {
+        console.log(" --- fill_depbase_list  ---");
         let data_list = [];
         if (data_rows) {
             for (let i = 0, row; row = data_rows[i]; i++) {
-                data_list[row.id] = row.abbrev;
+                data_list[row.id] = row.base_code;
             }
         }
         return data_list
-    }  //  fill_data_list
+    }  //  fill_depbase_list
 
 
 //###########################################################################
@@ -1593,4 +1613,319 @@ document.addEventListener('DOMContentLoaded', function() {
         const data_map = (tblName === "school") ? school_map : null;
         return data_map;
     }
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// +++++++++++++++++ MODAL SELECT EXAMYEAR ++++++++++++++++++++
+//=========  ModSelectExamyear_Open  ================ PR2020-10-27
+    function ModSelectExamyear_Open() {
+        //console.log( "===== ModSelectExamyear_Open ========= ");
+
+        //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
+        if (!isEmpty(loc)) {
+            mod_dict = {examyear_pk: setting_dict.sel_examyear_pk, table: "examyear"};
+    // ---  fill select table
+            ModSelectExamyear_FillSelectTable(0);  // 0 = selected_pk
+    // ---  show modal
+            $("#id_mod_select_examyear").modal({backdrop: true});
+            }
+    }  // ModSelectExamyear_Open
+
+//=========  ModSelectExamyear_Save  ================ PR2020-10-28
+    function ModSelectExamyear_Save() {
+        console.log("===  ModSelectExamyear_Save =========");
+        console.log("mod_dict", mod_dict);
+// selected_pk: {sel_examyear_pk: 23, sel_schoolbase_pk: 15, sel_depbase_pk: 1}
+
+// ---  upload new setting
+        const datalist_request = {
+            setting: {page_school: {mode: "get"}, sel_examyear_pk: mod_dict.examyear_pk},
+            examyear_rows: {get: true}
+        };
+        DatalistDownload(datalist_request);
+
+// hide modal
+        $("#id_mod_select_examyear").modal("hide");
+
+    }  // ModSelectExamyear_Save
+
+//=========  ModSelectExamyear_SelectItem  ================ PR2020-10-28
+    function ModSelectExamyear_SelectItem(tblRow) {
+        //console.log( "===== ModSelectExamyear_SelectItem ========= ");
+        //console.log( tblRow);
+        // all data attributes are now in tblRow, not in el_select = tblRow.cells[0].children[0];
+// ---  get clicked tablerow
+        if(tblRow) {
+// ---  deselect all highlighted rows
+            DeselectHighlightedRows(tblRow, cls_selected)
+// ---  highlight clicked row
+            tblRow.classList.add(cls_selected)
+// ---  get pk from id of select_tblRow
+            let data_pk = get_attr_from_el(tblRow, "data-pk", 0)
+            mod_dict.examyear_pk = (Number(data_pk)) ? Number(data_pk) : 0
+
+            ModSelectExamyear_Save()
+        }
+    }  // ModSelectExamyear_SelectItem
+
+//=========  ModSelectExamyear_FillSelectTable  ================ PR2020-08-21
+    function ModSelectExamyear_FillSelectTable(selected_pk) {
+        console.log( "===== ModSelectExamyear_FillSelectTable ========= ");
+        console.log( "selected_pk", selected_pk);
+        const tblBody_select = el_MSEY_tblBody_select;
+        tblBody_select.innerText = null;
+
+        let row_count = 0;
+// --- loop through data_map
+        const data_map = examyear_map;
+        if(data_map){
+            for (const [map_id, map_dict] of data_map.entries()) {
+                ModSelectExamyear_FillSelectRow(map_dict, tblBody_select, selected_pk);
+                row_count += 1;
+            };
+        }  // if(!!data_map)
+
+        if(!row_count){
+            let tblRow = tblBody_select.insertRow(-1);
+            let td = tblRow.insertCell(-1);
+            td.innerText = loc.No_exam_years;
+
+        } else if(row_count === 1){
+            let tblRow = tblBody_select.rows[0]
+            if(tblRow) {
+// ---  highlight first row
+                tblRow.classList.add(cls_selected)
+            }
+        }
+    }  // ModSelectExamyear_FillSelectTable
+
+//=========  ModSelectExamyear_FillSelectRow  ================ PR2020-10-27
+    function ModSelectExamyear_FillSelectRow(map_dict, tblBody_select, selected_pk) {
+        //console.log( "===== ModSelectExamyear_FillSelectRow ========= ");
+        //console.log( "map_dict: ", map_dict);
+
+//--- loop through data_map
+        let pk_int = null, code_value = null, is_selected_pk = false;
+        pk_int = map_dict.examyear_id;
+        code_value = (map_dict.examyear_int) ? map_dict.examyear_int.toString() : "---"
+        is_selected_pk = (selected_pk != null && pk_int === selected_pk)
+// ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
+        let tblRow = tblBody_select.insertRow(-1);
+        tblRow.setAttribute("data-pk", pk_int);
+        //tblRow.setAttribute("data-ppk", ppk_int);
+        tblRow.setAttribute("data-value", code_value);
+// ---  add EventListener to tblRow
+        tblRow.addEventListener("click", function() {ModSelectExamyear_SelectItem(tblRow)}, false )
+// ---  add hover to tblRow
+        add_hover(tblRow);
+// ---  highlight clicked row
+        //if (is_selected_pk){ tblRow.classList.add(cls_selected)}
+// ---  add first td to tblRow.
+        let td = tblRow.insertCell(-1);
+// --- add a element to td., necessary to get same structure as item_table, used for filtering
+        let el_div = document.createElement("div");
+            el_div.innerText = code_value;
+            el_div.classList.add("tw_090", "px-4", "pointer_show" )
+        td.appendChild(el_div);
+// --- add second td to tblRow with icon locked, published or activated.
+        td = tblRow.insertCell(-1);
+        el_div = document.createElement("div");
+            el_div.classList.add("tw_032", "stat_1_6")
+        td.appendChild(el_div);
+    }  // ModSelectExamyear_FillSelectRow
+
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// +++++++++++++++++ MODAL SELECT SCHOOL OR DEPARTMENT ++++++++++++++++++++
+//=========  ModSelSchOrDep_Open  ================ PR2020-10-27 PR2020-11-17
+    function ModSelSchOrDep_Open(tblName) {
+        //console.log( "===== ModSelSchOrDep_Open ========= ");
+        //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
+        if (!isEmpty(loc)) {
+            mod_dict = {base_id: setting_dict.requsr_schoolbase_pk, table: tblName};
+
+// ---  fill select table
+            ModSelSchOrDep_FillSelectTable(tblName, 0);  // 0 = selected_pk
+// ---  show modal
+            $("#id_mod_select_school_or_dep").modal({backdrop: true});
+            }
+    }  // ModSelSchOrDep_Open
+
+//=========  ModSelSchOrDep_Save  ================ PR2020-10-28
+    function ModSelSchOrDep_Save(tblName) {
+        console.log("===  ModSelSchOrDep_Save =========", tblName);
+
+// ---  upload new setting
+        let new_setting = {page_school: {mode: "get"}};
+        if (tblName === "school") {
+            new_setting.requsr_schoolbase_pk = mod_dict.base_id;
+        } else {
+            new_setting.requsr_depbase_pk = mod_dict.base_id;
+        }
+        const datalist_request = {setting: new_setting};
+        DatalistDownload(datalist_request);
+
+// hide modal
+        $("#id_mod_select_school_or_dep").modal("hide");
+
+    }  // ModSelSchOrDep_Save
+
+//=========  ModSelSchOrDep_SelectItem  ================ PR2020-10-28
+    function ModSelSchOrDep_SelectItem(tblName, tblRow) {
+        console.log( "===== ModSelSchOrDep_SelectItem ========= ");
+        console.log( tblRow);
+        // all data attributes are now in tblRow, not in el_select = tblRow.cells[0].children[0];
+// ---  get clicked tablerow
+        if(tblRow) {
+// ---  deselect all highlighted rows
+            DeselectHighlightedRows(tblRow, cls_selected)
+// ---  highlight clicked row
+            tblRow.classList.add(cls_selected)
+// ---  get pk from id of select_tblRow
+            let data_pk = get_attr_from_el(tblRow, "data-pk", 0)
+            if(!Number(data_pk)){
+               mod_dict.base_id = 0;
+            } else {
+                mod_dict.base_id = Number(data_pk)
+            }
+            ModSelSchOrDep_Save(tblName)
+        }
+    }  // ModSelSchOrDep_SelectItem
+
+//=========  ModSelSchOrDep_FillSelectTable  ================ PR2020-08-21
+    function ModSelSchOrDep_FillSelectTable(tblName, selected_pk) {
+        console.log( "===== ModSelSchOrDep_FillSelectTable ========= ");
+
+        const header_text = (tblName === "school") ? loc.Select_school :  loc.Select_department ;
+        document.getElementById("id_MSESD_header_text").innerText = header_text;
+
+        const caption_none = (tblName === "school") ? loc.No_schools :  loc.No_departments ;
+        const tblBody_select = el_ModSelSchOrDep_tblBody_select;
+        tblBody_select.innerText = null;
+
+        let row_count = 0, add_to_list = false;
+// --- loop through data_map
+        const data_map = (tblName === "school") ? school_map : department_map ;
+        if(data_map){
+            for (const [map_id, map_dict] of data_map.entries()) {
+                add_to_list = ModSelSchOrDep_FillSelectRow(map_dict, tblBody_select, tblName, -1, selected_pk);
+                if(add_to_list){ row_count += 1};
+            };
+        }  // if(!!data_map)
+
+        if(!row_count){
+            let tblRow = tblBody_select.insertRow(-1);
+            let td = tblRow.insertCell(-1);
+            td.innerText = caption_none;
+
+        } else if(row_count === 1){
+            let tblRow = tblBody_select.rows[0]
+            if(tblRow) {
+// ---  highlight first row
+                tblRow.classList.add(cls_selected)
+                if(tblName === "order") {
+                    selected_period.order_pk = get_attr_from_el_int(tblRow, "data-pk");
+                    MSE_SelectEmployee(tblName, tblRow)
+                }
+            }
+        }
+    }  // ModSelSchOrDep_FillSelectTable
+
+//=========  ModSelSchOrDep_FillSelectRow  ================ PR2020-10-27
+    function ModSelSchOrDep_FillSelectRow(map_dict, tblBody_select, tblName, row_index, selected_pk) {
+        //console.log( "===== ModSelSchOrDep_FillSelectRow ========= ");
+        //console.log("tblName: ", tblName);
+        //console.log( "map_dict: ", map_dict);
+
+//--- loop through data_map
+        let pk_int = null, code_value = null, add_to_list = false, is_selected_pk = false;
+        if(tblName === "school") {
+            pk_int = map_dict.base_id;
+            const code = (map_dict.sb_code) ? map_dict.sb_code : "---";
+            const name = (map_dict.name) ? map_dict.name : "---";
+            code_value = code + " - " + name;
+            const shiftmap_order_pk = map_dict.o_id;
+            // PR2020-06-11 debug: no matches because mod_dict.order_pk was str, not number.
+            add_to_list = true
+
+       } else if(tblName === "department") {
+            pk_int = map_dict.base_id;
+            code_value = (map_dict.abbrev) ? map_dict.abbrev : "---"
+            add_to_list = true;
+       }
+
+       if (add_to_list){
+            // selected_pk = 0 means: all customers / orders/ employees
+            is_selected_pk = (selected_pk != null && pk_int === selected_pk)
+// ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
+            let tblRow = tblBody_select.insertRow(row_index);
+            tblRow.setAttribute("data-pk", pk_int);
+            //tblRow.setAttribute("data-ppk", ppk_int);
+            tblRow.setAttribute("data-value", code_value);
+// ---  add EventListener to tblRow
+            tblRow.addEventListener("click", function() {ModSelSchOrDep_SelectItem(tblName, tblRow)}, false )
+// ---  add hover to tblRow
+            add_hover(tblRow);
+// ---  highlight clicked row
+            //if (is_selected_pk){ tblRow.classList.add(cls_selected)}
+// ---  add first td to tblRow.
+            let td = tblRow.insertCell(-1);
+// --- add a element to td., necessary to get same structure as item_table, used for filtering
+            let el_div = document.createElement("div");
+                el_div.innerText = code_value;
+                el_div.classList.add("tw_420", "px-2", "pointer_show" )
+            td.appendChild(el_div);
+        };
+        return add_to_list;
+    }  // ModSelSchOrDep_FillSelectRow
+
+
+
+//========= UpdateHeaderText  ================== PR2020-07-31
+    function UpdateHeaderText(){
+        //console.log(" --- UpdateHeaderText ---" )
+        let header_text = (selected_btn === "btn_school") ? loc.Schools : null;
+        document.getElementById("id_hdr_text").innerText = header_text;
+    }   //  UpdateHeaderText
+
+
+
+//========= UpdateHeaderbar  ================== PR2020-11-14 PR2020-12-02
+    function UpdateHeaderbar(){
+        console.log(" --- UpdateHeaderbar ---" )
+
+        let examyer_txt = "";
+        if (setting_dict.requsr_examyear_text){
+           examyer_txt = loc.Exam_year + " " + setting_dict.requsr_examyear_text
+        } else {
+            const examyear_str = (loc.Exam_year) ? loc.Exam_year.toLowerCase() : "-";
+            examyer_txt = "<" + loc.No__ + examyear_str +  loc.__selected + ">"
+        }
+        if(el_hdrbar_examyear) { el_hdrbar_examyear.innerText = examyer_txt};
+
+        console.log("examyer_txt", examyer_txt )
+        const may_select_school = (setting_dict.requsr_role_insp || setting_dict.requsr_role_admin || setting_dict.requsr_role_system);
+        const class_select_school = (may_select_school) ? "awp_navbaritem_may_select" : "awp_navbar_item";
+        let schoolname_txt = null;
+        if (!setting_dict.requsr_schoolbase_pk){
+            if (may_select_school) {
+                schoolname_txt = " <" + loc.Select_school + ">";
+            } else {
+                schoolname_txt = " <" + loc.No_school_selected + ">";
+            }
+        } else {
+            schoolname_txt = setting_dict.requsr_schoolbase_code;
+            if (!setting_dict.sel_examyear_pk) {
+                schoolname_txt += " <" + loc.No_examyear_selected + ">"
+            } else {
+                if (!setting_dict.requsr_school_pk){
+                    schoolname_txt += " <" + loc.School_notfound_thisexamyear + ">"
+                } else {
+                    schoolname_txt += " " + setting_dict.requsr_school_name
+                }
+            }
+        }
+        el_hdrbar_school.innerText = schoolname_txt;
+    }  // UpdateHeaderbar
+
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
 })  // document.addEventListener('DOMContentLoaded', function()

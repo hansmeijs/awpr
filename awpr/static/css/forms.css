@@ -1,4 +1,17 @@
 
+.flex_1 {
+    flex: 1;
+}
+.flex_2 {
+    flex: 2;
+}
+.flex_3 {
+    flex: 3;
+}
+.flex_4 {
+    flex: 4;
+}
+
 .flex_container {
 /*PR2019-02-05 from https://css-tricks.com/snippets/css/a-guide-to-flexbox/*/
 
@@ -70,7 +83,7 @@
     -ms-flex-line-pack: start;
         align-content: flex-start;  /* flex-start | flex-end | center | space-between | space-around | stretch; */
 
-    /*margin: 0px; /*these dont work: margin: none; margin: 0;*/
+    /* margin: 0px; /*these dont work: margin: none; margin: 0;*/
 
    /* padding: 10px;*/
    /* margin-left: 220px; /* Same as the width of the sidebar */
@@ -116,7 +129,7 @@
     This allows the default alignment (or the one specified by align-items) to be overridden for individual flex items.
     Please see the align-items explanation to understand the available values. */
 
-.flex_content {
+.flex_box {
 
 /*
     -webkit-box-flex: 1;
@@ -161,8 +174,8 @@
     /*border: 2px solid purple;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
     margin: 0px;
 
-    background-color:  #e0e0e0;
-    border-color: #c4c4c4;
+    /*background-color:  #e0e0e0;*/
+    /*border-color: #c4c4c4;*/
 }
 
 
@@ -273,18 +286,7 @@
     text-align: right;
 }
 
-.flex_1 {
-    flex: 1;
-}
-.flex_2 {
-    flex: 2;
-}
-.flex_3 {
-    flex: 3;
-}
-.flex_4 {
-    flex: 4;
-}
+
 .btn-add {
     padding: 0rem 0.5rem 0rem 0.5rem;
     margin: 0px;

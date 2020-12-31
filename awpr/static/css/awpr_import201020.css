@@ -257,7 +257,7 @@ a:hover{
 
     -webkit-transition: background-color 0.25s ease;
     -o-transition: background-color 0.25s ease;
-    transition: background-color 0.25s easet;
+    transition: background-color 0.25s ease;
 }
 
 
@@ -407,14 +407,14 @@ a:hover{
 }
 
 
-.tsa_tbl_unlinkedXX {
+.tsa_tbl_unlinked {
     /* font-size: 14px; not working on table */
     color: #ffffff; /*color: #FFFFFF; white */
     /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
     /*background-color: #f5f5f5; /* #f5f5f5 = 245 245 245  licht licht licht grijs; */
     background-color: #f5f5f5; /* #f5f5f5 = 245 245 245  licht licht licht grijs; */
 }
-.tsa_tbl_linkedXX {
+.tsa_tbl_linked {
     /* font-size: 14px; not working on table */
     color: #ffffff; /*color: #FFFFFF; white */
     /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
@@ -618,6 +618,13 @@ a:hover{
         }
     }
 
+/* IMPORT table */
+.modal-body {
+    overflow : auto;
+}
+.awp_import_table {
+    overflow-x: auto;    /* Trigger horizontal scroll */
+}
 
 /* SEARCH */
 .search_container {

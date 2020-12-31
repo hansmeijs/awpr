@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load i18n %} {% load l10n %}
+{% load static %}
+
+{% block title %}{% trans 'Grades' %}{% endblock %}
+
+{% block script %}
+    <script src="{% static 'js/grades201203.js' %}"></script>
+{% endblock %}
+
+<!-- SIDE BAR -->
+{% block sidebar %}
+    <nav id="id_sidebar" class="awp_sidebar">
+        <div class="sidebar_header">
+            <h3>{% trans 'Grades' %}</h3>
+        </div>
+        <div class="tw_200 m-2">
+            <h6 class="tw_200 line_height_normal px-2">{% trans 'Period' %}:</h6>
+            <select id="id_SBR_select_period" class="tw_200 border_none px-1"
+                autocomplete="off" ondragstart="return false;" ondrop="return false;"
+           ></select>
+        </div>
+
+        <div class="tw_200 m-2">
+            <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam type' %}:</h6>
+            <select id="id_SBR_select_examtype" class="tw_200 border_none px-1"
+                autocomplete="off" ondragstart="return false;" ondrop="return false;"
+           >
+            </select>
+        </div>
+
+        <div class="tw_200 m-2">
+            <h6 class="tw_200 line_height_normal px-2">{% trans 'Class / cluster' %}:</h6>
+           <select id="id_SBR_select_class_cluster" class="tw_200 border_none px-1"
+                autocomplete="off" ondragstart="return false;" ondrop="return false;"
+           ></select>
+        </div>
+
+        <div class="tw_200 m-2">
+            <h6 class="tw_200 line_height_normal px-2">{% trans 'Subject' %}:</h6>
+            <input id="id_SBR_select_subject" type="text"
+                class="tw_200 border_none pointer_show px-4" readonly>
+        </div>
+
+        <div class="tw_200 m-2">
+            <h6 class="tw_200 line_height_normal px-2">{% trans 'Candidate' %}:</h6>
+            <input id="id_SBR_select_student" type="text"
+                class="tw_200 border_none pointer_show px-1" readonly>
+        </div>
+
+        <div class="tw_200 m-2">
+            <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all from this period' %}</h6>
+        </div>
+    </nav>
+{% endblock %}
+<!-- END SIDE BAR -->
+
+
+{% block content %}
+    <div id="id_content">
+        {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
+    <!-- =================== MODAL SELECT EXAM YEAR =================== -->
+            {% include 'schools/modselectexamyear.html' %}
+    <!-- =================== MODAL SELECT SCHOOL OR DEPARTMENT=================== -->
+            {% include 'schools/modselectschoolordep.html' %}
+    <!-- =================== MODAL SELECT SUBJECT STUDENT  =================== -->
+            {% include 'includes/modselectsubjectstudent.html' %}
+    <!-- =================== MODAL CONFIRM  =================== -->
+            {% include 'includes/modconfirm.html' %}
+    <!-- =================== MODAL MESSAGE  =================== -->
+            {% include 'includes/modmessage.html' %}
+    <!-- =================== MODAL STUDENT =================== -->
+            {% include 'students/modstudent.html' %}
+    <!-- =================== MODAL STUDENT SUBJECT =================== -->
+            {% include 'students/modstudentsubject.html' %}
+
+            <div class="content_margin_top78">
+
+            {% include 'includes/messages.html' %}
+
+    <!-- BUTTON GROUP -->
+                <div id="id_btn_container" class="btn-group btn-block mx-2 my-2" role="group" aria-label="Choose option" >
+                    <button data-btn="grade_by_subject" class="btn btn-secondary ">{% trans 'Grades by subject' %}</button>
+                    <button data-btn="grade_by_student" class="btn btn-secondary ">{% trans 'Grades by candidate' %}</button>
+                    <button data-btn="grade_by_all" class="btn btn-secondary ">{% trans 'All grades' %}</button>
+                </div>
+    <!-- end BUTTON GROUP -->
+
+    <!-- CONTENT HEADER - LOADER -->
+
+        <!-- submenu -->
+                <div class="content_header flex_container">
+                    <div id="id_submenu" class="awp_navbar_submenuXX mt-5">
+                </div>
+        <!-- header_text -->
+                    <div class="flex_4 pl-4 py-2">
+                        <h5 id="id_hdr_left"></h5>
+                    </div>
+        <!-- loader -->
+                    <div class="flex_1 py-2">
+                        <div id="id_loader" class="image_container visibility_hide">
+                            <img src="{% static 'img/loader.gif' %}" class="icon_24">
+                        </div>
+                    </div>
+        <!-- header_text -->
+                    <div class="flex_4 py-2">
+                        <h5 id="id_hdr_textright1"></h5>
+                    </div>
+                </div>
+            <!-- end content_header -->
+
+    <!-- END OF CONTENT HEADER -->
+
+    <!-- CONTENT BODY -->
+    <!-- =================== DATA TABLES  =================== -->
+            <div class="content_header ml-2 mr-0">
+                <table class="table tsa_tbl">
+                    <thead id="id_tblHead_datatable"></thead>
+                    <tbody id="id_tblBody_datatable"></tbody>
+                </table>
+            </div>
+    <!-- END OF CONTENT BODY -->
+
+            <div id="id_data"
+                data-datalist_download_url="{% url 'datalist_download_url' %}"
+                data-settings_upload_url="{% url 'settings_upload_url' %}"
+                data-student_upload_url="{% url 'student_upload_url' %}"
+                data-studsubj_upload_url="{% url 'studsubj_upload_url' %}"
+                data-grade_upload_url="{% url 'grade_upload_url' %}"
+            >
+            </div>
+
+        {% else %}
+            <div class="mx-4 mt-5 pt-5">
+                <div class="alert alert-danger">{% trans "You don't have permission to view this page." %}</div>
+            </div>
+        {% endif %}
+    </div>
+
+{% endblock %}

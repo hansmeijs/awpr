@@ -3,7 +3,10 @@ from django.db.models import Model, ForeignKey, PROTECT, CASCADE, SET_NULL
 from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, EmailField
 from django.contrib.auth.models import AbstractUser, UserManager
 
-from django.contrib.postgres.fields import JSONField
+# PR2020-12-13 Deprecation warning: django.contrib.postgres.fields import JSONField  will be removed from Django 4
+# instead use: django.db.models import JSONField (is added in Django 3)
+from django.contrib.postgres.fields import ArrayField, JSONField
+
 
 from django.core.validators import RegexValidator
 from django.utils import timezone
@@ -51,7 +54,7 @@ class User(AbstractUser):
             'unique': _("A user with that username already exists."),
         })
     last_name = CharField(
-        max_length=50,
+        max_length=c.MAX_LENGTH_NAME,
         help_text=_('Required. {} characters or fewer.'.format(50)),
         validators=[
             RegexValidator(r'^[\w .\'-]+$',
@@ -63,18 +66,26 @@ class User(AbstractUser):
     # PR2018-08-01 role choices cannot be set in Model, because allowed values depend on request_user. Use role_list in Form instead
     role = PositiveSmallIntegerField(default=0)
     permits = PositiveSmallIntegerField(default=0)
-    allowed_depbase_list = CharField(max_length=255, null=True, blank=True)
-    allowed_levelbase_list = CharField(max_length=255, null=True, blank=True)
-    allowed_subjectbase_list = CharField(max_length=255, null=True, blank=True)
-    allowed_clusterbase_list = CharField(max_length=255, null=True, blank=True)
+
+    allowed_depbases = ArrayField(IntegerField(), null=True)
+    allowed_levelbases = ArrayField(IntegerField(), null=True)
+    allowed_subjectbases = ArrayField(IntegerField(), null=True)
+    allowed_clusterbases = ArrayField(IntegerField(), null=True)
 
     activated = BooleanField(default=False)
     activated_at = DateTimeField(null=True)
+    # country and schoolbase get their value when user is created - value can never change PR2020-11-17
+    # insp and admin selected school is stored in usersettings
     country = ForeignKey(Country, null=True, blank=True, related_name='+', on_delete=PROTECT)
-    examyear = ForeignKey(Examyear, null=True, blank=True, related_name='+', on_delete=PROTECT)
     schoolbase = ForeignKey(Schoolbase, null=True, blank=True, related_name='+', on_delete=PROTECT)
-    depbase = ForeignKey(Departmentbase, null=True, blank=True, related_name='+', on_delete=PROTECT)
-    lang = CharField(max_length=4, null=True, blank=True)
+
+    # PR2020-12-24 examyear and depbase are removed from user - are saved in usersetting
+    # examyear can always be set by user - value can change PR2020-11-17
+    # depbase can be set by user if allowed_depbases has multiple values- value can change PR2020-11-17
+    # examyear = ForeignKey(Examyear, null=True, blank=True, related_name='+', on_delete=SET_NULL)
+    # depbase = ForeignKey(Departmentbase, null=True, blank=True, related_name='+', on_delete=SET_NULL)
+
+    lang = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     created_by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
     created_at = DateTimeField(null=True)
     modified_by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
@@ -120,105 +131,6 @@ class User(AbstractUser):
         super(User, self).save(force_insert=not self.is_update, force_update=self.is_update, **kwargs)
         # self.id gets its value in super(Country, self).save
 
-        self.save_to_user_log()
-
-        """
-        # PR2018-06-07 self.modified_by is updated in View, couldn't get Country object passed to save function
-        self.modified_at = timezone.now()
-        super(User, self).save(*args, **kwargs)
-        # at login: self = user that logs in; kwargs = {'update_fields': ['last_login']}
-        logger.debug('User save after super(User) self: ' + str(self) +  ' kwargs: ' + str(kwargs))
-        self.save_to_user_log(self)
-        """
-    def save_to_user_log(self):
-        #Create method also saves record
-        User_log.objects.create(
-            user_id=self.pk,
-            username=self.username,
-            last_name=self.last_name,
-            email=self.email,
-
-            last_login=self.last_login,
-            is_superuser=self.is_superuser,
-            is_staff=self.is_staff,
-            is_active=self.is_active,
-            date_joined=self.date_joined,
-
-            role=self.role,
-            permits=self.permits,
-
-            activated=self.activated,
-            activated_at=self.activated_at,
-
-            country=self.country,
-            schoolbase=self.schoolbase,
-
-            mode=self.mode,
-            created_at=self.created_at,
-            created_by=self.created_by,
-
-            modified_by=self.modified_by,
-            modified_at=self.modified_at
-        )
-    #created_by = request_user if mode == 'c'
-
-    @property
-    def data_has_changed(self):
-        # returns True when the value of one or more fields has changed PR2018-08-26
-        self.is_update = self.id is not None # self.id is None before new record is saved
-
-        self.username_mod = self.original_username != self.username
-        self.password_mod = self.original_password != self.password
-
-        self.last_name_mod = self.original_last_name != self.last_name
-        self.email_mod = self.original_email != self.email
-
-        self.last_login_mod = self.original_last_login != self.last_login
-        self.is_superuser_mod = self.original_is_superuser != self.is_superuser
-        self.is_staff_mod = self.original_is_staff != self.is_staff
-        self.is_active_mod = self.original_is_active != self.is_active
-        self.date_joined_mod = self.original_date_joined != self.date_joined
-
-        self.role_mod = self.original_role != self.role
-        self.permits_mod = self.original_permits != self.permits
-        self.allowed_depbase_list_mod = self.original_allowed_depbase_list != self.allowed_depbase_list
-        self.allowed_levelbase_list_mod = self.original_allowed_levelbase_list != self.allowed_levelbase_list
-        self.allowed_subjectbase_list_mod = self.original_allowed_subjectbase_list != self.allowed_subjectbase_list
-        self.allowed_clusterbase_list_mod = self.original_allowed_clusterbase_list != self.allowed_clusterbase_list
-
-        self.activated_mod = self.original_activated != self.activated
-        self.activated_at_mod = self.original_activated_at != self.activated_at
-
-        self.country_mod = self.original_country != self.country
-        self.examyear_mod = self.original_examyear != self.examyear
-        self.schoolbase_mod = self.original_schoolbase != self.schoolbase
-        self.depbase_mod = self.original_depbase != self.depbase
-        self.lang_mod = self.original_lang != self.lang
-
-        return not self.is_update or \
-            self.username_mod or \
-            self.password_mod or \
-            self.last_name_mod or \
-            self.email_mod or \
-            self.last_login_mod or \
-            self.is_superuser_mod or \
-            self.is_staff_mod or \
-            self.is_active_mod or \
-            self.date_joined_mod or \
-            self.role_mod or \
-            self.permits_mod or \
-            self.allowed_depbase_list_mod or \
-            self.allowed_levelbase_list_mod or \
-            self.allowed_subjectbase_list_mod or \
-            self.allowed_clusterbase_list_mod or \
-            self.activated_mod or \
-            self.activated_at_mod or \
-            self.country_mod or \
-            self.examyear_mod or \
-            self.schoolbase_mod or \
-            self.depbase_mod or \
-            self.lang_mod
-
 
     @property
     def username_sliced(self):
@@ -236,111 +148,6 @@ class User(AbstractUser):
         #    _role_str = _('System')
         _role_str = c.CHOICES_ROLE_DICT.get(self.role,'')
         return _role_str
-
-    @property
-    def country_str(self): # PR2018-08-01
-        if self.country:
-            _country_str = self.country.name
-        else:
-            _country_str = ''
-        return _country_str
-
-    @property
-    def country_locked(self): # PR2018-08-17
-        _country_locked = False
-        if self.country:
-            _country_locked = self.country.locked
-        return _country_locked
-
-    @property
-    def examyear_str(self): # PR2018-09-02
-        if self.examyear:
-            return str(self.examyear)
-        else:
-            return _("<No exam year selected>")
-
-    @property
-    def examyear_locked(self): # PR2018-08-17
-        # examyear is locked when country is locked or examyear is locked
-        _examyear_locked = False
-        if self.country:
-            if self.country.locked:
-                _examyear_locked = True
-        if not _examyear_locked:
-            if self.examyear:
-                if self.examyear.locked:
-                    _examyear_locked = True
-        return _examyear_locked
-
-    @property
-    def schoolcode(self): # PR2020-09-29
-        schoolcode = None
-        if self.schoolbase:
-            schoolcode = self.schoolbase.code
-        return schoolcode
-
-    @property
-    def schoolname(self): # PR2018-09-15  PR2020-09-29
-        schoolname = None
-        if self.country and self.schoolbase:
-            if self.examyear:
-                # get school from this schoolbase and this examyear.
-                # Country is field of Examyear, therefore filter Country not necessary
-                school = School.objects.get_or_none(base=self.schoolbase, examyear=self.examyear)
-            else:
-                #if examyear is None: get school from latest examyear
-                school = School.objects.get_or_none(country=self.country, base=self.schoolbase).order_by('-examyear').first()
-            if school:
-                schoolname = school.name
-        return schoolname
-
-    @property
-    def schoolnamewithArticle(self): # PR2020-09-29
-        schoolname = None
-        if self.country and self.schoolbase:
-            if self.examyear:
-                # get school from this schoolbase and this examyear.
-                # Country is field of Examyear, therefore filter Country not necessary
-                school = School.objects.get_or_none(base=self.schoolbase, examyear=self.examyear)
-            else:
-                #if examyear is None: get school from latest examyear
-                school = School.objects.get_or_none(country=self.country, base=self.schoolbase).order_by('-examyear').first()
-            if school and school.name:
-                schoolname = school.name
-                if school.article:
-                    schoolname = school.article.capitalize() + ' ' + school.name
-                else:
-                    schoolname = school.name
-        return schoolname
-    @property
-    def schoolabbrev(self): # PR2018-12-18 used in user_list
-        abbrev = '-'
-        if self.country and self.examyear and self.schoolbase:
-            school= School.objects.get_or_none(base=self.schoolbase, examyear=self.examyear)
-            if school:
-                if school.abbrev:
-                    abbrev = school.abbrev
-        return abbrev
-    @property
-
-    def school_locked(self): # PR2018-09-03
-        # school is locked when (country is locked OR examyear is locked OR school is locked)
-        _school_locked = True
-        if self.country and self.examyear and self.schoolbase:
-            if not self.country.locked and not self.examyear_locked:
-                # get school from this schoolbase and this examyear
-                school= School.objects.filter(base=self.schoolbase, examyear=self.examyear).first()
-                if school:
-                    _school_locked = school.locked
-        return _school_locked
-
-    @property
-    def department(self): # PR2018-11-19 Used in StudentAddForm
-        department = None
-        if self.country and self.examyear and self.schoolbase and self.depbase:
-            # get school from this schoolbase and this examyear. Countr is field of Examyear, therefore filter Counrry not necessary
-            department= Department.objects.filter(base=self.depbase, examyear=self.examyear).first()
-        return department
 
     @property
     def permits_str(self):
@@ -399,7 +206,6 @@ class User(AbstractUser):
                 permits_list.append(permit_str)
         return tuple(permits_list)
 
-
     # PR2018-05-30 list of permits that user can be assigned to:
     # - System users can only have permits: 'Admin' and 'Read'
     # - System users can add all roles: 'System', Insp', School', but other roles olny with 'Admin' and 'Read' permit
@@ -425,137 +231,6 @@ class User(AbstractUser):
         return tuple(choices)
 
 
-    @property
-    def country_choices_NOT_IN_USE(self):
-        # PR2018-05-31 country_choices = [(1, 'SXM01 -  Milton Peters College')]
-        # only role System can choose country in headerbar, other roles have list of their own country
-        # this function is used in UserAddForm
-        _country_choices = []
-        if self.is_role_system:
-            countries = Country.objects.order_by('name')
-        else:
-            # PR2018-06-01 debug: objects.get gives error: 'Country' object is not iterable
-            # use objects.filter instead
-            countries = Country.objects.filter(id=self.country.id)
-        for country in countries:
-            if country.name is not None:
-                _item = (country.id, country.name)
-                logger.debug('SubjectdefaultAddForm __init__ _item: ' + str(_item) + ' Type: ' + str(type(_item)))
-                _country_choices.append(_item)
-        logger.debug('SubjectdefaultAddForm __init__ _country_choices: ' + str(_country_choices) + ' Type: ' + str(type(_country_choices)))
-
-        return _country_choices
-
-    def examyear_correct(self, instance_examyear_id):
-        # PR2018-11-02 check if:
-        #  - both country and examyear have value
-        #  - self.examyear.country is same as self.country
-        #  - self.examyear is same as instance_examyear
-
-        is_ok = False
-        if self.country is not None and self.examyear is not None:
-            if self.examyear.country.id == self.country.id:
-                if self.examyear.id == instance_examyear_id:
-                    is_ok = True
-        return is_ok
-
-    # PR2018-07-31 debug. This is a method, not a @property. Property gave error: 'list' object is not callable
-    # see: https://www.b-list.org/weblog/2006/aug/18/django-tips-using-properties-models-and-managers/?utm_medium=twitter&utm_source=twitterfeed
-    def schoolbase_choices(self, selected_user):
-        # PR2018-06-02 this function is used in UserEditForm, only when request_user.role = system or Insp
-        # PR2018-07-28 Show only schools from selected_user.country
-        # self = request_user, not selected_user when called by UserEditForm
-
-        # logger.debug('class User schoolbase_choices  request_user.username: ' + str(self.username))
-
-        _schools = None
-        _choices = []
-        _choices.append((0, 'None'))
-        if selected_user.examyear: # _selecteduser_countryid = False when _selecteduser_countryid == 0 or None:
-            _schools = School.objects.filter(examyear=selected_user.examyear)
-            logger.debug('class User(AbstractUser) _schools: ' + str(_schools))
-            if _schools:
-                for _school in _schools:
-                    _school_str = ''
-                    if _school.code is not None:
-                        _school_str = str(_school.code) + ' - '
-                    if _school.name is not None:
-                        _school_str = _school_str + str(_school.name)
-                    # logger.debug('class User(AbstractUser) _schooldefault_str: ' + str(_schooldefault_str))
-                    _choices.append((_school.base.id, _school_str))
-
-        # logger.debug('class User(AbstractUser) schooldefault_choices: ' + str(_choices))
-        return _choices
-
-
-    # PR2018-07-31 debug. This is a method, not a @property. Property gave error: 'list' object is not callable
-    # see: https://www.b-list.org/weblog/2006/aug/18/django-tips-using-properties-models-and-managers/?utm_medium=twitter&utm_source=twitterfeed
-    def depbase_choices(self, selected_user):
-        # PR2018-06-02 this function is used in UserEditForm
-        # PR2018-08-29 Show only departments from depbase_list of selected_user.schooldefault
-        # self = request_user, not selected_user when called by UserEditForm
-
-        logger.debug('class User depbase_choices  request_user.username: ' + str(self.username))
-        logger.debug('class User depbase_choices  request_user.schooldefault: ' + str(self.schoolbase))
-        logger.debug('class User depbase_choices  selected_user.username: ' + str(selected_user.username))
-        logger.debug('class User depbase_choices  selected_user.schooldefault: ' + str(selected_user.schooldefault))
-
-
-        _selecteduser_schooldefault_id = 0
-        if selected_user.schooldefault is not None:
-            _selecteduser_schooldefault_id = selected_user.schooldefault.id
-        _department = None
-        _choices = []
-        _choices.append((0, 'None'))
-        if _selecteduser_schooldefault_id: # _selecteduser_schooldefault_id = False when _selecteduser_schooldefault_id == 0 or None:
-            _department = Department.objects.filter(department_id=_selecteduser_schooldefault_id)
-            logger.debug('class User(AbstractUser) _department: ' + str(_department))
-            if _department:
-                for _schooldefault in _department:
-                    _schooldefault_str = ''
-                    if _schooldefault.code is not None:
-                        _schooldefault_str = str(_schooldefault.code) + ' - '
-                    if _schooldefault.name is not None:
-                        _schooldefault_str = _schooldefault_str + str(_schooldefault.name)
-                    # logger.debug('class User(AbstractUser) _schooldefault_str: ' + str(_schooldefault_str))
-                    _choices.append((_schooldefault.id, _schooldefault_str))
-
-        logger.debug('class User(AbstractUser) schooldefault_choices: ' + str(_choices))
-        return _choices
-
-
-    # PR2018-07-31 debug. This is a method, not a @property. Property gave error: 'list' object is not callable
-    # see: https://www.b-list.org/weblog/2006/aug/18/django-tips-using-properties-models-and-managers/?utm_medium=twitter&utm_source=twitterfeed
-    def examyear_choices(self, selected_user):
-        # PR2018-06-02 this function is used in UserEditForm, only when request_user.role = system or Insp
-        # PR2018-07-28 Show only examyears from selected_user.country
-        # self = request_user, not selected_user when called by UserEditForm
-
-        #logger.debug('class User examyear_choices  request_user.username: ' + str(self.username))
-        #logger.debug('class User examyear_choices  request_user.country: ' + str(self.country))
-        #logger.debug('class User examyear_choices  selected_user.username: ' + str(selected_user.username))
-        #logger.debug('class User examyear_choices  selected_user.country: ' + str(selected_user.country))
-
-        _selecteduser_countryid = 0
-        if selected_user.country is not None:
-            _selecteduser_countryid = selected_user.country.id
-        _schooldefaults = None
-        _choices = []
-        _choices.append((0, 'None'))
-        if _selecteduser_countryid: # _selecteduser_countryid = False when _selecteduser_countryid == 0 or None:
-            _examyears = Examyear.objects.filter(country_id=_selecteduser_countryid)
-            # logger.debug('class User examyear_choices _examyears: ' + str(_examyears))
-            if _examyears:
-                for _item in _examyears:
-                    _item_str = ''
-                    if _item.examyear is not None:
-                        _item_str = str(_item.examyear)
-                    # logger.debug('class User examyear_choices _item_str: ' + str(_item_str))
-                    _choices.append((_item.id, _item_str))
-
-        # logger.debug('class User examyear_choices class User examyear_choices: ' + str(_choices))
-        return _choices
-
     # PR2018-07-31 debug. This is a method, not a @property. Property gave error: 'list' object is not callable
     # see: https://www.b-list.org/weblog/2006/aug/18/django-tips-using-properties-models-and-managers/?utm_medium=twitter&utm_source=twitterfeed
     def user_settings(self):  # PR2018-12-19
@@ -565,30 +240,13 @@ class User(AbstractUser):
         if usersettings:
             for usersetting in usersettings:
                 # TODO: remove filter and get all settings
-                if usersetting.key == c.KEY_USER_MENU_SELECTED:
+                if usersetting.key == c.KEY_MENU_SELECTED:
                     if usersetting.char01:
-                        settings[c.KEY_USER_MENU_SELECTED] = usersetting.char01
+                        settings[c.KEY_MENU_SELECTED] = usersetting.char01
                         # logger.debug('user_settings: ' + str(user_settings) + ' type: ' +  str(type(user_settings)))
         settings_str = json.dumps(settings)
         # logger.debug('user_settings_str: ' + str(user_settings_str) + ' type: ' +  str(type(user_settings_str)))
         return settings_str
-
-    @property
-    def depbase_str(self): # PR2018-11-23
-        dep_str = ''
-        if self.depbase is not None:
-            dep = Department.objects.filter(base=self.depbase, examyear=self.examyear).first()
-            if dep is not None:
-                dep_str = dep.abbrev
-        return dep_str
-
-    @property
-    def allowed_depbase_list_str(self): # PR2018-11-23
-        return Department.depbase_list_str(depbase_list=self.allowed_depbase_list, examyear=self.examyear)
-
-    @property
-    def is_active_choices(self): # PR108-06-22
-        return c.IS_ACTIVE_CHOICES.get(int(self.is_active))
 
     # PR2018-05-27 property returns True when user has ROLE_64_SYSTEM
     @property
@@ -650,7 +308,7 @@ class User(AbstractUser):
         return _has_permit
 
     @property
-    def is_role_adm_or_sys_and_perm_adm_or_sys_(self):
+    def is_role_adm_or_sys_and_perm_adm_or_sys(self):
         _has_permit = False
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
@@ -1098,7 +756,7 @@ class Usersetting(Model):
     objects = CustomUserManager()
 
     user = ForeignKey(User, related_name='+', on_delete=CASCADE)
-    key = CharField(db_index=True, max_length=c.MAX_LENGTH_CODE)
+    key = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
 
     jsonsetting = JSONField(null=True)
 

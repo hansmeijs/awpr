@@ -1,12 +1,154 @@
 
+// ++++++++++++  TABLE  +++++++++++++++++++++++++++++++++++++++
+    "use strict";
+    const cls_hide = "display_hide";
+    const cls_hover = "tr_hover";
+    const cls_selected = "tsa_tr_selected";
+
+
+// ++++++++++++  MODAL SELECT EXAMYEAR SCHOOL OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
+
+//=========  t_MSESD_Open  ================ PR2020-10-27 PR2020-12-25
+    function t_MSESD_Open(loc, tblName, data_map, setting_dict, MSESD_Response) {
+        console.log( "===== t_MSESD_Open ========= ", tblName);
+        console.log( "setting_dict", setting_dict);
+
+        if (!isEmpty(loc)) {
+            let may_open_modal = false, selected_pk = null;
+            if (tblName === "examyear") {
+                may_open_modal = setting_dict.may_select_examyear
+                selected_pk = setting_dict.sel_examyear_pk;
+            } else if (tblName === "school") {
+                //<PERMIT>
+                may_open_modal = setting_dict.may_select_school;
+                selected_pk = setting_dict.sel_schoolbase_pk;
+            } else  if (tblName === "department") {
+                const allowed_depbases_count = (setting_dict.allowed_depbases) ? setting_dict.allowed_depbases.length : 0
+                may_open_modal = (allowed_depbases_count > 1);
+                may_open_modal = setting_dict.may_select_department;
+                selected_pk = setting_dict.sel_depbase_pk;
+             }
+            console.log( "selected_pk", selected_pk);
+            //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
+            if (may_open_modal) {
+            //mod_dict = {base_id: setting_dict.requsr_schoolbase_pk, table: tblName};
+
+// ---  fill select table
+            //const data_map = (tblName === "school") ? school_map : department_map ;
+            t_MSSD_FillSelectTable(loc, tblName, data_map, setting_dict, MSESD_Response, selected_pk);
+// ---  show modal
+            $("#id_mod_select_school_or_dep").modal({backdrop: true});
+            }
+        }
+    }  // t_MSESD_Open
+
+
+//=========  t_MSSD_FillSelectTable  ================ PR2020-08-21 PR2020-12-18
+    function t_MSSD_FillSelectTable(loc, tblName, data_map, setting_dict, MSESD_Response, selected_pk) {
+        console.log( "===== t_MSSD_FillSelectTable ========= ");
+
+        const header_text = (tblName === "examyear") ? loc.Select_examyear :
+                            (tblName === "school") ? loc.Select_school :
+                            (tblName === "department") ? loc.Select_department : null;
+        document.getElementById("id_MSESD_header_text").innerText = header_text;
+
+        const tblBody_select = document.getElementById("id_MSESD_tblBody_select");
+        tblBody_select.innerText = null;
+
+// --- loop through data_map
+        if(data_map){
+            for (const [map_id, map_dict] of data_map.entries()) {
+                const pk_int = (tblName === "examyear") ? map_dict.examyear_id :
+                                    (tblName === "school") ? map_dict.base_id :
+                                    (tblName === "department") ? map_dict.base_id : null;
+
+                let code_value = "---";
+                if(tblName === "examyear") {
+                    code_value = (map_dict.examyear_code) ? map_dict.examyear_code : "---";
+                } else if(tblName === "school") {
+                    const code = (map_dict.sb_code) ? map_dict.sb_code : "---";
+                    const name = (map_dict.abbrev) ? map_dict.abbrev : "---";
+                    code_value = code + " - " + name;
+                } else if(tblName === "department") {
+                    code_value = (map_dict.base_code) ? map_dict.base_code : "---"
+                }
+                let skip_row = false;
+                if(tblName === "department"){
+                    if (setting_dict.allowed_depbases){
+                        skip_row = !setting_dict.allowed_depbases.includes(pk_int);
+                    } else {
+                        skip_row = true;
+                    }
+                }
+                if(!skip_row){
+                    t_MSESD_CreateSelectRow(tblName, tblBody_select, pk_int, code_value, MSESD_Response, selected_pk);
+                }
+            };
+        }  // if(!!data_map)
+        const row_count = (tblBody_select.rows) ? tblBody_select.rows.length : 0;
+        if(!row_count){
+            const caption_none = (tblName === "school") ? loc.No_schools :  loc.No_departments ;
+            t_MSESD_CreateSelectRow(tblName, tblBody_select, null, caption_none, MSESD_Response, selected_pk);
+        }
+    }  // t_MSSD_FillSelectTable
+
+//=========  t_MSESD_CreateSelectRow  ================ PR2020-10-27 PR2020-12-18
+    function t_MSESD_CreateSelectRow(tblName, tblBody_select, pk_int, code_value, MSESD_Response, selected_pk) {
+        //console.log( "===== t_MSESD_CreateSelectRow ========= ");
+
+        const is_selected_pk = (selected_pk != null && pk_int === selected_pk)
+// ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
+        let tblRow = tblBody_select.insertRow(-1);
+        tblRow.setAttribute("data-pk", pk_int);
+        //tblRow.setAttribute("data-value", code_value);
+// ---  add EventListener to tblRow
+        if(pk_int){
+            tblRow.addEventListener("click", function() {t_MSSD_SelectItem(tblName, tblRow, MSESD_Response)}, false )
+// ---  add hover to tblRow
+            add_hover(tblRow);
+// ---  highlight clicked row
+            if (is_selected_pk){ tblRow.classList.add(cls_selected)}
+        }
+// ---  add first td to tblRow.
+        let td = tblRow.insertCell(-1);
+// --- add a element to td., necessary to get same structure as item_table, used for filtering
+        const col_width = (tblName === "examyear") ? "tw_240" :
+                            (tblName === "school") ? "tw_420" :
+                            (tblName === "department") ? "tw_420" : null;
+        let el_div = document.createElement("div");
+            el_div.innerText = code_value;
+            el_div.classList.add(col_width, "px-2")
+        td.appendChild(el_div);
+
+// --- add second td to tblRow with icon locked, published or activated.
+        td = tblRow.insertCell(-1);
+        el_div = document.createElement("div");
+            el_div.classList.add("tw_032", "stat_1_6")
+        td.appendChild(el_div);
+
+    }  // t_MSESD_CreateSelectRow
+
+
+//=========  t_MSSD_SelectItem  ================ PR2020-12-18
+    function t_MSSD_SelectItem(tblName, tblRow, MSESD_Response) {
+        //console.log( "===== t_MSSD_SelectItem ========= ");
+        if(tblRow) {
+// ---  get pk from id of select_tblRow
+            let pk_int = get_attr_from_el_int(tblRow, "data-pk")
+            MSESD_Response(tblName, pk_int)
+            $("#id_mod_select_school_or_dep").modal("hide");
+        }
+    }  // t_MSSD_SelectItem
+
+// ++++++++++++  END OF MODAL SELECT SCHOOL OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
+
 
 //========= CreateTable  ====================================
     function CreateTable(tableBase, header1, header2, headExc, headAwp, headLnk ) {
-console.log("==== CreateMapTableSub  =========>>>", tableBase, header1, header2, headExc, headAwp, headLnk);
+        console.log("==== CreateMapTableSub  =========>>>", tableBase, header1, header2, headExc, headAwp, headLnk);
         let base_div = $("#id_basediv_" + tableBase);  // BaseDivID = "sct", "lvl", "col"
         // delete existing rows of tblColExcel, tblColAwp, tblColLinked
         base_div.html("");
-
 
         //append column header to base_div
         if(!!header1 || !!header2) {
@@ -286,36 +428,36 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         return col_index;
     }
 
-//========= function get_arrayRow_by_keyValue  ====================================
-    function get_arrayRow_by_keyValue (objArray, arrKey, keyValue) {
-        // Function returns row of array that contains Value in objKey PR2019-01-05
+
+//========= get_arrayRow_by_keyValue  ====================================
+    function get_arrayRow_by_keyValue (dict_list, arrKey, keyValue) {
+        // Function returns row of array that contains keyValue in arrKey PR2019-01-05 PR2020-12-28
         // stored_columns[3]: {awpCol: "lastname", caption: "Last name", excCol: "ANAAM" }
         // excel_columns[0]:    {excCol: "ANAAM", awpCol: "lastname", awpCaption: "Achternaam"}
-        let row;
-        if (!!arrKey && !!keyValue){
-            for (let i = 0 ; i < objArray.length; i++) {
-                let obj = objArray[i];
-                if (!!obj && !!obj[arrKey] ){
-                    // convert number to string for text comparison
-                    let obj_value;
-                    if (typeof(obj[arrKey]) === "number"){
-                        obj_value = obj[arrKey].toString();
-                    } else {
-                        obj_value = obj[arrKey];
-                    }
-                    let isEqual = false;
+        // PR2020-12-27 do not use Object.entries because it does not allow break
+        //console.log("----- get_arrayRow_by_keyValue -----")
+        //console.log("dict_list", dict_list)
 
-                    if (typeof(keyValue) === "string" && typeof(obj_value) === "string"){
-                        isEqual = (keyValue.toLowerCase() === obj_value.toLowerCase())
+        let row;
+        if (dict_list && arrKey && keyValue != null){
+            for (let i = 0, dict; dict = dict_list[i]; i++) {
+                // dict =  {awpKey: "examnumber", caption: "Examennummer", linkfield: true, excKey: "exnr"}
+                const value = dict[arrKey];
+                if (!!dict && value != null){
+                    // convert number to string for text comparison
+                    let isEqual = false;
+                    if (typeof(keyValue) === "string"){
+                        const value_str = (typeof(value) === "number") ? value.toString() : value;
+                        isEqual = (keyValue.toLowerCase() === value_str.toLowerCase())
                     } else {
-                        isEqual = (keyValue === obj_value)
+                        isEqual = (keyValue === value)
                     }
                     if (isEqual){
-                        row = obj;
+                        row = dict;
                         break;
         }}}}
         return row;
-    }
+    }  // get_arrayRow_by_keyValue
 
 
 //========= function get_object_value_by_key  ====================================
@@ -330,8 +472,6 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         }
         return obj_value;
     }
-
-
 
 
 //========= function found_in_list_str  ======== PR2019-01-22
@@ -372,12 +512,12 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         return newValue;
     }
 //========= delay  ====================================
-    //PR2019-01-13
-    var delay = (function(){
-      var timer = 0;
+    //PR2019-01-13 PR2020-12-15 from https://stackoverflow.com/questions/10067094/how-does-this-delay-function-works
+    let delay = (function(){
+      let timer = 0;
       return function(callback, ms){
-      clearTimeout (timer);
-      timer = setTimeout(callback, ms);
+        clearTimeout (timer);
+        timer = setTimeout(callback, ms);
      };
     })();
 
@@ -386,8 +526,8 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 
     //========= t_get_rowindex_by_orderby  ================= PR2020-06-30
     function t_get_rowindex_by_orderby(tblBody, search_orderby) {
-        console.log(" ===== t_get_rowindex_by_orderby =====");
-        console.log("search_orderby", search_orderby);
+        //console.log(" ===== t_get_rowindex_by_orderby =====");
+        //console.log("search_orderby", search_orderby);
         let row_index = -1;
 // --- loop through rows of tblBody_datatable
         if(search_orderby){
@@ -396,7 +536,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
        //console.log("search_orderby", search_orderby);
             for (let i = 0, tblRow; tblRow = tblBody.rows[i]; i++) {
                 let row_orderby = get_attr_from_el(tblRow, "data-orderby");
-                console.log("row_orderby", row_orderby);
+                //console.log("row_orderby", row_orderby);
                 if(row_orderby){
                     if (typeof row_orderby === 'string' || row_orderby instanceof String) {
                         row_orderby = row_orderby.toLowerCase()};
@@ -411,6 +551,39 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         if(row_index >= 0){ row_index -= 1 }
         return row_index
     }  // t_get_rowindex_by_orderby
+
+
+//=========  t_HighlightSelectedTblRowByPk  ================ PR2019-10-05 PR2020-06-01
+    function t_HighlightSelectedTblRowByPk(tblBody, selected_pk, cls_selected, cls_background) {
+        //console.log(" --- t_HighlightSelectedTblRowByPk ---")
+        //console.log("selected_pk", selected_pk, typeof selected_pk)
+        let selected_row;
+        if(!cls_selected){cls_selected = "tsa_tr_selected"}
+        if(!!tblBody){
+            let tblrows = tblBody.rows;
+            for (let i = 0, tblRow, len = tblrows.length; i < len; i++) {
+                tblRow = tblrows[i];
+                if(!!tblRow){
+                    const pk_str = tblRow.getAttribute("data-pk");
+                    if (selected_pk && pk_str && pk_str === selected_pk.toString()){
+                        if(!!cls_background){tblRow.classList.remove(cls_background)};
+                        tblRow.classList.add(cls_selected)
+                        selected_row = tblRow;
+                        //tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' });
+                    } else if(tblRow.classList.contains(cls_selected)) {
+                        tblRow.classList.remove(cls_selected);
+                        if(!!cls_background){tblRow.classList.add(cls_background)}
+            }}}
+// ---  deselect new row in tblFoot
+            let tblFoot = tblBody.parentNode.tFoot
+            if(!!tblFoot){
+                let firstRow = tblFoot.rows[0]
+                if(!!firstRow){
+                    firstRow.classList.remove(cls_selected);
+            }}
+        }
+        return selected_row
+    }  // t_HighlightSelectedTblRowByPk
 
 
 //========= HighlightSelectRow  ============= PR2019-10-22
@@ -457,20 +630,19 @@ console.log("=========   handle_table_row_clicked   ======================") ;
     }  // DeselectHighlightedTblbody
 
 //========= get_tablerow_selected  =============
-    function get_tablerow_selected(el_selected){
+    function get_tablerow_selected(el){
         // PR2019-04-16 function 'bubbles up' till tablerow element is found
         // currentTarget refers to the element to which the event handler has been attached
         // event.target identifies the element on which the event occurred.
-        let tr_selected;
-        let el = el_selected
-        let break_it = false
+        let tr_selected = null;
+        let break_it = false;
         while(!break_it){
-            if (!!el){
+            if (el){
                 if (el.nodeName === "TR"){
                     tr_selected = el;
                     break_it = true
-                } else if (!!el.parentNode){
-                    el =  el.parentNode;
+                } else if (el.parentNode){
+                    el = el.parentNode;
                 } else {
                     break_it = true
                 }
@@ -481,8 +653,37 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         return tr_selected;
     };
 
-
 //>>>>>>>>>>> FILL OPTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+//========= t_FillOptionLevelSectorFromMap  ============= PR2020-12-11 from tsa
+    function t_FillOptionLevelSectorFromMap(tblName, data_map, depbase_pk, selected_pk, firstoption_txt) {
+         //console.log( "===== t_FillOptionLevelSectorFromMap  ========= ");
+         // used in page schemes
+// add empty option on first row, put firstoption_txt in < > (placed here to escape \< and \>
+        if(!firstoption_txt){firstoption_txt = "-"}
+        let option_text = "<option value=\"0\" data-ppk=\"0\">" + firstoption_txt + "</option>";
+// --- loop through data_map, fill only items with department_pk in depbases
+        for (const [map_id, item_dict] of data_map.entries()) {
+            if(item_dict.depbases && item_dict.depbases.includes(depbase_pk)){
+                option_text += FillOptionText(tblName, item_dict, selected_pk);
+            }
+        }
+        return option_text
+    }  // t_FillOptionLevelSectorFromMap
+
+//========= FillOptionText  ============= PR2020-12-11 from tsa
+    function FillOptionText(tblName, item_dict, selected_pk) {
+        //console.log( "===== FillOptionText  ========= ");
+        const value = (tblName === "level") ? (item_dict.abbrev) ? item_dict.abbrev : "---"
+                                            : (item_dict.name) ? item_dict.name : "---" ;
+        const pk_int = item_dict.id;
+        const pk_str = (pk_int != null) ? pk_int.toString() : "";
+        const selected_pk_str = (selected_pk != null) ? selected_pk.toString() : "";
+        const is_selected =  (selected_pk && pk_int === selected_pk);
+        let item_text = "<option value=\"" + pk_str + "\"";
+        if (is_selected) {item_text += " selected=true" };
+        item_text +=  ">" + value + "</option>";
+        return item_text
+    }  // FillOptionText
 
 //========= t_FillSelectOptions  =======  // PR2020-09-30
     function t_FillSelectOptions(el_select, data_map, tblName, fldName, has_selectall, hide_none,
@@ -526,3 +727,305 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         }
         el_select.disabled = (!row_count)
     }  // t_FillSelectOptions
+
+//========= t_FillOptionFromList  ============= PR2020-01-08
+    function t_FillOptionFromList(data_list, selected_pk, firstoption_txt) {
+         console.log( "===== t_FillOptionFromList  ========= ");
+         // add empty option on first row, put firstoption_txt in < > (placed here to escape \< and \>
+         // used in page customers
+        let option_text = "";
+        if(!!firstoption_txt){
+            option_text = "<option value=\"0\" data-ppk=\"0\">" + firstoption_txt + "</option>";
+        }
+        for (let i = 0, len = data_list.length; i < len; i++) {
+            const item_dict = data_list[i];
+            const item_text = FillOptionText(item_dict, selected_pk);
+            option_text += item_text;
+        }
+        return option_text
+    }  // t_FillOptionFromList
+
+//========= t_FillOptionsFromList  =======  PR2020-12-17
+    function t_FillOptionsFromList(el_select, data_list, filter_value, select_text, select_text_none, selected_value) {
+        console.log( "=== t_FillOptionsFromList ");
+
+// ---  fill options of select box
+        let option_text = "";
+        let row_count = 0
+
+// --- loop through data_map
+        if(data_list){
+            for (let i = 0, len = data_list.length; i < len; i++) {
+                const item_dict = data_list[i];
+                const show_row = (filter_value) ? (item_dict.filter === filter_value) : true;
+                if(show_row){
+                    option_text += FillOptionTextNew(item_dict.value, item_dict.caption, selected_value)
+                    row_count += 1
+                }
+            }
+        }  //   if(!!data_list){
+        let select_first_option = false;
+
+// show text "No items found" when no rows and select_text_none has value
+        if (!row_count){
+            option_text = "<option value=\"\" disabled selected hidden>" + select_text_none + "...</option>"
+        } else if (row_count === 1) {
+            select_first_option = true
+        } else if (row_count > 1 && select_text){
+            option_text = "<option value=\"\" disabled selected hidden>" + select_text + "...</option>" + option_text;
+        }
+        el_select.innerHTML = option_text;
+// if there is only 1 option: select first option
+        if (select_first_option){
+            el_select.selectedIndex = 0
+        }
+// disable element if it has none or one rows
+        el_select.disabled = (row_count <= 1)
+    }  // t_FillOptionsFromList
+
+//========= FillOptionTextNew  ============= PR2020-12-11 from tsa
+    function FillOptionTextNew(value, caption, selected_value) {
+        //console.log( "===== FillOptionTextNew  ========= ");
+        let item_text = "<option value=\"" + value + "\"";
+        if (selected_value && value === selected_value) {item_text += " selected=true" };
+        item_text +=  ">" + caption + "</option>";
+        return item_text
+    }  // FillOptionTextNew
+
+
+// +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
+//========= t_Filter_SelectRows  ==================================== PR2020-01-17
+    function t_Filter_SelectRows(tblBody_select, filter_text, filter_show_inactive, has_ppk_filter, selected_ppk, col_index_list) {
+        console.log( "===== t_Filter_SelectRows  ========= ");
+        console.log( "filter_text: <" + filter_text + ">");
+        //console.log( "has_ppk_filter: " + has_ppk_filter);
+        //console.log( "selected_ppk: " + selected_ppk, typeof selected_ppk);
+
+        const filter_text_lower = (filter_text) ? filter_text.toLowerCase() : "";
+        if(!col_index_list){col_index_list = []};
+        let has_selection = false, has_multiple = false;
+        let sel_value = null, sel_pk = null, sel_ppk = null, sel_display = null, sel_rowid = null, sel_innertext = null;
+        let row_count = 0;
+        for (let i = 0, tblRow; tblRow = tblBody_select.rows[i]; i++) {
+            if (!!tblRow){
+                let hide_row = false
+// ---  show only rows of selected_ppk_str, only if has_ppk_filter = true
+                if(has_ppk_filter){
+                    const ppk_str = get_attr_from_el(tblRow, "data-ppk")
+                    if(selected_ppk){
+                        hide_row = (ppk_str !== selected_ppk.toString())
+                    } else {
+                        hide_row = true;
+                }};
+// ---  hide inactive rows when filter_show_inactive = false
+                if(!hide_row && !filter_show_inactive){
+                    const inactive_str = get_attr_from_el(tblRow, "data-inactive")
+                    if (!!inactive_str) {
+                        hide_row = (inactive_str.toLowerCase() === "true")
+                }};
+// ---  show all rows if filter_text = ""
+                if (!hide_row && filter_text_lower){
+                    let found = false;
+                    // check columns in col_index_list, check all if list is empty PR2020-12-17
+                    for (let i = 0, el, cell, len = tblRow.cells.length; i < len; i++) {
+                        if(!col_index_list.length || col_index_list.includes(i)){
+                            cell = tblRow.cells[i];
+                            if(cell){
+                                const el_div = cell.children[0];
+                                if(el_div){
+                                    let el_value = el_div.innerText;
+                                    if(el_value){
+                                        el_value = el_value.toLowerCase();
+                                        if (el_value.indexOf(filter_text_lower) !== -1) {
+                                            found = true;
+                                            break;
+                    }}}}}}
+                    hide_row = (!found);
+                };
+                if (hide_row) {
+                    tblRow.classList.add(cls_hide)
+                } else {
+                    tblRow.classList.remove(cls_hide);
+                    row_count += 1;
+// ---  put values from first row that is shown in select_value etc
+                    if(!has_selection ) {
+                        sel_pk = get_attr_from_el(tblRow, "data-pk");
+                        sel_ppk = get_attr_from_el(tblRow, "data-ppk");
+                        sel_value = get_attr_from_el(tblRow, "data-value");
+                        sel_display = get_attr_from_el(tblRow, "data-display");
+                        sel_rowid = get_attr_from_el(tblRow, "id");
+                    } else {
+                        has_multiple = true;
+                    }
+                    has_selection = true;
+                    sel_innertext = [];
+                    for (let i = 0, cell; cell = tblRow.cells[i]; i++) {
+                        sel_innertext[i] = cell.innerText
+                    }
+
+        }}};
+// ---  set select_value etc null when multiple items found
+        if (has_multiple){
+            sel_pk = null;
+            sel_ppk = null;
+            sel_value = null,
+            sel_display = null;
+            sel_rowid = null;
+            sel_innertext = null;
+        }
+        const filter_dict = {row_count: row_count}
+        // (value == null) equals to (value === undefined || value === null)
+        if(sel_pk != null) {filter_dict.selected_pk = sel_pk};
+        if(sel_ppk != null) {filter_dict.selected_ppk = sel_ppk};
+        if(sel_value != null) {filter_dict.selected_value = sel_value};
+        if(sel_display != null) {filter_dict.selected_display = sel_display};
+        if(sel_pk != null) {filter_dict.selected_rowid = sel_rowid};
+        if(sel_innertext != null) {filter_dict.selected_innertext = sel_innertext};
+        return filter_dict
+    }; // t_Filter_SelectRows
+
+//========= t_Filter_TableRows  ==================================== PR2020-01-17// PR2019-06-24
+    function t_Filter_TableRows(tblBody, tblName, filter_dict, filter_show_inactive, has_ppk_filter, selected_ppk) {
+        //console.log( "===== t_Filter_TableRows  ========= ", tblName);
+        //console.log( "filter_dict", filter_dict);
+        //console.log( "filter_show_inactive", filter_show_inactive);
+        //console.log( "has_ppk_filter", has_ppk_filter);
+        //console.log( "selected_ppk", selected_ppk);
+
+        let tblRows = tblBody.rows
+        //console.log( "tblBody", tblBody);
+        const len = tblBody.rows.length;
+        //console.log( "tblBody.rows.length", len);
+        if (len){
+            for (let i = 0, tblRow, show_row; i < len; i++) {
+                tblRow = tblBody.rows[i]
+                show_row = t_ShowTableRow(tblRow, tblName, filter_dict, filter_show_inactive, has_ppk_filter, selected_ppk)
+                if (show_row) {
+                    tblRow.classList.remove(cls_hide)
+                } else {
+                    tblRow.classList.add(cls_hide)
+                };
+            }
+        } //  if (!!len){
+    }; // t_Filter_TableRows
+
+//========= t_ShowTableRow  ==================================== PR2020-01-17
+    function t_ShowTableRow(tblRow, tblName, filter_dict, filter_show_inactive, has_ppk_filter, selected_ppk) {  // PR2019-09-15
+        //console.log( "===== t_ShowTableRow  ========= ", tblName);
+        //console.log("filter_show_inactive", filter_show_inactive);
+        //console.log("tblRow", tblRow);
+
+        // function filters by inactive and substring of fields
+        // also filters selected customer pk in table order
+        //  - iterates through cells of tblRow
+        //  - skips filter of new row (new row is always visible) -> 'data-addnew' = 'true'
+        //  - filters on parent-pk -> 'data-ppk' = selected_ppk
+        //  - if filter_name is not null:
+        //       - checks tblRow.cells[i].children[0], gets value, in case of select element: data-value
+        //       - returns show_row = true when filter_name found in value
+        // filters on blank when filter_text = "#"
+        //  - if col_inactive has value >= 0 and hide_inactive = true:
+        //       - checks -> 'data-inactive' = 'true'
+        //       - hides row if inactive = true
+        // gets value of :
+        // when tag = 'select': value = selectedIndex.text
+        // when tag = 'input': value = el.value
+        // else: (excl tag = 'a'): value = el.innerText
+        // when not found:  value = 'data-value'
+        let hide_row = false;
+        if (tblRow){
+
+// 1. skip new row
+    // check if row is_addnew_row. This is the case when pk is a string ('new_3'). Not all search tables have "id" (select customer has no id in tblrow)
+            const is_addnew_row = (get_attr_from_el(tblRow, "data-addnew") === "true");
+            if(!is_addnew_row){
+
+        // show only rows of selected_ppk, only if selected_ppk has value
+                if(has_ppk_filter){
+                    if(!selected_ppk){
+                        hide_row = true;
+                    } else {
+                        const ppk_str = get_attr_from_el(tblRow, "data-ppk")
+        //console.log("ppk_str", ppk_str);
+                        if(!ppk_str){
+                            hide_row = true;
+                        } else if (ppk_str !== selected_ppk.toString()) {
+                            hide_row = true;
+                        }
+                    }
+                }
+        //console.log( "hide_row after selected_ppk: ", has_ppk_filter, selected_ppk,  hide_row);
+
+// hide inactive rows if filter_show_inactive
+        //console.log("filter_show_inactive", filter_show_inactive);
+                if(!hide_row && !filter_show_inactive){
+                    const inactive_str = get_attr_from_el(tblRow, "data-inactive")
+        //console.log("inactive_str", inactive_str);
+                    if (inactive_str && (inactive_str.toLowerCase() === "true")) {
+                        hide_row = true;
+                    }
+                }
+        //console.log( "hide_row after filter_show_inactive: ", hide_row);
+
+// show all rows if filter_name = ""
+        //console.log("filter_dict", filter_dict);
+                if (!hide_row && !isEmpty(filter_dict)){
+                    //Object.keys(filter_dict).forEach(function(key) {
+                    for (const [key, value] of Object.entries(filter_dict)) {
+                        // key = col_index
+                        // filter_dict is either a dict of lists ( when created by t_SetExtendedFilterDict)
+                        // filter_dict[col_index] = [filter_tag, filter_value, mode] modes are: 'blanks_only', 'no_blanks', 'lte', 'gte', 'lt', 'gt'
+                        // otherwise filter_dict is a dict of strings
+                        const filter_text = (Array.isArray(value)) ? value[1] : value;
+
+        //console.log("key", key);
+        //console.log("filter_text", filter_text);
+                        const filter_blank = (filter_text === "#")
+                        const filter_non_blank = (filter_text === "@")
+                        let tbl_cell = tblRow.cells[key];
+                        if (tbl_cell){
+                            let el = tbl_cell.children[0];
+                            if (el) {
+                        // skip if no filter on this colums
+                                if(filter_text){
+                        // get value from el.value, innerText or data-value
+                                    const el_tagName = el.tagName.toLowerCase()
+        //console.log("el_tagName", el_tagName);
+                                    let el_value = null;
+                                    if (el_tagName === "select"){
+                                        el_value = el.options[el.selectedIndex].text;
+                                    } else if (el_tagName === "input"){
+                                        el_value = el.value;
+                                    } else if (el_tagName === "a"){
+                                        // skip
+                                    } else {
+                                        el_value = el.innerText;
+                                    }
+                                    if (!el_value){el_value = get_attr_from_el(el, "data-value")}
+        //console.log("el_value",  el_value);
+
+                                    // PR2020-06-13 debug: don't use: "hide_row = (!el_value)", once hide_row = true it must stay like that
+                                    if (filter_blank){
+                                        if (el_value){hide_row = true};
+                                    } else if (filter_non_blank){
+                                        if (!el_value){hide_row = true};
+                                    } else if (!el_value){
+                                        hide_row = true;
+                                    } else {
+                                        const el_value_lc = el_value.toLowerCase() ;
+        //console.log("el_value_lc",  el_value_lc);
+        //console.log("el_value_lc.indexOf(filter_text)",  el_value_lc.indexOf(filter_text));
+                                        // hide row if filter_text not found
+                                        if (el_value_lc.indexOf(filter_text) === -1) {hide_row = true};
+                                    }
+                                }  //  if(!!filter_text)
+                            }  // if (!!el) {
+                        }  //  if (!!tbl_cell){
+                    };  // Object.keys(filter_dict).forEach(function(key) {
+                }  // if (!hide_row)
+        //console.log( "hide_row after filter_dict: ", hide_row);
+            } //  if(!is_addnew_row){
+        }  // if (!!tblRow)
+        return !hide_row
+    }; // t_ShowTableRow
+// ++++++++++++  END OF FILTER +++++++++++++++++++++++++++++++++++++++

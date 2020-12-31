@@ -324,22 +324,22 @@ class SchemeitemAddForm(ModelForm): # PR2018-08-24
                   'subject',
                   'subjecttype',
                   'gradetype',
-                  'weightSE',
-                  'weightCE',
+                  'weight_se',
+                  'weight_ce',
                   'is_mandatory',
                   'is_combi',
-                  'choicecombi_allowed',
+                  'elective_combi_allowed',
                   'has_practexam'
                   )
 
         labels = {
             'subjecttype': _('Subject type'),
             'gradetype': _('Grade type'),
-            'weightSE': _('Weight SE'),
-            'weightCE': _('Weight CE'),
+            'weight_se': _('Weight SE'),
+            'weight_ce': _('Weight CE'),
             'is_mandatory': _('Mandatory'),
             'is_combi': _('Combi subject'),
-            'choicecombi_allowed': _('Choice combi'),
+            'elective_combi_allowed': _('Choice combi'),
             'has_practexam': _('Has practical exam')}
 
 
@@ -352,13 +352,13 @@ class SchemeitemAddForm(ModelForm): # PR2018-08-24
 class SchemeitemEditForm(ModelForm):  # PR2018-08-11
     class Meta:
         model = Schemeitem
-        fields = ('scheme', 'subject', 'subjecttype', 'gradetype', 'weightSE', 'weightCE',
-                  'is_mandatory', 'is_combi', 'choicecombi_allowed', 'has_practexam')
+        fields = ('scheme', 'subject', 'subjecttype', 'gradetype', 'weight_se', 'weight_ce',
+                  'is_mandatory', 'is_combi', 'elective_combi_allowed', 'has_practexam')
 
         labels = {'subjecttype': _('Subject type'), 'gradetype': _('Grade type'),
-                  'weightSE': _('SE weight'), 'weightCE': _('CE weight'),
+                  'weight_se': _('SE weight'), 'weight_ce': _('CE weight'),
                   'is_mandatory': _('Mandatory'), 'is_combi': _('Combination'),
-                  'choicecombi_allowed': _('Choice combi allowed'),
+                  'elective_combi_allowed': _('Choice combi allowed'),
                   'has_practexam': _('Practical exam')}
 
 
@@ -444,11 +444,10 @@ class SchemeEditForm(ModelForm):  # PR2018-08-11
 class SubjectAddForm(ModelForm):
     class Meta:
         model = Subject
-        fields = ('examyear', 'name', 'abbrev', 'sequence')
+        fields = ('examyear', 'name', 'sequence')
         labels = {
             "examyear": _('Exam year'),
             "name": _('Name'),
-            "abbrev": _('Abbreviation'),
             "sequence": _('Sequence')
         }
 
@@ -498,8 +497,8 @@ class SubjectAddForm(ModelForm):
 class SubjectEditForm(ModelForm):  # PR2018-08-11
     class Meta:
         model = Subject
-        fields = ('examyear', 'name', 'abbrev', 'sequence')
-        labels = {'examyear': _('Exam year'),  'name': _('Name'), 'abbrev': _('Abbreviation'), 'sequence': _('Sequence')}
+        fields = ('examyear', 'name', 'sequence')
+        labels = {'examyear': _('Exam year'),  'name': _('Name'), 'sequence': _('Sequence')}
 
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)  # To get request.user. Do not use kwargs.pop('user', None) due to potential security hole
@@ -664,34 +663,5 @@ class validate_unique_subject_abbrev(object):  # PR2018-08-16:
         return value
 
 
-# === VALIDATORS =====================================
-# PR2018-08-06:
-class validate_unique_subject_name(object):
-    def __init__(self, examyear):
-        self.examyear = examyear
-        # logger.debug('validate_unique_subject __init__ self.examyear: ' + str(self.examyear))
 
-    def __call__(self, value):
-        # logger.debug('validate_unique_subjec __call__ value: ' + str(value))
-        # filter a Case-insensitive exact match.
-        if Subject.objects.filter(name__iexact=value, examyear=self.examyear).exists():
-            #logger.debug('validate_unique_subjectdefault ValidationError: Default subject exists')
-            # raise ValidationError({'subjectdefault':[_('Subject already exists.'),]})
-            raise ValidationError(_('Subject already exists.'))
-        return value
-
-# PR2018-08-09:
-class validate_unique_subject_abbrev(object):
-    def __init__(self, examyear):
-        self.examyear = examyear
-        # logger.debug('validate_unique_subject_abbrev __init__ self.examyear: ' + str(self.examyear))
-
-    def __call__(self, value):
-        # logger.debug('validate_unique_subject_abbrev __call__ value: ' + str(value))
-        # filter a Case-insensitive exact match.
-        if Subject.objects.filter(abbrev__iexact=value, examyear=self.examyear).exists():
-            # logger.debug('validate_unique_subject_abbrev ValidationError: Default subject exists')
-            # raise ValidationError({'subject':[_('Abbreviation of default subject already exists.'),]})
-            raise ValidationError(_('Abbreviation of default subject already exists.'))
-        return value
 

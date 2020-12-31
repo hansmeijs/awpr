@@ -27,10 +27,7 @@
         <!-- Navbar links -->
         <div id="collapsibleNavbar" class="collapse navbar-collapse" >
 
-          <div  class="d-flex flex-wrap" id="id_dflex" 
-              data-user_settings = '{{ user.user_settings | safe }}'
-              data-download_submenus_url= "{% url 'download_submenus_url' %}"
-              >
+          <div class="d-flex flex-wrap" id="id_dflex">
             {% for menu_item in menu_items %}
                 <svg id="{{menu_item.svg_index}}" height="{{menu_item.height}}" width="{{menu_item.width}}">
                     <a href="{{menu_item.href}}" >
