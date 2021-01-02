@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class UploadImportSettingView(View):   # PR2020-12-05
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
     def post(self, request, *args, **kwargs):
-        logger.debug(' ============= UploadImportSettingView ============= ')
+        #logger.debug(' ============= UploadImportSettingView ============= ')
 
         updated_stored_setting = {}
         has_permit = False
@@ -36,7 +36,7 @@ class UploadImportSettingView(View):   # PR2020-12-05
         if has_permit:
             if request.POST['upload']:
                 new_setting_dict = json.loads(request.POST['upload'])
-                logger.debug('new_setting_dict' + str(new_setting_dict))
+                #logger.debug('new_setting_dict' + str(new_setting_dict))
                 # new_setting_dict{'importtable': 'import_student', 'sel_schoolbase_pk': 16, 'sel_examyear_pk': 6,
                 # 'worksheetname': 'Compleetlijst', 'noheader': False}
                 # 'sector': {'CM': 4, 'EM': 5}}
@@ -52,22 +52,22 @@ class UploadImportSettingView(View):   # PR2020-12-05
                     if setting_key and sel_schoolbase:
                         stored_setting_dict = sch_mod.Schoolsetting.get_jsonsetting(setting_key, sel_schoolbase)
 
-                        logger.debug('stored_setting_dict' + str(stored_setting_dict))
+                        #logger.debug('stored_setting_dict' + str(stored_setting_dict))
                         new_stored_setting = {}
                         for import_key in ('worksheetname', 'noheader', 'coldef', 'department', 'level', 'sector'):
                             new_setting_value = new_setting_dict.get(import_key)
-                            logger.debug('new_setting_value' + str(new_setting_value))
+                            #logger.debug('new_setting_value' + str(new_setting_value))
 
                             if new_setting_value is None and stored_setting_dict:
                                 new_setting_value = stored_setting_dict.get(import_key)
                             if import_key is 'noheader' and  new_setting_value is None:
                                 new_setting_value = False
-                            logger.debug('new_setting_value' + str(new_setting_value))
+                            #logger.debug('new_setting_value' + str(new_setting_value))
 
                             if new_setting_value is not None:
                                 new_stored_setting[import_key] = new_setting_value
 
-                        logger.debug('new_stored_setting' + str(new_stored_setting))
+                        #logger.debug('new_stored_setting' + str(new_stored_setting))
                         if new_stored_setting:
                             sch_mod.Schoolsetting.set_jsonsetting(setting_key, new_stored_setting, sel_schoolbase)
 
@@ -84,7 +84,7 @@ class UploadImportSettingView(View):   # PR2020-12-05
 class UploadImportDataView(View):  # PR2020-12-05
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
     def post(self, request, *args, **kwargs):
-        logger.debug(' ============= UploadImportDataView ============= ')
+        #logger.debug(' ============= UploadImportDataView ============= ')
 
         update_dict = {}
         has_permit = False
@@ -111,9 +111,9 @@ class UploadImportDataView(View):  # PR2020-12-05
 
 
 def import_students(upload_dict, user_lang, request):  # PR2020-12-06
-    logger.debug(' ============= import_students ============= ')
+    #logger.debug(' ============= import_students ============= ')
 
-    logger.debug('upload_dict: ' + str(upload_dict))
+    #logger.debug('upload_dict: ' + str(upload_dict))
 # - get info from upload_dict
     is_test = upload_dict.get('test', False)
     dateformat = upload_dict.get('dateformat', '')
@@ -125,7 +125,7 @@ def import_students(upload_dict, user_lang, request):  # PR2020-12-06
 
     params = {}
     if awpColdef_list and data_list:
-        logger.debug('awpColdef_list: ' + str(awpColdef_list))
+        #logger.debug('awpColdef_list: ' + str(awpColdef_list))
 
 # - get lookup_field
         # lookup_field is field that determines if student alreay exist.
@@ -136,7 +136,7 @@ def import_students(upload_dict, user_lang, request):  # PR2020-12-06
             lookup_field = 'examnumber'
         elif 'idnumber' in awpColdef_list:
             lookup_field = 'idnumber'
-        logger.debug( 'lookup_field: ' + str(lookup_field))
+        #logger.debug( 'lookup_field: ' + str(lookup_field))
 
 # - get examyear from sel_examyear_pk and request.user.country
         examyear = sch_mod.Examyear.objects.get_or_none(pk=sel_examyear_pk, country=request.user.country)
@@ -175,7 +175,7 @@ def import_students(upload_dict, user_lang, request):  # PR2020-12-06
                 if dateformat:
                     info_txt = str(_("The date format is: '%(fld)s'.") % {'fld': dateformat})
                     logfile.append(c.STRING_INDENT_5 + info_txt)
-                logger.debug('dateformat: ' + str(dateformat))
+                #logger.debug('dateformat: ' + str(dateformat))
 
     # +++++ loop through data_list
                 update_list = []
@@ -192,7 +192,7 @@ def import_students(upload_dict, user_lang, request):  # PR2020-12-06
                             value = dict.get(lookup_field)
                             if value and value == lookup_value:
                                 occurrences_in_datalist += 1
-                    logger.debug('occurrences_in_datalist: ' + str(occurrences_in_datalist))
+                    #logger.debug('occurrences_in_datalist: ' + str(occurrences_in_datalist))
 
     # - upload student
                     update_dict = upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalist,
@@ -212,7 +212,7 @@ def import_students(upload_dict, user_lang, request):  # PR2020-12-06
 
 def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalist,
                    awpColdef_list, is_test, examyear, school, department, format_str, logfile, request):  # PR2019-12-17 PR2020-06-03
-    logger.debug('----------------- upload_student  --------------------')
+    #logger.debug('----------------- upload_student  --------------------')
     #logger.debug('data_dict: ' + str(data_dict))
 
 
@@ -235,22 +235,22 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
     row_index = data_dict.get('rowindex', -1)
     new_examnumber = data_dict.get('examnumber')
     new_idnumber = data_dict.get('idnumber')
-    logger.debug('new_examnumber: ' + str(new_examnumber))
-    logger.debug('new_idnumber: ' + str(new_idnumber))
+    #logger.debug('new_examnumber: ' + str(new_examnumber))
+    #logger.debug('new_idnumber: ' + str(new_idnumber))
 
     new_lastname, new_firstname, new_prefix = None, None, None
     required_lastname_novalue, required_firstname_novalue = False, False
     required_lastname_toolong, required_firstname_toolong = False, False
 
     lastname_input = data_dict.get('lastname')
-    logger.debug('lastname_input: ' + str(lastname_input) + ' ' + str(type(lastname_input)))
+    #logger.debug('lastname_input: ' + str(lastname_input) + ' ' + str(type(lastname_input)))
     if lastname_input is None:
         required_lastname_novalue = True
     elif len(lastname_input) > c.MAX_LENGTH_FIRSTLASTNAME:
         required_lastname_toolong = True
     else:
         new_lastname = lastname_input
-    logger.debug('new_lastname: ' + str(new_lastname))
+    #logger.debug('new_lastname: ' + str(new_lastname))
 
     firstname_input = data_dict.get('firstname')
     if firstname_input is None:
@@ -259,7 +259,7 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
         required_firstname_toolong = True
     else:
         new_firstname = firstname_input
-    logger.debug('new_lastname: ' + str(new_lastname))
+    #logger.debug('new_lastname: ' + str(new_lastname))
 
     prefix_input = data_dict.get('prefix')
     prefix_str = ''
@@ -283,8 +283,8 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
     lookup_field_capitalized = '-'
     if lookup_field_caption:
         lookup_field_capitalized = lookup_field_caption.capitalize()
-    logger.debug('lookup_field: ' + str(lookup_field) + ' lookup_field_caption: ' + str(lookup_field_caption))
-    logger.debug('lookup_value: ' + str(lookup_value))
+    #logger.debug('lookup_field: ' + str(lookup_field) + ' lookup_field_caption: ' + str(lookup_field_caption))
+    #logger.debug('lookup_value: ' + str(lookup_value))
 
     student, multiple_found, found_in_diff_dep, exceeded_length, is_existing_student = None, None, None, False, False
     student_name = '---'
@@ -340,14 +340,14 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
     elif multiple_found:
         log_str = str(_("Value '%(fld)s' is found multiple times.") % {'fld': lookup_value})
         msg_err = ' '.join((skipped_str, log_str))
-    logger.debug('msg_err: ' + str(msg_err))
+    #logger.debug('msg_err: ' + str(msg_err))
 
     if msg_err:
         logfile.append(student_name + str(_(' is not added.')))
         update_dict['row_error'] = msg_err
         update_dict[lookup_field] = {'error': msg_err}
         #logfile.append(code_text + is_skipped_str)
-        logfile.append(c.STRING_SPACE_30 + log_str)
+        logfile.append(c.STRING_INDENT_5 + log_str)
     else:
 
 # - create new student when student not found in database
@@ -360,7 +360,7 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
                 country=request.user.country
             )
 
-            logger.debug('student base: ' + str(base))
+            #logger.debug('student base: ' + str(base))
             student = stud_mod.Student(
                 base=base,
                 school=school,
@@ -368,8 +368,8 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
                 lastname=new_lastname,
                 firstname=new_firstname,
             )
-            logger.debug('ooooooooooo new  student: ' + str(student))
-            logger.debug('ooooooooooooo department: ' + str(department))
+            #logger.debug('ooooooooooo new  student: ' + str(student))
+            #logger.debug('ooooooooooooo department: ' + str(department))
             if student:
                 save_instance = True
                 update_dict['id']['created'] = True
@@ -382,10 +382,10 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
         else:
             is_existing_student = True
             logfile.append(student_name + ' ' + str(_('already exists.')))
-            logger.debug('ooooooooooo is_existing_student  student: ' + str(student))
-            logger.debug('ooooooooooooo department: ' + str(department))
+            #logger.debug('ooooooooooo is_existing_student  student: ' + str(student))
+            #logger.debug('ooooooooooooo department: ' + str(department))
 
-        logger.debug('is_existing_student: ' + str(is_existing_student))
+        #logger.debug('is_existing_student: ' + str(is_existing_student))
 
         if student:
             # add 'id' at the end, after saving the student. Pk doent have value until instance is saved
@@ -411,10 +411,10 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
             for field in fields:
                 # --- get field_dict from  upload_dict  if it exists
                 if field in awpColdef_list:
-                    logger.debug('---------- field: ' + str(field))
+                    #logger.debug('---------- field: ' + str(field))
                     field_dict = {}
                     field_caption = af.get_dict_value(c.CAPTIONS, ('student', field), '')
-                    logger.debug('field_caption: ' + str(field_caption))
+                    #logger.debug('field_caption: ' + str(field_caption))
                     caption_txt = (c.STRING_INDENT_5 + field_caption + c.STRING_SPACE_30)[:30]
                     # text fields
                     if field in ('lastname', 'firstname', 'prefix', 'gender', 'idnumber',  'birthcountry', 'birthcity',
@@ -494,9 +494,9 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
                         new_base_pk = data_dict.get(field)
                         saved_instance = getattr(student, field)
 
-                        logger.debug('field: ' + str(field))
-                        logger.debug('new_base_pk: ' + str(new_base_pk))
-                        logger.debug('saved_instance: ' + str(saved_instance))
+                        #logger.debug('field: ' + str(field))
+                        #logger.debug('new_base_pk: ' + str(new_base_pk))
+                        #logger.debug('saved_instance: ' + str(saved_instance))
 
                          # check if dep / lvl / sct exists
                         new_instance = None
@@ -504,37 +504,37 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
                             new_instance = subj_mod.Level.objects.get_or_none(base_id=new_base_pk, examyear=examyear)
                         elif field == 'sector':
                             new_instance = subj_mod.Sector.objects.get_or_none(base_id=new_base_pk, examyear=examyear)
-                        logger.debug('new_instance: ' + str(new_instance))
+                        #logger.debug('new_instance: ' + str(new_instance))
 
                         if new_instance is None:
                             save_new_instance = (saved_instance is not None)
                         else:
                             save_new_instance = (saved_instance is None) or (new_instance != saved_instance)
-                        logger.debug('save_new_lvl_sct: ' + str(save_new_instance))
+                        #logger.debug('save_new_lvl_sct: ' + str(save_new_instance))
 
                         if save_new_instance:
                             setattr(student, field, new_instance)
                             field_dict['updated'] = True
                             save_instance = True
                             new_abbrev = new_instance.abbrev if new_instance else None
-                            logger.debug('new_abbrev: ' + str(new_abbrev))
+                            #logger.debug('new_abbrev: ' + str(new_abbrev))
 
                             if field == 'level':
-                                caption_txt = department.level_caption
+                                caption_txt = (c.STRING_INDENT_5 + department.level_caption + c.STRING_SPACE_30)[:30]
                             elif field == 'sector':
-                                caption_txt = department.sector_caption
+                                caption_txt = (c.STRING_INDENT_5 + department.sector_caption + c.STRING_SPACE_30)[:30]
 
                             if not is_existing_student:
                                 logfile.append(caption_txt + (new_abbrev or blank_str))
-                                logger.debug('logfile.append: ' + str(caption_txt + (new_abbrev or blank_str)))
+                                #logger.debug('logfile.append: ' + str(caption_txt + (new_abbrev or blank_str)))
                             else:
                                 saved_abbrev = saved_instance.abbrev if saved_instance else None
                                 old_abbrev_str = was_str + (saved_abbrev or blank_str)
-                                logger.debug('old_abbrev_str: ' + str(old_abbrev_str))
+                                #logger.debug('old_abbrev_str: ' + str(old_abbrev_str))
                                 field_dict['info'] = field_caption + ' ' + old_abbrev_str
                                 update_str = ((new_abbrev or blank_str) + c.STRING_SPACE_30)[:25] + old_abbrev_str
                                 logfile.append(caption_txt + update_str)
-                                logger.debug('logfile.append: ' + str(caption_txt + update_str))
+                                #logger.debug('logfile.append: ' + str(caption_txt + update_str))
             # add field_dict to update_dict
                     update_dict[field] = field_dict
 
@@ -786,10 +786,10 @@ def update_student(instance, parent, upload_dict, msg_dict, request):
 
 
 
-
+"""
 def StudentImportUploadDataViewXXX(upload_dict):  # PR2018-12-04 PR2020-12-06
 
-    logger.debug(' ============= StudentImportUploadDataView ============= ')
+    #logger.debug(' ============= StudentImportUploadDataView ============= ')
 
     if request.user is not None and request.user.examyear is not None:
         if request.user.schoolbase is not None and request.user.depbase is not None:
@@ -804,9 +804,9 @@ def StudentImportUploadDataViewXXX(upload_dict):  # PR2018-12-04 PR2020-12-06
             for student in students:
 
 # ------------ import student   -----------------------------------
-                logger.debug(' ')
-                logger.debug('import student:')
-                logger.debug(str(student))
+                #logger.debug(' ')
+                #logger.debug('import student:')
+                #logger.debug(str(student))
 
 # ---  fill in required fields
                 # required field: "idnumber", "lastname" + "firstname" or "fullname"
@@ -873,25 +873,25 @@ def StudentImportUploadDataViewXXX(upload_dict):  # PR2018-12-04 PR2020-12-06
                 sector = None
                 if 'level' in student:
                     if student['level']:
-                        # logger.debug('student[level]: ' + str(student['level']))
+                        #logger.debug('student[level]: ' + str(student['level']))
                         if student['level'].isnumeric():
                             level_id = int(student['level'])
                             level = Level.objects.filter(id=level_id, examyear=request.user.examyear).first()
                 if 'sector' in student:
                     if student['sector']:
-                        # logger.debug('student[sector]: ' + str(student['sector']) + str(type(student['sector'])))
+                        #logger.debug('student[sector]: ' + str(student['sector']) + str(type(student['sector'])))
                         if student['sector'].isnumeric():
                             sector_id = int(student['sector'])
                             sector = Sector.objects.filter(id=sector_id, examyear=request.user.examyear).first()
-                            logger.debug('sector: ' + str(sector.name))
+                            #logger.debug('sector: ' + str(sector.name))
                 scheme = Scheme.get_scheme(department, level, sector)
 
                 if scheme:
-                    logger.debug('scheme: ' + str(scheme))
+                    #logger.debug('scheme: ' + str(scheme))
 
 # ========== create new student, but only if no errors found
                 if dont_add:
-                    logger.debug('Student not created: ')
+                    #logger.debug('Student not created: ')
                     # TODO stud_log.append(_("Student not created."))
                 else:
                     new_student = Student(
@@ -980,7 +980,7 @@ def StudentImportUploadDataViewXXX(upload_dict):  # PR2018-12-04 PR2020-12-06
                         if new_student.examnumber:
                             data['s_examnumber'] = new_student.examnumber
 
-                    # logger.debug(str(new_student.id) + ': Student ' + new_student.lastname_firstname_initials + ' created ')
+                    #logger.debug(str(new_student.id) + ': Student ' + new_student.lastname_firstname_initials + ' created ')
 
                         # from https://docs.quantifiedcode.com/python-anti-patterns/readability/not_using_items_to_iterate_over_a_dictionary.html
                         # for key, val in student.items():
@@ -990,4 +990,5 @@ def StudentImportUploadDataViewXXX(upload_dict):  # PR2018-12-04 PR2020-12-06
                 if len(data) > 0:
                     params.append(data)
                 # params.append(student)
+"""
 

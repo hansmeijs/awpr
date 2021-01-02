@@ -586,7 +586,7 @@ console.log("document.addEventListener students" )
         console.log("=== UploadNewUser");
         let mode = null, init_time_stamp = null, skip = false;
         if(Number(args)){
-            //skip if a new key is enetered in the elapsed period of 500 ms
+            //skip if a new key is entered in the elapsed period of 500 ms
             init_time_stamp = Number(args)
             skip =  (time_stamp !== init_time_stamp)
             mode = "validate"

@@ -66,10 +66,9 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener("click", function() {HandleBtnSelect(data_btn)}, false )
         };
 
-// ---  MODAL ADD USER
-        const el_MUA_input_school = document.getElementById("id_MUA_input_school")
-            el_MUA_input_school.addEventListener("keyup", function(event){
-                setTimeout(function() {MUA_InputKeyup(el_MUA_input_school, event.key)}, 50)});
+// ---  MODAL USER ADD
+        const el_MUA_schoolname = document.getElementById("id_MUA_schoolname")
+            el_MUA_schoolname.addEventListener("keyup", function() {MUA_InputSchoolname(el_MUA_schoolname, event.key)}, false )
         const el_MUA_username = document.getElementById("id_MUA_username")
             el_MUA_username.addEventListener("keyup", function() {MUA_InputKeyup(el_MUA_username, event.key)}, false )
         const el_MUA_last_name = document.getElementById("id_MUA_last_name")
@@ -499,10 +498,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= UploadNewUser  ============= PR2020-08-02 PR2020-08-15
    function UploadNewUser(args) {
-        console.log("=== UploadNewUser");
+        //console.log("=== UploadNewUser === args: ", args);
         let mode = null, init_time_stamp = null, skip = false;
+            // send schoolbase, username and email to server after 1000 ms
+            // abort if within that period a new value is entered.
+            // checked by comparing the timestamp
+            // args is either 'save' or a number based on time_stamp
+            // time_stamp gets new value 'now' whenever a 'keyup' event occurs
+            // UploadNewUser has a time-out of 1000 ms
+            // init_time_stamp is the value of time_stamp at the time this 'keyup' event occurred
+            // when time_stamp = init_time_stamp, it means that there are no new keyup events within the time-out period
+
         if(Number(args)){
-            //skip if a new key is enetered in the elapsed period of 500 ms
+            //skip if a new key is entered in the elapsed period of 1000 ms
             init_time_stamp = Number(args)
             skip =  (time_stamp !== init_time_stamp)
             mode = "validate"
@@ -532,7 +540,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (upload_mode === "update" ){
 
             } else if (["validate", "create"].indexOf(upload_mode) > -1){
-                upload_dict = { id: {ppk: mod_MUA_dict.schoolbase_pk,
+                upload_dict = { id: {ppk: mod_MUA_dict.user_schoolbase_pk,
                                    table: "user",
                                    mode: upload_mode},
                               username: {value: el_MUA_username.value, update: true},
@@ -541,7 +549,6 @@ document.addEventListener('DOMContentLoaded', function() {
                               };
             }
             //console.log("upload_dict: ", upload_dict);
-
 
             // must loose focus, otherwise green / red border won't show
             //el_input.blur();
@@ -557,8 +564,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
-                    console.log( "response");
-                    console.log( response);
+                    //console.log( "response");
+                    //console.log( response);
 
                     el_loader.classList.add(cls_visible_hide);
 
@@ -698,22 +705,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++ MOD ADD USER ++++++++++++++++ PR2020-09-18
     function MUA_Open(mode, el_input){
-        console.log(" -----  MUA_Open   ----")
-        console.log("mode", mode)  // modes are: addnew, update
-
+        console.log(" -----  MUA_Open   ---- mode: ", mode)  // modes are: addnew, update
+        console.log("setting_dict: ", setting_dict)
         // <PERMIT> PR2020-10-12
         // - when role is system or admin (ETE): req_user can select school, table school and iput school are visible
         // - when role is inspection or school: user.schoolbase = request.user.schoolbase
         // - else (teacher, student) : no access
         // - only perm_system can create user_list
-        const may_add_user_to_other_schools = (setting_dict.requsr_role_admin || setting_dict.requsr_role_system);
+
         const may_create_edit_users = (setting_dict.requsr_perm_system);
+        const may_add_user_to_other_schools = (setting_dict.requsr_role_admin || setting_dict.requsr_role_system);
         if(may_create_edit_users){
 
-            let user_dict = {}, user_pk = null, user_country_pk = null
-            let user_schoolbase_pk = null, user_schoolbase_code = null,  user_mapid = null;
+            let user_dict = {}, user_pk = null;
+            let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null;
             const fldName = get_attr_from_el(el_input, "data-field");
             const is_addnew = (mode === "addnew");
+
             if(el_input){
                 const tblRow = get_tablerow_selected(el_input);
                 user_mapid = tblRow.id;
@@ -722,27 +730,39 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("user_dict", user_dict)
                 if(!isEmpty(user_dict)){
                     user_pk = user_dict.id;
-                    user_country_pk = user_dict.country_id;
                     user_schoolbase_pk = user_dict.schoolbase_id;
-                    user_schoolbase_code = user_dict.code;
+                    user_schoolbase_code = user_dict.sb_code;
                 }
-            } else {
-                // when new user: get user_country_pk and user_schoolbase_pk  from request_user
-                user_country_pk = setting_dict.requsr_country_pk;
+            } else if (!may_add_user_to_other_schools){
+                // when new user and not role_admin or role_system: : get user_schoolbase_pk from request_user
                 user_schoolbase_pk = setting_dict.requsr_schoolbase_pk;
-                user_schoolbase_code = setting_dict.requsr_schoolcode;
+                user_schoolbase_code = setting_dict.requsr_schoolbase_code;
             }
-            //console.log("user_dict", user_dict)
+
+        console.log("user_schoolbase_code: ", user_schoolbase_code)
             selected_user_pk = user_pk
+
+            let user_schoolname = null;
+            if(user_schoolbase_pk){
+                user_schoolname = user_schoolbase_code
+                for(let i = 0, tblRow, dict; dict = school_rows[i]; i++){
+                    if (!isEmpty(dict)) {
+                        if(user_schoolbase_pk === dict.base_id ) {
+                            if (dict.abbrev) {user_schoolname += " - " + dict.abbrev};
+                            break;
+            }}}};
+
+        console.log("user_schoolbase_pk: ", user_schoolbase_pk)
+        console.log("user_schoolname: ", user_schoolname)
             mod_MUA_dict = {
                 mode: mode,
                 skip_validate_username: is_addnew,
                 skip_validate_last_name: is_addnew,
                 skip_validate_email: is_addnew,
                 user_pk: user_pk,
-                user_country_pk: user_country_pk,
                 user_schoolbase_pk: user_schoolbase_pk,
                 user_schoolbase_code: user_schoolbase_code,
+                user_schoolname: user_schoolname,
                 user_mapid: user_mapid,
                 username: get_dict_value(user_dict, ["username"]),
                 last_name: get_dict_value(user_dict, ["last_name"]),
@@ -751,7 +771,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---  show only the elements that are used in this tab
             const container_element = document.getElementById("id_mod_user");
-            let tab_str = (mode === "addnew") ? (may_add_user_to_other_schools) ? "tab_addnew_may_select_school" : "tab_addnew_noschool" : "tab_update";
+            let tab_str = (is_addnew) ? (may_add_user_to_other_schools) ? "tab_addnew_may_select_school" : "tab_addnew_noschool" : "tab_update";
             show_hide_selected_elements_byClass("tab_show", tab_str, container_element)
 
     // ---  set header text
@@ -759,28 +779,27 @@ document.addEventListener('DOMContentLoaded', function() {
             const el_MUA_header = document.getElementById("id_MUA_header");
             el_MUA_header.innerText = header_text;
 
-
     // ---  fill selecttable
-            MUA_FillSelectTableSchool();
+            if(may_add_user_to_other_schools){
+                MUA_FillSelectTableSchool();
+            }
 
-    // ---  remove value from el_MUA_input_school
-            el_MUA_input_school.value = null;
+    // ---  remove values from elements
             MUA_ResetElements(true);  // true = also_remove_values
+
+    // ---  put values in input boxes
+            el_MUA_schoolname.value = user_schoolname;
             if (mode === "update"){
                 el_MUA_username.value = mod_MUA_dict.username;
                 el_MUA_last_name.value = mod_MUA_dict.last_name;
                 el_MUA_email.value = mod_MUA_dict.email;
             }
     // ---  set focus to next el
-            const el_focus = (fldName === "last_name") ? el_MUA_last_name :
-                             (fldName === "email") ? el_MUA_email : el_MUA_input_school;
-            setTimeout(function (){el_focus.focus()}, 50);
-
-    // ---  put name of current school in textbox 'School'
-            //document.getElementById("id_MUA_school").innerText = setting_dict.requsr_schoolcode + " - " + setting_dict.requsr_schoolname
-    // put value of school in el_MUA_input_school
-            const display = (user_schoolbase_pk) ? user_schoolbase_code : null;
-            el_MUA_input_school.value = (user_schoolbase_pk) ? user_schoolbase_code : null;
+            const el_focus = (is_addnew && may_add_user_to_other_schools) ? el_MUA_schoolname :
+                             ( (is_addnew && !may_add_user_to_other_schools) || (fldName === "username") ) ? el_MUA_username :
+                             (fldName === "last_name") ? el_MUA_last_name :
+                             (fldName === "email") ? el_MUA_email : null;
+            if(el_focus){setTimeout(function (){el_focus.focus()}, 50)};
 
     // ---  set text and hide info footer
             el_MUA_info_footer01.innerText = loc.Click_to_register_new_user;
@@ -788,76 +807,19 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUA_info_footer01.classList.add(cls_hide);
             el_MUA_info_footer02.classList.add(cls_hide);
 
-    // ---  show but disable btn submit
-            el_MUA_btn_submit.classList.remove(cls_hide);
+    // ---  hide btn delete when addnew moe
+            add_or_remove_class(el_MUA_btn_delete, cls_hide, is_addnew)
+
+    // ---  disable btn submit
             const disable_btn_save = (!el_MUA_username.value || !el_MUA_last_name.value || !el_MUA_email.value )
             el_MUA_btn_submit.disabled = disable_btn_save;
             el_MUA_btn_submit.innerText = (mode === "update") ? loc.Save : loc.Submit;
+
     // ---  show modal
             $("#id_mod_user").modal({backdrop: true});
 
         }  // if(setting_dict.requsr_perm_system)
     };  // MUA_Open
-
-//=========  MUA_filter_school  ================ PR2019-05-26
-    function MUA_filter_schoolXX(option, event_key) {
-        //console.log( "===== MUA_filter_school  ========= ", option);
-        let new_filter = el_MUA_input_school.value;
-        let skip_filter = false
- // skip filter if filter value has not changed, update variable filter_mod_employee
-        if (!new_filter){
-            if (!filter_mod_employee){
-                skip_filter = true
-            } else {
-                filter_mod_employee = "";
-            }
-        } else {
-            if (new_filter.toLowerCase() === filter_mod_employee) {
-                skip_filter = true
-            } else {
-                filter_mod_employee = new_filter.toLowerCase();
-            }
-        }
-        let has_selection = false, has_multiple = false;
-        let select_value, select_pk, select_parentpk;
-        let tr_selected = null;
-        let tblbody = document.getElementById("id_ModSelUsr_tbody_employee");
-        if (!skip_filter){
-            for (let row_index = 0, tblRow, show_row, el, pk_str, code_value; tblRow = tblbody.rows[row_index]; row_index++) {
-                el = tblRow.cells[0].children[0]
-                show_row = false;
-                if (!filter_mod_employee){
-// --- show all rows if filter_text = ""
-                     show_row = true;
-                } else if (!!el){
-// hide current employee -> is already filtered out in MUA_FillSelectTableSchool
-                    code_value = get_attr_from_el_str(tblRow, "data-value")
-                    if (!!code_value){
-// check if code_value contains filter_mod_employee
-                        const code_value_lower = code_value.toLowerCase();
-                        show_row = (code_value_lower.indexOf(filter_mod_employee) !== -1)
-                    }
-                }
-                if (show_row) {
-                    tblRow.classList.remove(cls_hide)
-// put select_pk from first selected row in select_value
-                    if(!has_selection ) {
-                        select_pk = get_attr_from_el_int(tblRow, "data-pk")
-                        tr_selected = tblRow;
-                    }
-                    if (has_selection) {has_multiple = true}
-                    has_selection = true;
-                } else {
-                    tblRow.classList.add(cls_hide)
-                };
-            }  //  for (let row_index = 0, show
-        } //  if (!skip_filter) {
-
-// if only one employee in filtered list: put value in el_MUA_input_school /  mod_employee_dict
-        if (has_selection && !has_multiple ) {
-            MUA_SelectSchool(tr_selected);
-        }
-    }; // MUA_filter_school
 
 //========= MUA_FillSelectTableSchool  ============= PR2020--09-17
     function MUA_FillSelectTableSchool() {
@@ -916,14 +878,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MUA_ResetElements  ============= PR2020-08-03
     function MUA_ResetElements(also_remove_values){
-        //console.log( "===== MUA_ResetElements  ========= ");
+        console.log( "===== MUA_ResetElements  ========= ");
         // --- loop through input elements
-        const fields = ["username", "last_name", "email", "input_school"]
+        const fields = ["username", "last_name", "email", "schoolname"]
         for (let i = 0, field, el_input, el_msg; field = fields[i]; i++) {
             el_input = document.getElementById("id_MUA_" + field);
             if(el_input){
                 el_input.classList.remove("border_bg_invalid", "border_bg_valid");
                 if(also_remove_values){ el_input.value = null};
+                let is_enabled = false;
+                if  (field === "schoolname") {
+                // disable field 'schoolname' when is_update or when not requsr_role_admin and not requsr_role_system
+                    if (setting_dict.requsr_role_admin || setting_dict.requsr_role_system) {
+                        is_enabled = (mod_MUA_dict.mode === "addnew");
+                    }
+                } else {
+                // disable other fields when no school selected
+                    is_enabled = mod_MUA_dict.user_schoolbase_pk;
+                }
+                add_or_remove_attr (el_input, "readonly", !is_enabled, true);
             }
             el_msg = document.getElementById("id_MUA_msg_" + field);
             if(el_msg){
@@ -937,19 +910,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MUA_SetMsgElements  ============= PR2020-08-02
     function MUA_SetMsgElements(response){
-        //console.log( "===== MUA_SetMsgElements  ========= ");
+        console.log( "===== MUA_SetMsgElements  ========= ");
+
 
         const err_dict = ("msg_err" in response) ? response.msg_err : {}
         const validation_ok = get_dict_value(response, ["validation_ok"], false);
-
-        //console.log( "err_dict", err_dict);
-        //console.log( "validation_ok", validation_ok);
+    console.log( "err_dict", err_dict);
 
         const el_msg_container = document.getElementById("id_msg_container")
         let err_save = false;
         let is_ok = ("msg_ok" in response);
         if (is_ok) {
             const ok_dict = response["msg_ok"];
+    console.log( "ok_dict", ok_dict);
             document.getElementById("id_msg_01").innerText = get_dict_value(ok_dict, ["msg01"]);
             document.getElementById("id_msg_02").innerText = get_dict_value(ok_dict, ["msg02"]);
             document.getElementById("id_msg_03").innerText = get_dict_value(ok_dict, ["msg03"]);
@@ -979,8 +952,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 for (let i = 0, field; field = fields[i]; i++) {
                     const msg_err = get_dict_value(err_dict, [field]);
                     const msg_info = loc.msg_user_info[i];
-
+        console.log( "-----------field", field);
+        console.log( "msg_err", msg_err);
+        console.log( "msg_info", msg_info);
                     let el_input = document.getElementById("id_MUA_" + field);
+
+                    const must_blur = ( (!!msg_err && !el_input.classList.contains("border_bg_invalid")) ||
+                                        (!msg_err && !el_input.classList.contains("border_bg_valid")) );
+                    if( must_blur) { el_input.blur() };
                     add_or_remove_class (el_input, "border_bg_invalid", (!!msg_err));
                     add_or_remove_class (el_input, "border_bg_valid", (!msg_err));
 
@@ -989,6 +968,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_msg.innerText = (!!msg_err) ? msg_err : msg_info
                 }
             }
+
             el_MUA_btn_submit.disabled = !validation_ok;
             if(validation_ok){el_MUA_btn_submit.focus()}
         }
@@ -998,7 +978,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  set text on btn cancel
         const el_MUA_btn_cancel = document.getElementById("id_MUA_btn_cancel");
-        el_MUA_btn_cancel.innerText = ((is_ok || err_save) ? loc.Close: loc.Cancel);
+        el_MUA_btn_cancel.innerText = ((is_ok || err_save) ? loc.Close : loc.Cancel);
         if(is_ok || err_save){el_MUA_btn_cancel.focus()}
 
     }  // MUA_SetMsgElements
@@ -1014,58 +994,69 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  highlight clicked row
             tblRow.classList.add(cls_selected)
 // ---  get pk from id of select_tblRow
-            mod_MUA_dict.schoolbase_pk = get_attr_from_el_int(tblRow, "data-pk");
+            mod_MUA_dict.user_schoolbase_pk = get_attr_from_el_int(tblRow, "data-pk");
             mod_MUA_dict.country_pk = get_attr_from_el_int(tblRow, "data-ppk");
-            mod_MUA_dict.school_code = get_attr_from_el(tblRow, "data-value");
+            mod_MUA_dict.user_schoolname = get_attr_from_el(tblRow, "data-value");
 // ---  put value in input box
-            el_MUA_input_school.value = mod_MUA_dict.school_code
+            el_MUA_schoolname.value = mod_MUA_dict.user_schoolname
             MUA_headertext();
+            MUA_ResetElements();
+
             el_MUA_username.focus()
         }
     }  // MUA_SelectSchool
 
+//=========  MUA_InputSchoolname  ================ PR2020-09-24 PR2021-01-01
+    function MUA_InputSchoolname(el_input, event_key) {
+        console.log( "===== MUA_InputSchoolname  ========= ");
+        console.log( "event_key", event_key);
+
+        if(el_input){
+// ---  filter rows in table select_school
+            const filter_dict = MUA_Filter_SelectRows(el_input.value);
+        console.log( "filter_dict", filter_dict);
+// ---  if filter results have only one school: put selected school in el_MUA_schoolname
+            const selected_pk = Number(filter_dict.selected_pk);
+            if (selected_pk) {
+                el_input.value = filter_dict.selected_value
+    // ---  put pk of selected school in mod_MUA_dict
+                mod_MUA_dict.user_schoolbase_pk = selected_pk;
+                mod_MUA_dict.user_schoolname = filter_dict.selected_value;
+
+                MUA_headertext();
+                MUA_ResetElements();
+    // ---  Set focus to flied 'username'
+                el_MUA_username.focus()
+            }  // if (!!selected_pk)
+        }
+    }; // MUA_InputSchoolname
+
+
 //=========  MUA_InputKeyup  ================ PR2020-09-24
     function MUA_InputKeyup(el_input, event_key) {
-        //console.log( "===== MUA_InputKeyup  ========= ");
-        //console.log( "event_key", event_key);
+        console.log( "===== MUA_InputKeyup  ========= ");
+        console.log( "event_key", event_key);
 
         if(el_input){
             const fldName = get_attr_from_el(el_input, "data-field");
             let field_value = el_input.value;
-            if(fldName === "schoolcode") {
-// ---  filter rows in table select_school
-                const filter_dict = MUA_Filter_SelectRows(field_value);
-// ---  if filter results have only one school: put selected school in el_MUA_input_school
-                const selected_pk = filter_dict.selected_pk;
-                if (selected_pk) {
-                    el_input.value = filter_dict.selected_value
-// ---  put pk of selected school in mod_MUA_dict
-                    const pk_int = Number(selected_pk)
-                     mod_MUA_dict.user_schoolbase_pk = pk_int;
-                    MUA_headertext();
-// ---  Set focus to flied 'username'
-                    el_MUA_username.focus()
-                  }  // if (!!selected_pk)
-            } else  {
-                // fldName is 'username', 'last_name' or 'email'
-                if (fldName === "username" && field_value){
-                    field_value = field_value.replace(/, /g, "_"); // replace comma + space with "_"
-                    field_value = replaceChar(field_value)
-                    if (field_value !== el_input.value) { el_input.value = field_value}
-                }
-                mod_MUA_dict[fldName] = (field_value) ? field_value : null
-                mod_MUA_dict["skip_validate_" + fldName] = false;
-
-                MUA_ResetElements();
-               // if(mod_MUA_dict.mode !== "update" && !mod_MUA_dict.skip_validate_username && !mod_MUA_dict.skip_validate_last_name && !mod_dict.skip_validate_email){
-                // send schoolbase, username and email to server after 500 ms
-                // abort if within that period a new value is enetered.
-                // checked by comparing the timestamp
-                time_stamp = Number(Date.now())
-                setTimeout(UploadNewUser, 1000, time_stamp);
-
-               // }
+        console.log( "fldName", fldName);
+        console.log( "field_value", field_value);
+            // fldName is 'username', 'last_name' or 'email' . fldName "schoolname" is handled in MUA_InputSchoolname
+            if (fldName === "username" && field_value){
+                field_value = field_value.replace(/, /g, "_"); // replace comma or space with "_"
+                field_value = replaceChar(field_value)
+                if (field_value !== el_input.value) { el_input.value = field_value}
             }
+            mod_MUA_dict[fldName] = (field_value) ? field_value : null
+            mod_MUA_dict["skip_validate_" + fldName] = false;
+
+            MUA_ResetElements();
+            // send schoolbase, username and email to server after 1000 ms
+            // abort if within that period a new value is entered.
+            // checked by comparing the timestamp
+            time_stamp = Number(Date.now())
+            setTimeout(UploadNewUser, 1000, time_stamp);
         }
     }; // MUA_InputKeyup
 
@@ -1116,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  MUA_headertext  ================ PR2020-09-25
     function MUA_headertext(mode) {
         let header_text = (mode === "update") ? loc.User + ":  " + mod_MUA_dict.username : loc.Add_user;
-        if(mod_MUA_dict.schoolbase_pk){ header_text = loc.Add_user_to + mod_MUA_dict.school_code;}
+        if(mod_MUA_dict.user_schoolbase_pk){ header_text = loc.Add_user_to + mod_MUA_dict.user_schoolname;}
         document.getElementById("id_MUA_header").innerText = header_text;
     }  // MUA_headertext
 

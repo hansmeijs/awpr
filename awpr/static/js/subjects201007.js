@@ -1786,7 +1786,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_confirm_msg01.innerText = msg01_text;
             el_confirm_msg02.innerText = msg02_text;
             el_confirm_msg03.innerText = msg03_text;
-            el_confirm_btn_cancel.innerText = loc.Close_NL_sluiten
+            el_confirm_btn_cancel.innerText = loc.Close
             el_confirm_btn_save.classList.add(cls_hide);
         } else {
         // hide mod_confirm when no message

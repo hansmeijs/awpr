@@ -80,7 +80,7 @@ urlpatterns = [
         account_views.UserActivate, name='activate_url'),
     url(r'^activate/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
        account_views.UserActivateView.as_view(), name='activate_url'),
-    url(r'^users/(?P<pk>\d+)/activated$', account_views.UserActivatedSuccess.as_view(), name='account_activation_success_url'),
+    #url(r'^users/(?P<pk>\d+)/activated$', account_views.UserActivatedSuccess.as_view(), name='account_activation_success_url'),
 
     url(r'^users/set-password$',
         auth_views.PasswordResetView.as_view(

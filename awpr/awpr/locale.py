@@ -91,9 +91,10 @@ def get_locale_dict(table_dict, user_lang):
     dict['Create'] = _('Create')
     dict['Publish'] = _('Publish')
     dict['Delete'] = _('Delete')
+    dict['Save'] = _('Save')
 
     dict['Close_NL_afsluiten'] = pgettext_lazy('NL_afsluiten', 'Close')
-    dict['Close_NL_sluiten'] = pgettext_lazy('NL_sluiten', 'Close')
+    dict['Close'] = pgettext_lazy('NL_sluiten', 'Close')
 
     # error messages
     dict['This_field'] = _('This field ')

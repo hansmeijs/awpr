@@ -31,14 +31,15 @@
 
 <!-- modal_body_right contains input elements -->
                         <div id="id_div_form_controls" class="modal_body_right mx-2 my-2">
-                            <div class="content_subheader_left mx-1 tab_show tab_addnew_may_select_school display_hide">
-                                <label for="id_MUA_input_school" class="tsa_margin_form_label">{% trans 'School' %}:</label>
-                                <input id="id_MUA_input_school" type="text" data-field="schoolcode"
+                            <div class="content_subheader_left mx-1">
+                                <label for="id_MUA_schoolname" class="tsa_margin_form_label">{% trans 'School' %}:</label>
+                                <input id="id_MUA_schoolname" type="text" data-field="schoolname" class="form-control"
                                     autocomplete="off" ondragstart="return false;" ondrop="return false;"
-                                    class="form-control"
-                                    placeholder="{% trans 'Type a few letters and select a school in the list ...' %}">
+                                    placeholder="{% trans 'Type a few letters and select a school in the list ...'%}">
                             </div>
-
+                            <div class="content_subheader_left mx-1">
+                                <small id="id_MUA_msg_schoolname" class="text-danger tsa_margin_form_label"></small>
+                            </div>
                             <div id="id_msg_container" class="border_bg_valid m-4 tab_show tab_ok display_hide">
                                 <p id="id_msg_01" class="tsa_margin_form_label mx-4"></p>
                                 <p id="id_msg_02" class="tsa_margin_form_label mx-4"></p>
@@ -50,7 +51,7 @@
                                 <img  src="{% static 'img/loader.gif' %}" height="24" width="24">
                             </div>
 
-                            <div class="tab_show tab_addnew_may_select_school tab_addnew_noschool tab_update display_hide">
+                            <div>
                                 <div class="content_subheader_left mx-1">
                                     <label for="id_MUA_username" class="mx-2 ">{% trans 'Username' %}:</label>
                                     <input id="id_MUA_username" type="text" data-field="username"
@@ -75,12 +76,12 @@
                                 <div class="content_subheader_left mx-1">
                                     <small id="id_MUA_msg_email" class="tsa_margin_form_label"></small>
                                 </div>
-                                <div class="content_header mx-2 mt-2 tab_show tab_addnew_may_select_school tab_addnew_noschool display_hide">
+                                <div class="content_header mx-2 mt-2">
                                     <div class="content_subheader_left mx-1">
                                         <small id="id_info_footer01" ></small>
                                     </div>
                                 </div>
-                                <div class="content_header mx-2 tab_show tab_addnew_may_select_school tab_addnew_noschool display_hide">
+                                <div class="content_header mx-2">
                                     <div class="content_subheader_left mx-1">
                                         <small id="id_info_footer02" ></small>
                                     </div>
@@ -91,11 +92,11 @@
                 </div>
                 <div class="modal-footer">
                     <div class="content_subheader_left mx-1">
-                        <button id="id_MUA_btn_delete" type="button" data-dismiss="modal" class="btn btn-outline-danger tab_show tab_update display_hide">{% trans 'Delete user' %}</button>
+                        <button id="id_MUA_btn_delete" type="button" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete user' %}</button>
                     </div>
                     <div class="content_subheader_right">
                         <button id="id_MUA_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
-                        <button id="id_MUA_btn_submit" class="btn btn-primary tab_show tab_addnew_may_select_school tab_update display_hide">{% trans 'Submit' %}</button>
+                        <button id="id_MUA_btn_submit" class="btn btn-primary">{% trans 'Submit' %}</button>
                     </div>
 
                 </div>

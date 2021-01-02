@@ -1419,6 +1419,7 @@ console.log("mimp.linked_exc_values[tbodyTblName];", deepcopy_dict(mimp.linked_e
         if(mimp_stored.coldef){colLength = mimp_stored.coldef.length;};
         if(rowLength > 0 && colLength > 0){
 
+console.log ("mimp.mimp_setting_dict", deepcopy_dict(mimp_setting_dict));
 console.log ("mimp.excel_coldefs", deepcopy_dict(mimp.excel_coldefs));
 console.log ("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
 
@@ -1476,7 +1477,9 @@ console.log ("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
                     const request = {sel_examyear_pk: mimp_setting_dict.sel_examyear_pk,
                                     sel_schoolbase_pk: mimp_setting_dict.sel_schoolbase_pk,
                                     sel_depbase_pk: mimp_setting_dict.sel_depbase_pk,
-                    importtable: mimp.table,
+                                    sel_depbase_code: (mimp_setting_dict.sel_depbase_code) ? mimp_setting_dict.sel_depbase_code : "---",
+                                    sel_school_abbrev: (mimp_setting_dict.sel_school_abbrev) ? mimp_setting_dict.sel_school_abbrev : "---",
+                                    importtable: mimp.table,
                                      awpColdef_list: awpColdef_list,
                                      test: is_test_upload,
                                      data_list: dict_list
@@ -1517,7 +1520,13 @@ console.log ("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
 //--------- print log file
                 const log_list = get_dict_value(response, ["logfile"])
                 if (!!log_list && log_list.length > 0) {
-                    printPDFlogfile(log_list, "log_import_subjects")
+                    const today = new Date();
+                    const this_month_index = 1 + today.getMonth();
+                    const date_str = today.getFullYear() + "-" + this_month_index + "-" + today.getDate();
+                    const schoolname = request.sel_depbase_code + " " + request.sel_school_abbrev;
+                    const filename = schoolname +  " uploadlog kandidaten " + date_str;
+
+                    printPDFlogfile(log_list, filename )
                 }
             },
             error: function (xhr, msg) {

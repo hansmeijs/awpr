@@ -875,7 +875,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById("id_MEY_msg_modified").innerText = modified_text;
 
 // ---  set text on btn cancel
-        el_MEY_btn_cancel.innerText = ((is_ok || err_save) ? loc.Close_NL_sluiten: loc.Cancel);
+        el_MEY_btn_cancel.innerText = ((is_ok || err_save) ? loc.Close: loc.Cancel);
         if(is_ok || err_save){el_MUA_btn_cancel.focus()}
 // ---  set text on btn save
         el_MEY_btn_save.innerText = btn_save_text;
@@ -1078,7 +1078,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_confirm_msg01.innerText = msg01_text;
             el_confirm_msg02.innerText = msg02_text;
             el_confirm_msg03.innerText = msg03_text;
-            el_confirm_btn_cancel.innerText = loc.Close_NL_sluiten;
+            el_confirm_btn_cancel.innerText = loc.Close;
             el_confirm_btn_save.classList.add(cls_hide);
         } else {
         // hide mod_confirm when no message

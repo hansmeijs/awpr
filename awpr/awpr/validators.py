@@ -14,28 +14,30 @@ import logging
 logger = logging.getLogger(__name__)  # __name__ tsap.validators
 
 
-# === validate_unique_username ===================================== PR2020-03-31 PR2020-09-24
+# === validate_unique_username ===================================== PR2020-03-31 PR2020-09-24 PR2021-01-01
 def validate_unique_username(username, schoolbaseprefix, cur_user_id=None):
-    logger.debug ('=== validate_unique_username ====')
-    logger.debug ('username: <' + str(username) + '>')
-    logger.debug ('cur_user_id: <' + str(cur_user_id) + '>')
-    logger.debug ('schoolbaseprefix: <' + str(schoolbaseprefix) + '>')
+    #logger.debug ('=== validate_unique_username ====')
+    #logger.debug ('username: <' + str(username) + '>')
+    #logger.debug ('cur_user_id: <' + str(cur_user_id) + '>')
+    #logger.debug ('schoolbaseprefix: <' + str(schoolbaseprefix) + '>')
     # __iexact looks for the exact string, but case-insensitive. If username is None, it is interpreted as an SQL NULL
 
     msg_err = None
-    if not username:
+    if schoolbaseprefix is None:
+        msg_err = _('School cannot be blank.')
+    elif not username:
         msg_err = _('Username cannot be blank.')
     elif len(username) > c.USERNAME_SLICED_MAX_LENGTH:
         msg_err = _('Username must have %(fld)s characters or fewer.') % {'fld': c.USERNAME_SLICED_MAX_LENGTH}
     else:
         prefixed_username = schoolbaseprefix + username
-        logger.debug ('prefixed_username: ' + str(prefixed_username))
-        logger.debug ('cur_user_id: ' + str(cur_user_id))
+        #logger.debug ('prefixed_username: ' + str(prefixed_username))
+        #logger.debug ('cur_user_id: ' + str(cur_user_id))
         if cur_user_id:
             user = am.User.objects.filter(username__iexact=prefixed_username).exclude(pk=cur_user_id).first()
         else:
             user = am.User.objects.filter(username__iexact=prefixed_username).first()
-        logger.debug ('user: ' + str(user))
+        #logger.debug ('user: ' + str(user))
         if user:
             msg_err = str(_("This username already exists at this school."))
             if not user.activated:

@@ -87,28 +87,6 @@ class UserListView(ListView):
             _override_school = request.user.role_str
         headerbar_param = awpr_menu.get_headerbar_param(request,
             {'users': users, 'display_school': True, 'override_school': _override_school})
-        # logger.debug('home headerbar_param: ' + str(headerbar_param))
-        """
-        headerbar_param:
-        {
-            'context':
-                {'schoolyear': '2018-2019', 
-                    'select_schoolyear': True, 
-                    'display_schoolyear': True,
-                    'school': 'CUR02  Skol Avansa Amador Nita - Saan', 
-                    'display_school': False,
-                    'class_examyear_warning': 'navbar-item-warning'},
-
-            'schoolyear_list':
-                [{'pk': '2', 'schoolyear': '2018-2019', 'selected': True},
-                 {'pk': '1', 'schoolyear': '2017-2018', 'selected': False}],
-
-            'school_list':
-                [{'pk': '5', 'school': 'CUR01 -  Ancilla Domini Vsbo', 'selected': False},
-                 {'pk': '6', 'school': 'CUR02 -  Skol Avansa Amador Nita - Saan', 'selected': True},
-                 {'pk': '7', 'school': 'CUR03 -  Juan Pablo Duarte Vsbo', 'selected': False}],
-        }
-        """
 
         logger.debug('headerbar_param: ' + str(headerbar_param))
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
@@ -208,7 +186,16 @@ class UserUploadView(View):
 
     # ++++  create or validate new user ++++++++++++
                         elif mode in ('create', 'validate'):
-                            new_user_pk, err_dict, ok_dict = create_or_validate_user_instance(user_schoolbase, upload_dict, pk_int, is_validate_only, user_lang, request)
+                            # - get permits of new user.
+                            #       - new_permits is 'write' when user_school is same as requsr_school,
+                            #       - permits is 'write' plus 'admin' when user_school is different from requsr_school
+                            if is_same_schoolbase:
+                                new_permits = c.PERMIT_02_EDIT
+                            else:
+                                new_permits = (c.PERMIT_02_EDIT + c.PERMIT_32_ADMIN)
+
+                            new_user_pk, err_dict, ok_dict = create_or_validate_user_instance(
+                                user_schoolbase, upload_dict, pk_int, new_permits, is_validate_only, user_lang, request)
                             if err_dict:
                                 update_wrap['msg_err'] = err_dict
                             if ok_dict:
@@ -364,10 +351,15 @@ def SignupActivateView(request, uidb64, token):
         school = sch_mod.School.objects.get_or_none( base=user.schoolbase, examyear=examyear)
         if school and school.name:
             if school.article:
-                schoolnamewithArticle = school.article.capitalize() + ' ' + school.name
+                usr_schoolname_with_article = school.article + ' ' + school.name
             else:
-                schoolnamewithArticle = school.name
-            update_wrap['schoolnamewithArticle'] = schoolnamewithArticle
+                usr_schoolname_with_article = school.name
+        elif user.schoolbase and user.schoolbase.code:
+            usr_schoolname_with_article = user.schoolbase.code
+        else:
+            usr_schoolname_with_article = '---'
+        msg_txt = _("Your account with username '%(usr)s' is created at %(school)s.") % {'usr': user_name, 'school': usr_schoolname_with_article}
+        update_wrap['schoolnamewithArticle'] = msg_txt
 
 # - get language from user
         # PR2019-03-15 Debug: language gets lost, get request.user.lang again
@@ -535,7 +527,7 @@ def UserActivate(request, uidb64, token):
 
 # PR2018-05-05
 @method_decorator([login_required], name='dispatch')
-class UserActivatedSuccess(View):
+class UserActivatedSuccessXXX(View):
 
     def get(self, request):
         def get(self, request):
@@ -630,16 +622,17 @@ def create_user_list(request, user_pk=None):
 
 ########################################################################
 
-# === create_or_validate_user_instance ========= PR2020-08-16
-def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, is_validate_only, user_lang, request):
-    logger.debug('-----  create_or_validate_user_instance  -----')
-    logger.debug('upload_dict: ' + str(upload_dict))
-    logger.debug('user_pk: ' + str(user_pk))
-    logger.debug('is_validate_only: ' + str(is_validate_only))
+# === create_or_validate_user_instance ========= PR2020-08-16 PR2021-01-01
+def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, permits, is_validate_only, user_lang, request):
+    #logger.debug('-----  create_or_validate_user_instance  -----')
+    #logger.debug('upload_dict: ' + str(upload_dict))
+    #logger.debug('user_pk: ' + str(user_pk))
+    #logger.debug('is_validate_only: ' + str(is_validate_only))
 
     country = request.user.country
 
     has_error = False
+
     err_dict = {}
     ok_dict = {}
     new_user_pk = None
@@ -648,13 +641,18 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, is_v
     #  - only system and admin (ETE) can add users of other schools (system has also admin rights)
     #  - only insp and school can add users of their own school
 
+# - check if schoolbase has value
+    if user_schoolbase is None:
+        err_dict['schoolcode'] = _('Please enter a school.')
+        has_error = True
 
 # - check if this username already exists in this schoolbase
     # user_pk is pk of user that will be validated when the user already exist.
     # user_pk is None when new user is created or validated
     username = af.get_dict_value(upload_dict, ('username', 'value'))
     #logger.debug('username: ' + str(username))
-    msg_err = v.validate_unique_username(username, user_schoolbase.prefix, user_pk)
+    schoolbaseprefix = user_schoolbase.prefix if user_schoolbase else None
+    msg_err = v.validate_unique_username(username, schoolbaseprefix, user_pk)
     if msg_err:
         err_dict['username'] = msg_err
         has_error = True
@@ -697,7 +695,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, is_v
             last_name=last_name,
             email=email,
             role=c.ROLE_08_SCHOOL,
-            permits=0,
+            permits=permits,
             is_active=True,
             activated=False,
             lang=user_lang,
@@ -711,11 +709,41 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, is_v
 
             current_site = get_current_site(request)
 
-            # -  send email 'Activate your account'
+# -  create first line of email
+            # {{ requsr_schoolname }} {% trans 'has made the following AWP-online account for you:' %}
+            # When requser and new_user are from the same school: requser.last_name
+            # - get selected examyear from request_item_setting, Usersetting or first in list
+
+            sel_examyear, examyear_save_NIU, may_select_NIU = af.get_sel_examyear_instance(request)
+            requsr_school = sch_mod.School.objects.get_or_none( base=request.user.schoolbase, examyear=sel_examyear)
+            new_user_school = sch_mod.School.objects.get_or_none( base=user_schoolbase, examyear=sel_examyear)
+
+            req_user = request.user.last_name if request.user.last_name else request.user.username
+            req_school = ''
+            if requsr_school and requsr_school.name:
+                if requsr_school.article:
+                    req_school = requsr_school.article.capitalize() + ' '
+                req_school += requsr_school.name
+            else:
+                req_school = request.user.schoolbase.code if request.user.schoolbase.code else '---'
+
+
+            usr_schoolname_with_article = ''
+            if new_user_school and new_user_school.name:
+                if new_user_school.article:
+                    usr_schoolname_with_article = new_user_school.article.lower() + ' '
+                usr_schoolname_with_article += new_user_school.name
+            else:
+                usr_schoolname_with_article = '---'
+
+# -  send email 'Activate your account'
             subject = _('Activate your AWP-online account')
             from_email = 'AWP-online <noreply@awponline.net>'
             message = render_to_string('signup_activation_email.html', {
                 'user': new_user,
+                'usr_schoolname': usr_schoolname_with_article,
+                'req_school': req_school,
+                'req_user': req_user,
                 'domain': current_site.domain,
                 # PR2018-04-24 debug: In Django 2.0 you should call decode() after base64 encoding the uid, to convert it to a string:
                 # 'uid': urlsafe_base64_encode(force_bytes(user.pk)),
@@ -726,13 +754,12 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, is_v
             mails_sent = send_mail(subject, message, from_email, [new_user.email], fail_silently=False)
             #logger.debug('mails sent: ' + str(mails_sent))
             # - return message 'We have sent an email to user'
-            msg01 = _("User '%(usr)s' is registered successfully at %(school)s.") % {'usr': new_user.username_sliced, 'school': user_schoolbase}
+            msg01 = _("User '%(usr)s' is registered successfully at %(school)s.") % {'usr': new_user.username_sliced, 'school': usr_schoolname_with_article}
             msg02 = _("We have sent an email to the email address '%(email)s'.") % {'email': new_user.email}
             msg03 = _(
                 'The user must click the link in that email to verify the email address and create a password.')
-            msg04 = _("This user has no permissions yet. Don't forget to grant permissions.")
 
-            ok_dict = {'msg01': msg01, 'msg02': msg02, 'msg03': msg03, 'msg04': msg04}
+            ok_dict = {'msg01': msg01, 'msg02': msg02, 'msg03': msg03}
 
     return new_user_pk, err_dict, ok_dict
 
@@ -875,8 +902,8 @@ def resend_activation_email(user_pk, update_wrap, err_dict, request):
 # -  send email 'Activate your account'
         if not has_error:
             try:
-                subject = 'Activate your TSA-secure account'
-                from_email = 'TSA-secure <noreply@tsasecure.com>'
+                subject = 'Activate your AWP-online account'
+                from_email = 'AWP-online <noreply@awponline.net>'
                 message = render_to_string('signup_activation_email.html', {
                     'user': user,
                     'domain': current_site.domain,
@@ -895,9 +922,8 @@ def resend_activation_email(user_pk, update_wrap, err_dict, request):
                     msg01 = _("We have sent an email to the email address '%(email)s' of user '%(usr)s'.") % \
                                                     {'email': user.email, 'usr': user.username_sliced}
                     msg02 = _('The user must click the link in that email to verify the email address and create a password.')
-                    msg03 = _("This user has no permissions yet. Don't forget to grant permissions.")
 
-                    update_wrap['msg_ok'] = {'msg01': msg01, 'msg02': msg02, 'msg03': msg03}
+                    update_wrap['msg_ok'] = {'msg01': msg01, 'msg02': msg02}
 
             except:
                 err_dict['msg01'] = _('An error occurred.')
@@ -905,14 +931,17 @@ def resend_activation_email(user_pk, update_wrap, err_dict, request):
 
 # - reset expiration date by setting the field 'date_joined', to now
         if not has_error:
-            now_utc_naive = datetime.utcnow()
-            now_utc = now_utc_naive.replace(tzinfo=pytz.utc)
-            #user.date_joined = now_utc
+            # PR2021-01-01 was:
+            # now_utc_naive = datetime.utcnow()
+            # now_utc = now_utc_naive.replace(tzinfo=pytz.utc)
+            # user.date_joined = now_utc
 
-            #user.modifiedby = request.user
-            #user.modifiedat = now_utc
+            now_utc = timezone.now()
+            user.date_joined = now_utc  # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+            user.modifiedby = request.user
+            user.modifiedat = now_utc
 
-            #user.save()
+            user.save()
 # === end of resend_activation_email =====================================
 
 

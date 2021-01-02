@@ -126,10 +126,16 @@ def create_sector_rows(examyear):
     return rows
 # --- end of create_sector_rows
 
-def create_school_rows(examyear):
+def create_school_rows(examyear, setting_dict):
     # --- create rows of all schools of this examyear / country PR2020-09-18
     #     add messages to employee_row
     #logger.debug(' =============== create_employee_rows ============= ')
+
+    #<PERMIT> PR2021-01-01
+    # show only the requsr_school when not role_admin or role_system
+    requsr_role_system = setting_dict.get('requsr_role_system', False)
+    requsr_role_admin = setting_dict.get('requsr_role_admin', False)
+    requsr_schoolbase_pk =  setting_dict.get('requsr_schoolbase_pk')
 
     sql_keys = {'ey_id': examyear.pk}
 
@@ -144,8 +150,16 @@ def create_school_rows(examyear):
         "INNER JOIN schools_country AS c ON (c.id = ey.country_id)",
         "LEFT JOIN accounts_user AS au ON (au.id = s.modifiedby_id)",
 
-        "WHERE ey.id = %(ey_id)s::INT",
-        "ORDER BY LOWER(sb.code)"]
+        "WHERE ey.id = %(ey_id)s::INT"]
+
+    if requsr_role_system or requsr_role_admin:
+        sql_list.append("ORDER BY LOWER(sb.code)")
+    elif requsr_schoolbase_pk is not None:
+        sql_keys['sb_id'] = requsr_schoolbase_pk
+        sql_list.append("AND sb.id = %(sb_id)s::INT")
+    else:
+        sql_list.append("AND FALSE")
+
     sql = ' '.join(sql_list)
     newcursor = connection.cursor()
     newcursor.execute(sql, sql_keys)

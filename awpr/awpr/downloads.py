@@ -39,9 +39,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
     logging.disable(logging.NOTSET)  # logging.NOTSET re-enables logging
 
     def post(self, request):
-        logger.debug(' ')
-        logger.debug(' ++++++++++++++++++++ DatalistDownloadView ++++++++++++++++++++ ')
-        logger.debug('request.POST' + str(request.POST))
+        #logger.debug(' ')
+        #logger.debug(' ++++++++++++++++++++ DatalistDownloadView ++++++++++++++++++++ ')
+        #logger.debug('request.POST' + str(request.POST))
 
         #logger.debug('request.user' + str(request.user))
         #logger.debug('request.user.country' + str(request.user.country))
@@ -92,7 +92,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 # PR2020-05-23 debug: datalists = {} gives parse error.
                 # elapsed_seconds to the rescue: now datalists will never be empty
 
-# ----- get user_rows
+# ----- get users
                 request_item_setting = datalist_request.get('user_rows')
                 if request_item_setting:
                     datalists['user_rows'] = av.create_user_list(request)
@@ -111,7 +111,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['sector_rows'] = school_dicts.create_sector_rows(sel_examyear)
 # ----- schools
                 if datalist_request.get('school_rows'):
-                    datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear)
+                    datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear, new_setting_dict)
 # ----- subjects
                 if datalist_request.get('subject_rows'):
                     datalists['subject_rows'] = sj_vw.create_subject_rows(new_setting_dict, {}, None)
@@ -139,8 +139,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
         return HttpResponse(datalists_json)
 
 def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 PR2020-1-14
-    logger.debug(' ----- download_setting ----- ' )
-    logger.debug('request_item_setting: ' + str(request_item_setting) )
+    #logger.debug(' ----- download_setting ----- ' )
+    #logger.debug('request_item_setting: ' + str(request_item_setting) )
     # this function get settingss from request_item_setting.
     # if not in request_item_setting, it takes the saved settings.
 
@@ -157,16 +157,22 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
 # ==== COUNTRY ========================
 # - get country from req_user
     requsr_country = req_user.country
-    setting_dict['requsr_country_pk'] = requsr_country.pk
-    setting_dict['requsr_country'] = requsr_country.name
+    setting_dict['requsr_country_pk'] = requsr_country.pk  if requsr_country else None
+    setting_dict['requsr_country'] = requsr_country.name if requsr_country else None
 
 # ===== SCHOOLBASE ======================= PR2020-12-18
 # - get schoolbase from settings / request when role is insp, admin or system, from req_user otherwise
     # req_user.schoolbase cannot be changed
     # Selected schoolbase is stored in {selected_pk: {sel_schoolbase_pk: val}}
 
+    requsr_schoolbase = req_user.schoolbase
+    setting_dict['requsr_schoolbase_pk'] = requsr_schoolbase.pk if requsr_schoolbase else None
+    setting_dict['requsr_schoolbase_code'] = requsr_schoolbase.code if requsr_schoolbase else None
+
+    logger.debug('setting_dict: ' + str(setting_dict))
+
     sel_schoolbase_instance, sel_schoolbase_save = af.get_sel_schoolbase_instance(request, request_item_setting)
-    logger.debug('sel_schoolbase_instance: ' + str(sel_schoolbase_instance) + ' pk: ' + str(sel_schoolbase_instance.pk))
+    #logger.debug('sel_schoolbase_instance: ' + str(sel_schoolbase_instance) + ' pk: ' + str(sel_schoolbase_instance.pk))
     if sel_schoolbase_save:
         # when sel_schoolbase_save=True, there is always a sel_schoolbase_instance
         selected_dict[c.KEY_SEL_SCHOOLBASE_PK] = sel_schoolbase_instance.pk
@@ -183,13 +189,13 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
 
     setting_dict['may_select_examyear'] = may_select_examyear
 
-    logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
+    #logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
 # - update selected_dict when selected_dict_has_changed, will be saved at end of def
     if sel_examyear_save:
         # sel_examyear_instance has always value when selected_dict_has_changed
         selected_dict[c.KEY_SEL_EXAMYEAR_PK] = sel_examyear_instance.pk
         selected_dict_has_changed = True
-        logger.debug('selected_dict_has_changed: ' + str(selected_dict_has_changed) )
+        #logger.debug('selected_dict_has_changed: ' + str(selected_dict_has_changed) )
 # - add info to setting_dict, will be sent back to client
     if sel_examyear_instance:
         setting_dict[c.KEY_SEL_EXAMYEAR_PK] = sel_examyear_instance.pk
@@ -201,8 +207,8 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
 # - add message when examyear is different from this eaxamyear
     awp_message = val.message_diff_exyr(sel_examyear_instance)  # PR2020-10-30
 
-    logger.debug('sel_schoolbase_instance: ' + str(sel_schoolbase_instance) + ' pk: ' + str(sel_schoolbase_instance.pk))
-    logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
+    #logger.debug('sel_schoolbase_instance: ' + str(sel_schoolbase_instance) + ' pk: ' + str(sel_schoolbase_instance.pk))
+    #logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
 
 # ===== SCHOOL =======================
 # - only roles insp, admin and system may select other schools
@@ -213,7 +219,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
     sel_school = sch_mod.School.objects.get_or_none(
         base=sel_schoolbase_instance,
         examyear=sel_examyear_instance)
-    logger.debug('get_or_none sel_school: ' + str(sel_school) )
+    #logger.debug('get_or_none sel_school: ' + str(sel_school) )
     #sel_school2 = sch_mod.School.objects.filter(
     #    base=sel_schoolbase_instance,
     #    examyear=sel_examyear_instance).first()
@@ -227,7 +233,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
             setting_dict['sel_school_activated'] = sel_school.activated
         if sel_school.locked:
             setting_dict['sel_school_locked'] = sel_school.locked
-        logger.debug('sel_school.depbases: ' + str(sel_school.depbases) )
+        #logger.debug('sel_school.depbases: ' + str(sel_school.depbases) )
 
 # ===== DEPBASE =======================
     # every user can change depbase, if in .sel_school_depbases and in user allowed_depbases
@@ -245,7 +251,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
         # sel_depbase_instance has always value when selected_dict_has_changed
         selected_dict[c.KEY_SEL_DEPBASE_PK] = sel_depbase_instance.pk
         selected_dict_has_changed = True
-        logger.debug('selected_dict_has_changed: ' + str(selected_dict[c.KEY_SEL_DEPBASE_PK]))
+        #logger.debug('selected_dict_has_changed: ' + str(selected_dict[c.KEY_SEL_DEPBASE_PK]))
     # - add info to setting_dict, will be sent back to client
     if sel_depbase_instance:
         setting_dict[c.KEY_SEL_DEPBASE_PK] = sel_depbase_instance.pk
@@ -257,7 +263,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
             setting_dict['sel_department_abbrev'] = sel_department_instance.abbrev
             setting_dict['sel_department_name'] = sel_department_instance.name
 
-        logger.debug('>>>>>>>>>> setting_dict[sel_department_abbrev]: ' + str(setting_dict['sel_department_abbrev']))
+        #logger.debug('>>>>>>>>>> setting_dict[sel_department_abbrev]: ' + str(setting_dict['sel_department_abbrev']))
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # ===== EXAM PERIOD =======================
@@ -329,15 +335,16 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
                             setting_dict[sel_key] = new_value
                 if has_changed:
                     Usersetting.set_jsonsetting(key, new_page_dict, req_user)
-    #logger.debug('selected_dict_has_changed: ' + str(selected_dict_has_changed))
+    logger.debug('setting_dict: ' + str(setting_dict))
 
 # - save settings when they have changed
     if selected_dict_has_changed:
-        logger.debug('>>>>>>> save selected_dict: ' + str(selected_dict))
+        #logger.debug('>>>>>>> save selected_dict: ' + str(selected_dict))
         Usersetting.set_jsonsetting(c.KEY_SELECTED_PK, selected_dict, req_user)
 
     return setting_dict, awp_message, sel_examyear_instance, sel_schoolbase_instance
 # - end of download_setting
+
 
 def create_settingdict_with_role_and_permits(req_user, user_lang):
 # - get role from req_user, put them in setting_dict PR2020-12-14
