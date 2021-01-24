@@ -40,17 +40,14 @@
 
 
             <div class="content_header ">
-            <div id="id_submenu" class="awp_navbar_submenuXX display_hideXX mt-5">
+            <div id="id_submenu" class="awp_navbar_submenuXX display_hideXX mt-4">
             </div>
                             <!-- header_text -->
-                <div class="content_subheader_left mx-4">
-                    <h5 id="id_hdr_text">content_subheader_left</h5>
+                <div class="content_subheader_left">
                 </div>
         <!-- loader -->
-                <div class="content_header_middle ">
-                    <div id="id_loader" class="image_container visibility_hideXX">
-                        <img src="{% static 'img/loader.gif' %}" class="icon_24">
-                    </div>
+                <div class="content_header_middle mt-4 mb-2">
+                        {% include 'includes/loader.html' %}
                 </div>
             </div>
         <!-- end content_header -->

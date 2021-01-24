@@ -14,6 +14,7 @@ from awpr import menus as awpr_menu
 from awpr import constants as c
 from students import validations as v
 from awpr import functions as af
+from awpr import downloads as dl
 
 from accounts import models as acc_mod
 from schools import models as sch_mod
@@ -92,11 +93,12 @@ class StudentsubjectListView(View):
 
 def create_student_rows(setting_dict, append_dict, student_pk):
     # --- create rows of all students of this examyear / school PR2020-10-27
-    logger.debug(' =============== create_student_rows ============= ')
+    #logger.debug(' =============== create_student_rows ============= ')
     sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
     sel_schoolbase_pk = af.get_dict_value(setting_dict, ('sel_schoolbase_pk',))
+    sel_depbase_pk = af.get_dict_value(setting_dict, ('sel_depbase_pk',))
 
-    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk}
+    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
     sql_list = ["SELECT st.id, st.base_id, st.school_id AS s_id,",
         "st.department_id AS dep_id, st.level_id AS lvl_id, st.sector_id AS sct_id, st.scheme_id,",
         "dep.abbrev AS dep_abbrev,",
@@ -109,16 +111,16 @@ def create_student_rows(setting_dict, append_dict, student_pk):
         "st.iseveningstudent, st.locked, st.has_reex, st.bis_exam, st.withdrawn,",
         "st.modifiedby_id, st.modifiedat,",
         "SUBSTRING(au.username, 7) AS modby_username",
+
         "FROM students_student AS st",
         "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
         "LEFT JOIN schools_department AS dep ON (dep.id = st.department_id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
         "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
         "LEFT JOIN accounts_user AS au ON (au.id = st.modifiedby_id)",
-        "WHERE sch.base_id = %(sb_id)s::INT AND sch.examyear_id = %(ey_id)s::INT "]
+        "WHERE sch.base_id = %(sb_id)s::INT AND sch.examyear_id = %(ey_id)s::INT AND dep.base_id = %(db_id)s::INT"]
 
     if student_pk:
-        # when student_pk has value: skip other filters
         sql_list.append('AND st.id = %(st_id)s::INT')
         sql_keys['st_id'] = student_pk
     else:
@@ -128,10 +130,6 @@ def create_student_rows(setting_dict, append_dict, student_pk):
     newcursor = connection.cursor()
     newcursor.execute(sql, sql_keys)
     student_rows = sch_mod.dictfetchall(newcursor)
-
-    #logger.debug('sql_keys: ' + str(sql_keys))
-    #logger.debug('sql: ' + str(sql))
-    #logger.debug('student_rows: ' + str(student_rows))
 
 # - add lastname_firstname_initials to rows
     if student_rows:
@@ -151,8 +149,6 @@ def create_student_rows(setting_dict, append_dict, student_pk):
                 row[key] = value
 
     return student_rows
-
-
 # --- end of create_student_rows
 
 
@@ -289,19 +285,17 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
 
         # function creates, deletes and updates studentsubject records of current student PR2020-11-21
         update_wrap = {}
-        #<PERMIT> TODO
+
+        #<PERMIT>
+        # only users with role > student and perm_edit can change student data
+        # only school that is requsr_school can be changed
+        #   current schoolbase can be different from request.user.schoolbase (when role is insp, admin, system)
+        # only if country/examyear/school/student not locked, examyear is published and school is activated
         has_permit = False
-        # current schoolbase can be different from request.user.schoolbase (when role is insp, admin, system)
-        # in that case student data cannot be changed
-        # check if student belongs to request.user.schoolbase
         if request.user and request.user.country and request.user.schoolbase:
-            has_permit = True
+            has_permit = (request.user.role > c.ROLE_02_STUDENT and request.user.is_perm_edit)
         if has_permit:
 
-        # Validations: PR2020-11-21
-        # - changes can only be made when student_school equals requsr_school
-        #   (insp, admin and system can view records of other schools, but cannot change them)
-        # - changes can only be made when: student notlocked, school.activated and not locked, examyear.published and not locked
         # - TODO check for double subjects, double subjects are ot allowed
         # - TODO when deleting: return warning when subject grades have values
 
@@ -315,42 +309,26 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                 upload_dict = json.loads(upload_json)
                 logger.debug('upload_dict' + str(upload_dict))
 
-# - get examyear from upload_dict, filter: examyear is published and not locked
-                s_ey_pk = upload_dict.get(c.KEY_SEL_EXAMYEAR_PK)
-                sel_examyear = sch_mod.Examyear.objects.get_or_none(
-                    pk=s_ey_pk,
-                    country=request.user.country,
-                    published=True,
-                    locked=False
-                )
+# ----- get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, is_locked, \
+                    examyear_published, school_activated, is_requsr_school = \
+                        dl.get_selected_examyear_school_dep_from_usersetting(request)
                 logger.debug('sel_examyear: ' + str(sel_examyear))
-                # NIU sel_examyear_pk = sel_examyear.pk if sel_examyear else None
-
-# - get schoolbase from upload_dict:
-                s_sb_pk = upload_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
-                # TODO check if sel_schoolbase equals requsr_schoolbase: user can only make changes of his own school
-                # turned off for now for testing
-                # checked_sb_pk = s_sb_pk if s_sb_pk == request.user.schoolbase.pk else None
-                checked_sb_pk = s_sb_pk
-                sel_schoolbase = sch_mod.Schoolbase.objects.get_or_none(pk=checked_sb_pk, country=request.user.country)
-                # NIU sel_schoolbase_pk = sel_schoolbase.pk if sel_schoolbase else None
-
-                logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
-# - get school, filter: school is not locked
-                sel_school = sch_mod.School.objects.get_or_none(
-                    base=sel_schoolbase,
-                    examyear=sel_examyear,
-                    locked=False
-                )
                 logger.debug('sel_school: ' + str(sel_school))
+                logger.debug('sel_department: ' + str(sel_department))
+                logger.debug('is_locked: ' + str(is_locked))
 
-# - get current student from upload_dict, filter: sel_school, student is not locked
+# - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                 student = None
-                if sel_school:
+                # TODO : may_edit = examyear_published and school_activated and is_requsr_school and sel_department and not is_locked
+                may_edit = sel_department and not is_locked
+                logger.debug('may_edit: ' + str(may_edit))
+                if may_edit:
                     student_pk = upload_dict.get('student_pk')
                     student = stud_mod.Student.objects.get_or_none(
                         id=student_pk,
                         school=sel_school,
+                        department=sel_department,
                         locked=False
                     )
                 logger.debug('student: ' + str(student))
@@ -384,6 +362,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                         logger.debug('studsubj: ' + str(studsubj))
 # +++ delete studsubj
                         if mode == 'delete':
+                            # published fields are: subj_published, exem_published, reex_published, reex3_published, pok_published
                             # if published: don't delete, but set deleted=True, so its remains in the Ex1 form
                             #               also set grades 'deleted=True
                             # if not published: delete studsubj, grades will be cascade deleted
@@ -395,15 +374,17 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                                         this_text = _("Subject '%(tbl)s' ") % {'tbl': subject.name}
                                 logger.debug('this_text: ' + str(this_text))
 
-                                logger.debug('studsubj.published: ' + str(studsubj.published))
-
-                                if studsubj.published:
+                                if studsubj.subj_published or \
+                                    studsubj.exem_published or \
+                                    studsubj.reex_published or \
+                                    studsubj.reex3_published or \
+                                    studsubj.pok_published:
                                     # if published: set deleted=True, so its remains in the Ex1 form
                                     setattr(studsubj, 'deleted', True)
                                     studsubj.save(request=request)
                                     logger.debug('studsubj.deleted: ' + str(studsubj.deleted))
                                     grades = stud_mod.Grade.objects.filter(studentsubject=studsubj)
-                                    # also set grades deleted=True
+                            # also set grades deleted=True
                                     if grades:
                                         for grade in grades:
                                             setattr(grade, 'deleted', True)
@@ -421,7 +402,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                                         studsubj = None
                                         logger.debug('deleted_row: ' + str(studsubj_rows))
 
-# +++ create new studentsubject
+# +++ create new studentsubject, also create grade of first examperiod
                         elif mode == 'create':
                             schemeitem = subj_mod.Schemeitem.objects.get_or_none(id=schemeitem_pk)
                             logger.debug('schemeitem: ' + str(schemeitem))
@@ -444,7 +425,8 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                                 append_dict['error'] = error_dict
                             setting_dict = {
                                 'sel_examyear_pk': sel_school.examyear.pk,
-                                'sel_schoolbase_pk': sel_school.base_id
+                                'sel_schoolbase_pk': sel_school.base_id,
+                                'sel_depbase_pk': sel_department.base_id
                             }
                             rows = create_studentsubject_rows(
                                 setting_dict= setting_dict,
@@ -459,7 +441,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                         update_wrap['updated_studsubj_rows'] = studsubj_rows
 
         #logger.debug('update_wrap: ' + str(update_wrap))
-        # - return update_wrap
+# - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of StudentsubjectUploadView
 
@@ -604,6 +586,97 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
         except:
             msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
 # --- end of update_studsubj
+
+
+
+@method_decorator([login_required], name='dispatch')
+class StudentsubjectnoteUploadView(View):  # PR2021-01-16
+
+    def post(self, request, *args, **kwargs):
+        logger.debug(' ============= StudentsubjectnoteUploadView ============= ')
+
+        # function creates, deletes and updates studentsubject records of current student PR2020-11-21
+        update_wrap = {}
+
+        #<PERMIT>
+        # only users with role > student and perm_edit can change student data
+        # only school that is requsr_school can be changed
+        #   current schoolbase can be different from request.user.schoolbase (when role is insp, admin, system)
+        # only if country/examyear/school/student not locked, examyear is published and school is activated
+        has_permit = False
+        if request.user and request.user.country and request.user.schoolbase:
+            has_permit = (request.user.role > c.ROLE_02_STUDENT and request.user.is_perm_edit)
+        if has_permit:
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                logger.debug('upload_dict' + str(upload_dict))
+
+                # - get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, is_locked, \
+                examyear_published, school_activated, is_requsr_school = \
+                dl.get_selected_examyear_school_dep_from_usersetting(request)
+
+# - get current grade - when mode is 'create': studsubj is None. It will be created at "elif mode == 'create'"
+                examperiod_int = upload_dict.get('examperiod_int')
+                studsubj_pk = upload_dict.get('studsubj_pk')
+                note = upload_dict.get('note')
+
+                studsubj = stud_mod.Studentsubject.objects.get_or_none(
+                    id=studsubj_pk,
+                    student__school=sel_school,
+                    student__department=sel_department
+                )
+                logger.debug('studsubj: ' + str(studsubj))
+                logger.debug('note: ' + str(note))
+
+# - Create new orderhour / emplhour if is_create:
+                # update_emplhour is also called when emplhour is_created, save_to_log is called in update_emplhour
+                if studsubj and note:
+                    logger.debug('>>> studsubj.pk: ' + str(studsubj.pk))
+                    studsubjnote = stud_mod.Studentsubjectnote(
+                        studentsubject=studsubj,
+                        note=note,
+                        is_insp=False,
+                        is_public=False
+                    )
+                    logger.debug('studsubjnote.note: ' + str(studsubjnote.note))
+                    studsubjnote.save(request=request)
+                    logger.debug('studsubjnote.pk: ' + str(studsubjnote.pk))
+
+                """
+# - also set emplhour.hasnote = True, save emplhour and update last_emplhour_updated PR2020-10-26
+                    #emplhour.hasnote = True
+                    #emplhour.save(request=request, last_emplhour_updated=True)
+
+# 6. create list of updated emplhour_row
+                    filter_dict = {'eplh_update_list': [emplhour.pk]}
+                    emplhour_rows = d.create_emplhour_rows(filter_dict, request, None, False)
+                    if emplhour_rows:
+                        update_wrap['emplhour_updates'] = emplhour_rows
+
+# - also get emplhournote (roster page)
+                    emplhournote_rows = d.create_emplhournote_rows(
+                        period_dict=filter_dict,
+                        last_emplhour_check=None,
+                        request=request)
+                    if emplhournote_rows:
+                        update_wrap['emplhournote_updates'] = emplhournote_rows
+                """
+# 9. return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=LazyEncoder))
+
+
+
+
+
+
 
 
 @method_decorator([login_required], name='dispatch')
@@ -1061,6 +1134,263 @@ def update_student(instance, upload_dict, msg_dict, request):
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def create_studsubj(student, schemeitem, request):
+    # --- create student subject # PR2020-11-21
+    logger.debug(' ----- create_studsubj ----- ')
+
+    studsubj = None
+    msg_err = None
+
+    if student and schemeitem:
+        # - TODO check if student already has this subject, if subject is allowed
+        msg_err = None
+# - create and save student
+        if not msg_err:
+            try:
+                #a = 1 / 0
+                studsubj = stud_mod.Studentsubject(
+                    student=student,
+                    schemeitem=schemeitem
+                )
+                studsubj.save(request=request)
+                # also create grade of first examperiod
+                grade = stud_mod.Grade(
+                    studentsubject=studsubj,
+                    examperiod=c.EXAMPERIOD_FIRST
+                )
+                grade.save(request=request)
+            except:
+                name = schemeitem.subject.name if schemeitem.subject and schemeitem.subject.name else '---'
+                msg_err = str(_("An error occurred. Subject '%(val)s' could not be added.") % {'val': name})
+
+    return studsubj, msg_err
+
+
+#/////////////////////////////////////////////////////////////////
+
+def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studsubj_pk=None):
+    # --- create rows of all students of this examyear / school PR2020-10-27
+    logger.debug(' =============== create_student_rows ============= ')
+    logger.debug('append_dict: ' + str(append_dict))
+    logger.debug('setting_dict: ' + str(setting_dict))
+    # create list of students of this school / examyear, possibly with filter student_pk or studsubj_pk
+    # with left join of studentsubjects with deleted=False
+    sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
+    sel_schoolbase_pk = af.get_dict_value(setting_dict, ('sel_schoolbase_pk',))
+    sel_depbase_pk = af.get_dict_value(setting_dict, ('sel_depbase_pk',))
+    logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
+    logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
+    logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
+
+    sql_studsubj_list = ["SELECT studsubj.id AS studsubj_id, studsubj.student_id,",
+        "studsubj.cluster_id, si.id AS schemeitem_id, si.scheme_id AS scheme_id,",
+        "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_elective_combi,",
+        "studsubj.pws_title, studsubj.pws_subjects,",
+        "studsubj.has_exemption, studsubj.has_reex, studsubj.has_reex03, studsubj.has_pok,",
+
+        "si.subject_id, si.subjecttype_id, si.gradetype,",
+        "subjbase.code AS subj_code, subj.name AS subj_name,",
+        "si.weight_se AS si_se, si.weight_ce AS si_ce,",
+        "si.is_mandatory, si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
+        "si.elective_combi_allowed, si.has_practexam,",
+
+        "sjt.abbrev AS sjt_abbrev, sjt.has_prac AS sjt_has_prac,",
+        "sjt.has_pws AS sjt_has_pws, sjt.one_allowed AS sjt_one_allowed,",
+
+        "studsubj.subj_auth1by_id AS subj_auth1_id, SUBSTRING(subj_auth1.username, 7) AS subj_auth1_usr, subj_auth1.modified_at AS subj_auth1_modat,",
+        "studsubj.subj_auth2by_id AS subj_auth2_id, SUBSTRING(subj_auth2.username, 7) AS subj_auth2_usr, subj_auth2.modified_at AS subj_auth2_modat,",
+        "studsubj.subj_published_id AS subj_publ_id, subj_published.modifiedat AS subj_publ_modat,",
+
+        "studsubj.exem_auth1by_id AS exem_auth1_id, SUBSTRING(exem_auth1.username, 7) AS exem_auth1_usr, exem_auth1.modified_at AS exem_auth1_modat,",
+        "studsubj.exem_auth2by_id AS exem_auth2_id, SUBSTRING(exem_auth2.username, 7) AS exem_auth2_usr, exem_auth2.modified_at AS exem_auth2_modat,",
+        "studsubj.exem_published_id AS exem_publ_id, exem_published.modifiedat AS exem_publ_modat,",
+
+        "studsubj.reex_auth1by_id AS reex_auth1_id, SUBSTRING(reex_auth1.username, 7) AS reex_auth1_usr, reex_auth1.modified_at AS reex_auth1_modat,",
+        "studsubj.reex_auth2by_id AS reex_auth2_id, SUBSTRING(reex_auth2.username, 7) AS reex_auth2_usr, reex_auth2.modified_at AS reex_auth2_modat,",
+        "studsubj.reex_published_id AS reex_publ_id, reex_published.modifiedat AS reex_publ_modat,",
+
+        "studsubj.reex3_auth1by_id AS reex3_auth1_id, SUBSTRING(reex3_auth1.username, 7) AS reex3_auth1_usr, reex3_auth1.modified_at AS reex3_auth1_modat,",
+        "studsubj.reex3_auth2by_id AS reex3_auth2_id, SUBSTRING(reex3_auth2.username, 7) AS reex3_auth2_usr, reex3_auth2.modified_at AS reex3_auth2_modat,",
+        "studsubj.reex3_published_id AS reex3_publ_id, reex3_published.modifiedat AS reex3_publ_modat,",
+
+        "studsubj.pok_auth1by_id AS pok_auth1_id, SUBSTRING(pok_auth1.username, 7) AS pok_auth1_usr, pok_auth1.modified_at AS pok_auth1_modat,",
+        "studsubj.pok_auth2by_id AS pok_auth2_id, SUBSTRING(pok_auth2.username, 7) AS pok_auth2_usr, pok_auth2.modified_at AS pok_auth2_modat,",
+        "studsubj.pok_published_id AS pok_publ_id, pok_published.modifiedat AS pok_publ_modat,",
+
+        "studsubj.has_schoolnotes AS note_has_schoolnotes, studsubj.has_inspnotes AS note_has_inspnotes , studsubj.note_status,",
+
+        "studsubj.deleted, studsubj.modifiedby_id, studsubj.modifiedat,",
+        "SUBSTRING(au.username, 7) AS modby_username",
+
+        "FROM students_studentsubject AS studsubj",
+        "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+        "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+        "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+        "LEFT JOIN subjects_subjecttype AS sjt ON (sjt.id = si.subjecttype_id)",
+
+        "LEFT JOIN accounts_user AS au ON (au.id = studsubj.modifiedby_id)",
+
+        "LEFT JOIN accounts_user AS subj_auth1 ON (subj_auth1.id = studsubj.subj_auth1by_id)",
+        "LEFT JOIN accounts_user AS subj_auth2 ON (subj_auth2.id = studsubj.subj_auth2by_id)",
+        "LEFT JOIN students_published AS subj_published ON (subj_published.id = studsubj.subj_published_id)",
+
+        "LEFT JOIN accounts_user AS exem_auth1 ON (exem_auth1.id = studsubj.exem_auth1by_id)",
+        "LEFT JOIN accounts_user AS exem_auth2 ON (exem_auth2.id = studsubj.exem_auth2by_id)",
+        "LEFT JOIN students_published AS exem_published ON (exem_published.id = studsubj.exem_published_id)",
+
+        "LEFT JOIN accounts_user AS reex_auth1 ON (reex_auth1.id = studsubj.reex_auth1by_id)",
+        "LEFT JOIN accounts_user AS reex_auth2 ON (reex_auth2.id = studsubj.reex_auth2by_id)",
+        "LEFT JOIN students_published AS reex_published ON (reex_published.id = studsubj.reex_published_id)",
+
+        "LEFT JOIN accounts_user AS reex3_auth1 ON (reex3_auth1.id = studsubj.reex3_auth1by_id)",
+        "LEFT JOIN accounts_user AS reex3_auth2 ON (reex3_auth2.id = studsubj.reex3_auth2by_id)",
+        "LEFT JOIN students_published AS reex3_published ON (reex3_published.id = studsubj.reex3_published_id)",
+
+        "LEFT JOIN accounts_user AS pok_auth1 ON (pok_auth1.id = studsubj.pok_auth1by_id)",
+        "LEFT JOIN accounts_user AS pok_auth2 ON (pok_auth2.id = studsubj.pok_auth2by_id)",
+        "LEFT JOIN students_published AS pok_published ON (pok_published.id = studsubj.pok_published_id)",
+
+        "WHERE NOT studsubj.deleted"]
+    sql_studsubjects = ' '.join(sql_studsubj_list)
+
+    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
+
+    sql_list = ["SELECT studsubj.studsubj_id, studsubj.schemeitem_id, studsubj.cluster_id,",
+        "CONCAT('studsubj_', st.id::TEXT, '_', studsubj.studsubj_id::TEXT) AS mapid, 'studsubj' AS table,",
+        "st.id AS stud_id, st.lastname, st.firstname, st.prefix, st.examnumber,",
+        "st.scheme_id, st.iseveningstudent, st.locked, st.has_reex, st.bis_exam, st.withdrawn,",
+        "studsubj.subject_id AS subj_id, studsubj.subj_code, studsubj.subj_name, studsubj.sjt_abbrev,",
+        "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
+
+        "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_elective_combi,",
+        "studsubj.pws_title, studsubj.pws_subjects,",
+        "studsubj.has_exemption, studsubj.has_reex, studsubj.has_reex03, studsubj.has_pok,",
+
+        "studsubj.is_mandatory, studsubj.is_combi, studsubj.extra_count_allowed, studsubj.extra_nocount_allowed, studsubj.elective_combi_allowed,",
+        "studsubj.sjt_has_prac, studsubj.sjt_has_pws, studsubj.sjt_one_allowed,",
+
+        "studsubj.subj_auth1_id, studsubj.subj_auth1_usr, studsubj.subj_auth1_modat,",
+        "studsubj.subj_auth2_id, studsubj.subj_auth2_usr, studsubj.subj_auth2_modat,",
+        "studsubj.subj_publ_id, studsubj.subj_publ_modat,",
+
+        "studsubj.exem_auth1_id, studsubj.exem_auth1_usr, studsubj.exem_auth1_modat,",
+        "studsubj.exem_auth2_id, studsubj.exem_auth2_usr, studsubj.exem_auth2_modat,",
+        "studsubj.exem_publ_id, studsubj.exem_publ_modat,",
+
+        "studsubj.reex_auth1_id, studsubj.reex_auth1_usr, studsubj.reex_auth1_modat,",
+        "studsubj.reex_auth2_id, studsubj.reex_auth2_usr, studsubj.reex_auth2_modat,",
+        "studsubj.reex_publ_id, studsubj.reex_publ_modat,",
+
+        "studsubj.reex3_auth1_id, studsubj.reex3_auth1_usr, studsubj.reex3_auth1_modat,",
+        "studsubj.reex3_auth2_id, studsubj.reex3_auth2_usr, studsubj.reex3_auth2_modat,",
+        "studsubj.reex3_publ_id, studsubj.reex3_publ_modat,",
+
+        "studsubj.pok_auth1_id, studsubj.pok_auth1_usr, studsubj.pok_auth1_modat,",
+        "studsubj.pok_auth2_id, studsubj.pok_auth2_usr, studsubj.pok_auth2_modat,",
+        "studsubj.pok_publ_id, studsubj.pok_publ_modat,",
+
+        "studsubj.note_has_schoolnotes, studsubj.note_has_inspnotes, studsubj.note_status,",
+
+        "studsubj.deleted, studsubj.modifiedat, studsubj.modby_username",
+        "FROM students_student AS st",
+        "LEFT JOIN (" + sql_studsubjects + ") AS studsubj ON (studsubj.student_id = st.id)",
+        "INNER JOIN schools_school AS school ON (school.id = st.school_id)",
+        "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
+        "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
+        "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
+        "LEFT JOIN subjects_scheme AS scheme ON (scheme.id = st.scheme_id)",
+        "LEFT JOIN subjects_package AS package ON (package.id = st.package_id)",
+        "WHERE school.base_id = %(sb_id)s::INT AND school.examyear_id = %(ey_id)s::INT AND dep.base_id = %(db_id)s::INT"]
+
+    if studsubj_pk:
+        sql_list.append('AND studsubj.studsubj_id = %(studsubj_id)s::INT')
+        sql_keys['studsubj_id'] = studsubj_pk
+    elif student_pk:
+        sql_keys['st_id'] = student_pk
+        sql_list.append('AND st.id = %(st_id)s::INT')
+        sql_list.append('ORDER BY studsubj.subj_code')
+    else:
+        sql_list.append('ORDER BY LOWER(st.lastname), LOWER(st.firstname), studsubj.subj_code')
+    sql = ' '.join(sql_list)
+
+    #logger.debug('sql: ' + str(sql))
+    newcursor = connection.cursor()
+    newcursor.execute(sql, sql_keys)
+    student_rows = sch_mod.dictfetchall(newcursor)
+
+# - full name to rows
+    if student_rows:
+        for row in student_rows:
+            logger.debug('row', row)
+
+            first_name = row.get('firstname')
+            last_name = row.get('lastname')
+            prefix = row.get('prefix')
+            full_name = lastname_firstname_initials(last_name, first_name, prefix)
+            row['fullname'] = full_name if full_name else None
+
+# - add messages to student_row, only when only 1 row added (then studsubj_pk has value)
+        if studsubj_pk:
+            # when student_pk has value there is only 1 row
+            row = student_rows[0]
+            if row:
+                for key, value in append_dict.items():
+                    row[key] = value
+
+    return student_rows
+# --- end of create_studentsubject_rows
+
+
+def create_studentsubjectnote_rows(setting_dict, request_item):  # PR2021-01-17
+    # --- create rows of all students of this examyear / school PR2020-10-27
+    logger.debug(' =============== create_student_rows ============= ')
+    # logger.debug('append_dict', append_dict)
+    # create list of students of this school / examyear, possibly with filter student_pk or studsubj_pk
+    # with left join of studentsubjects with deleted=False
+
+    sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
+    sel_schoolbase_pk = af.get_dict_value(setting_dict, ('sel_schoolbase_pk',))
+    sel_depbase_pk = af.get_dict_value(setting_dict, ('sel_depbase_pk',))
+    sel_schoolbase_equals_requsr_sb = af.get_dict_value(setting_dict, ('sel_schoolbase_equals_requsr_sb',), False)
+    requsr_role_insp = af.get_dict_value(setting_dict, ('requsr_role_insp',), False)
+
+    studsubj_pk = af.get_dict_value(request_item, ('studsubj_pk',))
+    sql_keys = {'ss_id': studsubj_pk, 'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
+    sql_user = "SELECT au.id, COALESCE(SUBSTRING (au.username, 7), '') AS name, sb.code AS sb_code " + \
+                    "FROM accounts_user AS au INNER JOIN schools_schoolbase AS sb ON (sb.id = au.schoolbase_id)"
+
+    sql_list = ["SELECT ssn.id, ssn.studentsubject_id, ssn.note, ssn.is_insp, ssn.is_public, ssn.modifiedat,",
+                "au.name AS modifiedby, au.sb_code AS schoolcode",
+                "FROM students_studentsubjectnote AS ssn",
+                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = ssn.studentsubject_id)",
+                "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+                "INNER JOIN schools_school AS school ON (school.id = st.school_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
+                "LEFT JOIN ( " + sql_user + ") AS au ON (au.id = ssn.modifiedby_id)",
+                "WHERE ssn.studentsubject_id = %(ss_id)s::INT"]
+                #"AND school.base_id = %(sb_id)s::INT AND school.examyear_id = %(ey_id)s::INT AND dep.base_id = %(db_id)s::INT"]
+
+    #if sel_schoolbase_equals_requsr_sb:
+        # if user is from this school: display schoolnotes and public notes
+        #sql_list.append("AND (ssn.is_public OR NOT is_insp)")
+    #elif requsr_role_insp:
+        # if user is insp: display schoolnotes and public notes
+        #sql_list.append("AND (ssn.is_public OR is_insp)")
+   # else:
+        # only show public notes
+        #sql_list.append("AND (ssn.is_public)")
+
+    sql_list.append("ORDER BY ssn.modifiedat DESC")
+
+    sql = ' '.join(sql_list)
+    newcursor = connection.cursor()
+    newcursor.execute(sql, sql_keys)
+    note_rows = sch_mod.dictfetchall(newcursor)
+
+    return note_rows
+
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def upload_student(student_list, student_dict, lookup_field, awpKey_list,
                    is_test, dateformat, indent_str, space_str, logfile, request):  # PR2019-12-17 PR2020-10-21
     logger.debug('----------------- import student  --------------------')
@@ -1283,205 +1613,6 @@ def upload_student(student_list, student_dict, lookup_field, awpKey_list,
 
     return update_dict
 
-
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def create_studsubj(student, schemeitem, request):
-    # --- create student subject # PR2020-11-21
-    logger.debug(' ----- create_studsubj ----- ')
-
-    studsubj = None
-    msg_err = None
-
-    if student and schemeitem:
-        # - TODO check if student already has this subject, if subject is allowed
-        msg_err = None
-# - create and save student
-        if not msg_err:
-            try:
-                #a = 1 / 0
-                studsubj = stud_mod.Studentsubject(
-                    student=student,
-                    schemeitem=schemeitem
-                )
-                studsubj.save(request=request)
-                # also create grade of first examperiod
-                grade = stud_mod.Grade(
-                    studentsubject=studsubj,
-                    examperiod=c.EXAMPERIOD_FIRST
-                )
-                grade.save(request=request)
-            except:
-                name = schemeitem.subject.name if schemeitem.subject and schemeitem.subject.name else '---'
-                msg_err = str(_("An error occurred. Subject '%(val)s' could not be added.") % {'val': name})
-
-    return studsubj, msg_err
-
-
-#/////////////////////////////////////////////////////////////////
-
-def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studsubj_pk=None):
-    # --- create rows of all students of this examyear / school PR2020-10-27
-    #logger.debug(' =============== create_student_rows ============= ')
-    #logger.debug('append_dict', append_dict)
-    # create list of students of this school / examyear, possibly with filter student_pk or studsubj_pk
-    # with left join of studentsubjects with deleted=False
-    sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
-    sel_schoolbase_pk = af.get_dict_value(setting_dict, ('sel_schoolbase_pk',))
-
-    sql_studsubj_list = ["SELECT studsubj.id AS studsubj_id, studsubj.student_id,",
-        "studsubj.cluster_id, si.id AS schemeitem_id, si.scheme_id AS scheme_id,",
-        "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_elective_combi,",
-        "studsubj.pws_title, studsubj.pws_subjects,",
-        "studsubj.has_exemption, studsubj.has_reex, studsubj.has_reex03, studsubj.has_pok,",
-
-        "si.subject_id, si.subjecttype_id, si.gradetype,",
-        "subjbase.code AS subj_code, subj.name AS subj_name,",
-        "si.weight_se AS si_se, si.weight_ce AS si_ce,",
-        "si.is_mandatory, si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
-        "si.elective_combi_allowed, si.has_practexam,",
-
-        "sjt.abbrev AS sjt_abbrev, sjt.has_prac AS sjt_has_prac,",
-        "sjt.has_pws AS sjt_has_pws, sjt.one_allowed AS sjt_one_allowed,",
-
-        "studsubj.subj_auth1by_id AS subj_auth1_id, SUBSTRING(subj_auth1.username, 7) AS subj_auth1_usr, subj_auth1.modified_at AS subj_auth1_modat,",
-        "studsubj.subj_auth2by_id AS subj_auth2_id, SUBSTRING(subj_auth2.username, 7) AS subj_auth2_usr, subj_auth2.modified_at AS subj_auth2_modat,",
-        "studsubj.subj_published_id AS subj_publ_id, subj_published.modifiedat AS subj_publ_modat,",
-
-        "studsubj.exem_auth1by_id AS exem_auth1_id, SUBSTRING(exem_auth1.username, 7) AS exem_auth1_usr, exem_auth1.modified_at AS exem_auth1_modat,",
-        "studsubj.exem_auth2by_id AS exem_auth2_id, SUBSTRING(exem_auth2.username, 7) AS exem_auth2_usr, exem_auth2.modified_at AS exem_auth2_modat,",
-        "studsubj.exem_published_id AS exem_publ_id, exem_published.modifiedat AS exem_publ_modat,",
-
-        "studsubj.reex_auth1by_id AS reex_auth1_id, SUBSTRING(reex_auth1.username, 7) AS reex_auth1_usr, reex_auth1.modified_at AS reex_auth1_modat,",
-        "studsubj.reex_auth2by_id AS reex_auth2_id, SUBSTRING(reex_auth2.username, 7) AS reex_auth2_usr, reex_auth2.modified_at AS reex_auth2_modat,",
-        "studsubj.reex_published_id AS reex_publ_id, reex_published.modifiedat AS reex_publ_modat,",
-
-        "studsubj.reex3_auth1by_id AS reex3_auth1_id, SUBSTRING(reex3_auth1.username, 7) AS reex3_auth1_usr, reex3_auth1.modified_at AS reex3_auth1_modat,",
-        "studsubj.reex3_auth2by_id AS reex3_auth2_id, SUBSTRING(reex3_auth2.username, 7) AS reex3_auth2_usr, reex3_auth2.modified_at AS reex3_auth2_modat,",
-        "studsubj.reex3_published_id AS reex3_publ_id, reex3_published.modifiedat AS reex3_publ_modat,",
-
-        "studsubj.pok_auth1by_id AS pok_auth1_id, SUBSTRING(pok_auth1.username, 7) AS pok_auth1_usr, pok_auth1.modified_at AS pok_auth1_modat,",
-        "studsubj.pok_auth2by_id AS pok_auth2_id, SUBSTRING(pok_auth2.username, 7) AS pok_auth2_usr, pok_auth2.modified_at AS pok_auth2_modat,",
-        "studsubj.pok_published_id AS pok_publ_id, pok_published.modifiedat AS pok_publ_modat,",
-
-        "studsubj.deleted, studsubj.modifiedby_id, studsubj.modifiedat,",
-        "SUBSTRING(au.username, 7) AS modby_username",
-
-        "FROM students_studentsubject AS studsubj",
-        "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-        "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-        "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-        "LEFT JOIN subjects_subjecttype AS sjt ON (sjt.id = si.subjecttype_id)",
-
-        "LEFT JOIN accounts_user AS au ON (au.id = studsubj.modifiedby_id)",
-
-        "LEFT JOIN accounts_user AS subj_auth1 ON (subj_auth1.id = studsubj.subj_auth1by_id)",
-        "LEFT JOIN accounts_user AS subj_auth2 ON (subj_auth2.id = studsubj.subj_auth2by_id)",
-        "LEFT JOIN students_published AS subj_published ON (subj_published.id = studsubj.subj_published_id)",
-
-        "LEFT JOIN accounts_user AS exem_auth1 ON (exem_auth1.id = studsubj.exem_auth1by_id)",
-        "LEFT JOIN accounts_user AS exem_auth2 ON (exem_auth2.id = studsubj.exem_auth2by_id)",
-        "LEFT JOIN students_published AS exem_published ON (exem_published.id = studsubj.exem_published_id)",
-
-        "LEFT JOIN accounts_user AS reex_auth1 ON (reex_auth1.id = studsubj.reex_auth1by_id)",
-        "LEFT JOIN accounts_user AS reex_auth2 ON (reex_auth2.id = studsubj.reex_auth2by_id)",
-        "LEFT JOIN students_published AS reex_published ON (reex_published.id = studsubj.reex_published_id)",
-
-        "LEFT JOIN accounts_user AS reex3_auth1 ON (reex3_auth1.id = studsubj.reex3_auth1by_id)",
-        "LEFT JOIN accounts_user AS reex3_auth2 ON (reex3_auth2.id = studsubj.reex3_auth2by_id)",
-        "LEFT JOIN students_published AS reex3_published ON (reex3_published.id = studsubj.reex3_published_id)",
-
-        "LEFT JOIN accounts_user AS pok_auth1 ON (pok_auth1.id = studsubj.pok_auth1by_id)",
-        "LEFT JOIN accounts_user AS pok_auth2 ON (pok_auth2.id = studsubj.pok_auth2by_id)",
-        "LEFT JOIN students_published AS pok_published ON (pok_published.id = studsubj.pok_published_id)",
-
-        "WHERE NOT studsubj.deleted"]
-
-    sql_studsubjects = ' '.join(sql_studsubj_list)
-    #  "LEFT JOIN (" + sql_studsubjects + ") AS studsubj ON (studsubj.student_id = st.id)",
-
-    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk}
-    sql_list = ["SELECT studsubj.studsubj_id, studsubj.schemeitem_id, studsubj.cluster_id,",
-        "CONCAT('studsubj_', st.id::TEXT, '_', studsubj.studsubj_id::TEXT) AS mapid, 'studsubj' AS table,",
-        "st.id AS stud_id, st.lastname, st.firstname, st.prefix, st.examnumber,",
-        "st.scheme_id, st.iseveningstudent, st.locked, st.has_reex, st.bis_exam, st.withdrawn,",
-        "studsubj.subject_id AS subj_id, studsubj.subj_code, studsubj.subj_name, studsubj.sjt_abbrev,",
-        "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
-
-        "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_elective_combi,",
-        "studsubj.pws_title, studsubj.pws_subjects,",
-        "studsubj.has_exemption, studsubj.has_reex, studsubj.has_reex03, studsubj.has_pok,",
-
-        "studsubj.is_mandatory, studsubj.is_combi, studsubj.extra_count_allowed, studsubj.extra_nocount_allowed, studsubj.elective_combi_allowed,",
-        "studsubj.sjt_has_prac, studsubj.sjt_has_pws, studsubj.sjt_one_allowed,",
-
-        "studsubj.subj_auth1_id, studsubj.subj_auth1_usr, studsubj.subj_auth1_modat,",
-        "studsubj.subj_auth2_id, studsubj.subj_auth2_usr, studsubj.subj_auth2_modat,",
-        "studsubj.subj_publ_id, studsubj.subj_publ_modat,",
-
-        "studsubj.exem_auth1_id, studsubj.exem_auth1_usr, studsubj.exem_auth1_modat,",
-        "studsubj.exem_auth2_id, studsubj.exem_auth2_usr, studsubj.exem_auth2_modat,",
-        "studsubj.exem_publ_id, studsubj.exem_publ_modat,",
-
-        "studsubj.reex_auth1_id, studsubj.reex_auth1_usr, studsubj.reex_auth1_modat,",
-        "studsubj.reex_auth2_id, studsubj.reex_auth2_usr, studsubj.reex_auth2_modat,",
-        "studsubj.reex_publ_id, studsubj.reex_publ_modat,",
-
-        "studsubj.reex3_auth1_id, studsubj.reex3_auth1_usr, studsubj.reex3_auth1_modat,",
-        "studsubj.reex3_auth2_id, studsubj.reex3_auth2_usr, studsubj.reex3_auth2_modat,",
-        "studsubj.reex3_publ_id, studsubj.reex3_publ_modat,",
-
-        "studsubj.pok_auth1_id, studsubj.pok_auth1_usr, studsubj.pok_auth1_modat,",
-        "studsubj.pok_auth2_id, studsubj.pok_auth2_usr, studsubj.pok_auth2_modat,",
-        "studsubj.pok_publ_id, studsubj.pok_publ_modat,",
-
-        "studsubj.deleted, studsubj.modifiedat, studsubj.modby_username",
-        "FROM students_student AS st",
-        "LEFT JOIN (" + sql_studsubjects + ") AS studsubj ON (studsubj.student_id = st.id)",
-        "INNER JOIN schools_school AS school ON (school.id = st.school_id)",
-        "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
-        "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
-        "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
-        "LEFT JOIN subjects_scheme AS scheme ON (scheme.id = st.scheme_id)",
-        "LEFT JOIN subjects_package AS package ON (package.id = st.package_id)",
-        "WHERE school.base_id = %(sb_id)s::INT AND school.examyear_id = %(ey_id)s::INT "]
-
-    if studsubj_pk:
-        # when studsubj_pk has value: skip other filters
-        sql_list.append('AND studsubj.studsubj_id = %(studsubj_id)s::INT')
-        sql_keys['studsubj_id'] = studsubj_pk
-    elif student_pk:
-        # when student_pk has value: skip other filters
-        sql_keys['st_id'] = student_pk
-        sql_list.append('AND st.id = %(st_id)s::INT')
-        sql_list.append('ORDER BY studsubj.subj_abbrev')
-    else:
-        sql_list.append('ORDER BY LOWER(st.lastname), LOWER(st.firstname), studsubj.subj_code')
-
-    sql = ' '.join(sql_list)
-
-    newcursor = connection.cursor()
-    newcursor.execute(sql, sql_keys)
-    student_rows = sch_mod.dictfetchall(newcursor)
-
-# - full name to rows
-    if student_rows:
-        for row in student_rows:
-            first_name = row.get('firstname')
-            last_name = row.get('lastname')
-            prefix = row.get('prefix')
-            full_name = lastname_firstname_initials(last_name, first_name, prefix)
-            row['fullname'] = full_name if full_name else None
-
-# - add messages to student_row, only when only 1 row added (then studsubj_pk has value)
-        if studsubj_pk:
-            # when student_pk has value there is only 1 row
-            row = student_rows[0]
-            if row:
-                for key, value in append_dict.items():
-                    row[key] = value
-
-    return student_rows
-# --- end of create_studentsubject_rows
 
 # oooooooooooooo Functions  Student name ooooooooooooooooooooooooooooooooooooooooooooooooooo
 

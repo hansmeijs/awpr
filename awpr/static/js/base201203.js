@@ -99,7 +99,7 @@
         if(el_hdrbar_examyear) {
             let examyer_txt = "";
             if (setting_dict.sel_examyear_pk){
-               examyer_txt = loc.Exam_year + " " + setting_dict.sel_examyear_code
+               examyer_txt = loc.Examyear + " " + setting_dict.sel_examyear_code
             } else {
                 // there is always an examyear selected, unless table is empty
                 examyer_txt = "<" + loc.No_examyears + ">"
@@ -169,7 +169,6 @@
     }  // UpdateHeaderbar
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
 
 //========= isEmpty  ============= PR2019-05-11
     //PR2019-05-05 from https://coderwall.com/p/_g3x9q/how-to-check-if-javascript-object-is-empty'
@@ -552,6 +551,99 @@
         if (!map_dict) {map_dict = {}}
         return map_dict
     }
+
+
+//========= get_itemdict_from_datamap_by_el  ============= PR2019-10-12 PR2020-09-13 PR2021-01-014
+    function get_itemdict_from_datamap_by_el(el, data_map) {
+        // function gets map_id form 'data-map_id' of tblRow, looks up 'map_id' in data_map
+        let item_dict = {};
+        const tblRow = get_tablerow_selected(el);
+        if(tblRow){
+            // was: const map_id = get_attr_from_el(tblRow, "data-table") + "_" + get_attr_from_el(tblRow, "data-pk")
+            item_dict = get_mapdict_from_datamap_by_id(data_map, tblRow.id);
+        }
+        return item_dict
+    }
+
+//========= b_get_status_at_index  ============= PR2021-01-15
+    function b_get_status_at_index(status_int, index) {
+        if(status_int == null){status_int = 0};
+        let status_bool = false;
+        if(index < 15) {
+            const status_array = b_get_status_array(status_int)
+            status_bool = (status_array[index] == "1");
+        }
+        return status_bool
+    }  // b_get_status_at_index
+
+//========= b_set_status_at_index  ============= PR2021-01-15
+    function b_set_status_at_index(status_int, index, new_value) {
+        console.log( " ==== b_set_status_at_index ====");
+
+        if(status_int == null){status_int = 0};
+        let new_status_int = 0;
+        if(index < 15) {
+    // ---  put new_value at index
+            const status_array = b_get_status_array(status_int)
+            status_array[index] = (new_value) ? "1" : "0";
+    // ---  convert to integer
+            status_array.reverse();
+            const arr_joined = status_array.join("");
+            new_status_int = parseInt(arr_joined,2)
+        }
+        return new_status_int
+    }  // b_set_status_at_index
+
+//========= b_get_status_array  ============= PR2021-01-15
+    function b_get_status_array(status_int) {
+        //console.log( " ==== b_set_status_at_index ====");
+        if(status_int == null){status_int = 0};
+        const status_binary = status_int.toString(2)  // status_binary:  '1110101' string
+        const status_binary_extended = "00000000000000" + status_binary;  // status_binary_extended: '000000000000001110101' string
+        const status_binary_sliced = status_binary_extended.slice(-15);  // status_binary_sliced: '000000001110101' string
+
+        // PR2021-01-15 from https://www.samanthaming.com/tidbits/83-4-ways-to-convert-string-to-character-array/
+        const status_array = [...status_binary_sliced];   // ... is the spread operator
+        const status_array_reversed = status_array.reverse();
+
+        return status_array_reversed
+    }  // b_get_status_array
+
+    function get_status_class(status_sum) { // PR2021-01-15
+        //console.log( " ==== get_status_class ====");
+        //console.log( "status_sum", status_sum);
+        let img_class = "appr_0_0";
+        if (status_sum < 32) {
+            const created = b_get_status_at_index(status_sum, 0)  // STATUS_00_CREATED
+            const auth1 = b_get_status_at_index(status_sum, 1)  // STATUS_01_AUTH1 = 2
+            const auth2 = b_get_status_at_index(status_sum, 2) // STATUS_02_AUTH2 = 4
+            const auth3 = b_get_status_at_index(status_sum, 3) // STATUS_03_AUTH3 = 8
+            const submitted = b_get_status_at_index(status_sum, 4) // STATUS_04_SUBMITTED = 16
+
+            img_class = (submitted) ? "appr_1_5" :
+                        (auth1 && auth2 && auth3) ? "appr_1_4" :
+                        (auth1 && auth2) ? "appr_0_4" :
+                        (auth1 && auth3) ? "appr_1_2" :
+                        (auth2 && auth3) ? "appr_1_3" :
+                        (auth3) ? "appr_1_1" :
+                        (auth2) ? "appr_0_3" :
+                        (auth1) ? "appr_0_2" :
+                        (created) ? "stat_0_1" : "stat_0_0"
+
+        } else if (status_sum < 64) {img_class = "note_1_2" // STATUS_05_REQUEST = 32
+        } else if (status_sum < 128) {img_class = "note_1_3"// STATUS_06_WARNING = 64
+        } else if (status_sum < 256) {img_class = "note_1_4"// STATUS_07_REJECTED = 128
+        } else if (status_sum < 512) {img_class = "note_2_2"// STATUS_08_REQUEST_ANSWERED = 256
+        } else if (status_sum < 1024) {img_class = "note_2_3" // STATUS_09_WARNING_ANSWERED = 512
+        } else if (status_sum < 2048) {img_class = "note_2_4" // STATUS_10_REJECTED_ANSWERED = 1024
+        } else if (status_sum < 4096) {img_class = "note_1_5"  // STATUS_11_EDIT = 2048
+        } else if (status_sum < 8192) {img_class = "note_2_5" // STATUS_12_EDIT_ANSWERED = 4096
+        } else if (status_sum < 16384) {img_class = "note_2_6"  // STATUS_13_APPROVED = 8192
+        } else {img_class = "appr_2_6"}; // STATUS_14_LOCKED = 16384
+
+        //console.log("img_class", img_class);
+        return img_class;
+    }  // get_status_class
 
 //#########################################################################
 // +++++++++++++++++ DATAMAP +++++++++++++++++++++++++++++++++++++++

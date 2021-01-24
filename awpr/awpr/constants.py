@@ -58,36 +58,41 @@ ROLE_DICT = {
     }
 
 # PR2018-05-21
-PERMIT_00_NONE = 0
-PERMIT_01_READ = 1
-PERMIT_02_EDIT = 2
-PERMIT_04_AUTH1 = 4
-PERMIT_08_AUTH2 = 8
-PERMIT_16_ANALYZE = 16
-PERMIT_32_ADMIN = 32
-PERMIT_64_SYSTEM = 64
+PERMIT_000_NONE = 0
+PERMIT_001_READ = 1
+PERMIT_002_EDIT = 2
+PERMIT_004_AUTH1 = 4
+PERMIT_008_AUTH2 = 8
+PERMIT_016_AUTH3 = 16
+PERMIT_032_ANALYZE = 32
+PERMIT_064_ADMIN = 64
+PERMIT_128_SYSTEM = 128
 
 # PR2018-12-23 used in set_menu_items
-PERMIT_STR_00_NONE = 'none'
-PERMIT_STR_01_READ = 'read'
-PERMIT_STR_02_EDIT = 'edit'
-PERMIT_STR_04_AUTH1 = 'auth1'
-PERMIT_STR_08_AUTH2 = 'auth2'
-PERMIT_STR_16_ANALYZE = 'anlz'
-PERMIT_STR_32_ADMIN = 'admin'
-PERMIT_STR_64_SYSTEM = 'system'
 
 PERMIT_DICT = {
-    PERMIT_00_NONE: PERMIT_STR_00_NONE,
-    PERMIT_01_READ: PERMIT_STR_01_READ,
-    PERMIT_02_EDIT: PERMIT_STR_02_EDIT,
-    PERMIT_04_AUTH1: PERMIT_STR_04_AUTH1,
-    PERMIT_08_AUTH2: PERMIT_STR_08_AUTH2,
-    PERMIT_16_ANALYZE: PERMIT_STR_16_ANALYZE,
-    PERMIT_32_ADMIN: PERMIT_STR_32_ADMIN,
-    PERMIT_64_SYSTEM: PERMIT_STR_64_SYSTEM
+    PERMIT_000_NONE: 'none',
+    PERMIT_001_READ: 'read',
+    PERMIT_002_EDIT: 'edit',
+    PERMIT_004_AUTH1: 'auth1',
+    PERMIT_008_AUTH2:'auth2',
+    PERMIT_016_AUTH3: 'auth3',
+    PERMIT_032_ANALYZE: 'anlz',
+    PERMIT_064_ADMIN: 'admin',
+    PERMIT_128_SYSTEM: 'system'
 }
 
+PERMIT_LOOKUP = {
+    'perm_none': PERMIT_000_NONE,
+    'perm_read': PERMIT_001_READ,
+    'perm_edit': PERMIT_002_EDIT,
+    'perm_auth1': PERMIT_004_AUTH1,
+    'perm_auth2': PERMIT_008_AUTH2,
+    'perm_auth3': PERMIT_016_AUTH3,
+    'perm_anlz': PERMIT_032_ANALYZE,
+    'perm_admin': PERMIT_064_ADMIN,
+   'perm_system': PERMIT_128_SYSTEM
+}
 
 GENDER_NONE = '-'  # PR2018-09-05
 GENDER_MALE = 'M'
@@ -287,6 +292,14 @@ EXAMTYPE_OPTIONS = [
         {'value': 're3', 'filter': EXAMPERIOD_THIRD, 'caption': _('Re-examination 3rd period')},
     {'value': 'exm', 'filter': EXAMPERIOD_EXEMPTION, 'caption': _('School- / Central exam')}
     ]
+EXAMTYPE_CAPTION = {
+    'se': _('School exam'),
+    'pe': _('Practical exam'),
+    'ce': _('Central exam'),
+    're2': _('Re-examination'),
+    're3': _('Re-examination 3rd period'),
+    'exm': _('School- / Central exam')
+}
 
 # PR2018-11-28
 # se, pe ce, ce2, ce3, end
@@ -304,25 +317,70 @@ RESULT_CHOICES = (
     (WITHDRAWN_RESULT, _('Withdrawn'))
 )
 
+STATUS_NONE = 0
+STATUS_00_CREATED = 1
+STATUS_01_AUTH1 = 2
+STATUS_02_AUTH2 = 4
+STATUS_03_AUTH3 = 8
+STATUS_04_SUBMITTED = 16
+STATUS_05_REQUEST = 32
+STATUS_06_WARNING = 64
+STATUS_07_REJECTED = 128
+STATUS_08_REQUEST_ANSWERED = 256
+STATUS_09_WARNING_ANSWERED = 512
+STATUS_10_REJECTED_ANSWERED = 1024
+STATUS_11_EDIT = 2048
+STATUS_12_EDIT_ANSWERED = 4096
+STATUS_13_APPROVED = 8192
+STATUS_14_LOCKED = 16384
+
+"""
+# PR2021-01-014 from https://stackoverflow.com/questions/509211/understanding-slice-notation
+# list[start:stop:step] # start through not past stop, by step
+#status_str = bin(status_int)[-1:1:-1]  # status 31 becomes '11111', first char is STATUS_001_CREATED
+
+from https://www.postgresql.org/message-id/20040611075402.GA4887@computing-services.oxford.ac.uk
+area=> select 6::bit(32);
+>                bit
+> ----------------------------------
+>  00000000000000000000000000000110
+> (1 row)
+"""
+
+
 # USER SETTING KEYS PR2018-12-19 PR2020-12-18
 KEY_MENU_SELECTED = "menu_selected"
 KEY_SELECTED_PK = 'selected_pk'
 KEY_SEL_EXAMYEAR_PK = 'sel_examyear_pk'
 KEY_SEL_SCHOOLBASE_PK = 'sel_schoolbase_pk'
 KEY_SEL_DEPBASE_PK = 'sel_depbase_pk'
-KEY_SEL_EXAMPERIOD_PK = 'sel_examperiod_pk'
+KEY_SEL_EXAMPERIOD = 'sel_examperiod'
+KEY_SEL_EXAMTYPE = 'sel_examtype'
+KEY_SEL_SUBJECT_PK = 'sel_subject_pk'
+KEY_SEL_STUDENT_PK = 'sel_student_pk'
 
 # SCHOOL SETTING KEYS PR2018-12-03  PR2020-12-04
 
 KEY_IMPORT_SUBJECT = 'import_subject'
 KEY_IMPORT_STUDENT = 'import_student'
+KEY_IMPORT_STUDENTSUBJECT = 'import_studentsubject'
+KEY_IMPORT_GRADE = 'import_grade'
 
 KEY_COLDEF = {
     KEY_IMPORT_SUBJECT:
-         ({'awpColdef': 'code', 'caption': _('Subject abbreviation'), 'linkfield': True},
+        ({'awpColdef': 'code', 'caption': _('Subject abbreviation'), 'linkfield': True},
           {'awpColdef': 'name', 'caption': _('Subject name')},
           {'awpColdef': 'sequence', 'caption': _('Sequence')},
           {'awpColdef': 'depbases', 'caption': _('Departments, in which this subject occurs')}),
+
+    KEY_IMPORT_STUDENTSUBJECT:
+        ({'awpColdef': 'examnumber', 'caption': _('Exam number'), 'linkfield': True},
+            {'awpColdef': 'idnumber', 'caption': _('ID-number'), 'linkfield': True},
+            # to be used for tabular upload :
+            {'awpColdef': 'subject', 'caption': _('Subject'), 'tabularfield': True},
+            {'awpColdef': 'subjecttype', 'caption': _('Character'), 'tabularfield': True}
+         ),
+
     KEY_IMPORT_STUDENT:
         ({'awpColdef': 'lastname', 'caption': _('Last name')},
         {'awpColdef': 'firstname', 'caption': _('First name')},
@@ -339,7 +397,7 @@ KEY_COLDEF = {
         {'awpColdef': 'bis_exam', 'caption': _('Bis exam')},
         {'awpColdef': 'department', 'caption': _('Department')},
         {'awpColdef': 'level', 'caption': _('Level')},
-        {'awpColdef': 'sector', 'caption': _('Sector')})
+        {'awpColdef': 'sector', 'caption': _('Sector/Profiel')})
                }
 
 
@@ -358,7 +416,7 @@ CAPTIONS = {'student': {'lastname': _('Last name'),
                         'bis_exam': _('Bis exam'),
                         'department': _('Department'),
                         'level': _('Level'),
-                        'sector': _('Sector')}
+                        'sector': _('Sector/Profiel')}
             }
 
 CAPTION_IMPORT = {'no_file': _('No file is currently selected'),

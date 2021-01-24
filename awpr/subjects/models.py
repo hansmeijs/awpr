@@ -291,10 +291,10 @@ class Norm(sch_mod.AwpBaseModel):
     is_etenorm = BooleanField(default=False)
     scalelength_ce = PositiveSmallIntegerField(null=True)
     norm_ce = CharField(max_length=c.MAX_LENGTH_10, null=True)
-    scalelength_reex =  PositiveSmallIntegerField(null=True)
-    norm_reex = CharField(max_length=c.MAX_LENGTH_10, null=True)
     scalelength_pe = PositiveSmallIntegerField(null=True)
     norm_practex = CharField(max_length=c.MAX_LENGTH_10, null=True)
+    scalelength_reex =  PositiveSmallIntegerField(null=True)
+    norm_reex = CharField(max_length=c.MAX_LENGTH_10, null=True)
 
 # PR2018-08-23
 class Norm_log(sch_mod.AwpBaseModel):
@@ -307,10 +307,10 @@ class Norm_log(sch_mod.AwpBaseModel):
     is_etenorm = BooleanField(default=False)
     scalelength_ce = PositiveSmallIntegerField(null=True)
     norm_ce = CharField(max_length=c.MAX_LENGTH_10, null=True)
-    scalelength_reex = PositiveSmallIntegerField(null=True)
-    norm_reex = CharField(max_length=c.MAX_LENGTH_10, null=True)
     scalelength_pe = PositiveSmallIntegerField(null=True)
     norm_practex = CharField(max_length=c.MAX_LENGTH_10, null=True)
+    scalelength_reex = PositiveSmallIntegerField(null=True)
+    norm_reex = CharField(max_length=c.MAX_LENGTH_10, null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 

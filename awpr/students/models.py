@@ -1,6 +1,7 @@
 # PR2018-07-20
 from django.db.models import Model, Manager, ForeignKey, OneToOneField, PROTECT, CASCADE, SET_NULL
-from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, DecimalField, BooleanField, DateField, DateTimeField
+from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, \
+    DecimalField, BooleanField, DateField, FileField
 
 from django.db.models.functions import Lower
 
@@ -99,19 +100,17 @@ class Published(sch_mod.AwpBaseModel): # PR2020-12-02
     school = ForeignKey(School, related_name='+', on_delete=CASCADE)
     department = ForeignKey(Department, related_name='+', on_delete=CASCADE)
 
+    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
+    examperiod = PositiveSmallIntegerField(db_index=True) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
+
+    name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+
+    filename = CharField(max_length=255, null=True)
+
     datepublished = DateField()
-    # authorization of studentsubject
-    issubj = BooleanField(default=False)
-    isexemp = BooleanField(default=False)
-    ispok = BooleanField(default=False)
-    isreex = BooleanField(default=False)
-    isreex3 = BooleanField(default=False)
 
-    # authorization of grade
-    isse = BooleanField(default=False)
-    ispe = BooleanField(default=False)
-    isce = BooleanField(default=False)
-
+    def __str__(self):
+        return self.name
     # published has no published_log because its data don't change
 
 # =================
@@ -150,8 +149,8 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     iseveningstudent = BooleanField(default=False)
     hasdyslexia = BooleanField(default=False)
 
-    locked =  BooleanField(default=False)
-    has_reex= BooleanField(default=False)
+    locked = BooleanField(default=False)
+    has_reex = BooleanField(default=False)
     bis_exam= BooleanField(default=False)
     withdrawn = BooleanField(default=False)
 
@@ -359,6 +358,10 @@ class Studentsubject(sch_mod.AwpBaseModel):
     pok_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pok_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
 
+    has_schoolnotes = BooleanField(default=False)
+    has_inspnotes = BooleanField(default=False)
+    note_status = PositiveSmallIntegerField(default=0)
+
     deleted = BooleanField(default=False)
 
 
@@ -404,6 +407,10 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     pok_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pok_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
 
+    has_schoolnotes = BooleanField(default=False)
+    has_inspnotes = BooleanField(default=False)
+    note_status = PositiveSmallIntegerField(default=0)
+
     deleted = BooleanField(default=False)
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -414,9 +421,10 @@ class Studentsubjectnote(sch_mod.AwpBaseModel):
 
     studentsubject = ForeignKey(Studentsubject, related_name='+', on_delete=CASCADE)
 
-    note =  CharField(max_length=2048, null=True, blank=True)
+    note = CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
-    is_insp = BooleanField(default=False)
+    is_insp = BooleanField(default=False)  # False: school note True: insp / admin note PR2021-01-16
+    is_public = BooleanField(default=False)  # True: visbible for schools and insp / admin PR2021-01-16
 
     # TODO: refer to log table studentsubject_log
 
@@ -431,7 +439,9 @@ class Studentsubjectnote_log(sch_mod.AwpBaseModel):
 
     note = CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
-    is_insp = BooleanField(default=False)
+
+    is_insp = BooleanField(default=False)  # False: school note True: insp / admin note PR2021-01-16
+    is_public = BooleanField(default=False)  # True: visbible for schools and insp / admin PR2021-01-16
 
     studentsubject_mod = BooleanField(default=False)
     note_mod = BooleanField(default=False)
@@ -439,7 +449,6 @@ class Studentsubjectnote_log(sch_mod.AwpBaseModel):
     is_insp_mod = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
-
 
 #==== GRADES ======================================================
 
@@ -460,20 +469,27 @@ class Grade(sch_mod.AwpBaseModel):
     pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
+    se_status = PositiveSmallIntegerField(default=0)
     se_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    se_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
 
+    pe_status = PositiveSmallIntegerField(default=0)
     pe_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    pe_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
 
+    ce_status = PositiveSmallIntegerField(default=0)
     ce_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    ce_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
 
     deleted = BooleanField(default=False)
     status = PositiveSmallIntegerField(default=0)
+
 
 # PR2018-06-06
 class Grade_log(sch_mod.AwpBaseModel):
@@ -494,14 +510,17 @@ class Grade_log(sch_mod.AwpBaseModel):
     pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
+    se_status = PositiveSmallIntegerField(default=0)
     se_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
 
+    pe_status = PositiveSmallIntegerField(default=0)
     pe_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
 
+    ce_status = PositiveSmallIntegerField(default=0)
     ce_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)

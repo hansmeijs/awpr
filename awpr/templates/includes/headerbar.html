@@ -22,7 +22,7 @@
                 <li id="id_hdrbar_examyear" class="nav-item awp_navbar_item mr-0 pr-0">
                     <div>{{examyear_code}}</div>
                 </li>
-                <li id="id_hdrbar_examyear_locked1" class="nav-item awp_navbar ml-0 mt-1">
+                <li id="id_hdrbar_examyear_locked" class="nav-item awp_navbar ml-0 mt-1">
                     <div class="stat_0_0"></div>
                 </li>
                 <li id="id_hdrbar_department" class="nav-item awp_navbar_item">
@@ -31,9 +31,12 @@
                 <li id="id_hdrbar_school" class="nav-item awp_navbar_item">
                     {{school}}
                 </li>
+                <li id="id_hdrbar_school_locked" class="nav-item awp_navbar ml-0 mt-1">
+                    <div class="stat_0_0"></div>
+                </li>
             </ul>
         </div>
-        <div id="collapsibleNavbar2"  class="navbar-collapse collapse w-100 order-3 dual-collapse2">
+        <div id="collapsibleNavbar2"  class="navbar-collapse collapse order-3 dual-collapse2">
             <ul class="navbar-nav ml-auto">
                 {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
@@ -76,8 +79,7 @@
 
     </nav>
 
-<!-- XXXXXXXXXXXXXXXXXXXXXXXXX TEST BAR XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX -->
-        <nav class="navbar navbar-expand-md navbar-light bg-light">
+        <nav class="navbar navbar-expand-md navbar-light bg-light py-1">
         <!-- Toggler/collapsibe Button -->
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsible_testbar">
           <span class="navbar-toggler-icon"></span>
@@ -108,9 +110,9 @@
 
             </div>
     </nav>
-<!-- XXXXXXXXXXXXXXXXXXXXXXXXX TEST BAR XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX -->
+
 <!-- MENU BAR -->
-    <nav id="id_menubar" class="navbar navbar-expand-md awp_nav_bg_submenu">
+    <nav id="id_menubar" class="navbar navbar-expand-md awp_nav_bg_submenu pt-0 pb-2">
     <!-- Toggler/collapsibe Button -->
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#id_submenu">
             <span class="navbar-toggler-icon"></span>

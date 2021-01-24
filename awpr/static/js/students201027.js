@@ -5,9 +5,9 @@ document.addEventListener('DOMContentLoaded', function() {
 console.log("document.addEventListener students" )
     // <PERMIT> PR220-10-02
     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_write'
+    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
     //  roles are:   'role_student', 'role_teacher', 'role_school', 'role_insp', 'role_admin', 'role_system'
-    //  permits are: 'perm_read', 'perm_write', 'perm_auth1', 'perm_auth2', 'perm_docs', 'perm_admin', 'perm_system'
+    //  permits are: 'perm_read', 'perm_edit', 'perm_auth1', 'perm_auth2', 'perm_docs', 'perm_admin', 'perm_system'
 
 // ---  check if user has permit to view this page. If not: el_loader does not exist PR2020-10-02
     let el_loader = document.getElementById("id_loader");
@@ -68,8 +68,8 @@ console.log("document.addEventListener students" )
         student: {  field_caption: ["", "Examnumber_twolines", "Last_name", "First_name", "Gender", "ID_number", "Department", "Leerweg", "SectorProfiel_twolines"],
                     field_names: ["select", "examnumber", "lastname", "firstname", "gender", "idnumber", "dep_abbrev", "lvl_abbrev", "sct_abbrev"],
                     filter_tags: ["select", "text", "text",  "text", "text", "text", "text", "text", "text"],
-                    field_width:  ["032", "090", "180", "240", "090", "120", "120", "090", "090"],
-                    field_align: ["c", "r", "l", "l", "c", "l", "c","c", "c"]},
+                    field_width:  ["020", "090", "180", "240", "090", "120", "120", "090", "090"],
+                    field_align: ["c", "c", "l", "l", "c", "l", "c","c", "c"]},
         studsubj: { field_caption: ["", "Examnumber_twolines", "Candidate", "Abbreviation", "Subject", "Character"],
                     field_names: ["select", "examnumber", "fullname", "subj_code", "subj_name", "sjt_abbrev"],
                     filter_tags: ["select", "text", "text", "text", "text", "text", "text", "text", "text", "text"],
@@ -201,15 +201,15 @@ console.log("document.addEventListener students" )
         const datalist_request = {
                 setting: {page_student: {mode: "get"}},
                 schoolsetting: {setting_key: "import_student"},
-                locale: {page: "students"},
+                locale: {page: ["students", "upload"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true},
                 level_rows: {get: true},
                 sector_rows: {get: true},
-                student_rows: {get: true},
-                studentsubject_rows: {get: true},
-                schemeitem_rows: {get: true}
+                student_rows: {get: true}
+                //studentsubject_rows: {get: true},
+                //schemeitem_rows: {get: true}
             };
 
         DatalistDownload(datalist_request, "DOMContentLoaded");
@@ -248,7 +248,7 @@ console.log("document.addEventListener students" )
                     mimp_setting_dict = setting_dict;
                     // <PERMIT> PR220-10-02
                     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-                    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_write'
+                    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
                     has_permit_edit = (setting_dict.requsr_role_admin && setting_dict.requsr_perm_edit) ||
                                       (setting_dict.requsr_role_system && setting_dict.requsr_perm_edit);
                     // <PERMIT> PR2020-10-27
@@ -383,7 +383,7 @@ console.log("document.addEventListener students" )
 
 //=========  CreateTblHeader  === PR2020-07-31
     function CreateTblHeader() {
-        //console.log("===  CreateTblHeader ===== ");
+        console.log("===  CreateTblHeader ===== ");
         const tblName = get_tblName_from_selectedBtn();
 
 // --- reset table
@@ -396,6 +396,19 @@ console.log("document.addEventListener students" )
         if(field_setting){
             const column_count = field_setting.field_names.length;
 
+//--- get info from selected department_map
+            const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", setting_dict.sel_department_pk);
+            console.log("dep_dict", dep_dict);
+            let sct_caption = null, lvl_req = false, sct_req = false;
+            if(dep_dict){
+                sct_caption = (dep_dict.sct_caption) ? dep_dict.sct_caption : null;
+                lvl_req = (dep_dict.lvl_req) ? dep_dict.lvl_req : false;
+                sct_req = (dep_dict.sct_req) ? dep_dict.sct_req : false;
+            }
+            console.log("sct_caption", sct_caption);
+            console.log("lvl_req", lvl_req);
+            console.log("sct_req", sct_req);
+            // TODO hide col level when lvl_req = false, but implement col_hidden
 //--- insert table rows
             let tblRow_header = tblHead_datatable.insertRow (-1);
             let tblRow_filter = tblHead_datatable.insertRow (-1);
@@ -403,7 +416,7 @@ console.log("document.addEventListener students" )
 //--- insert th's to tblHead_datatable
             for (let j = 0; j < column_count; j++) {
                 const key = field_setting.field_caption[j];
-                const caption = (loc[key]) ? loc[key] : key;
+                let caption = (loc[key]) ? loc[key] : key;
 
                 const field_name = field_setting.field_names[j];
                 const filter_tag = field_setting.filter_tags[j];
@@ -421,8 +434,22 @@ console.log("document.addEventListener students" )
                             //AppendChildIcon(el_header, imgsrc_stat00);
                         } else {
 // --- add innerText to el_div
+                            if(field_name === "sct_abbrev"){
+                                const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", setting_dict.sel_department_pk);
+        console.log("dep_dict", dep_dict);
+                                if(dep_dict && dep_dict.sct_caption){
+        console.log("dep_dict.sct_caption", dep_dict.sct_caption);
+                                   // const caption_text = (dep_dict.sct_caption.toLowerCase() === "sector") ? mimp_loc.Link_sectors :
+                                    //(dep_dict.sct_caption.toLowerCase() === "profiel") ? mimp_loc.Link_profielen : null;
+                                    //if(caption_text){ document.getElementById("id_MIMP_header_sector").innerText = caption_text};
+                                }
+                            }
+
                             if(caption) {el_header.innerText = caption};
-                            if(field_name === "examnumber"){el_header.classList.add("pr-2")}
+
+                            if(field_name === "examnumber"){
+                                el_header.classList.add("pr-2")
+                            }
                         };
 // --- add width, text_align
                         el_header.classList.add(class_width, class_align);
@@ -580,152 +607,6 @@ console.log("document.addEventListener students" )
 
 
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
-
-//========= UploadNewUser  ============= PR2020-08-02 PR2020-08-15
-   function UploadNewUser(args) {
-        console.log("=== UploadNewUser");
-        let mode = null, init_time_stamp = null, skip = false;
-        if(Number(args)){
-            //skip if a new key is entered in the elapsed period of 500 ms
-            init_time_stamp = Number(args)
-            skip =  (time_stamp !== init_time_stamp)
-            mode = "validate"
-        } else {
-            mode = args
-        }
-        if(!skip){
-            // mod_dict modes are:  addnew, select, update
-            let url_str = url_subject_upload
-
-            const upload_mode = (mode === "validate") ? "validate" :
-                                (mode === "resend_activation_email" ) ? "resend_activation_email" :
-                                (mod_MSTUD_dict.mode === "update") ? "update" :
-                                (mod_MSTUD_dict.mode === "addnew") ? "create" : null;
-
-        console.log("mod_MSTUD_dict", mod_MSTUD_dict);
-    // ---  create mod_dict
-            let upload_dict = {}
-            if (upload_mode === "resend_activation_email" ){
-                upload_dict = { id: {pk: map_dict.id,
-                                   ppk: map_dict.schoolbase_pk,
-                                   table: "user",
-                                   mode: upload_mode,
-                                   mapid: "user_" + map_dict.id},
-                              username: {value: map_dict.username}
-                              };
-            } else if (upload_mode === "update" ){
-
-            } else if (["validate", "create"].indexOf(upload_mode) > -1){
-                upload_dict = { id: {ppk: mod_MSTUD_dict.schoolbase_pk,
-                                   table: "user",
-                                   mode: upload_mode},
-                              username: {value: el_MSTUD_abbrev.value, update: true},
-                              last_name: {value: el_MSTUD_last_name.value, update: true},
-                              email: {value: el_MSTUD_sequence.value, update: true}
-                              };
-            }
-            console.log("upload_dict: ", upload_dict);
-
-
-            // must loose focus, otherwise green / red border won't show
-            //el_input.blur();
-
-            const el_loader =  document.getElementById("id_MSTUD_loader");
-            el_loader.classList.remove(cls_visible_hide);
-
-            const parameters = {"upload": JSON.stringify (upload_dict)}
-            let response = "";
-            $.ajax({
-                type: "POST",
-                url: url_str,
-                data: parameters,
-                dataType:'json',
-                success: function (response) {
-                    console.log( "response");
-                    console.log( response);
-
-                    el_loader.classList.add(cls_visible_hide);
-
-                    MSTUD_SetMsgElements(response);
-
-                    if ("updated_list" in response){
-                        for (let i = 0, updated_dict; updated_dict = response.updated_list[i]; i++) {
-                            refresh_usermap_item(updated_dict);
-                        }
-                    }
-
-                },  // success: function (response) {
-                error: function (xhr, msg) {
-                    console.log(msg + '\n' + xhr.responseText);
-                    alert(msg + '\n' + xhr.responseText);
-                }  // error: function (xhr, msg) {
-            });  // $.ajax({
-        }
-    };  // UploadNewUser
-
-//========= UploadToggle  ============= PR2020-07-31
-    function UploadToggle(el_input) {
-        //console.log( " ==== UploadToggle ====");
-
-        mod_dict = {};
-        const tblRow = get_tablerow_selected(el_input);
-        if(tblRow){
-            const tblName = get_attr_from_el(tblRow, "data-table")
-            const map_id = tblRow.id
-            const map_dict = get_mapdict_from_datamap_by_id(subject_map, map_id);
-
-            if(!isEmpty(map_dict)){
-                const fldName = get_attr_from_el(el_input, "data-field");
-                let permit_value = get_attr_from_el_int(el_input, "data-value");
-                let has_permit = (!!permit_value);
-
-                const requsr_pk = get_dict_value(selected_period, ["requsr_pk"])
-                const is_request_user = (requsr_pk === map_dict.id)
-
-// show message when sysadmin tries to delete sysadmin permit or add readonly
-                if(fldName === "perm64_sysadmin" && is_request_user && has_permit ){
-                    ModConfirmOpen("permission_sysadm", el_input)
-                } else if(fldName === "perm01_readonly" && is_request_user && !has_permit ){
-                    ModConfirmOpen("permission_sysadm", el_input)
-                } else {
-// loop through row cells to get value of permissions.
-                    // Don't get them from map_dict, might not be correct while changing permissions
-                    let new_permit_sum = 0, new_permit_value = 0
-                    for (let i = 0, cell, cell_name, cell_value; cell = tblRow.cells[i]; i++) {
-                        cell_name = get_attr_from_el(cell, "data-field");
-                        if (cell_name.slice(0, 4) === "perm") {
-                            cell_value = get_attr_from_el_int(cell, "data-value");
-                // toggle value of clicked field
-                            if (cell_name === fldName){
-                                if(cell_value){
-                                    cell_value = 0;
-                                } else {
-                                    const cell_permit = fldName.slice(4, 6);
-                                    cell_value = (Number(cell_permit)) ? Number(cell_permit) : 0;
-                                }
-                                new_permit_value = cell_value;
-                // put new value in cell attribute 'data-value'
-                                cell.setAttribute("data-value", new_permit_value)
-                            };
-                            new_permit_sum += cell_value              }
-                    }
-
-// ---  change icon, before uploading
-                    let el_icon = el_input.children[0];
-                    if(el_icon){add_or_remove_class (el_icon, "tickmark_0_2", new_permit_value)};
-
-// ---  upload changes
-                    const upload_dict = { id: {pk: map_dict.id,
-                                               ppk: map_dict.company_id,
-                                               table: "user",
-                                               mode: "update",
-                                               mapid: map_id},
-                                          permits: {value: new_permit_sum, update: true}};
-                    UploadChanges(upload_dict, url_subject_upload);
-                }
-            }  //  if(!isEmpty(map_dict)){
-        }  //   if(!!tblRow)
-    }  // UploadToggle
 
 //========= UploadChanges  ============= PR2020-08-03
     function UploadChanges(upload_dict, url_str) {
@@ -932,7 +813,6 @@ console.log("document.addEventListener students" )
         console.log( "===== MSTUD_InputKeyup  ========= ");
         MSTUD_validate_and_disable();
     }; // MSTUD_InputKeyup
-
 
 //========= MSTUD_InputSelect  ============= PR2020-12-11
     function MSTUD_InputSelect(el_input){
@@ -1225,7 +1105,7 @@ console.log("document.addEventListener students" )
             table: 'studentsubject',
             sel_examyear_pk: setting_dict.sel_examyear_pk,
             sel_schoolbase_pk: setting_dict.sel_schoolbase_pk,
-            sel_departmentbase_pk: setting_dict.sel_departmentbase_pk,
+            sel_depbase_pk: setting_dict.sel_depbase_pk,
             sel_student_pk: mod_MSTUDSUBJ_dict.stud_id
             }
             const studsubj_list = []
@@ -1897,14 +1777,20 @@ console.log("document.addEventListener students" )
 
 //=========  RefreshDataMap  ================ PR2020-08-16 PR2020-09-30
     function RefreshDataMap(tblName, field_names, data_rows, data_map) {
-        //console.log(" --- RefreshDataMap  ---");
-        //console.log("data_rows", data_rows);
-        if (data_rows) {
+        console.log(" --- RefreshDataMap  ---");
+        console.log("data_rows", data_rows);
+        console.log("!!data_rows", !!data_rows);
+        // PR2021-01-13 debug: when data_rows = [] then !!data_rows = true. Must add !!data_rows.length
+        if (data_rows && data_rows.length ) {
             const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
             for (let i = 0, update_dict; update_dict = data_rows[i]; i++) {
                 RefreshDatamapItem(tblName, field_names, update_dict, data_map);
             }
+        } else {
+            // empty the datamap when data_rows is empty PR2021-01-13 debug forgot to empty data_map
+            data_map.clear();
         }
+        console.log("data_map", data_map);
     }  //  RefreshDataMap
 
 //=========  RefreshDatamapItem  ================ PR2020-08-16 PR2020-09-30
@@ -1979,18 +1865,6 @@ console.log("document.addEventListener students" )
         }
     }  // RefreshDatamapItem
 
-
-//=========  fill_data_list  ================ PR2020-10-07
-    function fill_data_list(data_rows) {
-        console.log(" --- fill_data_list  ---");
-        let data_list = [];
-        if (data_rows) {
-            for (let i = 0, row; row = data_rows[i]; i++) {
-                data_list[row.id] = row.abbrev;
-            }
-        }
-        return data_list
-    }  //  fill_data_list
 
 //=========  remove_studsubjrow_without_subject  ================ PR2020-12-20
     function remove_studsubjrow_without_subject(map_id) {
@@ -2288,7 +2162,8 @@ console.log("document.addEventListener students" )
        };
         FillTblRows();
     }  // function ResetFilterRows
-    //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // +++++++++++++++++ MODAL SELECT EXAMYEAR SCHOOL DEPARTMENT  ++++++++++++++++++++
 // functions are in table.js, except for MSESD_Response
 
@@ -2308,7 +2183,8 @@ console.log("document.addEventListener students" )
         } else if (tblName === "department") {
             selected_pk_dict.sel_depbase_pk = pk_int;
         }
-        const new_setting = {page_studentsubjects: {mode: "get"}, selected_pk: selected_pk_dict};
+        const new_setting = {page_student: {mode: "get"},
+                             selected_pk: selected_pk_dict};
         const datalist_request = {setting: new_setting};
 
 // also retrieve the tables that have been changed because of the change in school / dep
@@ -2316,13 +2192,12 @@ console.log("document.addEventListener students" )
         datalist_request.studentsubject_rows = {get: true};
         datalist_request.grade_rows = {get: true};
         datalist_request.schemeitem_rows = {get: true};
+        datalist_request.schoolsetting = {setting_key: "import_student"};
 
         DatalistDownload(datalist_request);
 
     }  // MSESD_Response
 //###########################################################################
-
-
 
 //========= get_tblName_from_selectedBtn  ======== // PR2020-11-14
     function get_tblName_from_selectedBtn() {

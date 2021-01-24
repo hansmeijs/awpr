@@ -5,9 +5,9 @@ document.addEventListener('DOMContentLoaded', function() {
 console.log("document.addEventListener studentsubjects" )
     // <PERMIT> PR220-10-02
     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_write'
+    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
     //  roles are:   'role_student', 'role_teacher', 'role_school', 'role_insp', 'role_admin', 'role_system'
-    //  permits are: 'perm_read', 'perm_write', 'perm_auth1', 'perm_auth2', 'perm_docs', 'perm_admin', 'perm_system'
+    //  permits are: 'perm_read', 'perm_edit', 'perm_auth1', 'perm_auth2', 'perm_docs', 'perm_admin', 'perm_system'
 
 // ---  check if user has permit to view this page. If not: el_loader does not exist PR2020-10-02
     let el_loader = document.getElementById("id_loader");
@@ -200,8 +200,8 @@ console.log("document.addEventListener studentsubjects" )
         // period also returns emplhour_list
         const datalist_request = {
                 setting: {page_studentsubjects: {mode: "get"}},
-                schoolsetting: {coldefs: "student"},
-                locale: {page: "studentsubjects"},
+                schoolsetting: {setting_key: "import_studentsubject"},
+                locale: {page: ["studentsubjects", "upload"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true},
@@ -245,9 +245,12 @@ console.log("document.addEventListener studentsubjects" )
                 if ("locale_dict" in response) { refresh_locale(response.locale_dict)};
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict
-                    // <PERMIT> PR220-10-02
+                    // <PERMIT> PR2021-10-20
+                    // TODO
                     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-                    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_write'
+                    //  - can add/delete/edit only 'role_school' + same_school plus 'perm_edit'
+                    //  - cannot edit when country, examyear or schoolis locked
+                    //  - can only edit when school is published
                     has_permit_edit = (setting_dict.requsr_role_admin && setting_dict.requsr_perm_edit) ||
                                       (setting_dict.requsr_role_system && setting_dict.requsr_perm_edit);
                     // <PERMIT> PR2020-10-27
@@ -293,7 +296,7 @@ console.log("document.addEventListener studentsubjects" )
 
 //=========  refresh_locale  ================  PR2020-07-31
     function refresh_locale(locale_dict) {
-        //console.log ("===== refresh_locale ==== ")
+        console.log ("===== refresh_locale ==== ")
         loc = locale_dict;
         mimp_loc = locale_dict;
         CreateSubmenu()
@@ -302,13 +305,10 @@ console.log("document.addEventListener studentsubjects" )
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
         //console.log("===  CreateSubmenu == ");
-        //console.log("loc.Add_subject ", loc.Add_subject);
-        //console.log("loc ", loc);
-
         let el_submenu = document.getElementById("id_submenu")
-            AddSubmenuButton(el_submenu, loc.Add_candidate, function() {MSTUD_Open()});
-            AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete")}, ["mx-2"]);
-            AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open("import_student")}, ["mx-2"], "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Add_subject, function() {MSTUD_Open()});
+            AddSubmenuButton(el_submenu, loc.Delete_subject, function() {ModConfirmOpen("delete")}, ["mx-2"]);
+            AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open("import_studentsubject")}, ["mx-2"], "id_submenu_import");
 
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
@@ -377,7 +377,7 @@ console.log("document.addEventListener studentsubjects" )
 
 //========= FillTblRows  ====================================
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
+        //console.log( "===== FillTblRows  === ");
         const tblName = "studsubj";
         const field_setting = field_settings[tblName]
 
@@ -389,7 +389,7 @@ console.log("document.addEventListener studentsubjects" )
 
 // --- set columns_shown
         //console.log( "tblName", tblName);
-        console.log( "selected_btn", selected_btn);
+        //console.log( "selected_btn", selected_btn);
 
         const is_btn_studsubj = (selected_btn === "btn_studsubj")
         columns_shown.sjt_abbrev = is_btn_studsubj;
@@ -405,7 +405,7 @@ console.log("document.addEventListener studentsubjects" )
         columns_shown.has_reex = is_btn_reex;
         columns_shown.has_reex03 = is_btn_reex;
 
-        const is_btn_auth = (setting_dict.requsr_perm_auth1 || setting_dict.requsr_perm_auth2)
+        const is_btn_auth = (setting_dict.requsr_perm_auth1 || setting_dict.requsr_perm_auth2 || setting_dict.requsr_perm_auth3)
         columns_shown.auth1 = is_btn_auth ;
         columns_shown.auth2 = is_btn_auth;
         columns_shown.auth_submitted = is_btn_auth;
@@ -572,6 +572,8 @@ console.log("document.addEventListener studentsubjects" )
                         has_permit = setting_dict.requsr_perm_auth1;
                     } else if (field_name === "auth2"){
                         has_permit = setting_dict.requsr_perm_auth2;
+                    } else if (field_name === "auth3"){
+                        has_permit = setting_dict.requsr_perm_auth3;
                     } else {
                         has_permit = setting_dict.requsr_perm_edit;
                     }
@@ -628,7 +630,7 @@ console.log("document.addEventListener studentsubjects" )
                     const field_auth_mod = prefix_mapped[selected_btn] + field_name + "_modat" // exem_auth1_modat
 
                     const auth_id = (map_dict[field_auth_id]) ? map_dict[field_auth_id] : null;
-                    console.log("auth_id", auth_id);
+                    //console.log("auth_id", auth_id);
                     let title = null;
                     if(auth_id){
                         const auth_usr = (map_dict[field_auth_usr]) ?  map_dict[field_auth_usr] : "-";
@@ -639,7 +641,7 @@ console.log("document.addEventListener studentsubjects" )
                             modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                         }
                         title = loc.Authorized_by + ": " + auth_usr + "\n" + loc.at_ + modified_date_formatted;
-                    console.log("title", title);
+                    //console.log("title", title);
                     }
                     const data_value = (auth_id) ? "1" : "0";
                     el_div.setAttribute("data-value", data_value);
@@ -649,7 +651,7 @@ console.log("document.addEventListener studentsubjects" )
                         el_div.removeAttribute("title")
                     }
                     const el_img = el_div.children[0];
-                    console.log("data_value", data_value, typeof data_value);
+                    //console.log("data_value", data_value, typeof data_value);
                     if (el_img) {add_or_remove_class (el_img, "tickmark_1_2", auth_id)};
 
                 }
@@ -694,7 +696,8 @@ console.log("document.addEventListener studentsubjects" )
                 if (["auth1", "auth2"].indexOf(fldName) > -1){
         console.log( "setting_dict.requsr_perm_auth1", setting_dict.requsr_perm_auth1);
         console.log( "setting_dict.requsr_perm_auth2", setting_dict.requsr_perm_auth2);
-                    if ( fldName === "auth1" && setting_dict.requsr_perm_auth1 || fldName === "auth2" && setting_dict.requsr_perm_auth2 ) {
+        console.log( "setting_dict.requsr_perm_auth3", setting_dict.requsr_perm_auth3);
+                    if ( fldName === "auth1" && setting_dict.requsr_perm_auth1 || fldName === "auth2" && setting_dict.requsr_perm_auth2  || fldName === "auth3" && setting_dict.requsr_perm_auth3 ) {
                         const prefix = (selected_btn === "btn_studsubj") ? "subj" :
                                         (selected_btn === "btn_exemption") ? "exem" :
                                         (selected_btn === "btn_reex") ? "reex" :
@@ -1229,7 +1232,7 @@ console.log("document.addEventListener studentsubjects" )
             table: 'studentsubject',
             sel_examyear_pk: setting_dict.sel_examyear_pk,
             sel_schoolbase_pk: setting_dict.sel_schoolbase_pk,
-            sel_departmentbase_pk: setting_dict.sel_departmentbase_pk,
+            sel_depbase_pk: setting_dict.sel_depbase_pk,
             student_pk: mod_MSTUDSUBJ_dict.stud_id
             }
             const studsubj_list = []
@@ -1908,7 +1911,8 @@ console.log("document.addEventListener studentsubjects" )
     // ---  create row in table., insert in alphabetical order
                 let order_by = (update_dict.fullname) ? update_dict.fullname.toLowerCase() : ""
                 const row_index = t_get_rowindex_by_orderby(tblBody_datatable, order_by)
-                tblRow = CreateTblRow(tblBody_datatable, tblName ,field_setting, map_id, update_dict, row_index)
+                const field_setting = field_settings[tblName]
+                tblRow = CreateTblRow(tblBody_datatable, tblName, field_setting, map_id, update_dict, row_index)
 
     // ---  scrollIntoView,
                 if(tblRow){
@@ -1958,18 +1962,6 @@ console.log("document.addEventListener studentsubjects" )
         }
     }  // RefreshDatamapItem
 
-
-//=========  fill_data_list  ================ PR2020-10-07
-    function fill_data_list(data_rows) {
-        //console.log(" --- fill_data_list  ---");
-        let data_list = [];
-        if (data_rows) {
-            for (let i = 0, row; row = data_rows[i]; i++) {
-                data_list[row.id] = row.abbrev;
-            }
-        }
-        return data_list
-    }  //  fill_data_list
 
 //=========  remove_studsubjrow_without_subject  ================ PR2020-12-20
     function remove_studsubjrow_without_subject(map_id) {

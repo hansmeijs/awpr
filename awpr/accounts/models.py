@@ -7,7 +7,6 @@ from django.contrib.auth.models import AbstractUser, UserManager
 # instead use: django.db.models import JSONField (is added in Django 3)
 from django.contrib.postgres.fields import ArrayField, JSONField
 
-
 from django.core.validators import RegexValidator
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
@@ -153,10 +152,10 @@ class User(AbstractUser):
     def permits_str(self):
         # PR2018-05-26 permits_str displays list of permits un UserListForm, e.g.: 'Schooladmin, Authorize, Write'
         permits_all_dict = {
-            c.PERMIT_01_READ: _('Read'),
-            c.PERMIT_02_EDIT: _('Write'),
-            c.PERMIT_04_AUTH1: _('Authorize'),
-            c.PERMIT_32_ADMIN: _('Admin'),
+            c.PERMIT_001_READ: _('Read'),
+            c.PERMIT_002_EDIT: _('Write'),
+            c.PERMIT_004_AUTH1: _('Authorize'),
+            c.PERMIT_064_ADMIN: _('Admin'),
         }
         permits_str = ''
         if self.permits_tuple is not None:
@@ -172,7 +171,7 @@ class User(AbstractUser):
                     permits_str = permits_str + ', ' + str(list_item)
                     # stop when write permission is found . 'Read' will then not be displayed
                     # PR2018-07-26 debug: doesn't work, because tuple is not in reverse order
-                    # if permit_int == c.PERMIT_02_EDIT:
+                    # if permit_int == c.PERMIT_002_EDIT:
                     #    break
         if not permits_str: # means: if permits_str == '':
             permits_str = ', None'
@@ -188,7 +187,7 @@ class User(AbstractUser):
         permits_list = []
         if permits_int is not None:
             if permits_int != 0:
-                for i in range(6, -1, -1): # range(start_value, end_value, step), end_value is not included!
+                for i in range(7, -1, -1): # range(start_value, end_value, step), end_value is not included!
                     power = 2 ** i
                     if permits_int >= power:
                         permits_int = permits_int - power
@@ -201,7 +200,7 @@ class User(AbstractUser):
     def permits_str_tuple(self): # 2018-12-23
         permits_list = []
         for permit_int in self.permits_tuple:
-            permit_str = c.PERMIT_DICT.get(permit_int,'')
+            permit_str = c.PERMIT_DICT.get(permit_int)
             if permit_str:
                 permits_list.append(permit_str)
         return tuple(permits_list)
@@ -213,22 +212,6 @@ class User(AbstractUser):
     # - Inspection and School users can only add their own role
     # - Inspection and School users can have all permits: 'Admin', 'Auth',  'Write' and 'Read'
 
-    @property
-    def permits_choices(self):
-        # PR201806-01 function creates tuple of permits, used in UserAddForm, UserEditForm
-        # permit_choices: ((1, 'Read'), (2, 'Write'), (4, 'Authorize'), (8, 'Admin'))
-
-        if self.role is not None:  # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-            choices = [
-                (c.PERMIT_01_READ, _('Read')),
-                (c.PERMIT_02_EDIT, _('Write')),
-                (c.PERMIT_04_AUTH1, _('Authorize')),
-                (c.PERMIT_32_ADMIN, _('Admin'))
-            ]
-        else:
-            # get permit 'None'
-            choices = [(c.PERMIT_00_NONE, _('None'),),]
-        return tuple(choices)
 
 
     # PR2018-07-31 debug. This is a method, not a @property. Property gave error: 'list' object is not callable
@@ -260,7 +243,7 @@ class User(AbstractUser):
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
                 if self.role == c.ROLE_64_SYSTEM:
-                    _has_permit = (c.PERMIT_32_ADMIN in self.permits_tuple)
+                    _has_permit = (c.PERMIT_064_ADMIN in self.permits_tuple)
         return _has_permit
 
     @property
@@ -323,36 +306,42 @@ class User(AbstractUser):
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
                 if self.role == c.ROLE_08_SCHOOL:
-                    _has_permit = (c.PERMIT_32_ADMIN in self.permits_tuple)
+                    _has_permit = (c.PERMIT_064_ADMIN in self.permits_tuple)
         return _has_permit
 
     @property
     def is_perm_system(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_64_SYSTEM in self.permits_tuple
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_128_SYSTEM in self.permits_tuple
 
     @property
+
     def is_perm_admin(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_32_ADMIN in self.permits_tuple
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_064_ADMIN in self.permits_tuple
 
     @property
-    def is_perm_docs(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_16_ANALYZE in self.permits_tuple
+    def is_perm_anlz(self):
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_032_ANALYZE in self.permits_tuple
+
+    @property
+    def is_perm_auth3(self):
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_016_AUTH3 in self.permits_tuple
 
     @property
     def is_perm_auth2(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_08_AUTH2 in self.permits_tuple
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_008_AUTH2 in self.permits_tuple
+
 
     @property
     def is_perm_auth1(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_04_AUTH1 in self.permits_tuple
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_004_AUTH1 in self.permits_tuple
 
     @property
     def is_perm_edit(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_02_EDIT in self.permits_tuple
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_002_EDIT in self.permits_tuple
 
     @property
     def is_perm_read(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_01_READ in self.permits_tuple
+        return self.is_authenticated and self.permits_tuple and c.PERMIT_001_READ in self.permits_tuple
 
 
     @property
@@ -758,6 +747,7 @@ class Usersetting(Model):
     user = ForeignKey(User, related_name='+', on_delete=CASCADE)
     key = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
 
+    setting = CharField(db_index=True, max_length=2048)
     jsonsetting = JSONField(null=True)
 
     #key_str = CharField(max_length=20)

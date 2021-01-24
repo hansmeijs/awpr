@@ -1,4 +1,30 @@
 
+.note_flex_1 {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: start;
+    align-items: flex-start;
+    align-content: flex-start;
+    position:relative;
+
+    flex: 1;
+
+    line-height: 1.15rem;
+    padding: 0px;
+    margin: 0px;
+
+    border: 1px solid #303024; /* dark dark Panta Rhei grey 48 48 36 */
+    border-radius: .25rem;
+    background-color: transparent;
+}
+
+.text_align_left {
+      text-align: left;
+}
+.text_align_right {
+      text-align: right;
+}
 .flex_1 {
     flex: 1;
 }
@@ -287,6 +313,8 @@
 }
 
 
+
+
 .btn-add {
     padding: 0rem 0.5rem 0rem 0.5rem;
     margin: 0px;
@@ -464,9 +492,9 @@ color: #000;
     flex-direction: row; /* flex-direction: row | row-reverse | column | column-reverse; */
     flex-wrap: wrap; /* flex-wrap: nowrap | wrap | wrap-reverse;  */
     /*  flex-flow: is a shorthand flex-direction and flex-wrap <‘flex-direction’> || <‘flex-wrap’>  */
-    justify-content: between; /*center space-between; space-around PR2019-01-05 */
+    justify-content: start; /* start center space-between; space-around PR2019-01-05 */
     /*  align-items defines how flex items are laid out along the cross axis on the current line. */
-        align-items: stretch;   /*   align-items: stretch | flex-start | flex-end | center |  */
+        align-items: flex-start;   /*   align-items: stretch | flex-start | flex-end | center |  */
     /*  align-content aligns a flex container's lines within when there is extra space in the cross-axis,   */
     align-content: flex-start;  /* flex-start | flex-end | center | space-between | space-around | stretch; */
 
@@ -546,6 +574,20 @@ color: #000;
 .modal {
   overflow-y:auto;
 }
+
+.tsa_note {
+  resize: none;
+}
+
+.tsa_textarea_resize {
+  resize: vertical;
+
+}.tsa_textarea_div {
+   margin: 4px 16px 0px 16px;  /* top, right, bottom, left:
+}
+
+
+
 
 /* PR20202-09-17 classes for header bar */
 .hdrbar_flexcontainer  {

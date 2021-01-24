@@ -102,7 +102,7 @@ def get_dateISO_from_string(date_string, format=None):  # PR2019-08-06
 
                     new_dat_str = '-'.join([year_str, month_str, day_str])
         except:
-            logger.debug('ERROR: get_dateISO_from_string: ' + str(date_string) + ' new_dat_str: ' + str(new_dat_str))
+            logger.error('ERROR: get_dateISO_from_string: ' + str(date_string) + ' new_dat_str: ' + str(new_dat_str))
     return new_dat_str
 
 # >>>>>> This is the right way, I think >>>>>>>>>>>>>
@@ -205,19 +205,23 @@ def get_country_choices_all():
 
 
 def get_sel_examyear_instance(request, request_item_setting=None):  # PR2020-12-25
-    #logger.debug('  -----  get_sel_examyear_instance  -----')
+    logger.debug('  -----  get_sel_examyear_instance  -----')
     sel_examyear_instance = None
     sel_examyear_save = False
     multiple_examyears = False
+
     if request.user and request.user.country:
         requsr_country = request.user.country
 
 # - check if there is a new examyear_pk in request_item_setting, check if request_examyear exists
         if request_item_setting is not None:
-            r_eyr_pk = get_dict_value(request_item_setting, (c.KEY_SELECTED_PK, c.KEY_SEL_EXAMYEAR_PK))
-            sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=r_eyr_pk, country=requsr_country)
-            if sel_examyear_instance is not None:
-                sel_examyear_save = True
+            selected_pk_dict = request_item_setting.get(c.KEY_SELECTED_PK)
+            logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+            if selected_pk_dict:
+                r_eyr_pk = selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+                sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=r_eyr_pk, country=requsr_country)
+                if sel_examyear_instance is not None:
+                    sel_examyear_save = True
 
         if sel_examyear_instance is None:
 # - get saved_examyear_pk from Usersetting, check if saved_examyear exists
@@ -233,6 +237,8 @@ def get_sel_examyear_instance(request, request_item_setting=None):  # PR2020-12-
 
 # - check if there are multiple examyears, used to enable select examyear
         multiple_examyears = (sch_mod.Examyear.objects.filter(country=requsr_country).count() > 1)
+
+# - also add sel_examperiod and sel_examtype, used in page grades
 
     return sel_examyear_instance, sel_examyear_save, multiple_examyears
 # --- end of get_sel_examyear_instance
@@ -281,8 +287,8 @@ def get_sel_schoolbase_instance(request, request_item_setting=None):  # PR2020-1
 
 
 def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  # PR2020-12-26
-    logger.debug('  -----  get_sel_depbase_instance  -----')
-    logger.debug('sel_school: ' + str(sel_school))
+    #logger.debug('  -----  get_sel_depbase_instance  -----')
+    #logger.debug('sel_school: ' + str(sel_school))
     sel_depbase_instance = None
     sel_depbase_save = False
     allowed_depbases = []
@@ -291,7 +297,7 @@ def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  #
         req_user = request.user
         requsr_country = req_user.country
 
-    # - get allowed depbases from school and user
+# - get allowed depbases from school and user
         may_select_department = False
         if sel_school and sel_school.depbases:
             for depbase_pk in sel_school.depbases:
@@ -301,13 +307,13 @@ def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  #
                 skip = req_user.allowed_depbases and depbase_pk not in req_user.allowed_depbases
                 if not skip:
                     allowed_depbases.append(depbase_pk)
-        logger.debug('allowed_depbases: ' + str(allowed_depbases))
+        #logger.debug('allowed_depbases: ' + str(allowed_depbases))
 
-    # - check if there is a new depbase_pk in request_item_setting,
+# - check if there is a new depbase_pk in request_item_setting,
         if request_item_setting is not None:
             r_depbase_pk = get_dict_value(request_item_setting, (c.KEY_SELECTED_PK, c.KEY_SEL_DEPBASE_PK))
-            logger.debug('request_item_setting instance: ' + str(request_item_setting))
-            logger.debug('r_depbase_pk instance: ' + str(r_depbase_pk))
+            #logger.debug('request_item_setting instance: ' + str(request_item_setting))
+            #logger.debug('r_depbase_pk instance: ' + str(r_depbase_pk))
             # check if it is in allowed_depbases,
             if r_depbase_pk in allowed_depbases:
                 # check if request_depbase exists
@@ -315,20 +321,20 @@ def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  #
                 if sel_depbase_instance is not None:
                     sel_depbase_save = True
 
-        logger.debug('request_depbase instance: ' + str(sel_depbase_instance))
-        logger.debug('sel_depbase_save: ' + str(sel_depbase_save))
+        #logger.debug('request_depbase instance: ' + str(sel_depbase_instance))
+        #logger.debug('sel_depbase_save: ' + str(sel_depbase_save))
 
         if sel_depbase_instance is None:
-    # - get depbase_pk from Usersetting, check if request_depbase exists
+# - get depbase_pk from Usersetting, check if request_depbase exists
             selected_dict = acc_mod.Usersetting.get_jsonsetting(c.KEY_SELECTED_PK, req_user)
             s_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
         # check if it is in allowed_depbases,
             if s_depbase_pk in allowed_depbases:
         # check if saved_depbase exists
                 sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=s_depbase_pk, country=requsr_country)
-        logger.debug('saved_depbase instance: ' + str(sel_depbase_instance))
+        #logger.debug('saved_depbase instance: ' + str(sel_depbase_instance))
 
-    # - if there is no saved nor request examyear: get first allowed depbase_pk
+# - if there is no saved nor request examyear: get first allowed depbase_pk
         if sel_depbase_instance is None:
             if allowed_depbases and len(allowed_depbases):
                 a_depbase_pk = allowed_depbases[0]
@@ -336,7 +342,7 @@ def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  #
                 if sel_depbase_instance is not None:
                     sel_depbase_save = True
 
-        logger.debug('sel_depbase_instance instance: ' + str(sel_depbase_instance))
+        #logger.debug('sel_depbase_instance instance: ' + str(sel_depbase_instance))
     return sel_depbase_instance, sel_depbase_save, allowed_depbases
 # --- end of get_sel_depbase_instance
 
@@ -414,16 +420,162 @@ def get_depbase_list_field_sorted_zerostripped(depbase_list):  # PR2018-08-23
 
 
 
-def system_updates():
+def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
 
-    # update_isabsence_istemplate()
-    # update_workminutesperday()  # PR20202-06-21
-    # update_company_workminutesperday() # PR20202-06-29
-    # update_paydateitems PR2020-06-26
-    # update_shiftcode_in_orderhours() PR2020-07-25
-    # update_customercode_ordercode_in_orderhours() PR2020-07-25
-    # update_employeecode_in_orderhours() PR2020-07-25
-    # update_sysadmin_in_user()  # PR2020-07-30
-    pass
+    update_examyearsetting(examyear, request)
+
+
+def update_examyearsetting(examyear, request):
+    # Once-only function to add sysadmin permit to admin users PR2020-07-30
+    # logger.debug('........update_sysadmin_in_user..........')
+
+    key_value_list = [
+        ('exform', 'minond', 'MINISTERIE VAN ONDERWIJS, WETENSCHAP, CULTUUR EN SPORT'),
+
+        ('exform', 'eex', 'EINDEXAMEN'),
+        ('exform', 'lex', 'LANDSEXAMEN'),
+        ('exform', 'ey', 'examenjaar'),
+        ('exform', 'se', 'schoolexamen'),
+        ('exform', 'ses', 'schoolexamens'),
+        ('exform', 'cie', 'commissie-examen (CIE)'),
+        ('exform', 'cies', 'commissie-examens (CIE)'),
+        ('exform', 'ce', 'centraal examen'),
+        ('exform', 'cece', 'centraal examen (CE)'),
+        ('exform', 'de_ces', 'de centrale examens'),
+        ('exform', 'de_cesce', 'de centrale examens (CE)'),
+        ('exform', 'eex_lb_rgl01', 'Landsbesluit eindexamens V.W.O., H.A.V.O., V.S.B.O. van de 23ste juni 2008,'),
+        ('exform', 'eex_lb_rgl02', 'ter uitvoering van artikel 32, vijfde lid, van de Landsverordening voortgezet onderwijs, no. 54.'),
+        ('exform', 'lex_lb_rgl01', 'Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016,'),
+        ('exform', 'lex_lb_rgl02', 'ter uitvoering van artikel 57 van de Landsverordening voorgezet onderwijs, no. 21.'),
+
+        ('exform', 'in_examyear', 'in het examenjaar'),
+        ('exform', 'school', 'School:'),
+        ('exform', 'col_name01', 'Naam en voorletters van de kandidaat'),
+        ('exform', 'col_name02', '(in alfabetische volgorde)'),
+        ('exform', 'col_class', 'Klas'),
+        ('exform', 'col_exnr', 'Ex.nr.'),
+        ('exform', 'col_idnr', 'ID-nummer'),
+        ('exform', 'bullet', '*'),
+        ('exform', 'signature_president', '(Handtekening voorzitter)'),
+        ('exform', 'signature_secretary', '(Handtekening secretaris)'),
+
+        ('ex1', 'title', 'Genummerde alfabetische naamlijst van de kandidaten'),
+        ('ex1', 'submit_before', 'Inzenden vóór 1 november *'),
+        ('ex1', 'title', 'Dit formulier dient tevens voor bestelling schriftelijk werk.'),
+        ('ex1', 'title', 'Ex.nr.: onder dit nummer doet de kandidaat examen.'),
+        ('ex1', 'title', 'Vakken waarin geëxamineerd moet worden aangeven met x.'),
+        ('ex1', 'footnote01', 'het getekend exemplaar en een digitale versie'),
+        ('ex1', 'footnote02', 'vóór 1 november inzenden naar de Onderwijs Inspectie'),
+        ('ex1', 'footnote03', 'en een digitale versie naar het ETE.'),
+        ('ex1', 'footnote03', 'en een digitale versie naar het ETE.'),
+
+        ('ex2', 'title', 'Verzamellijst van cijfers van schoolexamens'),
+        ('ex2', 'submit', 'Inzenden ten minste 3 dagen vóór aanvang van de centrale examens*'),
+        ('ex2', 'eex_backpage', 'Handtekening van de examinatoren voor akkoord cijfers schoolonderzoek als aan ommezijde vermeld.'),
+        ('ex2', 'lex_backpage', 'Handtekening van de examinatoren voor akkoord cijfers commissie-examen (CIE) als aan ommezijde vermeld.'),
+        ('ex2', 'footnote01', 'Ex. nr. en naam dienen in overeenstemming '),
+        ('ex2', 'footnote02', 'te zijn met formulier EX.1'),
+        ('ex2', 'footnote03', '1) doorhalen hetgeen niet van toepassing is.'),
+        ('ex2', 'footnote04', 'het getekend exemplaar en een digitale versie ten minste 3 dagen vóór aanvang van de centrale examens'),
+        ('ex2', 'footnote05', 'inzenden naar de Onderwijs Inspectie en een digitale versie naar het ETE.'),
+        ('ex2', 'backpage01', 'Handtekening van de examinatoren voor akkoord cijfers schoolonderzoek als aan ommezijde vermeld.'),
+        ('ex2', 'backpage02', 'Klas'),
+        ('ex2', 'backpage03', 'Vak'),
+        ('ex2', 'backpage04', 'Naam Examinator'),
+        ('ex2', 'backpage05', 'Handtekening'),
+
+        ('ex2a', 'title', 'Lijst van cijfers'),
+        ('ex2a', 'eex_article', '(Artikel 20 Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
+        ('ex2a', 'lex_article', '(Artikel 34 Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
+        ('ex3', 'title', 'Proces-Verbaal van Toezicht'),
+        ('ex3', 'eex_article', '(Artikel 28, Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
+        ('ex3', 'lex_article', '((Artikel 18, Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
+        ('ex4', 'title', 'Lijst van kandidaten voor het herexamen.'),
+        ('ex4', 'title_corona', 'Lijst van kandidaten voor herkansing.'),
+        ('ex4', 'eex_article', '(Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
+        ('ex4', 'lex_article', '(Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
+        ('ex4', 'header03', 'Tevens lijst van kandidaten, die om een geldige reden verhinderd waren het examen te voltooien.'),
+        ('ex4', 'eex_header04', 'Direct na elke uitslag inzenden naar de Onderwijs Inspectie en digitaal naar het ETE.'),
+        ('ex4', 'lex_header04', 'Direct na elke uitslag het ondertekend exemplaar en digitaal inzenden naar de Onderwijs Inspectie.'),
+        ('ex4', 'footer01', 'Dit formulier dient tevens voor bestelling schriftelijk werk.'),
+        ('ex4', 'footer02', 'Ex. nr. en naam dienen in overeenstemming te zijn met formulier EX.1.'),
+        ('ex4', 'verhinderd_header01', 'Kandidaten die om een geldige reden verhinderd waren het examen te voltooien.'),
+        ('ex4', 'verhinderd_header02', '(Voortzetting schoolexamen aangeven met s en centraal examen met c).'),
+        ('ex5', 'eex_inzenden', 'Inzenden binnen één week na de uitslag en na afloop van de herkansing, het ondertekend exemplaar inzenden naar de Onderwijs Inspectie en digitaal naar de Onderwijs Inspectie en het ETE.'),
+        ('ex5', 'lex_inzenden', 'Inzenden binnen één week na de uitslag en na afloop van de herkansing, het ondertekend exemplaar en digitaal inzenden naar de Onderwijs Inspectie.'),
+        ('ex6', 'eex_article', '(Artikel 47 Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
+        ('ex6', 'lex_article', '(Artikel 10 Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
+
+        ('gradelist', 'preliminary', 'VOORLOPIGE CIJFERLIJST'),
+
+        ('gradelist', 'undersigned', 'De ondergetekenden verklaren dat'),
+        ('gradelist', 'born_on', 'geboren op'),
+        ('gradelist', 'born_at', 'te'),
+        ('gradelist', 'examyear', 'in het examenjaar'),
+        ('gradelist', 'attended', 'heeft deelgenomen aan het eindexamen'),
+        ('gradelist', 'conform', 'conform'),
+        ('gradelist', 'profiel', 'het profiel'),
+        ('gradelist', 'leerweg', 'de leerweg'),
+        ('gradelist', 'at_school', 'aan'),
+        ('gradelist', 'at_country', 'te'),
+# & " heeft deelgenomen aan het eindexamen " & [Afd]![Afk_Afdeling] & " conform"
+        ('gradelist', 'eex_article01', 'welk examen werd afgenomen volgens de voorschriften gegeven bij en krachtens artikel 32 van de Landsverordening Voortgezet Onderwijs'),
+        ('gradelist', 'eex_article02', 'De kandidaat heeft examen afgelegd in de onderstaande vakken en heeft de daarachter vermelde cijfers behaald.'),
+
+        ('gradelist', 'subjects', 'Vakken waarin examen is afgelegd'),
+        ('gradelist', 'grades_for', 'Cijfers voor'),
+        ('gradelist', 'final_grades', 'Eindcijfers'),
+        ('gradelist', 'col_header_se', 'School-\nexamen'),
+        ('gradelist', 'col_header_ce', 'Centraal\nexamen'),
+        ('gradelist', 'col_in_numbers', 'in cijfers'),
+        ('gradelist', 'col_in_letters', 'in letters'),
+
+        ('gradelist', 'combi_grade', 'Combinatiecijfer, het gemiddelde van de met * gemerkte vakken:'),
+
+        ('gradelist', 'lbl_title_pws', 'Titel/onderwerp van het profielwerkstuk:'),
+        ('gradelist', 'lbl_title_sws', 'Titel/onderwerp van het profielwerkstuk:'),
+        ('gradelist', 'lbl_subjects__ws', 'Vakken waarop het profielwerkstuk betrekking heeft:'),
+
+        ('gradelist', 'avg_grade', 'Gemiddelde der cijfers'),
+        ('gradelist', 'result', 'Uitslag op grond van de resultaten:'),
+        ('gradelist', 'place', 'Plaats:'),
+        ('gradelist', 'date', 'Datum:'),
+        ('gradelist', 'president', 'De voorzitter:'),
+        ('gradelist', 'secretary', 'De secretaris:'),
+
+        ('diploma', 'born', 'geboren'),
+        ('diploma', 'born_at', 'at'),
+        ('diploma', 'attended', 'met gunstig gevolg heeft deelgenomen aan het eindexamen'),
+        ('diploma', 'conform_sector', 'conform de sector'),
+        ('diploma', 'at_school', 'aan'),
+        ('diploma', 'at_country', 'te'),
+        ('diploma', 'article', 'welk examen werd afgenomen volgens de voorschriften gegeven bij en krachtens artikel 32 van de Landsverordening voortgezet onderwijs van de 21ste mei 2008, P.B. no. 33, (P.B. 1979, no 29), zoals gewijzigd.'),
+
+        ('diploma', 'place', 'Plaats:'),
+        ('diploma', 'date', 'Datum:'),
+        ('diploma', 'president', 'De voorzitter van de examencommissie:'),
+        ('diploma', 'secretary', 'De secretaris van de examencommissie:'),
+
+        ('diploma', 'ete', 'Het Expertisecentrum voor Toetsen & Examens:'),
+
+        ('diploma', 'signature', 'Handtekening van de geslaagde:'),
+        ('diploma', 'reg_nr', 'Registratienr.:'),
+        ('diploma', 'id_nr', 'Id.nr.:'),
+    ]
+    for key_value in key_value_list:
+        instance = sch_mod.Examyearsetting.objects.filter(
+            examyear=examyear,
+            key=key_value[0],
+            subkey=key_value[1]).first()
+        if instance is None:
+            instance = sch_mod.Examyearsetting(
+                examyear=examyear,
+                key=key_value[0],
+                subkey=key_value[1],
+                setting=key_value[2]
+            )
+        else:
+            instance.setting = key_value[2]
+        instance.save()

@@ -41,11 +41,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_width:  ["032", "090", "150",  "180", "240",  "120", "180", "090"],
                     field_align: ["c", "l", "l", "l",  "l",  "c", "l", "c"]},
         permissions: {
-                    field_caption: ["", "School", "User", "Edit", "President", "Secretary",  "System_manager_2lines"],
-                    field_names: ["select", "sb_code", "username", "perm02_write", "perm04_auth1", "perm08_auth2",  "perm64_system"],
-                    filter_tags: ["select", "text", "text",  "toggle", "toggle", "toggle",  "toggle"],
-                    field_width:  ["032", "090", "150", "090", "090", "090", "090"],
-                    field_align: ["c", "l", "l", "c", "c", "c", "c"]}
+                    field_caption: ["", "School", "User", "Edit", "President", "Secretary", "Commissioner_2lines", "System_manager_2lines"],
+                    field_names: ["select", "sb_code", "username", "perm_edit", "perm_auth1", "perm_auth2", "perm_auth3", "perm_admin"],
+                    filter_tags: ["select", "text", "text",  "toggle", "toggle", "toggle","toggle",  "toggle"],
+                    field_width:  ["032", "090", "150", "090", "090", "090", "090", "090"],
+                    field_align: ["c", "l", "l", "c", "c", "c", "c", "c"]}
         };
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // period also returns emplhour_list
     const datalist_request = {
             setting: {page_user: {mode: "get"}},
-            locale: {page: "user"},
+            locale: {page: ["user"]},
             user_rows: {get: true},
             school_rows: {get: true}
         };
@@ -130,6 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
             success: function (response) {
                 console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
                 console.log(response)
+
                 // hide loader
                 el_loader.classList.add(cls_visible_hide)
                 let check_status = false;
@@ -138,11 +139,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("locale_dict" in response) { refresh_locale(response.locale_dict)};
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict
-                                    selected_btn = (setting_dict.sel_btn)
-
+                    selected_btn = (setting_dict.sel_btn)
         console.log( "setting_dict", setting_dict);
         console.log( "selected_btn", selected_btn);
-
                 };
 
                 if ("user_rows" in response) { refresh_user_map(response.user_rows)}
@@ -199,8 +198,6 @@ document.addEventListener('DOMContentLoaded', function() {
         CreateTblHeader();
         FillTblRows();
 
-// --- update header text
-        UpdateHeaderText();
     }  // HandleBtnSelect
 
 //=========  HandleTableRowClicked  ================ PR2020-08-03
@@ -225,19 +222,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         //console.log( "selected_user_pk: ", selected_user_pk, typeof selected_user_pk);
     }  // HandleTableRowClicked
-
-
-//========= UpdateHeaderText  ================== PR2020-07-31
-    function UpdateHeaderText(){
-        //console.log(" --- UpdateHeaderText ---" )
-        let header_text = null;
-        if(selected_btn === "btn_user_list"){
-            header_text = loc.User_list;
-        } else {
-            header_text = loc.Permissions;
-        }
-        document.getElementById("id_hdr_text").innerText = header_text;
-    }   //  UpdateHeaderText
 
 //=========  CreateTblHeader  === PR2020-07-31
     function CreateTblHeader() {
@@ -434,8 +418,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_div.innerText = map_dict[field_name];
                 } else if (field_name.slice(0, 4) === "perm") {
                     const is_true = (map_dict[field_name]) ? map_dict[field_name] : false;
-                    const value_str = field_name.slice(4, 6);
-                    const permit_value = (!is_true) ? 0 : (!Number(value_str)) ? 0 : Number(value_str);
+                    const permit_int = (field_name === "perm_edit") ? 2 : (field_name === "perm_auth1") ? 4 :
+                                       (field_name === "perm_auth2") ? 8 : (field_name === "perm_auth3") ? 16 :
+                                       (field_name === "perm_admin") ? 64 : 0;
+                    const permit_value = (is_true) ? permit_int : 0;
+
+                    console.log("field_name", field_name, "permit_value", permit_value);
                     el_div.setAttribute("data-value", permit_value);
                     let el_icon = el_div.children[0];
                     if(el_icon){add_or_remove_class (el_icon, "tickmark_1_2", is_true)};
@@ -500,14 +488,15 @@ document.addEventListener('DOMContentLoaded', function() {
    function UploadNewUser(args) {
         //console.log("=== UploadNewUser === args: ", args);
         let mode = null, init_time_stamp = null, skip = false;
-            // send schoolbase, username and email to server after 1000 ms
-            // abort if within that period a new value is entered.
-            // checked by comparing the timestamp
-            // args is either 'save' or a number based on time_stamp
-            // time_stamp gets new value 'now' whenever a 'keyup' event occurs
-            // UploadNewUser has a time-out of 1000 ms
-            // init_time_stamp is the value of time_stamp at the time this 'keyup' event occurred
-            // when time_stamp = init_time_stamp, it means that there are no new keyup events within the time-out period
+
+        // send schoolbase, username and email to server after 1000 ms
+        // abort if within that period a new value is entered.
+        // checked by comparing the timestamp
+        // args is either 'save' or a number based on time_stamp
+        // time_stamp gets new value 'now' whenever a 'keyup' event occurs
+        // UploadNewUser has a time-out of 1000 ms
+        // init_time_stamp is the value of time_stamp at the time this 'keyup' event occurred
+        // when time_stamp = init_time_stamp, it means that there are no new keyup events within the time-out period
 
         if(Number(args)){
             //skip if a new key is entered in the elapsed period of 1000 ms
@@ -592,7 +581,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         mod_dict = {};
         // <PERMIT> PR2020-10-12
-        if(setting_dict.requsr_perm_system){
+        if(setting_dict.requsr_perm_admin || setting_dict.requsr_perm_system){
             const tblRow = get_tablerow_selected(el_input);
             if(tblRow){
                 const tblName = get_attr_from_el(tblRow, "data-table")
@@ -606,23 +595,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
             console.log( "map_dict", map_dict);
             console.log( "fldName", fldName, "input_value", input_value);
-                    const requsr_pk = get_dict_value(selected_period, ["requsr_pk"])
-                    const is_request_user = (requsr_pk === map_dict.id)
+                    const is_request_user = (setting_dict.requsr_pk && setting_dict.requsr_pk === map_dict.id)
 
-    // show message when sysadmin tries to delete sysadmin permit or add readonly
-                    if(fldName === "perm64_sysadmin" && is_request_user && has_permit ){
-                        ModConfirmOpen("permission_sysadm", el_input)
-                    } else if(fldName === "perm01_readonly" && is_request_user && !has_permit ){
+            console.log( "is_request_user", is_request_user);
+            console.log( "has_permit", has_permit);
+    // show message when sysadmin tries to delete sysadmin permit
+                    if(fldName === "perm_admin" && is_request_user && has_permit ){
                         ModConfirmOpen("permission_sysadm", el_input)
                     } else {
 
     // ---  toggle permission value of el_input
+                        has_permit = (!has_permit);
                         if(input_value){
                             input_value = 0
                         } else {
-                            const cell_permit = fldName.slice(4, 6);
+                            const cell_permit = fldName.slice(4, 7);
                             input_value = (Number(cell_permit)) ? Number(cell_permit) : 0;
-    // --- user cannot have perm08_auth1 and  perm04_auth1 and perm08_auth2 at the same time - resert other auth field
+    // --- user cannot have perm08_auth1 / auth2 / auth3 at the same time - resert other auth fields
                             // moved to server, because of asynchrone ajax it is still possible to set both PR2020-10-12
                         }
     // ---  put new value in el_input attribute 'data-value'
@@ -648,19 +637,19 @@ document.addEventListener('DOMContentLoaded', function() {
                                                    table: "user",
                                                    mode: "update",
                                                    mapid: map_id},
-                                              permits: {value: new_permit_sum, update: true}};
+                                              permits: {field: fldName, value: has_permit, update: true}};
                         UploadChanges(upload_dict, url_user_upload);
                     }
                 }  //  if(!isEmpty(map_dict)){
             }  //   if(!!tblRow)
-        }  // if(setting_dict.requsr_perm_system)
+        }  // if(setting_dict.requsr_perm_admin)
     }  // UploadToggle
 
 //========= UploadChanges  ============= PR2020-08-03
     function UploadChanges(upload_dict, url_str) {
-        //console.log("=== UploadChanges");
-        //console.log("url_str: ", url_str);
-        //console.log("upload_dict: ", upload_dict);
+        console.log("=== UploadChanges");
+        console.log("url_str: ", url_str);
+        console.log("upload_dict: ", upload_dict);
 
         if(!isEmpty(upload_dict)) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -713,7 +702,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // - else (teacher, student) : no access
         // - only perm_system can create user_list
 
-        const may_create_edit_users = (setting_dict.requsr_perm_system);
+        const may_create_edit_users = (setting_dict.requsr_perm_admin || setting_dict.requsr_perm_system);
         const may_add_user_to_other_schools = (setting_dict.requsr_role_admin || setting_dict.requsr_role_system);
         if(may_create_edit_users){
 
@@ -817,8 +806,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---  show modal
             $("#id_mod_user").modal({backdrop: true});
-
-        }  // if(setting_dict.requsr_perm_system)
+        }
     };  // MUA_Open
 
 //========= MUA_FillSelectTableSchool  ============= PR2020--09-17
@@ -834,7 +822,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let row_count = 0
         for(let i = 0, tblRow, dict; dict = dictlist[i]; i++){
             if (!isEmpty(dict)) {
-//--- get info from item_dict
+// ---  get info from item_dict
                 const base_id = dict.base_id;
                 const country_id = dict.country_id;
                 const code = (dict.sb_code) ? dict.sb_code : "";
@@ -849,17 +837,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 tblRow.setAttribute("data-ppk", country_id);
                 tblRow.setAttribute("data-value", code + " - " + abbrev);
 
-        //- add hover to select row
+// ---  add hover to select row
                 add_hover(tblRow)
 
-        // --- add first td to tblRow.
+// ---  add first td to tblRow.
                 let td = tblRow.insertCell(-1);
                 let el_div = document.createElement("div");
                     el_div.classList.add("tw_075")
                     el_div.innerText = code;
                     td.appendChild(el_div);
 
-        // --- add second td to tblRow.
+// ---  add second td to tblRow.
                 td = tblRow.insertCell(-1);
                 el_div = document.createElement("div");
                     el_div.classList.add("tw_150")
@@ -868,7 +856,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 //td.classList.add("tw_200", "px-2", "pointer_show", "tsa_bc_transparent")
 
-    //--------- add addEventListener
+// ---  add addEventListener
                 tblRow.addEventListener("click", function() {MUA_SelectSchool(tblRow, event.target)}, false);
 
             }  //  if (!isEmpty(item_dict))
@@ -879,7 +867,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MUA_ResetElements  ============= PR2020-08-03
     function MUA_ResetElements(also_remove_values){
         console.log( "===== MUA_ResetElements  ========= ");
-        // --- loop through input elements
+// ---  loop through input elements
         const fields = ["username", "last_name", "email", "schoolname"]
         for (let i = 0, field, el_input, el_msg; field = fields[i]; i++) {
             el_input = document.getElementById("id_MUA_" + field);
@@ -1116,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03
     function ModConfirmOpen(mode, el_input) {
-        //console.log(" -----  ModConfirmOpen   ----")
+        console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "delete", "inactive" or "resend_activation_email", "permission_sysadm"
 
 // ---  get selected_pk
@@ -1133,8 +1121,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  get info from user_map
         const map_id = "user_" + selected_pk;
         const map_dict = get_mapdict_from_datamap_by_id(user_map, map_id)
-        const requsr_pk = get_dict_value(selected_period, ["requsr_pk"])
-        const is_request_user = (requsr_pk === map_dict.id)
+        const is_request_user = (setting_dict.requsr_pk && setting_dict.requsr_pk === map_dict.id)
 
         //console.log("map_dict", map_dict)
 // ---  create mod_dict
@@ -1186,10 +1173,8 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if(is_mode_permission_sysadm){
                 hide_save_btn = true;
                 const fldName = get_attr_from_el(el_input, "data-field")
-                if (fldName === "perm64_sysadmin") {
+                if (fldName === "perm_admin") {
                     msg_01_txt = loc.Sysadm_cannot_remove_sysadm_perm
-                } else if (fldName === "perm01_readonly") {
-                    msg_01_txt = loc.Sysadm_cannot_set_readonly
                 }
             } else if (is_mode_resend_activation_email) {
                 const is_expired = activationlink_is_expired(map_dict.date_joined);

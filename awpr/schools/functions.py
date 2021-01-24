@@ -423,12 +423,14 @@ def get_department(old_examyear, new_examyear):
 
 
 # ===============================
-def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, request):  # PR2020-04-17 PR2020-12-28
-    #logger.debug(' ---------------- get_schoolsetting ---------------- ')
-    #logger.debug('request_item_setting: ' + str(request_item_setting) + ' ' + str(type(request_item_setting)))
-    #logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_depbase):  # PR2020-04-17 PR2020-12-28  PR2021-01-12
+    logger.debug(' ---------------- get_schoolsetting ---------------- ')
+    logger.debug('request_item_setting: ' + str(request_item_setting) + ' ' + str(type(request_item_setting)))
+    logger.debug('sel_examyear: ' + str(sel_examyear))
+    logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+    logger.debug('sel_depbase: ' + str(sel_depbase) + ' ' + str(type(sel_depbase)))
     # only called by DatalistDownloadView
-    # schoolsetting: {setting_key: "import_student"},
+    # schoolsetting: {setting_key: "import_student"}, {setting_key: "import_subject"},, {setting_key: "import_grade"}
     sel_examyear_pk = sel_examyear.pk if sel_examyear else None
     sel_schoolbase_pk = sel_schoolbase.pk if sel_schoolbase else None
     schoolsetting_dict = {'sel_examyear_pk': sel_examyear_pk, 'sel_schoolbase_pk': sel_schoolbase_pk }
@@ -437,16 +439,28 @@ def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, reques
     setting_key = request_item_setting.get('setting_key')
     #logger.debug('setting_key: ' + str(setting_key) + ' ' + str(type(setting_key)))
     if setting_key:
-        if setting_key in (c.KEY_IMPORT_STUDENT, c.KEY_IMPORT_SUBJECT):
-            schoolsetting_dict[setting_key] = get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, request)
+        if setting_key in (c.KEY_IMPORT_STUDENT, c.KEY_IMPORT_SUBJECT, c.KEY_IMPORT_GRADE):
+            schoolsetting_dict[setting_key] = get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase)
+        elif setting_key in (c.KEY_IMPORT_STUDENTSUBJECT):
+                # {awpColdef: "examnumber", caption: "Examennummer", excColdef: "Ex_nr_", linkfield: true}
+                # get all subject_codes of subjects of this examyear and depbase
+
+                schoolsetting_dict[setting_key] = get_stored_coldefs_dict(
+                    setting_key, sel_examyear, sel_schoolbase, sel_depbase)
+
+                logger.debug('schoolsetting_dict: ' + str(schoolsetting_dict))
         else:
             schoolsetting_dict[setting_key]  = sch_mod.Schoolsetting.get_jsonsetting(setting_key, sel_schoolbase)
     return schoolsetting_dict
 
 
 # ===============================
-def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, request):
-    #logger.debug(' ---------------- get_stored_coldefs_dict ---------------- ')
+def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase):
+    logger.debug(' ---------------- get_stored_coldefs_dict ---------------- ')
+    logger.debug('setting_key: ' + str(setting_key))
+    logger.debug('sel_examyear: ' + str(sel_examyear))
+    logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+    logger.debug('sel_depbase: ' + str(sel_depbase) + ' ' + str(type(sel_depbase)))
 
     # stored_settings_dict: {'worksheetname': 'Compleetlijst', 'has_header': True,
     # 'coldef': {'idnumber': 'ID', 'classname': 'KLAS', 'department': 'Vakantiedagen', 'level': 'Payrollcode', 'sector': 'Profiel'},
@@ -454,30 +468,26 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, request):
     # 'level': {'W6': 1, 'W3': 2, 'W2': 3},
     # 'sector': {'EM': 3, 'CM': 4, 'NT': 7}}
 
-
 # - first get info from sel_school
     # sel_schoolbase can be different from request.user.schoolbase
     # This can be the case when role insp, admin or system has selected different school
     sel_school = sch_mod.School.objects.get_or_none(base=sel_schoolbase, examyear=sel_examyear)
 
-# - is_level_req / is_sector_req is True when _req is True in any of the allowed departments of sel_school
+# - is_level_req / is_sector_req is True when _req is True in the selected department of sel_school
     is_level_req = False
     is_sector_req = False
-
-    school_depbases = []
-    department_list = []
+    sel_department = None
+    school_depbasPk_list = []  # school_depbasPk_list: [2, 3] <class 'list'>
     if sel_school:
-        school_depbases = sel_school.depbases
-        if school_depbases:
-            departments = sch_mod.Department.objects.filter(examyear=sel_examyear)
-            for department in departments:
-                depbase_pk = department.base.pk
-                # school_depbases: [2, 3] <class 'list'>
-                if depbase_pk in school_depbases:
-                    if department.level_req:
-                        is_level_req = True
-                    if department.sector_req:
-                        is_sector_req = True
+        school_depbasPk_list = sel_school.depbases
+        if school_depbasPk_list and sel_depbase and sel_depbase.pk in school_depbasPk_list:
+            sel_department = sch_mod.Department.objects.get_or_none(base=sel_depbase, examyear=sel_examyear)
+            if sel_department:
+            # add is_req if is__req = True in selected department
+                if sel_department.level_req:
+                    is_level_req = True
+                if sel_department.sector_req:
+                    is_sector_req = True
 
 ##########################################
 # - get Schoolsetting from sel_schoolbase, not from request.user.schoolbase
@@ -488,17 +498,14 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, request):
     coldef_list = []
     stored_coldef = {}
 
-    stored_department_dict, stored_level_dict, stored_sector_dict = {}, {}, {}
     if setting_key:
         if stored_settings_dict:
             noheader = stored_settings_dict.get('noheader', False)
             worksheetname = stored_settings_dict.get('worksheetname')
             stored_coldef = stored_settings_dict.get('coldef')
-            stored_department_dict = stored_settings_dict.get('department')
-            stored_level_dict = stored_settings_dict.get('level')
-            stored_sector_dict = stored_settings_dict.get('sector')
 
         default_coldef_list = c.KEY_COLDEF.get(setting_key)
+        logger.debug('default_coldef_list: ' + str(default_coldef_list))
 
         if default_coldef_list:
             for dict in default_coldef_list:
@@ -507,8 +514,14 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, request):
 # - only add level or sector when school has departments with is_level_req / is_sector_req
                 if awpColdef == 'level':
                     add_to_list = is_level_req
+                    # replace caption 'Sector/Profiel'  with Sector or Profiel
+                    if add_to_list and sel_department and sel_department.level_caption:
+                        dict['caption'] = sel_department.level_caption
                 elif awpColdef == 'sector':
                     add_to_list = is_sector_req
+                    # replace caption 'Sector/Profiel'  with Sector or Profiel
+                    if add_to_list and sel_department and sel_department.sector_caption:
+                        dict['caption'] = sel_department.sector_caption
                 else:
                     add_to_list = True
                 if add_to_list:
@@ -525,6 +538,8 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, request):
                             dict['excColdef'] = stored_excColdef
                     coldef_list.append(dict)
 
+##########################################
+
     setting_dict = {
         'worksheetname': worksheetname,
         'noheader': noheader,
@@ -533,66 +548,80 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, request):
 
 ##########################################
 
-# - get departments
-    department_list = []
-    departments = sch_mod.Department.objects.filter(examyear=sel_examyear)
-    for department in departments:
-        depbase_pk = department.base.pk
-        dict = {'awpBasePk': depbase_pk, 'awpValue': department.base.code }
-        if stored_department_dict:
-            exc_coldef = stored_coldef.get('department')
-            if exc_coldef:
-                for key_excValue, value_awpValue in stored_department_dict.items():
-                    if value_awpValue == depbase_pk:
-                        dict['excColdef'] = exc_coldef
-                        dict['excValue'] = key_excValue
-                        break
-        department_list.append(dict)
-
-    # department_list: [{'awpBasePk': 1, 'awpValue': 'Vsbo'},
-    #                   {'awpBasePk': 2, 'awpValue': 'Havo'},
-    #                   {'awpBasePk': 3, 'awpValue': 'Vwo'}]
-    if department_list:
-        setting_dict['department'] = department_list
-
 # create list of required levels and sectors with excColdef when linked
-    for tblName in ('level', 'sector'):
+    for tblName in ('department', 'level', 'sector', 'subject', 'subjecttype'):
 # - only add list of level / sector when _req is True in any of the allowed departments of sel_school
-        is_req = is_level_req if tblName == 'level' else is_sector_req
-        tbl_list = []
+        is_req = False
+        if tblName == 'level':
+            is_req = is_level_req
+        elif tblName == 'sector':
+            is_req = is_sector_req
+        else:
+            #TODO set isreq fro dep, subj, subjtype
+            is_req = True
 
         if is_req:
-            stored_dict = stored_level_dict if tblName == 'level' else stored_sector_dict
-            if tblName == 'level':
+            tbl_list = []
+            instances = None
+
+    # reverse the  stored_dict : convert {'ned': 4} to {4: 'ned'} to speed up search
+            reversed_dict = {}
+            stored_dict = stored_settings_dict.get(tblName) if stored_settings_dict else None
+            if stored_dict:
+                for excKey, awpBasePk in stored_dict.items():
+                    reversed_dict[awpBasePk] = excKey
+
+            if tblName == 'department':
+                instances = sch_mod.Department.objects.filter(examyear=sel_examyear)
+            elif tblName == 'level':
                 instances = subj_mod.Level.objects.filter(examyear=sel_examyear)
-            else:
+            elif tblName == 'sector':
                 instances = subj_mod.Sector.objects.filter(examyear=sel_examyear)
+            elif tblName == 'subject':
+                instances = subj_mod.Subject.objects.filter(examyear=sel_examyear)
+            elif tblName == 'subjecttype':
+                instances = subj_mod.Subjecttype.objects.filter(examyear=sel_examyear)
+
+            logger.debug('school_depbasPk_list: ' + str(school_depbasPk_list))
+
+        # - loop through instances of this examyear
             for instance in instances:
-# - check if one of the depbases of level/sector is in the list of depbases of the school
+        # - check if one of the depbases of the instance is in the list of depbases of the school
                 add_to_list = False
-                if instance.depbases:
-                    # instance.depbases: [1] <class 'list'>
-                    # school_depbases: [1] <class 'list'>
-                    for instance_depbase in instance.depbases:
-                        if school_depbases and instance_depbase in school_depbases:
+                if school_depbasPk_list:
+                    if tblName == 'department':
+            # if department: check if depbasePk is in school_depbasPk_list
+                        instance_depbasePk = instance.base_id
+                        if instance_depbasePk in school_depbasPk_list:
                             add_to_list = True
-                            break
+                    elif instance.depbases:
+                        logger.debug('instance.depbases: ' + str(instance.depbases))
+            # in other tables: only add if sel_depbase.pk is in depbases
+                        if sel_depbase.pk in instance.depbases:
+                            add_to_list = True
 
                 if add_to_list:
-                    dict = {'awpBasePk': instance.base.pk, 'awpValue': instance.abbrev}
-                    if stored_dict:
-                        #  'sector': {'EM': 3, 'CM': 4, 'NT': 7}}
-                        exc_coldef = stored_coldef.get(tblName)
-                        if exc_coldef:
-                            for key_excValue, value_awpValue in stored_dict.items():
-                                if value_awpValue == instance.base.pk:
-                                    dict['excColdef'] = exc_coldef
-                                    dict['excValue'] = key_excValue
-                                    break
-                    tbl_list.append(dict)
-        if tbl_list:
-            setting_dict[tblName] = tbl_list
+                    instance_basePk = instance.base.pk
+                    instance_value = None
+                    if tblName in ('department', 'subject'):
+                        instance_value = instance.base.code if instance.base.code else None
+                    elif tblName in ('level', 'sector', 'subjecttype'):
+                        instance_value = instance.abbrev if instance.abbrev else None
 
-    #logger.debug('setting_dict: ' + str(setting_dict))
-    #logger.debug(' ---------------- end of get_stored_coldef_dict ---------------- ')
+                    dict = {'awpBasePk': instance_basePk, 'awpValue': instance_value}
+                    if reversed_dict:
+                        #  reversed_dict =  {3: 'EM', 4: 'CM', 7: 'NT'}
+                        # - add excKey when this subject is linked
+                        if reversed_dict and instance_basePk in reversed_dict:
+                            dict['excKey'] = reversed_dict[instance_basePk]
+                    tbl_list.append(dict)
+                    logger.debug('dict: ' + str(dict))
+            if tbl_list:
+                logger.debug('tbl_list: ' + str(tbl_list))
+                setting_dict[tblName] = tbl_list
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+    logger.debug('setting_dict: ' + str(setting_dict))
+    logger.debug(' ---------------- end of get_stored_coldef_dict ---------------- ')
     return setting_dict

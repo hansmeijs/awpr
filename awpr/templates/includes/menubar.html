@@ -2,53 +2,45 @@
 {% load static %}
 
 <!-- MENU BAR -->
-  {% if not user.is_authenticated %}
+{% if not user.is_authenticated %}
     <nav id="line6" class="navbar navbar-expand navbar-light bg-light tsa_tr_error">
-      <div class="container">
-          <ul class="navbar-nav mr-auto">
-            <li class="nav-item active">
-              <a class="nav-link" href="/">
-                  {% trans '---' %}
-              </a>
-            </li>
-          </ul>
-      </div>
+        <div class="container">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="/">
+                        {% trans '---' %}
+                    </a>
+                </li>
+            </ul>
+        </div>
     </nav>
 
-  {% else %}
-
-    <nav id="line20menubar" class="navbar navbar-expand-md navbar-light bg-light ">
-
+{% else %}
+    <nav id="line20menubar" class="navbar navbar-expand-md navbar-light bg-light">
         <!-- Toggler/collapsibe Button -->
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsibleNavbar">
-          <span class="navbar-toggler-icon"></span>
+            <span class="navbar-toggler-icon"></span>
         </button>
-
         <!-- Navbar links -->
         <div id="collapsibleNavbar" class="collapse navbar-collapse" >
-
-          <div class="d-flex flex-wrap" id="id_dflex">
-            {% for menu_item in menu_items %}
-                <svg id="{{menu_item.svg_index}}" height="{{menu_item.height}}" width="{{menu_item.width}}">
-                    <a href="{{menu_item.href}}" >
-                        <polygon id="'XXXid_plg_' + {{menu_item.index}}" points="{{menu_item.points}}" class="{{menu_item.class}}"></polygon>
-                        <text id="'id_txt' +{{menu_item.index}}"
-                            x="{{menu_item.x}}"
-                            y="{{menu_item.y}}"
-                            fill="{{menu_item.fill}}"
-                            text-anchor="middle"
-                            alignment-baseline="middle">
+            <div class="d-flex flex-wrap" id="id_dflex">
+                {% for menu_item in menu_items %}
+                    <svg id="{{menu_item.svg_index}}" height="{{menu_item.height}}" width="{{menu_item.width}}">
+                        <a href="{{menu_item.href}}" >
+                            <polygon id="'XXXid_plg_' + {{menu_item.index}}" points="{{menu_item.points}}" class="{{menu_item.class}}"></polygon>
+                            <text id="'id_txt' +{{menu_item.index}}"
+                                x="{{menu_item.x}}"
+                                y="{{menu_item.y}}"
+                                fill="{{menu_item.fill}}"
+                                text-anchor="middle"
+                                alignment-baseline="middle">
                                 {{menu_item.caption}}
-                        </text>
-                    </a>
-                </svg>
-            {% endfor %}
-
-          </div> <!-- class="d-flex flex-wrap"  -->
+                            </text>
+                        </a>
+                    </svg>
+                {% endfor %}
+            </div> <!-- class="d-flex flex-wrap"  -->
         </div>  <!--  class="collapse navbar-collapse"  -->
-      </div> <!-- class=container -->
     </nav>
-
-  {% endif %}
-
+{% endif %}
 <!-- MENU BAR -->

@@ -223,6 +223,17 @@ class Examyear_log(AwpBaseModel):
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
+class Examyearsetting(Model):  # PR2021-01-
+    # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
+    objects = AwpModelManager()
+
+    examyear = ForeignKey(Examyear, related_name='+', on_delete=CASCADE)
+
+    key = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
+    subkey = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
+    setting = CharField(db_index=True, max_length=2048)
+
+
 # === Department Model =====================================
 # PR2018-09-15 moved from Subjects to School because of circulair refrence when trying to import subjects.Department
 class Departmentbase(Model):# PR2018-10-17
@@ -448,7 +459,9 @@ class Schoolsetting(Model):  # PR2020-10-20
     schoolbase = ForeignKey(Schoolbase, related_name='schoolsetting', on_delete=CASCADE)
     key = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
 
-    jsonsetting = JSONField(null=True)  # stores invoice dates for this customer
+    setting = CharField(db_index=True, max_length=2048)
+
+    jsonsetting = JSONField(null=True)
 
 #===========  Classmethods
     @classmethod

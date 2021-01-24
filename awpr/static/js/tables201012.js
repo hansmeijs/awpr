@@ -4,14 +4,14 @@
     const cls_hide = "display_hide";
     const cls_hover = "tr_hover";
     const cls_selected = "tsa_tr_selected";
-
+    const cls_bc_transparent = "tsa_bc_transparent";
 
 // ++++++++++++  MODAL SELECT EXAMYEAR SCHOOL OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
 
 //=========  t_MSESD_Open  ================ PR2020-10-27 PR2020-12-25
     function t_MSESD_Open(loc, tblName, data_map, setting_dict, MSESD_Response) {
-        console.log( "===== t_MSESD_Open ========= ", tblName);
-        console.log( "setting_dict", setting_dict);
+        //console.log( "===== t_MSESD_Open ========= ", tblName);
+        //console.log( "setting_dict", setting_dict);
 
         if (!isEmpty(loc)) {
             let may_open_modal = false, selected_pk = null;
@@ -28,7 +28,7 @@
                 may_open_modal = setting_dict.may_select_department;
                 selected_pk = setting_dict.sel_depbase_pk;
              }
-            console.log( "selected_pk", selected_pk);
+            //console.log( "selected_pk", selected_pk);
             //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
             if (may_open_modal) {
             //mod_dict = {base_id: setting_dict.requsr_schoolbase_pk, table: tblName};
@@ -42,11 +42,11 @@
         }
     }  // t_MSESD_Open
 
-
 //=========  t_MSSD_FillSelectTable  ================ PR2020-08-21 PR2020-12-18
     function t_MSSD_FillSelectTable(loc, tblName, data_map, setting_dict, MSESD_Response, selected_pk) {
         console.log( "===== t_MSSD_FillSelectTable ========= ");
 
+// set header text
         const header_text = (tblName === "examyear") ? loc.Select_examyear :
                             (tblName === "school") ? loc.Select_school :
                             (tblName === "department") ? loc.Select_department : null;
@@ -128,7 +128,6 @@
 
     }  // t_MSESD_CreateSelectRow
 
-
 //=========  t_MSSD_SelectItem  ================ PR2020-12-18
     function t_MSSD_SelectItem(tblName, tblRow, MSESD_Response) {
         //console.log( "===== t_MSSD_SelectItem ========= ");
@@ -142,9 +141,170 @@
 
 // ++++++++++++  END OF MODAL SELECT SCHOOL OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
 
+// +++++++++++++++++ MODAL SELECT SUBJECT STUDENT ++++++++++++++++++++++++++++++++
+//========= t_MSSS_Open ====================================  PR2020-12-17 PR2021-01-23
+    function t_MSSS_Open (loc, tblName, data_map, setting_dict, MSSS_Response) {
+        console.log(" ===  t_MSSS_Open  =====", tblName) ;
+        console.log( "setting_dict", setting_dict);
 
-//========= CreateTable  ====================================
-    function CreateTable(tableBase, header1, header2, headExc, headAwp, headLnk ) {
+        const selected_pk = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_pk : null;
+
+        const el_MSSS_input = document.getElementById("id_MSSS_input")
+        el_MSSS_input.dataset.table = tblName;
+// --- fill select table
+        t_MSSS_Fill_SelectTable(loc, tblName, data_map, setting_dict, el_MSSS_input, MSSS_Response, selected_pk)
+        el_MSSS_input.value = null;
+// ---  set focus to input element
+        set_focus_on_el_with_timeout(el_MSSS_input, 50);
+// ---  show modal
+         $("#id_mod_select_subject_student").modal({backdrop: true});
+    }; // t_MSSS_Open
+
+//=========  t_MSSS_Save  ================ PR2020-01-29 PR2021-01-23
+    function t_MSSS_Save(el_input, MSSS_Response) {
+        console.log("===  t_MSSS_Save =========");
+    // --- put tblName, sel_pk and value in MSSS_Response, MSSS_Response handles uploading
+        const tblName = el_input.dataset.table;
+        const selected_pk = el_input.dataset.pk;
+        const selected_value = el_input.dataset.code;
+
+        MSSS_Response(tblName, selected_pk, selected_value)
+// hide modal
+        $("#id_mod_select_subject_student").modal("hide");
+    }  // t_MSSS_Save
+
+//========= t_MSSS_Fill_SelectTable  ============= PR2021-01-23
+    function t_MSSS_Fill_SelectTable(loc, tblName, data_map, setting_dict, el_input, MSSS_Response, selected_pk) {
+        //console.log("===== t_MSSS_Fill_SelectTable ===== ", tblName);
+
+// set header text
+        const label_text = loc.Filter + ( (tblName === "student") ?  loc.Candidate.toLowerCase() : loc.Subject.toLowerCase() );
+        const msg_text = (tblName === "student") ? loc.Type_afew_letters_candidate : loc.Type_afew_letters_subject;
+
+        document.getElementById("id_MSSS_header").innerText = label_text;
+        document.getElementById("id_MSSS_input_label").innerText = label_text;
+        document.getElementById("id_MSSS_msg_input").innerText = msg_text
+
+        const tblBody_select = document.getElementById("id_MSSS_tblBody_select");
+        tblBody_select.innerText = null;
+
+// ---  add All to list when multiple subject / students exist
+        if(data_map.size){
+            const caption = (tblName === "student") ? loc.Candidates : loc.Subjects;
+            const add_all_text = "<" + loc.All + caption.toLowerCase() + ">";
+            const add_all_dict = (tblName === "student") ? {id: -1, examnumber: "", fullname: add_all_text} :  {id: -1,  code: "", name: add_all_text};
+            t_MSSS_Create_SelectRow(tblName, tblBody_select, add_all_dict, selected_pk, el_input, MSSS_Response)
+        }
+// ---  loop through dictlist
+        for (const [map_id, map_dict] of data_map.entries()) {
+            t_MSSS_Create_SelectRow(tblName, tblBody_select, map_dict, selected_pk, el_input, MSSS_Response);
+        }
+    } // t_MSSS_Fill_SelectTable
+
+//========= t_MSSS_Create_SelectRow  ============= PR2020-12-18
+    function t_MSSS_Create_SelectRow(tblName, tblBody_select, dict, selected_pk, el_input, MSSS_Response) {
+        //console.log("===== t_MSSS_Create_SelectRow ===== ", tblName);
+        //console.log("dict", dict);
+//--- get info from item_dict
+        //[ {pk: 2608, code: "Colpa de, William"} ]
+        const pk_int = dict.id;
+        const code = (tblName === "student") ? dict.examnumber : dict.code
+        const name = (tblName === "student") ? dict.fullname : dict.name
+        const is_selected_row = (pk_int === selected_pk);
+
+//--------- insert tblBody_select row at end
+        const map_id = "sel_" + tblName + "_" + pk_int
+        const tblRow = tblBody_select.insertRow(-1);
+
+        tblRow.id = map_id;
+        tblRow.setAttribute("data-pk", pk_int);
+        tblRow.setAttribute("data-code", code);
+        tblRow.setAttribute("data-value", name);
+        tblRow.setAttribute("data-table", tblName);
+        const class_selected = (is_selected_row) ? cls_selected: cls_bc_transparent;
+        tblRow.classList.add(class_selected);
+
+//- add hover to select row
+        add_hover(tblRow)
+
+// --- add td to tblRow.
+        let td = tblRow.insertCell(-1);
+        let el_div = document.createElement("div");
+            el_div.classList.add("pointer_show")
+            el_div.innerText = code;
+            el_div.classList.add("tw_075", "px-1")
+            td.appendChild(el_div);
+
+        td.classList.add("tsa_bc_transparent")
+// --- add td to tblRow.
+        td = tblRow.insertCell(-1);
+        el_div = document.createElement("div");
+            el_div.classList.add("pointer_show")
+            el_div.innerText = name;
+            el_div.classList.add("tw_270", "px-1")
+            td.appendChild(el_div);
+        td.classList.add("tsa_bc_transparent")
+
+//--------- add addEventListener
+        tblRow.addEventListener("click", function() {t_MSSS_SelectItem(MSSS_Response, tblRow, el_input)}, false);
+    } // t_MSSS_Create_SelectRow
+
+//=========  t_MSSS_SelectItem  ================ PR2020-12-17
+    function t_MSSS_SelectItem(MSSS_Response, tblRow, el_input) {
+        console.log( "===== t_MSSS_SelectItem ========= ");
+        //console.log( tblRow);
+        // all data attributes are now in tblRow, not in el_select = tblRow.cells[0].children[0];
+        // after selecting row, values are stored in input box
+
+// ---  get clicked tablerow
+        if(tblRow) {
+// ---  deselect all highlighted rows
+            DeselectHighlightedRows(tblRow, cls_selected)
+// ---  highlight clicked row
+            tblRow.classList.add(cls_selected)
+// ---  get pk code and value from tblRow, put values in input box
+            el_input.dataset.pk = tblRow.dataset.pk
+            el_input.dataset.code = tblRow.dataset.code
+            el_input.dataset.value = tblRow.dataset.value
+// ---  save and close
+            t_MSSS_Save(el_input, MSSS_Response)
+        }
+    }  // t_MSSS_SelectItem
+
+//=========  t_MSSS_InputKeyup  ================ PR2020-09-19
+    function t_MSSS_InputKeyup(el_input) {
+        console.log( "===== t_MSSS_InputKeyup  ========= ");
+
+// ---  get value of new_filter
+        let new_filter = el_input.value
+
+        const el_MSSS_tblBody = document.getElementById("id_MSSS_tblBody_select");
+        let tblBody = el_MSSS_tblBody;
+        const len = tblBody.rows.length;
+        if (new_filter && len){
+// ---  filter rows in table select_employee
+            const filter_dict = t_Filter_SelectRows(tblBody, new_filter);
+        console.log( "filter_dict", filter_dict);
+// ---  if filter results have only one item: put selected item in el_input
+            const selected_pk = (filter_dict.selected_pk) ? filter_dict.selected_pk : null;
+            if (selected_pk) {
+                el_input.value = (filter_dict.selected_value) ? filter_dict.selected_value : null;;
+// ---  get pk code and value from filter_dict, put values in input box
+                el_input.dataset.pk = selected_pk
+                el_input.dataset.code = (filter_dict.selected_code) ? filter_dict.selected_code : null;
+                el_input.dataset.value = el_input.value;
+// ---  Set focus to btn_save
+                const el_MSSS_btn_save = document.getElementById("id_MSSS_btn_save")
+                set_focus_on_el_with_timeout(el_MSSS_btn_save, 50);
+            }  //  if (!!selected_pk) {
+        }
+    }; // t_MSSS_InputKeyup
+
+// +++++++++++++++++ END OF MODAL SELECT SUBJECT STUDENT ++++++++++++++++++++++++++++++++
+
+
+//========= CreateTable  ==================================== NIU ???
+    function CreateTableNIU(tableBase, header1, header2, headExc, headAwp, headLnk ) {
         console.log("==== CreateMapTableSub  =========>>>", tableBase, header1, header2, headExc, headAwp, headLnk);
         let base_div = $("#id_basediv_" + tableBase);  // BaseDivID = "sct", "lvl", "col"
         // delete existing rows of tblColExcel, tblColAwp, tblColLinked
@@ -747,7 +907,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 
 //========= t_FillOptionsFromList  =======  PR2020-12-17
     function t_FillOptionsFromList(el_select, data_list, filter_value, select_text, select_text_none, selected_value) {
-        console.log( "=== t_FillOptionsFromList ");
+        //console.log( "=== t_FillOptionsFromList ");
 
 // ---  fill options of select box
         let option_text = "";
@@ -794,7 +954,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 
 
 // +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
-//========= t_Filter_SelectRows  ==================================== PR2020-01-17
+//========= t_Filter_SelectRows  ==================================== PR2020-01-17 PR2021-01-23
     function t_Filter_SelectRows(tblBody_select, filter_text, filter_show_inactive, has_ppk_filter, selected_ppk, col_index_list) {
         console.log( "===== t_Filter_SelectRows  ========= ");
         console.log( "filter_text: <" + filter_text + ">");
@@ -804,14 +964,15 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         const filter_text_lower = (filter_text) ? filter_text.toLowerCase() : "";
         if(!col_index_list){col_index_list = []};
         let has_selection = false, has_multiple = false;
-        let sel_value = null, sel_pk = null, sel_ppk = null, sel_display = null, sel_rowid = null, sel_innertext = null;
+        let sel_pk = null, sel_ppk = null, sel_code = null, sel_value = null;
+        let sel_display = null, sel_rowid = null, sel_innertext = null;
         let row_count = 0;
         for (let i = 0, tblRow; tblRow = tblBody_select.rows[i]; i++) {
             if (!!tblRow){
                 let hide_row = false
 // ---  show only rows of selected_ppk_str, only if has_ppk_filter = true
                 if(has_ppk_filter){
-                    const ppk_str = get_attr_from_el(tblRow, "data-ppk")
+                    const ppk_str = tblRow.dataset.ppk;
                     if(selected_ppk){
                         hide_row = (ppk_str !== selected_ppk.toString())
                     } else {
@@ -819,7 +980,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                 }};
 // ---  hide inactive rows when filter_show_inactive = false
                 if(!hide_row && !filter_show_inactive){
-                    const inactive_str = get_attr_from_el(tblRow, "data-inactive")
+                    const inactive_str = tblRow.dataset.inactive;
                     if (!!inactive_str) {
                         hide_row = (inactive_str.toLowerCase() === "true")
                 }};
@@ -849,11 +1010,12 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                     row_count += 1;
 // ---  put values from first row that is shown in select_value etc
                     if(!has_selection ) {
-                        sel_pk = get_attr_from_el(tblRow, "data-pk");
-                        sel_ppk = get_attr_from_el(tblRow, "data-ppk");
-                        sel_value = get_attr_from_el(tblRow, "data-value");
-                        sel_display = get_attr_from_el(tblRow, "data-display");
-                        sel_rowid = get_attr_from_el(tblRow, "id");
+                        sel_pk = tblRow.dataset.pk;
+                        sel_ppk = tblRow.dataset.ppk;
+                        sel_code = tblRow.dataset.code;
+                        sel_value = tblRow.dataset.value;
+                        sel_display = tblRow.dataset.display;
+                        sel_rowid = tblRow.id;
                     } else {
                         has_multiple = true;
                     }
@@ -862,12 +1024,12 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                     for (let i = 0, cell; cell = tblRow.cells[i]; i++) {
                         sel_innertext[i] = cell.innerText
                     }
-
         }}};
 // ---  set select_value etc null when multiple items found
         if (has_multiple){
             sel_pk = null;
             sel_ppk = null;
+            sel_code = null;
             sel_value = null,
             sel_display = null;
             sel_rowid = null;
@@ -877,6 +1039,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         // (value == null) equals to (value === undefined || value === null)
         if(sel_pk != null) {filter_dict.selected_pk = sel_pk};
         if(sel_ppk != null) {filter_dict.selected_ppk = sel_ppk};
+        if(sel_code != null) {filter_dict.selected_code = sel_code};
         if(sel_value != null) {filter_dict.selected_value = sel_value};
         if(sel_display != null) {filter_dict.selected_display = sel_display};
         if(sel_pk != null) {filter_dict.selected_rowid = sel_rowid};

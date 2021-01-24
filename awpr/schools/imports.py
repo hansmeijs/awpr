@@ -212,7 +212,7 @@ def import_students(upload_dict, user_lang, request):  # PR2020-12-06
 
 def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalist,
                    awpColdef_list, is_test, examyear, school, department, format_str, logfile, request):  # PR2019-12-17 PR2020-06-03
-    #logger.debug('----------------- upload_student  --------------------')
+    logger.debug('----------------- upload_student  --------------------')
     #logger.debug('data_dict: ' + str(data_dict))
 
 
@@ -340,7 +340,6 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
     elif multiple_found:
         log_str = str(_("Value '%(fld)s' is found multiple times.") % {'fld': lookup_value})
         msg_err = ' '.join((skipped_str, log_str))
-    #logger.debug('msg_err: ' + str(msg_err))
 
     if msg_err:
         logfile.append(student_name + str(_(' is not added.')))
@@ -548,11 +547,6 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
                     sector=student.sector)
                 setattr(student, 'scheme', new_scheme)
 
-                #student.save(request=request)
-                #update_dict['id']['pk'] = student.pk
-                #update_dict['id']['ppk'] = student.company.pk
-                # wagerate wagecode
-                # priceratejson additionjson
                 try:
                     student.save(request=request)
                     update_dict['id']['pk'] = student.pk

@@ -42,19 +42,21 @@
 
 //####################################################################
 // +++++++++++++++++ MODAL IMPORT ++++++++++++++++++++
-//=========  MIMP_Open  ================ PR2020-12-03
-    function MIMP_Open(tblName) {
+//=========  MIMP_Open  ================ PR2020-12-03 PR2021-01-12
+    function MIMP_Open(import_table) {
         console.log( "===== MIMP_Open ========= ");
-        console.log( "mimp_stored", mimp_stored);
 
-        Object.keys(mimp).forEach(function(key,index) {
+        console.log( "mimp_stored", mimp_stored);
+        console.log( "import_table", import_table);
+
+        Object.keys(mimp).forEach(function(key, index) {
             // from https://stackoverflow.com/questions/8312459/iterate-through-object-properties
             // key: the name of the object key, index: the ordinal position of the key within the object
             mimp[key] = null;
         });
-        mimp.table = tblName
+        mimp.import_table = import_table
         const el_filedialog = document.getElementById("id_MIMP_filedialog");
-        //PR2020-12-05. THis one doesn't work: if(el_filedialog){el_filedialog.files = null};
+        //PR2020-12-05. This one doesn't work: if(el_filedialog){el_filedialog.files = null};
         if(el_filedialog){el_filedialog.value = null};
 
         // default value of el_MIMP_hasheader is 'true'
@@ -63,20 +65,106 @@
 
         //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
         if (!isEmpty(mimp_loc)) {
-            //mod_dict = {base_id: setting_dict.requsr_schoolbase_pk, table: tblName};
-            document.getElementById("id_MIMP_header").innerText = mimp_loc.Upload_candidates;
-            document.getElementById("id_MIMP_filedialog_label").innerText = "A. " + mimp_loc.Select_Excelfile_with_students;
-            document.getElementById("id_MIMP_upload_label").innerText = mimp_loc.Upload_candidates;
+            //mod_dict = {base_id: setting_dict.requsr_schoolbase_pk, table: import_table};
+            const header_text = (import_table === "import_student") ? mimp_loc.Upload_candidates :
+                                (["import_subject", "import_studentsubject"].indexOf(import_table) > -1) ? mimp_loc.Upload_subjects :
+                                (import_table === "import_grade") ? mimp_loc.Upload_grades : null;
+            const subheader_a = (import_table === "import_student") ? mimp_loc.Select_Excelfile_with_students :
+                                (["import_subject", "import_studentsubject"].indexOf(import_table) > -1) ? mimp_loc.Select_Excelfile_with_subjects :
+                                (import_table === "import_grade") ? mimp_loc.Select_Excelfile_with_grades : null;
+            document.getElementById("id_MIMP_header").innerText = header_text;
+            document.getElementById("id_MIMP_filedialog_label").innerText = "A. " + subheader_a;
+            document.getElementById("id_MIMP_upload_label").innerText = header_text;
 
             MIMP_btnSelectClicked("btn_step1");
 
 // ---  fill select table
-            //ModSelSchOrDep_FillSelectTable(tblName, 0);  // 0 = selected_pk
+            //ModSelSchOrDep_FillSelectTable(import_table, 0);  // 0 = selected_pk
 // ---  show modal
             $("#id_modimport").modal({backdrop: true});
             }
 
     }  // MIMP_Open
+
+    function MIMP_Save(mode, setting_dict){
+        console.log ("==========  MIMP_Save ==========");
+        const is_test_upload = (mode === "test")
+        let rowLength = 0, colLength = 0;
+        if(mimp.curWorksheetData){rowLength = mimp.curWorksheetData.length;};
+        if(mimp_stored.coldef){colLength = mimp_stored.coldef.length;};
+        if(rowLength > 0 && colLength > 0){
+
+console.log ("mimp.mimp_setting_dict", deepcopy_dict(mimp_setting_dict));
+console.log ("mimp.excel_coldefs", deepcopy_dict(mimp.excel_coldefs));
+console.log ("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
+
+//  ---  loop through excel_coldefs to get linked awpColdefs
+// excel_coldefs = [ {excColIndex: 1, excColdef: "exnr", rowId: "id_tr_coldef_exc_1", awpColdef: "examnumber", awpCaption: "Examennummer"} ]
+            let awpColdef_list = []
+            if(mimp.excel_coldefs){
+                for (let i = 0, coldef; coldef = mimp.excel_coldefs[i]; i++) {
+                    if (!!coldef.awpColdef){awpColdef_list.push(coldef.awpColdef)}
+                }
+            }
+            if(!awpColdef_list || !awpColdef_list.length){
+                alert("No linked columns")
+            } else {
+
+// ---  loop through all rows of worksheet_data
+                let dict_list = [];
+                for (let i = 0; i < rowLength; i++) {
+                    let row = mimp.curWorksheetData[i];
+
+//------ loop through excel_coldefs
+                    // rowindex is index of tablerow. Index 0 is header, therefore rowindex starts with 1
+                    let dict = {rowindex: i};
+                    for (let j = 0, exc_col; exc_col = mimp.excel_coldefs[j]; j++) {
+                        const awpColdef = exc_col.awpColdef;
+
+                        if (awpColdef){
+                            let value = (row[j]) ? row[j] : null;
+                            let mapped_value = null;
+                            if (["department", "level", "sector"].indexOf(awpColdef) > -1){
+                // mimp.linked_exc_values = { sector: [ {excColIndex: 0, excValue: "CM", awpBasePk: 4, awpValue: "c&m", rowId: "id_tr_sector_exc_0"}]
+
+                // ---  check if value exists in linked_exc_values
+                                const linked_values = mimp.linked_exc_values[awpColdef];
+                                const excel_row = get_arrayRow_by_keyValue(linked_values, "excValue", value);
+                // ---  if found: replace excel_value by base_id, that is stored in mimp.linked_exc_values
+                                if(excel_row && "awpBasePk" in excel_row){
+                                    mapped_value = excel_row.awpBasePk;
+                                }
+                            } else {
+                                mapped_value = value
+                            }
+                            dict[awpColdef] = mapped_value;
+                        }
+                    }; //for (let col = 1 ; col <colLength; col++)
+                    dict_list.push(dict);
+                }
+
+                if(!dict_list || !dict_list.length){
+                    alert("No data found")
+                } else {
+// --- Upload Data
+                    const el_data = document.getElementById("id_MIMP_data");
+                    const url_str = get_attr_from_el(el_data, "data-importdata_upload_url");
+                    const request = {sel_examyear_pk: mimp_setting_dict.sel_examyear_pk,
+                                    sel_schoolbase_pk: mimp_setting_dict.sel_schoolbase_pk,
+                                    sel_depbase_pk: mimp_setting_dict.sel_depbase_pk,
+                                    sel_depbase_code: (mimp_setting_dict.sel_depbase_code) ? mimp_setting_dict.sel_depbase_code : "---",
+                                    sel_school_abbrev: (mimp_setting_dict.sel_school_abbrev) ? mimp_setting_dict.sel_school_abbrev : "---",
+                                    importtable: mimp.import_table,
+                                     awpColdef_list: awpColdef_list,
+                                     test: is_test_upload,
+                                     data_list: dict_list
+                                     }
+
+                    UploadData(url_str, request);
+                }
+            }
+        };
+    }  // MIMP_Save
 
 //####################################################################
 
@@ -334,6 +422,7 @@
         }}
 
 // ---  loop through array stored_coldef
+        // mimp_stored.coldef gets value from schoolsetting_dict in i_UpdateSchoolsettingsImport(schoolsetting_dict)
 //console.log("mimp_stored.coldef", mimp_stored.coldef)
         if(mimp_stored.coldef) {
             for (let i = 0, stored_row; stored_row = mimp_stored.coldef[i]; i++) {
@@ -680,7 +769,7 @@
 
 //=========  MIMP_btnSelectClicked  ================ PR2020-12-05
     function MIMP_btnSelectClicked(data_btn) {
-        //console.log("=== MIMP_btnSelectClicked ===", data_btn);
+        console.log("=== MIMP_btnSelectClicked ===", data_btn);
         mimp.sel_btn = data_btn
 
 // ---  show only the elements that are used in this mod_shift_option
@@ -690,7 +779,6 @@
             const is_show = el.classList.contains(mimp.sel_btn)
             show_hide_element(el, is_show)
         }
-
 
 // ---  highlight selected button
         MIMP_HighlightAndDisableButtons();
@@ -866,26 +954,141 @@
         return [datefields_awpKeys, datefields_caption];
     }
 
+//=========  FillExcelValueLists  ================ PR2020-12-26
+    function FillExcelValueLists(){
+        console.log(" ==== FillExcelValueLists  =========>> ");
+        console.log("mimp.import_table", mimp.import_table);
+        console.log("mimp.excel_coldefs", mimp.excel_coldefs);
+        // mimp_stored.coldef = {awpKey: "examnumber", caption: "Examennummer", linkfield: true, excKey: "exnr"}
+        // excel_column = {index: 1, excKey: "exnr", awpKey: "examnumber", awpCaption: "Examennummer"}
+
+        // function fills mimp.linked_exc_values with excel_values of department, level, sector, subject, subjecttype
+
+// mimp.excel_coldefs = [ {excColIndex: 1, excColdef: "exnr", awpColdef: "examnumber", awpCaption: "Examennummer", rowId: "id_tr_coldef_exc_1"}
+
+        const awp_col_names = ["department", "level", "sector", "subject", "subjecttype"];
+// ---  loop through list of excel_coldefs
+        if(mimp.excel_coldefs){
+            for (let i = 0, row; row = mimp.excel_coldefs[i]; i++) {
+                const awpColdef = row.awpColdef;
+                const excColIndex = row.excColIndex;
+                const excColdef = row.excColdef;
+        console.log("row", row);
+        console.log("excColdef", excColdef);
+        console.log("awpColdef", awpColdef);
+
+// ---  only add to value_list when  mimp.import_table 'department', 'level', 'sector', 'subject', 'subjecttype' is linked
+                const add_to_list = (mimp.import_table === "import_studentsubject" ) ?  true : (awpColdef && awp_col_names.includes(awpColdef))
+        //console.log("add_to_list", add_to_list);
+                if(add_to_list) {
+
+// ---  add awpColdef dict to mimp.linked_awp_values
+                    // sector: [ {awpBasePk: 4, awpValue: "c&m", rowId: "id_tr_sector_awp_0"}
+                    //           {awpBasePk: 5, awpValue: "e&m", excColdef: "Profiel", excValue: "EM", rowId: "id_tr_sector_awp_1"}
+                    //mimp.linked_awp_values[awpColdef] = deepcopy_dict(mimp_stored[awpColdef]);
+                    mimp.linked_awp_values[awpColdef] = mimp_stored[awpColdef];
+
+// ---  loop through curWorksheetData, create a list of excel values and add to mimp.linked_exc_values
+                    // excel_value_list = ["EM", "NT", "CM"]
+                    let excel_value_list = [];
+                    if(mimp.curWorksheetData){
+                        for (let i = 0, data_row; data_row = mimp.curWorksheetData[i]; i++) {
+                            // data_row: ["576", "112", "Regales", .... , "NT", "4", "40", "21", "W4"]
+// ---  get value of column with index 'excColIndex' and add value to excel_value_list if it doesn't yet exist in this list
+                            const value = data_row[excColIndex];
+                            if (value && !excel_value_list.includes(value)) {
+                                excel_value_list.push(value)
+                            }
+                        };
+                    }
+
+                    if (excel_value_list.length){
+
+// ---  sort the excel_value_list
+                        // from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort
+                        excel_value_list.sort(function (a, b) {return a.localeCompare(b);});
+
+// ---  convert the excel_value_list to a dict_list, add linked awpValue and
+                        const dict_list = []
+                        for (let j = 0, excel_value; excel_value = excel_value_list[j]; j++) {
+                            const exc_dict = {excColIndex: j, excValue: excel_value}
+
+            // lookup excel_value in mimp_stored awpColdef
+                            if(mimp_stored[awpColdef]){
+                                for (let x = 0, awp_dict; awp_dict = mimp_stored[awpColdef][x]; x++) {
+                                if (awp_dict){
+
+            // if is linked value (when excValue exists in awp_dict): add awpBasePk and awpValue to exc_dict
+                                    if (awp_dict.excValue) {
+                                        if (awp_dict.excValue.toLowerCase() === excel_value.toLowerCase() ){
+                                            if(awp_dict.awpBasePk){ exc_dict.awpBasePk = awp_dict.awpBasePk }
+                                            if(awp_dict.awpValue){ exc_dict.awpValue = awp_dict.awpValue }
+
+                                        }
+                                    } else if (awp_dict.awpValue && excel_value) {
+            //TODO this is not working properly yet. Links again when clicked on unlink  PR2020-12-31
+            // if not a linked value: check if awpValue and excValue are the same. If so: add to linked list
+                     //console.log("awp_dict.awpValue", awp_dict.awpValue, "excel_value", excel_value);
+                                        // skip when already linked
+                                        //let awp_val_stripped = awp_dict.awpValue.toLowerCase()
+                                        //awp_val_stripped = awp_val_stripped.replaceAll("&", "");
+                                        //awp_val_stripped = awp_val_stripped.replaceAll(" ", "");
+                                        //awp_val_stripped = awp_val_stripped.replaceAll("-", "");
+
+                                       // let exc_val_stripped = excel_value.toLowerCase()
+                                        //exc_val_stripped = exc_val_stripped.replaceAll("&", "");
+                                        //exc_val_stripped = exc_val_stripped.replaceAll(" ", "");
+                                        //exc_val_stripped = exc_val_stripped.replaceAll("-", "");
+                                        //if (awp_val_stripped && exc_val_stripped && awp_val_stripped === exc_val_stripped){
+                                        // add to exc_dict when stripped values are the same
+                                        //    if(awp_dict.awpBasePk){ exc_dict.awpBasePk = awp_dict.awpBasePk }
+                                        //    if(awp_dict.awpValue) {exc_dict.awpValue = awp_dict.awpValue};
+                                        // also add to awp_dict
+                                       //     if(excColdef){ awp_dict.excColdef = excColdef }
+                                       //     awp_dict.excValue = excel_value
+                                       // }
+                                    }
+                                }
+
+                                }
+                            }
+                            dict_list.push(exc_dict)
+                        }
+// ---  add the dict_list to mimp.linked_exc_values
+                        // mimp.linked_exc_values = { sector: [ {excColIndex: 0, excValue: "CM"},
+                        //                                      {excColIndex: 1, excValue: "EM"},
+                        //                                      {excColIndex: 2, excValue: "NT"} ] }
+                        mimp.linked_exc_values[awpColdef] = dict_list
+                        //console.log("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
+                        //console.log("mimp.linked_awp_values", deepcopy_dict(mimp.linked_awp_values));
+                    }
+                }
+            }
+        }
+        //console.log("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
+    }  // FillExcelValueLists
 
 //========= Fill_AEL_Tables  ====================================
     function Fill_AEL_Tables(JustLinkedAwpId, JustUnLinkedAwpId, JustUnlinkedExcId) {
-        //console.log("==== Fill_AEL_Tables  =========>> ");
-        //console.log("mimp_stored.coldef ", mimp_stored.coldef);
-       // console.log("mimp.excel_coldefs ", mimp.excel_coldefs);
+        console.log("==== Fill_AEL_Tables  =========>> ");
+        console.log("mimp_stored.coldef ", mimp_stored.coldef);
+        console.log("mimp.excel_coldefs ", mimp.excel_coldefs);
 
-        const tbl_list = ["coldef", "department", "level", "sector"];
+        //const tbl_list = ["coldef", "department", "level", "sector", "subject", "subjecttype"];
+        const tbl_list = ["coldef", "subject"];
         for (let i = 0, tbodyTblName; tbodyTblName = tbl_list[i]; i++) {
             Fill_AEL_Table(tbodyTblName, JustLinkedAwpId, JustUnLinkedAwpId, JustUnlinkedExcId)
         }
     }  // Fill_AEL_Tables
 
-
 //========= Fill_AEL_Table  ==================================== PR2020-12-29
     function Fill_AEL_Table(tbodyTblName, JustLinkedAwpId, JustUnLinkedAwpId, JustUnlinkedExcId) {
-        //console.log("==== Fill_AEL_Table  ========= ", tbodyTblName);
-        //console.log("mimp.linked_exc_values[tbodyTblName] ", deepcopy_dict(mimp.linked_exc_values[tbodyTblName]));
+        console.log("==== Fill_AEL_Table  ========= ");
+        console.log("tbodyTblName", tbodyTblName);
+        console.log("mimp.linked_exc_values[tbodyTblName] ", deepcopy_dict(mimp.linked_exc_values[tbodyTblName]));
 
-        // tbodyTblNames are: "coldef", "department", "level", "sector"
+        // tbodyTblNames are: "coldef", "department", "level", "sector", "subject", "subjecttype"
+        // tbody id's are: id_MIMP_tbody_coldef_awp, id_MIMP_tbody_coldef_exc, id_MIMP_tbody_coldef_lnk etc.
 
         // stored_coldef: [ {awpColdef: "examnumber", caption: "Examennummer", linkfield: true, excColdef: "exnr"}, ...]
 
@@ -904,17 +1107,44 @@
         //const awp_row_key = (tbodyAEL === "awp") ? row_clicked_key : (tbodyAEL === "exc") ? row_other_key : null;
         //const awp_row = get_arrayRow_by_keyValue (awp_rows, awp_key, awp_row_key);
 
-// ---  hide table department, level, sector when their column is not linked
-        // lookup awpColdef 'department' etc in mimp_stored.coldef. If it exists: show table 'department' etc.
-        const lookup_row = get_arrayRow_by_keyValue(mimp_stored.coldef, "awpColdef", tbodyTblName);
-        // check if it is a linked column by checking if 'excColdef' exists in row
-        const show_table = ( is_tbl_coldef || (!!lookup_row && "excColdef" in lookup_row) );
-
-// --- hide tables that are not linked
+        console.log("mimp_stored.coldef", mimp_stored.coldef);
+        console.log("mimp.import_table", mimp.import_table);
+        console.log("tbodyTblName", tbodyTblName);
+// ---  show or hide tables
+        // hide table department, level, sector when their column is not linked, only when table = student
+        let show_table = false;
+        if(mimp.import_table === "import_student"){
+            if (is_tbl_coldef){
+                show_table = true;
+            } else if (["subject", "subjecttype"].indexOf(tbodyTblName) > -1){
+                show_table = false;
+            } else {
+                // --- hide tables that are not linked
+                // lookup awpColdef 'department' etc in mimp_stored.coldef. If it exists: show table 'department' etc.
+                const lookup_row = get_arrayRow_by_keyValue(mimp_stored.coldef, "awpColdef", tbodyTblName);
+                // check if it is a linked column by checking if 'excColdef' exists in row
+                show_table = (!!lookup_row && "excColdef" in lookup_row) ;
+            }
+        } else if(mimp.import_table === "import_studentsubject"){
+            show_table = (["coldef", "subject", "subjecttype"].indexOf(tbodyTblName) > -1);
+        }
         const el_container = document.getElementById("id_MIMP_container_" + tbodyTblName);
         if(el_container) {add_or_remove_class(el_container, cls_hide, !show_table)};
 
+        console.log("mimp.import_table", mimp.import_table);
+        console.log("tbodyTblName", tbodyTblName);
+        console.log(">>>>>>>>>> show_table", show_table);
+
+// ---  set caption of sector field to 'Link_sectors' or 'Link_profielen'
         if(show_table){
+            if(tbodyTblName === "sector"){
+                const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", mimp_setting_dict.sel_department_pk);
+                if(dep_dict  && dep_dict.sct_caption){
+                    const caption_text = (dep_dict.sct_caption.toLowerCase() === "sector") ? mimp_loc.Link_sectors :
+                                        (dep_dict.sct_caption.toLowerCase() === "profiel") ? mimp_loc.Link_profielen : null;
+                    if(caption_text){ document.getElementById("id_MIMP_header_sector").innerText = caption_text};
+                }
+            }
 // ---  first loop through array of awp_columns, then through array of excel_coldefs
             // key: 0 = "awp", 1: "lnk" or "awp"
             for (let j = 0; j < 2; j++) {
@@ -922,7 +1152,9 @@
                 const rows = (is_tbl_coldef) ? (!j) ? mimp_stored.coldef : mimp.excel_coldefs :
                                                (!j) ? mimp.linked_awp_values[tbodyTblName] : mimp.linked_exc_values[tbodyTblName];
 
-            //console.log("----- tbodyTblName ", tbodyTblName, "key", key);
+                console.log("----- tbodyTblName ", tbodyTblName, "key", key);
+                console.log("rows ", rows);
+                console.log("----- mimp.linked_exc_values ", mimp.linked_exc_values);
                 if(rows){
                     for (let i = 0, row ; row = rows[i]; i++) {
                         // mimp_stored.coldef row = {awpColdef: "examnumber", caption: "Examennummer", linkfield: true, excColdef: "exnr"}
@@ -1036,20 +1268,6 @@
             }  // for (let j = 0; j < 2; j++)
         }  // if(show_table)
      }; // Fill_AEL_Table()
-
-//========= has_awpKeys =====================================
-    function has_awpKeys(){
-//  ---  loop through excel_coldefs to get linked awpKeys
-        let has_awpKeys = false
-        if(!!excel_coldefs){
-            for (let i = 0, col; col = excel_coldefs[i]; i++) {
-                const awpKey = get_dict_value(col, ["awpKey"])
-                if (!!awpKey){
-                    has_awpKeys = true
-                    break;
-        }}}
-        return has_awpKeys;
-    }
 
 //=========   Handle_AEL_row_clicked   ======================
     function Handle_AEL_row_clicked(event) {
@@ -1266,8 +1484,7 @@ console.log("mimp.linked_exc_values[tbodyTblName];", deepcopy_dict(mimp.linked_e
         MIMP_HighlightAndDisableButtons();
     }  // UnlinkColumns
 
-
-//========= UPLOAD SETTING COLUMNS =====================================
+//========= UPLOAD  =====================================
     function UploadImportSetting (tbodyTblName) {
         console.log ("==========  UploadImportSetting ========= tbodyTblName: ", tbodyTblName);
         let awp_rows = (tbodyTblName === "coldef") ? mimp_stored.coldef : (mimp.linked_awp_values[tbodyTblName]) ? mimp.linked_awp_values[tbodyTblName] : null;
@@ -1345,7 +1562,7 @@ console.log("mimp.linked_exc_values[tbodyTblName];", deepcopy_dict(mimp.linked_e
         };
     }; // function (UploadImportSetting)
 
-//========= i_UpdateSchoolsettingsImport  ================ PR2020-04-17
+//========= i_UpdateSchoolsettingsImport  ================ PR2020-04-17 PR2021-01-12
     function i_UpdateSchoolsettingsImport(schoolsetting_dict){
         console.log("===== i_UpdateSchoolsettingsImport ===== ")
         console.log("schoolsetting_dict", deepcopy_dict(schoolsetting_dict))
@@ -1356,6 +1573,10 @@ console.log("mimp.linked_exc_values[tbodyTblName];", deepcopy_dict(mimp.linked_e
                 import_table = "import_student";
             } else if("import_subject" in schoolsetting_dict ){
                 import_table = "import_subject";
+            } else if("import_studentsubject" in schoolsetting_dict ){
+                import_table = "import_studentsubject";
+            } else if("import_grade" in schoolsetting_dict ){
+                import_table = "import_grade";
             }
         };
         const import_table_dict = schoolsetting_dict[import_table];
@@ -1375,123 +1596,6 @@ console.log("mimp.linked_exc_values[tbodyTblName];", deepcopy_dict(mimp.linked_e
         console.log("mimp_stored", mimp_stored)
     }  // i_UpdateSchoolsettingsImport
 
-    //=====import CSV file ===== PR2020-04-16
-    // TODO add csv filetype
-    // from https://www.quora.com/What-is-the-best-way-to-read-a-CSV-file-using-JavaScript-not-JQuery
-    function UploadCSV() {
-        var fileUpload = document.getElementById("fileUpload");
-        var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.csv|.txt)$/;
-        // shouldnt it be const regex = RegExp('foo*');
-        // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/test
-        if (regex.test(fileUpload.value.toLowerCase())) {
-            if (typeof (FileReader) != "undefined") {
-                var reader = new FileReader();
-                reader.onload = function (e) {
-                    var table = document.createElement("table");
-                    var rows = e.target.result.split("\n");
-                    for (var i = 0; i < rows.length; i++) {
-                        var row = table.insertRow(-1);
-                        var cells = rows[i].split(",");
-                        for (var j = 0; j < cells.length; j++) {
-                            var cell = row.insertCell(-1);
-                            cell.innerHTML = cells[j];
-                        }
-                    }
-                    var dvCSV = document.getElementById("dvCSV");
-                    dvCSV.innerHTML = "";
-                    dvCSV.appendChild(table);
-                }
-                reader.readAsText(fileUpload.files[0]);
-            } else {
-                alert("This browser does not support HTML5.");
-            }
-        } else {
-            alert("Please upload a valid CSV file.");
-        }
-    }
-
-//========= UPLOAD DATA =====================================
-    function MIMP_Save(mode, setting_dict){
-        console.log ("==========  MIMP_Save ==========");
-        const is_test_upload = (mode === "test")
-        let rowLength = 0, colLength = 0;
-        if(mimp.curWorksheetData){rowLength = mimp.curWorksheetData.length;};
-        if(mimp_stored.coldef){colLength = mimp_stored.coldef.length;};
-        if(rowLength > 0 && colLength > 0){
-
-console.log ("mimp.mimp_setting_dict", deepcopy_dict(mimp_setting_dict));
-console.log ("mimp.excel_coldefs", deepcopy_dict(mimp.excel_coldefs));
-console.log ("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
-
-//  ---  loop through excel_coldefs to get linked awpColdefs
-// excel_coldefs = [ {excColIndex: 1, excColdef: "exnr", rowId: "id_tr_coldef_exc_1", awpColdef: "examnumber", awpCaption: "Examennummer"} ]
-            let awpColdef_list = []
-            if(mimp.excel_coldefs){
-                for (let i = 0, coldef; coldef = mimp.excel_coldefs[i]; i++) {
-                    if (!!coldef.awpColdef){awpColdef_list.push(coldef.awpColdef)}
-                }
-            }
-            if(!awpColdef_list || !awpColdef_list.length){
-                alert("No linked columns")
-            } else {
-
-// ---  loop through all rows of worksheet_data
-                let dict_list = [];
-                for (let i = 0; i < rowLength; i++) {
-                    let row = mimp.curWorksheetData[i];
-
-//------ loop through excel_coldefs
-                    // rowindex is index of tablerow. Index 0 is header, therefore rowindex starts with 1
-                    let dict = {rowindex: i};
-                    for (let j = 0, exc_col; exc_col = mimp.excel_coldefs[j]; j++) {
-                        const awpColdef = exc_col.awpColdef;
-
-                        if (awpColdef){
-                            let value = (row[j]) ? row[j] : null;
-                            let mapped_value = null;
-                            if (["department", "level", "sector"].indexOf(awpColdef) > -1){
-                // mimp.linked_exc_values = { sector: [ {excColIndex: 0, excValue: "CM", awpBasePk: 4, awpValue: "c&m", rowId: "id_tr_sector_exc_0"}]
-
-                // ---  check if value exists in linked_exc_values
-                                const linked_values = mimp.linked_exc_values[awpColdef];
-                                const excel_row = get_arrayRow_by_keyValue(linked_values, "excValue", value);
-                // ---  if found: replace excel_value by base_id, that is stored in mimp.linked_exc_values
-                                if(excel_row && "awpBasePk" in excel_row){
-                                    mapped_value = excel_row.awpBasePk;
-                                }
-                            } else {
-                                mapped_value = value
-                            }
-                            dict[awpColdef] = mapped_value;
-                        }
-                    }; //for (let col = 1 ; col <colLength; col++)
-                    dict_list.push(dict);
-                }
-
-                if(!dict_list || !dict_list.length){
-                    alert("No data found")
-                } else {
-// --- Upload Data
-                    const el_data = document.getElementById("id_MIMP_data");
-                    const url_str = get_attr_from_el(el_data, "data-importdata_upload_url");
-                    const request = {sel_examyear_pk: mimp_setting_dict.sel_examyear_pk,
-                                    sel_schoolbase_pk: mimp_setting_dict.sel_schoolbase_pk,
-                                    sel_depbase_pk: mimp_setting_dict.sel_depbase_pk,
-                                    sel_depbase_code: (mimp_setting_dict.sel_depbase_code) ? mimp_setting_dict.sel_depbase_code : "---",
-                                    sel_school_abbrev: (mimp_setting_dict.sel_school_abbrev) ? mimp_setting_dict.sel_school_abbrev : "---",
-                                    importtable: mimp.table,
-                                     awpColdef_list: awpColdef_list,
-                                     test: is_test_upload,
-                                     data_list: dict_list
-                                     }
-
-                    UploadData(url_str, request);
-                }
-            }
-        };
-    }
-
-//========= UPLOAD DATA =====================================
     function UploadData(url_str, request){
         console.log ("==========  UploadData ==========");
         console.log("url_str", url_str);
@@ -1543,6 +1647,56 @@ console.log ("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
     }; //  UploadData
 //========= END UploadData =====================================
 
+//=====import CSV file ===== PR2020-04-16
+    // TODO add csv filetype
+    // from https://www.quora.com/What-is-the-best-way-to-read-a-CSV-file-using-JavaScript-not-JQuery
+    function UploadCSV() {
+        var fileUpload = document.getElementById("fileUpload");
+        var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.csv|.txt)$/;
+        // shouldnt it be const regex = RegExp('foo*');
+        // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/test
+        if (regex.test(fileUpload.value.toLowerCase())) {
+            if (typeof (FileReader) != "undefined") {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var table = document.createElement("table");
+                    var rows = e.target.result.split("\n");
+                    for (var i = 0; i < rows.length; i++) {
+                        var row = table.insertRow(-1);
+                        var cells = rows[i].split(",");
+                        for (var j = 0; j < cells.length; j++) {
+                            var cell = row.insertCell(-1);
+                            cell.innerHTML = cells[j];
+                        }
+                    }
+                    var dvCSV = document.getElementById("dvCSV");
+                    dvCSV.innerHTML = "";
+                    dvCSV.appendChild(table);
+                }
+                reader.readAsText(fileUpload.files[0]);
+            } else {
+                alert("This browser does not support HTML5.");
+            }
+        } else {
+            alert("Please upload a valid CSV file.");
+        }
+    }  // UploadCSV
+
+// ============================ FUNCTIONS ============================ PR2021-01-12
+
+//========= has_awpKeys =====================================
+    function has_awpKeys(){
+//  ---  loop through excel_coldefs to get linked awpKeys
+        let has_awpKeys = false
+        if(!!excel_coldefs){
+            for (let i = 0, col; col = excel_coldefs[i]; i++) {
+                const awpKey = get_dict_value(col, ["awpKey"])
+                if (!!awpKey){
+                    has_awpKeys = true
+                    break;
+        }}}
+        return has_awpKeys;
+    }
 
 //=========  detect_dateformat  ================ PR2020-06-04
     function detect_dateformat(dict_list, col_index_index_list){
@@ -1617,109 +1771,94 @@ console.log ("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
         return dateformat;
     }  // detect_dateformat
 
-//=========  FillExcelValueLists  ================ PR2020-12-26
-    function FillExcelValueLists(){
-        console.log("@@@@@@@@@@@==== FillExcelValueLists  =========>> ");
-        // mimp_stored.coldef = {awpKey: "examnumber", caption: "Examennummer", linkfield: true, excKey: "exnr"}
-        // excel_column = {index: 1, excKey: "exnr", awpKey: "examnumber", awpCaption: "Examennummer"}
-        // function fills mimp.linked_exc_values with excel_values of department, level and sector
+//=========  i_get_name_from_fullanme  ================ PR2021-01-12
+    function i_get_name_from_fullanme(input_value){
+        console.log("==== i_get_name_from_fullanme  =========>> ");
+        let last_name = null, first_name = null, prefix = null;
+        const full_name = (input_value) ? input_value.trim() : null
+        if (full_name) {
+            const pos_comma = full_name.indexOf(",");
+            // if name contains a comma, structure is: prefix lastname, firstname OR  lastname, firstname prefix
+            if(pos_comma > -1 ){
+                last_name = input_name.slice(0, pos_comma)
 
-// mimp.excel_coldefs = [ {excColIndex: 1, excColdef: "exnr", awpColdef: "examnumber", awpCaption: "Examennummer", rowId: "id_tr_coldef_exc_1"}
+    //  check if there is a prefix in front of last_name
+                let has_prefix = false, name_remainder = null, prefix = null;
+                if(last_name){
+                    const arr = i_split_prefix_from_name(last_name, false); // false = don't split_from_first_name
+                    has_prefix = arr[0];
+                    name_remainder = arr[1];
+                    prefix = arr[2];
+                }
+                first_name = input_name.slice(pos_comma);
+                if(first_name){ first_name = first_name.trim();
+    //  check if there is a prefix at the end of first_name
+                if(!has_prefix && first_name){
+                    const arr = i_split_prefix_from_name(first_name, true);  // true = split_from_first_name
+                    has_prefix = arr[0];
+                    name_remainder = arr[1];
+                    prefix = arr[2];
+                }
+            } else {
+    // if name does not have a comma, structure is: firstname prefix lastname
 
-        const awp_col_names = ["department", "level", "sector"];
-// ---  loop through list of excel_coldefs
-        if(mimp.excel_coldefs){
-            for (let i = 0, row; row = mimp.excel_coldefs[i]; i++) {
-                const awpColdef = row.awpColdef;
-                const excColIndex = row.excColIndex;
-                const excColdef = row.excColdef;
+            }
+            }  // if(pos_int > -1 ){
+        } else {
+            last_name = full_name
+        }  //  if (full_name && full_name.includes(","){
+        return [last_name]
+    }  // i_get_name_from_fullanme
 
-// ---  only add to value_list when  table 'department', 'level', 'sector' is linked
-                const add_to_list = (awpColdef && awp_col_names.includes(awpColdef))
-                if(add_to_list) {
 
-// ---  add awpColdef dict to mimp.linked_awp_values
-                    // sector: [ {awpBasePk: 4, awpValue: "c&m", rowId: "id_tr_sector_awp_0"}
-                    //           {awpBasePk: 5, awpValue: "e&m", excColdef: "Profiel", excValue: "EM", rowId: "id_tr_sector_awp_1"}
-                    //mimp.linked_awp_values[awpColdef] = deepcopy_dict(mimp_stored[awpColdef]);
-                    mimp.linked_awp_values[awpColdef] = mimp_stored[awpColdef];
+//=========  i_split_prefix_from_name  ================ PR2021-01-12
+    function i_split_prefix_from_name(input_value, split_from_first_name){
+        console.log("==== i_split_prefix_from_name  =========>> ");
+        // PR2016-04-01 aparte functie van gemaakt
+        //Functie splitst tussenvoegsel voor Achternaam (IsPrefix=True) of achter Voornamen (IsPrefix=False)
 
-// ---  loop through curWorksheetData, create a list of excel values and add to mimp.linked_exc_values
-                    // excel_value_list = ["EM", "NT", "CM"]
-                    let excel_value_list = [];
-                    if(mimp.curWorksheetData){
-                        for (let i = 0, data_row; data_row = mimp.curWorksheetData[i]; i++) {
-                            // data_row: ["576", "112", "Regales", .... , "NT", "4", "40", "21", "W4"]
-// ---  get value of column with index 'excColIndex' and add value to excel_value_list if it doesn't yet exist in this list
-                            const value = data_row[excColIndex];
-                            if (value && !excel_value_list.includes(value)) {
-                                excel_value_list.push(value)
-                            }
-                        };
-                    }
-
-                    if (excel_value_list.length){
-
-// ---  sort the excel_value_list
-                        // from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort
-                        excel_value_list.sort(function (a, b) {return a.localeCompare(b);});
-
-// ---  convert the excel_value_list to a dict_list, add linked awpValue and
-                        const dict_list = []
-                        for (let j = 0, excel_value; excel_value = excel_value_list[j]; j++) {
-                            const exc_dict = {excColIndex: j, excValue: excel_value}
-
-            // lookup excel_value in mimp_stored awpColdef
-                            if(mimp_stored[awpColdef]){
-                                for (let x = 0, awp_dict; awp_dict = mimp_stored[awpColdef][x]; x++) {
-                                if (awp_dict){
-
-            // if is linked value (when excValue exists in awp_dict): add awpBasePk and awpValue to exc_dict
-                                    if (awp_dict.excValue) {
-                                        if (awp_dict.excValue.toLowerCase() === excel_value.toLowerCase() ){
-                                            if(awp_dict.awpBasePk){ exc_dict.awpBasePk = awp_dict.awpBasePk }
-                                            if(awp_dict.awpValue){ exc_dict.awpValue = awp_dict.awpValue }
-
-                                        }
-                                    } else if (awp_dict.awpValue && excel_value) {
-            //TODO this is not working properly yet. Links again when clicked on unlink  PR2020-12-31
-            // if not a linked value: check if awpValue and excValue are the same. If so: add to linked list
-                     //console.log("awp_dict.awpValue", awp_dict.awpValue, "excel_value", excel_value);
-                                        // skip when already linked
-                                        //let awp_val_stripped = awp_dict.awpValue.toLowerCase()
-                                        //awp_val_stripped = awp_val_stripped.replaceAll("&", "");
-                                        //awp_val_stripped = awp_val_stripped.replaceAll(" ", "");
-                                        //awp_val_stripped = awp_val_stripped.replaceAll("-", "");
-
-                                       // let exc_val_stripped = excel_value.toLowerCase()
-                                        //exc_val_stripped = exc_val_stripped.replaceAll("&", "");
-                                        //exc_val_stripped = exc_val_stripped.replaceAll(" ", "");
-                                        //exc_val_stripped = exc_val_stripped.replaceAll("-", "");
-                                        //if (awp_val_stripped && exc_val_stripped && awp_val_stripped === exc_val_stripped){
-                                        // add to exc_dict when stripped values are the same
-                                        //    if(awp_dict.awpBasePk){ exc_dict.awpBasePk = awp_dict.awpBasePk }
-                                        //    if(awp_dict.awpValue) {exc_dict.awpValue = awp_dict.awpValue};
-                                        // also add to awp_dict
-                                       //     if(excColdef){ awp_dict.excColdef = excColdef }
-                                       //     awp_dict.excValue = excel_value
-                                       // }
-                                    }
-                                }
-
-                                }
-                            }
-                            dict_list.push(exc_dict)
-                        }
-// ---  add the dict_list to mimp.linked_exc_values
-                        // mimp.linked_exc_values = { sector: [ {excColIndex: 0, excValue: "CM"},
-                        //                                      {excColIndex: 1, excValue: "EM"},
-                        //                                      {excColIndex: 2, excValue: "NT"} ] }
-                        mimp.linked_exc_values[awpColdef] = dict_list
-                        console.log("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
-                        console.log("mimp.linked_awp_values", deepcopy_dict(mimp.linked_awp_values));
+        let name_remainder = null, prefix = null, has_prefix = false;
+        const prefix_dict_before = {
+            2: ["d'", "l'"],
+            3: ["al ", "d' ", "da ", "de ", "do ", "el ", "l' ", "la ", "le ", "te "],
+            4: ["del ", "den ", "der ", "dos ", "ten ", "ter ", "van "],
+            6: ["de la "],
+            7: ["van de ", "van 't "],
+            8: ["van den ", "van der "],
+            9: ["voor den "]
+         }
+        const prefix_dict_after = {
+            2: ["d'", "l'"],
+            3: [" al", " d'", " da", " de", " do", " el", " l'", " la", " le", " te"],
+            4: [" del", " den", " der", " dos", " ten", " ter", " van"],
+            6: [" de la"],
+            7: [" van de", " van 't"],
+            8: [" van den", " van der"],
+            9: [" voor den"]
+         }
+        const prefix_dict = (split_from_first_name)  ? prefix_dict_after : prefix_dict_before;
+        let remainder_name = (input_value) ? input_value.trim() : null
+        if (input_name){
+        //Achternaam met tussenvoegsel ervoor
+            //van groot naar klein, anders wordt 'van den' niet bereikt, maar 'den' ingevuld
+            for (let len = 9; len > 1; len--) {
+                let first_part = (!split_from_first_name) ? input_name.slice(0, len) : input_name.slice( len * -1) ;
+                // get prefixes with length = len
+                if( len in prefix_dict) {
+                    const prefix_list = prefix_dict[len];
+                    // check if first_part is in prefix_list
+                    if (prefix_list && prefix_list.indexOf(first_part) > -1){
+                        // remove trailing space from first_part
+                        prefix = first_part.trim();
+                        remainder_name = input_name.slice(len);
+                        has_prefix = true;
+                        break;
                     }
                 }
+            }  // for (let len = 9; len > 1; len--)
+            if(!is_found){
+                remainder_name = input_name;
             }
         }
-        //console.log("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
-    }  // FillExcelValueLists
+        return [has_prefix, name_remainder, prefix];
+    }  // i_split_prefix_from_name

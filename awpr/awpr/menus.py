@@ -67,7 +67,7 @@ menus_dict = {
                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                 },
 'analysis': {'index': 7, 'href_tuple': ('subjects_url',),
-               'caption':  str(_('Analysis')), 'width': 120, 'height': height,  'pos_x': 60,  'pos_y': pos_y,
+               'caption':  str(_('Analysis')), 'width': 90, 'height': height,  'pos_x': 45,  'pos_y': pos_y,
                'indent_left': indent_10, 'indent_right': indent_none,
                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                 }

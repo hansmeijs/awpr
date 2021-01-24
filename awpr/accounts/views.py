@@ -28,7 +28,7 @@ from django.contrib.auth import (
     logout as auth_logout, update_session_auth_hash,
 )
 
-from .forms import UserAddForm, UserEditForm, UserActivateForm
+from .forms import UserActivateForm
 from .tokens import account_activation_token
 from .models import User, User_log, Usersetting
 
@@ -51,7 +51,6 @@ logger = logging.getLogger(__name__)
 
 @method_decorator([login_required], name='dispatch')
 class UserListView(ListView):
-    # PR 2018-04-22 template_name = 'user_list.html' is not necessary, Django looks for <appname>/<model>_list.html
 
     def get(self, request, *args, **kwargs):
         User = get_user_model()
@@ -88,7 +87,6 @@ class UserListView(ListView):
         headerbar_param = awpr_menu.get_headerbar_param(request,
             {'users': users, 'display_school': True, 'override_school': _override_school})
 
-        logger.debug('headerbar_param: ' + str(headerbar_param))
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'users.html', headerbar_param)
 
@@ -136,17 +134,23 @@ class UserUploadView(View):
                     user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
                     activate(user_lang)
 
-    # - check if this user schoolbase is same as request.user.schoolbase
-                    pk_int = af.get_dict_value(upload_dict, ('id', 'pk'))
-                    ppk_int = af.get_dict_value(upload_dict, ('id', 'ppk'))
+    # - get info from upload_dict
+                    pk_int = af.get_dict_value(upload_dict, ('id', 'pk'))  # selected user_pk
+                    ppk_int = af.get_dict_value(upload_dict, ('id', 'ppk')) # country_pk
                     map_id = af.get_dict_value(upload_dict, ('id', 'mapid'))
 
 # - check if the user schoolbase exists
                     user_schoolbase = sch_mod.Schoolbase.objects.get_or_none(id=ppk_int, country=request.user.country)
-                    # <PERMIT> PR220-09-24
                     is_same_schoolbase = (user_schoolbase and user_schoolbase == request.user.schoolbase)
-                    if (user_schoolbase) and (has_permit_all_schools or is_same_schoolbase):
-
+                    # <PERMIT> PR220-09-24
+                    # user may edit users from their own school
+                    has_permit = False
+                    if user_schoolbase:
+                        if has_permit_all_schools:
+                            has_permit = True
+                        elif has_permit_this_school:
+                            has_permit = is_same_schoolbase
+                    if has_permit:
                         mode = af.get_dict_value(upload_dict, ('id', 'mode'))
                         is_validate_only = (mode == 'validate')
                         update_wrap['mode'] = mode
@@ -190,9 +194,9 @@ class UserUploadView(View):
                             #       - new_permits is 'write' when user_school is same as requsr_school,
                             #       - permits is 'write' plus 'admin' when user_school is different from requsr_school
                             if is_same_schoolbase:
-                                new_permits = c.PERMIT_02_EDIT
+                                new_permits = c.PERMIT_002_EDIT
                             else:
-                                new_permits = (c.PERMIT_02_EDIT + c.PERMIT_32_ADMIN)
+                                new_permits = (c.PERMIT_002_EDIT + c.PERMIT_064_ADMIN)
 
                             new_user_pk, err_dict, ok_dict = create_or_validate_user_instance(
                                 user_schoolbase, upload_dict, pk_int, new_permits, is_validate_only, user_lang, request)
@@ -209,7 +213,7 @@ class UserUploadView(View):
                                     updated_dict['created'] = True
 
                         else:
-    # - +++++++++ is update ++++++++++++
+    # - +++++++++ update ++++++++++++
                             instance = None
                             if has_permit_all_schools:
                                 instance = am.User.objects.get_or_none(id=pk_int, country=request.user.country)
@@ -227,7 +231,7 @@ class UserUploadView(View):
                                     update_wrap['msg_ok'] = ok_dict
                                 # - create_user_list returns list of only 1 user
                                 updated_instance_list = create_user_list(request, instance.pk)
-                                updated_dict = updated_instance_list[0]
+                                updated_dict = updated_instance_list[0] if updated_instance_list else {}
                                 updated_dict['updated'] = True
                                 updated_dict['mapid'] = map_id
 
@@ -358,9 +362,10 @@ def SignupActivateView(request, uidb64, token):
             usr_schoolname_with_article = user.schoolbase.code
         else:
             usr_schoolname_with_article = '---'
-        msg_txt = _("Your account with username '%(usr)s' is created at %(school)s.") % {'usr': user_name, 'school': usr_schoolname_with_article}
-        update_wrap['schoolnamewithArticle'] = msg_txt
-
+        # PR2021-01-20 this one does not translate to Dutch - don't know why. Text moved to template
+        # msg_txt = _("Your account with username '%(usr)s' is created at %(school)s.") % {'usr': user_name, 'school': usr_schoolname_with_article}
+        # update_wrap['schoolnamewithArticle'] = msg_txt
+        update_wrap['schoolnamewithArticle'] = usr_schoolname_with_article
 # - get language from user
         # PR2019-03-15 Debug: language gets lost, get request.user.lang again
         user_lang = user.lang if user.lang else c.LANG_DEFAULT
@@ -420,7 +425,6 @@ def SignupActivateView(request, uidb64, token):
     # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
     return render(request, 'signup_setpassword.html', update_wrap)
 # === end of SignupActivateView =====================================
-
 
 
 
@@ -553,11 +557,12 @@ class UserDeleteView(DeleteView):
 def create_user_list(request, user_pk=None):
     # --- create list of all users of this company, or 1 user with user_pk PR2020-07-31
     #logger.debug(' =============== create_user_list ============= ')
+    #logger.debug('user_pk: ' + str(user_pk))
 
-    ROLE_08_SCHOOL = 8
-    ROLE_16_INSP = 16
-    ROLE_32_ADMIN = 32
-    ROLE_64_SYSTEM = 64
+    #ROLE_08_SCHOOL = 8
+    #ROLE_16_INSP = 16
+    #ROLE_32_ADMIN = 32
+    #ROLE_64_SYSTEM = 64
 
     # <PERMIT> PR2020-10-12
     # PR2018-05-27 list of users in UserListView:
@@ -567,11 +572,12 @@ def create_user_list(request, user_pk=None):
     #  - only perm_system can create user_list
     #  - when user_pk has value the school of user_pk can be different from the school of request user (in case of admin(ETE) )
     has_permit_school_users, has_permit_all_users = False, False
-    if request.user.country and request.user.is_perm_system :
-        if request.user.is_role_system or request.user.is_role_admin:
-            has_permit_all_users = True
-        elif request.user.is_role_insp or request.user.is_role_school:
-            has_permit_school_users = True
+    if request.user.country  :
+        if request.user.is_perm_admin or request.user.is_perm_system :
+            if request.user.is_role_system or request.user.is_role_admin:
+                has_permit_all_users = True
+            elif request.user.is_role_insp or request.user.is_role_school:
+                has_permit_school_users = True
 
     user_list = []
 
@@ -582,13 +588,14 @@ def create_user_list(request, user_pk=None):
             "CONCAT('user_', u.id) AS mapid, 'user' AS table,",
             "SUBSTRING(u.username, 7) AS username,",
             "u.last_name, u.email, u.role, u.permits,",
-            "(TRUNC(u.permits / 64) = 1) AS perm64_system,",
-            "(TRUNC( MOD(u.permits, 64) / 32) = 1) AS perm32_admin,",
-            "(TRUNC( MOD(u.permits, 32) / 16) = 1) AS perm16_anlz,",
-            "(TRUNC( MOD(u.permits, 16) / 8) = 1) AS perm08_auth2,",
-            "(TRUNC( MOD(u.permits, 8) / 4) = 1) AS perm04_auth1,",
-            "(TRUNC( MOD(u.permits, 4) / 2) = 1) AS perm02_write,",
-            "(MOD(u.permits, 2) = 1) AS perm01_read,",
+            "(TRUNC(u.permits / 128) = 1) AS perm_system,",
+            "(TRUNC( MOD(u.permits, 128) / 64) = 1) AS perm_admin,",
+            "(TRUNC( MOD(u.permits, 64) / 32) = 1) AS perm_anlz,",
+            "(TRUNC( MOD(u.permits, 32) / 16) = 1) AS perm_auth3,",
+            "(TRUNC( MOD(u.permits, 16) / 8) = 1) AS perm_auth2,",
+            "(TRUNC( MOD(u.permits, 8) / 4) = 1) AS perm_auth1,",
+            "(TRUNC( MOD(u.permits, 4) / 2) = 1) AS perm_edit,",
+            "(MOD(u.permits, 2) = 1) AS perm_read,",
     
             "u.activated, u.activated_at, u.is_active, u.last_login, u.date_joined,",
             "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
@@ -614,6 +621,7 @@ def create_user_list(request, user_pk=None):
         if sql_is_ok:
             sql_list.append('ORDER BY LOWER(u.username)')
             sql = ' '.join(sql_list)
+
             newcursor = connection.cursor()
             newcursor.execute(sql, sql_keys)
             user_list = sch_mod.dictfetchall(newcursor)
@@ -767,8 +775,8 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, perm
 
 # === update_user_instance ========== PR2020-08-16 PR2020-09-24
 def update_user_instance(instance, user_pk, upload_dict, is_validate_only, request):
-    #F.debug('-----  update_user_instance  -----')
-    #logger.debug('upload_dict: ' + str(upload_dict))
+    logger.debug('-----  update_user_instance  -----')
+    logger.debug('upload_dict: ' + str(upload_dict))
     has_error = False
     err_dict = {}
     ok_dict = {}
@@ -822,32 +830,41 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
                         data_has_changed = True
 
                 elif field == 'permits':
-                    new_permits = field_dict.get('value', 0)
-                    # sysadmins cannot remove sysadmin permission from their own account
-                    if request.user.is_perm_admin and instance == request.user:
-                        if new_permits < c.PERMIT_64_SYSTEM:
-                            err_dict[field] = _("System administrators cannot remove their own 'system administrator' permission.")
-                            has_error = True
-                        elif new_permits % 2:  # % modulus returns the decimal part (remainder) of the quotient
-                            err_dict[field] = _("System administrators cannot set their own permission to 'read-only'.")
-                            has_error = True
-                    if not has_error and new_permits != instance.permits:
+                    permit_field = field_dict.get('field')
+                    new_permit_bool = field_dict.get('value', False)
+                    new_permit_int = c.PERMIT_LOOKUP[permit_field] if permit_field else 0
+                    saved_permit_list = list(get_permits_tuple(instance.permits))
+                    logger.debug('permit_field: ' + str(permit_field))
+                    logger.debug('new_permit_bool: ' + str(new_permit_bool))
+                    logger.debug('new_permit_int: ' + str(new_permit_int))
+                    logger.debug('saved_permit_list: ' + str(saved_permit_list))
+            # - sysadmins cannot remove sysadmin permission from their own account
+                    if request.user.is_perm_admin or request.user.is_perm_system:
+                        if permit_field in ('perm_admin', 'perm_system'):
+                            if instance == request.user:
+                                if not new_permit_bool:
+                                    err_dict[field] = _("System administrators cannot remove their own 'system administrator' permission.")
+                                    has_error = True
 
+                    if not has_error:
             # - validation: user cannot have perm04_auth1 and perm08_auth2 at the same time - resert other auth field
-                        has_new_permit_auth1 = get_permit(c.PERMIT_04_AUTH1, new_permits)
-                        has_new_permit_auth2 = get_permit(c.PERMIT_08_AUTH2, new_permits)
-                        if has_new_permit_auth1 and has_new_permit_auth2:
-                            has_saved_permit_auth1 = get_permit(c.PERMIT_04_AUTH1, instance.permits)
-                            has_saved_permit_auth2 = get_permit(c.PERMIT_08_AUTH2, instance.permits)
-                            if has_saved_permit_auth2:
-                                # remove PERMIT_08_AUTH2 from new_permits
-                                new_permits -= c.PERMIT_08_AUTH2
-                            elif has_saved_permit_auth1:
-                                # remove PERMIT_04_AUTH1 from new_permits
-                                new_permits -= c.PERMIT_04_AUTH1
+                        permit_sum_has_changed = False
+                        if new_permit_bool:
+                            if new_permit_int not in saved_permit_list:
+                                saved_permit_list.append(new_permit_int)
+                                permit_sum_has_changed = True
+                        else:
+                            if new_permit_int in saved_permit_list:
+                                saved_permit_list.remove(new_permit_int)
+                                permit_sum_has_changed = True
+                        if permit_sum_has_changed:
+# - remove value of other auth permits when auth permit is set
+                            if new_permit_bool:
+                                remove_other_auth_permits(permit_field, saved_permit_list)
 
-                        instance.permits = new_permits
-                        data_has_changed = True
+                            new_permit_sum = get_permit_sum_from_tuple(saved_permit_list)
+                            instance.permits = new_permit_sum
+                            data_has_changed = True
 
                 elif field == 'is_active':
                     new_isactive = field_dict.get('value', False)
@@ -945,33 +962,50 @@ def resend_activation_email(user_pk, update_wrap, err_dict, request):
 # === end of resend_activation_email =====================================
 
 
-def get_permit(permit_value, permits_int): # PR2020-10-12
+def get_permit(permits_int, permit_index):  # PR2020-10-12 PR2021-01-18
     has_permit = False
-    if permits_int and permit_value:
+    if permits_int and permit_index:
         permits_tuple = get_permits_tuple(permits_int)
-        has_permit = permit_value in permits_tuple
+        has_permit = permit_index in permits_tuple
     return has_permit
 
-def has_permit_auth1(permits_int): # PR2020-10-12 separate function made
-    has_permit = False
-    if permits_int:
-        permits_tuple = get_permits_tuple(permits_int)
-        has_permit =  c.PERMIT_04_AUTH1 in permits_tuple
-    return has_permit
 
 def get_permits_tuple(permits_int): # PR2020-10-12 separate function made
-    # PR2018-05-27 permits_tuple converts self.permits string into tuple, e.g.: permits=15 will be converted to permits_tuple=(1,2,4,8)
+    # PR2018-05-27 permits_tuple converts self.permits_int into tuple, e.g.: permits=15 will be converted to permits_tuple=(1,2,4,8)
     permits_list = []
     if permits_int is not None:
         if permits_int != 0:
-            for i in range(6, -1, -1): # range(start_value, end_value, step), end_value is not included!
+            for i in range(7, -1, -1):  # range(start_value, end_value, step), end_value is not included!
                 power = 2 ** i
                 if permits_int >= power:
                     permits_int = permits_int - power
-                    permits_list.insert(0, power) # list.insert(0,value) adds at the beginning of the list
+                    permits_list.insert(0, power)  # list.insert(0, value) adds at the beginning of the list
     if not permits_list:
         permits_list = [0]
     return tuple(permits_list)
+
+
+def get_permit_sum_from_tuple(permits_tuple):
+    # PR2021-01-19 sum all values of permits in tuple
+    return sum(permits_tuple) if permits_tuple else 0
+
+def remove_other_auth_permits(permit_field, permit_list):
+    # PR2021-01-19 remove value of other auth permits when auth permit is set
+    if permit_field != "perm_auth1" and c.PERMIT_004_AUTH1 in permit_list:
+        permit_list.remove(c.PERMIT_004_AUTH1)
+    if permit_field != "perm_auth2" and c.PERMIT_008_AUTH2 in permit_list:
+        permit_list.remove(c.PERMIT_008_AUTH2)
+    if permit_field != "perm_auth3" and c.PERMIT_016_AUTH3 in permit_list:
+        permit_list.remove(c.PERMIT_016_AUTH3)
+
+
+
+def has_permit(permits_int, permit_index): # PR2020-10-12 separate function made PR2021-01-18
+    has_permit = False
+    if permits_int:
+        permits_tuple = get_permits_tuple(permits_int)
+        has_permit = permit_index in permits_tuple
+    return has_permit
 
 
 

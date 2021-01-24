@@ -4,9 +4,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // <PERMIT> PR220-10-02
     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_write'
+    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
     //  roles are:   'role_student', 'role_teacher', 'role_school', 'role_insp', 'role_admin', 'role_system'
-    //  permits are: 'perm_read', 'perm_write', 'perm_auth1', 'perm_auth2', 'perm_docs', 'perm_admin', 'perm_system'
+    //  permits are: 'perm_read', 'perm_edit', 'perm_auth1', 'perm_auth2', 'perm_docs', 'perm_admin', 'perm_system'
 
     const cls_hide = "display_hide";
     const cls_hover = "tr_hover";
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get field_settings
     const field_settings = {
         examyear: { //PR2020-06-02 dont use loc.Employee here, has no value yet. Use "Employee" here and loc in CreateTblHeader
-                    field_caption: ["", "Exam_year", "Created_on", "Published", "Published_on", "Closed", "Closed_on"],
+                    field_caption: ["", "Examyear", "Created_on", "Published", "Published_on", "Closed", "Closed_on"],
                     field_names: ["select", "examyear_int", "createdat", "published", "publishedat", "locked", "lockedat"],
                     filter_tags: ["select", "text", "text", "toggle", "text", "toggle", "text"],
                     field_width:  ["032", "120", "120", "120", "120", "120", "120"],
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // period also returns emplhour_list
         const datalist_request = {
                 setting: {page_examyear: {mode: "get"}, },
-                locale: {page: "examyear"},
+                locale: {page: ["examyear"]},
                 examyear_rows: {get: true}
             };
 
@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     setting_dict = response.setting_dict
                     // <PERMIT> PR220-10-02
                     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-                    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_write'
+                    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
                     has_edit_permit = (setting_dict.requsr_role_admin && setting_dict.requsr_perm_edit) ||
                                       (setting_dict.requsr_role_system && setting_dict.requsr_perm_edit);
 
@@ -198,16 +198,16 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_submenu = document.getElementById("id_submenu")
             el_submenu.innerHTML = null;
             const is_NL = (setting_dict.user_lang === "nl");
-            const examyear_lc = (loc.Exam_year) ? loc.Exam_year.toLowerCase() : "";
+            const examyear_lc = (loc.Examyear) ? loc.Examyear.toLowerCase() : "";
             const create_lc = (loc.Create) ? loc.Create.toLowerCase() : "";
             const publish_lc = (loc.Publish) ? loc.Publish.toLowerCase() : "";
             const close_lc = (loc.Close_NL_afsluiten) ? loc.Close_NL_afsluiten.toLowerCase() : "";
             const delete_lc = (loc.Delete) ? loc.Delete.toLowerCase() : "";
 
-            const create_caption = (is_NL) ? loc.Exam_year + " " + create_lc : loc.Create + " " + examyear_lc;
-            const publish_caption = (is_NL) ? loc.Exam_year + " " + publish_lc : loc.Publish + " " + examyear_lc;
-            const close_caption = (is_NL) ? loc.Exam_year + " " + close_lc : loc.Close_NL_afsluiten + " " + examyear_lc;
-            const delete_caption = (is_NL) ? loc.Exam_year + " " + delete_lc : loc.Delete + " " + examyear_lc;
+            const create_caption = (is_NL) ? loc.Examyear + " " + create_lc : loc.Create + " " + examyear_lc;
+            const publish_caption = (is_NL) ? loc.Examyear + " " + publish_lc : loc.Publish + " " + examyear_lc;
+            const close_caption = (is_NL) ? loc.Examyear + " " + close_lc : loc.Close_NL_afsluiten + " " + examyear_lc;
+            const delete_caption = (is_NL) ? loc.Examyear + " " + delete_lc : loc.Delete + " " + examyear_lc;
 
             AddSubmenuButton(el_submenu, create_caption, function() {MEY_Open("create")});
             AddSubmenuButton(el_submenu, publish_caption, function() {MEY_Open("publish")},  ["ml-2"]);
@@ -302,9 +302,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("setting_dict.requsr_examyear_text", setting_dict.requsr_examyear_text )
         let examyer_txt = "";
         if (setting_dict.requsr_examyear_text){
-           examyer_txt = loc.Exam_year + " " + setting_dict.requsr_examyear_text
+           examyer_txt = loc.Examyear + " " + setting_dict.requsr_examyear_text
         } else {
-            const examyear_str = (loc.Exam_year) ? loc.Exam_year.toLowerCase() : "-";
+            const examyear_str = (loc.Examyear) ? loc.Examyear.toLowerCase() : "-";
             examyer_txt = "<" + loc.No__ + examyear_str +  loc.__selected + ">"
         }
         //if(el_SBR_examyear) { el_SBR_examyear.value = examyer_txt};
@@ -945,11 +945,11 @@ document.addEventListener('DOMContentLoaded', function() {
             let header_text = "";
             const is_NL = (loc.user_lang === "nl");
             if(mode === "delete"){
-                header_text =  (is_NL) ? loc.Exam_year + " " + loc.Delete.toLowerCase() :
+                header_text =  (is_NL) ? loc.Examyear + " " + loc.Delete.toLowerCase() :
                                          loc.Delete + " " + + examyear_str;
             }
 // ---  put text in modal form
-            const item = (tblName === "examyear") ? loc.Exam_year : "";
+            const item = (tblName === "examyear") ? loc.Examyear : "";
 
             let msg_list = [];
             const hide_save_btn = !has_selected_item;
@@ -958,7 +958,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 const username = (map_dict.username) ? map_dict.username  : "-";
                 if(mode === "delete"){
-                    msg_list[0] = loc.Exam_year + " '" + mod_dict.examyear + "'" + loc.will_be_deleted
+                    msg_list[0] = loc.Examyear + " '" + mod_dict.examyear + "'" + loc.will_be_deleted
                     msg_list[1] = loc.Do_you_want_to_continue;
                 }
             }
@@ -1465,9 +1465,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let examyer_txt = "";
         if (setting_dict.requsr_examyear_text){
-           examyer_txt = loc.Exam_year + " " + setting_dict.requsr_examyear_text
+           examyer_txt = loc.Examyear + " " + setting_dict.requsr_examyear_text
         } else {
-            const examyear_str = (loc.Exam_year) ? loc.Exam_year.toLowerCase() : "-";
+            const examyear_str = (loc.Examyear) ? loc.Examyear.toLowerCase() : "-";
             examyer_txt = "<" + loc.No__ + examyear_str +  loc.__selected + ">"
         }
         if(el_hdrbar_examyear) { el_hdrbar_examyear.innerText = examyer_txt};

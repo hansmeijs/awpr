@@ -30,6 +30,7 @@ from schools import imports as school_imports
 from students import views as student_views
 from subjects import views as subject_views
 from grades import views as grade_views
+from grades import exfiles as grade_exfiles
 from reports import views as report_views
 
 from accounts.forms import SchoolbaseAuthenticationForm
@@ -149,7 +150,6 @@ urlpatterns = [
         ])),
     ])),
 
-
     # PR 2018-08-31 from https://simpleisbetterthancomplex.com/tutorial/2018/01/29/how-to-implement-dependent-or-chained-dropdown-list-with-django.html
     # re_path(r'^ajax/load-levels/$', subject_views.load_levels, name='ajax_load_levels'),
 
@@ -202,8 +202,12 @@ urlpatterns = [
         path('studentsubject', student_views.StudentsubjectListView.as_view(), name='studentsubjects_url'),
         path('studentsubject_upload', student_views.StudentsubjectUploadView.as_view(), name='studsubj_upload_url'),
 
+        path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='studentsubjectnote_upload_url'),
+
         path('grades', grade_views.GradeListView.as_view(), name='grades_url'),
         path('grade_upload', grade_views.GradeUploadView.as_view(), name='grade_upload_url'),
+        path('grade_approve', grade_views.GradeApproveView.as_view(), name='grade_approve_url'),
+        path('grade_download_ex2a', grade_exfiles.GradeDownloadEx2aView.as_view(), name='grade_download_ex2a_url'),
 
         path('load_cities/', student_views.load_cities, name='load_cities_url'),  # PR2018-09-03
 

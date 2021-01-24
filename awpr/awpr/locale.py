@@ -13,7 +13,7 @@ def get_locale_dict(table_dict, user_lang):
     #TODO use user_lang etc from settings_dict
     dict = {'user_lang': user_lang}
 
-    page = table_dict.get('page')
+    page_list = table_dict.get('page')
 
     dict['weekdays_abbrev'] = TXT_weekdays_abbrev
     dict['weekdays_long'] = TXT_weekdays_long
@@ -60,7 +60,7 @@ def get_locale_dict(table_dict, user_lang):
     dict['Cancel'] = _('Cancel')
     dict['OK'] = _('OK')
 
-    dict['Exam_year'] = _('Exam year')
+    dict['Examyear'] = _('Exam year')
     dict['Subject'] = _('Subject')
     dict['Subjects'] = _('Subjects')
     dict['Level'] = _('Level')
@@ -124,7 +124,14 @@ def get_locale_dict(table_dict, user_lang):
     dict['All'] = _('All ')
 
 # ====== PAGE UPLOAD =========================
-    if page == 'upload':
+    if 'upload' in page_list:
+
+        dict['Upload_candidates'] = _('Upload candidates')
+        dict['Upload_subjects'] = _('Upload subjects')
+        dict['Upload_grades'] = _('Upload grades')
+        dict['Select_Excelfile_with_students'] = _('Select an Excel file with students:')
+        dict['Select_Excelfile_with_subjects'] = _('Select an Excel file with subjects:')
+        dict['Select_Excelfile_with_grades'] = _('Select an Excel file with grades:')
         dict['Select_valid_Excelfile'] = _('Please select a valid Excel file.')
         dict['Not_valid_Excelfile'] = _('This is not a valid Excel file.')
         dict['Only'] = _('Only ')
@@ -132,36 +139,17 @@ def get_locale_dict(table_dict, user_lang):
         dict['are_supported'] = _(' are supported.')
         dict['No_worksheets'] = _('There are no worksheets.')
         dict['No_worksheets_with_data'] = _('There are no worksheets with data.')
-        dict['coldef_list'] = [
-            {'awpKey': 'custcode', 'caption': _('Customer - Short name')},
-            {'awpKey': 'custname', 'caption': _('Customer - Name')},
-            {'awpKey': 'custidentifier', 'caption': _('Customer - Identifier')},
-            # {'awpKey': 'custcontactname', 'caption': _('Customer - Contact name')},
-            # {'awpKey': 'custaddress', 'caption': _('Customer - Address')},
-            # {'awpKey': 'custzipcode', 'caption': _('Customer - Zipcode')},
-            # {'awpKey': 'custcity', 'caption': _('Customer - City')},
-            # {'awpKey': 'custcountry', 'caption': _('Customer - Country')},
-            # {'awpKey': 'custemail', 'caption': _('Customer - Email address')},
-            # {'awpKey': 'custtelephone', 'caption': _('Customer - Telephone')},
 
-            {'awpKey': 'ordercode', 'caption': _('Order - Short name')},
-            {'awpKey': 'ordername', 'caption': _('Order - Name')},
-            {'awpKey': 'orderidentifier', 'caption': _('Order - Identifier')},
-            # {'awpKey': 'ordercontactname', 'caption': _('Order - Contact name')},
-            # {'awpKey': 'orderaddress', 'caption': _('Order - Address')},
-            #  {'awpKey': 'orderzipcode', 'caption': _('Order - Zipcode')},
-            #  {'awpKey': 'ordercity', 'caption': _('Order - City')},
-            # {'awpKey': 'ordercountry', 'caption': _('Order - Country')},
-            # {'awpKey': 'orderemail', 'caption': _('Order - Email address')},
-            # {'awpKey': 'ordertelephone', 'caption': _('Order - Telephone')},
-            {'awpKey': 'orderdatefirst', 'caption': _('Order - First date of order')},
-            {'awpKey': 'orderdatelast', 'caption': _('Order - Last date of order')}]
+        dict['linkunique_The_field'] = _("The field ")
+        dict['linkunique_One_ofthe_fields'] = _("One of the fields ")
+        dict['_or_'] = _(" or ")
+        dict['linkunique_mustbelinked_and_unique'] = _(" must be linked and contain unique values.")
 
-        dict['The_subject_data_will_be_uploaded'] = _('The subject data will be uploaded.')
-        dict['Upload_subjects'] = _('Upload subjects')
+        dict['Link_sectors'] = _('Link sectors')
+        dict['Link_profielen'] = _('Link profielen')
 
 # ====== PAGE USER ========================= PR2019-11-19
-    elif page == 'user':
+    if 'user' in page_list:
 
         dict['User_list'] = _('User list')
         dict['Permissions'] = _('Permissions')
@@ -170,8 +158,12 @@ def get_locale_dict(table_dict, user_lang):
         dict['Read_only'] = _('Read only')
         dict['Read_only_2lines'] =  pgettext_lazy('2 lines', 'Read\nonly')
         dict['Edit'] = _('Edit')
-        dict['President'] = _('President')
-        dict['Secretary'] = _('Secretary')
+
+        dict['President'] = TXT_President
+        dict['Secretary'] = TXT_Secretary
+        dict['Commissioner'] = TXT_Commissioner
+
+        dict['Commissioner_2lines'] =  pgettext_lazy('2 lines', 'Commis-\nsioner')
         dict['Analyze'] = _('Analyze')
         dict['Administrator'] = _('Administrator')
         dict['Administrator_2lines'] =  pgettext_lazy('2 lines', 'Admini-\nstrator')
@@ -180,7 +172,6 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['Sysadm_cannot_delete_own_account'] = _("System administrators cannot delete their own account.")
         dict['Sysadm_cannot_remove_sysadm_perm'] = _("System administrators cannot remove their own 'system administrator' permission.")
-        dict['Sysadm_cannot_set_readonly'] = _("System administrators cannot set their own permission to 'read-only'.")
         dict['Sysadm_cannot_set_inactive'] = _("System administrators cannot make their own account inactive.")
 
         dict['Username'] = _('Username')
@@ -194,7 +185,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Delete_user'] = _('Delete user')
         dict['This_user'] = _('This user')
         dict['Submit_employee_as_user'] = _('Submit employee as user')
-        dict['Submit'] = _('Submit')
+        dict['Submit'] = TXT_Submit
         dict['Inactive'] = TXT_Inactive
 
         dict['No_user_selected']  = _('There is no user selected.')
@@ -220,7 +211,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Yes_send_email'] = _('Yes, send email')
 
 # ====== PAGE EXAM YEAR ========================= PR2020-10-04
-    elif page == 'examyear':
+    if 'examyear' in page_list:
         dict['Created_on'] = _('Created on ')
 
         dict['Published'] = _('Published')
@@ -269,7 +260,7 @@ def get_locale_dict(table_dict, user_lang):
         }
 
 # ====== PAGE SUBJECTS ========================= PR2020-09-30
-    elif page == 'subjects':
+    if 'subjects' in page_list:
 
         dict['Add_subject'] = _('Add subject')
         dict['Add_department'] = _('Add department')
@@ -294,7 +285,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Package'] = _('Package')
         dict['Package_item'] = _('Package item')
 
-
+        dict['Upload_subjects'] = _('Upload subjects')
 
         dict['this_subject'] = _('this subject')
         dict['this_level'] = _('this level')
@@ -309,7 +300,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['already_exists_in_departments'] = _(' already exists in one of the departments.')
 
 # ====== PAGE SCHOOLS ========================= PR2020-09-30
-    elif page == 'schools':
+    if 'schools' in page_list:
 
         dict['Article'] = _('Article')
         dict['Short_name'] = _('Short name')
@@ -327,8 +318,10 @@ def get_locale_dict(table_dict, user_lang):
         dict['is_too_long_max_article'] = _(" is too long. Maximum is %(max)s characters.") % {'max': c.MAX_LENGTH_SCHOOLABBREV}
         dict['is_too_long_max_name'] = _(" is too long. Maximum is %(max)s characters.") % {'max': c.MAX_LENGTH_NAME}
 
+        dict['Upload_awpdata'] = _('Upload AWP data file')
+
 # ====== PAGE STUDENTS ========================= PR2020-10-27
-    elif page == 'students':
+    if 'students' in page_list:
 
         dict['Add_candidate'] = _('Add candidate')
         dict['Delete_candidate'] = _('Delete candidate')
@@ -344,54 +337,13 @@ def get_locale_dict(table_dict, user_lang):
         dict['ID_number'] = _('ID number')
 
         dict['Abbrev'] = _('Abbrev.')
-        dict['_of_'] = _(' of ')
+        dict['_of_'] = TXT__of_
 
         dict['No_subject_selected'] = _('No subject selected.')
 
-# - mod upload
-        dict['Upload_candidates'] = _('Upload candidates')
-        dict['Select_Excelfile_with_students'] = _('Select an Excel file with students:')
-        dict['Select_valid_Excelfile'] = _('Please select a valid Excel file.')
-        dict['Not_valid_Excelfile'] = _('This is not a valid Excel file.')
-        dict['Only'] = _('Only ')
-        dict['and'] = _(' and ')
-        dict['are_supported'] = _(' are supported.')
-        dict['No_worksheets'] = _('There are no worksheets.')
-        dict['No_worksheets_with_data'] = _('There are no worksheets with data.')
-        dict['coldef_list'] = [
-            {'awpKey': 'custcode', 'caption': _('Customer - Short name')},
-            {'awpKey': 'custname', 'caption': _('Customer - Name')},
-            {'awpKey': 'custidentifier', 'caption': _('Customer - Identifier')},
-            # {'awpKey': 'custcontactname', 'caption': _('Customer - Contact name')},
-            # {'awpKey': 'custaddress', 'caption': _('Customer - Address')},
-            # {'awpKey': 'custzipcode', 'caption': _('Customer - Zipcode')},
-            # {'awpKey': 'custcity', 'caption': _('Customer - City')},
-            # {'awpKey': 'custcountry', 'caption': _('Customer - Country')},
-            # {'awpKey': 'custemail', 'caption': _('Customer - Email address')},
-            # {'awpKey': 'custtelephone', 'caption': _('Customer - Telephone')},
-
-            {'awpKey': 'ordercode', 'caption': _('Order - Short name')},
-            {'awpKey': 'ordername', 'caption': _('Order - Name')},
-            {'awpKey': 'orderidentifier', 'caption': _('Order - Identifier')},
-            # {'awpKey': 'ordercontactname', 'caption': _('Order - Contact name')},
-            # {'awpKey': 'orderaddress', 'caption': _('Order - Address')},
-            #  {'awpKey': 'orderzipcode', 'caption': _('Order - Zipcode')},
-            #  {'awpKey': 'ordercity', 'caption': _('Order - City')},
-            # {'awpKey': 'ordercountry', 'caption': _('Order - Country')},
-            # {'awpKey': 'orderemail', 'caption': _('Order - Email address')},
-            # {'awpKey': 'ordertelephone', 'caption': _('Order - Telephone')},
-            {'awpKey': 'orderdatefirst', 'caption': _('Order - First date of order')},
-            {'awpKey': 'orderdatelast', 'caption': _('Order - Last date of order')}]
-
-        #dict['The_cancicate_data_will_be_uploaded'] = _('The candidate data will be uploaded.')
-        #dict['Upload_subjects'] = _('Upload subjects')
-        dict['linkunique_The_field'] = _("The field ")
-        dict['linkunique_One_ofthe_fields'] = _("One of the fields ")
-        dict['_or_'] = _(" or ")
-        dict['linkunique_mustbelinked_and_unique'] = _(" must be linked and contain unique values.")
 
 # ====== PAGE STUDENTSUBJECTS ========================= PR2020-12-21
-    elif page == 'studentsubjects':
+    if 'studentsubjects' in page_list:
         dict['Character'] = _('Character')
         dict['Examnumber_twolines'] = _('Exam\nnumber')
         dict['This_candidate_has_nosubjects_yet'] = _('This candidate has no subjects yet.')
@@ -403,10 +355,11 @@ def get_locale_dict(table_dict, user_lang):
         dict['Authorized_by'] = _('Authorized by')
 
         dict['at_'] = pgettext_lazy('at_date', 'at ')
+        dict['_of_'] = TXT__of_
 
 
 # ====== PAGE GRADES ========================= PR2020-10-27
-    elif page == 'grades':
+    if 'grades' in page_list:
 
         dict['No_candidate_selected'] = _('No candidate selected')
         dict['This_candidate_has_nosubjects_yet'] = _('This candidate has no subjects yet.')
@@ -418,10 +371,36 @@ def get_locale_dict(table_dict, user_lang):
         dict['Gender'] = _('Gender')
         dict['ID_number'] = _('ID number')
 
+        dict['All_subjects'] = _('All subjects')
+        dict['All_candidates'] = _('All candidates')
+        dict['All_leerwegen'] = _("All 'leerwegen'")
+        dict['All_subjects_and_candidates'] = _('All subjects and candidates')
+
         dict['Abbrev'] = _('Abbrev.')
 
         dict['Character'] = _('Character')
-        dict['_of_'] = _(' of ')
+        dict['_of_'] = TXT__of_
+
+        dict['Submit_Ex2A_form'] = _('Submit Ex2A form')
+        dict['Approve_grades'] = _('Approve grades')
+        dict['Submit_Ex2A_form'] = _('Submit Ex2A form')
+        dict['Preliminary_Ex2A_form'] = _('Preliminary Ex2A form')
+        dict['Approve'] = _('Approve')
+        dict['Check_grades'] = _('Check grades')
+        dict['Submit'] = TXT_Submit
+
+        dict['MAG_info'] = {
+            'subheader_approve': _('The following grades will be approved:'),
+            'subheader_submit': _('An Ex2A form with the following grades will be submitted:'),
+
+            'approve_01': _("Click 'Approve' to approve the selected grades or click 'Remove approval'."),
+            'approve_02': _('After the grades are approved by the president, secretary and commissioner,'),
+            'approve_03': _('the Ex2A form can be submitted by the president or secretary.'),
+
+            'submit_01': _("Click 'Check grades' to check the selected grades before submitting."),
+            'submit_02': _("If the check is OK, click 'Submit Ex2A form' to submit the selected grades."),
+            'submit_03': _("After the grades are submitted, you can only change them with permission of the Inpsection.")
+        }
 
         dict['Score'] = _('Score')
         dict['Grade'] = _('Grade')
@@ -452,6 +431,11 @@ def get_locale_dict(table_dict, user_lang):
         dict['options_examperiod'] = c.EXAMPERIOD_OPTIONS
         dict['options_examtype'] = c.EXAMTYPE_OPTIONS
 
+
+        dict['President'] = TXT_President
+        dict['Secretary'] = TXT_Secretary
+        dict['Commissioner'] = TXT_Commissioner
+
         dict['grade_err_list'] = {
             'examyear_locked': _('The exam year is locked.'),
             'school_locked': _('The school data is locked.'),
@@ -480,14 +464,19 @@ def get_locale_dict(table_dict, user_lang):
             'Grade_may_only_have_1_decimal': _('The grade may only have one digit after the dot.'),
             'Score_mustbe_between_0_and': _('The score must be a number between 0 and ')
         }
-        # - mod upload
-
 
     return dict
 
 TXT_Email_address = _('Email address')
 
 TXT_Inactive = _("Inactive")
+
+TXT_President = _('President')
+TXT_Secretary = _('Secretary')
+TXT_Commissioner = _('Commissioner')
+TXT__of_ = _(' of ')
+TXT_Submit = _('Submit')
+
 
 # get weekdays translated
 TXT_weekdays_abbrev = ('', _('Mon'), _('Tue'), _('Wed'), _('Thu'), _('Fri'), _('Sat'), _('Sun'))

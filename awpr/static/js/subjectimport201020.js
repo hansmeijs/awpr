@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const datalist_request = {
         setting: {page_employeeupload: {mode: "get"}},
         schoolsetting: {coldefs: "subject"},
-        locale: {page: "upload"}
+        locale: {page: ["upload"]}
     };
     DatalistDownload(datalist_request, "DOMContentLoaded");
 

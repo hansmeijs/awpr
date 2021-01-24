@@ -961,6 +961,17 @@ aXX:hover{
     margin: 16px 8px 4px 8px; /* mx-2 = .5 rem, mx-1 = .25 rem, 1 rem = 16 px  <top><right><bottom><left> */
 }
 
+.tsa_margin_top_72 {
+    /* margin: <top><right><bottom><left> */
+   margin-top: 72px
+}
+.tsa_margin_top48_left24 {
+    /* margin: <top><right><bottom><left> */
+   margin-top: 128px;
+   margin-left: 224px;
+}
+
+
 .tw_480 { width: 480px; }
 .tw_420 { width: 420px; }
 .tw_390 { width: 390px; }
@@ -1021,7 +1032,7 @@ aXX:hover{
     background: transparent;
     border: none;
     margin: 0;
-	padding: 0;
+	padding: 0px 8px;
 /* PR2020-12-18 debug. Input element exceeds width of parent td.
     Solved by add width: 100%, adding  box-sizing: border-box not necessary, already set by default
     from https://stackoverflow.com/questions/1633522/html-input-element-wider-than-containing-div */
@@ -1054,7 +1065,7 @@ aXX:hover{
 .image_container {
   display: flex;
   justify-content: center;
-  /*padding: 8px;*/
+  padding: 4px;
 }
 
 .icon_24 {
@@ -1168,17 +1179,27 @@ aXX:hover{
 
 /* SPRITES PR2020-08-17 */
 
+.appr_0_0, .appr_0_1, .appr_0_2, .appr_0_3, .appr_0_4, .appr_0_5, .appr_0_6,
+.appr_1_0, .appr_1_1, .appr_1_2, .appr_1_3, .appr_1_4, .appr_1_5, .appr_1_6,
+.appr_2_0, .appr_2_1, .appr_2_2, .appr_2_3, .appr_2_4, .appr_2_5, .appr_2_6,
+
 .stat_0_0, .stat_0_1, .stat_0_2, .stat_0_3, .stat_0_4, .stat_0_5, .stat_0_6,
 .stat_1_0, .stat_1_1, .stat_1_2, .stat_1_3, .stat_1_4, .stat_1_5, .stat_1_6,
+
 .inactive_0_0, .inactive_0_1, .inactive_0_2, .inactive_0_3,
 .inactive_1_0, .inactive_1_1, .inactive_1_2, .inactive_1_3,
-.edit_0_0, .edit_0_1, .edit_0_2, .edit_0_3, .edit_0_4,
-.edit_1_0, .edit_1_1, .edit_1_2, .edit_1_3, .edit_1_4,
+
+.note_0_0, .note_0_1, .note_0_2, .note_0_3, .note_0_4, .note_0_5, .note_0_6,
+.note_1_0, .note_1_1, .note_1_2, .note_1_3, .note_1_4, .note_1_5, .note_1_6,
+.note_2_0, .note_2_1, .note_2_2, .note_2_3, .note_2_4, .note_2_5, .note_2_6,
+
 .xmark_0_0, .xmark_0_1, .xmark_0_2, .xmark_0_3,
 .exclamation_0_0, .exclamation_0_1, .exclamation_0_2,
+
 .tickmark_0_0, .tickmark_0_1, .tickmark_0_2,
 .tickmark_1_0, .tickmark_1_1, .tickmark_1_2,
 .tickmark_2_0, .tickmark_2_1, .tickmark_2_2,
+
 .delete_0_0, .delete_0_1, .delete_0_2 {
     background-repeat: no-repeat;
     height: 20px;
@@ -1187,6 +1208,33 @@ aXX:hover{
     padding-top: 2px;
     /*cursor: pointer*/;
 }
+.appr_0_0, .appr_0_1, .appr_0_2, .appr_0_3, .appr_0_4, .appr_0_5, .appr_0_6,
+.appr_1_0, .appr_1_1, .appr_1_2, .appr_1_3, .appr_1_4, .appr_1_5, .appr_1_6,
+.appr_2_0, .appr_2_1, .appr_2_2, .appr_2_3, .appr_2_4, .appr_2_5, .appr_2_6 {
+    background-image: url('/static/img/approved.png');
+    background-size: 140px 60px;
+}
+.appr_0_0 { background-position: -0px -0px;}
+.appr_0_1 { background-position: -20px -0px;}
+.appr_0_2 { background-position: -40px -0px;}
+.appr_0_3 { background-position: -60px -0px;}
+.appr_0_4 { background-position: -80px -0px;}
+.appr_0_5 { background-position: -100px -0px;}
+.appr_0_6 { background-position: -120px -0px;}
+.appr_1_0 { background-position: -0px -20px;}
+.appr_1_1 { background-position: -20px -20px;}
+.appr_1_2 { background-position: -40px -20px;}
+.appr_1_3 { background-position: -60px -20px;}
+.appr_1_4 { background-position: -80px -20px;}
+.appr_1_5 { background-position: -100px -20px;}
+.appr_1_6 { background-position: -120px -20px;}
+.appr_2_0 { background-position: -0px -40px;}
+.appr_2_1 { background-position: -20px -40px;}
+.appr_2_2 { background-position: -40px -40px;}
+.appr_2_3 { background-position: -60px -40px;}
+.appr_2_4 { background-position: -80px -40px;}
+.appr_2_5 { background-position: -100px -40px;}
+.appr_2_6 { background-position: -120px -40px;}
 
 .stat_0_0, .stat_0_1, .stat_0_2, .stat_0_3, .stat_0_4, .stat_0_5, .stat_0_6,
 .stat_1_0, .stat_1_1, .stat_1_2, .stat_1_3, .stat_1_4, .stat_1_5, .stat_1_6 {
@@ -1222,21 +1270,33 @@ aXX:hover{
 .inactive_1_2 { background-position: -40px -20px;}
 .inactive_1_3 { background-position: -60px -20px;}
 
-.edit_0_0, .edit_0_1, .edit_0_2, .edit_0_3, .edit_0_4,
-.edit_1_0, .edit_1_1, .edit_1_2, .edit_1_3, .edit_1_4 {
-    background-image: url('/static/img/editor.png');
-    background-size: 100px 40px;
+.note_0_0, .note_0_1, .note_0_2, .note_0_3, .note_0_4, .note_0_5, .note_0_6,
+.note_1_0, .note_1_1, .note_1_2, .note_1_3, .note_1_4, .note_1_5, .note_1_6,
+.note_2_0, .note_2_1, .note_2_2, .note_2_3, .note_2_4, .note_2_5, .note_2_6 {
+    background-image: url('/static/img/notes.png');
+    background-size: 140px 60px;
 }
-.edit_0_0 { background-position: -0px -0px;}
-.edit_0_1 { background-position: -20px -0px;}
-.edit_0_2 { background-position: -40px -0px;}
-.edit_0_3 { background-position: -60px -0px;}
-.edit_0_4 { background-position: -80px -0px;}
-.edit_1_0 { background-position: -0px -20px;}
-.edit_1_1 { background-position: -20px -20px;}
-.edit_1_2 { background-position: -40px -20px;}
-.edit_1_3 { background-position: -60px -20px;}
-.edit_1_4 { background-position: -80px -20px;}
+.note_0_0 { background-position: -0px -0px;}
+.note_0_1 { background-position: -20px -0px;}
+.note_0_2 { background-position: -40px -0px;}
+.note_0_3 { background-position: -60px -0px;}
+.note_0_4 { background-position: -80px -0px;}
+.note_0_5 { background-position: -100px -0px;}
+.note_0_6 { background-position: -120px -0px;}
+.note_1_0 { background-position: -0px -20px;}
+.note_1_1 { background-position: -20px -20px;}
+.note_1_2 { background-position: -40px -20px;}
+.note_1_3 { background-position: -60px -20px;}
+.note_1_4 { background-position: -80px -20px;}
+.note_1_5 { background-position: -100px -20px;}
+.note_1_6 { background-position: -120px -20px;}
+.note_2_0 { background-position: -0px -40px;}
+.note_2_1 { background-position: -20px -40px;}
+.note_2_2 { background-position: -40px -40px;}
+.note_2_3 { background-position: -60px -40px;}
+.note_2_4 { background-position: -80px -40px;}
+.note_2_5 { background-position: -100px -40px;}
+.note_2_6 { background-position: -120px -40px;}
 
 .xmark_0_0, .xmark_0_1, .xmark_0_2, .xmark_0_3 {
     background-image: url('/static/img/xmark.png');

@@ -161,6 +161,13 @@ STATICFILES_DIRS = [
 # PR 2018-03-06 STATIC_ROOT is the folder where all static files will be stored after a manage.py collectstatic.
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# PR2021-01-22 path to fonts dir in statis
+STATICFILES_FONTS_DIR = os.path.join(BASE_DIR, 'static', 'fonts') + '\\'
+STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'static', 'media') + '\\'
+# PR2021-01-22 from https://www.caktusgroup.com/blog/2017/08/28/advanced-django-file-handling/
+# how to handle DEFAULT_FILE_STORAGE ( i.e. MEDIAFILES_STORAGE)
+# TODO store pdf's and exccel files, diploma's
+
 # PR 2018-03-27
 LOGIN_URL = 'login'
 # PR 2018-03-20

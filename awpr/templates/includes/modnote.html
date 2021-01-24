@@ -1,0 +1,49 @@
+{% load i18n %}
+{% load static %}
+
+<!-- =================== MODAL NOTE  =================== -->
+<div class="modal" id="id_mod_note" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg " role="document">
+        <div class="modal-content ">
+            <div class="modal-header tsa_bc_lightlightgrey">
+                <h4 id="id_ModNote_header" class="modal-title mx-2" ></h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div id="id_ModNote_input_container" class="mx-4 mt-4">
+                <textarea id="id_ModNote_input_note" rows="4" class="form-control"
+                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+                    placeholder="{% trans 'Type your note here...'%}"></textarea>
+                <div class="pt-2">
+                    <div class="content_header">
+                        <div id="id_ModNote_memo_internal" data-index="internal" class="note_flex_1 pointer_show tr_hover">
+                            <div class="note_1_1"></div>
+                            <div class="c_form_text pr-5">{% trans 'Internal memo' %}</div>
+                        </div>
+                        <div id="id_ModNote_memo_external" data-index="external" class="note_flex_1 pointer_show mx-2">
+                            <div data-index="2" class="note_0_2"></div>
+                            <div data-index="3" class="note_0_3"></div>
+                            <div data-index="4" class="note_0_4"></div>
+                            <div data-index="5" class="note_0_5"></div>
+                            <div data-index="label" class="c_form_text">{% trans 'External memo' %}</div>
+                        </div>
+                        <div class="flex_1 text_align_right">
+                            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                            <button id="id_ModNote_btn_save" type="button" class="btn btn-primary">{% trans 'Save' %}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="id_ModNote_note_container" class="mx-2 my-4">
+            </div>
+
+            <div class="modal-footer mx-4">
+
+            </div>
+
+        </div>
+    </div>
+</div>
+<!-- =================== END MODAL NOTE  =================== -->

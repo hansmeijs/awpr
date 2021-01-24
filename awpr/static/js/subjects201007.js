@@ -4,10 +4,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // <PERMIT> PR220-10-02 PR2020-10-29
     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_write'
+    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
     //  - no add/delete/edit allowed when requsr_examyear_locked or requsr_school_locked
     //  roles are:   'role_student', 'role_teacher', 'role_school', 'role_insp', 'role_admin', 'role_system'
-    //  permits are: 'perm_read', 'perm_write', 'perm_auth1', 'perm_auth2', 'perm_docs', 'perm_admin', 'perm_system'
+    //  permits are: 'perm_read', 'perm_edit', 'perm_auth1', 'perm_auth2', 'perm_docs', 'perm_admin', 'perm_system'
 
 // ---  check if user has permit to view this page. If not: el_loader does not exist PR2020-10-02
     let el_loader = document.getElementById("id_loader");
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get field_settings
     const field_settings = {
         subject: { //PR2020-06-02 dont use loc.Employee here, has no value yet. Use "Employee" here and loc in CreateTblHeader
-                    field_caption: ["", "Abbreviation", "Name", "Departments",  "Sequence",  "Exam_year"],
+                    field_caption: ["", "Abbreviation", "Name", "Departments",  "Sequence",  "Examyear"],
                     field_names: ["select", "code", "name", "depbases", "sequence", "examyear"],
                     filter_tags: ["select", "text", "text",  "text", "number", "number"],
                     field_width:  ["032", "120", "240", "240", "120",  "120"],
@@ -117,13 +117,18 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
 
-// --- header bar / sidebar elements
+// --- header bar elements
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
-            el_hdrbar_examyear.addEventListener("click", function() {ModSelectExamyear_Open()}, false )
+            el_hdrbar_examyear.addEventListener("click", function() {
+                t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, MSESD_Response)}, false )
         const el_hdrbar_school = document.getElementById("id_hdrbar_school")
-            el_hdrbar_school.addEventListener("click", function() {ModSelSchOrDep_Open("school")}, false )
+            el_hdrbar_school.addEventListener("click", function() {
+                t_MSESD_Open(loc, "school", school_map, setting_dict, MSESD_Response)}, false )
         const el_hdrbar_department = document.getElementById("id_hdrbar_department")
-            el_hdrbar_department.addEventListener("click", function() {ModSelSchOrDep_Open("department")}, false )
+            el_hdrbar_department.addEventListener("click", function() {
+                t_MSESD_Open(loc, "department", department_map, setting_dict, MSESD_Response)}, false )
+
+
 
 // ---  MOD SELECT EXAM YEAR ------------------------------------
         let el_MSEY_tblBody_select = document.getElementById("id_MSEY_tblBody_select");
@@ -177,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // period also returns emplhour_list
         const datalist_request = {
                 setting: {page_subject: {mode: "get"}},
-                locale: {page: "subjects"},
+                locale: {page: ["subjects"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true},
@@ -223,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     setting_dict = response.setting_dict
                     // <PERMIT> PR220-10-02  PR220-10-29
                     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-                    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_write'
+                    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
                     //  - no add/delete/edit allowed when requsr_examyear_locked or requsr_school_locked
                     if (!setting_dict.requsr_examyear_locked && !setting_dict.requsr_examyear_locked){
                         has_edit_permit = (setting_dict.requsr_role_admin && setting_dict.requsr_perm_edit) ||
@@ -279,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  refresh_locale  ================  PR2020-07-31
     function refresh_locale(locale_dict) {
-        //console.log ("===== refresh_locale ==== ")
+        console.log ("===== refresh_locale ==== ")
         loc = locale_dict;
         CreateSubmenu()
     }  // refresh_locale
@@ -289,6 +294,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("===  CreateSubmenu == ");
         console.log("loc.Add_subject ", loc.Add_subject);
         console.log("loc ", loc);
+        console.log("loc.Add_subject ", loc.Add_subject);
+        console.log("loc.Delete_subject ", loc.Delete_subject);
+        console.log("loc.Upload_subjects ", loc.Upload_subjects);
 
         let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Add_subject, function() {MSJ_Open()});
@@ -946,7 +954,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const is_request_user = (requsr_pk === map_dict.id)
 
 // show message when sysadmin tries to delete sysadmin permit or add readonly
-                if(fldName === "perm64_sysadmin" && is_request_user && has_permit ){
+                if(fldName === "perm_system" && is_request_user && has_permit ){
                     ModConfirmOpen("permission_sysadm", el_input)
                 } else if(fldName === "perm01_readonly" && is_request_user && !has_permit ){
                     ModConfirmOpen("permission_sysadm", el_input)
@@ -2086,126 +2094,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-// +++++++++++++++++ MODAL SELECT EXAMYEAR ++++++++++++++++++++
-//=========  ModSelectExamyear_Open  ================ PR2020-10-27
-    function ModSelectExamyear_Open() {
-        //console.log( "===== ModSelectExamyear_Open ========= ");
-
-        //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
-        if (!isEmpty(loc)) {
-            mod_dict = {examyear_pk: setting_dict.sel_examyear_pk, table: "examyear"};
-    // ---  fill select table
-            ModSelectExamyear_FillSelectTable(0);  // 0 = selected_pk
-    // ---  show modal
-            $("#id_mod_select_examyear").modal({backdrop: true});
-            }
-    }  // ModSelectExamyear_Open
-
-//=========  ModSelectExamyear_Save  ================ PR2020-10-28
-    function ModSelectExamyear_Save() {
-        console.log("===  ModSelectExamyear_Save =========");
-        console.log("mod_dict", mod_dict);
-// selected_pk: {sel_examyear_pk: 23, sel_schoolbase_pk: 15, sel_depbase_pk: 1}
-
-// ---  upload new setting
-        const datalist_request = {
-            setting: {page_subject: {mode: "get"}, sel_examyear_pk: mod_dict.examyear_pk},
-            examyear_rows: {get: true}
-        };
-        DatalistDownload(datalist_request);
-
-// hide modal
-        $("#id_mod_select_examyear").modal("hide");
-
-    }  // ModSelectExamyear_Save
-
-//=========  ModSelectExamyear_SelectItem  ================ PR2020-10-28
-    function ModSelectExamyear_SelectItem(tblRow) {
-        //console.log( "===== ModSelectExamyear_SelectItem ========= ");
-        //console.log( tblRow);
-        // all data attributes are now in tblRow, not in el_select = tblRow.cells[0].children[0];
-// ---  get clicked tablerow
-        if(tblRow) {
-// ---  deselect all highlighted rows
-            DeselectHighlightedRows(tblRow, cls_selected)
-// ---  highlight clicked row
-            tblRow.classList.add(cls_selected)
-// ---  get pk from id of select_tblRow
-            let data_pk = get_attr_from_el(tblRow, "data-pk", 0)
-            mod_dict.examyear_pk = (Number(data_pk)) ? Number(data_pk) : 0
-
-            ModSelectExamyear_Save()
-        }
-    }  // ModSelectExamyear_SelectItem
-
-//=========  ModSelectExamyear_FillSelectTable  ================ PR2020-08-21
-    function ModSelectExamyear_FillSelectTable(selected_pk) {
-        console.log( "===== ModSelectExamyear_FillSelectTable ========= ");
-        console.log( "selected_pk", selected_pk);
-        const tblBody_select = el_MSEY_tblBody_select;
-        tblBody_select.innerText = null;
-
-        let row_count = 0;
-// --- loop through data_map
-        const data_map = examyear_map;
-        if(data_map){
-            for (const [map_id, map_dict] of data_map.entries()) {
-                ModSelectExamyear_FillSelectRow(map_dict, tblBody_select, selected_pk);
-                row_count += 1;
-            };
-        }  // if(!!data_map)
-
-        if(!row_count){
-            let tblRow = tblBody_select.insertRow(-1);
-            let td = tblRow.insertCell(-1);
-            td.innerText = loc.No_exam_years;
-
-        } else if(row_count === 1){
-            let tblRow = tblBody_select.rows[0]
-            if(tblRow) {
-// ---  highlight first row
-                tblRow.classList.add(cls_selected)
-            }
-        }
-    }  // ModSelectExamyear_FillSelectTable
-
-//=========  ModSelectExamyear_FillSelectRow  ================ PR2020-10-27
-    function ModSelectExamyear_FillSelectRow(map_dict, tblBody_select, selected_pk) {
-        //console.log( "===== ModSelectExamyear_FillSelectRow ========= ");
-        //console.log( "map_dict: ", map_dict);
-
-//--- loop through data_map
-        let pk_int = null, code_value = null, is_selected_pk = false;
-        pk_int = map_dict.examyear_id;
-        code_value = (map_dict.examyear_int) ? map_dict.examyear_int.toString() : "---"
-        is_selected_pk = (selected_pk != null && pk_int === selected_pk)
-// ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
-        let tblRow = tblBody_select.insertRow(-1);
-        tblRow.setAttribute("data-pk", pk_int);
-        //tblRow.setAttribute("data-ppk", ppk_int);
-        tblRow.setAttribute("data-value", code_value);
-// ---  add EventListener to tblRow
-        tblRow.addEventListener("click", function() {ModSelectExamyear_SelectItem(tblRow)}, false )
-// ---  add hover to tblRow
-        add_hover(tblRow);
-// ---  highlight clicked row
-        //if (is_selected_pk){ tblRow.classList.add(cls_selected)}
-// ---  add first td to tblRow.
-        let td = tblRow.insertCell(-1);
-// --- add a element to td., necessary to get same structure as item_table, used for filtering
-        let el_div = document.createElement("div");
-            el_div.innerText = code_value;
-            el_div.classList.add("tw_090", "px-4", "pointer_show" )
-        td.appendChild(el_div);
-// --- add second td to tblRow with icon locked, published or activated.
-        td = tblRow.insertCell(-1);
-        el_div = document.createElement("div");
-            el_div.classList.add("tw_032", "stat_1_6")
-        td.appendChild(el_div);
-    }  // ModSelectExamyear_FillSelectRow
-
-//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-// +++++++++++++++++ MODAL SELECT SCHOOL OR DEPARTMENT ++++++++++++++++++++
+// +++++++++++++++++ MODAL SELECT EXAMYEAR, SCHOOL OR DEPARTMENT ++++++++++++++++++++
 //=========  ModSelSchOrDep_Open  ================ PR2020-10-27 PR2020-11-17
     function ModSelSchOrDep_Open(tblName) {
         //console.log( "===== ModSelSchOrDep_Open ========= ");
@@ -2355,9 +2244,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let examyer_txt = "";
         if (setting_dict.requsr_examyear_text){
-           examyer_txt = loc.Exam_year + " " + setting_dict.requsr_examyear_text
+           examyer_txt = loc.Examyear + " " + setting_dict.requsr_examyear_text
         } else {
-            const examyear_str = (loc.Exam_year) ? loc.Exam_year.toLowerCase() : "-";
+            const examyear_str = (loc.Examyear) ? loc.Examyear.toLowerCase() : "-";
             examyer_txt = "<" + loc.No__ + examyear_str +  loc.__selected + ">"
         }
         if(el_hdrbar_examyear) { el_hdrbar_examyear.innerText = examyer_txt};

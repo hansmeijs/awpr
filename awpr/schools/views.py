@@ -350,157 +350,6 @@ def copy_tables_from_last_year(new_examyear_instance, request):
 
 #################################################
 
-
-# PR2018-05-14
-@method_decorator([login_required], name='dispatch')
-class ExamyearSelectView(View):
-
-    def get(self, request, pk):
-        #logger.debug('ExamyearSelectView get: ' + str(request) + ' pk: ' + str(pk))
-        if pk is not None:
-            # PR2018-05-18 getting examyear from object not necessary, but let it stay for safety
-            try:
-                exyear = Examyear.objects.get(id=pk)
-                request.user.examyear = exyear
-                request.user.save(self.request)
-                #logger.debug('ExamyearSelectView exyear saved: ' + str(request.user.examyear.id))
-
-            finally:
-                return redirect('home_url')
-        return redirect('home_url')
-
-
-# PR2018-05-10 PR2018-04-16
-@method_decorator([login_required], name='dispatch')
-class ExamyearAddView(CreateView):
-    # the following lines are not necessary:
-    # model = Examyear
-    # form_class = ExamyearAddForm
-    # template_name = 'examyear_add.html' # without template_name Django searches for user_form.html
-    # pk_url_kwarg = 'pk'
-    # context_object_name = 'ExamyearAddForm' # "context_object_name" changes the original parameter name "object_list"
-
-    def get(self, request, *args, **kwargs):
-        #logger.debug('ExamyearAddView get request: ' + str(request))
-        # permission:   user.is_authenticated AND user.is_role_insp_or_admin_or_system
-        form = ExamyearAddForm(request=request)
-
-        # set headerbar parameters PR 2018-08-06
-        _param = awpr_menu.get_headerbar_param(request, {
-            'form': form,
-            'display_school': True,
-            'override_school': request.user.role_str})
-        #logger.debug('ExamyearAddView def get headerbar_param: ' + str(headerbar_param))
-
-        # render(request, template_name, context=None (A dictionary of values to add to the template context), content_type=None, status=None, using=None)
-        return render(request, 'examyear_add.html', _param)
-
-    def post(self, request, *args, **kwargs):
-        self.request = request
-        #logger.debug('ExamyearAddView post self.request: ' + str(self.request))
-
-        form = ExamyearAddForm(self.request.POST, request=self.request) # this one doesn't work: form = ExamyearAddForm(request=request)
-
-        if form.is_valid():
-            #logger.debug('ExamyearAddView post is_valid form.data: ' + str(form.data))
-
-            # save examyear without commit
-            self.new_examyear = form.save(commit=False)
-
-            # ======  save field 'Country'  ============
-            # initial value of 'country' is set in ExamyearAddForm: self.initial['country'] = request.user.country.id
-
-            self.new_examyear.published = False
-            self.new_examyear.locked = False
-
-            self.new_examyear.modified_by = self.request.user
-            # PR2018-06-07 datetime.now() is timezone naive, whereas timezone.now() is timezone aware, based on the USE_TZ setting
-            self.new_examyear.modified_at = timezone.now()
-
-            # save examyear with commit
-            # PR2018-08-04 debug: don't forget argument (request), otherwise gives error 'tuple index out of range' at request = args[0]
-            self.new_examyear.save(request=self.request)
-
-            self.new_examyear_id = self.new_examyear.id
-            self.modified_at = timezone.now()
-
-            # copy general tables from previous examyear # PR2019-02-23
-            sf.copy_deps_from_prev_examyear(request.user, self.new_examyear)
-            sf.copy_levels_from_prev_examyear(request.user, self.new_examyear)
-            sf.copy_sectors_from_prev_examyear(request.user, self.new_examyear)
-            sf.copy_subjecttypes_from_prev_examyear(request.user, self.new_examyear)
-            sf.copy_subjects_from_prev_examyear(request.user, self.new_examyear)
-
-
-            #elif self.request.user.is_role_school_perm_admin:
-
-            # TODO: let schools copy their own school to the new examyear
-            # TODO: schools can only be added when new examyear is published > filter in form new_examyear
-            # add info from previous examyear:
-            #  - inpection / system:
-                    # adds dep, level, sector, scheme, subjects,
-                    # from is_template school: scheme_items, packages
-                    # examyear not yet published
-            # school: only after examyear is pubvlished:
-                    # from own school: school, scheme_items, packageitems
-                    # students from last year
-
-            # ======  Add schools from previous examyear from this country to table school with new examyear  ============
-
-            """
-            # if previous examyear exists: copy schools
-            if self.prev_examyear:
-            self.prev_examyear_id = self.prev_examyear.id
-            self.new_examyear_id = self.new_examyear.id
-            self.country_id = self.new_examyear.country_id
-            self.modified_by_id = self.new_examyear.modified_by_id
-            self.modified_at = timezone.now()
-            cursor = connection.cursor()
-            cursor.execute(
-                '
-                INSERT INTO schools_school (examyear_id, schoolbase_id, name, code, abbrev, article, dep_list, locked, modified_by_id, modified_at) ' + \
-                'SELECT %s AS examyear_id, sb.id, sb.name, sb.code, sb.abbrev, sb.article, sb.dep_list, False AS locked, %s AS modified_by_id, %s AS modified_at  ' + \
-                'FROM schools_school AS sb WHERE sb.examyear_id = %s;',
-                [self.new_examyear_id, self.modified_by_id, self.modified_at, self.prev_examyear_id])
-            connection.commit()
-
-
-            #PR2018-08-08 This took way too long:
-            subjectdefaults = Subjectdefault.objects.filter(country=examyear.country)
-
-            for subjectdefault in subjectdefaults:
-                subject_new = Subject(
-                    examyear_id=examyear.id,
-                    subjectdefault_id=subjectdefault.id,
-                    name=subjectdefault.name,
-                    abbrev=subjectdefault.abbrev,
-                    sequence=subjectdefault.sequence,
-                    dep_list=subjectdefault.dep_list,
-                    modified_by=examyear.modified_by,
-                    modified_at=examyear.modified_at
-                )
-                subject_new.save(self.request)
-
-            # ======  Add active subjectdefault from this country to table subject with new examyear  ============
-            _examyear_id = examyear.id
-            _country_id = examyear.country_id
-            _modified_by_id = examyear.modified_by_id
-            _modified_at = timezone.now()
-            cursor = connection.cursor()
-            cursor.execute(
-                'INSERT INTO subjects_subject (examyear_id, subjectdefault_id, name, abbrev, sequence, dep_list, is_active, modified_by_id, modified_at) ' + \
-                'SELECT %s AS examyear_id, sd.id, sd.name, sd.abbrev, sd.sequence, sd.dep_list, sd.is_active, %s AS modified_by_id, %s AS modified_at ' + \
-                'FROM subjects_subjectdefault AS sd WHERE sd.is_active = True AND sd.country_id = %s;',
-                [_examyear_id, _modified_by_id, _modified_at, _country_id]
-            )
-            connection.commit()
-            """
-
-            return redirect('examyears_url')
-        else:
-            """If the form is invalid, render the invalid form."""
-            return render(self.request, 'examyear_add.html', {'form': form})
-
 # === Department =====================================
 @method_decorator([login_required], name='dispatch')
 class DepartmentListView(View): # PR2018-08-11
@@ -533,7 +382,6 @@ class DepartmentSelectView(View):  # PR2018-08-24 PR2018-11-23
                 #logger.debug('request.user.depbase saved: ' + str(request.user.depbase) + ' Type: ' + str(type(request.user.depbase)))
 
         return redirect('home_url')
-
 
 
 @method_decorator([login_required], name='dispatch')
@@ -570,7 +418,7 @@ class SchoolListView(View):  # PR2018-08-25 PR2020-10-21
         #logger.debug('  =====  SchoolListView ===== ')
         #logger.debug('request: ' + str(request) + ' Type: ' + str(type(request)))
 
-        # set headerbar parameters PR2018-08-06
+# - set headerbar parameters PR2018-08-06
         page = 'schools'
         params = awpr_menu.get_headerbar_param(
             request=request,
@@ -634,7 +482,7 @@ class SchoolUploadView(View):  # PR2020-10-22
 
         #<PERMIT>
         # - only ROLE_32_ADMIN and ROLE_64_SYSTEM can change school.
-        # - only PERMIT_02_EDIT can ange schools
+        # - only PERMIT_002_EDIT can ange schools
         has_permit = False
         if request.user is not None:
             if request.user.country is not None and request.user.schoolbase is not None:
