@@ -183,10 +183,10 @@ class UserUploadView(View):
                                     else:
                                         try:
                                             instance.delete()
-                                        except:
-                                            err_dict['msg01'] = _('An error occurred. This user could not be deleted.')
-                                        else:
                                             updated_dict['deleted'] = True
+                                        except:
+                                            err_dict['msg01'] = _("User '%(val)s' can not be deleted.\nInstead, you can make the user inactive.") \
+                                                                % {'val': instance.username_sliced}
 
     # ++++  create or validate new user ++++++++++++
                         elif mode in ('create', 'validate'):
@@ -323,8 +323,8 @@ def account_activation_sent(request):
 
 # === SignupActivateView ===================================== PR2020-09-29
 def SignupActivateView(request, uidb64, token):
-    #logger.debug('  === SignupActivateView =====')
-    #logger.debug('request: ' + str(request))
+    logger.debug('  === SignupActivateView =====')
+    logger.debug('request: ' + str(request))
 
     # SignupActivateView is called when user clicks on link 'Activate your AWP-online account'
     # it returns the page 'signup_setpassword'
@@ -339,6 +339,7 @@ def SignupActivateView(request, uidb64, token):
         user = User.objects.get_or_none(pk=uid)
     except (TypeError, ValueError, OverflowError):
         user = None
+    logger.debug('user: ' + str(user))
 
     if user is None:
         update_wrap['msg_01'] = _('Sorry, we could not find your account.')
@@ -373,6 +374,8 @@ def SignupActivateView(request, uidb64, token):
 
 # - check activation_token
         activation_token_ok = account_activation_token.check_token(user, token)
+        logger.debug('activation_token_ok: ' + str(activation_token_ok))
+
         if activation_token_ok:
             update_wrap['activation_token_ok'] = activation_token_ok
             # don't activate user and company until user has submitted valid password
@@ -381,18 +384,18 @@ def SignupActivateView(request, uidb64, token):
             update_wrap['msg_01'] = _('The link to active the account is valid for 7 days and has expired.')
             update_wrap['msg_02'] = _('You cannot activate your account.')
 
-    #logger.debug('update_wrap: ' + str(update_wrap))
+    logger.debug('update_wrap: ' + str(update_wrap))
 
     if request.method == 'POST':
-        #logger.debug('request.POST' + str(request.POST))
+        logger.debug('request.POST' + str(request.POST))
         form = SetPasswordForm(user, request.POST)
 
         form_is_valid = form.is_valid()
 
         non_field_errors = af.get_dict_value(form, ('non_field_errors',))
         field_errors = [(field.label, field.errors) for field in form]
-        #logger.debug('non_field_errors' + str(non_field_errors))
-        #logger.debug('field_errors' + str(field_errors))
+        logger.debug('non_field_errors' + str(non_field_errors))
+        logger.debug('field_errors' + str(field_errors))
 
         if form_is_valid:
             user = form.save()
@@ -412,13 +415,15 @@ def SignupActivateView(request, uidb64, token):
             #login_user = authenticate(username=user.username, password=password1)
             #login(request, login_user)
             login(request, user)
-            #logger.debug('user.login' + str(user))
+            logger.debug('user.login' + str(user))
             if request.user:
                 update_wrap['msg_01'] = _("Congratulations.")
                 update_wrap['msg_02'] = _("Your account is succesfully activated.")
                 update_wrap['msg_03'] = _('You are now logged in to AWP-online.')
     else:
         form = SetPasswordForm(user)
+
+    logger.debug('update_wrap: ' + str(update_wrap))
 
     update_wrap['form'] = form
 

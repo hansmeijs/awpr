@@ -582,7 +582,7 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
             elif tblName == 'subjecttype':
                 instances = subj_mod.Subjecttype.objects.filter(examyear=sel_examyear)
 
-            logger.debug('school_depbasPk_list: ' + str(school_depbasPk_list))
+            #logger.debug('school_depbasPk_list: ' + str(school_depbasPk_list))
 
         # - loop through instances of this examyear
             for instance in instances:
@@ -595,7 +595,7 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
                         if instance_depbasePk in school_depbasPk_list:
                             add_to_list = True
                     elif instance.depbases:
-                        logger.debug('instance.depbases: ' + str(instance.depbases))
+                        #logger.debug('instance.depbases: ' + str(instance.depbases))
             # in other tables: only add if sel_depbase.pk is in depbases
                         if sel_depbase.pk in instance.depbases:
                             add_to_list = True
@@ -615,13 +615,13 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
                         if reversed_dict and instance_basePk in reversed_dict:
                             dict['excKey'] = reversed_dict[instance_basePk]
                     tbl_list.append(dict)
-                    logger.debug('dict: ' + str(dict))
+                    #logger.debug('dict: ' + str(dict))
             if tbl_list:
-                logger.debug('tbl_list: ' + str(tbl_list))
+                #logger.debug('tbl_list: ' + str(tbl_list))
                 setting_dict[tblName] = tbl_list
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-    logger.debug('setting_dict: ' + str(setting_dict))
-    logger.debug(' ---------------- end of get_stored_coldef_dict ---------------- ')
+    #logger.debug('setting_dict: ' + str(setting_dict))
+    #logger.debug(' ---------------- end of get_stored_coldef_dict ---------------- ')
     return setting_dict

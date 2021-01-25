@@ -672,14 +672,16 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         return newValue;
     }
 //========= delay  ====================================
-    //PR2019-01-13 PR2020-12-15 from https://stackoverflow.com/questions/10067094/how-does-this-delay-function-works
-    let delay = (function(){
-      let timer = 0;
-      return function(callback, ms){
-        clearTimeout (timer);
-        timer = setTimeout(callback, ms);
-     };
-    })();
+    //PR2019-01-13 PR2021-01-25 from https://stackoverflow.com/questions/10067094/how-does-this-delay-function-works
+    let delay = function(){
+    // set timer
+        let timer = 0;
+    // return setTimeout function
+        return function(callback, ms){
+            clearTimeout(timer);
+            timer = setTimeout(callback, ms);
+        };
+    };
 
 
     //////////////////////////////////

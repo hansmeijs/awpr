@@ -682,7 +682,7 @@ console.log("document.addEventListener students" )
     // ---  fill level and sector options, set select team in selectbox
             const selected_pk = null;
             const department_pk = (is_addnew) ? setting_dict.requsr_department_pk : mod_MSTUD_dict.dep_id;
-            const dep_dict = get_mapdict_from_datamap_by_tblName_pk(mimp_department_map, "department", department_pk);
+            const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", department_pk);
             const depbase_pk = dep_dict.base_id;
             const lvl_req = (dep_dict.lvl_req) ? dep_dict.lvl_req : false;
             const sct_req = (dep_dict.sct_req) ? dep_dict.sct_req : false;

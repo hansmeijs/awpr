@@ -2,7 +2,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
-console.log("document.addEventListener studentsubjects" )
     // <PERMIT> PR220-10-02
     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
     //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
@@ -621,7 +620,7 @@ console.log("document.addEventListener studentsubjects" )
                     const data_value = (fld_value) ? "1" : "0";
                     el_div.setAttribute("data-value", data_value);
                     const el_img = el_div.children[0];
-                    if (el_img) {add_or_remove_class (el_img, "tickmark_1_2", true)};
+                    if (el_img) {add_or_remove_class (el_img, "tickmark_0_0", true)};
 
                 } else if (["auth1", "auth2"].indexOf(field_name) > -1){
                     const prefix_mapped = {btn_studsubj: "subj_", btn_exemption: "exem_", btn_reex: "reex_", btn_reex3: "reex3_", btn_pok: "pok_", }

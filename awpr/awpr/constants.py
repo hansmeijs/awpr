@@ -283,6 +283,12 @@ EXAMPERIOD_OPTIONS = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam perio
                         {'value': EXAMPERIOD_SECOND, 'caption': _('Second exam period')},
                         {'value': EXAMPERIOD_THIRD, 'caption': _('Third exam period')},
                         {'value': EXAMPERIOD_EXEMPTION, 'caption': _('Exemption')}]
+
+
+def get_examperiod_caption(examperiod_int):
+    return EXAMPERIOD_CAPTION.get(examperiod_int, '')
+
+
 # options_examtype value = ecamtype, filter = examperiod PR2020-12-17
 EXAMTYPE_OPTIONS = [
     {'value': 'se', 'filter': EXAMPERIOD_FIRST, 'caption': _('School exam')},
@@ -298,8 +304,12 @@ EXAMTYPE_CAPTION = {
     'ce': _('Central exam'),
     're2': _('Re-examination'),
     're3': _('Re-examination 3rd period'),
-    'exm': _('School- / Central exam')
+    'exm': _('Exemption')
 }
+
+
+def get_examtype_caption(examtype_str):
+    return EXAMTYPE_CAPTION.get(examtype_str, '')
 
 # PR2018-11-28
 # se, pe ce, ce2, ce3, end

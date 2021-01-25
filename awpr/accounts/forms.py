@@ -82,9 +82,9 @@ class SchoolbaseAuthenticationForm(Form):
         schoolcode = self.cleaned_data.get('schoolcode')
         username = self.cleaned_data.get('username')
         password = self.cleaned_data.get('password')
-        logger.debug('schoolcode: ' + str(schoolcode))
-        logger.debug('username: ' + str(username))
-        logger.debug('password: ' + str(password))
+        #logger.debug('schoolcode: ' + str(schoolcode))
+        #logger.debug('username: ' + str(username))
+        #logger.debug('password: ' + str(password))
 
         if username is not None and password:
             # put schoolprefix in front of username PR2019-03-13
@@ -97,11 +97,11 @@ class SchoolbaseAuthenticationForm(Form):
                 username = schoolbase.prefix + username
             else:
                 username = "xxxxxx" + username
-            logger.debug('schoolbase: ' + str(schoolbase))
-            logger.debug('username: ' + str(username))
+            #logger.debug('schoolbase: ' + str(schoolbase))
+            #logger.debug('username: ' + str(username))
 
             self.user_cache = authenticate(self.request, username=username, password=password)
-            logger.debug('self.user_cache: ' + str(self.user_cache))
+            #logger.debug('self.user_cache: ' + str(self.user_cache))
 
             # PR2020-10-22 from https://stackoverflow.com/questions/46459258/how-to-inform-a-user-that-he-is-not-active-in-django-login-view
             if self.user_cache is None:

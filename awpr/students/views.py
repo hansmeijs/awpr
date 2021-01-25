@@ -1321,8 +1321,6 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
 # - full name to rows
     if student_rows:
         for row in student_rows:
-            logger.debug('row', row)
-
             first_name = row.get('firstname')
             last_name = row.get('lastname')
             prefix = row.get('prefix')

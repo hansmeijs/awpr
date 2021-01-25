@@ -486,7 +486,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= UploadNewUser  ============= PR2020-08-02 PR2020-08-15
    function UploadNewUser(args) {
-        //console.log("=== UploadNewUser === args: ", args);
+        console.log("=== UploadNewUser === ");
+        console.log("args: ", args);
         let mode = null, init_time_stamp = null, skip = false;
 
         // send schoolbase, username and email to server after 1000 ms
@@ -494,7 +495,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // checked by comparing the timestamp
         // args is either 'save' or a number based on time_stamp
         // time_stamp gets new value 'now' whenever a 'keyup' event occurs
-        // UploadNewUser has a time-out of 1000 ms
+        // UploadNewUser has a time-out of 1500 ms
         // init_time_stamp is the value of time_stamp at the time this 'keyup' event occurred
         // when time_stamp = init_time_stamp, it means that there are no new keyup events within the time-out period
 
@@ -553,8 +554,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
-                    //console.log( "response");
-                    //console.log( response);
+                    console.log( "response");
+                    console.log( response);
 
                     el_loader.classList.add(cls_visible_hide);
 
@@ -796,7 +797,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUA_info_footer01.classList.add(cls_hide);
             el_MUA_info_footer02.classList.add(cls_hide);
 
-    // ---  hide btn delete when addnew moe
+    // ---  hide btn delete when addnew mode
             add_or_remove_class(el_MUA_btn_delete, cls_hide, is_addnew)
 
     // ---  disable btn submit
@@ -900,7 +901,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function MUA_SetMsgElements(response){
         console.log( "===== MUA_SetMsgElements  ========= ");
 
-
         const err_dict = ("msg_err" in response) ? response.msg_err : {}
         const validation_ok = get_dict_value(response, ["validation_ok"], false);
     console.log( "err_dict", err_dict);
@@ -960,9 +960,13 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUA_btn_submit.disabled = !validation_ok;
             if(validation_ok){el_MUA_btn_submit.focus()}
         }
+
 // ---  show message in footer when no error and no ok msg
         add_or_remove_class(el_MUA_info_footer01, cls_hide, !validation_ok )
         add_or_remove_class(el_MUA_info_footer02, cls_hide, !validation_ok )
+
+// ---  hide submit btn when is_ok
+        add_or_remove_class(el_MUA_btn_submit, cls_hide, is_ok)
 
 // ---  set text on btn cancel
         const el_MUA_btn_cancel = document.getElementById("id_MUA_btn_cancel");
@@ -1044,7 +1048,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // abort if within that period a new value is entered.
             // checked by comparing the timestamp
             time_stamp = Number(Date.now())
-            setTimeout(UploadNewUser, 1000, time_stamp);
+            setTimeout(UploadNewUser, 1500, time_stamp);  // time_stamp is an argument passed to the function UploadNewUser.
         }
     }; // MUA_InputKeyup
 
