@@ -450,7 +450,7 @@ def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_de
 
                 logger.debug('schoolsetting_dict: ' + str(schoolsetting_dict))
         else:
-            schoolsetting_dict[setting_key]  = sch_mod.Schoolsetting.get_jsonsetting(setting_key, sel_schoolbase)
+            schoolsetting_dict[setting_key] = sel_schoolbase.get_setting(setting_key)
     return schoolsetting_dict
 
 
@@ -491,7 +491,7 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
 
 ##########################################
 # - get Schoolsetting from sel_schoolbase, not from request.user.schoolbase
-    stored_settings_dict = sch_mod.Schoolsetting.get_jsonsetting(setting_key, sel_schoolbase)
+    stored_settings_dict = sel_schoolbase.get_setting(setting_key)
 
     noheader = False
     worksheetname = ''

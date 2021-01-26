@@ -200,6 +200,7 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['Click_to_register_new_user'] = _('Click the submit button to register the new user.')
         dict['We_will_send_an_email_to_the_new_user'] = _('We will send an email to the new user, with a link to create a password and activate the account.')
+
         dict['Activationlink_expired'] = _('The link to active the account is valid for 7 days and has expired.')
         dict['We_will_resend_an_email_to_user'] = _('We will email a new activation link to user')
         dict['Activation_email_not_sent'] = _('The activation email has not been sent.')

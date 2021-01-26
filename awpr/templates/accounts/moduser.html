@@ -32,35 +32,29 @@
 <!-- modal_body_right contains input elements -->
                         <div id="id_div_form_controls" class="modal_body_right mx-2 my-2">
                             <div class="content_subheader_left mx-1 tab_show tab_addnew_may_select_school tab_addnew_noschool tab_update display_hide">
-                                <label for="id_MUA_schoolname" class="tsa_margin_form_label">{% trans 'School' %}:</label>
+                                <label for="id_MUA_schoolname" class="awp_margin_form_label">{% trans 'School' %}:</label>
                                 <input id="id_MUA_schoolname" type="text" data-field="schoolname" class="form-control"
                                     autocomplete="off" ondragstart="return false;" ondrop="return false;"
                                     placeholder="{% trans 'Type a few letters and select a school in the list ...'%}">
                             </div>
-                            <div class="content_subheader_left mx-1">
-                                <small id="id_MUA_msg_schoolname" class="text-danger tsa_margin_form_label"></small>
-                            </div>
                             <div id="id_msg_container" class="border_bg_valid mx-4 tab_show tab_ok display_hide">
-                                <p id="id_msg_01" class="tsa_margin_form_labelXX mx-4"></p>
-                                <p id="id_msg_02" class="tsa_margin_form_labelXX mx-4"></p>
-                                <p id="id_msg_03" class="tsa_margin_form_label mx-4"></p>
-                                <p id="id_msg_04" class="tsa_margin_form_label mx-4 mb-4"></p>
+                                <p id="id_msg_01" class="mx-4"></p>
+                                <p id="id_msg_02" class="mx-4"></p>
+                                <p id="id_msg_03" class="mx-4"></p>
+                                <p id="id_msg_04" class="mx-4 mb-4"></p>
                             </div>
 
-                            <div id="id_MUA_loader" class="image_container visibility_hide">
-                                <img  src="{% static 'img/loader.gif' %}" height="24" width="24">
-                            </div>
                              <div class="tab_show tab_addnew_may_select_school tab_addnew_noschool tab_update display_hide">
                                 <div class="content_subheader_left mx-1">
-                                    <label for="id_MUA_username" class="mx-2 ">{% trans 'Username' %}:</label>
+                                    <label for="id_MUA_username" class="awp_margin_form_label">{% trans 'Username' %}:</label>
                                     <input id="id_MUA_username" type="text" data-field="username"
                                     autocomplete="off" ondragstart="return false;" ondrop="return false;" class="form-control">
                                 </div>
                                 <div class="content_subheader_left mx-1">
-                                    <small id="id_MUA_msg_username" class="text-danger tsa_margin_form_label"></small>
+                                    <small id="id_MUA_msg_username" class="text-danger awp_margin_form_label"></small>
                                 </div>
                                 <div class="content_subheader_left mx-1">
-                                    <label for="id_MUA_last_name" class="tsa_margin_form_label">{% trans 'Name' %}:</label>
+                                    <label for="id_MUA_last_name" class="awp_margin_form_label">{% trans 'Name' %}:</label>
                                     <input id="id_MUA_last_name" type="text" data-field="last_name"
                                     autocomplete="off" ondragstart="return false;" ondrop="return false;" class="form-control">
                                 </div>
@@ -68,21 +62,28 @@
                                     <small id="id_MUA_msg_last_name" class="tsa_margin_form_label"></small>
                                 </div>
                                 <div class="content_subheader_left mx-1 ">
-                                    <label for="id_MUA_email" class="tsa_margin_form_label">{% trans 'Email address' %}:</label>
+                                    <label for="id_MUA_email" class="awp_margin_form_label">{% trans 'Email address' %}:</label>
                                     <input id="id_MUA_email" type="text" data-field="email"
                                     autocomplete="off" ondragstart="return false;" ondrop="return false;" class="form-control">
                                 </div>
                                 <div class="content_subheader_left mx-1">
-                                    <small id="id_MUA_msg_email" class="tsa_margin_form_label"></small>
+                                    <small id="id_MUA_msg_email" class="awp_margin_form_label"></small>
                                 </div>
-                                <div class="content_header mx-2 mt-2">
-                                    <div class="content_subheader_left mx-1">
-                                        <small id="id_info_footer01" ></small>
+                                 <div id="id_MUA_footer_container" class="display_hide">
+                                    <div class="content_header mx-2 mt-2">
+                                        <div class="content_subheader_left mx-1">
+                                            <small id="id_MUA_footer01" >{% trans "Click the submit button to register the new user." %}</small>
+                                        </div>
+                                    </div>
+                                    <div class="content_header mx-2">
+                                        <div class="content_subheader_left mx-1">
+                                            <small id="id_MUA_footer02" >{% trans "We will send an email to the new user, with a link to create a password and activate the account." %}</small>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="content_header mx-2">
-                                    <div class="content_subheader_left mx-1">
-                                        <small id="id_info_footer02" ></small>
+                                <div id="id_MUA_loader" class="display_hide">
+                                    <div class="image_container">
+                                        <img  src="{% static 'img/loader.gif' %}" height="24" width="24">
                                     </div>
                                 </div>
                             </div>

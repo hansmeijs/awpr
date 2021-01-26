@@ -79,8 +79,10 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUA_btn_delete.addEventListener("click", function() {ModConfirmOpen("delete")}, false )
         const el_MUA_btn_submit = document.getElementById("id_MUA_btn_submit");
             el_MUA_btn_submit.addEventListener("click", function() {UploadNewUser("save")}, false )
-        const el_MUA_info_footer01 = document.getElementById("id_info_footer01")
-        const el_MUA_info_footer02 = document.getElementById("id_info_footer02")
+        const el_MUA_footer_container = document.getElementById("id_MUA_footer_container")
+        const el_MUA_footer01 = document.getElementById("id_MUA_footer01")
+        const el_MUA_footer02 = document.getElementById("id_MUA_footer02")
+        const el_MUA_loader = document.getElementById("id_MUA_loader");
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_confirm_header");
@@ -151,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             error: function (xhr, msg) {
 // ---  hide loader
-                document.getElementById("id_loader").classList.add(cls_visible_hide)
+                el_loader.classList.add(cls_visible_hide)
                 console.log(msg + '\n' + xhr.responseText);
                 alert(msg + '\n' + xhr.responseText);
             }
@@ -290,8 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         el_filter.setAttribute("ondrop", "return false;");
                     } else if (["toggle", "activated", "inactive"].indexOf(filter_tag) > -1) {
                         // default empty icon necessary to set pointer_show
-                        // default empty icon necessary to set pointer_show
-                        append_background_class(el_filter,"tickmark_0_0");
+                        append_background_class(el_filter, "tickmark_0_0");
                     }
 
 // --- add width, text_align
@@ -370,6 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (field_name.slice(0, 4) === "perm") {
                     el_td.addEventListener("click", function() {UploadToggle(el_td)}, false)
                     let el_div = document.createElement("div");
+                        el_div.classList.add("inactive_1_2")
                         el_td.appendChild(el_div);
                     add_hover(el_td);
                 } else if ( field_name === "activated") {
@@ -410,23 +412,18 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("=========  UpdateField =========");
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
-            const fld_value = map_dict[field_name];
             if(field_name){
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
                 } else if (["sb_code", "username", "last_name", "email", "employee_code"].indexOf(field_name) > -1){
                     el_div.innerText = map_dict[field_name];
                 } else if (field_name.slice(0, 4) === "perm") {
-                    const is_true = (map_dict[field_name]) ? map_dict[field_name] : false;
-                    const permit_int = (field_name === "perm_edit") ? 2 : (field_name === "perm_auth1") ? 4 :
-                                       (field_name === "perm_auth2") ? 8 : (field_name === "perm_auth3") ? 16 :
-                                       (field_name === "perm_admin") ? 64 : 0;
-                    const permit_value = (is_true) ? permit_int : 0;
+                    // map_dict[field_name] example: perm_admin: true
+                    const permit_bool = (map_dict[field_name]) ? map_dict[field_name] : false;
+                    el_div.setAttribute("data-permit_bool", (permit_bool) ? "1" : 0 );
 
-                    console.log("field_name", field_name, "permit_value", permit_value);
-                    el_div.setAttribute("data-value", permit_value);
-                    let el_icon = el_div.children[0];
-                    if(el_icon){add_or_remove_class (el_icon, "tickmark_1_2", is_true)};
+                    const img_class = (permit_bool) ? "tickmark_2_2" : "tickmark_0_0";
+                    b_refresh_icon_class(el_div, img_class)
 
                 } else if ( field_name === "activated") {
                     const is_activated = (map_dict[field_name]) ? map_dict[field_name] : false;
@@ -454,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const is_inactive = !( (map_dict[field_name]) ? map_dict[field_name] : false );
                     el_div.setAttribute("data-value", ((is_inactive) ? 1 : 0) );
                     const img_class = (is_inactive) ? "inactive_1_3" : "inactive_0_2";
-                    refresh_background_class(el_div, img_class)
+                    b_refresh_icon_class(el_div, img_class)
                     //let el_icon = el_div.children[0];
                     //if(el_icon){add_or_remove_class (el_icon, "inactive_1_3", is_inactive, "inactive_0_2")};
 // ---  add title
@@ -487,10 +484,11 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= UploadNewUser  ============= PR2020-08-02 PR2020-08-15
    function UploadNewUser(args) {
         console.log("=== UploadNewUser === ");
-        console.log("args: ", args);
+        console.log("args:       ", args);
+        //console.log("time_stamp: ", time_stamp);
         let mode = null, init_time_stamp = null, skip = false;
 
-        // send schoolbase, username and email to server after 1000 ms
+        // send schoolbase, username and email to server after 1500 ms
         // abort if within that period a new value is entered.
         // checked by comparing the timestamp
         // args is either 'save' or a number based on time_stamp
@@ -507,6 +505,10 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             mode = args
         }
+        if(!skip) {
+            skip = !(el_MUA_username.value && el_MUA_last_name.value && el_MUA_email.value)
+        }
+        //console.log("skip: ", skip);
         if(!skip){
             // mod_dict modes are:  addnew, select, update
             let url_str = url_user_upload
@@ -520,31 +522,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  create mod_dict
             let upload_dict = {}
             if (upload_mode === "resend_activation_email" ){
-                upload_dict = { id: {pk: map_dict.id,
-                                   ppk: map_dict.schoolbase_pk,
-                                   table: "user",
-                                   mode: upload_mode,
-                                   mapid: "user_" + map_dict.id},
-                              username: {value: map_dict.username}
+                upload_dict = { user_pk: map_dict.id,
+                               schoolbase_pk: map_dict.schoolbase_pk,
+                               mode: upload_mode,
+                               mapid: "user_" + map_dict.id,
+                                username: {value: map_dict.username}
                               };
             } else if (upload_mode === "update" ){
 
             } else if (["validate", "create"].indexOf(upload_mode) > -1){
-                upload_dict = { id: {ppk: mod_MUA_dict.user_schoolbase_pk,
-                                   table: "user",
-                                   mode: upload_mode},
-                              username: {value: el_MUA_username.value, update: true},
-                              last_name: {value: el_MUA_last_name.value, update: true},
-                              email: {value: el_MUA_email.value, update: true}
+                upload_dict = { schoolbase_pk: mod_MUA_dict.user_schoolbase_pk,
+                                mode: upload_mode,
+                                username: el_MUA_username.value,
+                                last_name: el_MUA_last_name.value,
+                                email: el_MUA_email.value
                               };
             }
             //console.log("upload_dict: ", upload_dict);
 
             // must loose focus, otherwise green / red border won't show
             //el_input.blur();
-
-            const el_loader =  document.getElementById("id_MUA_loader");
-            el_loader.classList.remove(cls_visible_hide);
+            // show loader, hide msg_info
+            el_MUA_loader.classList.remove(cls_hide);
+            el_MUA_footer_container.classList.add(cls_hide);
 
             const parameters = {"upload": JSON.stringify (upload_dict)}
             let response = "";
@@ -557,7 +557,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( "response");
                     console.log( response);
 
-                    el_loader.classList.add(cls_visible_hide);
+                    // hide loader
+                    el_MUA_loader.classList.add(cls_hide);
 
                     MUA_SetMsgElements(response);
 
@@ -579,9 +580,11 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= UploadToggle  ============= PR2020-07-31
     function UploadToggle(el_input) {
         console.log( " ==== UploadToggle ====");
+        console.log( "el_input", el_input);
 
         mod_dict = {};
         // <PERMIT> PR2020-10-12
+        // - only perm_admin and perm_system can change users
         if(setting_dict.requsr_perm_admin || setting_dict.requsr_perm_system){
             const tblRow = get_tablerow_selected(el_input);
             if(tblRow){
@@ -591,35 +594,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if(!isEmpty(map_dict)){
                     const fldName = get_attr_from_el(el_input, "data-field");
-                    let input_value = get_attr_from_el_int(el_input, "data-value");
-                    let has_permit = (!!input_value);
+                    let data_permit_bool = get_attr_from_el(el_input, "data-permit_bool");
+                    let permit_bool = (data_permit_bool === "1");
 
-            console.log( "map_dict", map_dict);
-            console.log( "fldName", fldName, "input_value", input_value);
                     const is_request_user = (setting_dict.requsr_pk && setting_dict.requsr_pk === map_dict.id)
 
-            console.log( "is_request_user", is_request_user);
-            console.log( "has_permit", has_permit);
     // show message when sysadmin tries to delete sysadmin permit
-                    if(fldName === "perm_admin" && is_request_user && has_permit ){
+                    if(fldName === "perm_admin" && is_request_user && permit_bool ){
                         ModConfirmOpen("permission_sysadm", el_input)
                     } else {
 
-    // ---  toggle permission value of el_input
-                        has_permit = (!has_permit);
-                        if(input_value){
-                            input_value = 0
-                        } else {
-                            const cell_permit = fldName.slice(4, 7);
-                            input_value = (Number(cell_permit)) ? Number(cell_permit) : 0;
-    // --- user cannot have perm08_auth1 / auth2 / auth3 at the same time - resert other auth fields
-                            // moved to server, because of asynchrone ajax it is still possible to set both PR2020-10-12
-                        }
-    // ---  put new value in el_input attribute 'data-value'
-                        el_input.setAttribute("data-value", input_value)
+    // ---  toggle permission el_input
+                        permit_bool = (!permit_bool);
+                        console.log( "new permit_bool", permit_bool);
+    // ---  put new permission in el_input
+                        el_input.setAttribute("data-permit_bool", permit_bool)
     // ---  change icon, before uploading
-                        let el_icon = el_input.children[0];
-                        if(el_icon){add_or_remove_class (el_icon, "tickmark_1_2", input_value)};
+                        const img_class = (permit_bool) ? "tickmark_1_2" : "tickmark_0_0";
+                        b_refresh_icon_class(el_input, img_class)
 
     // ---  loop through row cells to get value of permissions.
                         // Don't get them from map_dict, might not be correct while changing permissions
@@ -633,12 +625,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
 
     // ---  upload changes
-                        const upload_dict = { id: {pk: map_dict.id,
-                                                   ppk: map_dict.country_id,
-                                                   table: "user",
-                                                   mode: "update",
-                                                   mapid: map_id},
-                                              permits: {field: fldName, value: has_permit, update: true}};
+                        const upload_dict = { user_pk: map_dict.id,
+                                              schoolbase_pk: map_dict.schoolbase_id,
+                                              mode: "update",
+                                              mapid: map_id,
+                                              permits: {field: fldName, value: permit_bool, update: true}};
                         UploadChanges(upload_dict, url_user_upload);
                     }
                 }  //  if(!isEmpty(map_dict)){
@@ -792,10 +783,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if(el_focus){setTimeout(function (){el_focus.focus()}, 50)};
 
     // ---  set text and hide info footer
-            el_MUA_info_footer01.innerText = loc.Click_to_register_new_user;
-            el_MUA_info_footer02.innerText = loc.We_will_send_an_email_to_the_new_user;
-            el_MUA_info_footer01.classList.add(cls_hide);
-            el_MUA_info_footer02.classList.add(cls_hide);
+            //el_MUA_footer01.innerText = loc.Click_to_register_new_user;
+            //el_MUA_footer02.innerText = loc.We_will_send_an_email_to_the_new_user;
+            el_MUA_footer_container.classList.add(cls_hide);
+
+    // ---  hide loader
+            el_MUA_loader.classList.add(cls_hide);
 
     // ---  hide btn delete when addnew mode
             add_or_remove_class(el_MUA_btn_delete, cls_hide, is_addnew)
@@ -867,7 +860,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MUA_ResetElements  ============= PR2020-08-03
     function MUA_ResetElements(also_remove_values){
-        console.log( "===== MUA_ResetElements  ========= ");
+        //console.log( "===== MUA_ResetElements  ========= ");
 // ---  loop through input elements
         const fields = ["username", "last_name", "email", "schoolname"]
         for (let i = 0, field, el_input, el_msg; field = fields[i]; i++) {
@@ -893,24 +886,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_msg.classList.remove("text-danger")
             }
         }
-        el_MUA_info_footer01.classList.add(cls_hide);
-        el_MUA_info_footer02.classList.add(cls_hide);
+        el_MUA_footer_container.classList.add(cls_hide);
     }  // MUA_ResetElements
 
 //========= MUA_SetMsgElements  ============= PR2020-08-02
     function MUA_SetMsgElements(response){
-        console.log( "===== MUA_SetMsgElements  ========= ");
+        //console.log( "===== MUA_SetMsgElements  ========= ");
 
         const err_dict = ("msg_err" in response) ? response.msg_err : {}
         const validation_ok = get_dict_value(response, ["validation_ok"], false);
-    console.log( "err_dict", err_dict);
+    //console.log( "err_dict", err_dict);
 
         const el_msg_container = document.getElementById("id_msg_container")
         let err_save = false;
         let is_ok = ("msg_ok" in response);
         if (is_ok) {
             const ok_dict = response["msg_ok"];
-    console.log( "ok_dict", ok_dict);
+    //console.log( "ok_dict", ok_dict);
             document.getElementById("id_msg_01").innerText = get_dict_value(ok_dict, ["msg01"]);
             document.getElementById("id_msg_02").innerText = get_dict_value(ok_dict, ["msg02"]);
             document.getElementById("id_msg_03").innerText = get_dict_value(ok_dict, ["msg03"]);
@@ -940,9 +932,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 for (let i = 0, field; field = fields[i]; i++) {
                     const msg_err = get_dict_value(err_dict, [field]);
                     const msg_info = loc.msg_user_info[i];
-        console.log( "-----------field", field);
-        console.log( "msg_err", msg_err);
-        console.log( "msg_info", msg_info);
+        //console.log( "-----------field", field);
+        //console.log( "msg_err", msg_err);
+        //console.log( "msg_info", msg_info);
                     let el_input = document.getElementById("id_MUA_" + field);
 
                     const must_blur = ( (!!msg_err && !el_input.classList.contains("border_bg_invalid")) ||
@@ -962,8 +954,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
 // ---  show message in footer when no error and no ok msg
-        add_or_remove_class(el_MUA_info_footer01, cls_hide, !validation_ok )
-        add_or_remove_class(el_MUA_info_footer02, cls_hide, !validation_ok )
+        add_or_remove_class(el_MUA_footer_container, cls_hide, !validation_ok )
 
 // ---  hide submit btn when is_ok
         add_or_remove_class(el_MUA_btn_submit, cls_hide, is_ok)
@@ -1000,13 +991,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MUA_InputSchoolname  ================ PR2020-09-24 PR2021-01-01
     function MUA_InputSchoolname(el_input, event_key) {
-        console.log( "===== MUA_InputSchoolname  ========= ");
-        console.log( "event_key", event_key);
+        //console.log( "===== MUA_InputSchoolname  ========= ");
+        //console.log( "event_key", event_key);
 
         if(el_input){
 // ---  filter rows in table select_school
             const filter_dict = MUA_Filter_SelectRows(el_input.value);
-        console.log( "filter_dict", filter_dict);
+            //console.log( "filter_dict", filter_dict);
 // ---  if filter results have only one school: put selected school in el_MUA_schoolname
             const selected_pk = Number(filter_dict.selected_pk);
             if (selected_pk) {
@@ -1029,26 +1020,34 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "===== MUA_InputKeyup  ========= ");
         console.log( "event_key", event_key);
 
+        const fldName = get_attr_from_el(el_input, "data-field");
         if(el_input){
-            const fldName = get_attr_from_el(el_input, "data-field");
-            let field_value = el_input.value;
-        console.log( "fldName", fldName);
-        console.log( "field_value", field_value);
-            // fldName is 'username', 'last_name' or 'email' . fldName "schoolname" is handled in MUA_InputSchoolname
-            if (fldName === "username" && field_value){
-                field_value = field_value.replace(/, /g, "_"); // replace comma or space with "_"
-                field_value = replaceChar(field_value)
-                if (field_value !== el_input.value) { el_input.value = field_value}
-            }
-            mod_MUA_dict[fldName] = (field_value) ? field_value : null
-            mod_MUA_dict["skip_validate_" + fldName] = false;
+            if(event_key === "Shift"){
+                // pass
+            } else if(event_key === "Enter" && fldName === "username"){
+                el_MUA_last_name.focus();
+            } else if(event_key === "Enter" && fldName === "last_name"){
+                el_MUA_email.focus();
+            } else {
+                let field_value = el_input.value;
+            console.log( "fldName", fldName);
+            console.log( "field_value", field_value);
+                // fldName is 'username', 'last_name' or 'email' . fldName "schoolname" is handled in MUA_InputSchoolname
+                if (fldName === "username" && field_value){
+                    field_value = field_value.replace(/, /g, "_"); // replace comma or space with "_"
+                    field_value = replaceChar(field_value)
+                    if (field_value !== el_input.value) { el_input.value = field_value}
+                }
+                mod_MUA_dict[fldName] = (field_value) ? field_value : null
+                mod_MUA_dict["skip_validate_" + fldName] = false;
 
-            MUA_ResetElements();
-            // send schoolbase, username and email to server after 1000 ms
-            // abort if within that period a new value is entered.
-            // checked by comparing the timestamp
-            time_stamp = Number(Date.now())
-            setTimeout(UploadNewUser, 1500, time_stamp);  // time_stamp is an argument passed to the function UploadNewUser.
+                MUA_ResetElements();
+                // send schoolbase, username and email to server after 1000 ms
+                // abort if within that period a new value is entered.
+                // checked by comparing the timestamp
+                time_stamp = Number(Date.now())
+                setTimeout(UploadNewUser, 1500, time_stamp);  // time_stamp is an argument passed to the function UploadNewUser.
+            }
         }
     }; // MUA_InputKeyup
 
@@ -1259,11 +1258,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
 // ---  Upload Changes
-        let upload_dict = { id: {pk: mod_dict.user_pk,
-                                 ppk: mod_dict.user_ppk,
-                                 table: "user",
-                                 mode: mod_dict.mode,
-                                 mapid: mod_dict.mapid}};
+        let upload_dict = { user_pk: mod_dict.user_pk,
+                             schoolbase_pk: mod_dict.user_ppk,
+                             mode: mod_dict.mode,
+                             mapid: mod_dict.mapid};
         if (mod_dict.mode === "inactive") {
             upload_dict.is_active = {value: mod_dict.new_isactive, update: true}
         };

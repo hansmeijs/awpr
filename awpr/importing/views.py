@@ -472,11 +472,7 @@ def ImportData(ws_name, row_data, excel_data, mapped, sel_examyear, request):  #
                     abbrev = str(row_data[3]) if row_data[3] else None
                     article = str(row_data[4]) if row_data[4] else None
                     depbases = get_depbase_id_list_from_nameslist(row_data[5], mapped)
-                    is_template = True if str(row_data[6]) == "1" else False
-                # is_template stores the examyear.id. In that way there can only be one template per examyear / country
-                    template_examyear_int = None
-                    if is_template and sel_examyear:
-                        template_examyear_int = sel_examyear.pk
+                    # is_template = True if str(row_data[6]) == "1" else False
 
                     # PR2018-04-28 debug: don't forget de brackets when creating an instance of the class
                     school = sch_mod.School(
@@ -485,8 +481,7 @@ def ImportData(ws_name, row_data, excel_data, mapped, sel_examyear, request):  #
                         name=name,
                         abbrev=abbrev,
                         article=article,
-                        depbases=depbases,
-                        istemplate=template_examyear_int
+                        depbases=depbases
                     )
                     logger.debug('school: ' + str(school))
                     school.save(request=request)

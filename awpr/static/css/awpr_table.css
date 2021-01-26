@@ -960,7 +960,9 @@ aXX:hover{
 .tsa_margin_form_label {
     margin: 16px 8px 4px 8px; /* mx-2 = .5 rem, mx-1 = .25 rem, 1 rem = 16 px  <top><right><bottom><left> */
 }
-
+.awp_margin_form_label {
+    margin: 8px 8px 4px 8px; /* mx-2 = .5 rem, mx-1 = .25 rem, 1 rem = 16 px  <top><right><bottom><left> */
+}
 .tsa_margin_top_72 {
     /* margin: <top><right><bottom><left> */
    margin-top: 72px

@@ -61,7 +61,8 @@ class GradeListView(View):  # PR2020-12-03
         )
 
 # - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
-        acc_mod.Usersetting.set_jsonsetting('sel_page', {'page': page}, request.user)
+        if request.user:
+            request.user.set_setting('sel_page', {'page': page})
 
         return render(request, 'grades.html', params)
 

@@ -457,7 +457,7 @@ FIELDS_EXAMYEAR = ('country', 'examyear', 'published', 'locked',
                    'createdat', 'publishedat', 'lockedat', 'modifiedby', 'modifiedat')
 FIELDS_SCHOOL = ('base', 'examyear', 'name', 'abbrev', 'article', 'depbases',
                  'isdayschool', 'iseveningschool', 'islexschool',
-                 'activated', 'locked', 'activatedat', 'lockedat', 'istemplate', 'modifiedby', 'modifiedat')
+                 'activated', 'locked', 'activatedat', 'lockedat', 'modifiedby', 'modifiedat')
 
 FIELDS_SUBJECT = ('base', 'examyear', 'name', 'abbrev', 'sequence', 'depbases', 'modifiedby', 'modifiedat')
 FIELDS_STUDENT = ('base', 'school', 'department', 'level', 'sector', 'scheme', 'package',

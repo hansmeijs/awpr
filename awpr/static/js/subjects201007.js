@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  check if user has permit to view this page. If not: el_loader does not exist PR2020-10-02
     let el_loader = document.getElementById("id_loader");
     const has_view_permit = (!!el_loader);
-    // has_edit_permit gets value after downloading settings
-    let has_edit_permit = false;
+    // has_permit_edit gets value after downloading settings
+    let has_permit_edit = false;
     let has_permit_select_school = false;
 
     const cls_hide = "display_hide";
@@ -128,13 +128,10 @@ document.addEventListener('DOMContentLoaded', function() {
             el_hdrbar_department.addEventListener("click", function() {
                 t_MSESD_Open(loc, "department", department_map, setting_dict, MSESD_Response)}, false )
 
-
-
 // ---  MOD SELECT EXAM YEAR ------------------------------------
         let el_MSEY_tblBody_select = document.getElementById("id_MSEY_tblBody_select");
 // ---  MOD SELECT SCHOOL OR DEPARTMENT ------------------------------------
         let el_ModSelSchOrDep_tblBody_select = document.getElementById("id_MSESD_tblBody_select");
-
 
 // ---  MOD SELECT SCHOOL ------------------------------------
         let el_ModSelect_header = document.getElementById("id_ModSelect_header");
@@ -193,20 +190,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 scheme_rows: {get: true}
             };
 
-        DatalistDownload(datalist_request, "DOMContentLoaded");
+        DatalistDownload(datalist_request);
     }
 //  #############################################################################################################
 
 //========= DatalistDownload  ===================== PR2020-07-31
-    function DatalistDownload(datalist_request, called_by) {
-        console.log( "=== DatalistDownload ", called_by)
+    function DatalistDownload(datalist_request, keep_loader_hidden) {
+        console.log( "===== DatalistDownload ===== ")
         console.log("request: ", datalist_request)
 
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
 
-// ---  show loader
-        el_loader.classList.remove(cls_visible_hide)
+// ---  show loader  // keep_loader_hidden not in use yet
+        if(!keep_loader_hidden){el_loader.classList.remove(cls_visible_hide)}
 
         let param = {"download": JSON.stringify (datalist_request)};
         let response = "";
@@ -221,32 +218,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 // hide loader
                 el_loader.classList.add(cls_visible_hide)
                 let check_status = false;
-                let call_DisplayCustomerOrderEmployee = true;
+                let must_create_submenu = false;
 
-                if ("locale_dict" in response) { refresh_locale(response.locale_dict)};
+                if ("locale_dict" in response) {
+                    loc = response.locale_dict;
+                    must_create_submenu = true;
+                };
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict
-                    // <PERMIT> PR220-10-02  PR220-10-29
+
+                    // <PERMIT> PR2020-10-02 PPR2021-01-26
+                    //  has_permit_edit = true if:
+                    //   - school is activated, AND examyear is published, AND school, examyear, country are not locked
+                    //   - AND user has perm_edit
+                    //   - AND user has role school TODO activate rule, rule left out for testing PR2021-01-26
+
                     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
                     //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
-                    //  - no add/delete/edit allowed when requsr_examyear_locked or requsr_school_locked
-                    if (!setting_dict.requsr_examyear_locked && !setting_dict.requsr_examyear_locked){
-                        has_edit_permit = (setting_dict.requsr_role_admin && setting_dict.requsr_perm_edit) ||
-                                          (setting_dict.requsr_role_system && setting_dict.requsr_perm_edit);
+                    has_permit_edit = false;
+                     if (setting_dict.sel_examyear_published && setting_dict.sel_school_activated &&
+                            !setting_dict.requsr_country_locked && !setting_dict.sel_examyear_locked &&
+                            !setting_dict.sel_school_locked){
+                        if (setting_dict.requsr_perm_edit){
+                            // TODO activate rule, rule left out for testing PR2021-01-26
+                            // TODO add role_teacher in the future
+                            //if(setting_dict.requsr_role_school){has_permit_edit = true}
+                            has_permit_edit = true
+                        }
                     }
-                    selected_btn = (setting_dict.sel_btn)
-
                     // <PERMIT> PR2020-10-27
-                    // - every user may change examyear and department
                     // -- only insp, admin and system may change school
                     has_permit_select_school = (setting_dict.requsr_role_insp ||
                                                 setting_dict.requsr_role_admin ||
                                                 setting_dict.requsr_role_system);
-                    selected_btn = (setting_dict.sel_btn);
 
-                    UpdateHeaderbar();
+                    selected_btn = (setting_dict.sel_btn)
+
+                    b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school );
+
                 };
-                // call render_messages also when tghere are no messages, to remove existing messages
+                if(must_create_submenu){CreateSubmenu()};
+
+                // call render_messages also when there are no messages, to remove existing messages
                 const awp_messages = (response.awp_messages) ? response.awp_messages : {};
                 render_messages(response.awp_messages);
 
@@ -281,13 +294,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }  // function DatalistDownload
-
-//=========  refresh_locale  ================  PR2020-07-31
-    function refresh_locale(locale_dict) {
-        console.log ("===== refresh_locale ==== ")
-        loc = locale_dict;
-        CreateSubmenu()
-    }  // refresh_locale
 
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
@@ -593,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const is_inactive = !( (map_dict[field_name]) ? map_dict[field_name] : false );
                     el_div.setAttribute("data-value", ((is_inactive) ? 1 : 0) );
                     const img_class = (is_inactive) ? "inactive_1_3" : "inactive_0_2";
-                    refresh_background_class(el_div, img_class)
+                    b_refresh_icon_class(el_div, img_class)
                     //let el_icon = el_div.children[0];
                     //if(el_icon){add_or_remove_class (el_icon, "inactive_1_3", is_inactive, "inactive_0_2")};
 // ---  add title
@@ -607,7 +613,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }  // if(el_div)
     };  // UpdateField
 
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// +++++++++++++++++ MODAL SELECT EXAMYEAR, SCHOOL OR DEPARTMENT ++++++++++++++++++++
+// functions are in table.js, except for MSESD_Response
 
+//=========  MSESD_Response  ================ PR2020-12-18
+    function MSESD_Response(tblName, pk_int) {
+        console.log( "===== MSESD_Response ========= ");
+        console.log( "tblName", tblName);
+        console.log( "pk_int", pk_int);
+
+// ---  upload new setting
+        let new_setting = {page_grade: {mode: "get"}};
+        if (tblName === "school") {
+            new_setting.selected_pk = {sel_schoolbase_pk: pk_int, sel_depbase_pk: null}
+        } else {
+            new_setting.selected_pk = {sel_depbase_pk: pk_int}
+        }
+        const datalist_request = {setting: new_setting};
+
+// also retrieve the tables that have been changed because of the change in school / dep
+        datalist_request.student_rows = {get: true};
+        datalist_request.studentsubject_rows = {get: true};
+        datalist_request.grade_rows = {get: true};
+
+        DatalistDownload(datalist_request);
+
+    }  // MSESD_Response
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // +++++++++++++++++ MODAL SELECT  ++++++++++++++++++++++++++++
@@ -1048,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- also used for level, sector,
     function MSJ_Open(el_input){
         console.log(" -----  MSJ_Open   ----")
-        if( has_edit_permit){
+        if( has_permit_edit){
             let user_pk = null, user_country_pk = null, user_schoolbase_pk = null, mapid = null;
             const fldName = get_attr_from_el(el_input, "data-field");
 
@@ -1130,7 +1162,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  MSJ_save  ----", crud_mode);
         console.log( "mod_MSJ_dict: ", mod_MSJ_dict);
 
-        if(has_edit_permit){
+        if(has_permit_edit){
             // delete is handled by ModConfirm("delete")
 
             let upload_dict = {id: {table: 'subject', ppk: mod_MSJ_dict.examyear_id} }
@@ -1595,7 +1627,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "delete", "inactive" or "resend_activation_email", "permission_sysadm"
 
-        if(has_edit_permit){
+        if(has_permit_edit){
             el_confirm_msg01.innerText = null;
             el_confirm_msg02.innerText = null;
             el_confirm_msg03.innerText = null;
@@ -1714,9 +1746,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
-        let close_modal = !has_edit_permit;
+        let close_modal = !has_permit_edit;
 
-        if(has_edit_permit){
+        if(has_permit_edit){
             let tblRow = document.getElementById(mod_dict.mapid);
 
     // ---  when delete: make tblRow red, before uploading
@@ -2237,47 +2269,6 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         return add_to_list;
     }  // ModSelSchOrDep_FillSelectRow
-
-//========= UpdateHeaderbar  ================== PR2020-11-14 PR2020-12-02
-    function UpdateHeaderbar(){
-        console.log(" --- UpdateHeaderbar ---" )
-
-        let examyer_txt = "";
-        if (setting_dict.requsr_examyear_text){
-           examyer_txt = loc.Examyear + " " + setting_dict.requsr_examyear_text
-        } else {
-            const examyear_str = (loc.Examyear) ? loc.Examyear.toLowerCase() : "-";
-            examyer_txt = "<" + loc.No__ + examyear_str +  loc.__selected + ">"
-        }
-        if(el_hdrbar_examyear) { el_hdrbar_examyear.innerText = examyer_txt};
-
-        console.log("examyer_txt", examyer_txt )
-        const may_select_school = (setting_dict.requsr_role_insp || setting_dict.requsr_role_admin || setting_dict.requsr_role_system);
-        const class_select_school = (may_select_school) ? "awp_navbaritem_may_select" : "awp_navbar_item";
-        let schoolname_txt = null;
-        if (!setting_dict.requsr_schoolbase_pk){
-            if (may_select_school) {
-                schoolname_txt = " <" + loc.Select_school + ">";
-            } else {
-                schoolname_txt = " <" + loc.No_school_selected + ">";
-            }
-        } else {
-            schoolname_txt = setting_dict.requsr_schoolbase_code;
-            if (!setting_dict.sel_examyear_pk) {
-                schoolname_txt += " <" + loc.No_examyear_selected + ">"
-            } else {
-                if (!setting_dict.requsr_school_pk){
-                    schoolname_txt += " <" + loc.School_notfound_thisexamyear + ">"
-                } else {
-                    schoolname_txt += " " + setting_dict.requsr_school_name
-                }
-            }
-        }
-        el_hdrbar_school.innerText = schoolname_txt;
-    }  // UpdateHeaderbar
-
-//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
 
 
 })  // document.addEventListener('DOMContentLoaded', function()

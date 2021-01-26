@@ -737,7 +737,8 @@ class SubjectListView(View):
         page = 'subjects'
         params = awpr_menu.get_headerbar_param(request, page)
         # save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
-        acc_mod.Usersetting.set_jsonsetting('sel_page', {'page': page}, request.user)
+        if request.user:
+            request.user.set_setting('sel_page', {'page': page})
 
         return render(request, 'subjects.html', params)
 
@@ -924,8 +925,8 @@ class SubjectImportView(View):  # PR2020-10-01
 
             # get mapped coldefs from table Companysetting
             # get stored setting from Companysetting
-    #TODO get_jsonsetting returns dict
-            settings_json = sch_mod.Schoolsetting.get_jsonsetting(c.KEY_IMPORT_SUBJECT, request.user.schoolbase)
+
+            settings_json = request.user.schoolbase.get_setting(c.KEY_IMPORT_SUBJECT)
             stored_setting = json.loads(settings_json) if settings_json else {}
 
             # don't replace keyvalue when new_setting[key] = ''
@@ -997,7 +998,7 @@ class SubjectImportUploadSetting(View):   # PR2019-03-10
                 new_code_calc = ''
                 new_coldefs = {}
     #TODO get_jsonsetting returns dict
-                stored_json = sch_mod.Schoolsetting.get_jsonsetting(settings_key, request.user.schoolbase)
+                stored_json = request.user.schoolbase.get_setting(settings_key)
                 if stored_json:
                     stored_setting = json.loads(stored_json)
                     #logger.debug('stored_setting: ' + str(stored_setting))
@@ -1023,12 +1024,7 @@ class SubjectImportUploadSetting(View):   # PR2019-03-10
                                'codecalc': new_code_calc,
                                'coldefs': new_coldefs}
                 new_setting_json = json.dumps(new_setting)
-                #logger.debug('new_setting' + str(new_setting))
-                #logger.debug('---  set_jsonsettingg  ------- ')
-                #logger.debug('new_setting_json' + str(new_setting_json))
-                #logger.debug(new_setting_json)
-                # TODO set_jsonsetting parameter changed to dict
-                sch_mod.Schoolsetting.set_jsonsetting(settings_key, new_setting_json, request.user.schoolbase)
+                request.user.schoolbase.set_setting(settings_key, new_setting_json)
 
     # only for testing
                 # ----- get user_lang

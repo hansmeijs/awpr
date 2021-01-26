@@ -5,19 +5,18 @@ from django.contrib.auth.models import AbstractUser, UserManager
 
 # PR2020-12-13 Deprecation warning: django.contrib.postgres.fields import JSONField  will be removed from Django 4
 # instead use: django.db.models import JSONField (is added in Django 3)
-from django.contrib.postgres.fields import ArrayField, JSONField
+# PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
+from django.contrib.postgres.fields import ArrayField # ,JSONField
 
 from django.core.validators import RegexValidator
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-import json #PR2018-12-19
 from schools.models import Country, Examyear, Departmentbase, Department, Schoolbase, School
 from awpr import constants as c
 from awpr.settings import AUTH_USER_MODEL
 
-
-# PR2018-05-10
-import logging
+import json #PR2018-12-19
+import logging # PR2018-05-10
 logger = logging.getLogger(__name__)
 
 # === USER =====================================
@@ -130,7 +129,6 @@ class User(AbstractUser):
         super(User, self).save(force_insert=not self.is_update, force_update=self.is_update, **kwargs)
         # self.id gets its value in super(Country, self).save
 
-
     @property
     def username_sliced(self):
         # PR2019-03-13 Show username 'Hans' instead of '000001Hans'
@@ -212,24 +210,8 @@ class User(AbstractUser):
     # - Inspection and School users can only add their own role
     # - Inspection and School users can have all permits: 'Admin', 'Auth',  'Write' and 'Read'
 
-
-
-    # PR2018-07-31 debug. This is a method, not a @property. Property gave error: 'list' object is not callable
+    # PR2018-07-31 debug. 'def': This is a method, not a @property. Property gave error: 'list' object is not callable
     # see: https://www.b-list.org/weblog/2006/aug/18/django-tips-using-properties-models-and-managers/?utm_medium=twitter&utm_source=twitterfeed
-    def user_settings(self):  # PR2018-12-19
-        # function gets usersettings MENU_SELECTED
-        settings = {}
-        usersettings = Usersetting.objects.filter(user=self)
-        if usersettings:
-            for usersetting in usersettings:
-                # TODO: remove filter and get all settings
-                if usersetting.key == c.KEY_MENU_SELECTED:
-                    if usersetting.char01:
-                        settings[c.KEY_MENU_SELECTED] = usersetting.char01
-                        # logger.debug('user_settings: ' + str(user_settings) + ' type: ' +  str(type(user_settings)))
-        settings_str = json.dumps(settings)
-        # logger.debug('user_settings_str: ' + str(user_settings_str) + ' type: ' +  str(type(user_settings_str)))
-        return settings_str
 
     # PR2018-05-27 property returns True when user has ROLE_64_SYSTEM
     @property
@@ -314,7 +296,6 @@ class User(AbstractUser):
         return self.is_authenticated and self.permits_tuple and c.PERMIT_128_SYSTEM in self.permits_tuple
 
     @property
-
     def is_perm_admin(self):
         return self.is_authenticated and self.permits_tuple and c.PERMIT_064_ADMIN in self.permits_tuple
 
@@ -330,7 +311,6 @@ class User(AbstractUser):
     def is_perm_auth2(self):
         return self.is_authenticated and self.permits_tuple and c.PERMIT_008_AUTH2 in self.permits_tuple
 
-
     @property
     def is_perm_auth1(self):
         return self.is_authenticated and self.permits_tuple and c.PERMIT_004_AUTH1 in self.permits_tuple
@@ -342,7 +322,6 @@ class User(AbstractUser):
     @property
     def is_perm_read(self):
         return self.is_authenticated and self.permits_tuple and c.PERMIT_001_READ in self.permits_tuple
-
 
     @property
     def may_add_or_edit_users(self):
@@ -363,6 +342,43 @@ class User(AbstractUser):
                         _has_permit = True
         return _has_permit
 
+# +++++++++++++++++++  get and set setting +++++++++++++++++++++++
+
+    def get_setting(cls, key_str): # PR2019-03-09 PR2021-01-25
+        # function retrieves the string value of the setting row that match the filter and converts it to a dict
+        #logger.debug(' ---  get_setting  ------- ')
+        #  json.dumps converts a dict in a json object
+        #  json.loads retrieves a dict (or other type) from a json object
+
+        #logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
+        setting_dict = {}
+        if cls and key_str:
+            row = Usersetting.objects.filter(user=cls, key=key_str).order_by('-id').first()
+            if row and row.setting:
+                #logger.debug('row.setting: ' + str(row.setting) + ' ' + str(type(row.setting)))
+                setting_dict = json.loads(row.setting)
+        return setting_dict
+
+    def set_setting(cls, key_str, setting_dict): #PR2019-03-09 PR2021-01-25
+        # function saves setting in first row that matches the filter, adds new row when not found
+        #logger.debug('---  set_setting  ------- ')
+        #logger.debug('key_str: ' + str(key_str))
+        #logger.debug('setting_dict: ' + str(setting_dict))
+        #logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
+        #  json.dumps converts a dict in a json object
+        #  json.loads retrieves a dict (or other type) from a json object
+        if cls and key_str:
+            setting_str = json.dumps(setting_dict)
+            row = Usersetting.objects.filter(user=cls, key=key_str).order_by('-id').first()
+            if row:
+                row.setting = setting_str
+            else:
+                # don't add row when setting has no value
+                # note: empty setting_dict {} = False, empty json "{}" = True, teherfore check if setting_dict is empty
+                if setting_dict:
+                    row = Usersetting(user=cls, key=key_str, setting=setting_str)
+            row.save()
+            #logger.debug('row.setting: ' + str(row.setting))
 
 
 # +++++++++++++++++++  FORM PERMITS  +++++++++++++++++++++++
@@ -748,18 +764,10 @@ class Usersetting(Model):
     key = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
 
     setting = CharField(db_index=True, max_length=2048)
-    jsonsetting = JSONField(null=True)
+    # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
+    # jsonsetting = JSONField(null=True)
 
-    #key_str = CharField(max_length=20)
-    #char01 = CharField(max_length=2048, null=True)
-    #char02 = CharField(max_length=2048, null=True)
-    #int01 = IntegerField(null=True)
-   # int02 = IntegerField(null=True)
-   # bool01 = BooleanField(default=False)
-   # bool02 = BooleanField(default=False)
-    #date01 = DateTimeField(null=True)
-    #date02 = DateTimeField(null=True)
-
+    """ NOT IN USE PR2021-01-25
     @classmethod
     def get_jsonsetting(cls, key_str, user):  # PR2019-07-02
         setting_dict = {}
@@ -794,3 +802,4 @@ class Usersetting(Model):
                 #logger.debug('row does not exist')
                 row = cls(user=user, key=key_str, jsonsetting=setting_dict)
             row.save()
+    """

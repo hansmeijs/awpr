@@ -106,87 +106,113 @@ class UserUploadView(View):
         #logger.debug(' ========== UserUploadView ===============')
 
         update_wrap = {}
-        err_dict = {}
-        updated_dict = {}
         if request.user is not None and request.user.country is not None and request.user.schoolbase is not None:
-            has_permit_this_school = False
-            has_permit_all_schools = False
+            req_usr = request.user
             # <PERMIT> PR220-09-24
-            #  - only perm_admin and perm_system can add/edit/delete users
+            #  - only perm_admin and perm_system can add / edit / delete users
             #  - only role_system and role_admin (ETE) can add users of other schools
-            #  - also role_insp and role_school can add users of their own school
-            if request.user.is_perm_admin or request.user.is_perm_system:
-                has_permit_all_schools = request.user.is_role_admin or request.user.is_role_system
-                has_permit_this_school = request.user.is_role_insp or request.user.is_role_school
+            #  - role_system, role_admin, role_insp and role_school can add users of their own school
+
+            has_permit_this_school, has_permit_all_schools = False, False
+            if req_usr.is_perm_admin or req_usr.is_perm_system:
+                has_permit_all_schools = req_usr.is_role_admin or req_usr.is_role_system
+                has_permit_this_school = req_usr.is_role_insp or req_usr.is_role_school
             if has_permit_this_school or has_permit_all_schools:
+
 # - get upload_dict from request.POST
                 upload_json = request.POST.get("upload")
                 if upload_json:
                     upload_dict = json.loads(upload_json)
-                    #logger.debug('upload_dict: ' + str(upload_dict))
+                    logger.debug('upload_dict: ' + str(upload_dict))
 
                     # upload_dict: {'mode': 'validate', 'company_pk': 3, 'pk_int': 114, 'user_ppk': 3,
-                    # 'employee_pk': None, 'employee_code': None, 'username': 'Giterson_Lisette', 'last_name': 'Lisette Sylvia enzo Giterson', 'email': 'hmeijs@gmail.com'}
-    # upload_dict: {'mode': 'delete', 'user_pk': 169, 'user_ppk': 3, 'mapid': 'user_169'}
+                    #               'employee_pk': None, 'employee_code': None, 'username': 'Giterson_Lisette',
+                    #               'last_name': 'Lisette Sylvia enzo Giterson', 'email': 'hmeijs@gmail.com'}
+                    # upload_dict: {'mode': 'delete', 'user_pk': 169, 'user_ppk': 3, 'mapid': 'user_169'}
 
     # - reset language
-                    # PR2019-03-15 Debug: language gets lost, get request.user.lang again
-                    user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                    # PR2019-03-15 Debug: language gets lost, get req_usr.lang again
+                    user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
                     activate(user_lang)
 
     # - get info from upload_dict
-                    pk_int = af.get_dict_value(upload_dict, ('id', 'pk'))  # selected user_pk
-                    ppk_int = af.get_dict_value(upload_dict, ('id', 'ppk')) # country_pk
-                    map_id = af.get_dict_value(upload_dict, ('id', 'mapid'))
+                    user_pk = upload_dict.get('user_pk')
+                    user_schoolbase_pk = upload_dict.get('schoolbase_pk')
+                    map_id = upload_dict.get('mapid')
+                    mode = upload_dict.get('mode')
 
-# - check if the user schoolbase exists
-                    user_schoolbase = sch_mod.Schoolbase.objects.get_or_none(id=ppk_int, country=request.user.country)
-                    is_same_schoolbase = (user_schoolbase and user_schoolbase == request.user.schoolbase)
+                    is_validate_only = (mode == 'validate')
+                    update_wrap['mode'] = mode
+
+                    logger.debug('user_pk: ' + str(user_pk))
+                    logger.debug('user_schoolbase_pk: ' + str(user_schoolbase_pk))
+                    logger.debug('map_id: ' + str(map_id))
+                    logger.debug('mode: ' + str(mode))
+    # - check if the user schoolbase exists
+                    user_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
+                        id=user_schoolbase_pk,
+                        country=req_usr.country
+                    )
+                    is_same_schoolbase = (user_schoolbase and user_schoolbase == req_usr.schoolbase)
+                    logger.debug('user_schoolbase: ' + str(user_schoolbase))
+                    logger.debug('is_same_schoolbase: ' + str(is_same_schoolbase))
+
                     # <PERMIT> PR220-09-24
                     # user may edit users from their own school
+
+                    err_dict = {}
                     has_permit = False
                     if user_schoolbase:
                         if has_permit_all_schools:
                             has_permit = True
                         elif has_permit_this_school:
                             has_permit = is_same_schoolbase
-                    if has_permit:
-                        mode = af.get_dict_value(upload_dict, ('id', 'mode'))
-                        is_validate_only = (mode == 'validate')
-                        update_wrap['mode'] = mode
+
+                    if not has_permit:
+                        err_dict['msg01'] = _("You don't have permission to perform this action.")
+                    else:
+                        updated_dict = {}
 
     # ++++  resend activation email ++++++++++++
                         if mode == 'resend_activation_email':
-                            resend_activation_email(pk_int, update_wrap, err_dict, request)
+                            resend_activation_email(user_pk, update_wrap, err_dict, request)
+
     # ++++  delete user ++++++++++++
                         elif mode == 'delete':
-                            if pk_int:
+                            if user_pk:
                                 instance = None
                                 if has_permit_all_schools:
-                                    instance = am.User.objects.get_or_none(id=pk_int, country=request.user.country)
+                                    instance = am.User.objects.get_or_none(
+                                        id=user_pk,
+                                        country=req_usr.country
+                                    )
                                 elif has_permit_this_school:
                                     instance = am.User.objects.get_or_none(
-                                        id=pk_int,
-                                        country=request.user.country,
-                                        schoolbase=request.user.schoolbase
+                                        id=user_pk,
+                                        country=req_usr.country,
+                                        schoolbase=req_usr.schoolbase
                                     )
-                                #logger.debug('instance: ' + str(instance))
+                                logger.debug('instance: ' + str(instance))
+
                                 if instance:
                                     deleted_instance_list = create_user_list(request, instance.pk)
+                                    logger.debug('deleted_instance_list: ' + str(deleted_instance_list))
                                     if deleted_instance_list:
                                         updated_dict = deleted_instance_list[0]
                                         updated_dict['mapid'] = map_id
 
-                                    if (request.user.is_perm_system or request.user.is_perm_admin) \
-                                            and (instance == request.user):
+                                    if (req_usr.is_perm_system or req_usr.is_perm_admin) \
+                                            and (instance == req_usr):
                                         err_dict['msg01'] = _("System administrators cannot delete their own account.")
                                     else:
                                         try:
                                             instance.delete()
                                             updated_dict['deleted'] = True
+                                            logger.debug('deleted: ' + str(True))
                                         except:
                                             err_dict['msg01'] = _("User '%(val)s' can not be deleted.\nInstead, you can make the user inactive.") \
                                                                 % {'val': instance.username_sliced}
+                                            logger.debug('err_dict msg01: ' + str(err_dict['msg01']))
 
     # ++++  create or validate new user ++++++++++++
                         elif mode in ('create', 'validate'):
@@ -198,8 +224,10 @@ class UserUploadView(View):
                             else:
                                 new_permits = (c.PERMIT_002_EDIT + c.PERMIT_064_ADMIN)
 
+                            new_role = user_schoolbase.defaultrole
+
                             new_user_pk, err_dict, ok_dict = create_or_validate_user_instance(
-                                user_schoolbase, upload_dict, pk_int, new_permits, is_validate_only, user_lang, request)
+                                user_schoolbase, upload_dict, user_pk, new_permits, new_role, is_validate_only, user_lang, request)
                             if err_dict:
                                 update_wrap['msg_err'] = err_dict
                             if ok_dict:
@@ -216,15 +244,15 @@ class UserUploadView(View):
     # - +++++++++ update ++++++++++++
                             instance = None
                             if has_permit_all_schools:
-                                instance = am.User.objects.get_or_none(id=pk_int, country=request.user.country)
+                                instance = am.User.objects.get_or_none(id=user_pk, country=req_usr.country)
                             elif has_permit_this_school:
                                 instance = am.User.objects.get_or_none(
-                                    id=pk_int,
-                                    country=request.user.country,
-                                    schoolbase=request.user.schoolbase
+                                    id=user_pk,
+                                    country=req_usr.country,
+                                    schoolbase=req_usr.schoolbase
                                 )
                             if instance:
-                                err_dict, ok_dict = update_user_instance(instance, pk_int, upload_dict, is_validate_only, request)
+                                err_dict, ok_dict = update_user_instance(instance, user_pk, upload_dict, is_validate_only, request)
                                 if err_dict:
                                     update_wrap['msg_err'] = err_dict
                                 if ok_dict:
@@ -238,10 +266,10 @@ class UserUploadView(View):
     # - +++++++++ en of is update ++++++++++++
                         if updated_dict:
                             update_wrap['updated_list'] = [updated_dict]
-                        if err_dict:
-                            update_wrap['msg_err'] = err_dict
-                        else:
-                            update_wrap['validation_ok'] = True
+                    if err_dict:
+                        update_wrap['msg_err'] = err_dict
+                    elif is_validate_only:
+                        update_wrap['validation_ok'] = True
 
         # - create_user_list returns list of only 1 user
         #update_wrap['user_list'] = ad.create_user_list(request, instance.pk)
@@ -259,7 +287,7 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None:
-
+            req_user = request.user
 # 1. get upload_dict from request.POST
             upload_json = request.POST.get('upload')
             if upload_json:
@@ -269,7 +297,7 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
                 # PR2020-10-04 not any more, don't know why
                 for key, new_setting_dict in upload_dict.items():
                     # key = 'page_examyear', dict = {'sel_btn': 'examyear'}
-                    saved_settings_dict = Usersetting.get_jsonsetting(key, request.user)
+                    saved_settings_dict = req_user.get_setting(key)
                     #logger.debug('new_setting_dict: ' + str(new_setting_dict))
                     #logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
                     # loop through saved settings
@@ -286,8 +314,8 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
                         # if subkey not found in saved_settings_dict and value is not None: create subkey with value
                             if value:
                                 saved_settings_dict[subkey] = value
-                    #logger.debug('Usersetting.set_jsonsetting from UserSettingsUploadView')
-                    Usersetting.set_jsonsetting(key, saved_settings_dict, request.user)
+                    #logger.debug('Usersetting.set_setting from UserSettingsUploadView')
+                    req_user.set_setting(key, saved_settings_dict)
 
         # c. add update_dict to update_wrap
                     update_wrap['setting'] = {'result': 'ok'}
@@ -325,6 +353,8 @@ def account_activation_sent(request):
 def SignupActivateView(request, uidb64, token):
     logger.debug('  === SignupActivateView =====')
     logger.debug('request: ' + str(request))
+    logger.debug('uidb64: ' + str(uidb64))
+    logger.debug('token: ' + str(token))
 
     # SignupActivateView is called when user clicks on link 'Activate your AWP-online account'
     # it returns the page 'signup_setpassword'
@@ -340,6 +370,12 @@ def SignupActivateView(request, uidb64, token):
     except (TypeError, ValueError, OverflowError):
         user = None
     logger.debug('user: ' + str(user))
+    logger.debug('user.is_authenticated: ' + str(user.is_authenticated))
+
+# - get language from user
+    # PR2019-03-15 Debug: language gets lost, get request.user.lang again
+    user_lang = user.lang if user and user.lang else c.LANG_DEFAULT
+    activate(user_lang)
 
     if user is None:
         update_wrap['msg_01'] = _('Sorry, we could not find your account.')
@@ -350,8 +386,6 @@ def SignupActivateView(request, uidb64, token):
         update_wrap['schoolcode'] = user.schoolbase.code
 
 # - get schoolname PR2020-12-24
-        # TODO  add correct schoolnames  < schoolname of request user> heeft de volgende AWP-online account
-        #                   voor je aangemaakt: bij <schoolname new user, only if different from request_school>
         examyear = af.get_todays_examyear_or_latest_instance(user.country)
         school = sch_mod.School.objects.get_or_none( base=user.schoolbase, examyear=examyear)
         if school and school.name:
@@ -363,14 +397,10 @@ def SignupActivateView(request, uidb64, token):
             usr_schoolname_with_article = user.schoolbase.code
         else:
             usr_schoolname_with_article = '---'
-        # PR2021-01-20 this one does not translate to Dutch - don't know why. Text moved to template
+        # PR2021-01-20 this one does not translate to Dutch, because language is not set. Text moved to template
         # msg_txt = _("Your account with username '%(usr)s' is created at %(school)s.") % {'usr': user_name, 'school': usr_schoolname_with_article}
         # update_wrap['schoolnamewithArticle'] = msg_txt
         update_wrap['schoolnamewithArticle'] = usr_schoolname_with_article
-# - get language from user
-        # PR2019-03-15 Debug: language gets lost, get request.user.lang again
-        user_lang = user.lang if user.lang else c.LANG_DEFAULT
-        activate(user_lang)
 
 # - check activation_token
         activation_token_ok = account_activation_token.check_token(user, token)
@@ -381,8 +411,9 @@ def SignupActivateView(request, uidb64, token):
             # don't activate user and company until user has submitted valid password
             #update_wrap['uidb64'] = uidb64
         else:
-            update_wrap['msg_01'] = _('The link to active the account is valid for 7 days and has expired.')
-            update_wrap['msg_02'] = _('You cannot activate your account.')
+            update_wrap['msg_01'] = _('The link to active your account is no longer valid.')
+            update_wrap['msg_02'] = _('Maybe it has expired or has been used already.')
+            update_wrap['msg_03'] = _('The link expires after 7 days.')
 
     logger.debug('update_wrap: ' + str(update_wrap))
 
@@ -560,7 +591,7 @@ class UserDeleteView(DeleteView):
 
 
 def create_user_list(request, user_pk=None):
-    # --- create list of all users of this company, or 1 user with user_pk PR2020-07-31
+    # --- create list of all users of this school, or 1 user with user_pk PR2020-07-31
     #logger.debug(' =============== create_user_list ============= ')
     #logger.debug('user_pk: ' + str(user_pk))
 
@@ -571,72 +602,61 @@ def create_user_list(request, user_pk=None):
 
     # <PERMIT> PR2020-10-12
     # PR2018-05-27 list of users in UserListView:
-    # - when role is system or admin (ETE): show all users
-    # - when role is inspection or school: all users with role <= request.user.role and schoolbase = request.user.schoolbase
-    # - else (teacher, student) : no access
-    #  - only perm_system can create user_list
-    #  - when user_pk has value the school of user_pk can be different from the school of request user (in case of admin(ETE) )
-    has_permit_school_users, has_permit_all_users = False, False
-    if request.user.country  :
-        if request.user.is_perm_admin or request.user.is_perm_system :
-            if request.user.is_role_system or request.user.is_role_admin:
-                has_permit_all_users = True
-            elif request.user.is_role_insp or request.user.is_role_school:
-                has_permit_school_users = True
+    # - only perm_system and perm_admin can create user_list
+    # - role teacher, student have no access
+    # - dont show users with higher role
+    # - when role is inspection or school: show only users of request.user.schoolbase
+    # - when user_pk has value the school of user_pk can be different from the school of request user (in case of admin(ETE) )
 
     user_list = []
+    if request.user.country and request.user.schoolbase:
+        if request.user.role >= c.ROLE_08_SCHOOL:
+            if request.user.is_perm_admin or request.user.is_perm_system :
 
-    if has_permit_school_users or has_permit_all_users:
-        sql_is_ok = False
-        sql_keys = {'country_id': request.user.country.pk}
-        sql_list = ["SELECT u.id, u.schoolbase_id,",
-            "CONCAT('user_', u.id) AS mapid, 'user' AS table,",
-            "SUBSTRING(u.username, 7) AS username,",
-            "u.last_name, u.email, u.role, u.permits,",
-            "(TRUNC(u.permits / 128) = 1) AS perm_system,",
-            "(TRUNC( MOD(u.permits, 128) / 64) = 1) AS perm_admin,",
-            "(TRUNC( MOD(u.permits, 64) / 32) = 1) AS perm_anlz,",
-            "(TRUNC( MOD(u.permits, 32) / 16) = 1) AS perm_auth3,",
-            "(TRUNC( MOD(u.permits, 16) / 8) = 1) AS perm_auth2,",
-            "(TRUNC( MOD(u.permits, 8) / 4) = 1) AS perm_auth1,",
-            "(TRUNC( MOD(u.permits, 4) / 2) = 1) AS perm_edit,",
-            "(MOD(u.permits, 2) = 1) AS perm_read,",
-    
-            "u.activated, u.activated_at, u.is_active, u.last_login, u.date_joined,",
-            "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
-            "u.lang, u.modified_by_id, u.modified_at",
-    
-            "FROM accounts_user AS u",
-            "INNER JOIN schools_country AS c ON (c.id = u.country_id)",
-            "LEFT JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
-            "WHERE u.country_id = %(country_id)s::INT"]
-        if user_pk:
-            sql_keys['u_id'] = user_pk
-            sql_list.append('AND u.id = %(u_id)s::INT')
-            sql_is_ok = True
-        else:
-            if has_permit_all_users:
-                sql_is_ok = True
-            elif has_permit_school_users:
-                schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
-                sql_keys['sb_id'] = schoolbase_pk
-                sql_keys['max_role'] = request.user.role
-                sql_list.append('AND u.schoolbase_id = %(sb_id)s::INT AND role <= %(max_role)s::INT')
-                sql_is_ok = True
-        if sql_is_ok:
-            sql_list.append('ORDER BY LOWER(u.username)')
-            sql = ' '.join(sql_list)
+                sql_keys = {'country_id': request.user.country.pk, 'max_role': request.user.role}
+                sql_list = ["SELECT u.id, u.schoolbase_id,",
+                    "CONCAT('user_', u.id) AS mapid, 'user' AS table,",
+                    "SUBSTRING(u.username, 7) AS username,",
+                    "u.last_name, u.email, u.role, u.permits,",
+                    "(TRUNC(u.permits / 128) = 1) AS perm_system,",
+                    "(TRUNC( MOD(u.permits, 128) / 64) = 1) AS perm_admin,",
+                    "(TRUNC( MOD(u.permits, 64) / 32) = 1) AS perm_anlz,",
+                    "(TRUNC( MOD(u.permits, 32) / 16) = 1) AS perm_auth3,",
+                    "(TRUNC( MOD(u.permits, 16) / 8) = 1) AS perm_auth2,",
+                    "(TRUNC( MOD(u.permits, 8) / 4) = 1) AS perm_auth1,",
+                    "(TRUNC( MOD(u.permits, 4) / 2) = 1) AS perm_edit,",
+                    "(MOD(u.permits, 2) = 1) AS perm_read,",
 
-            newcursor = connection.cursor()
-            newcursor.execute(sql, sql_keys)
-            user_list = sch_mod.dictfetchall(newcursor)
+                    "u.activated, u.activated_at, u.is_active, u.last_login, u.date_joined,",
+                    "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
+                    "u.lang, u.modified_by_id, u.modified_at",
+
+                    "FROM accounts_user AS u",
+                    "INNER JOIN schools_country AS c ON (c.id = u.country_id)",
+                    "LEFT JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
+                    "WHERE u.country_id = %(country_id)s::INT",
+                    "AND role <= %(max_role)s::INT"]
+                if user_pk:
+                    sql_keys['u_id'] = user_pk
+                    sql_list.append('AND u.id = %(u_id)s::INT')
+                elif request.user.role < c.ROLE_32_ADMIN:
+                    schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
+                    sql_keys['sb_id'] = schoolbase_pk
+                    sql_list.append('AND u.schoolbase_id = %(sb_id)s::INT')
+
+                sql_list.append('ORDER BY  LOWER(sb.code), LOWER(u.username)')
+                sql = ' '.join(sql_list)
+
+                newcursor = connection.cursor()
+                newcursor.execute(sql, sql_keys)
+                user_list = sch_mod.dictfetchall(newcursor)
     return user_list
 
 
 ########################################################################
 
 # === create_or_validate_user_instance ========= PR2020-08-16 PR2021-01-01
-def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, permits, is_validate_only, user_lang, request):
+def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, permits, role, is_validate_only, user_lang, request):
     #logger.debug('-----  create_or_validate_user_instance  -----')
     #logger.debug('upload_dict: ' + str(upload_dict))
     #logger.debug('user_pk: ' + str(user_pk))
@@ -651,8 +671,9 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, perm
     new_user_pk = None
 
     # <PERMIT> PR220-09-24
-    #  - only system and admin (ETE) can add users of other schools (system has also admin rights)
-    #  - only insp and school can add users of their own school
+    #  - only perm_admin and perm_system can add / edit / delete users
+    #  - only role_system and role_admin (ETE) can add users of other schools
+    #  - role_system, role_admin, role_insp and role_school can add users of their own school
 
 # - check if schoolbase has value
     if user_schoolbase is None:
@@ -662,7 +683,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, perm
 # - check if this username already exists in this schoolbase
     # user_pk is pk of user that will be validated when the user already exist.
     # user_pk is None when new user is created or validated
-    username = af.get_dict_value(upload_dict, ('username', 'value'))
+    username = upload_dict.get('username')
     #logger.debug('username: ' + str(username))
     schoolbaseprefix = user_schoolbase.prefix if user_schoolbase else None
     msg_err = v.validate_unique_username(username, schoolbaseprefix, user_pk)
@@ -671,7 +692,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, perm
         has_error = True
 
 # - check if namelast is blank
-    last_name = af.get_dict_value(upload_dict, ('last_name', 'value'))
+    last_name = upload_dict.get('last_name')
     #logger.debug('last_name: ' + str(last_name))
     msg_err = v.validate_notblank_maxlength(last_name, c.MAX_LENGTH_NAME, _('The name'))
     if msg_err:
@@ -679,7 +700,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, perm
         has_error = True
 
 # - check if this is a valid email address:
-    email = af.get_dict_value(upload_dict, ('email', 'value'))
+    email = upload_dict.get('email')
     #logger.debug('email: ' + str(email))
     msg_err = v.validate_email_address(email)
     if msg_err:
@@ -699,6 +720,8 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, perm
         # datetime.now() is timezone naive. PR2018-06-07
         now_utc = timezone.now()
 
+        role = user_schoolbase.defaultrole
+
     # - create new user
         prefixed_username = user_schoolbase.prefix + username
         new_user = am.User(
@@ -707,7 +730,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, perm
             username=prefixed_username,
             last_name=last_name,
             email=email,
-            role=c.ROLE_08_SCHOOL,
+            role=role,
             permits=permits,
             is_active=True,
             activated=False,
@@ -771,8 +794,8 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, perm
             msg02 = _("We have sent an email to the email address '%(email)s'.") % {'email': new_user.email}
             msg03 = _(
                 'The user must click the link in that email to verify the email address and create a password.')
-
-            ok_dict = {'msg01': msg01, 'msg02': msg02, 'msg03': msg03}
+            msg04 = _('Check the spam folder, if the email does not appear within a few minutes.')
+            ok_dict = {'msg01': msg01, 'msg02': msg02, 'msg03': msg03, 'msg04': msg04}
 
     return new_user_pk, err_dict, ok_dict
 
@@ -868,6 +891,10 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
                                 remove_other_auth_permits(permit_field, saved_permit_list)
 
                             new_permit_sum = get_permit_sum_from_tuple(saved_permit_list)
+
+                            logger.debug('saved_permit_list: ' + str(saved_permit_list))
+                            logger.debug('new_permit_sum: ' + str(new_permit_sum))
+
                             instance.permits = new_permit_sum
                             data_has_changed = True
 

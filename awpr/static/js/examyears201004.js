@@ -31,10 +31,11 @@ document.addEventListener('DOMContentLoaded', function() {
     let mod_MEY_dict = {};
     let time_stamp = null; // used in mod add user
 
-    let company_dict = {};
     let user_list = [];
-    let school_rows = [];
+
     let examyear_map = new Map();
+    let school_map = new Map();
+    let department_map = new Map();
 
     let filter_dict = {};
     let filter_mod_employee = false;
@@ -65,6 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const has_view_permit = (!!el_loader);
     // has_edit_permit gets value after downloading settings
     let has_edit_permit = false;
+    let has_permit_select_school = false;
 
 // === EVENT HANDLERS ===
 // === reset filter when ckicked on Escape button ===
@@ -122,7 +124,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const datalist_request = {
                 setting: {page_examyear: {mode: "get"}, },
                 locale: {page: ["examyear"]},
-                examyear_rows: {get: true}
+                examyear_rows: {get: true},
+                school_rows: {get: true},
+                department_rows: {get: true}
             };
 
         DatalistDownload(datalist_request, "DOMContentLoaded");
@@ -157,29 +161,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if ("locale_dict" in response) {loc = response.locale_dict};
                 if ("setting_dict" in response) {
-                    setting_dict = response.setting_dict
+                    setting_dict = response.setting_dict;
+
                     // <PERMIT> PR220-10-02
                     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
                     //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
                     has_edit_permit = (setting_dict.requsr_role_admin && setting_dict.requsr_perm_edit) ||
                                       (setting_dict.requsr_role_system && setting_dict.requsr_perm_edit);
+                    // <PERMIT> PR2020-10-27
+                    // - every user may change examyear and department
+                    // -- only insp, admin and system may change school
+                    has_permit_select_school = (setting_dict.requsr_role_insp ||
+                                                setting_dict.requsr_role_admin ||
+                                                setting_dict.requsr_role_system);
+                    selected_btn = (setting_dict.sel_btn)
 
-                    if (!isEmpty(setting_dict) && "sel_btn" in setting_dict) { selected_btn = setting_dict.sel_btn}
-
-                    //UpdateHeaderbar();
+                    b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
 
                     UpdateSidebarExamyear(response.awp_messages);
                 };
                 // both 'loc' and 'setting_dict' are needed for CreateSubmenu
                 if (!isEmpty(loc) && !isEmpty(setting_dict)) {CreateSubmenu()};
-                //if ("company_dict" in response) { company_dict = response.company_dict}
 
                 if ("examyear_rows" in response) {
                     const tblName = "examyear";
                     const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
                     RefreshDataMap(tblName, field_names, response.examyear_rows, examyear_map)
                 }
-                if ("school_rows" in response) { school_rows = response.school_rows}
+                if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows)};
+                if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows)};
+
+
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
 
             },

@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const is_inactive = !( (map_dict[field_name]) ? map_dict[field_name] : false );
                     el_div.setAttribute("data-value", ((is_inactive) ? 1 : 0) );
                     const img_class = (is_inactive) ? "inactive_1_3" : "inactive_0_2";
-                    refresh_background_class(el_div, img_class)
+                    b_refresh_icon_class(el_div, img_class)
                     //let el_icon = el_div.children[0];
                     //if(el_icon){add_or_remove_class (el_icon, "inactive_1_3", is_inactive, "inactive_0_2")};
 // ---  add title

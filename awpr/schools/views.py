@@ -78,18 +78,21 @@ def home(request):
 
 def Loggedin(request):
     logger.debug('  ==========  Loggedin ==========')
-    # redirect to saved_href of last selected menubutton # PR2018-12-25 # PR2020-10-22
+    # redirect to saved_href of last selected menubutton # PR2018-12-25 # PR2020-10-22 PR2021-01-25
 
 # retrieve last opened page from, so at next login this page will open. Uses in LoggedIn
     sel_page = None
-    sel_page_dict = acc_mod.Usersetting.get_jsonsetting('sel_page', request.user)
-    logger.debug('sel_page_dict: ' + str(sel_page_dict))
+    if request and request.user:
+        req_usr = request.user
+        logger.debug('req_usr: ' + str(req_usr))
+        sel_page_dict = req_usr.get_setting('sel_page')
+        logger.debug('sel_page_dict: ' + str(sel_page_dict))
 
-    if sel_page_dict is not None:
-        sel_page = sel_page_dict.get('page')
+        if sel_page_dict is not None:
+            sel_page = sel_page_dict.get('page')
 # get page_url of sel_page, rturns 'home' when not found
     page_url = awpr_menu.get_saved_page_url(sel_page, request)
-    logger.debug('page_url: ' + str(page_url))
+    #logger.debug('page_url: ' + str(page_url))
 
     return HttpResponseRedirect(reverse_lazy(page_url))
 
@@ -99,9 +102,9 @@ def Loggedin(request):
 class ExamyearListView(View):
     # PR2018-08-06 PR2018-05-10 PR2018-03-02 PR2020-10-04
 
-
     def get(self, request):
         logger.debug(" =====  ExamyearListView  =====")
+
 # -  get user_lang
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
@@ -112,12 +115,10 @@ class ExamyearListView(View):
             request=request,
             page=page
         )
-       # params['examyear'] = requsr_examyear_text
-       # params['school'] = requsr_school_text
-       # params['department'] = requsr_dep_text
 
         # save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
-        acc_mod.Usersetting.set_jsonsetting('sel_page', {'page': page}, request.user)
+        if request and request.user:
+            request.user.set_setting('sel_page', {'page': page})
 
         logger.debug("params: " + str(params))
         return render(request, 'examyears.html', params)
@@ -426,7 +427,8 @@ class SchoolListView(View):  # PR2018-08-25 PR2020-10-21
         )
 
 # save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
-        acc_mod.Usersetting.set_jsonsetting('sel_page', {'page': page}, request.user)
+        if request and request.user:
+            request.user.set_setting('sel_page', {'page': page})
 
         return render(request, 'schools.html', params)
 
@@ -608,10 +610,7 @@ class SchoolImportView(View):  # PR2020-10-01
             coldef_list = c.COLDEF_SUBJECT
             captions_dict = c.CAPTION_IMPORT
 
-            # get mapped coldefs from table Companysetting
-            # get stored setting from Companysetting
-    #TODO get_jsonsetting returns dict
-            settings_json = sch_mod.Schoolsetting.get_jsonsetting(c.KEY_IMPORT_SUBJECT, request.user.schoolbase)
+            settings_json = request.user.schoolbase.get_setting(c.KEY_IMPORT_SUBJECT)
             stored_setting = json.loads(settings_json) if settings_json else {}
 
             # don't replace keyvalue when new_setting[key] = ''
@@ -682,8 +681,8 @@ class SchoolImportUploadSetting(View):   # PR2019-03-10
                 new_has_header = True
                 new_code_calc = ''
                 new_coldefs = {}
-    #TODO get_jsonsetting returns dict
-                stored_json = sch_mod.Schoolsetting.get_jsonsetting(settings_key, request.user.schoolbase)
+
+                stored_json = request.user.schoolbase.get_setting(settings_key)
                 if stored_json:
                     stored_setting = json.loads(stored_json)
                     #logger.debug('stored_setting: ' + str(stored_setting))
@@ -709,23 +708,7 @@ class SchoolImportUploadSetting(View):   # PR2019-03-10
                                'codecalc': new_code_calc,
                                'coldefs': new_coldefs}
                 new_setting_json = json.dumps(new_setting)
-                #logger.debug('new_setting' + str(new_setting))
-                #logger.debug('---  set_jsonsettingg  ------- ')
-                #logger.debug('new_setting_json' + str(new_setting_json))
-                #logger.debug(new_setting_json)
-                # TODO set_jsonsetting parameter changed to dict
-                sch_mod.Schoolsetting.set_jsonsetting(settings_key, new_setting_json, request.user.schoolbase)
-
-    # only for testing
-                # ----- get user_lang
-                #user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-                #tblName = 'employee'
-                #coldefs_dict = compdicts.get_stored_coldefs_dict(tblName, user_lang, request)
-                #if coldefs_dict:
-                #    schoolsetting_dict['coldefs'] = coldefs_dict
-                #logger.debug('new_setting from saved ' + str(coldefs_dict))
-
-                #m.Companysetting.set_setting(c.settings_key, new_setting_json, request.user.schoolbase)
+                request.user.schoolbase.set_setting(settings_key, new_setting_json)
 
         return HttpResponse(json.dumps(schoolsetting_dict, cls=LazyEncoder))
 # --- end of SubjectImportUploadSetting
@@ -884,7 +867,7 @@ def update_school(instance, upload_dict, msg_dict, request):
     if instance:
         # FIELDS_SCHOOL = ('base', 'examyear', 'name', 'abbrev', 'article', 'depbases',
         #                  'isdayschool', 'iseveningschool', 'islexschool',
-        #                  'activated', 'locked', 'activatedat', 'lockedat', 'istemplate', 'modifiedby', 'modifiedat')
+        #                  'activated', 'locked', 'activatedat', 'lockedat', 'modifiedby', 'modifiedat')
         save_changes = False
         for field, new_value in upload_dict.items():
             if field in c.FIELDS_SCHOOL:
@@ -919,7 +902,7 @@ def update_school(instance, upload_dict, msg_dict, request):
                             save_changes = True
 
 # 4. save changes in field 'inactive'
-                elif field in ['activated', 'locked', 'istemplate']:
+                elif field in ['activated', 'locked']:
                     #logger.debug('inactive new_value]: ' + str(new_value) + ' ' + str(type(new_value)))
                     saved_value = getattr(instance, field)
                     #logger.debug('inactive saved_value]: ' + str(saved_value) + ' ' + str(type(saved_value)))

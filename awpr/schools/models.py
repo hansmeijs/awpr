@@ -3,7 +3,8 @@ from django.contrib.auth import get_user_model
 
 # PR2020-12-13 Deprecation warning: django.contrib.postgres.fields import JSONField  will be removed from Django 4
 # instead use: django.db.models import JSONField (is added in Django 3)
-from django.contrib.postgres.fields import ArrayField, JSONField
+# PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
+from django.contrib.postgres.fields import ArrayField #, JSONField
 
 from django.db import connection
 from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
@@ -197,6 +198,44 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
             schoolyear = str(last_year) + '-' + str(self.code)
         return schoolyear
 
+# +++++++++++++++++++  get and set setting +++++++++++++++++++++++
+
+    def get_setting(cls, key_str):  # PR2019-03-09 PR2021-01-25
+        # function retrieves the string value of the setting row that match the filter and converts it to a dict
+        # logger.debug(' ---  get_setting  ------- ')
+        #  json.dumps converts a dict in a json object
+        #  json.loads retrieves a dict (or other type) from a json object
+
+        # logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
+        setting_dict = {}
+        if cls and key_str:
+            row = Examyearsetting.objects.filter(user=cls, key=key_str).order_by('-id').first()
+            if row and row.setting:
+                # logger.debug('row.setting: ' + str(row.setting) + ' ' + str(type(row.setting)))
+                setting_dict = json.loads(row.setting)
+        return setting_dict
+
+    def set_setting(cls, key_str, setting_dict):  # PR2019-03-09 PR2021-01-25
+        # function saves setting in first row that matches the filter, adds new row when not found
+        # logger.debug('---  set_setting  ------- ')
+        # logger.debug('key_str: ' + str(key_str))
+        # logger.debug('setting_dict: ' + str(setting_dict))
+        # logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
+        #  json.dumps converts a dict in a json object
+        #  json.loads retrieves a dict (or other type) from a json object
+        if cls and key_str:
+            setting_str = json.dumps(setting_dict)
+            row = Examyearsetting.objects.filter(user=cls, key=key_str).order_by('-id').first()
+            if row:
+                row.setting = setting_str
+            else:
+                # don't add row when setting has no value
+                # note: empty setting_dict {} = False, empty json "{}" = True, teherfore check if setting_dict is empty
+                if setting_dict:
+                    row = Examyearsetting(user=cls, key=key_str, setting=setting_str)
+            row.save()
+            # logger.debug('row.setting: ' + str(row.setting))
+
 
 # PR2018-06-06
 class Examyear_log(AwpBaseModel):
@@ -232,6 +271,73 @@ class Examyearsetting(Model):  # PR2021-01-
     key = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
     subkey = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
     setting = CharField(db_index=True, max_length=2048)
+
+
+# ===========  Classmethod
+    @classmethod
+    def get_setting(cls, key_str, user):  # PR2019-03-09 PR2021-01-25
+        # function returns value of setting row that match the filter
+        # logger.debug('---  get_setting  ------- ')
+        setting_str = None
+        if user and key_str:
+            row = cls.objects.filter(user=user, key=key_str).order_by('-id').first()
+            if row and row.setting:
+                setting_str = row.setting
+        return setting_str
+
+    @classmethod
+    def set_setting(cls, key_str, setting_str, user):  # PR2019-03-09 PR2021-01-25
+        # function saves setting in first row that matches the filter, adds new row when not found
+        logger.debug('---  set_setting  ------- ')
+        logger.debug('key_str: ' + str(key_str))
+        logger.debug('setting_str: ' + str(setting_str))
+        if user and key_str:
+            row = cls.objects.filter(user=user, key=key_str).order_by('-id').first()
+            if row:
+                row.setting = setting_str
+            else:
+                # don't add row when setting has no value
+                if setting_str:
+                    row = cls(user=user, key=key_str, setting=setting_str)
+            row.save()
+            logger.debug('row.setting: ' + str(row.setting))
+
+#===========  Classmethod
+    @classmethod
+    def get_setting(cls, key_str, user): # PR2019-03-09 PR2021-01-25
+        # function retrieves the string value of the setting row that match the filter and converts it to a dict
+        # logger.debug('---  get_setting  ------- ')
+        #  json.dumps converts a dict in a json object
+        #  json.loads retrieves a dict (or other type) from a json object
+        setting_dict = {}
+        if user and key_str:
+            row = cls.objects.filter(user=user, key=key_str).order_by('-id').first()
+            if row and row.setting:
+                setting_dict = json.loads(row.setting)
+        return setting_dict
+
+    @classmethod
+    def set_setting(cls, key_str, setting_dict, user): #PR2019-03-09 PR2021-01-25
+        # function saves setting in first row that matches the filter, adds new row when not found
+        logger.debug('---  set_setting  ------- ')
+        logger.debug('key_str: ' + str(key_str))
+        logger.debug('setting_dict: ' + str(setting_dict))
+        #  json.dumps converts a dict in a json object
+        #  json.loads retrieves a dict (or other type) from a json object
+        if user and key_str:
+            setting_str = json.dumps(setting_dict)
+            row = cls.objects.filter(user=user, key=key_str).order_by('-id').first()
+            if row:
+                row.setting = setting_str
+            else:
+                # don't add row when setting has no value
+                # note: empty setting_dict {} = False, empty json "{}" = True, teherfore check if setting_dict is empty
+                if setting_dict:
+                    row = cls(user=user, key=key_str, setting=setting_str)
+            row.save()
+            logger.debug('row.setting: ' + str(row.setting))
+
+
 
 
 # === Department Model =====================================
@@ -324,6 +430,9 @@ class Schoolbase(Model):  # PR2018-05-27 PR2018-11-11
 
     country = ForeignKey(Country, related_name='+', on_delete=PROTECT)
     code = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
+    # the role of new users is set to defaultrole of their schoolbase PR2021-01-25
+    # defaultroles are: school = 8, insp = 16, admin = 32, system = 64
+    defaultrole = PositiveSmallIntegerField(default=0)
 
     def __str__(self):
         return self.code
@@ -333,6 +442,45 @@ class Schoolbase(Model):  # PR2018-05-27 PR2018-11-11
         #PR2019-03-13 Prefix is added at front of username, to make usernames unique per schoolbase
         id_str = '000000' + str(self.pk)
         return id_str[-6:]
+
+# +++++++++++++++++++  get and set setting +++++++++++++++++++++++
+    def get_setting(cls, key_str):  # PR2019-03-09 PR2021-01-25
+        # function retrieves the string value of the setting row that match the filter and converts it to a dict
+        # logger.debug(' ---  get_setting  ------- ')
+        #  json.dumps converts a dict in a json object
+        #  json.loads retrieves a dict (or other type) from a json object
+
+        # logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
+        setting_dict = {}
+        if cls and key_str:
+            row = Schoolsetting.objects.filter(schoolbase=cls, key=key_str).order_by('-id').first()
+            if row and row.setting:
+                # logger.debug('row.setting: ' + str(row.setting) + ' ' + str(type(row.setting)))
+                setting_dict = json.loads(row.setting)
+        return setting_dict
+
+    def set_setting(cls, key_str, setting_dict):  # PR2019-03-09 PR2021-01-25
+        # function saves setting in first row that matches the filter, adds new row when not found
+        # logger.debug('---  set_setting  ------- ')
+        # logger.debug('key_str: ' + str(key_str))
+        # logger.debug('setting_dict: ' + str(setting_dict))
+        # logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
+        #  json.dumps converts a dict in a json object
+        #  json.loads retrieves a dict (or other type) from a json object
+        if cls and key_str:
+            setting_str = json.dumps(setting_dict)
+            row = Schoolsetting.objects.filter(schoolbase=cls, key=key_str).order_by('-id').first()
+            if row:
+                row.setting = setting_str
+            else:
+                # don't add row when setting has no value
+                # note: empty setting_dict {} = False, empty json "{}" = True, teherfore check if setting_dict is empty
+                if setting_dict:
+                    row = Schoolsetting(schoolbase=cls, key=key_str, setting=setting_str)
+            row.save()
+            # logger.debug('row.setting: ' + str(row.setting))
+
+
 
 
 # ===  School Model =====================================
@@ -357,9 +505,6 @@ class School(AwpBaseModel):  # PR2018-08-20 PR2018-11-11
     locked = BooleanField(default=False)
     activatedat = DateTimeField(null=True)
     lockedat = DateTimeField(null=True)
-
-    # is_template stores the examyear.id. In that way there can only be one template per examyear / country
-    istemplate = IntegerField(unique=True, null=True)
 
     class Meta:
         ordering = ['abbrev',]
@@ -400,11 +545,6 @@ class School_log(AwpBaseModel):
     locked = BooleanField(default=False)
     activatedat = DateTimeField(null=True)
     lockedat = DateTimeField(null=True)
-
-    #is_template = BooleanField(null=True)  # default School of this country and examyear PR2018-08-23
-
-    # is_template stores the examyear.id. In that way there can only be one template per examyear / country
-    istemplate = IntegerField(unique=True, null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -460,44 +600,8 @@ class Schoolsetting(Model):  # PR2020-10-20
     key = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
 
     setting = CharField(db_index=True, max_length=2048)
-
-    jsonsetting = JSONField(null=True)
-
-#===========  Classmethods
-    @classmethod
-    def get_jsonsetting(cls, key_str, schoolbase, default_setting_dict=None):  # PR2019-03-09 PR2020-10-20
-        setting_dict = None
-        if schoolbase and key_str:
-            # dont use get_or_none, it returns None when multiple found PR2020-12-05
-            # get row with highest id if multiple found
-            row = cls.objects.filter(schoolbase=schoolbase, key=key_str).order_by('-id').first()
-            if row and row.jsonsetting:
-                setting_dict = json.loads(row.jsonsetting)
-
-        if setting_dict is None and default_setting_dict:
-            setting_dict = default_setting_dict
-        return setting_dict
-
-    @classmethod
-    def set_jsonsetting(cls, key_str, new_setting_dict, schoolbase): #PR2019-03-09
-        #logger.debug('---  set_jsonsettingg  ------- ')
-        #logger.debug('key_str: ' + str(key_str) + ' new_setting_dict: ' + str(new_setting_dict))
-
-        if schoolbase and key_str:
-            new_setting_json = json.dumps(new_setting_dict)
-
-            # don't use get_or_none, gives none when multiple settings exists and will create extra setting.
-            row = cls.objects.filter(schoolbase=schoolbase, key=key_str).order_by('-id').first()
-            if row:
-                row.jsonsetting = new_setting_json
-            else:
-                if new_setting_json:
-                    row = cls(schoolbase=schoolbase, key=key_str, jsonsetting=new_setting_json)
-            row.save()
-            # test
-            #row = None
-            #saved_row = cls.objects.filter(schoolbase=schoolbase, key=key_str).order_by('-id').first()
-            ##logger.debug('saved_row.jsonsetting: ' + str(saved_row.jsonsetting))
+    # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
+    # jsonsetting = JSONField(null=True)
 
     @classmethod
     def get_datetimesetting(cls, key_str, schoolbase):  # PR2020-08-23

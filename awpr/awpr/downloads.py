@@ -158,28 +158,30 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
     # this function get settingss from request_item_setting.
     # if not in request_item_setting, it takes the saved settings.
 
-    req_user = request.user
+    req_usr = request.user
 
 # - selected_dict contains saved selected_pk's from Usersetting, key: selected_pk
     # changes are stored in this dict, saved at the end when
-    selected_dict = acc_mod.Usersetting.get_jsonsetting(c.KEY_SELECTED_PK, req_user)
+    selected_dict = req_usr.get_setting(c.KEY_SELECTED_PK)
     selected_dict_has_changed = False
 
 # - setting_dict contains all info to be sent to client
-    setting_dict = create_settingdict_with_role_and_permits(req_user, user_lang)
+    setting_dict = create_settingdict_with_role_and_permits(req_usr, user_lang)
 
 # ==== COUNTRY ========================
 # - get country from req_user
-    requsr_country = req_user.country
+    requsr_country = req_usr.country
     setting_dict['requsr_country_pk'] = requsr_country.pk  if requsr_country else None
     setting_dict['requsr_country'] = requsr_country.name if requsr_country else None
+    if requsr_country.locked:
+        setting_dict['requsr_country_locked'] = True
 
 # ===== SCHOOLBASE ======================= PR2020-12-18
 # - get schoolbase from settings / request when role is insp, admin or system, from req_user otherwise
     # req_user.schoolbase cannot be changed
     # Selected schoolbase is stored in {selected_pk: {sel_schoolbase_pk: val}}
 
-    requsr_schoolbase = req_user.schoolbase
+    requsr_schoolbase = req_usr.schoolbase
     setting_dict['requsr_schoolbase_pk'] = requsr_schoolbase.pk if requsr_schoolbase else None
     setting_dict['requsr_schoolbase_code'] = requsr_schoolbase.code if requsr_schoolbase else None
 
@@ -225,7 +227,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
 
 # ===== SCHOOL =======================
 # - only roles insp, admin and system may select other schools
-    may_select_school = req_user.is_role_insp or req_user.is_role_admin or req_user.is_role_system
+    may_select_school = req_usr.is_role_insp or req_usr.is_role_admin or req_usr.is_role_system
     setting_dict['may_select_school'] = may_select_school
 
 # get school from sel_schoolbase and sel_examyear_instance
@@ -367,7 +369,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
             if key not in skip_keys:
                 has_changed = False
                 new_page_dict = {}
-                saved_setting_dict = acc_mod.Usersetting.get_jsonsetting(key, req_user)
+                saved_setting_dict = req_usr.get_setting(key)
 
 ################################
 # get page settings - keys starting with 'page_'
@@ -391,13 +393,12 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
                             new_page_dict[sel_key] = new_value
                             setting_dict[sel_key] = new_value
                 if has_changed:
-                    acc_mod.Usersetting.set_jsonsetting(key, new_page_dict, req_user)
+                    req_usr.set_setting(key, new_page_dict)
     #logger.debug('setting_dict: ' + str(setting_dict))
 
     # - save settings when they have changed
     if selected_dict_has_changed:
-        # logger.debug('>>>>>>> save selected_dict: ' + str(selected_dict))
-        acc_mod.Usersetting.set_jsonsetting(c.KEY_SELECTED_PK, selected_dict, req_user)
+        req_usr.set_setting(c.KEY_SELECTED_PK, selected_dict)
 
     return setting_dict, awp_message, sel_examyear_instance, sel_schoolbase_instance, sel_depbase_instance
 # - end of download_setting
@@ -406,11 +407,13 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
 def get_selected_examperiod_examtype_from_usersetting(request):  # PR2021-01-20
 # - get selected examperiod and examtype from usersettings
     sel_examperiod, sel_examtype, sel_subject_pk = None, None, None
-    selected_dict = acc_mod.Usersetting.get_jsonsetting(c.KEY_SELECTED_PK, request.user)
-    if selected_dict:
-        sel_examperiod = selected_dict.get(c.KEY_SEL_EXAMPERIOD)
-        sel_examtype = selected_dict.get(c.KEY_SEL_EXAMTYPE)
-        sel_subject_pk = selected_dict.get(c.KEY_SEL_SUBJECT_PK)
+    req_user = request.user
+    if req_user:
+        selected_dict = req_user.get_setting(c.KEY_SELECTED_PK)
+        if selected_dict:
+            sel_examperiod = selected_dict.get(c.KEY_SEL_EXAMPERIOD)
+            sel_examtype = selected_dict.get(c.KEY_SEL_EXAMTYPE)
+            sel_subject_pk = selected_dict.get(c.KEY_SEL_SUBJECT_PK)
     return sel_examperiod, sel_examtype, sel_subject_pk
 
 
@@ -469,8 +472,11 @@ def get_selected_examyear_school_dep_from_usersetting(request):  # PR2021-1-13
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def create_settingdict_with_role_and_permits(req_user, user_lang):
-# - get role from req_user, put them in setting_dict PR2020-12-14
-    setting_dict = {'user_lang': user_lang, 'requsr_pk': req_user.pk, 'requsr_name': req_user.last_name}
+# - get role from req_user, put them in setting_dict PR2020-12-14  PR2021-01-26
+    setting_dict = {'user_lang': user_lang,
+                    'requsr_pk': req_user.pk,
+                    'requsr_name': req_user.last_name,
+                    'requsr_role': req_user.role}
     if req_user.is_role_student:
         setting_dict['requsr_role_student'] = req_user.is_role_student
     if req_user.is_role_teacher:

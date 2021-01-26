@@ -58,10 +58,14 @@ class StudentListView(View):  # PR2018-09-02 PR2020-10-27
 
         # set headerbar parameters PR2018-08-06
         page = 'students'
-        params = awpr_menu.get_headerbar_param(request, page)
+        params = awpr_menu.get_headerbar_param(
+            request=request,
+            page=page
+        )
 
         # save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
-        acc_mod.Usersetting.set_jsonsetting('sel_page', {'page': page}, request.user)
+        if request and request.user:
+            request.user.set_setting('sel_page', {'page': page})
 
         return render(request, 'students.html', params)
 
@@ -86,7 +90,8 @@ class StudentsubjectListView(View):
         page = 'subjects'
         params = awpr_menu.get_headerbar_param(request, page)
         # save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
-        acc_mod.Usersetting.set_jsonsetting('sel_page', {'page': page}, request.user)
+        if request.user:
+            request.user.set_setting('sel_page', {'page': page})
 
         return render(request, 'studentsubjects.html', params)
 #/////////////////////////////////////////////////////////////////
@@ -699,7 +704,7 @@ class StudentImportView(View):  # PR2020-10-01
             captions_dict = c.CAPTION_IMPORT
 
             # get stored setting from Schoolsetting
-            stored_setting = sch_mod.Schoolsetting.get_jsonsetting(c.KEY_IMPORT_SUBJECT, request.user.schoolbase)
+            stored_setting = request.user.schoolbase.get_setting(c.KEY_IMPORT_SUBJECT)
 
             logger.debug('coldef_list: ' + str(coldef_list))
             logger.debug('captions_dict: ' + str(captions_dict))
@@ -773,8 +778,8 @@ class StudentImportUploadSetting(View):  # PR2019-03-10
                 new_has_header = True
                 new_code_calc = ''
                 new_coldefs = {}
-    #TODO get_jsonsetting returns dict
-                stored_json = sch_mod.Schoolsetting.get_jsonsetting(settings_key, request.user.schoolbase)
+
+                stored_json = request.user.schoolbase.get_setting(settings_key)
                 if stored_json:
                     stored_setting = json.loads(stored_json)
                     # logger.debug('stored_setting: ' + str(stored_setting))
@@ -800,23 +805,8 @@ class StudentImportUploadSetting(View):  # PR2019-03-10
                                'codecalc': new_code_calc,
                                'coldefs': new_coldefs}
                 new_setting_json = json.dumps(new_setting)
-                # logger.debug('new_setting' + str(new_setting))
-                # logger.debug('---  set_jsonsettingg  ------- ')
-                # logger.debug('new_setting_json' + str(new_setting_json))
-                # logger.debug(new_setting_json)
-                # TODO set_jsonsetting parameter changed to dict
-                sch_mod.Schoolsetting.set_jsonsetting(settings_key, new_setting_json, request.user.schoolbase)
 
-        # only for testing
-        # ----- get user_lang
-        # user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-        # tblName = 'student'
-        # coldefs_dict = compdicts.get_stored_coldefs_dict(tblName, user_lang, request)
-        # if coldefs_dict:
-        #    schoolsetting_dict['coldefs'] = coldefs_dict
-        # logger.debug('new_setting from saved ' + str(coldefs_dict))
-
-        # m.Companysetting.set_setting(c.settings_key, new_setting_json, request.user.schoolbase)
+                request.user.schoolbase.set_setting(settings_key, new_setting_json)
 
         return HttpResponse(json.dumps(schoolsetting_dict, cls=LazyEncoder))
 

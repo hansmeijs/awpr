@@ -235,8 +235,6 @@ console.log("document.addEventListener students" )
         }
 
 // ---  MOD MESSAGE ------------------------------------
-        let el_mod_message_header = document.getElementById("id_mod_message_header");
-        let el_mod_message_text = document.getElementById("id_mod_message_text");
         let el_modmessage_btn_cancel = document.getElementById("id_modmessage_btn_cancel");
             el_modmessage_btn_cancel.addEventListener("click", function() {ModMessageClose()}, false);
 
@@ -264,7 +262,7 @@ console.log("document.addEventListener students" )
 //  #############################################################################################################
 
 //========= DatalistDownload  ===================== PR2020-07-31
-    function DatalistDownload(datalist_request, keep_loeader_hidden) {
+    function DatalistDownload(datalist_request, keep_loader_hidden) {
         console.log( "=== DatalistDownload ")
         console.log("request: ", datalist_request)
 
@@ -272,7 +270,7 @@ console.log("document.addEventListener students" )
         let startime = new Date().getTime();
 
 // ---  show loader
-        if(!keep_loeader_hidden){el_loader.classList.remove(cls_visible_hide)}
+        if(!keep_loader_hidden){el_loader.classList.remove(cls_visible_hide)}
 
         let param = {"download": JSON.stringify (datalist_request)};
         let response = "";
@@ -295,17 +293,32 @@ console.log("document.addEventListener students" )
                 };
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict
-                    // <PERMIT> PR220-10-02
+
+                    // <PERMIT> PR2020-10-02 PPR2021-01-26
+                    //  has_permit_edit = true if:
+                    //   - school is activated, AND examyear is published, AND school, examyear, country are not locked
+                    //   - AND user has perm_edit
+                    //   - AND user has role school TODO activate rule, rule left out for testing PR2021-01-26
+
                     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
                     //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
-                    has_permit_edit = (setting_dict.requsr_role_admin && setting_dict.requsr_perm_edit) ||
-                                      (setting_dict.requsr_role_system && setting_dict.requsr_perm_edit);
+                    has_permit_edit = false;
+                     if (setting_dict.sel_examyear_published && setting_dict.sel_school_activated &&
+                            !setting_dict.requsr_country_locked && !setting_dict.sel_examyear_locked &&
+                            !setting_dict.sel_school_locked){
+                        if (setting_dict.requsr_perm_edit){
+                            // TODO activate rule, rule left out for testing PR2021-01-26
+                            // TODO add role_teacher in the future
+                            //if(setting_dict.requsr_role_school){has_permit_edit = true}
+                            has_permit_edit = true
+                        }
+                    }
                     // <PERMIT> PR2020-10-27
-                    // - every user may change examyear and department
                     // -- only insp, admin and system may change school
                     has_permit_select_school = (setting_dict.requsr_role_insp ||
                                                 setting_dict.requsr_role_admin ||
                                                 setting_dict.requsr_role_system);
+
                     selected_btn = (setting_dict.sel_btn)
 
                     b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school );
@@ -321,8 +334,11 @@ console.log("document.addEventListener students" )
 
                     document.getElementById("id_hdr_textright1").innerText = setting_dict.sel_examperiod_caption
                 };
-
                 if(must_create_submenu){CreateSubmenu()};
+
+                // call render_messages also when there are no messages, to remove existing messages
+                const awp_messages = (response.awp_messages) ? response.awp_messages : {};
+                render_messages(response.awp_messages);
 
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
                 if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows) };
@@ -836,11 +852,8 @@ console.log("document.addEventListener students" )
                 if (msg_err){
                     //alert(msg_err)
     // ---  show modal
-                    // TODO header, set focus after closing messagebox
-                    // el_mod_message_header.innerText = loc.Enter_grade;
-                    el_mod_message_text.innerText = msg_err;
-                    $("#id_mod_message").modal({backdrop: false});
-                    set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
+                    const header_text = null;
+                    b_show_mod_message(header_text, msg_err);
 
                     el_focus = el_input;
                     el_input.value = null;
@@ -1450,7 +1463,7 @@ console.log("document.addEventListener students" )
 
             // period also returns emplhour_list
             const datalist_request = {studentsubjectnote_rows: {studsubj_pk: grade_dict.studsubj_id}};
-            DatalistDownload(datalist_request, true);  // true = keep_loeader_hidden
+            DatalistDownload(datalist_request, true);  // true = keep_loader_hidden
 
             mod_dict = {
                 studsubj_pk: grade_dict.studsubj_id,

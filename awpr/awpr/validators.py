@@ -131,7 +131,6 @@ def validate_delete_examyear(examyear):
         else:
 # - check if schools have activated or locked their school of this exam year  - can only happen when examyear.published =True
             crit = Q(examyear=examyear) & \
-                   Q(istemplate__isnull=True) & \
                    (Q(activated=True) | Q(locked=True))
             exists = sch_mod.School.objects.filter(crit).exists()
             if exists:
@@ -153,7 +152,6 @@ def validate_locked_activated_examyear(examyear):
         else:
 # - check if schools have activated or locked their school of this exam year  - can only happen when examyear.published =True
             crit = Q(examyear=examyear) & \
-                   Q(istemplate__isnull=True) & \
                    (Q(activated=True) | Q(locked=True))
             exists = sch_mod.School.objects.filter(crit).exists()
             if exists:

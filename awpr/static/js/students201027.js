@@ -14,7 +14,6 @@ console.log("document.addEventListener students" )
     const has_view_permit = (!!el_loader);
     // has_permit_edit gets value after downloading settings
     let has_permit_edit = false;
-    let has_permit_select_school = false;
 
     const cls_hide = "display_hide";
     const cls_hover = "tr_hover";
@@ -251,12 +250,7 @@ console.log("document.addEventListener students" )
                     //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
                     has_permit_edit = (setting_dict.requsr_role_admin && setting_dict.requsr_perm_edit) ||
                                       (setting_dict.requsr_role_system && setting_dict.requsr_perm_edit);
-                    // <PERMIT> PR2020-10-27
-                    // - every user may change examyear and department
-                    // -- only insp, admin and system may change school
-                    has_permit_select_school = (setting_dict.requsr_role_insp ||
-                                                setting_dict.requsr_role_admin ||
-                                                setting_dict.requsr_role_system);
+
                     selected_btn = (setting_dict.sel_btn)
 
                     b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
@@ -264,11 +258,9 @@ console.log("document.addEventListener students" )
 
                 if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
 
-                if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
-                if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows) };
-                if ("department_rows" in response) {
-                    b_fill_datamap(department_map, response.department_rows);
-                };
+                if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows)};
+                if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows)};
+                if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows)};
                 if ("level_rows" in response)  {
                     b_fill_datamap(level_map, response.level_rows);
                 };

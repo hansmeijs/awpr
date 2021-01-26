@@ -1,6 +1,6 @@
 from django.db import connection
 
-from awpr import functions as af
+from awpr import constants as ac
 from schools import models as sch_m
 
 import logging
@@ -131,17 +131,21 @@ def create_school_rows(examyear, setting_dict):
     #     add messages to employee_row
     #logger.debug(' =============== create_employee_rows ============= ')
 
-    #<PERMIT> PR2021-01-01
-    # show only the requsr_school when not role_admin or role_system
+    #<PERMIT> PR2021-01-01  PR2021-01-26
+    # - when role_school: show only the requsr_school
+    # - else: show only schools with defaultrole <= requsr_role
     requsr_role_system = setting_dict.get('requsr_role_system', False)
     requsr_role_admin = setting_dict.get('requsr_role_admin', False)
+
     requsr_schoolbase_pk =  setting_dict.get('requsr_schoolbase_pk')
 
-    sql_keys = {'ey_id': examyear.pk}
+    requsr_role = setting_dict.get('requsr_role', 0)
+
+    sql_keys = {'ey_id': examyear.pk, 'max_role': requsr_role}
 
     sql_list = ["SELECT s.id, s.base_id, s.examyear_id, ey.code AS examyear_code, ey.country_id, c.name AS country,",
-        "CONCAT('school_', s.id::TEXT) AS mapid,",
-        "s.name, s.abbrev, s.article, s.depbases, sb.code AS sb_code, s.istemplate, s.locked, s.depbases,",
+        "CONCAT('school_', s.id::TEXT) AS mapid, sb.defaultrole,",
+        "s.name, s.abbrev, s.article, s.depbases, sb.code AS sb_code, s.locked, s.depbases,",
         "s.modifiedby_id, s.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
 
         "FROM schools_school AS s",
@@ -150,15 +154,14 @@ def create_school_rows(examyear, setting_dict):
         "INNER JOIN schools_country AS c ON (c.id = ey.country_id)",
         "LEFT JOIN accounts_user AS au ON (au.id = s.modifiedby_id)",
 
-        "WHERE ey.id = %(ey_id)s::INT"]
+        "WHERE ey.id = %(ey_id)s::INT",
+        "AND sb.defaultrole <= %(max_role)s::INT"]
 
-    if requsr_role_system or requsr_role_admin:
+    if requsr_role >= ac.ROLE_16_INSP :
         sql_list.append("ORDER BY LOWER(sb.code)")
-    elif requsr_schoolbase_pk is not None:
+    else:
         sql_keys['sb_id'] = requsr_schoolbase_pk
         sql_list.append("AND sb.id = %(sb_id)s::INT")
-    else:
-        sql_list.append("AND FALSE")
 
     sql = ' '.join(sql_list)
     newcursor = connection.cursor()

@@ -211,6 +211,7 @@ def get_sel_examyear_instance(request, request_item_setting=None):  # PR2020-12-
     multiple_examyears = False
 
     if request.user and request.user.country:
+        req_usr= request.user
         requsr_country = request.user.country
 
 # - check if there is a new examyear_pk in request_item_setting, check if request_examyear exists
@@ -225,7 +226,7 @@ def get_sel_examyear_instance(request, request_item_setting=None):  # PR2020-12-
 
         if sel_examyear_instance is None:
 # - get saved_examyear_pk from Usersetting, check if saved_examyear exists
-            selected_dict = acc_mod.Usersetting.get_jsonsetting(c.KEY_SELECTED_PK, request.user)
+            selected_dict = req_usr.get_setting(c.KEY_SELECTED_PK)
             s_ey_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
             sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=s_ey_pk, country=requsr_country)
 
@@ -249,16 +250,16 @@ def get_sel_schoolbase_instance(request, request_item_setting=None):  # PR2020-1
     #logger.debug('request_item_setting: ' + str(request_item_setting))
 
 # ===== SCHOOLBASE ======================= PR2020-12-18
-    # - get schoolbase from settings / request when role is insp, admin or system, from req_user otherwise
-    # req_user.schoolbase cannot be changed
+    # - get schoolbase from settings / request when role is insp, admin or system, from req_usr otherwise
+    # req_usr.schoolbase cannot be changed
     # Selected schoolbase is stored in {selected_pk: {sel_schoolbase_pk: val}}
 
     sel_schoolbase_instance = None
     sel_schoolbase_save = False
     if request.user and request.user.country:
-        req_user = request.user
-        requsr_country = req_user.country
-        may_select_schoolbase = req_user.is_role_insp or req_user.is_role_admin or req_user.is_role_system
+        req_usr = request.user
+        requsr_country = req_usr.country
+        may_select_schoolbase = req_usr.is_role_insp or req_usr.is_role_admin or req_usr.is_role_system
 
         if may_select_schoolbase:
 
@@ -271,16 +272,16 @@ def get_sel_schoolbase_instance(request, request_item_setting=None):  # PR2020-1
 
             if sel_schoolbase_instance is None:
     # - get saved_schoolbase_pk from Usersetting, check if saved_schoolbase exists
-                selected_dict = acc_mod.Usersetting.get_jsonsetting(c.KEY_SELECTED_PK, req_user)
+                selected_dict = req_usr.get_setting(c.KEY_SELECTED_PK)
                 s_sb_pk = selected_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
                 sel_schoolbase_instance = sch_mod.Schoolbase.objects.get_or_none(pk=s_sb_pk, country=requsr_country)
     # - if there is no saved nor request examyear: get schoolbase of this user
             if sel_schoolbase_instance is None:
-                sel_schoolbase_instance = req_user.schoolbase
+                sel_schoolbase_instance = req_usr.schoolbase
                 if sel_schoolbase_instance is not None:
                     sel_schoolbase_save = True
         else:
-            sel_schoolbase_instance = req_user.schoolbase
+            sel_schoolbase_instance = req_usr.schoolbase
 
     return sel_schoolbase_instance, sel_schoolbase_save
 # --- end of get_sel_schoolbase_instance
@@ -294,17 +295,17 @@ def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  #
     allowed_depbases = []
 
     if request.user and request.user.country:
-        req_user = request.user
-        requsr_country = req_user.country
+        req_usr = request.user
+        requsr_country = req_usr.country
 
 # - get allowed depbases from school and user
         may_select_department = False
         if sel_school and sel_school.depbases:
             for depbase_pk in sel_school.depbases:
-                # skip if depbase not in list of req_user.allowed_depbases
-                # if req_user.allowed_depbases is empty, all depbases of the
+                # skip if depbase not in list of req_usr.allowed_depbases
+                # if req_usr.allowed_depbases is empty, all depbases of the
                 # school are allowed
-                skip = req_user.allowed_depbases and depbase_pk not in req_user.allowed_depbases
+                skip = req_usr.allowed_depbases and depbase_pk not in req_usr.allowed_depbases
                 if not skip:
                     allowed_depbases.append(depbase_pk)
         #logger.debug('allowed_depbases: ' + str(allowed_depbases))
@@ -326,7 +327,7 @@ def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  #
 
         if sel_depbase_instance is None:
 # - get depbase_pk from Usersetting, check if request_depbase exists
-            selected_dict = acc_mod.Usersetting.get_jsonsetting(c.KEY_SELECTED_PK, req_user)
+            selected_dict = req_usr.get_setting(c.KEY_SELECTED_PK)
             s_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
         # check if it is in allowed_depbases,
             if s_depbase_pk in allowed_depbases:
@@ -377,14 +378,15 @@ def get_saved_sel_depbase_instance(request):  # PR2020-12-24
     #logger.debug('  -----  get_saved_sel_depbase_instance  -----')
     sel_depbase_instance = None
 # - get saved selected_pk's from Usersetting, key: selected_pk
-    selected_dict = acc_mod.Usersetting.get_jsonsetting(c.KEY_SELECTED_PK, request.user)
-
+    req_usr = request.user
+    if req_usr:
+        selected_dict = req_usr.get_setting(c.KEY_SELECTED_PK)
 # - get saved_depbase_pk, check if saved_depbase exists
-    if selected_dict:
-        s_db_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
-# - get selected examyear
-        if s_db_pk:
-            sel_depbase_instance = sch_mod.Department.objects.get_or_none(pk=s_db_pk, country=request.user.country)
+        if selected_dict:
+            s_db_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
+    # - get selected examyear
+            if s_db_pk:
+                sel_depbase_instance = sch_mod.Department.objects.get_or_none(pk=s_db_pk, country=request.user.country)
     return sel_depbase_instance
 
 

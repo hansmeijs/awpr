@@ -10,72 +10,74 @@
 
 <!-- SIDE BAR -->
 {% block sidebar %}
-    <div class="tsa_margin_top48_left24X">
     <nav id="id_sidebar" class="awp_sidebar">
         <div class="content_subheader_left tab_show tab_init mx-2 my-4">
             <h5>{% trans 'Users' %}</h5>
         </div>
-
     </nav>
-    </div>>
 {% endblock %}
 <!-- END SIDE BAR -->
 
 
 {% block content %}
+    <div id="id_content">
+        {% if user.is_perm_admin or user.is_perm_system %}
+    <!-- =================== MODAL SELECT EXAM YEAR =================== -->
+            {% include 'schools/modselectexamyear.html' %}
+    <!-- =================== MODAL SELECT SCHOOL OR DEPARTMENT=================== -->
+            {% include 'schools/modselectschoolordep.html' %}
+    <!-- =================== MODAL CONFIRM  =================== -->
+            {% include 'includes/modconfirm.html' %}
+    <!-- =================== MODAL USER  =================== -->
+            {% include 'accounts/moduser.html' %}
 
-<div id="id_content">
+            <div class="content_margin_top78">
 
-    {% if user.is_perm_admin or user.is_perm_system %}
-<!-- =================== MODAL CONFIRM  =================== -->
-        {% include 'includes/modconfirm.html' %}
-<!-- =================== MODAL USER  =================== -->
-        {% include 'accounts/moduser.html' %}
+                {% include 'includes/messages.html' %}
 
-        <div class="containerXX">
+
 <!-- CONTENT HEADER - LOADER -->
-        <!-- content_header -->
-
-            {% include 'includes/menubar.html' %}
-
-
-            <div class="content_header ">
-            <div id="id_submenu" class="awp_navbar_submenuXX display_hideXX mt-4">
-            </div>
-                            <!-- header_text -->
-                <div class="content_subheader_left">
+        <!-- submenu -->
+                <div class="content_header flex_container">
+                    <div id="id_submenu" class="awp_navbar_submenuXX mt-5">
+                    </div>
+        <!-- header_text -->
+                    <div class="flex_4 pl-4 py-2">
+                    </div>
+            <!-- loader -->
+                    <div class="flex_1 py-2">
+                            {% include 'includes/loader.html' %}
+                    </div>
+            <!-- right header_text -->
+                    <div class="flex_4 py-2">
+                        <h5 id="id_hdr_textright1"></h5>
+                    </div>
                 </div>
-        <!-- loader -->
-                <div class="content_header_middle mt-4 mb-2">
-                        {% include 'includes/loader.html' %}
-                </div>
-            </div>
-        <!-- end content_header -->
+
 <!-- BUTTON GROUP -->
-            <div id="id_btn_container" class="btn-group btn-block mx-2 my-2" role="group" aria-label="Choose option" >
-                <button data-btn="btn_user_list" class="btn btn-secondary ">{% trans 'User list' %}</button>
-                <button data-btn="btn_permissions" class="btn btn-secondary ">{% trans 'Permissions' %}</button>
-            </div>
+                <div id="id_btn_container" class="btn-group btn-block mx-2 my-2" role="group" aria-label="Choose option" >
+                    <button data-btn="btn_user_list" class="btn btn-secondary ">{% trans 'User list' %}</button>
+                    <button data-btn="btn_permissions" class="btn btn-secondary ">{% trans 'Permissions' %}</button>
+                </div>
 <!-- end BUTTON GROUP -->
-<!-- END OF CONTENT HEADER -->
 
 <!-- CONTENT BODY -->
-        <div class="content_body ml-2 mr-0">
-<!-- =================== DATA TABLE  =================== -->
-            <table class="table tsa_tbl">
-                <thead id="id_tblHead_datatable"></thead>
-                <tbody id="id_tblBody_datatable"></tbody>
-            </table>
-<!-- =================== END DATA TABLE  =================== -->
-        </div>
-<!-- END OF CONTENT BODY -->
-        </div>
-        <div id="id_data"
-            data-datalist_download_url="{% url 'datalist_download_url' %}"
-            data-settings_upload_url="{% url 'settings_upload_url' %}"
+                <div class="content_body ml-2 mr-0">
+        <!-- =================== DATA TABLE  =================== -->
+                    <table class="table tsa_tbl">
+                        <thead id="id_tblHead_datatable"></thead>
+                        <tbody id="id_tblBody_datatable"></tbody>
+                    </table>
+        <!-- =================== END DATA TABLE  =================== -->
+                </div>
+            </div>
 
-            data-user_upload_url="{% url 'user_upload_url' %}"
-        >
+            <div id="id_data"
+                data-datalist_download_url="{% url 'datalist_download_url' %}"
+                data-settings_upload_url="{% url 'settings_upload_url' %}"
+
+                data-user_upload_url="{% url 'user_upload_url' %}"
+            >
         </div>
 
     {% else %}

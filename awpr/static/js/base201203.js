@@ -138,11 +138,10 @@
             }
             el_hdrbar_department.innerText = department_txt;
         }
-//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+// --- SCHOOL
         if(el_hdrbar_school) {
-            // set hove when user has permit to goto different school.
+            // set hover when user has permit to goto different school.
             const permit_select_school = setting_dict.may_select_school;
-            console.log("permit_select_school", permit_select_school )
             add_or_remove_class(el_hdrbar_school, "awp_navbaritem_may_select", permit_select_school, "awp_navbar_item" )
 
             let schoolname_txt = null;
@@ -460,18 +459,18 @@
     }
 
 //=========  refresh_background_class ================ PR2020-09-12
-    function refresh_background_class(el, img_class) {
+    function b_refresh_icon_class(el, img_class) {
         if (el) {
-            let el_img = el.children[0];
-            if (el_img){
-                el_img.className = img_class;
-            }
+            const el_img = el.children[0];
+            if (el_img){el_img.className = img_class};
         }
-    }  // refresh_background_class
+    }  // b_refresh_icon_class
 
 //========= add_hover_class  =========== PR2020-09-20
     function add_hover_class (el, hover_class, default_class) {
         //console.log(" === add_hover_class === ")
+        // note: dont use on icons that will change, like 'inactive' or 'status'
+        // add_hover_class will replace 'is_inactive' icon by default_class on mouseleave
         if(el && hover_class && default_class){
             el.addEventListener("mouseenter", function() {add_or_remove_class (el, hover_class, true, default_class)});
             el.addEventListener("mouseleave", function() {add_or_remove_class (el, default_class, true, hover_class)});
@@ -850,6 +849,16 @@
 //#########################################################################
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++
 
+    function b_show_mod_message(header_text, msg_text){  // PR2021-01-26
+        // TODO header, set focus after closing messagebox
+        // el_mod_message_header.innerText = loc.Enter_grade;
+        document.getElementById("id_mod_message_header").innerText = header_text;
+        document.getElementById("id_mod_message_text").innerText = msg_text;
+        $("#id_mod_message").modal({backdrop: false});
+        set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
+    }  // show_mod_message
+
+
 //========= render_messages  =================
     function render_messages(awp_messages) {
         console.log( "=== render_messages ")
@@ -873,7 +882,6 @@
             if (!isEmpty(awp_messages)) {
                 for (let i = 0 ; i <awp_messages.length; i++) {
                     const awp_message = awp_messages[i];
-        console.log( "awp_message", awp_message)
                     if (awp_message){
 
 // --- insert td element,
