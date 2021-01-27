@@ -33,6 +33,7 @@ from students import models as stud_mod
 from students import views as stud_view
 from subjects import models as subj_mod
 from grades import validations as grad_val
+from grades import exfiles as grad_ex
 
 import json # PR2018-12-03
 # PR2018-04-27
@@ -62,7 +63,7 @@ class GradeListView(View):  # PR2020-12-03
 
 # - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request.user:
-            request.user.set_setting('sel_page', {'page': page})
+            request.user.set_usersetting_dict('sel_page', {'page': page})
 
         return render(request, 'grades.html', params)
 
@@ -83,14 +84,16 @@ class GradeApproveView(View):  # PR2021-01-19
         # only if country/examyear/school/student not locked, examyear is published and school is activated
         has_permit = False
         if request.user and request.user.country and request.user.schoolbase:
-            req_usr = request.user
-            # TODO ROLE_64_SYSTEM is only for testing, must be removed
-            if req_usr.role in (c.ROLE_08_SCHOOL, c.ROLE_64_SYSTEM):
-                has_permit = (req_usr.is_perm_auth1 or req_usr.is_perm_auth2 or req_usr.is_perm_auth3)
+            req_user = request.user
+            # TODO ROLE_32_ADMIN, ROLE_64_SYSTEM is only for testing, must be removed
+            if req_user.role in (c.ROLE_08_SCHOOL, c.ROLE_32_ADMIN, c.ROLE_64_SYSTEM):
+                has_permit = (req_user.is_perm_auth1 or req_user.is_perm_auth2 or req_user.is_perm_auth3)
+
+            logger.debug('has_permit: ' + str(has_permit))
             if has_permit:
 
     # - reset language
-                user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
                 activate(user_lang)
 
     # - get upload_dict from request.POST
@@ -103,15 +106,13 @@ class GradeApproveView(View):  # PR2021-01-19
                     mode = upload_dict.get('mode')
                     is_approve = True if mode in ('approve', 'reset') else False
                     is_submit = True if mode in ('submit_test', 'submit_submit') else False
+                    is_test = (mode == 'submit_test')
                     logger.debug('mode: ' + str(mode))
 
     # - get selected examyear, school and department from usersettings
                     sel_examyear, sel_school, sel_department, is_locked, \
                         examyear_published, school_activated, is_requsr_school = \
                             dl.get_selected_examyear_school_dep_from_usersetting(request)
-                    setting_dict = {'sel_examyear_pk': sel_examyear.pk,
-                                    'sel_schoolbase_pk': sel_school.base_id,
-                                    'sel_depbase_pk': sel_department.base_id}
 
     # - get selected grade from upload_dict - if any
                     grade_pk = upload_dict.get('grade_pk')
@@ -144,8 +145,7 @@ class GradeApproveView(View):  # PR2021-01-19
                         if grades is None:
                             msg_dict['count_text'] = _("The selection contains %(val)s.") % {'val': get_grade_text(0)}
                         else:
-                            is_test = mode == 'submit_test'
-       # create new published_instance when it is not a test
+       # create new published_instance. Save it  when it is not a test
                             published_instance = create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, is_test, request)
         # +++++ loop through  grades
                             grade_rows = []
@@ -153,7 +153,7 @@ class GradeApproveView(View):  # PR2021-01-19
                                 logger.debug('grade: ' + str(grade))
                                 msg_dict['count'] += 1
                                 if is_approve:
-                                    is_reset = mode == 'reset'
+                                    is_reset = (mode == 'reset')
                                     approve_grade(grade, sel_examtype, is_reset, msg_dict, request)
                                 elif is_submit:
                                     logger.debug('published_instance: ' + str(published_instance))
@@ -177,8 +177,8 @@ class GradeApproveView(View):  # PR2021-01-19
                                         grade_rows.append(rows[0])
         # +++++  end of loop through  grades
                             if grade_rows:
-                                canvas = create_ex2a(published_instance, grade_rows, request)
-                                update_wrap['updated_ex2a'] = canvas
+                                #canvas = create_ex2a(published_instance, grade_rows, request)
+                                #update_wrap['updated_ex2a'] = canvas
 
                                 update_wrap['updated_grade_rows'] = grade_rows
                                 count = msg_dict.get('count', 0)
@@ -280,9 +280,11 @@ def get_grades_are_text(count):
 
 def approve_grade(grade, sel_examtype, is_reset, msg_dict, request):  # PR2021-01-19
     logger.debug('----- approve_grade -----')
+    logger.debug('sel_examtype: ' + str(sel_examtype))
+    logger.debug('is_reset: ' + str(is_reset))
 
     if grade and sel_examtype and sel_examtype in ('se', 'pe', 'ce'):
-        req_usr = request.user
+        req_user = request.user
 
 # - skip if this grade / examtype is already published
         published = getattr(grade, sel_examtype + '_published')
@@ -302,11 +304,11 @@ def approve_grade(grade, sel_examtype, is_reset, msg_dict, request):  # PR2021-0
             else:
 
                 authby_field = None
-                if req_usr.is_perm_auth1:
+                if req_user.is_perm_auth1:
                     authby_field = sel_examtype + '_auth1by'
-                elif req_usr.is_perm_auth2:
+                elif req_user.is_perm_auth2:
                     authby_field = sel_examtype + '_auth2by'
-                elif req_usr.is_perm_auth3:
+                elif req_user.is_perm_auth3:
                     authby_field = sel_examtype + '_auth3by'
                 logger.debug('authby_field: ' + str(authby_field))
 
@@ -324,36 +326,36 @@ def approve_grade(grade, sel_examtype, is_reset, msg_dict, request):  # PR2021-0
                     save_changes = True
                 else:
     # - skip if this grade is already approved by this auth
-                    already_approved_by_auth = req_usr.is_perm_auth1 and auth1by or \
-                                               req_usr.is_perm_auth2 and auth2by or \
-                                               req_usr.is_perm_auth3 and auth3by
+                    already_approved_by_auth = req_user.is_perm_auth1 and auth1by or \
+                                               req_user.is_perm_auth2 and auth2by or \
+                                               req_user.is_perm_auth3 and auth3by
                     logger.debug('already_approved_by_auth: ' + str(already_approved_by_auth))
                     if already_approved_by_auth:
                         msg_dict['already_approved_by_auth'] += 1
                     else:
     # - skip if this author (like 'president') has already approved this grade
             # under a different permit (like 'secretary' or 'commissioner')
-                        if req_usr.is_perm_auth1:
-                            double_approved = (auth2by and auth2by == req_usr) or (auth3by and auth3by == req_usr)
-                        elif req_usr.is_perm_auth2:
-                            double_approved = (auth1by and auth1by == req_usr) or (auth3by and auth3by == req_usr)
-                        elif req_usr.is_perm_auth3:
-                            double_approved = (auth1by and auth1by == req_usr) or (auth2by and auth2by == req_usr)
+                        if req_user.is_perm_auth1:
+                            double_approved = (auth2by and auth2by == req_user) or (auth3by and auth3by == req_user)
+                        elif req_user.is_perm_auth2:
+                            double_approved = (auth1by and auth1by == req_user) or (auth3by and auth3by == req_user)
+                        elif req_user.is_perm_auth3:
+                            double_approved = (auth1by and auth1by == req_user) or (auth2by and auth2by == req_user)
 
                         logger.debug('double_approved: ' + str(double_approved))
                         if double_approved:
                             msg_dict['double_approved'] += 1
                         else:
-                            setattr(grade, authby_field, req_usr)
+                            setattr(grade, authby_field, req_user)
                             msg_dict['saved'] += 1
                             save_changes = True
                             logger.debug('save_changes: ' + str(save_changes))
 
     # - set value of authby_field
                 if save_changes:
-                    status_index = 1 if req_usr.is_perm_auth1 else \
-                        2 if req_usr.is_perm_auth2 else \
-                            3 if req_usr.is_perm_auth3 else None
+                    status_index = 1 if req_user.is_perm_auth1 else \
+                        2 if req_user.is_perm_auth2 else \
+                            3 if req_user.is_perm_auth3 else None
                     logger.debug('status_index: ' + str(status_index))
                     logger.debug('is_reset: ' + str(is_reset))
 
@@ -791,7 +793,7 @@ def set_status_sum_by_index(status_sum, index, new_value_bool):  # PR2021-01-15
 # --- end of set_status_sum_by_index
 
 
-def create_ex2a(published_instance, grade_rows, request):
+def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, sel_subject, sel_examperiod, sel_examtype, grade_rows, request):
     logger.debug(' ============= create_ex2a ============= ')
     # --- create ex2a PR2021-01-22
 
@@ -802,7 +804,9 @@ def create_ex2a(published_instance, grade_rows, request):
     # create PDF
     filepath = awpr_settings.STATICFILES_MEDIA_DIR + 'Ex2A.pdf'
     canvas = Canvas(filepath)
-    draw_Ex2A(canvas, grade_rows)
+
+    grad_ex.draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel_examperiod, sel_examtype,
+                  grade_rows)
     #canvas.drawString(200, 200, 'Examennummer')
     canvas.showPage()
     canvas.save()

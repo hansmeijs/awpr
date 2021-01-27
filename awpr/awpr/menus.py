@@ -399,13 +399,13 @@ def get_depbase_list(request, requsr_school):  # PR2018-08-24  PR2018-11-23 PR20
     may_select_dep = False
     sel_depbase_instance = None
 
-    req_usr = request.user
-    if req_usr and requsr_school:
+    req_user = request.user
+    if req_user and requsr_school:
         allowed_dep_count = 0
 # - if school does not have any departments: sel_depbase_instance = None
         if requsr_school.depbases:
 # - if requsr_allowed_depbase_list is empty: add all school_depbases to list
-            if req_usr.allowed_depbases is None:
+            if req_user.allowed_depbases is None:
                 depbase_pk_list = requsr_school.depbases
                 allowed_dep_count = len(depbase_pk_list)
             else:
@@ -414,13 +414,13 @@ def get_depbase_list(request, requsr_school):  # PR2018-08-24  PR2018-11-23 PR20
                 # add only the ones in requsr_allowed_depbase_list
                 for school_depbase_pk in requsr_school.depbases:
     # - add_to_list if school_depbase is in requsr_allowed_depbase_list
-                    if school_depbase_pk in req_usr.allowed_depbases:
+                    if school_depbase_pk in req_user.allowed_depbases:
                         depbase_pk_list.append(school_depbase_pk)
                         allowed_dep_count += 1
     # if there is only 1 allowed dep: set user_dep = this dep
             if allowed_dep_count == 1:
                 sel_depbase_pk = depbase_pk_list[0]
-                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=sel_depbase_pk, country=req_usr.country)
+                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=sel_depbase_pk, country=req_user.country)
             elif allowed_dep_count > 1:
 # - get saved sel_depbase: if multiple exist in depbase_pk_list
                 saved_sel_depbase_instance = af.get_saved_sel_depbase_instance(request)

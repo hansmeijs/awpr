@@ -38,17 +38,18 @@ logger = logging.getLogger(__name__)
 class GradeDownloadEx2aView(View):  # PR2021-01-24
 
     def get(self, request):
-#logger.debuglogger.debug(' ============= GradeDownloadEx2aView ============= ')
+        #logger.debug(' ============= GradeDownloadEx2aView ============= ')
         # function creates, Ex2A pdf file based on settings in usersetting
         response = None
         try:
             if request.user and request.user.country and request.user.schoolbase:
-                req_usr = request.user
-                logger.debug('req_usr: ' + str(req_usr))
+                req_user = request.user
+                logger.debug('req_user: ' + str(req_user))
 
     # - reset language
-                user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
                 activate(user_lang)
+
     # - get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, is_locked, \
                     examyear_published, school_activated, is_requsr_school = \
@@ -56,6 +57,11 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
 
         # - get selected examperiod, examtype, subject_pk from usersettings
                 sel_examperiod, sel_examtype, sel_subject_pk = dl.get_selected_examperiod_examtype_from_usersetting(request)
+
+                logger.debug('sel_examperiod: ' + str(sel_examperiod))
+                logger.debug('sel_school: ' + str(sel_school))
+                logger.debug('sel_department: ' + str(sel_department))
+                logger.debug('sel_subject_pk: ' + str(sel_subject_pk))
 
                 if sel_examperiod and sel_school and sel_department and sel_subject_pk:
                     sel_subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk, examyear=sel_examyear)

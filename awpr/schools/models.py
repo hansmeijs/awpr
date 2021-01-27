@@ -302,43 +302,6 @@ class Examyearsetting(Model):  # PR2021-01-
             row.save()
             logger.debug('row.setting: ' + str(row.setting))
 
-#===========  Classmethod
-    @classmethod
-    def get_setting(cls, key_str, user): # PR2019-03-09 PR2021-01-25
-        # function retrieves the string value of the setting row that match the filter and converts it to a dict
-        # logger.debug('---  get_setting  ------- ')
-        #  json.dumps converts a dict in a json object
-        #  json.loads retrieves a dict (or other type) from a json object
-        setting_dict = {}
-        if user and key_str:
-            row = cls.objects.filter(user=user, key=key_str).order_by('-id').first()
-            if row and row.setting:
-                setting_dict = json.loads(row.setting)
-        return setting_dict
-
-    @classmethod
-    def set_setting(cls, key_str, setting_dict, user): #PR2019-03-09 PR2021-01-25
-        # function saves setting in first row that matches the filter, adds new row when not found
-        logger.debug('---  set_setting  ------- ')
-        logger.debug('key_str: ' + str(key_str))
-        logger.debug('setting_dict: ' + str(setting_dict))
-        #  json.dumps converts a dict in a json object
-        #  json.loads retrieves a dict (or other type) from a json object
-        if user and key_str:
-            setting_str = json.dumps(setting_dict)
-            row = cls.objects.filter(user=user, key=key_str).order_by('-id').first()
-            if row:
-                row.setting = setting_str
-            else:
-                # don't add row when setting has no value
-                # note: empty setting_dict {} = False, empty json "{}" = True, teherfore check if setting_dict is empty
-                if setting_dict:
-                    row = cls(user=user, key=key_str, setting=setting_str)
-            row.save()
-            logger.debug('row.setting: ' + str(row.setting))
-
-
-
 
 # === Department Model =====================================
 # PR2018-09-15 moved from Subjects to School because of circulair refrence when trying to import subjects.Department

@@ -107,16 +107,16 @@ class UserUploadView(View):
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None and request.user.schoolbase is not None:
-            req_usr = request.user
+            req_user = request.user
             # <PERMIT> PR220-09-24
             #  - only perm_admin and perm_system can add / edit / delete users
             #  - only role_system and role_admin (ETE) can add users of other schools
             #  - role_system, role_admin, role_insp and role_school can add users of their own school
 
             has_permit_this_school, has_permit_all_schools = False, False
-            if req_usr.is_perm_admin or req_usr.is_perm_system:
-                has_permit_all_schools = req_usr.is_role_admin or req_usr.is_role_system
-                has_permit_this_school = req_usr.is_role_insp or req_usr.is_role_school
+            if req_user.is_perm_admin or req_user.is_perm_system:
+                has_permit_all_schools = req_user.is_role_admin or req_user.is_role_system
+                has_permit_this_school = req_user.is_role_insp or req_user.is_role_school
             if has_permit_this_school or has_permit_all_schools:
 
 # - get upload_dict from request.POST
@@ -131,8 +131,8 @@ class UserUploadView(View):
                     # upload_dict: {'mode': 'delete', 'user_pk': 169, 'user_ppk': 3, 'mapid': 'user_169'}
 
     # - reset language
-                    # PR2019-03-15 Debug: language gets lost, get req_usr.lang again
-                    user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+                    # PR2019-03-15 Debug: language gets lost, get req_user.lang again
+                    user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
                     activate(user_lang)
 
     # - get info from upload_dict
@@ -151,9 +151,9 @@ class UserUploadView(View):
     # - check if the user schoolbase exists
                     user_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
                         id=user_schoolbase_pk,
-                        country=req_usr.country
+                        country=req_user.country
                     )
-                    is_same_schoolbase = (user_schoolbase and user_schoolbase == req_usr.schoolbase)
+                    is_same_schoolbase = (user_schoolbase and user_schoolbase == req_user.schoolbase)
                     logger.debug('user_schoolbase: ' + str(user_schoolbase))
                     logger.debug('is_same_schoolbase: ' + str(is_same_schoolbase))
 
@@ -184,13 +184,13 @@ class UserUploadView(View):
                                 if has_permit_all_schools:
                                     instance = am.User.objects.get_or_none(
                                         id=user_pk,
-                                        country=req_usr.country
+                                        country=req_user.country
                                     )
                                 elif has_permit_this_school:
                                     instance = am.User.objects.get_or_none(
                                         id=user_pk,
-                                        country=req_usr.country,
-                                        schoolbase=req_usr.schoolbase
+                                        country=req_user.country,
+                                        schoolbase=req_user.schoolbase
                                     )
                                 logger.debug('instance: ' + str(instance))
 
@@ -201,8 +201,8 @@ class UserUploadView(View):
                                         updated_dict = deleted_instance_list[0]
                                         updated_dict['mapid'] = map_id
 
-                                    if (req_usr.is_perm_system or req_usr.is_perm_admin) \
-                                            and (instance == req_usr):
+                                    if (req_user.is_perm_system or req_user.is_perm_admin) \
+                                            and (instance == req_user):
                                         err_dict['msg01'] = _("System administrators cannot delete their own account.")
                                     else:
                                         try:
@@ -244,12 +244,12 @@ class UserUploadView(View):
     # - +++++++++ update ++++++++++++
                             instance = None
                             if has_permit_all_schools:
-                                instance = am.User.objects.get_or_none(id=user_pk, country=req_usr.country)
+                                instance = am.User.objects.get_or_none(id=user_pk, country=req_user.country)
                             elif has_permit_this_school:
                                 instance = am.User.objects.get_or_none(
                                     id=user_pk,
-                                    country=req_usr.country,
-                                    schoolbase=req_usr.schoolbase
+                                    country=req_user.country,
+                                    schoolbase=req_user.schoolbase
                                 )
                             if instance:
                                 err_dict, ok_dict = update_user_instance(instance, user_pk, upload_dict, is_validate_only, request)
@@ -297,7 +297,7 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
                 # PR2020-10-04 not any more, don't know why
                 for key, new_setting_dict in upload_dict.items():
                     # key = 'page_examyear', dict = {'sel_btn': 'examyear'}
-                    saved_settings_dict = req_user.get_setting(key)
+                    saved_settings_dict = req_user.get_usersetting_dict(key)
                     #logger.debug('new_setting_dict: ' + str(new_setting_dict))
                     #logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
                     # loop through saved settings
@@ -315,7 +315,7 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
                             if value:
                                 saved_settings_dict[subkey] = value
                     #logger.debug('Usersetting.set_setting from UserSettingsUploadView')
-                    req_user.set_setting(key, saved_settings_dict)
+                    req_user.set_usersetting_dict(key, saved_settings_dict)
 
         # c. add update_dict to update_wrap
                     update_wrap['setting'] = {'result': 'ok'}
@@ -369,8 +369,8 @@ def SignupActivateView(request, uidb64, token):
         user = User.objects.get_or_none(pk=uid)
     except (TypeError, ValueError, OverflowError):
         user = None
-    logger.debug('user: ' + str(user))
-    logger.debug('user.is_authenticated: ' + str(user.is_authenticated))
+    #logger.debug('user: ' + str(user))
+    #logger.debug('user.is_authenticated: ' + str(user.is_authenticated))
 
 # - get language from user
     # PR2019-03-15 Debug: language gets lost, get request.user.lang again
@@ -415,7 +415,7 @@ def SignupActivateView(request, uidb64, token):
             update_wrap['msg_02'] = _('Maybe it has expired or has been used already.')
             update_wrap['msg_03'] = _('The link expires after 7 days.')
 
-    logger.debug('update_wrap: ' + str(update_wrap))
+    #logger.debug('update_wrap: ' + str(update_wrap))
 
     if request.method == 'POST':
         logger.debug('request.POST' + str(request.POST))

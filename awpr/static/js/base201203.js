@@ -564,8 +564,8 @@
         return item_dict
     }
 
-//========= b_get_status_at_index  ============= PR2021-01-15
-    function b_get_status_at_index(status_int, index) {
+//========= b_get_status_bool_at_index  ============= PR2021-01-15
+    function b_get_status_bool_at_index(status_int, index) {
         if(status_int == null){status_int = 0};
         let status_bool = false;
         if(index < 15) {
@@ -573,11 +573,11 @@
             status_bool = (status_array[index] == "1");
         }
         return status_bool
-    }  // b_get_status_at_index
+    }  // b_get_status_bool_at_index
 
-//========= b_set_status_at_index  ============= PR2021-01-15
-    function b_set_status_at_index(status_int, index, new_value) {
-        console.log( " ==== b_set_status_at_index ====");
+//========= b_set_status_bool_at_index  ============= PR2021-01-15
+    function b_set_status_bool_at_index(status_int, index, new_value) {
+        console.log( " ==== b_set_status_bool_at_index ====");
 
         if(status_int == null){status_int = 0};
         let new_status_int = 0;
@@ -591,11 +591,11 @@
             new_status_int = parseInt(arr_joined,2)
         }
         return new_status_int
-    }  // b_set_status_at_index
+    }  // b_set_status_bool_at_index
 
 //========= b_get_status_array  ============= PR2021-01-15
     function b_get_status_array(status_int) {
-        //console.log( " ==== b_set_status_at_index ====");
+        //console.log( " ==== b_set_status_bool_at_index ====");
         if(status_int == null){status_int = 0};
         const status_binary = status_int.toString(2)  // status_binary:  '1110101' string
         const status_binary_extended = "00000000000000" + status_binary;  // status_binary_extended: '000000000000001110101' string
@@ -613,11 +613,11 @@
         //console.log( "status_sum", status_sum);
         let img_class = "appr_0_0";
         if (status_sum < 32) {
-            const created = b_get_status_at_index(status_sum, 0)  // STATUS_00_CREATED
-            const auth1 = b_get_status_at_index(status_sum, 1)  // STATUS_01_AUTH1 = 2
-            const auth2 = b_get_status_at_index(status_sum, 2) // STATUS_02_AUTH2 = 4
-            const auth3 = b_get_status_at_index(status_sum, 3) // STATUS_03_AUTH3 = 8
-            const submitted = b_get_status_at_index(status_sum, 4) // STATUS_04_SUBMITTED = 16
+            const created = b_get_status_bool_at_index(status_sum, 0)  // STATUS_00_CREATED
+            const auth1 = b_get_status_bool_at_index(status_sum, 1)  // STATUS_01_AUTH1 = 2
+            const auth2 = b_get_status_bool_at_index(status_sum, 2) // STATUS_02_AUTH2 = 4
+            const auth3 = b_get_status_bool_at_index(status_sum, 3) // STATUS_03_AUTH3 = 8
+            const submitted = b_get_status_bool_at_index(status_sum, 4) // STATUS_04_SUBMITTED = 16
 
             img_class = (submitted) ? "appr_1_5" :
                         (auth1 && auth2 && auth3) ? "appr_1_4" :

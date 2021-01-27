@@ -65,7 +65,7 @@ class StudentListView(View):  # PR2018-09-02 PR2020-10-27
 
         # save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request and request.user:
-            request.user.set_setting('sel_page', {'page': page})
+            request.user.set_usersetting_dict('sel_page', {'page': page})
 
         return render(request, 'students.html', params)
 
@@ -91,7 +91,7 @@ class StudentsubjectListView(View):
         params = awpr_menu.get_headerbar_param(request, page)
         # save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request.user:
-            request.user.set_setting('sel_page', {'page': page})
+            request.user.set_usersetting_dict('sel_page', {'page': page})
 
         return render(request, 'studentsubjects.html', params)
 #/////////////////////////////////////////////////////////////////

@@ -83,9 +83,9 @@ def Loggedin(request):
 # retrieve last opened page from, so at next login this page will open. Uses in LoggedIn
     sel_page = None
     if request and request.user:
-        req_usr = request.user
-        logger.debug('req_usr: ' + str(req_usr))
-        sel_page_dict = req_usr.get_setting('sel_page')
+        req_user = request.user
+        logger.debug('req_user: ' + str(req_user))
+        sel_page_dict = req_user.get_usersetting_dict('sel_page')
         logger.debug('sel_page_dict: ' + str(sel_page_dict))
 
         if sel_page_dict is not None:
@@ -118,7 +118,7 @@ class ExamyearListView(View):
 
         # save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request and request.user:
-            request.user.set_setting('sel_page', {'page': page})
+            request.user.set_usersetting_dict('sel_page', {'page': page})
 
         logger.debug("params: " + str(params))
         return render(request, 'examyears.html', params)
@@ -428,7 +428,7 @@ class SchoolListView(View):  # PR2018-08-25 PR2020-10-21
 
 # save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request and request.user:
-            request.user.set_setting('sel_page', {'page': page})
+            request.user.set_usersetting_dict('sel_page', {'page': page})
 
         return render(request, 'schools.html', params)
 

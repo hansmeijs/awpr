@@ -906,44 +906,45 @@ console.log("document.addEventListener students" )
                 if(!isEmpty(map_dict)){
                     const fldName = get_attr_from_el(el_input, "data-field");
                     if(fldName in map_dict ){
-                        console.log( "fldName", fldName);
                         const examtype = fldName.substring(0,2);
                         const published_field = examtype + "_published"
-                        console.log( "published_field", published_field);
                         let published_pk = (map_dict[published_field]) ? map_dict[published_field] : null;
+
+                        console.log( "fldName", fldName);
+                        console.log( "published_field", published_field);
                         console.log( "published_pk", published_pk);
 
                 // ---  index of auth1 = 1, index of auth2 = 2  ---  STATUS_01_AUTH1 = 2,  STATUS_02_AUTH2 = 4
                         const index = ( perm_auth1 ) ? 1 : ( perm_auth2 ) ? 2 : ( perm_auth3 ) ? 3 : null;
                         const status_sum = (map_dict[fldName]) ? map_dict[fldName] : 0;
+                        const status_bool_at_index = b_get_status_bool_at_index(status_sum, index)
+                console.log( "status_bool_at_index", status_bool_at_index);
                 console.log( "status_sum", status_sum);
-                        const status_at_index = b_get_status_at_index(status_sum, index)
-                console.log( "status_at_index", status_at_index);
 
-                // ---  toggle value of status_at_index
-                        const new_value = !status_at_index;
-                console.log( "new_value", new_value);
-                // ---  put new value in  value of status_at_index
-                        const new_status_sum = b_set_status_at_index(status_sum, index, new_value);
-                console.log( "new_status_sum", new_status_sum);
-
-                console.log( "new_status_sum", new_status_sum);
+                // ---  toggle value of status_bool_at_index
+                        const new_status_bool_at_index = !status_bool_at_index;
+                console.log( "new_status_bool_at_index", new_status_bool_at_index);
+                // ---  put new value in  value of status_bool_at_index
 
     // ---  change icon, before uploading
+                        //const new_status_sum = b_set_status_bool_at_index(status_sum, index, new_status_bool_at_index);
                         //el_input.className = get_status_class(new_status_sum)
 
     // ---  upload changes
+                        // value of 'mode' setermines if status is set to 'approved' or 'not
+                        // instead of using value of new_status_bool_at_index,
+                        const mode = (new_status_bool_at_index) ? "approve" : "reset"
                         const upload_dict = { table: map_dict.table,
-                                               mode: "approve",
+                                               mode: mode,
                                                mapid: map_id,
-
+                                               field: fldName,
+                                               status_bool_at_index:  new_status_bool_at_index,
                                                examperiod: map_dict.examperiod,
                                                examtype: examtype,
 
                                                grade_pk: map_dict.id,
                                                student_pk: map_dict.student_id,
                                                studsubj_pk: map_dict.studsubj_id};
-                        upload_dict[fldName] = new_status_sum;
                         UploadChanges(upload_dict, url_grade_approve);
 
                     }  //   if(fldName in map_dict ){
