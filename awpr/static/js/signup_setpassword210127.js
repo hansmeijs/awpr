@@ -3,8 +3,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
-    console.log( "==== signup_setpassword210125 ========= ");
-
     const cls_hide = "display_hide";
     const cls_visible_hide = "visibility_hide";
     const el_btn_submit = document.getElementById("id_btn_submit");

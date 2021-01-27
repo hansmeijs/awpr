@@ -122,6 +122,7 @@ class GradeApproveView(View):  # PR2021-01-19
                         sel_examperiod = upload_dict.get('examperiod')
                         sel_examtype = upload_dict.get('examtype')
                     else:
+
     # - get selected examperiod and examtype from usersettings
                         sel_examperiod, sel_examtype, sel_subject_pkNIU = dl.get_selected_examperiod_examtype_from_usersetting(request)
 
@@ -145,7 +146,7 @@ class GradeApproveView(View):  # PR2021-01-19
                         if grades is None:
                             msg_dict['count_text'] = _("The selection contains %(val)s.") % {'val': get_grade_text(0)}
                         else:
-       # create new published_instance. Save it  when it is not a test
+       # create new published_instance. Only save it when it is not a test
                             published_instance = create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, is_test, request)
         # +++++ loop through  grades
                             grade_rows = []
@@ -156,7 +157,6 @@ class GradeApproveView(View):  # PR2021-01-19
                                     is_reset = (mode == 'reset')
                                     approve_grade(grade, sel_examtype, is_reset, msg_dict, request)
                                 elif is_submit:
-                                    logger.debug('published_instance: ' + str(published_instance))
                                     submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, request)
 
     # - add update_dict to update_wrap
@@ -292,6 +292,7 @@ def approve_grade(grade, sel_examtype, is_reset, msg_dict, request):  # PR2021-0
         if published:
             msg_dict['already_published'] += 1
         else:
+
 # skip if this grade has no value
             grade_value = getattr(grade, sel_examtype + 'grade')
             score_value = None
@@ -312,20 +313,20 @@ def approve_grade(grade, sel_examtype, is_reset, msg_dict, request):  # PR2021-0
                     authby_field = sel_examtype + '_auth3by'
                 logger.debug('authby_field: ' + str(authby_field))
 
-    # - skip if other_auth has already approved and other_auth is same as this auth. - may not approve if same auth has already approved
+# - skip if other_auth has already approved and other_auth is same as this auth. - may not approve if same auth has already approved
                 auth1by = getattr(grade, sel_examtype + '_auth1by')
                 auth2by = getattr(grade, sel_examtype + '_auth2by')
                 auth3by = getattr(grade, sel_examtype + '_auth3by')
 
                 double_approved = False
                 save_changes = False
-    # - remove  authby when is_reset
+# - remove  authby when is_reset
                 if is_reset:
                     setattr(grade, authby_field, None)
                     msg_dict['saved'] += 1
                     save_changes = True
                 else:
-    # - skip if this grade is already approved by this auth
+# - skip if this grade is already approved by this auth
                     already_approved_by_auth = req_user.is_perm_auth1 and auth1by or \
                                                req_user.is_perm_auth2 and auth2by or \
                                                req_user.is_perm_auth3 and auth3by
@@ -333,7 +334,7 @@ def approve_grade(grade, sel_examtype, is_reset, msg_dict, request):  # PR2021-0
                     if already_approved_by_auth:
                         msg_dict['already_approved_by_auth'] += 1
                     else:
-    # - skip if this author (like 'president') has already approved this grade
+# - skip if this author (like 'president') has already approved this grade
             # under a different permit (like 'secretary' or 'commissioner')
                         if req_user.is_perm_auth1:
                             double_approved = (auth2by and auth2by == req_user) or (auth3by and auth3by == req_user)
@@ -351,7 +352,7 @@ def approve_grade(grade, sel_examtype, is_reset, msg_dict, request):  # PR2021-0
                             save_changes = True
                             logger.debug('save_changes: ' + str(save_changes))
 
-    # - set value of authby_field
+# - set value of authby_field
                 if save_changes:
                     status_index = 1 if req_user.is_perm_auth1 else \
                         2 if req_user.is_perm_auth2 else \
@@ -365,7 +366,7 @@ def approve_grade(grade, sel_examtype, is_reset, msg_dict, request):  # PR2021-0
                     logger.debug('new_status_sum: ' + str(new_status_sum))
                     setattr(grade, sel_examtype + '_status', new_status_sum)
 
-    # - save changes
+# - save changes
                     grade.save(request=request)
 # - end of approve_grade
 
@@ -396,7 +397,9 @@ def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, req
                 auth1by = getattr(grade, sel_examtype + '_auth1by')
                 auth2by = getattr(grade, sel_examtype + '_auth2by')
                 auth3by = getattr(grade, sel_examtype + '_auth3by')
-                auth_missing = auth1by is None or auth2by is None or auth3by is None
+                # TODO dnot checking on auth3by ia only for testing. Must put it back
+                # auth_missing = auth1by is None or auth2by is None or auth3by is None
+                auth_missing = auth1by is None or auth2by is None
                 logger.debug('auth_missing: ' + str(auth_missing))
                 if auth_missing:
                     msg_dict['auth_missing'] += 1

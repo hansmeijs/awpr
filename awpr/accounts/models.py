@@ -344,6 +344,7 @@ class User(AbstractUser):
 
 # +++++++++++++++++++  get and set setting +++++++++++++++++++++++
 
+
     def get_usersetting_dict(cls, key_str): # PR2019-03-09 PR2021-01-25
         # function retrieves the string value of the setting row that match the filter and converts it to a dict
         #logger.debug(' ---  get_usersetting_dict  ------- ')
@@ -359,12 +360,12 @@ class User(AbstractUser):
                 if row:
                     row_setting = row.setting
                     if row_setting:
-                        logger.debug('row.setting: ' + str(row.setting) + ' ' + str(type(row.setting)))
                         setting_dict = json.loads(row_setting)
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
             logger.error('key_str: ', str(key_str))
             logger.error('row_setting: ', str(row_setting))
+
         return setting_dict
 
     def set_usersetting_dict(cls, key_str, setting_dict): #PR2019-03-09 PR2021-01-25
@@ -389,7 +390,7 @@ class User(AbstractUser):
                     if setting_dict:
                         row = Usersetting(user=cls, key=key_str, setting=setting_str)
                 row.save()
-            #logger.debug('row.setting: ' + str(row.setting))
+
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
             logger.error('key_str: ', str(key_str))

@@ -1,4 +1,4 @@
-# PR2020-09-17
+# PR2020-09-17 PR2021-01-27
 from django.contrib.auth.decorators import login_required
 from django.db import connection
 from django.db.models import Q, Value
@@ -7,12 +7,10 @@ from django.http import HttpResponse
 from django.shortcuts import render, redirect #, get_object_or_404
 from django.utils.translation import activate, ugettext_lazy as _
 from django.utils.decorators import method_decorator
-from django.views.generic import UpdateView, View
+from django.views.generic import View
 
-from datetime import date, time, datetime, timedelta
 from timeit import default_timer as timer
 
-from accounts import models as acc_mod
 from accounts import views as av
 
 from awpr import constants as c

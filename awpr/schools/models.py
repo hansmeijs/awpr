@@ -198,44 +198,6 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
             schoolyear = str(last_year) + '-' + str(self.code)
         return schoolyear
 
-# +++++++++++++++++++  get and set setting +++++++++++++++++++++++
-
-    def get_setting(cls, key_str):  # PR2019-03-09 PR2021-01-25
-        # function retrieves the string value of the setting row that match the filter and converts it to a dict
-        # logger.debug(' ---  get_setting  ------- ')
-        #  json.dumps converts a dict in a json object
-        #  json.loads retrieves a dict (or other type) from a json object
-
-        # logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
-        setting_dict = {}
-        if cls and key_str:
-            row = Examyearsetting.objects.filter(user=cls, key=key_str).order_by('-id').first()
-            if row and row.setting:
-                # logger.debug('row.setting: ' + str(row.setting) + ' ' + str(type(row.setting)))
-                setting_dict = json.loads(row.setting)
-        return setting_dict
-
-    def set_setting(cls, key_str, setting_dict):  # PR2019-03-09 PR2021-01-25
-        # function saves setting in first row that matches the filter, adds new row when not found
-        # logger.debug('---  set_setting  ------- ')
-        # logger.debug('key_str: ' + str(key_str))
-        # logger.debug('setting_dict: ' + str(setting_dict))
-        # logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
-        #  json.dumps converts a dict in a json object
-        #  json.loads retrieves a dict (or other type) from a json object
-        if cls and key_str:
-            setting_str = json.dumps(setting_dict)
-            row = Examyearsetting.objects.filter(user=cls, key=key_str).order_by('-id').first()
-            if row:
-                row.setting = setting_str
-            else:
-                # don't add row when setting has no value
-                # note: empty setting_dict {} = False, empty json "{}" = True, teherfore check if setting_dict is empty
-                if setting_dict:
-                    row = Examyearsetting(user=cls, key=key_str, setting=setting_str)
-            row.save()
-            # logger.debug('row.setting: ' + str(row.setting))
-
 
 # PR2018-06-06
 class Examyear_log(AwpBaseModel):
@@ -272,12 +234,10 @@ class Examyearsetting(Model):  # PR2021-01-
     subkey = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
     setting = CharField(db_index=True, max_length=2048)
 
-
-# ===========  Classmethod
-    @classmethod
-    def get_setting(cls, key_str, user):  # PR2019-03-09 PR2021-01-25
+    # +++++++++++++++++++  get and set setting +++++++++++++++++++++++
+    def get_setting_dict(cls, key_str, user):  # PR2019-03-09 PR2021-01-25
         # function returns value of setting row that match the filter
-        # logger.debug('---  get_setting  ------- ')
+        # logger.debug('---  get_setting_dict  ------- ')
         setting_str = None
         if user and key_str:
             row = cls.objects.filter(user=user, key=key_str).order_by('-id').first()
@@ -406,23 +366,32 @@ class Schoolbase(Model):  # PR2018-05-27 PR2018-11-11
         id_str = '000000' + str(self.pk)
         return id_str[-6:]
 
+
 # +++++++++++++++++++  get and set setting +++++++++++++++++++++++
-    def get_setting(cls, key_str):  # PR2019-03-09 PR2021-01-25
+    def get_schoolsetting_dict(cls, key_str):  # PR2019-03-09 PR2021-01-25
         # function retrieves the string value of the setting row that match the filter and converts it to a dict
-        # logger.debug(' ---  get_setting  ------- ')
+        # logger.debug(' ---  get_schoolsetting_dict  ------- ')
         #  json.dumps converts a dict in a json object
         #  json.loads retrieves a dict (or other type) from a json object
 
         # logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
         setting_dict = {}
-        if cls and key_str:
-            row = Schoolsetting.objects.filter(schoolbase=cls, key=key_str).order_by('-id').first()
-            if row and row.setting:
-                # logger.debug('row.setting: ' + str(row.setting) + ' ' + str(type(row.setting)))
-                setting_dict = json.loads(row.setting)
+        row_setting = None
+        try:
+            if cls and key_str:
+                row = Schoolsetting.objects.filter(schoolbase=cls, key=key_str).order_by('-id').first()
+                if row:
+                    row_setting = row.setting
+                    if row_setting:
+                        setting_dict = json.loads(row_setting)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            logger.error('key_str: ', str(key_str))
+            logger.error('row_setting: ', str(row_setting))
+
         return setting_dict
 
-    def set_setting(cls, key_str, setting_dict):  # PR2019-03-09 PR2021-01-25
+    def set_schoolsetting_dict(cls, key_str, setting_dict):  # PR2019-03-09 PR2021-01-25
         # function saves setting in first row that matches the filter, adds new row when not found
         # logger.debug('---  set_setting  ------- ')
         # logger.debug('key_str: ' + str(key_str))
@@ -430,20 +399,23 @@ class Schoolbase(Model):  # PR2018-05-27 PR2018-11-11
         # logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
         #  json.dumps converts a dict in a json object
         #  json.loads retrieves a dict (or other type) from a json object
-        if cls and key_str:
-            setting_str = json.dumps(setting_dict)
-            row = Schoolsetting.objects.filter(schoolbase=cls, key=key_str).order_by('-id').first()
-            if row:
-                row.setting = setting_str
-            else:
-                # don't add row when setting has no value
-                # note: empty setting_dict {} = False, empty json "{}" = True, teherfore check if setting_dict is empty
-                if setting_dict:
-                    row = Schoolsetting(schoolbase=cls, key=key_str, setting=setting_str)
-            row.save()
-            # logger.debug('row.setting: ' + str(row.setting))
 
-
+        try:
+            if cls and key_str:
+                setting_str = json.dumps(setting_dict)
+                row = Schoolsetting.objects.filter(schoolbase=cls, key=key_str).order_by('-id').first()
+                if row:
+                    row.setting = setting_str
+                else:
+                    # don't add row when setting has no value
+                    # note: empty setting_dict {} = False, empty json "{}" = True, teherfore check if setting_dict is empty
+                    if setting_dict:
+                        row = Schoolsetting(schoolbase=cls, key=key_str, setting=setting_str)
+                row.save()
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            logger.error('key_str: ', str(key_str))
+            logger.error('setting_dict: ', str(setting_dict))
 
 
 # ===  School Model =====================================

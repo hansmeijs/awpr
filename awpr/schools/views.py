@@ -610,7 +610,7 @@ class SchoolImportView(View):  # PR2020-10-01
             coldef_list = c.COLDEF_SUBJECT
             captions_dict = c.CAPTION_IMPORT
 
-            settings_json = request.user.schoolbase.get_setting(c.KEY_IMPORT_SUBJECT)
+            settings_json = request.user.schoolbase.get_schoolsetting_dict(c.KEY_IMPORT_SUBJECT)
             stored_setting = json.loads(settings_json) if settings_json else {}
 
             # don't replace keyvalue when new_setting[key] = ''
@@ -682,7 +682,7 @@ class SchoolImportUploadSetting(View):   # PR2019-03-10
                 new_code_calc = ''
                 new_coldefs = {}
 
-                stored_json = request.user.schoolbase.get_setting(settings_key)
+                stored_json = request.user.schoolbase.get_schoolsetting_dict(settings_key)
                 if stored_json:
                     stored_setting = json.loads(stored_json)
                     #logger.debug('stored_setting: ' + str(stored_setting))
@@ -708,7 +708,7 @@ class SchoolImportUploadSetting(View):   # PR2019-03-10
                                'codecalc': new_code_calc,
                                'coldefs': new_coldefs}
                 new_setting_json = json.dumps(new_setting)
-                request.user.schoolbase.set_setting(settings_key, new_setting_json)
+                request.user.schoolbase.set_schoolsetting_dict(settings_key, new_setting_json)
 
         return HttpResponse(json.dumps(schoolsetting_dict, cls=LazyEncoder))
 # --- end of SubjectImportUploadSetting

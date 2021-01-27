@@ -50,7 +50,7 @@ class UploadImportSettingView(View):   # PR2020-12-05
                     sel_examyear = sch_mod.Examyear.objects.get_or_none(pk=sel_examyear_pk)
 
                     if setting_key and sel_schoolbase:
-                        stored_setting_dict = sel_schoolbase.get_setting(setting_key)
+                        stored_setting_dict = sel_schoolbase.get_schoolsetting_dict(setting_key)
 
                         #logger.debug('stored_setting_dict' + str(stored_setting_dict))
                         new_stored_setting = {}
@@ -69,7 +69,7 @@ class UploadImportSettingView(View):   # PR2020-12-05
 
                         #logger.debug('new_stored_setting' + str(new_stored_setting))
                         if new_stored_setting:
-                            sel_schoolbase.set_setting(setting_key, new_stored_setting)
+                            sel_schoolbase.set_schoolsetting_dict(setting_key, new_stored_setting)
 
         # get updated stored_setting from database, return tp page to update mimp_stored
                     #request_item_setting = {'setting_key': setting_key}
