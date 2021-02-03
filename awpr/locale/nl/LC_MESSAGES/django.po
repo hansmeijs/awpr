@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-01-26 16:16-0400\n"
+"POT-Creation-Date: 2021-02-03 19:54-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -62,7 +62,7 @@ msgstr ""
 msgid "A user with that username already exists."
 msgstr "Een gebruiker met deze gebruikersnaam komt al voor."
 
-#: .\accounts\models.py:56 .\schools\models.py:363 .\subjects\models.py:42
+#: .\accounts\models.py:56 .\schools\models.py:286 .\subjects\models.py:42
 #: .\subjects\models.py:44 .\subjects\models.py:166 .\subjects\models.py:168
 msgid "Required. {} characters or fewer."
 msgstr "Verplicht. {} tekens of minder."
@@ -95,92 +95,92 @@ msgstr "Autoriseren"
 msgid "Admin"
 msgstr ""
 
-#: .\accounts\models.py:389 .\accounts\models.py:529
-#: .\templates\subjects\subjectimport.html:203
+#: .\accounts\models.py:405 .\accounts\models.py:545
+#: .\templates\subjects\subjectimport.html:202
 msgid "You must be logged in to view this page."
 msgstr "Je moet ingelogd zijn om deze pagina te kunnen bekijken."
 
-#: .\accounts\models.py:420
+#: .\accounts\models.py:436
 msgid "You don't have permission to modify countries."
 msgstr "Je hebt geen permissie om landen te wijzigen."
 
-#: .\accounts\models.py:524 .\templates\accounts\users.html:85
+#: .\accounts\models.py:540 .\templates\accounts\users.html:85
 #: .\templates\import.html:29 .\templates\importing\import_student.html:84
-#: .\templates\schools\examyears.html:90 .\templates\schools\schools.html:100
+#: .\templates\schools\examyears.html:90 .\templates\schools\schools.html:98
 #: .\templates\students\grades.html:142 .\templates\students\students.html:113
 #: .\templates\students\studentsubjects.html:113
-#: .\templates\subjects\subjectimport.html:198
+#: .\templates\subjects\subjectimport.html:197
 #: .\templates\subjects\subjects.html:86
 msgid "You don't have permission to view this page."
 msgstr "Je hebt geen permissie om deze pagina te bekijken."
 
-#: .\accounts\models.py:536 .\accounts\models.py:568
+#: .\accounts\models.py:552 .\accounts\models.py:584
 msgid "You are not connected to a country. You cannot view this page."
 msgstr "Er is geen land geselecteerd. Je kunt deze pagina niet bekijken."
 
-#: .\accounts\models.py:541 .\accounts\models.py:580 .\accounts\models.py:664
+#: .\accounts\models.py:557 .\accounts\models.py:596 .\accounts\models.py:680
 msgid "You are not connected to a school. You cannot view this page."
 msgstr ""
 "Je bent niet verbonden aan een school. Je kunt deze pagina niet bekijken."
 
-#: .\accounts\models.py:559
+#: .\accounts\models.py:575
 msgid "You don't have permission to view countries."
 msgstr "Je hebt geen permissie om landen te bekijken."
 
-#: .\accounts\models.py:590
+#: .\accounts\models.py:606
 msgid "You don't have permission to view exam years."
 msgstr "Je hebt geen permissie om examenjaren te bekijken."
 
-#: .\accounts\models.py:601
+#: .\accounts\models.py:617
 msgid "You don't have permission to modify exam years."
 msgstr "Je hebt geen permissie om examenjaren te wijzigen."
 
-#: .\accounts\models.py:604
+#: .\accounts\models.py:620
 msgid "This country is locked. You cannot modify exam years."
 msgstr "Dit land is vergrendeld. Je kunt geen examenjaren wijzigen."
 
-#: .\accounts\models.py:612
+#: .\accounts\models.py:628
 msgid "You must first select an examyear, before you can view this page."
 msgstr ""
 "Je moet eerst een examenjaar selecteren om deze pagina te kunnen bekijken."
 
-#: .\accounts\models.py:622
+#: .\accounts\models.py:638
 msgid "You don't have permission to view these items."
 msgstr "Je hebt geen permissie om deze items te bekijken."
 
-#: .\accounts\models.py:631 .\accounts\models.py:645
+#: .\accounts\models.py:647 .\accounts\models.py:661
 msgid "You don't have permission to modify these items."
 msgstr "Je hebt geen permissie om deze items te wijzigen."
 
-#: .\accounts\models.py:633 .\accounts\models.py:647 .\accounts\models.py:697
+#: .\accounts\models.py:649 .\accounts\models.py:663 .\accounts\models.py:713
 msgid "This country is locked. You cannot modify these items."
 msgstr "Dit land is vergrendeld. Je kunt deze items niet wijzigen."
 
-#: .\accounts\models.py:649 .\accounts\models.py:699
+#: .\accounts\models.py:665 .\accounts\models.py:715
 msgid "This examyear is locked. You cannot modify these items."
 msgstr "Dit examenjaar is vergrendeld. Je kunt deze items niet wijzigen."
 
-#: .\accounts\models.py:672
+#: .\accounts\models.py:688
 msgid "This country is locked. You cannot modify schools."
 msgstr "Dit land is vergrendeld. Je kunt geen scholen wijzigen."
 
-#: .\accounts\models.py:674
+#: .\accounts\models.py:690
 msgid "This examyear is locked. You cannot modify schools."
 msgstr "Dit examenjaar is vergrendeld. Je kunt geen scholen wijzigen."
 
-#: .\accounts\models.py:678
+#: .\accounts\models.py:694
 msgid "You don't have permission to modify schools."
 msgstr "Dit examenjaar is vergrendeld. Je kunt geen scholen wijzigen."
 
-#: .\accounts\models.py:681
+#: .\accounts\models.py:697
 msgid "You don't have permission to add or delete schools."
 msgstr "Je heeft geen permissie om scholen toe te voegen of te wissen"
 
-#: .\accounts\models.py:701
+#: .\accounts\models.py:717
 msgid "This school is locked. You cannot modify these items."
 msgstr "Deze school is vergrendeld. Je kunt deze items niet wijzigen."
 
-#: .\accounts\models.py:711
+#: .\accounts\models.py:727
 msgid "Error. You cannot view this page."
 msgstr "Is er ee nfout opgetreden. Je kunt deze pagina niet bekijken"
 
@@ -637,7 +637,7 @@ msgid "'%(email)s' is not a valid email address."
 msgstr ""
 
 #: .\accounts\views.py:967 .\accounts\views.py:978 .\awpr\locale.py:117
-#: .\schools\models.py:685 .\schools\views.py:265
+#: .\schools\models.py:620 .\schools\views.py:265
 #: .\templates\students\studentsubjectXXX.html:148
 #: .\templates\subjects\schemeitem_list.html:135
 msgid "An error occurred."
@@ -1028,23 +1028,23 @@ msgstr ""
 #: .\awpr\constants.py:435 .\templates\includes\modimport.html:91
 #: .\templates\includes\modimport.html:94
 #: .\templates\includes\modimport.html:108
-#: .\templates\subjects\subjectimport.html:106
-#: .\templates\subjects\subjectimport.html:109
-#: .\templates\subjects\subjectimport.html:123
+#: .\templates\subjects\subjectimport.html:105
+#: .\templates\subjects\subjectimport.html:108
+#: .\templates\subjects\subjectimport.html:122
 msgid "Excel columns"
 msgstr "Excel-kolommen"
 
 #: .\awpr\constants.py:436 .\templates\includes\modimport.html:81
 #: .\templates\includes\modimport.html:84
 #: .\templates\includes\modimport.html:107
-#: .\templates\subjects\subjectimport.html:96
-#: .\templates\subjects\subjectimport.html:99
-#: .\templates\subjects\subjectimport.html:122
+#: .\templates\subjects\subjectimport.html:95
+#: .\templates\subjects\subjectimport.html:98
+#: .\templates\subjects\subjectimport.html:121
 msgid "AWP columns"
 msgstr "AWP-kolommen"
 
 #: .\awpr\constants.py:437 .\templates\includes\modimport.html:103
-#: .\templates\subjects\subjectimport.html:118
+#: .\templates\subjects\subjectimport.html:117
 msgid "Linked columns"
 msgstr "Gekoppelde kolommen"
 
@@ -1476,9 +1476,9 @@ msgid "Upload candidates"
 msgstr "Kandidaten uploaden"
 
 #: .\awpr\locale.py:130 .\awpr\locale.py:281 .\awpr\locale.py:289
-#: .\templates\subjects\subjectimport.html:24
-#: .\templates\subjects\subjectimport.html:44
-#: .\templates\subjects\subjectimport.html:138
+#: .\templates\subjects\subjectimport.html:23
+#: .\templates\subjects\subjectimport.html:43
+#: .\templates\subjects\subjectimport.html:137
 msgid "Upload subjects"
 msgstr "Vakken uploaden"
 
@@ -2676,7 +2676,7 @@ msgstr "Score praktijkexamen"
 msgid "Grade practical exam"
 msgstr "Praktijkcijfer"
 
-#: .\grades\views.py:145 .\grades\views.py:192
+#: .\grades\views.py:147 .\grades\views.py:192
 #, python-format
 msgid "The selection contains %(val)s."
 msgstr "De selectie bevat %(val)s."
@@ -2769,7 +2769,7 @@ msgstr " cijfers zijn"
 
 #: .\importing\views.py:30 .\importing\views.py:81
 #: .\templates\includes\modimport.html:369
-#: .\templates\subjects\subjectimport.html:141
+#: .\templates\subjects\subjectimport.html:140
 msgid "Upload"
 msgstr "Uploaden"
 
@@ -2932,11 +2932,11 @@ msgid "An error occurred. Candidate '%(val)s' could not be added."
 msgstr ""
 "Er is een fout opgetreden. Kandidaat '%(val)s' kon niet worden toegevoegd."
 
-#: .\schools\models.py:686
+#: .\schools\models.py:621
 msgid "This item"
 msgstr "Dit item"
 
-#: .\schools\models.py:687
+#: .\schools\models.py:622
 #, python-format
 msgid "%(tbl)s could not be deleted."
 msgstr "%(tbl)s kon niet gewist worden."
@@ -3265,8 +3265,8 @@ msgid "An error occurred. The subject data is not saved."
 msgstr "Er is een fout opgetreden. De vakgegevens zijn niet opgeslagen."
 
 #: .\templates\accounts\moduser.html:20 .\templates\schools\school_log.html:14
-#: .\templates\schools\schools.html:5 .\templates\schools\schools.html:17
-#: .\templates\schools\schools.html:74
+#: .\templates\schools\schools.html:5 .\templates\schools\schools.html:15
+#: .\templates\schools\schools.html:72
 msgid "Schools"
 msgstr "Scholen"
 
@@ -3335,24 +3335,24 @@ msgstr ""
 #: .\templates\includes\modimport.html:23
 #: .\templates\includes\modimport.html:24
 #: .\templates\includes\modimport.html:25
+#: .\templates\subjects\subjectimport.html:26
 #: .\templates\subjects\subjectimport.html:27
 #: .\templates\subjects\subjectimport.html:28
-#: .\templates\subjects\subjectimport.html:29
+#: .\templates\subjects\subjectimport.html:46
 #: .\templates\subjects\subjectimport.html:47
 #: .\templates\subjects\subjectimport.html:48
-#: .\templates\subjects\subjectimport.html:49
 msgid "Step"
 msgstr "Stap"
 
 #: .\templates\includes\modimport.html:22
-#: .\templates\subjects\subjectimport.html:27
-#: .\templates\subjects\subjectimport.html:47
+#: .\templates\subjects\subjectimport.html:26
+#: .\templates\subjects\subjectimport.html:46
 msgid "Select file"
 msgstr "Selecteer bestand"
 
 #: .\templates\includes\modimport.html:23
-#: .\templates\subjects\subjectimport.html:28
-#: .\templates\subjects\subjectimport.html:48
+#: .\templates\subjects\subjectimport.html:27
+#: .\templates\subjects\subjectimport.html:47
 msgid "Link colums"
 msgstr "Kolommen koppelen"
 
@@ -3361,35 +3361,35 @@ msgid "Link data"
 msgstr "Gegevens koppelen"
 
 #: .\templates\includes\modimport.html:25
-#: .\templates\subjects\subjectimport.html:29
-#: .\templates\subjects\subjectimport.html:49
+#: .\templates\subjects\subjectimport.html:28
+#: .\templates\subjects\subjectimport.html:48
 msgid "Upload data"
 msgstr "Gegevens uploaden"
 
 #: .\templates\includes\modimport.html:43
-#: .\templates\subjects\subjectimport.html:162
+#: .\templates\subjects\subjectimport.html:161
 msgid "You must select a valid Excel file before you can proceed."
 msgstr ""
 "Je moet eerst een geldig Excel-bestand selecteren voordat je verder kunt "
 "gaan."
 
 #: .\templates\includes\modimport.html:47
-#: .\templates\subjects\subjectimport.html:59
+#: .\templates\subjects\subjectimport.html:58
 msgid "Select a worksheet"
 msgstr "Selecteer een werkblad"
 
 #: .\templates\includes\modimport.html:62
-#: .\templates\subjects\subjectimport.html:75
+#: .\templates\subjects\subjectimport.html:74
 msgid "Select if the worksheet has a header row:"
 msgstr "Kies of de eerste regel van het werkblad kolom-namen bevat:"
 
 #: .\templates\includes\modimport.html:66
-#: .\templates\subjects\subjectimport.html:79
+#: .\templates\subjects\subjectimport.html:78
 msgid "Worksheet has a header row"
 msgstr "De eerste regel van het werkblad bevat kolom-namen"
 
 #: .\templates\includes\modimport.html:73
-#: .\templates\subjects\subjectimport.html:87
+#: .\templates\subjects\subjectimport.html:86
 msgid ""
 "Click corresponding names in the left and right list to link an Excel column "
 "to an AWP-column."
@@ -3398,7 +3398,7 @@ msgstr ""
 "kolom aan een AWP-kolom te koppelen."
 
 #: .\templates\includes\modimport.html:74
-#: .\templates\subjects\subjectimport.html:88
+#: .\templates\subjects\subjectimport.html:87
 msgid "Click linked names in the lower list to unlink these columns."
 msgstr ""
 "Klik op een gekoppelde kolom in de onderste lijst om de kolommen te "
@@ -3489,12 +3489,12 @@ msgstr ""
 "datumformaat"
 
 #: .\templates\includes\modimport.html:368
-#: .\templates\subjects\subjectimport.html:140
+#: .\templates\subjects\subjectimport.html:139
 msgid "Test upload"
 msgstr ""
 
 #: .\templates\includes\modimport.html:376
-#: .\templates\subjects\subjectimport.html:148
+#: .\templates\subjects\subjectimport.html:147
 msgid ""
 "'Test upload' validates the new data and compares it with the existing "
 "database. It will not save the new data."
@@ -3503,27 +3503,27 @@ msgstr ""
 "opgeslagen gegevens. De nieuwe gegevens worden niet opgeslagen"
 
 #: .\templates\includes\modimport.html:377
-#: .\templates\subjects\subjectimport.html:149
+#: .\templates\subjects\subjectimport.html:148
 msgid "You can review the results in a log file that will be downloaded."
 msgstr "De resultaten zijn opgeslagen in een logbestand dat wordt gedownload."
 
 #: .\templates\includes\modimport.html:384
-#: .\templates\subjects\subjectimport.html:172
+#: .\templates\subjects\subjectimport.html:171
 msgid "Excel file data"
 msgstr "Excel-bestand gegevens"
 
 #: .\templates\includes\modimport.html:388
-#: .\templates\subjects\subjectimport.html:176
+#: .\templates\subjects\subjectimport.html:175
 msgid "The columns with a red header will be uploaded."
 msgstr "De kolommen met een rode kopregel worden geüpload."
 
 #: .\templates\includes\modimport.html:410
-#: .\templates\subjects\subjectimport.html:157
+#: .\templates\subjects\subjectimport.html:156
 msgid "Previous step"
 msgstr "Vorige stap"
 
 #: .\templates\includes\modimport.html:411
-#: .\templates\subjects\subjectimport.html:158
+#: .\templates\subjects\subjectimport.html:157
 msgid "Next step"
 msgstr "Volgende stap"
 
@@ -3824,11 +3824,11 @@ msgstr "Log uit"
 msgid "Is template"
 msgstr "Is sjabloon"
 
-#: .\templates\schools\schools.html:21
+#: .\templates\schools\schools.html:19
 msgid "Select department"
 msgstr "Selecteer afdeling"
 
-#: .\templates\schools\schools.html:28
+#: .\templates\schools\schools.html:26
 msgid "Select school"
 msgstr "Selecteer school"
 
@@ -4301,12 +4301,12 @@ msgstr "Vak wissen"
 msgid "Edit subject:"
 msgstr "Vak wijzigen"
 
-#: .\templates\subjects\subjectimport.html:53
+#: .\templates\subjects\subjectimport.html:52
 msgid "Select an Excel file with subjects"
 msgstr "Selecteer een Excel-bestand met vakken"
 
-#: .\templates\subjects\subjectimport.html:89
-#: .\templates\subjects\subjectimport.html:131
+#: .\templates\subjects\subjectimport.html:88
+#: .\templates\subjects\subjectimport.html:130
 msgid ""
 "The field 'Subject abbreviation' must be linked and contain unique values."
 msgstr ""
