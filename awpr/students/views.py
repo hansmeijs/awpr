@@ -1160,17 +1160,17 @@ def create_studsubj(student, schemeitem, request):
 
 def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studsubj_pk=None):
     # --- create rows of all students of this examyear / school PR2020-10-27
-    logger.debug(' =============== create_student_rows ============= ')
-    logger.debug('append_dict: ' + str(append_dict))
-    logger.debug('setting_dict: ' + str(setting_dict))
+    #logger.debug(' =============== create_student_rows ============= ')
+    #logger.debug('append_dict: ' + str(append_dict))
+    #logger.debug('setting_dict: ' + str(setting_dict))
     # create list of students of this school / examyear, possibly with filter student_pk or studsubj_pk
     # with left join of studentsubjects with deleted=False
     sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
     sel_schoolbase_pk = af.get_dict_value(setting_dict, ('sel_schoolbase_pk',))
     sel_depbase_pk = af.get_dict_value(setting_dict, ('sel_depbase_pk',))
-    logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
-    logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
-    logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
+    #logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
+    #logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
+    #logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
 
     sql_studsubj_list = ["SELECT studsubj.id AS studsubj_id, studsubj.student_id,",
         "studsubj.cluster_id, si.id AS schemeitem_id, si.scheme_id AS scheme_id,",

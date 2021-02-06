@@ -206,6 +206,11 @@ class UserUploadView(View):
                                         err_dict['msg01'] = _("System administrators cannot delete their own account.")
                                     else:
                                         try:
+                                            # PR2021-02-05 debug: CASCADE delete usersetting not working. Delete manually
+                                            usersettings = Usersetting.objects.filter(user=instance)
+                                            for usersetting in usersettings:
+                                                logger.debug('usersetting delete: ' + str(usersetting))
+                                                usersetting.delete()
                                             instance.delete()
                                             updated_dict['deleted'] = True
                                             logger.debug('deleted: ' + str(True))
@@ -300,7 +305,7 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
                     saved_settings_dict = req_user.get_usersetting_dict(key)
                     #logger.debug('new_setting_dict: ' + str(new_setting_dict))
                     #logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
-                    # loop through saved settings
+                    # loop through new settings
                     for subkey, value in new_setting_dict.items():
                         # subkey: sel_btn,  value: examyear
                         # if subkey has value in saved_settings_dict: replace saved value with new value
@@ -352,16 +357,17 @@ def account_activation_sent(request):
 # === SignupActivateView ===================================== PR2020-09-29
 def SignupActivateView(request, uidb64, token):
     logger.debug('  === SignupActivateView =====')
-    logger.debug('request: ' + str(request))
-    logger.debug('uidb64: ' + str(uidb64))
-    logger.debug('token: ' + str(token))
+    #logger.debug('request: ' + str(request))
+    #logger.debug('uidb64: ' + str(uidb64))
+    #logger.debug('token: ' + str(token))
 
     # SignupActivateView is called when user clicks on link 'Activate your AWP-online account'
     # it returns the page 'signup_setpassword'
     # when error: it sends err_msg to this page
 
+    update_wrap = {}
     activation_token_ok = False
-    update_wrap = {'activation_token_ok': activation_token_ok}
+    newuser_activated = False
 
 # - get user
     try:
@@ -369,8 +375,9 @@ def SignupActivateView(request, uidb64, token):
         user = User.objects.get_or_none(pk=uid)
     except (TypeError, ValueError, OverflowError):
         user = None
-    #logger.debug('user: ' + str(user))
-    #logger.debug('user.is_authenticated: ' + str(user.is_authenticated))
+    logger.debug('user: ' + str(user))
+    logger.debug('user.is_authenticated: ' + str(user.is_authenticated))
+    logger.debug('user.activated: ' + str(user.activated))
 
 # - get language from user
     # PR2019-03-15 Debug: language gets lost, get request.user.lang again
@@ -384,10 +391,14 @@ def SignupActivateView(request, uidb64, token):
         user_name = user.username_sliced
         update_wrap['username'] = user_name
         update_wrap['schoolcode'] = user.schoolbase.code
+        update_wrap['user_lastname'] = user.last_name
 
 # - get schoolname PR2020-12-24
         examyear = af.get_todays_examyear_or_latest_instance(user.country)
+        logger.debug('examyear: ' + str(examyear))
         school = sch_mod.School.objects.get_or_none( base=user.schoolbase, examyear=examyear)
+        logger.debug('school: ' + str(school))
+        usr_schoolname_with_article = '---'
         if school and school.name:
             if school.article:
                 usr_schoolname_with_article = school.article + ' ' + school.name
@@ -395,31 +406,29 @@ def SignupActivateView(request, uidb64, token):
                 usr_schoolname_with_article = school.name
         elif user.schoolbase and user.schoolbase.code:
             usr_schoolname_with_article = user.schoolbase.code
-        else:
-            usr_schoolname_with_article = '---'
         # PR2021-01-20 this one does not translate to Dutch, because language is not set. Text moved to template
         # msg_txt = _("Your account with username '%(usr)s' is created at %(school)s.") % {'usr': user_name, 'school': usr_schoolname_with_article}
         # update_wrap['schoolnamewithArticle'] = msg_txt
+        logger.debug('usr_schoolname_with_article: ' + str(usr_schoolname_with_article))
         update_wrap['schoolnamewithArticle'] = usr_schoolname_with_article
 
 # - check activation_token
         activation_token_ok = account_activation_token.check_token(user, token)
         logger.debug('activation_token_ok: ' + str(activation_token_ok))
 
-        if activation_token_ok:
-            update_wrap['activation_token_ok'] = activation_token_ok
-            # don't activate user and company until user has submitted valid password
-            #update_wrap['uidb64'] = uidb64
-        else:
+        if not activation_token_ok:
             update_wrap['msg_01'] = _('The link to active your account is no longer valid.')
             update_wrap['msg_02'] = _('Maybe it has expired or has been used already.')
             update_wrap['msg_03'] = _('The link expires after 7 days.')
 
-    #logger.debug('update_wrap: ' + str(update_wrap))
+    # don't activate user and company until user has submitted valid password
+    update_wrap['activation_token_ok'] = activation_token_ok
+    logger.debug('update_wrap: ' + str(update_wrap))
 
     if request.method == 'POST':
         logger.debug('request.POST' + str(request.POST))
         form = SetPasswordForm(user, request.POST)
+        logger.debug('form: ' + str(form))
 
         form_is_valid = form.is_valid()
 
@@ -427,8 +436,10 @@ def SignupActivateView(request, uidb64, token):
         field_errors = [(field.label, field.errors) for field in form]
         logger.debug('non_field_errors' + str(non_field_errors))
         logger.debug('field_errors' + str(field_errors))
+        logger.debug('form_is_valid' + str(form_is_valid))
 
         if form_is_valid:
+            logger.debug('form_is_valid' + str(form_is_valid))
             user = form.save()
             update_session_auth_hash(request, user)  # Important!
 
@@ -442,22 +453,38 @@ def SignupActivateView(request, uidb64, token):
             user.activated = True
             user.activatedat = datetime_activated
             user.save()
+            newuser_activated = user.activated
+            logger.debug('user.saved: ' + str(user))
 
             #login_user = authenticate(username=user.username, password=password1)
             #login(request, login_user)
             login(request, user)
             logger.debug('user.login' + str(user))
-            if request.user:
-                update_wrap['msg_01'] = _("Congratulations.")
-                update_wrap['msg_02'] = _("Your account is succesfully activated.")
-                update_wrap['msg_03'] = _('You are now logged in to AWP-online.')
+            #if request.user:
+            #    update_wrap['msg_01'] = _("Congratulations.")
+            #    update_wrap['msg_02'] = _("Your account is succesfully activated.")
+           #     update_wrap['msg_03'] = _('You are now logged in to AWP-online.')
+        else:
+            # TODO check if this is correct when user enters wrong password PR2021-02-05
+            form = SetPasswordForm(user)
+            logger.debug('form: ' + str(form))
+            update_wrap['form'] = form
     else:
         form = SetPasswordForm(user)
-
+        logger.debug('form: ' + str(form))
+        update_wrap['form'] = form
+    update_wrap['newuser_activated'] = newuser_activated
+    # PR2021-02-05 debug: when a new user tries to activat his account
+    #                     and a different user is already logged in in the same browser,
+    #                     in form value user.activated = True and passwoord form does not show.
+    #                     use variable 'newuser_activated' and add this error trap to form:
+    #                     {% elif user.is_authenticated and user.activated and not newuser_activated %}
+    #                     instead of  {% elif user.is_authenticated %}
+    logger.debug('activation_token_ok: ' + str(activation_token_ok))
+    logger.debug('user.is_authenticated: ' + str(user.is_authenticated))
+    logger.debug('user.activated: ' + str(user.activated))
+    logger.debug('newuser_activated: ' + str(newuser_activated))
     logger.debug('update_wrap: ' + str(update_wrap))
-
-    update_wrap['form'] = form
-
     # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
     return render(request, 'signup_setpassword.html', update_wrap)
 # === end of SignupActivateView =====================================

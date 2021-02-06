@@ -130,8 +130,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_examyear_pk=sel_examyear.pk,
                             sel_schoolbase_pk=sel_schoolbase.pk,
                             sel_depbase_pk=sel_depbase.pk,
-                            sel_subject_pk=new_setting_dict.get('sel_subject_pk'),
-                            sel_student_pk=new_setting_dict.get('sel_student_pk'),
+                            sel_examperiod=new_setting_dict.get('sel_examperiod'),
                         )
 # ----- published
                 if datalist_request.get('published_rows'):
@@ -418,7 +417,7 @@ def get_selected_examperiod_examtype_from_usersetting(request):  # PR2021-01-20
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def get_selected_examyear_school_dep_from_usersetting(request):  # PR2021-1-13
-    logger.debug(' ----- get_selected_examyear_school_dep_from_usersetting ----- ' )
+    #logger.debug(' ----- get_selected_examyear_school_dep_from_usersetting ----- ' )
     # logger.debug('request_item_setting: ' + str(request_item_setting) )
     # this function get settingss from request_item_setting.
     # if not in request_item_setting, it takes the saved settings.

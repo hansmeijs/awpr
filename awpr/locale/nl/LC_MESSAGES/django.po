@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-02-03 19:54-0400\n"
+"POT-Creation-Date: 2021-02-06 19:11-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -186,6 +186,7 @@ msgstr "Is er ee nfout opgetreden. Je kunt deze pagina niet bekijken"
 
 #: .\accounts\templates\account_activation_email.html:4
 #: .\accounts\templates\signup_activation_email.html:4
+#: .\accounts\templates\signup_setpassword.html:64
 msgid "Hello "
 msgstr "Hallo "
 
@@ -254,7 +255,7 @@ msgstr ""
 
 #: .\accounts\templates\account_activation_sent.html:17
 #: .\accounts\templates\password_change_done.html:19
-#: .\accounts\templates\signup_setpassword.html:91
+#: .\accounts\templates\signup_setpassword.html:96
 #: .\templates\includes\modmessage.html:20
 #: .\templates\schools\country_log.html:51
 #: .\templates\schools\department_log.html:56
@@ -292,12 +293,12 @@ msgstr "Wachtwoord aanmaken"
 
 #: .\accounts\templates\account_activation_success.html:17
 #: .\accounts\templates\password_change.html:23
-#: .\accounts\templates\signup_setpassword.html:94
+#: .\accounts\templates\signup_setpassword.html:99
 #: .\accounts\templates\user_add.html:36 .\accounts\templates\user_edit.html:33
 #: .\accounts\templates\user_set_password.html:18 .\awpr\locale.py:60
 #: .\templates\accounts\moduser.html:98 .\templates\includes\modconfirm.html:29
 #: .\templates\includes\modimport.html:406 .\templates\includes\modnote.html:32
-#: .\templates\includes\modselectsubjectstudent.html:48
+#: .\templates\includes\modselectsubjectstudent.html:45
 #: .\templates\schools\country_add.html:20
 #: .\templates\schools\country_add.html:24
 #: .\templates\schools\country_confirm_delete.html:25
@@ -454,23 +455,43 @@ msgstr ""
 msgid "AWP-online"
 msgstr ""
 
-#: .\accounts\templates\signup_setpassword.html:31 .\accounts\views.py:776
+#: .\accounts\templates\signup_setpassword.html:31 .\accounts\views.py:803
 msgid "Activate your AWP-online account"
 msgstr "Activeer je AWP-online account"
 
-#: .\accounts\templates\signup_setpassword.html:60
+#: .\accounts\templates\signup_setpassword.html:45
+msgid "Another user is already logged in on this computer."
+msgstr ""
+
+#: .\accounts\templates\signup_setpassword.html:46
+msgid "Logout that user first and try again."
+msgstr ""
+
+#: .\accounts\templates\signup_setpassword.html:50
+msgid "Congratulations."
+msgstr "Gefeliciteerd."
+
+#: .\accounts\templates\signup_setpassword.html:51
+msgid "Your account is succesfully activated."
+msgstr "Je account is met succes geactiveerd."
+
+#: .\accounts\templates\signup_setpassword.html:52
+msgid "You are now logged in to AWP-online."
+msgstr "Je bent nu ingelogd bij AWP-online."
+
+#: .\accounts\templates\signup_setpassword.html:65
 msgid "Your account with username"
 msgstr "Je account met gebruikersnaam"
 
-#: .\accounts\templates\signup_setpassword.html:60
+#: .\accounts\templates\signup_setpassword.html:65
 msgid "is created at"
 msgstr "is aangemaakt bij"
 
-#: .\accounts\templates\signup_setpassword.html:61
+#: .\accounts\templates\signup_setpassword.html:66
 msgid "Enter your password to activate your account."
 msgstr "Vul je wachtwoord in om je account te activeren."
 
-#: .\accounts\templates\signup_setpassword.html:93
+#: .\accounts\templates\signup_setpassword.html:98
 msgid "Activate your account"
 msgstr "Activeer je account"
 
@@ -536,7 +557,7 @@ msgstr "Je hebt geen permissie om deze bewerking uit te voeren."
 msgid "System administrators cannot delete their own account."
 msgstr "Systeembeheerders kunnen hun eigen account niet wissen."
 
-#: .\accounts\views.py:213
+#: .\accounts\views.py:218
 #, python-format
 msgid ""
 "User '%(val)s' can not be deleted.\n"
@@ -545,57 +566,45 @@ msgstr ""
 "Gebruiker '%(val)s' kan niet worden gewist.\n"
 "In plaats daarvan kun je de gebruiker niet-aktief maken."
 
-#: .\accounts\views.py:381
+#: .\accounts\views.py:388
 msgid "Sorry, we could not find your account."
 msgstr "Sorry, we hebben je account niet kunnen vinden."
 
-#: .\accounts\views.py:382
+#: .\accounts\views.py:389
 msgid "Your account cannot be activated."
 msgstr "Je account kan niet geactiveerd worden."
 
-#: .\accounts\views.py:414
+#: .\accounts\views.py:420
 msgid "The link to active your account is no longer valid."
 msgstr "De link om je account te activeren is niet meer geldig."
 
-#: .\accounts\views.py:415
+#: .\accounts\views.py:421
 msgid "Maybe it has expired or has been used already."
 msgstr "Hij is misschien verlopen of al gebruikt."
 
-#: .\accounts\views.py:416
+#: .\accounts\views.py:422
 msgid "The link expires after 7 days."
 msgstr "De link verloopt na 7 dagen."
 
-#: .\accounts\views.py:451
-msgid "Congratulations."
-msgstr "Gefeliciteerd."
-
-#: .\accounts\views.py:452
-msgid "Your account is succesfully activated."
-msgstr "Je account is met succes geactiveerd."
-
-#: .\accounts\views.py:453
-msgid "You are now logged in to AWP-online."
-msgstr "Je bent nu ingelogd bij AWP-online."
-
-#: .\accounts\views.py:680
+#: .\accounts\views.py:707
 msgid "Please enter a school."
 msgstr "De school moet ingevuld worden."
 
-#: .\accounts\views.py:697 .\accounts\views.py:835
+#: .\accounts\views.py:724 .\accounts\views.py:862
 msgid "The name"
 msgstr "De naam"
 
-#: .\accounts\views.py:793
+#: .\accounts\views.py:820
 #, python-format
 msgid "User '%(usr)s' is registered successfully at %(school)s."
 msgstr "Gebruiker '%(usr)s' is met succes geregistreerd bij %(school)s."
 
-#: .\accounts\views.py:794
+#: .\accounts\views.py:821
 #, python-format
 msgid "We have sent an email to the email address '%(email)s'."
 msgstr "We hebben een e-mail verzonden naar het e-mail adres '%(email)s'."
 
-#: .\accounts\views.py:796 .\accounts\views.py:973
+#: .\accounts\views.py:823 .\accounts\views.py:1000
 msgid ""
 "The user must click the link in that email to verify the email address and "
 "create a password."
@@ -603,51 +612,51 @@ msgstr ""
 "De gebruiker moet op de link in die e-mail klikken om het e-mail adres te "
 "verifiëren en een wachtwoord in te vullen."
 
-#: .\accounts\views.py:797
+#: .\accounts\views.py:824
 msgid ""
 "Check the spam folder, if the email does not appear within a few minutes."
 msgstr ""
 "Als de e-mail niet binnen een paar minuten verschijnt, is hij waarschijnlijk "
 "in de map met spam terecht gekomen."
 
-#: .\accounts\views.py:874 .\awpr\locale.py:174
+#: .\accounts\views.py:901 .\awpr\locale.py:174
 msgid ""
 "System administrators cannot remove their own 'system administrator' "
 "permission."
 msgstr ""
 "Systembeheerders kunnen hun eigen 'systembeheerder' permissie niet wissen."
 
-#: .\accounts\views.py:906 .\awpr\locale.py:175
+#: .\accounts\views.py:933 .\awpr\locale.py:175
 msgid "System administrators cannot make their own account inactive."
 msgstr ""
 
-#: .\accounts\views.py:923
+#: .\accounts\views.py:950
 msgid "The changes have been saved successfully."
 msgstr ""
 
-#: .\accounts\views.py:925 .\schools\imports.py:777 .\schools\views.py:327
+#: .\accounts\views.py:952 .\schools\imports.py:777 .\schools\views.py:327
 #: .\schools\views.py:928 .\students\views.py:592 .\students\views.py:1121
 #: .\subjects\views.py:1579
 msgid "An error occurred. The changes have not been saved."
 msgstr "Er is een fout opgetreden. De wijzigingen zijn niet opgeslagen."
 
-#: .\accounts\views.py:948
+#: .\accounts\views.py:975
 #, python-format
 msgid "'%(email)s' is not a valid email address."
 msgstr ""
 
-#: .\accounts\views.py:967 .\accounts\views.py:978 .\awpr\locale.py:117
+#: .\accounts\views.py:994 .\accounts\views.py:1005 .\awpr\locale.py:117
 #: .\schools\models.py:620 .\schools\views.py:265
 #: .\templates\students\studentsubjectXXX.html:148
 #: .\templates\subjects\schemeitem_list.html:135
 msgid "An error occurred."
 msgstr "Er is een fout opgetreden."
 
-#: .\accounts\views.py:968 .\accounts\views.py:979 .\awpr\locale.py:206
+#: .\accounts\views.py:995 .\accounts\views.py:1006 .\awpr\locale.py:206
 msgid "The activation email has not been sent."
 msgstr ""
 
-#: .\accounts\views.py:971
+#: .\accounts\views.py:998
 #, python-format
 msgid ""
 "We have sent an email to the email address '%(email)s' of user '%(usr)s'."
@@ -1356,7 +1365,7 @@ msgid "Publish"
 msgstr "Publiceren"
 
 #: .\awpr\locale.py:94 .\templates\includes\modnote.html:33
-#: .\templates\includes\modselectsubjectstudent.html:49
+#: .\templates\includes\modselectsubjectstudent.html:46
 #: .\templates\schools\country_add.html:19
 #: .\templates\schools\country_edit.html:19
 #: .\templates\schools\country_formset.html:57
@@ -2551,11 +2560,11 @@ msgstr ""
 msgid "No department"
 msgstr "Geen afdeling"
 
-#: .\awpr\settings.py:209
+#: .\awpr\settings.py:212
 msgid "English"
 msgstr "Engels"
 
-#: .\awpr\settings.py:210
+#: .\awpr\settings.py:213
 msgid "Dutch"
 msgstr "Nederlands"
 
@@ -2676,35 +2685,35 @@ msgstr "Score praktijkexamen"
 msgid "Grade practical exam"
 msgstr "Praktijkcijfer"
 
-#: .\grades\views.py:147 .\grades\views.py:192
+#: .\grades\views.py:149 .\grades\views.py:202
 #, python-format
 msgid "The selection contains %(val)s."
 msgstr "De selectie bevat %(val)s."
 
-#: .\grades\views.py:196
+#: .\grades\views.py:206
 msgid "The following grades will be skipped:"
 msgstr "De volgende cijfers worden overgeslagen:"
 
-#: .\grades\views.py:198
+#: .\grades\views.py:208
 #, python-format
 msgid "  - %(val)s already submitted"
 msgstr "  - %(val)s al ingediend"
 
-#: .\grades\views.py:201
+#: .\grades\views.py:211
 #, python-format
 msgid "  - %(val)s not completely approved"
 msgstr "  - %(val)s niet volledig goedgekeurd"
 
-#: .\grades\views.py:205
+#: .\grades\views.py:215
 msgid "  - 1 grade has no value"
 msgstr "  - 1 cijfer is niet ingevuld"
 
-#: .\grades\views.py:207
+#: .\grades\views.py:217
 #, python-format
 msgid "  - %(val)s grades have no value"
 msgstr "  - %(val)s cijfers zijn niet ingevuld"
 
-#: .\grades\views.py:210
+#: .\grades\views.py:220
 #, python-format
 msgid ""
 "  - %(val)s approved multiple times by the same user, in different functions "
@@ -2712,58 +2721,58 @@ msgstr ""
 "  - %(val)s meerdere keren door dezelfde gebruiker, in verschillende "
 "functies, goedgekeurd"
 
-#: .\grades\views.py:213
+#: .\grades\views.py:223
 #, python-format
 msgid "  - %(val)s already approved"
 msgstr "  - %(val)s al goedgekeurd"
 
-#: .\grades\views.py:217
+#: .\grades\views.py:227
 msgid "No grades will be approved."
 msgstr "Er worden geen cijfers goedgekeurd."
 
-#: .\grades\views.py:219
+#: .\grades\views.py:229
 msgid "One grade will be approved."
 msgstr "Eén cijfer worden goedgekeurd."
 
-#: .\grades\views.py:221
+#: .\grades\views.py:231
 #, python-format
 msgid "%(val)s grades will be approved."
 msgstr "%(val)s cijfers worden goedgekeurd."
 
-#: .\grades\views.py:226
+#: .\grades\views.py:236
 msgid "The Ex2A form can not be submitted."
 msgstr "Het Ex2A-formulier kan niet worden ingediend."
 
-#: .\grades\views.py:228
+#: .\grades\views.py:238
 msgid "One grade will be added to the Ex2A form."
 msgstr "Er wordt één cijfer toegevoegd aan het Ex2A-formulier."
 
-#: .\grades\views.py:230
+#: .\grades\views.py:240
 #, python-format
 msgid "%(val)s grades will be added to the Ex2A form."
 msgstr "Er worden %(val)s cijfers toegevoegd aan het Ex2A-formulier."
 
-#: .\grades\views.py:275
+#: .\grades\views.py:305
 msgid "no grades"
 msgstr "geen cijfers"
 
-#: .\grades\views.py:275
+#: .\grades\views.py:305
 msgid "1 grade"
 msgstr "1 cijfer"
 
-#: .\grades\views.py:275
+#: .\grades\views.py:305
 msgid " grades"
 msgstr " cijfers"
 
-#: .\grades\views.py:278
+#: .\grades\views.py:309
 msgid "no grades are"
 msgstr "geen cijfers zijn"
 
-#: .\grades\views.py:278
+#: .\grades\views.py:309
 msgid "1 grade is"
 msgstr "1 cijfer is"
 
-#: .\grades\views.py:278
+#: .\grades\views.py:309
 msgid " grades are"
 msgstr " cijfers zijn"
 

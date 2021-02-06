@@ -1,15 +1,12 @@
 # PR2021-11-24
 from django.contrib.auth.decorators import login_required
 
-from django.db.models import Q
-from django.db import connection
-from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.shortcuts import render, redirect
+from django.core.files.storage import default_storage, FileSystemStorage
+from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpResponseNotFound
 from django.utils.decorators import method_decorator
 from django.utils.translation import activate, ugettext_lazy as _
 from django.views.generic import View
 
-from django.core.files.storage import default_storage
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -34,17 +31,81 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 
-@method_decorator([login_required], name='dispatch')
-class GradeDownloadEx2aView(View):  # PR2021-01-24
 
-    def get(self, request):
-        #logger.debug(' ============= GradeDownloadEx2aView ============= ')
+@method_decorator([login_required], name='dispatch')
+class GradeDownloadPdfView(View):  # PR2021-02-0
+
+    def post(self, request):
+        logger.debug(' ============= GradeDownloadPdfView ============= ')
         # function creates, Ex2A pdf file based on settings in usersetting
         response = None
         try:
             if request.user and request.user.country and request.user.schoolbase:
                 req_user = request.user
-                logger.debug('req_user: ' + str(req_user))
+
+    # - reset language
+                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+                # - get upload_dict from request.POST
+                upload_json = request.POST.get('upload', None)
+                if upload_json:
+                    upload_dict = json.loads(upload_json)
+                    logger.debug('upload_dict' + str(upload_dict))
+
+                    # upload_dict{'table': 'published', 'mapid': 'published_63', 'published_pk': 63}
+                    # - get selected grade from upload_dict - if any
+                    published_pk = upload_dict.get('published_pk')
+                    logger.debug('published_pk: ' + str(published_pk))
+                    published = stud_mod.Published.objects.get_or_none(pk=published_pk)
+                    if published:
+                        filename = getattr(published, 'filename')
+                        filename = 'Ex2A - CUR12 St. Paulus Vsbo - SE 1e tv.pdf'
+                        logger.debug('filename' + str(filename))
+                        fs = FileSystemStorage()
+                        logger.debug('fs.exists(filename)' + str(fs.exists(filename)))
+
+                        # fs.fs.locationC: = C:\dev\awpr\awpr\static\media
+                        logger.debug('fs.location' + str(fs.location))
+                        logger.debug('fs.path' + str(fs.path))
+
+                        if fs.exists(filename):
+                            with fs.open(filename) as pdf:
+                                response = HttpResponse(content_type='application/pdf')
+                                response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                                # response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
+
+                                response.write(pdf)
+
+                                """
+                                response = HttpResponse(pdf, content_type='application/pdf')
+                                response['Content-Disposition'] = 'inline; filename="mypdf.pdf"'
+                                #response['Content-Disposition'] = 'attachment; filename="mypdf.pdf"'
+                                logger.debug('response' + str(response))
+                                return response
+                                """
+                                logger.debug('response' + str(response))
+                                return response
+
+
+                        else:
+                            return HttpResponseNotFound('The requested pdf was not found in our server.')
+
+        except:
+            raise Http404("Error creating Ex2A file")
+
+
+
+@method_decorator([login_required], name='dispatch')
+class GradeDownloadEx2aView(View):  # PR2021-01-24
+
+    def get(self, request):
+        logger.debug(' ============= GradeDownloadEx2aView ============= ')
+        # function creates, Ex2A pdf file based on settings in usersetting
+        response = None
+        try:
+            if request.user and request.user.country and request.user.schoolbase:
+                req_user = request.user
 
     # - reset language
                 user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
@@ -61,20 +122,19 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
                 logger.debug('sel_examperiod: ' + str(sel_examperiod))
                 logger.debug('sel_school: ' + str(sel_school))
                 logger.debug('sel_department: ' + str(sel_department))
-                logger.debug('sel_subject_pk: ' + str(sel_subject_pk))
 
                 if sel_examperiod and sel_school and sel_department and sel_subject_pk:
                     sel_subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk, examyear=sel_examyear)
+                    logger.debug('sel_subject: ' + str(sel_subject))
+
     # +++ get selected grade_rows
                     grade_rows = gr_vw.create_grade_rows(
                         sel_examyear_pk=sel_examyear.pk,
                         sel_schoolbase_pk=sel_school.base_id,
                         sel_depbase_pk=sel_department.base_id,
-                        sel_subject_pk=sel_subject.id,
+                        sel_examperiod=sel_examperiod,
+                        sel_subject_pk=sel_subject_pk,
                         )
-
-                    response = HttpResponse(content_type='application/pdf')
-                    response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
 
                     buffer = io.BytesIO()
                     canvas = Canvas(buffer)
@@ -84,22 +144,29 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
                     #test_pdf(canvas)
                     # testParagraph_pdf(canvas)
 
-                    # End writing
+                    logger.debug('end of draw_Ex2A')
 
                     canvas.showPage()
                     canvas.save()
 
                     pdf = buffer.getvalue()
                     buffer.close()
+
+                    response = HttpResponse(content_type='application/pdf')
+                    response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                    #response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
+
                     response.write(pdf)
 
         except:
             raise Http404("Error creating Ex2A file")
+
         if response:
             return response
         else:
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
 
 def testParagraph_pdf(canvas):
     styleSheet = getSampleStyleSheet()
@@ -118,7 +185,6 @@ def testParagraph_pdf(canvas):
         'debug': 0
     ) #Paragraph <class 'reportlab.platypus.paragraph.Paragraph'>
     """
-
 
     logger.debug('P: ' + str(P) + ' ' + str(type(P)))
     aW = 460
@@ -205,23 +271,34 @@ def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel
     border = [top, right, bottom, left]
     canvas.rect(left, bottom, width, height)
 
+    # - draw rectangle around Ex2A
+    canvas.rect(right - 16 * mm, top - 12 * mm, 16 * mm, 12 * mm)
 
 # - draw horizontal lines
     x1, x2, y = left, right, top - 45*mm
     canvas.line(x1, y, x2, y)
 
-# - draw rectangle around Ex2A
-    canvas.rect(right - 16*mm, top - 12*mm, 16*mm, 12*mm)
-
     x1, x2, y = left, right, top - 62*mm
     canvas.line(x1, y,x2, y)
+
     # verrtical lines
     x_list = (25, 65, 17, 22, 22, 22, 17) # last col is 17 mm
     x, y1, y2 = left, top - 45*mm, bottom + 40*mm
+
+    tab_list = [left + 12 * mm,
+                left + 29 * mm,
+                left + 97 * mm,
+                left + 116 * mm,
+                left + 138 * mm,
+                left + 160 * mm,
+                left + 177 * mm
+                ]
+
     for w in x_list:
         x += w*mm
         canvas.line(x, y1, x, y2)
 
+    logger.debug('tab_list: ' + str(tab_list) + ' ' + str(type(tab_list)))
     # canvas.setFont(psfontname, size, leading = None)
     examyear_code = str(sel_examyear.code)
     school_name = sel_school.name
@@ -246,41 +323,87 @@ def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel
 
     add_frame_header(canvas, border, text_list, school_name, subject_name)
 
-
     canvas.setFont('Arial', 8, leading=None)
     x, y = left + 2*mm, top - 50*mm
     canvas.drawString(x, y, 'Examennummer')
-    canvas.drawString(x, y -4*mm, 'van de kandidaat')
-    canvas.drawString(x + 10*mm, y -10*mm, '1)')
+    canvas.drawString(x, y - 4*mm, 'van de kandidaat')
+    canvas.drawString(x + 10*mm, y - 10*mm, '1)')
 
     x += 30*mm
     canvas.drawString(x, y, 'Naam en voorletters van de kandidaat')
-    y -= 4*mm
-    canvas.drawString(x + 7*mm, y, '(in alfabetische volgorde)')
-    y -= 6*mm
-    canvas.drawString(x + 15*mm, y, '2)')
-    y -= 6*mm
+    canvas.drawString(x + 7*mm, y - 4*mm, '(in alfabetische volgorde)')
+    canvas.drawString(x + 20*mm, y - 10*mm, '2)')
+
+    x += 61*mm
+    canvas.drawString(x, y, 'Cijfer SE')
+    canvas.drawString(x + 4*mm, y - 10*mm, '3)')
+
+    x += 19*mm
+    canvas.drawString(x, y, 'Cijfer PE')
+    canvas.drawString(x + 6*mm, y - 10*mm, '4)')
+
+    x += 22*mm
+    canvas.drawString(x, y, 'Cijfer CE')
+    canvas.drawString(x + 6*mm, y - 10*mm, '5)')
+
+    x += 22*mm
+    canvas.drawString(x, y, 'Cijfer Herex')
+    canvas.drawString(x + 6*mm, y - 10*mm, '6)')
+
+    x += 20*mm
+    canvas.drawString(x, y, 'Eindcijfer')
+    canvas.drawString(x + 4*mm, y - 10*mm, '7)')
+
+
+
+    y -= 16 * mm
     canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
+
     if grade_rows:
         coord = [x, y]
         for row in grade_rows:
-            logger.debug('coord: ' + str(coord) + ' ' + str(type(coord)))
-            draw_Ex2A_line(canvas, row, left, right, coord)
+            draw_Ex2A_line(canvas, row, left, right, coord, tab_list)
+# - end of draw_Ex2A
 
 
-def draw_Ex2A_line(canvas, row, left, right, coord):
-    logger.debug('row: ' + str(row) + ' ' + str(type(row)))
+def draw_Ex2A_line(canvas, row, left, right, coord, tab_list):
     y = coord[1]
-    logger.debug('y: ' + str(y) + ' ' + str(type(y)))
-    canvas.drawString(left + 12 * mm, y, row.get('examnumber', '---'))
-    canvas.drawString(left + 28 * mm, y, row.get('fullname', '---'))
-    canvas.drawString(left + 97 * mm, y, row.get('segrade', '---'))
+    try:
+        logger.debug('y: ' + str(y) + ' ' + str(type(y)))
+        logger.debug('tab_list: ' + str(tab_list) + ' ' + str(type(tab_list)))
+        # col_width = (25, 65, 17, 22, 22, 22, 17)  # last col is 17 mm
+
+
+        logger.debug('left: ' + str(left))
+        logger.debug('tab_list: ' + str(tab_list[0]))
+
+        examnumber = row['examnumber'] or '---'
+        canvas.drawString(tab_list[0], y, examnumber)
+
+        fullname = row['fullname'] or '---'
+        canvas.drawString(tab_list[1], y, fullname)
+
+        segrade = row['segrade'] or '---'
+        canvas.drawString(tab_list[2], y, segrade)
+
+        pegrade = row['pegrade'] or '---'
+        canvas.drawString(tab_list[3], y, pegrade)
+
+        cegrade = row['cegrade'] or '---'
+        logger.debug('cegrade: ', str(cegrade))
+        canvas.drawString(tab_list[4], y, cegrade)
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+        logger.error('row: ', str(row))
+
     canvas.line(left, y - 1.25 * mm, right, y - 1.25 * mm)
     coord[1] = y - 5 * mm
+    logger.debug('end of draw_Ex2A_line:')
 
 
 def add_frame_header(canvas, border, text_list, school_name, subject_name):
-    logger.debug('----- add_frame_header -----')
+    #logger.debug('----- add_frame_header -----')
 
     # border = [top, right, bottom, left]
     # width = right - left  # 190 mm
@@ -296,7 +419,7 @@ def add_frame_header(canvas, border, text_list, school_name, subject_name):
     styleHeader = ParagraphStyle(name="ex_header", alignment=TA_LEFT, fontName="Times-Bold", fontSize=11,
                                    leading=7*mm, leftIndent=2*mm, rightIndent=2*mm)
 
-    logger.debug('styleHeader: ' + str(styleHeader) + ' ' + str(type(styleHeader)))
+    #logger.debug('styleHeader: ' + str(styleHeader) + ' ' + str(type(styleHeader)))
     story = []
     for index, text in enumerate(text_list):
         story.append(Paragraph(text, styleHeader))
@@ -308,20 +431,20 @@ def add_frame_header(canvas, border, text_list, school_name, subject_name):
     color_blue = colors.HexColor("#000080")
     #color_blue = colors.cornflowerblue
 
-    logger.debug('color_blue: ' + str(color_blue) + ' ' + str(type(color_blue)))
+    #logger.debug('color_blue: ' + str(color_blue) + ' ' + str(type(color_blue)))
     styleData = ParagraphStyle(name="ex_data", alignment=TA_LEFT, fontName="Arial", fontSize=11,
                                    textColor=colors.HexColor("#000080"),
                                    leading=14*mm, leftIndent = 4*mm, rightIndent = 4*mm)
-    logger.debug('styleData: ' + str(styleData) + ' ' + str(type(styleData)))
+    #logger.debug('styleData: ' + str(styleData) + ' ' + str(type(styleData)))
 
     logger.debug('subject_name: ' + str(subject_name) + ' ' + str(type(subject_name)))
     logger.debug('school_name: ' + str(school_name) + ' ' + str(type(school_name)))
     line1 = Paragraph(subject_name, styleData)
-    logger.debug('line1: ' + str(line1) + ' ' + str(type(line1)))
+    #logger.debug('line1: ' + str(line1) + ' ' + str(type(line1)))
     line2 = Paragraph(school_name, styleData)
-    logger.debug('line2: ' + str(line2) + ' ' + str(type(line2)))
+    #logger.debug('line2: ' + str(line2) + ' ' + str(type(line2)))
     story2 = [line1, line2]
-    logger.debug('story2: ' + str(story2) + ' ' + str(type(story2)))
+    #logger.debug('story2: ' + str(story2) + ' ' + str(type(story2)))
 
     left = left + 40*mm
     bottom  = bottom - 13*mm

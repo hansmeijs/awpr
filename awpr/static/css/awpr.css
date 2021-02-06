@@ -143,7 +143,7 @@ nav.menubar {
     background-color: green; /*95% #233d5c */
     color: red; /*95% #233d5c */
     clear: both;
-    overflow: hidden; // Add this
+    overflow: hidden;
 }
 ul.menubar {
     padding: 4px 16px;
@@ -156,7 +156,7 @@ ul.menubar {
 ul.menubar li {
     display: inline;
     font-size: 1rem;  /* font-size: 18px;*/
-    color: #he3ebf4;
+    /*color: #he3ebf4;  PR2021-02-03 firefox ddebug: ‘#he3ebf4’.  Error in parsing value for ‘color’. */
 }
 
 /* Add a slash symbol (/) before/behind each list item */
@@ -211,34 +211,29 @@ select.form-control:not([size]):not([multiple]) {
 
 /*
 .btn {
-  padding: 0.1rem 0.25rem; //* PR2018-12-15 was: DEFAULT padding: 0.375rem 0.75rem; */
-}
-*/
+  padding: 0.1rem 0.25rem; //* PR2018-12-15 was: DEFAULT padding: 0.375rem 0.75rem;
+}*/
+
 .navbar {
   padding: 2px 4px; /* 0.25rem 0.25rem; /* PR2018-12-15 was: padding: 0.25rem 1rem; */
-
 }
-
 .close {
   line-height: .75;  /* PR2018-08-18 was: line-height: 1; */
 }
-
-
-
 
 .content_margin_top78 {
    margin-top: 78px;
    margin-left: 16px;
 }
-
+/* NIU
 .menubar_fixed_top {
   position: fixed;
-  top: 96;
+  top: 96px;
   right: 0;
-  left: 48;
+  left: 48px;
   z-index: 1020;
 }
-
+*/
 
 .menubar_navbar {
     margin-top: 0px;
@@ -246,7 +241,7 @@ select.form-control:not([size]):not([multiple]) {
     margin-left: 212px;
     margin-right: auto;
     padding: 0px 8px;
-    z-index: 990 /* headerbar dropdown item has z-index 1000. This one must have lower z-index. Was  1020; PR2020-10-03*/
+    z-index: 990; /* headerbar dropdown item has z-index 1000. This one must have lower z-index. Was  1020; PR2020-10-03*/
     background-color: #f8f9fa /* bootstrap bg-light  */
 }
 
@@ -331,6 +326,9 @@ select.form-control:not([size]):not([multiple]) {
 .border_invalid {
     border: 1px solid #dc3545;    /*  red like in django is-invalid */
     border-radius: .25rem;
+}
+z_index_1070 {
+    z-index: 1090;
 }
 
 /* CSS loader */

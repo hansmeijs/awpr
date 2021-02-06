@@ -564,60 +564,101 @@
         return item_dict
     }
 
-//========= b_get_status_bool_at_index  ============= PR2021-01-15
-    function b_get_status_bool_at_index(status_int, index) {
-        if(status_int == null){status_int = 0};
-        let status_bool = false;
-        if(index < 15) {
-            const status_array = b_get_status_array(status_int)
-            status_bool = (status_array[index] == "1");
-        }
-        return status_bool
+//========= b_get_status_bool_at_index  ============= PR2021-01-15 PR2021-02-05
+    function b_get_status_bool_at_index(status_sum, index) {
+        const status_array = b_get_status_array(status_sum);
+        return b_get_status_bool_at_arrayindex(status_array, index);
     }  // b_get_status_bool_at_index
 
-//========= b_set_status_bool_at_index  ============= PR2021-01-15
+//========= b_get_status_bool_at_index  ============= PR2021-02-05
+    function b_get_status_bool_at_arrayindex(status_array, index) {
+        let status_bool = false;
+        if(status_array && index < status_array.length) {
+            status_bool = (status_array[index] === 1);
+        }
+        return status_bool
+    }
+
+//========= b_set_status_bool_at_index  ============= PR2021-01-15 PR2021-02-05
     function b_set_status_bool_at_index(status_int, index, new_value) {
         console.log( " ==== b_set_status_bool_at_index ====");
 
         if(status_int == null){status_int = 0};
-        let new_status_int = 0;
-        if(index < 15) {
+        let new_status_sum = 0;
+        const status_array = b_get_status_array(status_int)
+        if(status_array && index < status_array.length) {
     // ---  put new_value at index
-            const status_array = b_get_status_array(status_int)
-            status_array[index] = (new_value) ? "1" : "0";
+            status_array[index] = (new_value) ? 1 : 0;
     // ---  convert to integer
-            status_array.reverse();
-            const arr_joined = status_array.join("");
-            new_status_int = parseInt(arr_joined,2)
+            new_status_sum =  b_get_statussum_from_array(status_array);
         }
-        return new_status_int
+        return new_status_sum
     }  // b_set_status_bool_at_index
 
-//========= b_get_status_array  ============= PR2021-01-15
-    function b_get_status_array(status_int) {
+
+//========= b_get_statussum_from_array  =============  PR2021-02-05
+    function b_get_statussum_from_array(status_array) {
+        // ---  convert to integer
+        let status_sum = null;
+        if(status_array && status_array.length){
+            status_array.reverse();
+            const arr_joined = status_array.join("");
+            status_sum = parseInt(arr_joined,2);
+        }
+        return status_sum;
+    }
+
+//========= b_get_status_array  ============= PR2021-01-15 PR2021-02-05
+    function b_get_status_array(status_sum) {
         //console.log( " ==== b_set_status_bool_at_index ====");
-        if(status_int == null){status_int = 0};
-        const status_binary = status_int.toString(2)  // status_binary:  '1110101' string
-        const status_binary_extended = "00000000000000" + status_binary;  // status_binary_extended: '000000000000001110101' string
-        const status_binary_sliced = status_binary_extended.slice(-15);  // status_binary_sliced: '000000001110101' string
+        const array_length = 15
+        const leading_zeros = "0".repeat(array_length);
+
+        if(status_sum == null){status_sum = 0};
+        const status_binary = status_sum.toString(2)  // status_binary:  '1110101' string
+        const status_binary_extended = leading_zeros + status_binary;  // status_binary_extended: '000000000000001110101' string
+        const status_binary_sliced = status_binary_extended.slice(array_length * -1);  // status_binary_sliced: '000000001110101' string
 
         // PR2021-01-15 from https://www.samanthaming.com/tidbits/83-4-ways-to-convert-string-to-character-array/
         const status_array = [...status_binary_sliced];   // ... is the spread operator
         const status_array_reversed = status_array.reverse();
 
+        for (let i = 0, len = status_array_reversed.length; i < len; i++) {
+            status_array_reversed[i] = Number(status_array_reversed[i]);
+        }
+        // status_array_reversed = [1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]
+
         return status_array_reversed
     }  // b_get_status_array
 
+
+
+    function b_get_status_iconclass(publ, auth1, auth2, auth3) {
+        const img_class = (publ) ? "appr_1_5" :
+                          (auth1 && auth2 && auth3) ? "appr_1_4" :
+                          (auth2 && auth3) ? "appr_1_3" :
+                          (auth1 && auth3) ? "appr_1_2" :
+                          (auth1 && auth2) ? "appr_0_4" :
+                          (auth3) ? "appr_1_1" :
+                          (auth2 ) ? "appr_0_3" :
+                          (auth1 ) ? "appr_0_2" : "appr_0_0"
+        return img_class
+    }
+
+
     function get_status_class(status_sum) { // PR2021-01-15
-        //console.log( " ==== get_status_class ====");
-        //console.log( "status_sum", status_sum);
+        console.log( " ==== get_status_class ====");
+        console.log( "status_sum", status_sum);
         let img_class = "appr_0_0";
+
         if (status_sum < 32) {
-            const created = b_get_status_bool_at_index(status_sum, 0)  // STATUS_00_CREATED
-            const auth1 = b_get_status_bool_at_index(status_sum, 1)  // STATUS_01_AUTH1 = 2
-            const auth2 = b_get_status_bool_at_index(status_sum, 2) // STATUS_02_AUTH2 = 4
-            const auth3 = b_get_status_bool_at_index(status_sum, 3) // STATUS_03_AUTH3 = 8
-            const submitted = b_get_status_bool_at_index(status_sum, 4) // STATUS_04_SUBMITTED = 16
+            const status_array = b_get_status_array(status_sum);
+            const created = b_get_status_bool_at_arrayindex(status_array, 0)  // STATUS_00_CREATED
+            const auth1 = b_get_status_bool_at_arrayindex(status_array, 1)  // STATUS_01_AUTH1 = 2
+            const auth2 = b_get_status_bool_at_arrayindex(status_array, 2) // STATUS_02_AUTH2 = 4
+            const auth3 = b_get_status_bool_at_arrayindex(status_array, 3) // STATUS_03_AUTH3 = 8
+            const submitted = b_get_status_bool_at_arrayindex(status_array, 4) // STATUS_04_SUBMITTED = 16
+
 
             img_class = (submitted) ? "appr_1_5" :
                         (auth1 && auth2 && auth3) ? "appr_1_4" :
@@ -628,7 +669,15 @@
                         (auth2) ? "appr_0_3" :
                         (auth1) ? "appr_0_2" :
                         (created) ? "stat_0_1" : "stat_0_0"
-
+    if(status_sum){
+        console.log( "status_array", status_array);
+        console.log( "created", created);
+        console.log( "auth1", auth1);
+        console.log( "auth2", auth2);
+        console.log( "auth3", auth3);
+        console.log( "submitted", submitted);
+        console.log( "img_class", img_class);
+    }
         } else if (status_sum < 64) {img_class = "note_1_2" // STATUS_05_REQUEST = 32
         } else if (status_sum < 128) {img_class = "note_1_3"// STATUS_06_WARNING = 64
         } else if (status_sum < 256) {img_class = "note_1_4"// STATUS_07_REJECTED = 128

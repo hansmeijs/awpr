@@ -58,6 +58,12 @@
 {% block content %}
     <div id="id_content">
         {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
+    <!-- =================== MODAL APPROVE GRADE  =================== -->
+            {% include 'students/modapprovegrade.html' %}
+    <!-- =================== MODAL STUDENT SUBJECT =================== -->
+            {% include 'students/modstudentsubject.html' %}
+    <!-- =================== MODAL STUDENT =================== -->
+            {% include 'students/modstudent.html' %}
     <!-- =================== MODAL SELECT EXAM YEAR =================== -->
             {% include 'schools/modselectexamyear.html' %}
     <!-- =================== MODAL SELECT SCHOOL OR DEPARTMENT=================== -->
@@ -72,12 +78,6 @@
             {% include 'includes/modnote.html' %}
     <!-- =================== MODAL MESSAGE  =================== -->
             {% include 'includes/modmessage.html' %}
-    <!-- =================== MODAL APPROVE GRADE  =================== -->
-            {% include 'students/modapprovegrade.html' %}
-    <!-- =================== MODAL STUDENT =================== -->
-            {% include 'students/modstudent.html' %}
-    <!-- =================== MODAL STUDENT SUBJECT =================== -->
-            {% include 'students/modstudentsubject.html' %}
 
             <div class="content_margin_top78">
 
@@ -88,7 +88,7 @@
                     <button data-btn="grade_by_subject" class="btn btn-secondary ">{% trans 'Grades by subject' %}</button>
                     <button data-btn="grade_by_student" class="btn btn-secondary ">{% trans 'Grades by candidate' %}</button>
                     <button data-btn="grade_by_all" class="btn btn-secondary ">{% trans 'All grades' %}</button>
-                    <button data-btn="grade_ex2a" class="btn btn-secondary ">{% trans 'Submitted Ex2A forms' %}</button>
+                    <button data-btn="grade_published" class="btn btn-secondary ">{% trans 'Submitted Ex2A forms' %}</button>
                 </div>
     <!-- end BUTTON GROUP -->
 

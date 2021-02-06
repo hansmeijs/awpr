@@ -25,12 +25,12 @@ li {
 /* MENU */
 aXX {
     font-size: 14px;
-    font-weight: loadold;
+    font-weight: bold;
     /*line-height: 32px;
     display: inline-block;*/
     padding: 0.2em 0.4em 0.15em 0.4em;/*padding: 4px 8px;*/
     color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw*/
-    background-color: transparent /* #B8CCE4; 'TextboxBackColor Default Schema Blauw lichtblauw*/
+    background-color: transparent; /* #B8CCE4; 'TextboxBackColor Default Schema Blauw lichtblauw*/
     border: 1px solid #B8CCE4; /*rgba(0,0,0,0.25);*/
     float: left;
     cursor: pointer;
@@ -47,6 +47,7 @@ aXX:hover{
     -o-transition: all 50ms linear;
     transition: all 50ms linear;
 }
+
 /* INDEX */
 
 .c_gridcontainer {
@@ -169,7 +170,7 @@ aXX:hover{
 .ea_flex {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-around /*center /* space-between;  space-around PR2019-01-05 try flexbox */
+    justify-content: space-around; /*center /* space-between;  space-around PR2019-01-05 try flexbox */
     align-items: flex-start;
     border: 1px solid #2D4E77;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
 /*
@@ -194,7 +195,7 @@ aXX:hover{
 .li_flex {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-around /* center /* space-between;  space-around PR2019-01-05 try flexbox */
+    justify-content: space-around; /* center /* space-between;  space-around PR2019-01-05 try flexbox */
     align-items: flex-start
 /*
     font-size: 14px;
@@ -210,7 +211,7 @@ aXX:hover{
 }
 .li_flex > div {
     flex: 1;
-    border: 1px solid #800000 /* background-color: #800000; dark red*/
+    border: 1px solid #800000; /* background-color: #800000; dark red*/
 }
 
 
@@ -239,7 +240,7 @@ aXX:hover{
     padding: 4px 8px;
 
     color: #376191;  /*FooterBackColor Default Schema Blauw donkerblauw */
-    background-color: #F5FAFF; */ /*licht licht blauw; */
+    background-color: #F5FAFF; /* licht licht blauw; */
 
     -webkit-box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
             box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
@@ -582,7 +583,7 @@ aXX:hover{
 .search_container {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-around /*center /* space-between;  space-around PR2019-01-05 try flexbox */
+    justify-content: space-around; /*center /* space-between;  space-around PR2019-01-05 try flexbox */
     align-items: flex-start;
 
     /*height: 24px;*/
@@ -591,7 +592,7 @@ aXX:hover{
     margin: 0px; /*these dont work: margin: none; margin: 0;*/
     /*background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */ /* #4A7DBB; /* 'TextboxBackColor Default Schema Blauw medium blauw */
 
-    background-color: #F5FAFF; */ /*licht licht blauw; */
+    background-color: #F5FAFF; /* licht licht blauw; */
     color: #376191;  /* Default Schema Blauw donkerblauw */
     border: 1px solid #2D4E77;    /*  #2D4E77; HeaderBackColor Default Schema Blauw donkerblauw */
 }
@@ -778,7 +779,7 @@ aXX:hover{
 .stp_container_show {
     width: 100%;
     height: 100%;
-    margin: auto
+    margin: auto;
     z-index:10;
     position: relative;
     visibility: visible;
@@ -802,7 +803,7 @@ aXX:hover{
 .mod_flex {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-around /*center /* space-between;  space-around PR2019-01-05 try flexbox */
+    justify-content: space-around; /*center /* space-between;  space-around PR2019-01-05 try flexbox */
     align-items: flex-start;
     border: none;
 }

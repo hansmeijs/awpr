@@ -205,7 +205,7 @@ def get_country_choices_all():
 
 
 def get_sel_examyear_instance(request, request_item_setting=None):  # PR2020-12-25
-    logger.debug('  -----  get_sel_examyear_instance  -----')
+    #logger.debug('  -----  get_sel_examyear_instance  -----')
     sel_examyear_instance = None
     sel_examyear_save = False
     multiple_examyears = False
@@ -217,7 +217,7 @@ def get_sel_examyear_instance(request, request_item_setting=None):  # PR2020-12-
 # - check if there is a new examyear_pk in request_item_setting, check if request_examyear exists
         if request_item_setting is not None:
             selected_pk_dict = request_item_setting.get(c.KEY_SELECTED_PK)
-            logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+            #logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
             if selected_pk_dict:
                 r_eyr_pk = selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK)
                 sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=r_eyr_pk, country=requsr_country)

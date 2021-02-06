@@ -33,7 +33,7 @@ from students import models as stud_mod
 from students import views as stud_view
 from subjects import models as subj_mod
 from grades import validations as grad_val
-from grades import exfiles as grad_ex
+from grades import exfiles as grade_exfiles
 
 import json # PR2018-12-03
 # PR2018-04-27
@@ -116,18 +116,19 @@ class GradeApproveView(View):  # PR2021-01-19
 
     # - get selected grade from upload_dict - if any
                     grade_pk = upload_dict.get('grade_pk')
+                    logger.debug('grade_pk: ' + str(grade_pk))
 
     # - if  grade_pk has value: get sel_examtype from upload_dict instead of from settings
+                    sel_subject_pk = None
                     if grade_pk:
                         sel_examperiod = upload_dict.get('examperiod')
                         sel_examtype = upload_dict.get('examtype')
                     else:
-
-    # - get selected examperiod and examtype from usersettings
-                        sel_examperiod, sel_examtype, sel_subject_pkNIU = dl.get_selected_examperiod_examtype_from_usersetting(request)
+    # - if  grade_pk has no value: get selected examperiod and examtype from usersettings
+                        sel_examperiod, sel_examtype, sel_subject_pk = \
+                            dl.get_selected_examperiod_examtype_from_usersetting(request)
 
                     if sel_examperiod and sel_examtype and sel_school and sel_department:
-
     # +++ get selected grade_rows
                         crit = Q(studentsubject__student__school=sel_school) & \
                                Q(studentsubject__student__department=sel_department) & \
@@ -143,11 +144,14 @@ class GradeApproveView(View):  # PR2021-01-19
                                      'already_approved_by_auth': 0,
                                      'auth_missing': 0
                                     }
+                        logger.debug('grades: ' + str(grades))
                         if grades is None:
                             msg_dict['count_text'] = _("The selection contains %(val)s.") % {'val': get_grade_text(0)}
                         else:
        # create new published_instance. Only save it when it is not a test
-                            published_instance = create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, is_test, request)
+                            published_instance = None
+                            if is_submit and not is_test:
+                                published_instance = create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, is_test, request)
         # +++++ loop through  grades
                             grade_rows = []
                             for grade in grades:
@@ -170,15 +174,21 @@ class GradeApproveView(View):  # PR2021-01-19
                                         sel_schoolbase_pk=sel_school.base_id,
                                         sel_depbase_pk=sel_department.base_id,
                                         append_dict=append_dict,
-                                        sel_subject_pk=None,
-                                        sel_student_pk=None,
+                                        sel_examperiod=sel_examperiod,
                                         grade_pk=grade.pk)
                                     if rows:
                                         grade_rows.append(rows[0])
         # +++++  end of loop through  grades
                             if grade_rows:
-                                #canvas = create_ex2a(published_instance, grade_rows, request)
-                                #update_wrap['updated_ex2a'] = canvas
+                                if is_submit and not is_test:
+                                    sel_subject = subj_mod.Subject.objects.get_or_none(
+                                        pk=sel_subject_pk,
+                                        examyear=sel_examyear
+                                    )
+                                    canvas = create_ex2a(published_instance, sel_examyear, sel_school,
+                                                         sel_department, sel_subject, sel_examperiod,
+                                                         sel_examtype, grade_rows, request)
+                                    update_wrap['updated_ex2a'] = canvas
 
                                 update_wrap['updated_grade_rows'] = grade_rows
                                 count = msg_dict.get('count', 0)
@@ -239,23 +249,33 @@ class GradeApproveView(View):  # PR2021-01-19
 
 
 def create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, is_test, request):  # PR2021-01-21
+    logger.debug('----- create_published_instance -----')
     # create new published_instance and save it when it is not a test
-    school_caption = sel_school.base.code + ' ' + sel_school.name
-    if sel_department.base.code.lower() not in sel_school.name.lower():
-        school_caption += ' ' + sel_department.base.code
+    depbase_code = sel_department.base.code if sel_department.base.code else '-'
+    school_code = sel_school.base.code if sel_school.base.code else '-'
+    school_abbrev = sel_school.abbrev if sel_school.abbrev else '-'
+    #examtype_caption = c.EXAMTYPE_CAPTION[sel_examtype].lower()
 
-    examtype_caption = c.EXAMTYPE_CAPTION[sel_examtype].lower()
-    examperiod_caption = c.EXAMPERIOD_CAPTION[sel_examperiod].lower()
-    # TODO add level and subject if it is filtered on those fields
-    name = ' - '.join(('Ex2A', school_caption, examtype_caption, examperiod_caption))
-    # use short version of schoolname if total name is too long
-    if len(name) < c.MAX_LENGTH_FIRSTLASTNAME:
-        school_caption = sel_school.base.code + ' ' + sel_school.abbrev
-        if sel_department.base.code.lower() not in sel_school.abbrev.lower():
-            school_caption += ' ' + sel_department.base.code
-            name = ' - '.join(('Ex2A', school_caption, examtype_caption, examperiod_caption))
+    examperiod_str = ''
+    if sel_examperiod == 1:
+        examperiod_str = '-tv1'
+    if sel_examperiod == 2:
+        examperiod_str = '-tv2'
+    elif sel_examperiod == 3:
+        examperiod_str = '-tv3'
+    elif sel_examperiod == 4:
+        examperiod_str = '-vrst'
 
     today_date = af.get_today_dateobj()
+    today_iso = today_date.isoformat()
+
+    examtype_caption = sel_examtype.upper() + examperiod_str
+    # TODO add level and subject if it is filtered on those fields
+    name = ' '.join(('Ex2A', school_code, depbase_code, school_abbrev, today_iso))
+    # skip schoolname if total name is too long
+    if len(name) > c.MAX_LENGTH_FIRSTLASTNAME:
+        name = ' '.join(('Ex2A', school_code, depbase_code, today_iso))
+
     logger.debug('name: ' + str(len(name)))
     logger.debug('date.today: ' + str(today_date))
     published_instance = stud_mod.Published(
@@ -268,11 +288,22 @@ def create_published_instance(sel_school, sel_department, sel_examtype, sel_exam
     logger.debug('published_instance: ' + str(published_instance))
     if not is_test:
         published_instance.save(request=request)
+        logger.debug('published_instance.saved: ' + str(published_instance))
+        # add path and pk to name t cerate filename
+
+        # check if filename already exists
+        file_name = published_instance.name
+        file_exists = stud_mod.Published.objects.filter(filename__iexact=file_name).exists()
+        if file_exists:
+            file_name += ' ' + str(published_instance.pk)
+        published_instance.filename = file_name
+        published_instance.save(request=request)
     return published_instance
 # - end of create_published_instance
 
 def get_grade_text(count):
     return _('no grades') if not count else _('1 grade') if count == 1 else str(count) + str(_(' grades'))
+
 
 def get_grades_are_text(count):
     return _('no grades are') if not count else _('1 grade is') if count == 1 else str(count) + str(_(' grades are'))
@@ -356,7 +387,7 @@ def approve_grade(grade, sel_examtype, is_reset, msg_dict, request):  # PR2021-0
                 if save_changes:
                     status_index = 1 if req_user.is_perm_auth1 else \
                         2 if req_user.is_perm_auth2 else \
-                            3 if req_user.is_perm_auth3 else None
+                        3 if req_user.is_perm_auth3 else None
                     logger.debug('status_index: ' + str(status_index))
                     logger.debug('is_reset: ' + str(is_reset))
 
@@ -400,6 +431,10 @@ def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, req
                 # TODO dnot checking on auth3by ia only for testing. Must put it back
                 # auth_missing = auth1by is None or auth2by is None or auth3by is None
                 auth_missing = auth1by is None or auth2by is None
+                logger.debug('subject: ' + str(grade.studentsubject.schemeitem.subject.name))
+                logger.debug('auth1by: ' + str(auth1by))
+                logger.debug('auth2by: ' + str(auth2by))
+                logger.debug('auth3by: ' + str(auth3by))
                 logger.debug('auth_missing: ' + str(auth_missing))
                 if auth_missing:
                     msg_dict['auth_missing'] += 1
@@ -430,6 +465,7 @@ def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, req
 # - end of approve_grade
 
 # - end of submit_grade
+
 #FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 
 
@@ -467,6 +503,9 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
                 sel_examyear, sel_school, sel_department, is_locked, \
                 examyear_published, school_activated, is_requsr_school = \
                     dl.get_selected_examyear_school_dep_from_usersetting(request)
+# - get selected examperiod and examtype from usersettings
+                sel_examperiod, sel_examtype, sel_subject_pkNIU = \
+                    dl.get_selected_examperiod_examtype_from_usersetting(request)
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                 student = None
@@ -524,9 +563,8 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
                             sel_examyear_pk=sel_examyear.pk,
                             sel_schoolbase_pk=sel_school.base_id,
                             sel_depbase_pk=sel_department.base_id,
+                            sel_examperiod=sel_examperiod,
                             append_dict=append_dict,
-                            sel_subject_pk=None,
-                            sel_student_pk=None,
                             grade_pk=grade.pk)
                         if rows:
                             row = rows[0]
@@ -613,12 +651,12 @@ def update_grade(instance, upload_dict, err_dict, request):
 # --- end of update_grade
 
 
-def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, append_dict=None,
-                      sel_subject_pk=None, sel_student_pk=None, grade_pk=None):
+def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, append_dict=None,
+                       sel_subject_pk=None, grade_pk=None):
     # --- create rows of all students of this examyear / school PR2020-12-14
     #logger.debug(' ----- create_grade_rows -----')
 
-    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk}
+    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
 
     sql_list = ["SELECT grade.id,  studsubj.id AS studsubj_id, studsubj.schemeitem_id, studsubj.cluster_id,",
         "CONCAT('grade_', grade.id::TEXT) AS mapid, 'grade' AS table,",
@@ -630,9 +668,9 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, append
         "grade.examperiod, grade.pescore, grade.cescore, grade.segrade, grade.pegrade, grade.cegrade,",
         "grade.pecegrade, grade.finalgrade,",
 
-        "se_status, se_auth1by_id, grade.se_auth2by_id, grade.se_published_id,",
-        "pe_status, pe_auth1by_id, grade.pe_auth2by_id, grade.pe_published_id,",
-        "ce_status, ce_auth1by_id, grade.ce_auth2by_id, grade.ce_published_id,",
+        "se_status, se_auth1by_id, grade.se_auth2by_id, grade.se_auth3by_id, grade.se_published_id,",
+        "pe_status, pe_auth1by_id, grade.pe_auth2by_id, grade.pe_auth3by_id, grade.pe_published_id,",
+        "ce_status, ce_auth1by_id, grade.ce_auth2by_id, grade.ce_auth3by_id, grade.ce_published_id,",
 
         "norm.scalelength_ce, norm.scalelength_reex, norm.scalelength_pe,",
         "si.subject_id, si.subjecttype_id, si.gradetype,",
@@ -654,7 +692,8 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, append
         "LEFT JOIN subjects_norm AS norm ON (norm.id = si.norm_id)",
         "WHERE ey.id = %(ey_id)s::INT",
         "AND school.base_id = %(sb_id)s::INT",
-        "AND dep.base_id = %(depbase_id)s::INT"
+        "AND dep.base_id = %(depbase_id)s::INT",
+        "AND grade.examperiod = %(experiod)s::INT"
         ]
 
     #logger.debug('grade_pk: ' + str(grade_pk))
@@ -664,15 +703,9 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, append
         # when grade_pk has value: skip other filters
         sql_keys['grade_id'] = grade_pk
         sql_list.append('AND grade.id = %(grade_id)s::INT')
-    elif sel_student_pk:
-        # when sel_student_pk has value: skip other filters
-        sql_keys['student_id'] = sel_student_pk
-        sql_list.append('AND stud.id = %(student_id)s::INT')
-        sql_list.append('ORDER BY LOWER(subj.name)')
     elif sel_subject_pk:
-        # when student_pk has value: skip other filters
         sql_keys['subj_id'] = sel_subject_pk
-        sql_list.append('AND subj.id = %(subj_id)s::INT')
+        sql_list.append('AND si.subject_id = %(subj_id)s::INT')
         sql_list.append('ORDER BY LOWER(stud.lastname), LOWER(stud.firstname)')
     else:
         sql_list.append('ORDER BY LOWER(stud.lastname), LOWER(stud.firstname), subjbase.code')
@@ -715,10 +748,12 @@ def create_published_rows(setting_dict):
     #logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
     #logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
 
+    media_dir = "\\static\media\\"
     sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk}
 
     sql_list = ["SELECT publ.id, CONCAT('published_', publ.id::TEXT) AS mapid, 'published' AS table,",
         "publ.name, publ.examtype, publ.examperiod, publ.datepublished, publ.filename,",
+        "CONCAT('" + media_dir + "', publ.filename) AS filepath,",
         "sb.code AS sb_code, school.name AS school_name, db.code AS db_code, ey.code AS ey_code",
 
         "FROM students_published AS publ",
@@ -774,24 +809,36 @@ def get_status_bool_by_index(status_sum, index):  # PR2021-01-15
 
 def set_status_sum_by_index(status_sum, index, new_value_bool):  # PR2021-01-15
     #logger.debug(' =============== set_status_sum_by_index ============= ')
-    # bin(status_sum): '0b1010111' <class 'str'>   binary string from int
-    # bin(status_sum)[-1:1:-1]: '1110101' <class 'str'>     reversed string from binary string
-    # status_list: ['1', '1', '1', '0', '1', '0', '1'] <class 'list'>
+    # bin(status_sum): '0b0010111' <class 'str'>   binary string from int
+    # bin(status_sum)[-1:1:-1]: '1110100' <class 'str'>     reversed string from binary string, leave out '0b'
+    # status_list: ['1', '1', '1', '0', '1', '0', '0']  convert to list
 
+    #logger.debug('status_sum: ' + str(status_sum))
+    #logger.debug('index: ' + str(index))
+    #logger.debug('new_value_bool: ' + str(new_value_bool))
 # - convert status_sum to status_list
     status_list = list(bin(status_sum)[-1:1:-1])
+    #logger.debug('status_list: ' + str(status_list))
+# - if index > length of list: extend list with zero's
     length = len(status_list)
     if length <= index:
         for i in range(length, index + 1):
             status_list.append('0')
+    #logger.debug('extended status_list: ' + str(status_list))
+
 # - replace binary value at index with '1' if new_value_bool = True, else with '0'
     status_list[index] = '1' if new_value_bool else '0'
-    new_status_sum = 0
+
+    #logger.debug('new status_list: ' + str(status_list))
+    new_status_str = ''.join(status_list)
+    #logger.debug('new new_status_str: ' + str(new_status_str))
+    new_status_str_reversed = new_status_str[::-1]
+    #logger.debug('new new_status_str_reversed: ' + str(new_status_str_reversed))
 # - convert status_list to new_status_sum
-    if status_list:
-        for index, value in enumerate(status_list):
-            if value == '1':
-                new_status_sum += pow(2, index)  # or: new_status_sum += 2 ** index
+    # PR2021-02-06 from https://stackoverflow.com/questions/8928240/convert-base-2-binary-number-string-to-int
+    new_status_sum = int(new_status_str_reversed, 2)
+    #logger.debug('new_status_sum: ' + str(new_status_sum))
+
     return new_status_sum
 # --- end of set_status_sum_by_index
 
@@ -803,17 +850,25 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
 # from https://stackoverflow.com/questions/26274021/simply-save-file-to-folder-in-django
 # from https://stackoverflow.com/questions/51139721/django-save-canvas-object-as-a-pdf-file-to-filefield
 
+    try:
+        # create PDF
+        filepath = awpr_settings.STATICFILES_MEDIA_DIR + published_instance.name + '.pdf'
+        logger.debug('filepath: ' + str(filepath))
 
-    # create PDF
-    filepath = awpr_settings.STATICFILES_MEDIA_DIR + 'Ex2A.pdf'
-    canvas = Canvas(filepath)
+        canvas = Canvas(filepath)
 
-    grad_ex.draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel_examperiod, sel_examtype,
-                  grade_rows)
-    #canvas.drawString(200, 200, 'Examennummer')
-    canvas.showPage()
-    canvas.save()
+        canvas.setTitle(published_instance.name)
 
+        grade_exfiles.draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel_examperiod, sel_examtype,
+                      grade_rows)
+        #canvas.drawString(200, 200, 'Examennummer')
+        canvas.showPage()
+        canvas.save()
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+    else:
+        published_instance.filename = filepath
+        published_instance.save(request=request)
     #io_file = io.open(filename, encoding="utf-8")
 
     #io_file = codecs.open(filepath, "r", encoding='utf-8', errors='ignore')

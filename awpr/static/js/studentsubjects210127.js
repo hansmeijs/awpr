@@ -165,20 +165,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     const el_filedialog = document.getElementById("id_MIMP_filedialog");
         el_filedialog.addEventListener("change", function() {HandleFiledialog(el_filedialog, loc)}, false )
-    const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
-        el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false);
-    const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
-        el_MIMP_checkboxhasheader.addEventListener("change", MIMP_CheckboxHasheaderChanged) //, false);
-    const el_select_dateformat = document.getElementById("id_MIMP_dateformat");
-        el_select_dateformat.addEventListener("change", function() {MIMP_Selectdateformat(el_select_dateformat)}, false )
-   const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
-        el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false )
-   const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
-        el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false )
-   const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
-        el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test", setting_dict)}, false )
-   const el_MIMP_btn_upload = document.getElementById("id_MIMP_btn_upload");
-        el_MIMP_btn_upload.addEventListener("click", function() {MIMP_Save("save", setting_dict)}, false )
+    //const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
+    //    el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false);
+   // const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
+   //     el_MIMP_checkboxhasheader.addEventListener("change", MIMP_CheckboxHasheaderChanged) //, false);
+    //const el_select_dateformat = document.getElementById("id_MIMP_dateformat");
+   //     el_select_dateformat.addEventListener("change", function() {MIMP_Selectdateformat(el_select_dateformat)}, false )
+   //const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
+   //     el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false )
+   //const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
+   //     el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false )
+   //const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
+   //     el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test", setting_dict)}, false )
+   //const el_MIMP_btn_upload = document.getElementById("id_MIMP_btn_upload");
+   //     el_MIMP_btn_upload.addEventListener("click", function() {MIMP_Save("save", setting_dict)}, false )
 
 
 // ---  MOD CONFIRM ------------------------------------
@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 };
 
-                if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
+               // if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
 
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
                 if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows) };
@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function refresh_locale(locale_dict) {
         console.log ("===== refresh_locale ==== ")
         loc = locale_dict;
-        mimp_loc = locale_dict;
+        //mimp_loc = locale_dict;
         CreateSubmenu()
     }  // refresh_locale
 

@@ -239,7 +239,7 @@
 
     -webkit-box-pack: between;
     -ms-flex-pack: between;
-        justify-content: between; /*center space-between; space-around PR2019-01-05 */
+        justify-content: space-between;  /* center space-between; space-around PR2019-01-05 */
 
     /*  align-items defines how flex items are laid out along the cross axis on the current line. */
      -webkit-box-align: stretch;
@@ -381,7 +381,7 @@
       */
       -webkit-box-flex: 1;
       -ms-flex: 1;
-      flex: 1
+      flex: 1;
 
 
 /* The flex CSS property is a shorthand property specifying the ability
@@ -475,16 +475,6 @@ color: #000;
     transition: background-color 0.25s ease-in-out;
 }
 
-
-.icon_show {
-    display: ""
-
-}
-.inactive_hide {
-    display: "none"
-
-}
-
 .flexcontainer_horizontal {
     /* PR2020-04-20 */
     display: flex;
@@ -492,7 +482,7 @@ color: #000;
     flex-direction: row; /* flex-direction: row | row-reverse | column | column-reverse; */
     flex-wrap: wrap; /* flex-wrap: nowrap | wrap | wrap-reverse;  */
     /*  flex-flow: is a shorthand flex-direction and flex-wrap <‘flex-direction’> || <‘flex-wrap’>  */
-    justify-content: start; /* start center space-between; space-around PR2019-01-05 */
+    justify-content: flex-start; /* start center space-between; space-around PR2019-01-05 */
     /*  align-items defines how flex items are laid out along the cross axis on the current line. */
         align-items: flex-start;   /*   align-items: stretch | flex-start | flex-end | center |  */
     /*  align-content aligns a flex container's lines within when there is extra space in the cross-axis,   */
@@ -510,7 +500,7 @@ color: #000;
     flex-direction: column; /* flex-direction: row | row-reverse | column | column-reverse; */
     flex-wrap: wrap; /* flex-wrap: nowrap | wrap | wrap-reverse;  */
     /*  flex-flow: is a shorthand flex-direction and flex-wrap <‘flex-direction’> || <‘flex-wrap’>  */
-    justify-content: between; /*center space-between; space-around PR2019-01-05 */
+    justify-content: space-between; /*center space-between; space-around PR2019-01-05 */
     /*  align-items defines how flex items are laid out along the cross axis on the current line. */
         align-items: stretch;   /*   align-items: stretch | flex-start | flex-end | center |  */
     /*  align-content aligns a flex container's lines within when there is extra space in the cross-axis,   */
@@ -581,11 +571,10 @@ color: #000;
 
 .tsa_textarea_resize {
   resize: vertical;
-
-}.tsa_textarea_div {
-   margin: 4px 16px 0px 16px;  /* top, right, bottom, left:
 }
-
+.tsa_textarea_div {
+   margin: 4px 16px 0px 16px;  /* top, right, bottom, left: */
+}
 
 
 

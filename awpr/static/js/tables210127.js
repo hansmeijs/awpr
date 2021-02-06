@@ -44,7 +44,7 @@
 
 //=========  t_MSSD_FillSelectTable  ================ PR2020-08-21 PR2020-12-18
     function t_MSSD_FillSelectTable(loc, tblName, data_map, setting_dict, MSESD_Response, selected_pk) {
-        console.log( "===== t_MSSD_FillSelectTable ========= ");
+        //console.log( "===== t_MSSD_FillSelectTable ========= ");
 
 // set header text
         const header_text = (tblName === "examyear") ? loc.Select_examyear :
@@ -144,8 +144,8 @@
 // +++++++++++++++++ MODAL SELECT SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSS_Open ====================================  PR2020-12-17 PR2021-01-23
     function t_MSSS_Open (loc, tblName, data_map, setting_dict, MSSS_Response) {
-        console.log(" ===  t_MSSS_Open  =====", tblName) ;
-        console.log( "setting_dict", setting_dict);
+        //console.log(" ===  t_MSSS_Open  =====", tblName) ;
+        //console.log( "setting_dict", setting_dict);
 
         const selected_pk = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_pk : null;
 
@@ -162,13 +162,15 @@
 
 //=========  t_MSSS_Save  ================ PR2020-01-29 PR2021-01-23
     function t_MSSS_Save(el_input, MSSS_Response) {
-        console.log("===  t_MSSS_Save =========");
+        //console.log("===  t_MSSS_Save =========");
+        //console.log("el_input.dataset", el_input.dataset);
     // --- put tblName, sel_pk and value in MSSS_Response, MSSS_Response handles uploading
         const tblName = el_input.dataset.table;
-        const selected_pk = el_input.dataset.pk;
-        const selected_value = el_input.dataset.code;
-
-        MSSS_Response(tblName, selected_pk, selected_value)
+        const selected_pk_str = el_input.dataset.pk;
+        const selected_code = el_input.dataset.code;
+        const selected_name = el_input.dataset.name;
+        const selected_pk_int = (Number(selected_pk_str)) ? Number(selected_pk_str) : null;
+        MSSS_Response(tblName, selected_pk_int, selected_code, selected_name)
 // hide modal
         $("#id_mod_select_subject_student").modal("hide");
     }  // t_MSSS_Save
@@ -178,7 +180,7 @@
         //console.log("===== t_MSSS_Fill_SelectTable ===== ", tblName);
 
 // set header text
-        const label_text = loc.Filter + ( (tblName === "student") ?  loc.Candidate.toLowerCase() : loc.Subject.toLowerCase() );
+        const label_text = loc.Select + ( (tblName === "student") ?  loc.Candidate.toLowerCase() : loc.Subject.toLowerCase() );
         const msg_text = (tblName === "student") ? loc.Type_afew_letters_candidate : loc.Type_afew_letters_subject;
 
         document.getElementById("id_MSSS_header").innerText = label_text;
@@ -219,7 +221,7 @@
         tblRow.id = map_id;
         tblRow.setAttribute("data-pk", pk_int);
         tblRow.setAttribute("data-code", code);
-        tblRow.setAttribute("data-value", name);
+        tblRow.setAttribute("data-name", name);
         tblRow.setAttribute("data-table", tblName);
         const class_selected = (is_selected_row) ? cls_selected: cls_bc_transparent;
         tblRow.classList.add(class_selected);
@@ -251,7 +253,7 @@
 
 //=========  t_MSSS_SelectItem  ================ PR2020-12-17
     function t_MSSS_SelectItem(MSSS_Response, tblRow, el_input) {
-        console.log( "===== t_MSSS_SelectItem ========= ");
+        //console.log( "===== t_MSSS_SelectItem ========= ");
         //console.log( tblRow);
         // all data attributes are now in tblRow, not in el_select = tblRow.cells[0].children[0];
         // after selecting row, values are stored in input box
@@ -265,7 +267,7 @@
 // ---  get pk code and value from tblRow, put values in input box
             el_input.dataset.pk = tblRow.dataset.pk
             el_input.dataset.code = tblRow.dataset.code
-            el_input.dataset.value = tblRow.dataset.value
+            el_input.dataset.name = tblRow.dataset.name
 // ---  save and close
             t_MSSS_Save(el_input, MSSS_Response)
         }
@@ -273,7 +275,7 @@
 
 //=========  t_MSSS_InputKeyup  ================ PR2020-09-19
     function t_MSSS_InputKeyup(el_input) {
-        console.log( "===== t_MSSS_InputKeyup  ========= ");
+        //console.log( "===== t_MSSS_InputKeyup  ========= ");
 
 // ---  get value of new_filter
         let new_filter = el_input.value
@@ -284,15 +286,15 @@
         if (new_filter && len){
 // ---  filter rows in table select_employee
             const filter_dict = t_Filter_SelectRows(tblBody, new_filter);
-        console.log( "filter_dict", filter_dict);
+
 // ---  if filter results have only one item: put selected item in el_input
             const selected_pk = (filter_dict.selected_pk) ? filter_dict.selected_pk : null;
             if (selected_pk) {
-                el_input.value = (filter_dict.selected_value) ? filter_dict.selected_value : null;;
+                el_input.value = (filter_dict.selected_name) ? filter_dict.selected_name : null;;
 // ---  get pk code and value from filter_dict, put values in input box
                 el_input.dataset.pk = selected_pk
                 el_input.dataset.code = (filter_dict.selected_code) ? filter_dict.selected_code : null;
-                el_input.dataset.value = el_input.value;
+                el_input.dataset.name = el_input.value;
 // ---  Set focus to btn_save
                 const el_MSSS_btn_save = document.getElementById("id_MSSS_btn_save")
                 set_focus_on_el_with_timeout(el_MSSS_btn_save, 50);
@@ -302,85 +304,13 @@
 
 // +++++++++++++++++ END OF MODAL SELECT SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 
-
-//========= CreateTable  ==================================== NIU ???
-    function CreateTableNIU(tableBase, header1, header2, headExc, headAwp, headLnk ) {
-        console.log("==== CreateMapTableSub  =========>>>", tableBase, header1, header2, headExc, headAwp, headLnk);
-        let base_div = $("#id_basediv_" + tableBase);  // BaseDivID = "sct", "lvl", "col"
-        // delete existing rows of tblColExcel, tblColAwp, tblColLinked
-        base_div.html("");
-
-        //append column header to base_div
-        if(!!header1 || !!header2) {
-            $("<div>").appendTo(base_div)
-                .attr({id: "id_div_hd_" + tableBase})
-                .addClass("c_columns_header");
-
-            if(!!header1) {
-                $("<p>").appendTo( "#id_div_hd_" + tableBase)
-                    //header1 = "Link sectors"
-                    .html("<b>" + header1 + "</b>");
-            }
-            if(!!header2) {
-                $("<p>").appendTo( "#id_div_hd_" + tableBase)
-                    //header2 = "Click to link or unlink sector"
-                    .html("<b>###" + header2 + "</b>");
-            }
-        }
-        // append flex div for table Excel and Awp
-        $("<div>").appendTo(base_div)
-                .attr({id: "id_ea_flex_" + tableBase})
-                .addClass("ea_flex");
-
-        // append div for table Excel
-            $("<div>").appendTo("#id_ea_flex_" + tableBase)
-                    .attr({id: "id_exc_div_" + tableBase});
-
-                $("<table>").appendTo("#id_exc_div_" + tableBase)
-                        .attr({id: "id_exc_table_" + tableBase})
-                        .addClass("c_grid_colExcel")
-                        .on("click", handle_table_row_clicked);
-
-                    $("<thead>").appendTo("#id_exc_table_" + tableBase)
-                            .html("<tr><td>" + headExc + "</td></tr>"); // headExc: "Excel sectors"
-                    $("<tbody>").appendTo("#id_exc_table_" + tableBase)
-                            .attr({id: "id_exc_tbody_" + tableBase});
-
-        // append div for table Awp
-            $("<div>").appendTo("#id_ea_flex_" + tableBase)
-                    .attr({id: "id_awp_div_" + tableBase});
-                $("<table>").appendTo("#id_awp_div_" + tableBase)
-                        .attr({id: "id_awp_table_" + tableBase})
-                        .addClass("c_grid_colExcel")
-                        .on("click", handle_table_row_clicked);
-                    $("<thead>").appendTo("#id_awp_table_" + tableBase)
-                            .html("<tr><td>" + headAwp + "</td></tr>"); // headAwp: "AWP columns"
-                    $("<tbody>").appendTo("#id_awp_table_" + tableBase)
-                            .attr({id: "id_awp_tbody_" + tableBase});
-
-        // append flex div for table Linked
-        $("<div>").appendTo(base_div)
-                .attr({id: "id_li_flex_" + tableBase})
-                .addClass("li_flex");
-            $("<div>").appendTo("#id_li_flex_" + tableBase)
-                    .attr({id: "id_lnk_div_" + tableBase});
-                $("<table>").appendTo("#id_lnk_div_" + tableBase)
-                        .attr({id: "id_lnk_table_" + tableBase})
-                        .addClass("c_grid_colLinked")
-                        .on("click", handle_table_row_clicked);
-                    $("<thead>").appendTo("#id_lnk_table_" + tableBase)
-                            .attr({id: "id_sct_th_lnk_" + tableBase})
-                            .html("<tr><td colspan=2>" + headLnk + "</td></tr>"); // headLnk: "Linked sectors"
-                    $("<tbody>").appendTo("#id_lnk_table_" + tableBase)
-                            .attr({id: "id_lnk_tbody_" + tableBase});
-
-         }; //function CreateTable()
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// NIU
 //========= CreateTableRows  ====================================
-    function CreateTableRows(tableBase, stored_items, excel_items,
+    function CreateTableRowsXXX(tableBase, stored_items, excel_items,
                     JustLinkedAwpId, JustUnlinkedAwpId, JustUnlinkedExcId) {
 
-    console.log("==== CreateMapTableRows  =========>> ", tableBase);
+    //console.log("==== CreateMapTableRows  =========>> ", tableBase);
         const cae_hv = "c_colAwpExcel_hover";
         //const cae_hl = "c_colAwpExcel_highlighted";
         const cli_hv = "c_colLinked_hover";
@@ -391,8 +321,8 @@
         const Xid_lnk_tbody = "#id_lnk_tbody_" + tableBase;
 
         // only when level is required, i.e. when mapped_level_list exists
-// console.log("stored_items", stored_items, typeof stored_items);
-// console.log("excel_items", excel_items, typeof excel_items);
+//console.log("stored_items", stored_items, typeof stored_items);
+//console.log("excel_items", excel_items, typeof excel_items);
 
         // JustUnlinkedAwpId = id_awp_tr_sct_1
         // JustUnlinkedExcId = id_exc_tr_sct_2
@@ -892,7 +822,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 
 //========= t_FillOptionFromList  ============= PR2020-01-08
     function t_FillOptionFromList(data_list, selected_pk, firstoption_txt) {
-         console.log( "===== t_FillOptionFromList  ========= ");
+         //console.log( "===== t_FillOptionFromList  ========= ");
          // add empty option on first row, put firstoption_txt in < > (placed here to escape \< and \>
          // used in page customers
         let option_text = "";
@@ -958,15 +888,15 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 // +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
 //========= t_Filter_SelectRows  ==================================== PR2020-01-17 PR2021-01-23
     function t_Filter_SelectRows(tblBody_select, filter_text, filter_show_inactive, has_ppk_filter, selected_ppk, col_index_list) {
-        console.log( "===== t_Filter_SelectRows  ========= ");
-        console.log( "filter_text: <" + filter_text + ">");
+        //console.log( "===== t_Filter_SelectRows  ========= ");
+        //console.log( "filter_text: <" + filter_text + ">");
         //console.log( "has_ppk_filter: " + has_ppk_filter);
         //console.log( "selected_ppk: " + selected_ppk, typeof selected_ppk);
 
         const filter_text_lower = (filter_text) ? filter_text.toLowerCase() : "";
         if(!col_index_list){col_index_list = []};
         let has_selection = false, has_multiple = false;
-        let sel_pk = null, sel_ppk = null, sel_code = null, sel_value = null;
+        let sel_pk = null, sel_ppk = null, sel_code = null, sel_name = null, sel_value = null;
         let sel_display = null, sel_rowid = null, sel_innertext = null;
         let row_count = 0;
         for (let i = 0, tblRow; tblRow = tblBody_select.rows[i]; i++) {
@@ -1015,6 +945,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                         sel_pk = tblRow.dataset.pk;
                         sel_ppk = tblRow.dataset.ppk;
                         sel_code = tblRow.dataset.code;
+                        sel_name = tblRow.dataset.name;
                         sel_value = tblRow.dataset.value;
                         sel_display = tblRow.dataset.display;
                         sel_rowid = tblRow.id;
@@ -1032,6 +963,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
             sel_pk = null;
             sel_ppk = null;
             sel_code = null;
+            sel_name = null;
             sel_value = null,
             sel_display = null;
             sel_rowid = null;
@@ -1042,6 +974,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         if(sel_pk != null) {filter_dict.selected_pk = sel_pk};
         if(sel_ppk != null) {filter_dict.selected_ppk = sel_ppk};
         if(sel_code != null) {filter_dict.selected_code = sel_code};
+        if(sel_name != null) {filter_dict.selected_name = sel_name};
         if(sel_value != null) {filter_dict.selected_value = sel_value};
         if(sel_display != null) {filter_dict.selected_display = sel_display};
         if(sel_pk != null) {filter_dict.selected_rowid = sel_rowid};
