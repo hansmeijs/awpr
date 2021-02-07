@@ -382,6 +382,15 @@ def get_locale_dict(table_dict, user_lang):
         dict['Character'] = _('Character')
         dict['_of_'] = TXT__of_
 
+        dict['Name_ex_form'] = _('Name Ex form')
+        dict['Exam_period'] = _('Exam period')
+        dict['Exam_type'] = _('Exam type')
+        dict['Date_submitted'] = _('Date submitted')
+        dict['Download_Exform'] = _('Download Ex form')
+
+        dict['examtype_caption'] = c.EXAMTYPE_CAPTION
+        dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
+
         dict['Submit_Ex2A_form'] = _('Submit Ex2A form')
         dict['Approve_grades'] = _('Approve grades')
         dict['Submit_Ex2A_form'] = _('Submit Ex2A form')

@@ -108,7 +108,7 @@ class UserUploadView(View):
         update_wrap = {}
         if request.user is not None and request.user.country is not None and request.user.schoolbase is not None:
             req_user = request.user
-            # <PERMIT> PR220-09-24
+            # <PERMIT> PR2020-09-24
             #  - only perm_admin and perm_system can add / edit / delete users
             #  - only role_system and role_admin (ETE) can add users of other schools
             #  - role_system, role_admin, role_insp and role_school can add users of their own school
@@ -117,6 +117,7 @@ class UserUploadView(View):
             if req_user.is_perm_admin or req_user.is_perm_system:
                 has_permit_all_schools = req_user.is_role_admin or req_user.is_role_system
                 has_permit_this_school = req_user.is_role_insp or req_user.is_role_school
+
             if has_permit_this_school or has_permit_all_schools:
 
 # - get upload_dict from request.POST
@@ -148,6 +149,7 @@ class UserUploadView(View):
                     logger.debug('user_schoolbase_pk: ' + str(user_schoolbase_pk))
                     logger.debug('map_id: ' + str(map_id))
                     logger.debug('mode: ' + str(mode))
+
     # - check if the user schoolbase exists
                     user_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
                         id=user_schoolbase_pk,
@@ -228,7 +230,8 @@ class UserUploadView(View):
                                 new_permits = c.PERMIT_002_EDIT
                             else:
                                 new_permits = (c.PERMIT_002_EDIT + c.PERMIT_064_ADMIN)
-
+                            # - new user gets role from defaultrole of user_schoolbase
+                            #   PR2021-02-06 debug: don't forget to set values of defaultrole in schoolbase!
                             new_role = user_schoolbase.defaultrole
 
                             new_user_pk, err_dict, ok_dict = create_or_validate_user_instance(
@@ -288,42 +291,18 @@ class UserUploadView(View):
 class UserSettingsUploadView(UpdateView):  # PR2019-10-09
 
     def post(self, request, *args, **kwargs):
-        #logger.debug(' ============= UserSettingsUploadView ============= ')
+        logger.debug(' ============= UserSettingsUploadView ============= ')
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None:
             req_user = request.user
-# 1. get upload_dict from request.POST
+# - get upload_dict from request.POST
             upload_json = request.POST.get('upload')
             if upload_json:
                 upload_dict = json.loads(upload_json)
-                #logger.debug('upload_dict: ' + str(upload_dict))
-                # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
-                # PR2020-10-04 not any more, don't know why
-                for key, new_setting_dict in upload_dict.items():
-                    # key = 'page_examyear', dict = {'sel_btn': 'examyear'}
-                    saved_settings_dict = req_user.get_usersetting_dict(key)
-                    #logger.debug('new_setting_dict: ' + str(new_setting_dict))
-                    #logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
-                    # loop through new settings
-                    for subkey, value in new_setting_dict.items():
-                        # subkey: sel_btn,  value: examyear
-                        # if subkey has value in saved_settings_dict: replace saved value with new value
-                        if subkey in saved_settings_dict:
-                            if value:
-                                saved_settings_dict[subkey] = value
-                            else:
-                        # if subkey has no value in saved_settings_dict: remove key from dict
-                                saved_settings_dict.pop(subkey)
-                        else:
-                        # if subkey not found in saved_settings_dict and value is not None: create subkey with value
-                            if value:
-                                saved_settings_dict[subkey] = value
-                    #logger.debug('Usersetting.set_setting from UserSettingsUploadView')
-                    req_user.set_usersetting_dict(key, saved_settings_dict)
-
-        # c. add update_dict to update_wrap
-                    update_wrap['setting'] = {'result': 'ok'}
+                req_user.set_usersetting_from_uploaddict(upload_dict)
+# - add update_dict to update_wrap
+                update_wrap['setting'] = {'result': 'ok'}
 # F. return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 

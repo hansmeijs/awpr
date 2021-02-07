@@ -124,7 +124,23 @@ class GradeApproveView(View):  # PR2021-01-19
                         sel_examperiod = upload_dict.get('examperiod')
                         sel_examtype = upload_dict.get('examtype')
                     else:
-    # - if  grade_pk has no value: get selected examperiod and examtype from usersettings
+    # - if  grade_pk has no value: get selected examperiod, examtype and subject_pk from usersettings
+                        # update usersetting if new values in upload_dict
+                        new_examperiod = upload_dict.get('examperiod')
+                        new_examtype = upload_dict.get('examtype')
+                        new_subject_pk = upload_dict.get('subject_pk')
+                        logger.debug('new_subject_pk: ' + str(new_subject_pk))
+                        if new_examperiod or new_examtype or new_subject_pk:
+                            new_setting_dict = {}
+                            if new_examperiod:
+                                new_setting_dict[c.KEY_SEL_EXAMPERIOD] = new_examperiod
+                            if new_examtype:
+                                new_setting_dict[c.KEY_SEL_EXAMTYPE] = new_examtype
+                            if new_subject_pk:
+                                new_setting_dict[c.KEY_SEL_SUBJECT_PK] = new_subject_pk
+                            logger.debug('new_setting_dict: ' + str(new_setting_dict))
+                            saved_setting_dict = req_user.set_usersetting_from_upload_subdict(c.KEY_SELECTED_PK, new_setting_dict)
+                            logger.debug('saved_setting_dict: ' + str(saved_setting_dict))
                         sel_examperiod, sel_examtype, sel_subject_pk = \
                             dl.get_selected_examperiod_examtype_from_usersetting(request)
 
@@ -135,6 +151,8 @@ class GradeApproveView(View):  # PR2021-01-19
                                Q(examperiod=sel_examperiod)
                         if grade_pk:
                             crit.add(Q(pk=grade_pk), crit.connector)
+                        elif sel_subject_pk:
+                            crit.add(Q(studentsubject__schemeitem__subject_id=sel_subject_pk), crit.connector)
                         grades = stud_mod.Grade.objects.filter(crit)
                         msg_dict = {'count': 0,
                                     'already_published': 0,
@@ -657,6 +675,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
     #logger.debug(' ----- create_grade_rows -----')
 
     sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
+    #logger.debug('sql_keys: ' + str(sql_keys))
 
     sql_list = ["SELECT grade.id,  studsubj.id AS studsubj_id, studsubj.schemeitem_id, studsubj.cluster_id,",
         "CONCAT('grade_', grade.id::TEXT) AS mapid, 'grade' AS table,",
@@ -754,6 +773,7 @@ def create_published_rows(setting_dict):
     sql_list = ["SELECT publ.id, CONCAT('published_', publ.id::TEXT) AS mapid, 'published' AS table,",
         "publ.name, publ.examtype, publ.examperiod, publ.datepublished, publ.filename,",
         "CONCAT('" + media_dir + "', publ.filename) AS filepath,",
+        "'" + media_dir + "' AS filedir,",
         "sb.code AS sb_code, school.name AS school_name, db.code AS db_code, ey.code AS ey_code",
 
         "FROM students_published AS publ",

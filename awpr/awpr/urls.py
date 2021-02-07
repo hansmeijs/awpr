@@ -188,7 +188,6 @@ urlpatterns = [
         path('subject_import', subject_views.SubjectImportView.as_view(), name='subject_import_url'),
         path('uploadsetting', subject_views.SubjectImportUploadSetting.as_view(), name='subject_uploadsetting_url'),
         path('uploaddata', subject_views.SubjectImportUploadData.as_view(), name='subject_uploaddata_url'),
-
     ])),
 
 # ===== STUDENTS ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16

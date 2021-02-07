@@ -1,4 +1,67 @@
 
+//========= format_date with vanilla js  ======== PR2020-07-31
+    function format_dateISO_vanilla (loc, date_iso, hide_weekday, hide_year, is_months_long, is_weekdays_long) {
+        let date_formatted = null;
+        if (date_iso){
+            const date_JS = get_dateJS_from_dateISO(date_iso);
+            date_formatted = format_dateJS_vanilla(loc, date_JS, hide_weekday, hide_year, is_months_long, is_weekdays_long)
+        }
+        return date_formatted;
+    }
+//========= get_dateJS_from_dateISO  ======== PR2019-10-28
+    function get_dateJS_from_dateISO (date_iso) {
+        //console.log( "===== get_dateJS_from_dateISO  ========= ");
+        //console.log( "date_iso: ", date_iso, typeof date_iso);
+        let date_JS = null;
+        if (date_iso){
+            // PR2020-06-22 debug: got error because date_iso was Number
+            const date_iso_str = date_iso.toString()
+            const arr = date_iso_str.split("-");
+            if (arr.length > 2) {
+                // Month 4 april has index 3
+                date_JS = new Date(parseInt(arr[0]), parseInt(arr[1]) - 1, parseInt(arr[2]))
+            }
+        }
+        return date_JS
+    }  //  get_dateJS_from_dateISO
+
+
+//========= format_date with vanilla js  ======== PR2019-10-12 PR2020-07-31
+    function format_dateJS_vanilla (loc, date_JS, hide_weekday, hide_year, is_months_long, is_weekdays_long) {
+        //console.log(" ----- format_dateJS_vanilla", date_JS);
+        let display_value = "";
+        if(date_JS) {
+            const is_en = (loc.user_lang === "en");
+            const comma_space = (is_en) ? ", " : " ";
+
+            const month_list = (is_months_long) ? loc.months_long : loc.months_abbrev;
+            const month_index =  date_JS.getMonth();
+            const month_str = (!!month_list) ? month_list[month_index + 1] : "";
+            const date_str = date_JS.getDate().toString();
+
+            if(is_en){
+                display_value = month_str + " " + date_str;
+            } else {
+                display_value = date_str + " " + month_str;
+            }
+
+            if (!hide_year) {
+                const year_str = date_JS.getFullYear().toString();
+                display_value += comma_space + year_str;
+            };
+
+            if (!hide_weekday) {
+                // index 0 is index 7 in weekday_list
+                const weekday_list = (is_weekdays_long) ? loc.weekdays_long : loc.weekdays_abbrev;
+                const weekday_index = (date_JS.getDay()) ? date_JS.getDay() : 7;
+                const weekday_str = (weekday_list) ? weekday_list[weekday_index] : "";
+                display_value = weekday_str + comma_space  + display_value;
+            };
+        }  // if(!!date_JS)
+        return display_value
+    }  // function format_dateJS_vanilla
+
+
 //=========  format_datetime_from_datetimeJS ================ PR2020-07-22  PR2020-10-04
     function format_datetime_from_datetimeJS(loc, datetimeJS, hide_weekday, hide_year, hide_time, hide_suffix) {
         //console.log( "===== format_datetime_from_datetimeJS  ========= ");
@@ -24,7 +87,7 @@
             // noon = 12:00 am
             // midnight, end of day = 12:00 pmm
             let is_pm = false;
-            const hours = datetimeJS.getHours();
+            let hours = datetimeJS.getHours();
             if(isAmPm && hours > 12) {
                 hours -= 12
                 is_pm = true;

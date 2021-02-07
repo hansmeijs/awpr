@@ -57,6 +57,7 @@
 
 {% block content %}
     <div id="id_content">
+        {{ user.is_role_school }} {{ user.is_role_insp }} {{ user.is_role_admin }} {{ user.is_role_system }}
         {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
     <!-- =================== MODAL APPROVE GRADE  =================== -->
             {% include 'students/modapprovegrade.html' %}
@@ -88,7 +89,7 @@
                     <button data-btn="grade_by_subject" class="btn btn-secondary ">{% trans 'Grades by subject' %}</button>
                     <button data-btn="grade_by_student" class="btn btn-secondary ">{% trans 'Grades by candidate' %}</button>
                     <button data-btn="grade_by_all" class="btn btn-secondary ">{% trans 'All grades' %}</button>
-                    <button data-btn="grade_published" class="btn btn-secondary ">{% trans 'Submitted Ex2A forms' %}</button>
+                    <button data-btn="grade_published" class="btn btn-secondary ">{% trans 'Submitted Ex forms' %}</button>
                 </div>
     <!-- end BUTTON GROUP -->
 
@@ -132,8 +133,8 @@
                 data-grade_upload_url="{% url 'grade_upload_url' %}"
                 data-grade_approve_url="{% url 'grade_approve_url' %}"
                 data-grade_download_ex2a_url="{% url 'grade_download_ex2a_url' %}"
-
                 data-studentsubjectnote_upload_url="{% url 'studentsubjectnote_upload_url' %}"
+                data-media_dir = "{{ media_dir }}"
             >
             </div>
 

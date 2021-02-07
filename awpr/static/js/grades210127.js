@@ -63,8 +63,8 @@ console.log("document.addEventListener students" )
     const url_grade_upload = get_attr_from_el(el_data, "data-grade_upload_url");
     const url_grade_approve = get_attr_from_el(el_data, "data-grade_approve_url");
     const url_grade_download_ex2a = get_attr_from_el(el_data, "data-grade_download_ex2a_url");
-
     const url_studentsubjectnote_upload = get_attr_from_el(el_data, "data-studentsubjectnote_upload_url");
+    const media_dir = get_attr_from_el(el_data, "data-media_dir");
 
 // --- get field_settings
     const columns_shown = {select: true, examnumber: true, fullname: true, subj_code: true, subj_name: true,
@@ -108,12 +108,12 @@ console.log("document.addEventListener students" )
                                  "r","r","c",
                                  "r","r","c",
                                  "r", "r", "c"]},
-            published: {field_caption: ["", "Name", "Exam_period", "Exam_type", "Date_submitted", "Download"],
+            published: {field_caption: ["", "Name_ex_form", "Exam_period", "Exam_type", "Date_submitted", ""],
                     field_names: ["select", "name", "examperiod",  "examtype", "datepublished", "filename"],
                     field_tags: ["div", "div", "div", "div", "div", "a"],
                     filter_tags: ["text", "text","text", "text",  "text", "text"],
-                    field_width: ["020", "100", "120", "100", "120", "120"],
-                    field_align: ["c", "l", "l", "l", "l", "l"]}
+                    field_width: ["020", "360", "150", "150", "150", "020"],
+                    field_align: ["c", "l", "l", "l", "l", "c"]}
         };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -742,10 +742,14 @@ console.log("document.addEventListener students" )
                         } else if (field_name === "filename"){
                             const file_path = (map_dict.filepath) ? map_dict.filepath : null;
                             const file_name = (map_dict.name) ? map_dict.name + ".pdf" : "";
-
+console.log("file_path", file_path)
+console.log("file_name", file_name)
+console.log("map_dict.filedir", map_dict.filedir)
                             const order_by_subj = (map_dict.subj_name) ? map_dict.subj_name.toLowerCase() : null;
-                            el.setAttribute("href", file_path);
+                            el.setAttribute("href", "\\static\\media\\" + file_name);
                             el.setAttribute("download", file_name);
+                            el.title = loc.Download_Exform;
+                            el.classList.add("btn", "btn-add")
                             add_hover(td);
                         }
 
@@ -792,8 +796,6 @@ console.log("document.addEventListener students" )
         if(el){
             const field_name = get_attr_from_el(el, "data-field");
             const fld_value = map_dict[field_name];
-        console.log("field_name", field_name);
-        console.log("fld_value", fld_value);
             if (el.nodeName === "INPUT"){
                  el.value = (fld_value) ? fld_value : null;
             } else if (field_name ==="se_status"){
@@ -805,13 +807,22 @@ console.log("document.addEventListener students" )
             } else if (field_name === "hasnote"){
                 //el.className = "tw032 note_1_1"
                 el.className = "note_1_1"
+            } else if (field_name === "examperiod"){
+                el.innerText = loc.examperiod_caption[map_dict.examperiod];
+            } else if (field_name === "examtype"){
+                el.innerText = loc.examtype_caption[map_dict.examtype];
+
+            } else if (field_name === "datepublished"){
+                el.innerText = format_dateISO_vanilla (loc, map_dict.datepublished, true, false, true, false);
+
             } else if (field_name === "filename"){
                 el.innerHTML = "&#8681;";
+                //el.innetText = map_dict.file_name;
             } else{
                  el.innerText = (fld_value) ? fld_value : null;
             }
         }
-    };
+    };  // UpdateField
 
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-12-15
 
@@ -1371,7 +1382,7 @@ console.log("document.addEventListener students" )
             el_MAG_examtype.innerText = examtype_caption
 
             add_or_remove_class(el_MAG_level_container, cls_hide, !setting_dict.sel_dep_level_req)
-            el_MAG_level.innerText = setting_dict.sel_depbase_code
+            el_MAG_level.innerText = (setting_dict.sel_level_code) ? setting_dict.sel_level_code : null;
             let subject_text = null;
             if(selected_subject_pk){
                 const dict = get_mapdict_from_datamap_by_tblName_pk(subject_map, "subject", selected_subject_pk);
@@ -1421,6 +1432,7 @@ console.log("document.addEventListener students" )
 
 // ---  upload changes
         const upload_dict = { table: "grade",
+                               subject_pk: selected_subject_pk,
                                mode: mode}
         console.log("upload_dict", upload_dict);
         UploadChanges(upload_dict, url_grade_approve);

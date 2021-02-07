@@ -11,6 +11,7 @@ import json #PR2018-12-21
 from accounts import models as acc_mod
 from awpr import constants as c
 from awpr import functions as af
+from awpr import settings as awpr_settings
 from schools import models as sch_mod
 from schools import dicts as sch_dicts
 
@@ -169,7 +170,6 @@ def get_headerbar_param(request, page):
             else:
                 depname = sel_depbase.code
 
-
 # ------- set menu_items -------- PR2018-12-21
         # get selected menu_key and selected_button_key from request.GET, settings or default, check viewpermit
         #XXX return_dict = lookup_button_key_with_viewpermit(request)
@@ -194,7 +194,8 @@ def get_headerbar_param(request, page):
             'class_flag1_hidden': _class_flag1_hidden,
             'class_flag2_hidden': _class_flag2_hidden,
             'menu_items': menu_items,
-            'awp_messages': awp_messages
+            'awp_messages': awp_messages,
+            'media_dir': awpr_settings.MEDIA_ROOT
         }
 
     return headerbar

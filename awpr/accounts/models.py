@@ -398,7 +398,52 @@ class User(AbstractUser):
 # - end of set_usersetting_dict
 
 
-# +++++++++++++++++++  FORM PERMITS  +++++++++++++++++++++++
+    def set_usersetting_from_uploaddict(cls, upload_dict): #PR2021-02-07
+        #logger.debug(' ----- set_usersetting_from_uploaddict ----- ')
+        # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
+        # logger.debug('upload_dict: ' + str(upload_dict))
+        # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
+        # PR2020-10-04 not any more, don't know why
+# - loop through keys of upload_dict
+        for key, new_setting_dict in upload_dict.items():
+            cls.set_usersetting_from_upload_subdict(key, new_setting_dict)
+    # - end of set_usersetting_from_uploaddict
+
+
+    def set_usersetting_from_upload_subdict(cls, key, new_setting_dict):  # PR2021-02-07
+        # logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
+        # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
+        # logger.debug('upload_dict: ' + str(upload_dict))
+        # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
+        # PR2020-10-04 not any more, don't know why
+        # - loop through keys of upload_dict
+
+        # key = 'page_examyear', dict = {'sel_btn': 'examyear'}
+        saved_settings_dict = cls.get_usersetting_dict(key)
+        # logger.debug('new_setting_dict: ' + str(new_setting_dict))
+        # logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
+# - loop through subkeys of new settings
+        for subkey, value in new_setting_dict.items():
+            # new_setting_dict: {'sel_subject_pk': 46}
+# - if subkey has value in saved_settings_dict: replace saved value with new value
+            if subkey in saved_settings_dict:
+                if value:
+                    saved_settings_dict[subkey] = value
+                else:
+# - if subkey has no value in saved_settings_dict: remove key from dict
+                    saved_settings_dict.pop(subkey)
+            else:
+# - if subkey not found in saved_settings_dict and value is not None: create subkey with value
+                if value:
+                    saved_settings_dict[subkey] = value
+        # logger.debug('Usersetting.set_setting from UserSettingsUploadView')
+# - save key in usersetting and return settings_dict
+        cls.set_usersetting_dict(key, saved_settings_dict)
+        return saved_settings_dict
+    # - end of set_usersetting_from_upload_subdict
+
+
+    # +++++++++++++++++++  FORM PERMITS  +++++++++++++++++++++++
 # - user
     @property
     def message_user_authenticated(self):
