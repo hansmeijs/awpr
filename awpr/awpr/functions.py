@@ -46,6 +46,8 @@ def get_date_from_arr(arr_int):  # PR2019-11-17  # PR2020-10-20
         date_obj = date(arr_int[0], arr_int[1], arr_int[2])
     return date_obj
 
+
+
 # ################### DATE STRING  FUNCTIONS ###################
 
 def get_dateISO_from_string(date_string, format=None):  # PR2019-08-06

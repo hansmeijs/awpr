@@ -746,7 +746,7 @@ console.log("file_path", file_path)
 console.log("file_name", file_name)
 console.log("map_dict.filedir", map_dict.filedir)
                             const order_by_subj = (map_dict.subj_name) ? map_dict.subj_name.toLowerCase() : null;
-                            el.setAttribute("href", "\\static\\media\\" + file_name);
+                            el.setAttribute("href",file_path);
                             el.setAttribute("download", file_name);
                             el.title = loc.Download_Exform;
                             el.classList.add("btn", "btn-add")

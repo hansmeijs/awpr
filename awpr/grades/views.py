@@ -17,6 +17,8 @@ from django.core.files import File
 
 import io
 import codecs
+import platform
+import os
 
 from awpr import functions as f
 from awpr import constants as c
@@ -169,7 +171,7 @@ class GradeApproveView(View):  # PR2021-01-19
        # create new published_instance. Only save it when it is not a test
                             published_instance = None
                             if is_submit and not is_test:
-                                published_instance = create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, is_test, request)
+                                published_instance = create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, request)
         # +++++ loop through  grades
                             grade_rows = []
                             for grade in grades:
@@ -266,8 +268,8 @@ class GradeApproveView(View):  # PR2021-01-19
 # --- end of GradeUploadView
 
 
-def create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, is_test, request):  # PR2021-01-21
-    logger.debug('----- create_published_instance -----')
+def create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, request):  # PR2021-01-21
+    #logger.debug('----- create_published_instance -----')
     # create new published_instance and save it when it is not a test
     depbase_code = sel_department.base.code if sel_department.base.code else '-'
     school_code = sel_school.base.code if sel_school.base.code else '-'
@@ -283,19 +285,23 @@ def create_published_instance(sel_school, sel_department, sel_examtype, sel_exam
         examperiod_str = '-tv3'
     elif sel_examperiod == 4:
         examperiod_str = '-vrst'
+    examtype_caption = sel_examtype.upper() + examperiod_str
+
+    subject_code = ''
+    if sel_subject_pk:
+        subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk)
+        if subject:
+            subject_code = subject.base.code
 
     today_date = af.get_today_dateobj()
     today_iso = today_date.isoformat()
 
-    examtype_caption = sel_examtype.upper() + examperiod_str
-    # TODO add level and subject if it is filtered on those fields
-    name = ' '.join(('Ex2A', school_code, depbase_code, school_abbrev, today_iso))
+    # TODO add level if it is filtered on those fields
+    name = ' '.join(('Ex2A', school_code, depbase_code, school_abbrev, examtype_caption, subject_code, today_iso))
     # skip schoolname if total name is too long
     if len(name) > c.MAX_LENGTH_FIRSTLASTNAME:
         name = ' '.join(('Ex2A', school_code, depbase_code, today_iso))
 
-    logger.debug('name: ' + str(len(name)))
-    logger.debug('date.today: ' + str(today_date))
     published_instance = stud_mod.Published(
         school=sel_school,
         department=sel_department,
@@ -303,7 +309,7 @@ def create_published_instance(sel_school, sel_department, sel_examtype, sel_exam
         examperiod=sel_examperiod,
         name=name,
         datepublished=today_date)
-    logger.debug('published_instance: ' + str(published_instance))
+
     if not is_test:
         published_instance.save(request=request)
         logger.debug('published_instance.saved: ' + str(published_instance))
@@ -877,8 +883,26 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
         #canvas.drawString(200, 200, 'Examennummer')
         canvas.showPage()
         canvas.save()
+
+        logger.debug('canvas: ' + str(canvas))
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
+
+    else:
+        cur_platform = platform.system()
+        logger.debug('cur_platform: ' + str(cur_platform))
+        if cur_platform != 'Windows':
+            try:
+                # change owner to uaw, see if this works
+                # PR2021-02-07 fro m https://www.tutorialspoint.com/How-to-change-the-owner-of-a-file-using-Python
+                # module pwd only available on Unix
+                import pwd
+                import grp
+                uid = pwd.getpwnam('uaw').pw_uid
+                gid = grp.getgrnam('uaw').gr_gid
+                os.chown(filepath, uid, gid)
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
 
     #io_file = io.open(filename, encoding="utf-8")
 
