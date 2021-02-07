@@ -162,8 +162,9 @@ STATICFILES_DIRS = [
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # PR2021-01-22 path to fonts dir in statis
-STATICFILES_FONTS_DIR = os.path.join(BASE_DIR, 'static', 'fonts') + '\\'
-STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'static', 'media') + '\\'
+# PR2021-02-07 debug: backslash gives error on server, use / instead
+STATICFILES_FONTS_DIR = os.path.join(BASE_DIR, 'static', 'fonts') + '/'
+STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'static', 'media') + '/'
 # PR2021-01-22 from https://www.caktusgroup.com/blog/2017/08/28/advanced-django-file-handling/
 # how to handle DEFAULT_FILE_STORAGE ( i.e. MEDIAFILES_STORAGE)
 # TODO store pdf's and exccel files, diploma's
