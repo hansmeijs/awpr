@@ -879,9 +879,7 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
         canvas.save()
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
-    else:
-        published_instance.filename = filepath
-        published_instance.save(request=request)
+
     #io_file = io.open(filename, encoding="utf-8")
 
     #io_file = codecs.open(filepath, "r", encoding='utf-8', errors='ignore')
