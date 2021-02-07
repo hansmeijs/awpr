@@ -308,7 +308,7 @@ def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel
     examperiod_caption = c.get_examperiod_caption(sel_examperiod)
     examtype_caption = c.get_examtype_caption(sel_examtype)
 
-    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'Arial.ttf'
+    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'arial.ttf'
     logger.debug('filepath: ' + str(filepath))
 
     try:
