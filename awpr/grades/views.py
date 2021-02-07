@@ -872,7 +872,8 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
 
     try:
         # create PDF
-        filepath = awpr_settings.STATICFILES_MEDIA_DIR + published_instance.name + '.pdf'
+        filename = 'published_' + str(published_instance.pk) + '.pdf'
+        filepath = awpr_settings.STATICFILES_MEDIA_DIR + filename
         logger.debug('filepath: ' + str(filepath))
 
         canvas = Canvas(filepath)
