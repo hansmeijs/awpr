@@ -298,7 +298,7 @@ def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel
         x += w*mm
         canvas.line(x, y1, x, y2)
 
-    logger.debug('tab_list: ' + str(tab_list) + ' ' + str(type(tab_list)))
+    #logger.debug('tab_list: ' + str(tab_list) + ' ' + str(type(tab_list)))
     # canvas.setFont(psfontname, size, leading = None)
     examyear_code = str(sel_examyear.code)
     school_name = sel_school.name
@@ -307,7 +307,15 @@ def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel
     examperiod_caption = c.get_examperiod_caption(sel_examperiod)
     examtype_caption = c.get_examtype_caption(sel_examtype)
 
-    pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
+    ttfFilePath = "\\static\\fonts\\" + 'Arial.ttf'
+    logger.debug('ttfFilePath: ' + str(ttfFilePath))
+    try:
+        ttfFile = TTFont('Arial', 'Arial.ttf')
+        logger.debug('ttfFile: ' + str(ttfFile))
+        pdfmetrics.registerFont(ttfFile)
+    except Exception as e:
+        logger.error('ttfFilePath: ' + str(ttfFilePath))
+        logger.error(getattr(e, 'message', str(e)))
 
     canvas.setFont('Times-Bold', 11, leading=None)
 
@@ -369,13 +377,13 @@ def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel
 def draw_Ex2A_line(canvas, row, left, right, coord, tab_list):
     y = coord[1]
     try:
-        logger.debug('y: ' + str(y) + ' ' + str(type(y)))
-        logger.debug('tab_list: ' + str(tab_list) + ' ' + str(type(tab_list)))
+        #logger.debug('y: ' + str(y) + ' ' + str(type(y)))
+        #logger.debug('tab_list: ' + str(tab_list) + ' ' + str(type(tab_list)))
         # col_width = (25, 65, 17, 22, 22, 22, 17)  # last col is 17 mm
 
 
-        logger.debug('left: ' + str(left))
-        logger.debug('tab_list: ' + str(tab_list[0]))
+        #logger.debug('left: ' + str(left))
+        #logger.debug('tab_list: ' + str(tab_list[0]))
 
         examnumber = row['examnumber'] or '---'
         canvas.drawString(tab_list[0], y, examnumber)
@@ -390,7 +398,6 @@ def draw_Ex2A_line(canvas, row, left, right, coord, tab_list):
         canvas.drawString(tab_list[3], y, pegrade)
 
         cegrade = row['cegrade'] or '---'
-        logger.debug('cegrade: ', str(cegrade))
         canvas.drawString(tab_list[4], y, cegrade)
 
     except Exception as e:
@@ -399,7 +406,7 @@ def draw_Ex2A_line(canvas, row, left, right, coord, tab_list):
 
     canvas.line(left, y - 1.25 * mm, right, y - 1.25 * mm)
     coord[1] = y - 5 * mm
-    logger.debug('end of draw_Ex2A_line:')
+    #logger.debug('end of draw_Ex2A_line:')
 
 
 def add_frame_header(canvas, border, text_list, school_name, subject_name):
@@ -437,8 +444,8 @@ def add_frame_header(canvas, border, text_list, school_name, subject_name):
                                    leading=14*mm, leftIndent = 4*mm, rightIndent = 4*mm)
     #logger.debug('styleData: ' + str(styleData) + ' ' + str(type(styleData)))
 
-    logger.debug('subject_name: ' + str(subject_name) + ' ' + str(type(subject_name)))
-    logger.debug('school_name: ' + str(school_name) + ' ' + str(type(school_name)))
+    #logger.debug('subject_name: ' + str(subject_name) + ' ' + str(type(subject_name)))
+    #logger.debug('school_name: ' + str(school_name) + ' ' + str(type(school_name)))
     line1 = Paragraph(subject_name, styleData)
     #logger.debug('line1: ' + str(line1) + ' ' + str(type(line1)))
     line2 = Paragraph(school_name, styleData)
@@ -452,7 +459,7 @@ def add_frame_header(canvas, border, text_list, school_name, subject_name):
     height = 40*mm
     f2 = Frame(left, bottom, width, height, showBoundary=0)
     f2.addFromList(story2, canvas)
-    logger.debug('addFromList: ' + str(f2) + ' ' + str(type(f2)))
+    #logger.debug('addFromList: ' + str(f2) + ' ' + str(type(f2)))
 
 """
 class ParagraphStyle(PropertySet):    
