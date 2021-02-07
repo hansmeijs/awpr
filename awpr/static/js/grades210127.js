@@ -741,7 +741,7 @@ console.log("document.addEventListener students" )
                             el.classList.add("pr-4")
                         } else if (field_name === "filename"){
                             const file_path = (map_dict.filepath) ? map_dict.filepath : null;
-                            const file_name = (map_dict.name) ? map_dict.name + ".pdf" : "";
+                            const file_name = (map_dict.name) ? map_dict.name : "";
 console.log("file_path", file_path)
 console.log("file_name", file_name)
 console.log("map_dict.filedir", map_dict.filedir)

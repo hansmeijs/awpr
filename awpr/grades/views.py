@@ -307,14 +307,7 @@ def create_published_instance(sel_school, sel_department, sel_examtype, sel_exam
     if not is_test:
         published_instance.save(request=request)
         logger.debug('published_instance.saved: ' + str(published_instance))
-        # add path and pk to name t cerate filename
-
-        # check if filename already exists
-        file_name = published_instance.name
-        file_exists = stud_mod.Published.objects.filter(filename__iexact=file_name).exists()
-        if file_exists:
-            file_name += ' ' + str(published_instance.pk)
-        published_instance.filename = file_name
+        published_instance.filename = 'published_' + str(published_instance.pk) + '.pdf'
         published_instance.save(request=request)
     return published_instance
 # - end of create_published_instance
@@ -872,8 +865,7 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
 
     try:
         # create PDF
-        filename = 'published_' + str(published_instance.pk) + '.pdf'
-        filepath = awpr_settings.STATICFILES_MEDIA_DIR + filename
+        filepath = awpr_settings.STATICFILES_MEDIA_DIR + published_instance.filename
         logger.debug('filepath: ' + str(filepath))
 
         canvas = Canvas(filepath)
