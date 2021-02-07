@@ -18,6 +18,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Frame, Spacer, Imag
 
 from awpr import constants as c
 from awpr import downloads as dl
+from awpr import settings as awpr_settings
 
 from accounts import models as acc_mod
 from schools import models as sch_mod
@@ -307,14 +308,15 @@ def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel
     examperiod_caption = c.get_examperiod_caption(sel_examperiod)
     examtype_caption = c.get_examtype_caption(sel_examtype)
 
-    ttfFilePath = "\\static\\fonts\\" + 'Arial.ttf'
-    logger.debug('ttfFilePath: ' + str(ttfFilePath))
+    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'Arial.ttf'
+    logger.debug('filepath: ' + str(filepath))
+
     try:
-        ttfFile = TTFont('Arial', 'Arial.ttf')
+        ttfFile = TTFont('Arial', filepath)
         logger.debug('ttfFile: ' + str(ttfFile))
         pdfmetrics.registerFont(ttfFile)
     except Exception as e:
-        logger.error('ttfFilePath: ' + str(ttfFilePath))
+        logger.error('filepath: ' + str(filepath))
         logger.error(getattr(e, 'message', str(e)))
 
     canvas.setFont('Times-Bold', 11, leading=None)
