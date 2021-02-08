@@ -745,7 +745,6 @@ console.log("document.addEventListener students" )
                         const name = (map_dict.name) ? map_dict.name : null;
                         const file_name = (map_dict.filename) ? map_dict.filename : "";
                         if (file_name){
-                            const media_dir = "/static/media/"
                             const file_path = media_dir + file_name
                             el.setAttribute("href",file_path);
                             el.setAttribute("download", name);

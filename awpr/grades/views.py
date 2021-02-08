@@ -880,10 +880,11 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
 
     try:
         # create PDF
-        filepath = awpr_settings.STATICFILES_MEDIA_DIR + published_instance.filename
-        logger.debug('filepath: ' + str(filepath))
+        file_path = ''.join((awpr_settings.STATICFILES_MEDIA_DIR, published_instance.filename))
 
-        canvas = Canvas(filepath)
+        logger.debug('filepath: ' + str(file_path))
+
+        canvas = Canvas(file_path)
 
         canvas.setTitle(published_instance.name)
 
@@ -910,10 +911,6 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
                 import grp
                 import os
 
-                groups = grp.getgrall()
-                for group in groups:
-                    for user in group[3]:
-                        logger.debug('user: ' + str(user) + ' group ' + str(group[0]))
 
                 uid = pwd.getpwnam('uaw').pw_uid
                 logger.debug('uid: ' + str(uid))
@@ -921,6 +918,7 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
                 gid = grp.getgrnam('uaw').gr_gid
                 logger.debug('gid: ' + str(gid))
 
+                logger.debug('filepath: ' + str(filepath))
                 os.chown(filepath, uid, gid)
 
             except Exception as e:

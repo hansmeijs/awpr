@@ -133,7 +133,7 @@ class DownloadPublishedFile(View):  # PR2021-02-07
                             file_name = published.filename
                             if file_name:
                                 logger.debug('file_name' + str(file_name))
-                                file_path = awpr_settings.STATICFILES_MEDIA_DIR + file_name
+                                file_path = ''.join((awpr_settings.STATICFILES_MEDIA_DIR, file_name))
                                 logger.debug('file_path: ' + str(file_path))
                                 # gives UnicodeDecodeError : 'charmap' codec can't decode byte 0x9d in position 656:
                                 # see https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
