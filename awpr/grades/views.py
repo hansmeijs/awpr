@@ -20,6 +20,9 @@ import codecs
 import platform
 import os
 
+import string
+import random
+
 from awpr import functions as f
 from awpr import constants as c
 from awpr import settings as awpr_settings
@@ -313,7 +316,13 @@ def create_published_instance(sel_school, sel_department, sel_examtype, sel_exam
     if not is_test:
         published_instance.save(request=request)
         logger.debug('published_instance.saved: ' + str(published_instance))
-        published_instance.filename = 'published_' + str(published_instance.pk) + '.pdf'
+
+        #file_name = ( ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(24)) ) + '.pdf'
+        file_name = ( ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(24)) ) + '.pdf'
+
+        # published_instance.filename = 'published_' + str(published_instance.pk) + '.pdf'
+        published_instance.filename = file_name
+
         published_instance.save(request=request)
     return published_instance
 # - end of create_published_instance
@@ -895,12 +904,25 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
             try:
                 # change owner to uaw, see if this works
                 # PR2021-02-07 fro m https://www.tutorialspoint.com/How-to-change-the-owner-of-a-file-using-Python
+                # https://stackoverflow.com/questions/5994840/how-to-change-the-user-and-group-permissions-for-a-directory-by-name
                 # module pwd only available on Unix
                 import pwd
                 import grp
+                import os
+
+                groups = grp.getgrall()
+                for group in groups:
+                    for user in group[3]:
+                        logger.debug('user: ' + str(user) + ' group ' + str(group[0]))
+
                 uid = pwd.getpwnam('uaw').pw_uid
+                logger.debug('uid: ' + str(uid))
+
                 gid = grp.getgrnam('uaw').gr_gid
+                logger.debug('gid: ' + str(gid))
+
                 os.chown(filepath, uid, gid)
+
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
 

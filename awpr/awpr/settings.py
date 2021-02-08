@@ -171,7 +171,7 @@ STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'static', 'media') + '/'
 # TODO store pdf's and exccel files, diploma's
 # PR2021-02-06 from https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-MEDIA_ROOT
 MEDIA_ROOT = os.path.join(BASE_DIR, 'static', 'media') #  + '\\'
-
+MEDIA_DIR = '/static/media/'
 
 # PR 2018-03-27
 LOGIN_URL = 'login'

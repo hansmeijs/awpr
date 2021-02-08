@@ -206,6 +206,7 @@ urlpatterns = [
         path('grades', grade_views.GradeListView.as_view(), name='grades_url'),
         path('grade_upload', grade_views.GradeUploadView.as_view(), name='grade_upload_url'),
         path('grade_approve', grade_views.GradeApproveView.as_view(), name='grade_approve_url'),
+        path('download_published_file', grade_exfiles.DownloadPublishedFile.as_view(), name='download_published_file_url'),
         path('grade_download_ex2a', grade_exfiles.GradeDownloadEx2aView.as_view(), name='grade_download_ex2a_url'),
 
         path('load_cities/', student_views.load_cities, name='load_cities_url'),  # PR2018-09-03

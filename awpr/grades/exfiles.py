@@ -96,6 +96,75 @@ class GradeDownloadPdfView(View):  # PR2021-02-0
             raise Http404("Error creating Ex2A file")
 
 
+@method_decorator([login_required], name='dispatch')
+class DownloadPublishedFile(View):  # PR2021-02-07
+
+    def post(self, request):
+        logger.debug(' ============= DownloadPublishedFile ============= ')
+        # download published pdf file from server
+
+
+        response = None
+        # <PERMIT>
+        # only users with role > student and perm_edit can change student data
+        # only school that is requsr_school can be changed
+        #   current schoolbase can be different from request.user.schoolbase (when role is insp, admin, system)
+        # only if country/examyear/school/student not locked, examyear is published and school is activated
+        has_permit = False
+        if request.user and request.user.country and request.user.schoolbase:
+            req_user = request.user
+            # TODO set permit properly
+            has_permit = (req_user.role > c.ROLE_02_STUDENT)
+            if has_permit:
+                # - reset language
+                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+                # - get upload_dict from request.POST
+                upload_json = request.POST.get('upload', None)
+                if upload_json:
+                    upload_dict = json.loads(upload_json)
+                    logger.debug('upload_dict' + str(upload_dict))
+                    published_pk = upload_dict.get('published_pk')
+                    if published_pk:
+                        published = stud_mod.Published.objects.get_or_none(pk=published_pk)
+                        logger.debug('published' + str(published))
+                        if published:
+                            file_name = published.filename
+                            if file_name:
+                                logger.debug('file_name' + str(file_name))
+                                file_path = awpr_settings.STATICFILES_MEDIA_DIR + file_name
+                                logger.debug('file_path: ' + str(file_path))
+                                # gives UnicodeDecodeError : 'charmap' codec can't decode byte 0x9d in position 656:
+                                # see https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
+                                # and https://www.edureka.co/community/51644/python-unicodedecodeerror-codec-decode-position-invalid
+                                # was: with open(file_path, 'r') as pdf:
+                                with open(file_path, 'r', encoding = 'utf-8', errors = 'ignore') as pdf:
+                                    response = HttpResponse(pdf.read(), content_type='application/pdf')
+                                    response['Content-Disposition'] = 'inline;filename=some_file.pdf'
+                                    return response
+
+                                """
+                                try:
+                                    fs = FileSystemStorage()
+                                    if fs.exists(file_name):
+                                        logger.debug('fs.exists' + str(file_name))
+                                        with fs.open(file_name) as pdf:
+                                            response = HttpResponse(pdf, content_type='application/pdf')
+                                            response['Content-Disposition'] = 'attachment; filename="testfile.pdf"'
+                                            return response
+                                    else:
+                                        return HttpResponseNotFound('The requested pdf was not found in our server.')
+                                except:
+                                    raise Http404("Error creating Ex2A file")
+                                """
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+# - end of DownloadPublishedFile
+
 
 @method_decorator([login_required], name='dispatch')
 class GradeDownloadEx2aView(View):  # PR2021-01-24
@@ -103,6 +172,7 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
     def get(self, request):
         logger.debug(' ============= GradeDownloadEx2aView ============= ')
         # function creates, Ex2A pdf file based on settings in usersetting
+
         response = None
         try:
             if request.user and request.user.country and request.user.schoolbase:

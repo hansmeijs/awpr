@@ -62,6 +62,7 @@ console.log("document.addEventListener students" )
     const url_subject_upload = get_attr_from_el(el_data, "data-subject_upload_url");
     const url_grade_upload = get_attr_from_el(el_data, "data-grade_upload_url");
     const url_grade_approve = get_attr_from_el(el_data, "data-grade_approve_url");
+    const url_download_published_file = get_attr_from_el(el_data, "data-download_published_file_url");
     const url_grade_download_ex2a = get_attr_from_el(el_data, "data-grade_download_ex2a_url");
     const url_studentsubjectnote_upload = get_attr_from_el(el_data, "data-studentsubjectnote_upload_url");
     const media_dir = get_attr_from_el(el_data, "data-media_dir");
@@ -716,64 +717,68 @@ console.log("document.addEventListener students" )
             // --- add data-field attribute
                     el.setAttribute("data-field", field_name);
             // --- add data-field Attribute when input element
-                        if (field_tag === "input") {
-                            el.setAttribute("type", "text")
-                            el.setAttribute("autocomplete", "off");
-                            el.setAttribute("ondragstart", "return false;");
-                            el.setAttribute("ondrop", "return false;");
-                // --- add EventListener
-                            //el.addEventListener("keyup", function() {delay(function(){HandleEventKey(el)}, 1000 );});
-                            el.addEventListener("change", function(){HandleEventKey(el)});
-                            el.addEventListener("keydown", function(event){HandleArrowEvent(el, event)});
+                    if (field_tag === "input") {
+                        el.setAttribute("type", "text")
+                        el.setAttribute("autocomplete", "off");
+                        el.setAttribute("ondragstart", "return false;");
+                        el.setAttribute("ondrop", "return false;");
+            // --- add EventListener
+                        //el.addEventListener("keyup", function() {delay(function(){HandleEventKey(el)}, 1000 );});
+                        el.addEventListener("change", function(){HandleEventKey(el)});
+                        el.addEventListener("keydown", function(event){HandleArrowEvent(el, event)});
 
-        // --- add class 'input_text' and text_align
-                        // class 'input_text' contains 'width: 100%', necessary to keep input field within td width
-                            el.classList.add("input_text");
-                        } else {
-                        }
-                        el.classList.add("ta_" + field_setting.field_align[j]);
-                        if (field_name.includes("status")){
+    // --- add class 'input_text' and text_align
+                    // class 'input_text' contains 'width: 100%', necessary to keep input field within td width
+                        el.classList.add("input_text");
+                    }
+
+                    el.classList.add("ta_" + field_setting.field_align[j]);
+
+                    if (field_name.includes("status")){
 // --- add column with status icon
-                            el.classList.add("tw_032", "stat_0_1")
-                        } else if (field_name === "hasnote"){
-                            el.classList.add("note_1_4")
-                        } else if(field_name === "examnumber"){
-                            el.classList.add("pr-4")
-                        } else if (field_name === "filename"){
-                            const file_path = (map_dict.filepath) ? map_dict.filepath : null;
-                            const file_name = (map_dict.name) ? map_dict.name : "";
-console.log("file_path", file_path)
-console.log("file_name", file_name)
-console.log("map_dict.filedir", map_dict.filedir)
-                            const order_by_subj = (map_dict.subj_name) ? map_dict.subj_name.toLowerCase() : null;
+                        el.classList.add("tw_032", "stat_0_1")
+                    } else if (field_name === "hasnote"){
+                        el.classList.add("note_1_4")
+                    } else if(field_name === "examnumber"){
+                        el.classList.add("pr-4")
+                    } else if (field_name === "filename"){
+                        const name = (map_dict.name) ? map_dict.name : null;
+                        const file_name = (map_dict.filename) ? map_dict.filename : "";
+                        if (file_name){
+                            const media_dir = "/static/media/"
+                            const file_path = media_dir + file_name
                             el.setAttribute("href",file_path);
-                            el.setAttribute("download", file_name);
+                            el.setAttribute("download", name);
                             el.title = loc.Download_Exform;
                             el.classList.add("btn", "btn-add")
+                            //el.addEventListener("click", function() {DownloadPublished(el)}, false)
                             add_hover(td);
                         }
+                    }
 
-                    td.appendChild(el);
-               if (["examnumber", "fullname"].indexOf(field_name) > -1){
+                td.appendChild(el);
+                if (["examnumber", "fullname"].indexOf(field_name) > -1){
                     td.addEventListener("click", function() {MSTUD_Open(td)}, false)
                     add_hover(td);
-               } else if (["subj_code", "subj_name"].indexOf(field_name) > -1){
+                } else if (["subj_code", "subj_name"].indexOf(field_name) > -1){
                     td.addEventListener("click", function() {MSTUDSUBJ_Open(td)}, false)
                     add_hover(td);
-               } else if (field_name.includes("status")){
+                } else if (field_name.includes("status")){
                     td.addEventListener("click", function() {UploadToggle(el)}, false)
                     add_hover(td);
-               } else if (field_name === "hasnote"){
+                } else if (field_name === "filename"){
+                    const file_name = (map_dict.name) ? map_dict.name : "";
+
+                } else if (field_name === "hasnote"){
                     td.addEventListener("click", function() {ModNote_Open(el)}, false)
                     add_hover(td);
-               }
-               //td.classList.add("pointer_show", "px-2");
+                }
+                //td.classList.add("pointer_show", "px-2");
     // --- add field_width and text_align
                 //el.classList.add("tw_XX" + field_width[j], "ta_" + field_align[j]);
     // --- put value in field
-               UpdateField(el, map_dict)
+                UpdateField(el, map_dict)
             }  //  if (columns_shown[field_name])
-
         }  // for (let j = 0; j < 8; j++)
 
         return tblRow
@@ -929,7 +934,14 @@ console.log("map_dict.filedir", map_dict.filedir)
 
     };  // HandleEventKey
 
-
+//========= DownloadPublished  ============= PR2020-07-31  PR2021-01-14
+    function DownloadPublished(el_input) {
+        console.log( " ==== DownloadPublished ====");
+        const tblRow = get_tablerow_selected(el_input);
+        const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+        const upload_dict = { published_pk: pk_int};
+        UploadChanges(upload_dict, url_download_published_file);
+     } // DownloadPublished
 //========= UploadToggle  ============= PR2020-07-31  PR2021-01-14
     function UploadToggle(el_input) {
         console.log( " ==== UploadToggle ====");

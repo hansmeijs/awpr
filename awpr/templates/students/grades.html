@@ -50,6 +50,9 @@
         <div class="tw_200 m-2">
             <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all from this period' %}</h6>
         </div>
+
+
+
     </nav>
 {% endblock %}
 <!-- END SIDE BAR -->
@@ -102,6 +105,8 @@
         <!-- left header_text -->
                     <div class="flex_4 pl-4 py-2">
                         <h5 id="id_hdr_left"></h5>
+                                <div class="tw_200 m-2">
+        {{ media_dir }}        </div>
                     </div>
         <!-- loader -->
                     <div class="flex_1 py-2">
@@ -132,6 +137,7 @@
                 data-studsubj_upload_url="{% url 'studsubj_upload_url' %}"
                 data-grade_upload_url="{% url 'grade_upload_url' %}"
                 data-grade_approve_url="{% url 'grade_approve_url' %}"
+                data-download_published_file_url="{% url 'download_published_file_url' %}"
                 data-grade_download_ex2a_url="{% url 'grade_download_ex2a_url' %}"
                 data-studentsubjectnote_upload_url="{% url 'studentsubjectnote_upload_url' %}"
                 data-media_dir = "{{ media_dir }}"
