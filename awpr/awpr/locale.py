@@ -402,8 +402,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['MAG_info'] = {
             'subheader_approve': _('The following grades will be approved:'),
             'subheader_submit': _('An Ex2A form with the following grades will be submitted:'),
-
-            'approve_01': _("Click 'Approve' to approve the selected grades or click 'Remove approval'."),
+            'approve_01': _("Click 'Check grades' to check the selected grades before approving."),
             'approve_02': _('After the grades are approved by the president, secretary and commissioner,'),
             'approve_03': _('the Ex2A form can be submitted by the president or secretary.'),
 

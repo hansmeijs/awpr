@@ -93,8 +93,6 @@ class GradeApproveView(View):  # PR2021-01-19
             # TODO ROLE_32_ADMIN, ROLE_64_SYSTEM is only for testing, must be removed
             if req_user.role in (c.ROLE_08_SCHOOL, c.ROLE_32_ADMIN, c.ROLE_64_SYSTEM):
                 has_permit = (req_user.is_perm_auth1 or req_user.is_perm_auth2 or req_user.is_perm_auth3)
-
-            logger.debug('has_permit: ' + str(has_permit))
             if has_permit:
 
     # - reset language
@@ -109,9 +107,11 @@ class GradeApproveView(View):  # PR2021-01-19
 
     # - get selected mode. Modes are 'approve' 'submit_test' 'submit_submit', 'reset'
                     mode = upload_dict.get('mode')
-                    is_approve = True if mode in ('approve', 'reset') else False
+
+                    is_approve = True if mode in ('approve_test', 'approve_submit', 'approve_reset') else False
                     is_submit = True if mode in ('submit_test', 'submit_submit') else False
-                    is_test = (mode == 'submit_test')
+                    is_reset = True if mode == 'approve_reset' else False
+                    is_test = True if mode in ('approve_test', 'submit_test') else False
                     logger.debug('mode: ' + str(mode))
 
     # - get selected examyear, school and department from usersettings
@@ -119,26 +119,29 @@ class GradeApproveView(View):  # PR2021-01-19
                         examyear_published, school_activated, is_requsr_school = \
                             dl.get_selected_examyear_school_dep_from_usersetting(request)
 
-    # - get selected grade from upload_dict - if any
+    # - get selected examperiod from usersetting
+                    sel_examperiod = None
+                    selected_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
+                    if selected_dict:
+                        sel_examperiod = selected_dict.get(c.KEY_SEL_EXAMPERIOD)
+
+    # - get selected grade from upload_dict - only if clicked on a grade tblRow
                     grade_pk = upload_dict.get('grade_pk')
                     logger.debug('grade_pk: ' + str(grade_pk))
 
     # - if  grade_pk has value: get sel_examtype from upload_dict instead of from settings
                     sel_subject_pk = None
                     if grade_pk:
-                        sel_examperiod = upload_dict.get('examperiod')
                         sel_examtype = upload_dict.get('examtype')
+                        logger.debug('sel_examtype: ' + str(sel_examtype))
                     else:
     # - if  grade_pk has no value: get selected examperiod, examtype and subject_pk from usersettings
                         # update usersetting if new values in upload_dict
-                        new_examperiod = upload_dict.get('examperiod')
                         new_examtype = upload_dict.get('examtype')
                         new_subject_pk = upload_dict.get('subject_pk')
                         logger.debug('new_subject_pk: ' + str(new_subject_pk))
-                        if new_examperiod or new_examtype or new_subject_pk:
+                        if new_examtype or new_subject_pk:
                             new_setting_dict = {}
-                            if new_examperiod:
-                                new_setting_dict[c.KEY_SEL_EXAMPERIOD] = new_examperiod
                             if new_examtype:
                                 new_setting_dict[c.KEY_SEL_EXAMTYPE] = new_examtype
                             if new_subject_pk:
@@ -146,10 +149,11 @@ class GradeApproveView(View):  # PR2021-01-19
                             logger.debug('new_setting_dict: ' + str(new_setting_dict))
                             saved_setting_dict = req_user.set_usersetting_from_upload_subdict(c.KEY_SELECTED_PK, new_setting_dict)
                             logger.debug('saved_setting_dict: ' + str(saved_setting_dict))
-                        sel_examperiod, sel_examtype, sel_subject_pk = \
+                        sel_examperiodNIU, sel_examtype, sel_subject_pk = \
                             dl.get_selected_examperiod_examtype_from_usersetting(request)
 
                     if sel_examperiod and sel_examtype and sel_school and sel_department:
+                        logger.debug('sel_examperiod: ' + str(sel_examperiod))
     # +++ get selected grade_rows
                         crit = Q(studentsubject__student__school=sel_school) & \
                                Q(studentsubject__student__department=sel_department) & \
@@ -158,30 +162,32 @@ class GradeApproveView(View):  # PR2021-01-19
                             crit.add(Q(pk=grade_pk), crit.connector)
                         elif sel_subject_pk:
                             crit.add(Q(studentsubject__schemeitem__subject_id=sel_subject_pk), crit.connector)
+                        row_count = stud_mod.Grade.objects.filter(crit).count()
+                        logger.debug('row_count: ' + str(row_count))
+
                         grades = stud_mod.Grade.objects.filter(crit)
                         msg_dict = {'count': 0,
                                     'already_published': 0,
-                                     'double_approved': 0,
-                                     'no_value': 0,
-                                     'saved': 0,
-                                     'already_approved_by_auth': 0,
-                                     'auth_missing': 0
+                                    'double_approved': 0,
+                                    'no_value': 0,
+                                    'saved': 0,
+                                    'now_saved': 0,
+                                    'now_reset': 0,
+                                    'already_approved_by_auth': 0,
+                                    'auth_missing': 0
                                     }
-                        logger.debug('grades: ' + str(grades))
-                        if grades is None:
-                            msg_dict['count_text'] = _("The selection contains %(val)s.") % {'val': get_grade_text(0)}
-                        else:
+                        if grades is not None:
        # create new published_instance. Only save it when it is not a test
                             published_instance = None
                             if is_submit and not is_test:
                                 published_instance = create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, request)
         # +++++ loop through  grades
                             grade_rows = []
+                            logger.debug('grade_rows: ' + str(grade_rows))
                             for grade in grades:
                                 logger.debug('grade: ' + str(grade))
                                 msg_dict['count'] += 1
                                 if is_approve:
-                                    is_reset = (mode == 'reset')
                                     approve_grade(grade, sel_examtype, is_reset, msg_dict, request)
                                 elif is_submit:
                                     submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, request)
@@ -202,7 +208,15 @@ class GradeApproveView(View):  # PR2021-01-19
                                     if rows:
                                         grade_rows.append(rows[0])
         # +++++  end of loop through  grades
-                            if grade_rows:
+
+                            row_count = len(grade_rows)
+                            logger.debug('len: ' + str(len))
+                            if not row_count:
+                                msg_dict['count_text'] = str(
+                                    _("The selection contains %(val)s.") % {'val': get_grade_text(0)})
+                                logger.debug('msg_dict: ' + str(msg_dict))
+                            else:
+
                                 if is_submit and not is_test:
                                     sel_subject = subj_mod.Subject.objects.get_or_none(
                                         pk=sel_subject_pk,
@@ -360,7 +374,6 @@ def approve_grade(grade, sel_examtype, is_reset, msg_dict, request):  # PR2021-0
             if no_value:
                 msg_dict['no_value'] += 1
             else:
-
                 authby_field = None
                 if req_user.is_perm_auth1:
                     authby_field = sel_examtype + '_auth1by'
@@ -377,12 +390,15 @@ def approve_grade(grade, sel_examtype, is_reset, msg_dict, request):  # PR2021-0
 
                 double_approved = False
                 save_changes = False
+
 # - remove  authby when is_reset
                 if is_reset:
                     setattr(grade, authby_field, None)
                     msg_dict['saved'] += 1
+                    msg_dict['now_reset'] += 1
                     save_changes = True
                 else:
+
 # - skip if this grade is already approved by this auth
                     already_approved_by_auth = req_user.is_perm_auth1 and auth1by or \
                                                req_user.is_perm_auth2 and auth2by or \
@@ -391,6 +407,7 @@ def approve_grade(grade, sel_examtype, is_reset, msg_dict, request):  # PR2021-0
                     if already_approved_by_auth:
                         msg_dict['already_approved_by_auth'] += 1
                     else:
+
 # - skip if this author (like 'president') has already approved this grade
             # under a different permit (like 'secretary' or 'commissioner')
                         if req_user.is_perm_auth1:
@@ -406,6 +423,7 @@ def approve_grade(grade, sel_examtype, is_reset, msg_dict, request):  # PR2021-0
                         else:
                             setattr(grade, authby_field, req_user)
                             msg_dict['saved'] += 1
+                            msg_dict['now_saved'] += 1
                             save_changes = True
                             logger.debug('save_changes: ' + str(save_changes))
 
@@ -419,7 +437,9 @@ def approve_grade(grade, sel_examtype, is_reset, msg_dict, request):  # PR2021-0
 
                     saved_status_sum = getattr(grade, sel_examtype + '_status')
                     logger.debug('saved_status_sum: ' + str(saved_status_sum))
-                    new_status_sum = set_status_sum_by_index(saved_status_sum, status_index, not is_reset)
+
+                    new_value_bool = True if not is_reset else False
+                    new_status_sum = set_status_sum_by_index(saved_status_sum, status_index, new_value_bool)
                     logger.debug('new_status_sum: ' + str(new_status_sum))
                     setattr(grade, sel_examtype + '_status', new_status_sum)
 
@@ -472,15 +492,16 @@ def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, req
                         msg_dict['double_approved'] += 1
                     else:
                         logger.debug('===> saved ')
-
                         msg_dict['saved'] += 1
+                        msg_dict['now_saved'] += 1
 # - set value of published_instance and exatmtype_status field
                         if not is_test:
                             setattr(grade, sel_examtype + '_published', published_instance)
 
                             status_index = 4 # c.STATUS_04_SUBMITTED # STATUS_04_SUBMITTED = 16
                             saved_status_sum = getattr(grade, sel_examtype + '_status')
-                            new_status_sum = set_status_sum_by_index(saved_status_sum, status_index, True)
+                            new_value_bool = True
+                            new_status_sum = set_status_sum_by_index(saved_status_sum, status_index, new_value_bool)
 
                             logger.debug('saved_status_sum: ' + str(saved_status_sum))
                             logger.debug('status_index: ' + str(status_index))
@@ -775,13 +796,14 @@ def create_published_rows(setting_dict):
     #logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
     #logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
 
-    media_dir = "\\static\media\\"
-    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk}
+    sql_keys = {'ey_id': sel_examyear_pk,
+                'sb_id': sel_schoolbase_pk,
+                'depbase_id': sel_depbase_pk,
+                'mediadir': awpr_settings.MEDIA_DIR}
 
     sql_list = ["SELECT publ.id, CONCAT('published_', publ.id::TEXT) AS mapid, 'published' AS table,",
         "publ.name, publ.examtype, publ.examperiod, publ.datepublished, publ.filename,",
-        "CONCAT('" + media_dir + "', publ.filename) AS filepath,",
-        "'" + media_dir + "' AS filedir,",
+        "CONCAT(%(mediadir)s, publ.filename) AS filepath,",
         "sb.code AS sb_code, school.name AS school_name, db.code AS db_code, ey.code AS ey_code",
 
         "FROM students_published AS publ",
@@ -881,12 +903,14 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
     try:
         # create PDF
         file_path = ''.join((awpr_settings.STATICFILES_MEDIA_DIR, published_instance.filename))
+        file_name = published_instance.name
 
         logger.debug('filepath: ' + str(file_path))
+        logger.debug('file_name: ' + str(file_name))
 
         canvas = Canvas(file_path)
 
-        canvas.setTitle(published_instance.name)
+        canvas.setTitle(file_name)
 
         grade_exfiles.draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel_examperiod, sel_examtype,
                       grade_rows)

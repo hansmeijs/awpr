@@ -194,8 +194,7 @@ def get_headerbar_param(request, page):
             'class_flag1_hidden': _class_flag1_hidden,
             'class_flag2_hidden': _class_flag2_hidden,
             'menu_items': menu_items,
-            'awp_messages': awp_messages,
-            'media_dir': awpr_settings.STATICFILES_MEDIA_DIR
+            'awp_messages': awp_messages
         }
 
     return headerbar
