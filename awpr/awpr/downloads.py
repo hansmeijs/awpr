@@ -134,7 +134,12 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         )
 # ----- published
                 if datalist_request.get('published_rows'):
-                    datalists['published_rows'] = gr_vw.create_published_rows(new_setting_dict)
+                    if sel_examyear and sel_schoolbase and sel_depbase:
+                        datalists['published_rows'] = gr_vw.create_published_rows(
+                            sel_examyear_pk=sel_examyear.pk,
+                            sel_schoolbase_pk=sel_schoolbase.pk,
+                            sel_depbase_pk=sel_depbase.pk
+                        )
 # ----- schemes
                 if datalist_request.get('scheme_rows'):
                     datalists['scheme_rows'] = sj_vw.create_scheme_rows(new_setting_dict, {}, None)

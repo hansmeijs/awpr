@@ -402,13 +402,16 @@ def get_locale_dict(table_dict, user_lang):
         dict['MAG_info'] = {
             'subheader_approve': _('The following grades will be approved:'),
             'subheader_submit': _('An Ex2A form with the following grades will be submitted:'),
-            'approve_01': _("Click 'Check grades' to check the selected grades before approving."),
-            'approve_02': _('After the grades are approved by the president, secretary and commissioner,'),
-            'approve_03': _('the Ex2A form can be submitted by the president or secretary.'),
+            'approve_0': _("Click 'Check grades' to check the selected grades before approving."),
+            'approve_1': _('After the grades are approved by the president, secretary and commissioner,'),
+            'approve_2': _('the Ex2A form can be submitted by the president or secretary.'),
 
-            'submit_01': _("Click 'Check grades' to check the selected grades before submitting."),
-            'submit_02': _("If the check is OK, click 'Submit Ex2A form' to submit the selected grades."),
-            'submit_03': _("After the grades are submitted, you can only change them with permission of the Inpsection.")
+            'submit_0': _("Click 'Check grades' to check the selected grades before submitting."),
+            'submit_1': _("If the check is OK, click 'Submit Ex2A form' to submit the selected grades."),
+            'submit_2': _("After the grades are submitted, you can only change them with permission of the Inpsection."),
+
+            'submit_ok_01': _("The Ex2A form is succesfully created."),
+
         }
 
         dict['Score'] = _('Score')

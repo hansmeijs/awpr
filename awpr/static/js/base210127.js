@@ -66,9 +66,9 @@
 
 //========= UploadSettings  ============= PR2019-10-09
     function UploadSettings (upload_dict, url_str) {
-        console.log("=== UploadSettings");
-        console.log("url_str", url_str);
-        console.log("upload_dict", upload_dict);
+        //console.log("=== UploadSettings");
+        //console.log("url_str", url_str);
+        //console.log("upload_dict", upload_dict);
         if(!!upload_dict) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
             let response = "";
@@ -95,7 +95,7 @@
         //console.log("setting_dict", setting_dict )
 
 // --- EXAM YEAR
-       // console.log("setting_dict.sel_examyear_pk", setting_dict.sel_examyear_pk )
+       //console.log("setting_dict.sel_examyear_pk", setting_dict.sel_examyear_pk )
         if(el_hdrbar_examyear) {
             let examyer_txt = "";
             if (setting_dict.sel_examyear_pk){
@@ -245,7 +245,8 @@
 
 //========= show_hide_selected_elements_byClass  ====  PR2020-02-19  PR2020-06-20
     function show_hide_selected_elements_byClass(container_classname, contains_classname, container_element) {
-        // this function shows / hides elements on page, based on classnames: example: <div class="tab_show tab_shift tab_team display_hide">
+        // this function shows / hides elements in container_element or (if null) on page,
+        // based on classnames: example: <div class="tab_show tab_shift tab_team display_hide">
         // - all elements with class 'container_classname' will be checked. example:'tab_show' is the container_classname.
         // - if an element contains class 'contains_classname', it will be shown, if not it will be hidden. example: 'tab_shift' and 'tab_team' are classes of the select buttons ('contains_classname')
         // - class 'display_hide' in html is necessary to prevent showing all elements when page opens
@@ -581,7 +582,7 @@
 
 //========= b_set_status_bool_at_index  ============= PR2021-01-15 PR2021-02-05
     function b_set_status_bool_at_index(status_int, index, new_value) {
-        console.log( " ==== b_set_status_bool_at_index ====");
+        //console.log( " ==== b_set_status_bool_at_index ====");
 
         if(status_int == null){status_int = 0};
         let new_status_sum = 0;
@@ -647,8 +648,8 @@
 
 
     function get_status_class(status_sum) { // PR2021-01-15
-        console.log( " ==== get_status_class ====");
-        console.log( "status_sum", status_sum);
+        //console.log( " ==== get_status_class ====");
+        //console.log( "status_sum", status_sum);
         let img_class = "appr_0_0";
 
         if (status_sum < 32) {
@@ -670,13 +671,13 @@
                         (auth1) ? "appr_0_2" :
                         (created) ? "stat_0_1" : "stat_0_0"
     if(status_sum){
-        console.log( "status_array", status_array);
-        console.log( "created", created);
-        console.log( "auth1", auth1);
-        console.log( "auth2", auth2);
-        console.log( "auth3", auth3);
-        console.log( "submitted", submitted);
-        console.log( "img_class", img_class);
+        //console.log( "status_array", status_array);
+        //console.log( "created", created);
+        //console.log( "auth1", auth1);
+        //console.log( "auth2", auth2);
+        //console.log( "auth3", auth3);
+        //console.log( "submitted", submitted);
+        //console.log( "img_class", img_class);
     }
         } else if (status_sum < 64) {img_class = "note_1_2" // STATUS_05_REQUEST = 32
         } else if (status_sum < 128) {img_class = "note_1_3"// STATUS_06_WARNING = 64
@@ -818,8 +819,8 @@
                                     const must_be_str = (is_percentage) ? loc.err_msg_must_be_percentage_greater_than_or_equal_to : loc.err_msg_must_be_number_greater_than_or_equal_to;
                                     err_msg = caption_str + " " + must_be_str + " " + min_value / multiplier + "."
 
-                                    console.log("max_value", max_value, "multiplier", multiplier )
-                                    console.log("err_msg", err_msg )
+                                    //console.log("max_value", max_value, "multiplier", multiplier )
+                                    //console.log("err_msg", err_msg )
                                 }
                             } else if(max_value !== null) {
                                 const must_be_str = (is_percentage) ? loc.err_msg_must_be_percentage_less_than_or_equal_to : loc.err_msg_must_be_number_less_than_or_equal_to;
@@ -910,8 +911,8 @@
 
 //========= render_messages  =================
     function render_messages(awp_messages) {
-        console.log( "=== render_messages ")
-        console.log( "awp_messages", awp_messages)
+        //console.log( "=== render_messages ")
+        //console.log( "awp_messages", awp_messages)
         // PR202020-10-30 renders messages
         /*
             {% for message in awp_messages %}
@@ -925,7 +926,7 @@
         */
 
         const el_msg_container = document.getElementById("id_awpmsg_container")
-        console.log( "el_msg_container", el_msg_container)
+        //console.log( "el_msg_container", el_msg_container)
         if (el_msg_container){
             el_msg_container.innerText = null;
             if (!isEmpty(awp_messages)) {
