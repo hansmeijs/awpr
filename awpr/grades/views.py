@@ -350,10 +350,9 @@ def create_published_instance(sel_school, sel_department, sel_examtype, sel_exam
         published_instance.save(request=request)
         logger.debug('published_instance.saved: ' + str(published_instance))
 
-        #file_name = ( ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(24)) ) + '.pdf'
-        file_name = ( ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(24)) ) + '.pdf'
+        #file_name = ( ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(24)) ) + '.pdf'
 
-        # published_instance.filename = 'published_' + str(published_instance.pk) + '.pdf'
+        file_name = 'published' + str(published_instance.pk) + '.pdf'
         published_instance.filename = file_name
 
         published_instance.save(request=request)
