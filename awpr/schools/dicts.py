@@ -54,7 +54,7 @@ def create_department_rows(examyear):
 
     sql_list = ["SELECT dep.id, dep.base_id, dep.examyear_id, ey.code AS examyear_code, ey.country_id,",
         "CONCAT('department_', dep.id::TEXT) AS mapid, depbase.code AS base_code,",
-        "dep.name, dep.abbrev, dep.sequence, dep.level_req AS lvl_req, dep.sector_req AS sct_req, dep.level_caption AS lvl_caption, dep.sector_caption AS sct_caption,",
+        "dep.name, dep.abbrev, dep.sequence, dep.level_req AS lvl_req, dep.sector_req AS sct_req, dep.has_profiel,",
         "dep.modifiedby_id, dep.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
 
         "FROM schools_department AS dep",
@@ -145,7 +145,7 @@ def create_school_rows(examyear, setting_dict):
 
     sql_list = ["SELECT s.id, s.base_id, s.examyear_id, ey.code AS examyear_code, ey.country_id, c.name AS country,",
         "CONCAT('school_', s.id::TEXT) AS mapid, sb.defaultrole,",
-        "s.name, s.abbrev, s.article, s.depbases, sb.code AS sb_code, s.locked, s.depbases,",
+        "s.name, s.abbrev, s.article, sb.code AS sb_code, s.activated, s.locked, s.depbases,",
         "s.modifiedby_id, s.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
 
         "FROM schools_school AS s",
@@ -157,7 +157,7 @@ def create_school_rows(examyear, setting_dict):
         "WHERE ey.id = %(ey_id)s::INT",
         "AND sb.defaultrole <= %(max_role)s::INT"]
 
-    if requsr_role >= ac.ROLE_16_INSP :
+    if requsr_role >= ac.ROLE_032_INSP :
         sql_list.append("ORDER BY LOWER(sb.code)")
     else:
         sql_keys['sb_id'] = requsr_schoolbase_pk
@@ -169,4 +169,4 @@ def create_school_rows(examyear, setting_dict):
     school_rows = sch_m.dictfetchall(newcursor)
 
     return school_rows
-# --- end of create_employee_rows
+# --- end of create_school_rows

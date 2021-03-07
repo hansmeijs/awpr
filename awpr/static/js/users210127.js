@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const schoolcode_lc_trail = ( (map_dict.sb_code) ? map_dict.sb_code.toLowerCase() : "" ) + " ".repeat(8) ;
                 const schoolcode_sliced = schoolcode_lc_trail.slice(0, 8);
                 const order_by = schoolcode_sliced +  ( (map_dict.username) ? map_dict.username.toLowerCase() : "");
-                const row_index = -1; // t_get_rowindex_by_orderby(tblBody_datatable, order_by)
+                const row_index = -1; // t_get_rowindex_by_sortby(tblBody_datatable, order_by)
                 let tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, map_dict, row_index)
           };
         }  // if(!!data_map)
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
             tblRow.setAttribute("data-pk", map_dict.id);
             tblRow.setAttribute("data-ppk", map_dict.company_id);
             tblRow.setAttribute("data-table", tblName);
-            tblRow.setAttribute("data-orderby", map_dict.username);
+            tblRow.setAttribute("data-sortby", map_dict.username);
 
 // --- add EventListener to tblRow
             tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
@@ -484,42 +484,52 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= UploadNewUser  ============= PR2020-08-02 PR2020-08-15
    function UploadNewUser(args) {
         console.log("=== UploadNewUser === ");
-        console.log("args:       ", args);
-        //console.log("time_stamp: ", time_stamp);
-        let mode = null, init_time_stamp = null, skip = false;
+        //console.log("args: ", args);
+        //console.log("time_stamp:     ", time_stamp);
+
+        //  args = 'save'     when called by el_MUA_btn_submit
+        //  args = time_stamp when called by MUA_InputKeyup
+
+        let mode = null, skip = false;
 
         // send schoolbase, username and email to server after 1500 ms
         // abort if within that period a new value is entered.
         // checked by comparing the timestamp
-        // args is either 'save' or a number based on time_stamp
+        // 'args' is either 'save' or a time_stamp number
         // time_stamp gets new value 'now' whenever a 'keyup' event occurs
         // UploadNewUser has a time-out of 1500 ms
         // init_time_stamp is the value of time_stamp at the time this 'keyup' event occurred
         // when time_stamp = init_time_stamp, it means that there are no new keyup events within the time-out period
 
         if(Number(args)){
-            //skip if a new key is entered in the elapsed period of 1000 ms
-            init_time_stamp = Number(args)
-            skip =  (time_stamp !== init_time_stamp)
-            mode = "validate"
+// ---  skip if a new key is entered in the elapsed period of 1500 ms
+            const init_time_stamp = Number(args)
+            skip = (time_stamp !== init_time_stamp)
         } else {
-            mode = args
+            mode = args; // 'value can only be 'save'
         }
         if(!skip) {
+// ---  skip if one of the fields is blank
             skip = !(el_MUA_username.value && el_MUA_last_name.value && el_MUA_email.value)
         }
         //console.log("skip: ", skip);
         if(!skip){
-            // mod_dict modes are:  addnew, select, update
-            let url_str = url_user_upload
+            // mod_MUA_dict. modes are: 'addnew', 'update'
 
-            const upload_mode = (mode === "validate") ? "validate" :
-                                (mode === "resend_activation_email" ) ? "resend_activation_email" :
-                                (mod_MUA_dict.mode === "update") ? "update" :
-                                (mod_MUA_dict.mode === "addnew") ? "create" : null;
+            // in ModConfirmSave upload_dict.mode can get value "delete" or "resend_activation_email"
+            // in this function value of 'mode' is only 'save'
+            const upload_mode =  (mod_MUA_dict.mode === "addnew") ? "create" : "update";
 
-        //console.log("mod_MUA_dict", mod_MUA_dict);
-    // ---  create mod_dict
+                                // (mode === "validate") ? "validate" :
+                                //(mode === "resend_activation_email" ) ? "resend_activation_email" :
+                               // (mod_MUA_dict.mode === "update") ? "update" :
+                               // (mod_MUA_dict.mode === "addnew") ? "create" : null;
+
+            console.log("mod_MUA_dict", mod_MUA_dict);
+            console.log("mode", mode);
+            console.log("................upload_mode", upload_mode);
+
+   // ---  create mod_dict
             let upload_dict = {}
             if (upload_mode === "resend_activation_email" ){
                 upload_dict = { user_pk: map_dict.id,
@@ -529,7 +539,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                 username: {value: map_dict.username}
                               };
             } else if (upload_mode === "update" ){
-
+                upload_dict = { schoolbase_pk: mod_MUA_dict.user_schoolbase_pk,
+                                mode: upload_mode,
+                                username: el_MUA_username.value,
+                                last_name: el_MUA_last_name.value,
+                                email: el_MUA_email.value
+                              };
             } else if (["validate", "create"].indexOf(upload_mode) > -1){
                 upload_dict = { schoolbase_pk: mod_MUA_dict.user_schoolbase_pk,
                                 mode: upload_mode,
@@ -538,9 +553,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 email: el_MUA_email.value
                               };
             }
-            //console.log("upload_dict: ", upload_dict);
+            console.log("upload_dict: ", upload_dict);
 
-            // must loose focus, otherwise green / red border won't show
+            // must lose focus, otherwise green / red border won't show
             //el_input.blur();
             // show loader, hide msg_info
             el_MUA_loader.classList.remove(cls_hide);
@@ -550,7 +565,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let response = "";
             $.ajax({
                 type: "POST",
-                url: url_str,
+                url: url_user_upload,
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
@@ -688,6 +703,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function MUA_Open(mode, el_input){
         console.log(" -----  MUA_Open   ---- mode: ", mode)  // modes are: addnew, update
         console.log("setting_dict: ", setting_dict)
+        // mode = 'addnew' when called by SubmenuButton
+        // mode = 'update' when called by tblRow event
+
         // <PERMIT> PR2020-10-12
         // - when role is system or admin (ETE): req_user can select school, table school and iput school are visible
         // - when role is inspection or school: user.schoolbase = request.user.schoolbase
@@ -736,10 +754,10 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("user_schoolbase_pk: ", user_schoolbase_pk)
         console.log("user_schoolname: ", user_schoolname)
             mod_MUA_dict = {
-                mode: mode,
-                skip_validate_username: is_addnew,
-                skip_validate_last_name: is_addnew,
-                skip_validate_email: is_addnew,
+                mode: mode, // modes are: addnew, update
+                //skip_validate_username: is_addnew,
+                //skip_validate_last_name: is_addnew,
+                //skip_validate_email: is_addnew,
                 user_pk: user_pk,
                 user_schoolbase_pk: user_schoolbase_pk,
                 user_schoolbase_code: user_schoolbase_code,
@@ -1039,7 +1057,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (field_value !== el_input.value) { el_input.value = field_value}
                 }
                 mod_MUA_dict[fldName] = (field_value) ? field_value : null
-                mod_MUA_dict["skip_validate_" + fldName] = false;
+                mod_MUA_dict["has_changed_" + fldName] = true;
 
                 MUA_ResetElements();
                 // send schoolbase, username and email to server after 1000 ms
@@ -1357,7 +1375,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updated_columns.push("created")
     // ---  create row in table., insert in alphabetical order
                 const order_by = update_dict.username.toLowerCase();
-                const row_index = t_get_rowindex_by_orderby(tblBody_datatable, order_by)
+                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
                 tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, update_dict, row_index)
     // ---  scrollIntoView,
                 if(tblRow){

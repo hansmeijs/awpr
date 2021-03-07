@@ -58,7 +58,7 @@ class GradeDownloadPdfView(View):  # PR2021-02-0
                     # - get selected grade from upload_dict - if any
                     published_pk = upload_dict.get('published_pk')
                     logger.debug('published_pk: ' + str(published_pk))
-                    published = stud_mod.Published.objects.get_or_none(pk=published_pk)
+                    published = sch_mod.Published.objects.get_or_none(pk=published_pk)
                     if published:
                         filename = getattr(published, 'filename')
                         filename = 'Ex2A - CUR12 St. Paulus Vsbo - SE 1e tv.pdf'
@@ -114,7 +114,7 @@ class DownloadPublishedFile(View):  # PR2021-02-07
         if request.user and request.user.country and request.user.schoolbase:
             req_user = request.user
             # TODO set permit properly
-            has_permit = (req_user.role > c.ROLE_02_STUDENT)
+            has_permit = (req_user.role > c.ROLE_002_STUDENT)
             if has_permit:
                 # - reset language
                 user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -127,21 +127,29 @@ class DownloadPublishedFile(View):  # PR2021-02-07
                     logger.debug('upload_dict' + str(upload_dict))
                     published_pk = upload_dict.get('published_pk')
                     if published_pk:
-                        published = stud_mod.Published.objects.get_or_none(pk=published_pk)
+                        published = sch_mod.Published.objects.get_or_none(pk=published_pk)
                         logger.debug('published' + str(published))
                         if published:
                             file_name = published.filename
                             if file_name:
+
                                 logger.debug('file_name' + str(file_name))
-                                file_path = ''.join((awpr_settings.STATICFILES_MEDIA_DIR, file_name))
+                                file_dir = ''.join((awpr_settings.AWS_LOCATION, '/published/'))
+                                # was: file_path = ''.join((awpr_settings.STATICFILES_MEDIA_DIR, file_name))
+                                file_path = ''.join((file_dir, file_name))
                                 logger.debug('file_path: ' + str(file_path))
                                 # gives UnicodeDecodeError : 'charmap' codec can't decode byte 0x9d in position 656:
                                 # see https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
                                 # and https://www.edureka.co/community/51644/python-unicodedecodeerror-codec-decode-position-invalid
                                 # was: with open(file_path, 'r') as pdf:
-                                with open(file_path, 'r', encoding = 'utf-8', errors = 'ignore') as pdf:
-                                    response = HttpResponse(pdf.read(), content_type='application/pdf')
-                                    response['Content-Disposition'] = 'inline;filename=some_file.pdf'
+                                with open(file_path, 'r', encoding='utf-8', errors='ignore') as pdf:
+                                    logger.debug('pdf: ' + str(pdf) + ' ' + str((type(pdf))) )
+                                    read_data = pdf.read()
+                                    logger.debug('read_data: ' + str(read_data) + ' ' + str((type(read_data))) )
+
+                                    response = HttpResponse(read_data, content_type='application/pdf')
+                                    #response['Content-Disposition'] = 'inline;filename=some_file.pdf'
+                                    response['Content-Disposition'] = 'attachment;filename=some_file.pdf'
                                     return response
 
                                 """
@@ -356,6 +364,13 @@ def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel
     x_list = (25, 65, 17, 22, 22, 22, 17) # last col is 17 mm
     x, y1, y2 = left, top - 45*mm, bottom + 40*mm
 
+    """
+        ______
+      | 
+     16 
+     
+    """
+
     tab_list = [left + 12 * mm,
                 left + 29 * mm,
                 left + 97 * mm,
@@ -412,7 +427,9 @@ def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel
     x += 30*mm
     canvas.drawString(x, y, 'Naam en voorletters van de kandidaat')
     canvas.drawString(x + 7*mm, y - 4*mm, '(in alfabetische volgorde)')
-    canvas.drawString(x + 20*mm, y - 10*mm, '2)')
+    # canvas.drawString(x + 20*mm, y - 10*mm, '2)')
+    # calculate center: x + dx/2
+    canvas.drawCentredString(x + 20*mm, y - 10*mm, '2)')
 
     x += 61*mm
     canvas.drawString(x, y, 'Cijfer SE')
@@ -433,8 +450,6 @@ def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel
     x += 20*mm
     canvas.drawString(x, y, 'Eindcijfer')
     canvas.drawString(x + 4*mm, y - 10*mm, '7)')
-
-
 
     y -= 16 * mm
     canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
@@ -458,7 +473,8 @@ def draw_Ex2A_line(canvas, row, left, right, coord, tab_list):
         #logger.debug('tab_list: ' + str(tab_list[0]))
 
         examnumber = row['examnumber'] or '---'
-        canvas.drawString(tab_list[0], y, examnumber)
+        # canvas.drawString(tab_list[0], y, examnumber)
+        canvas.drawCentredString(tab_list[0], y, examnumber)
 
         fullname = row['fullname'] or '---'
         canvas.drawString(tab_list[1], y, fullname)
@@ -526,12 +542,33 @@ def add_frame_header(canvas, border, text_list, school_name, subject_name):
     #logger.debug('story2: ' + str(story2) + ' ' + str(type(story2)))
 
     left = left + 40*mm
-    bottom  = bottom - 13*mm
+    bottom = bottom - 13*mm
     width = 80*mm
     height = 40*mm
     f2 = Frame(left, bottom, width, height, showBoundary=0)
     f2.addFromList(story2, canvas)
     #logger.debug('addFromList: ' + str(f2) + ' ' + str(type(f2)))
+
+def testing():
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="somefilename.pdf"'
+
+    buffer = io.BytesIO()
+
+    p = Canvas(buffer)
+    p.setFont('Helvetica-Bold', 36)
+
+    p.setPageSize((400, 400))
+    p.drawString(100, 100, "Hello world.")
+
+    # Close the PDF object cleanly, and we're done.
+    p.showPage()
+    p.save()
+    pdf = buffer.getvalue()
+    buffer.close()
+    response.write(pdf)
+    return response
+
 
 """
 class ParagraphStyle(PropertySet):    

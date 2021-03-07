@@ -8,7 +8,7 @@ from django.contrib.postgres.fields import ArrayField #, JSONField
 
 from django.db import connection
 from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
-from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField
+from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, DateField
 from django.utils import timezone
 
 import json
@@ -288,8 +288,9 @@ class Department(AwpBaseModel):# PR2018-08-10
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
     level_req = BooleanField(default=True)
     sector_req = BooleanField(default=True)
-    level_caption = CharField(max_length=c.MAX_LENGTH_20, null=True, blank=True)  # PR2019-01-17
-    sector_caption = CharField(max_length=c.MAX_LENGTH_20, null=True, blank=True)  # PR2019-01-17
+    has_profiel = BooleanField(default=False)
+    #level_caption = CharField(max_length=c.MAX_LENGTH_20, null=True, blank=True)  # PR2019-01-17
+    #sector_caption = CharField(max_length=c.MAX_LENGTH_20, null=True, blank=True)  # PR2019-01-17
 
     class Meta:
         ordering = ['sequence',]
@@ -316,36 +317,14 @@ class Department_log(AwpBaseModel):
     sequence = PositiveSmallIntegerField()
     level_req = BooleanField(default=True)
     sector_req = BooleanField(default=True)
-    level_caption = CharField(max_length=c.MAX_LENGTH_20, null=True)
-    sector_caption = CharField(max_length=c.MAX_LENGTH_20, null=True)
-
-    name_mod = BooleanField(default=False)
-    abbrev_mod = BooleanField(default=False)
-    sequence_mod = BooleanField(default=False)
-    level_req_mod = BooleanField(default=False)
-    sector_req_mod = BooleanField(default=False)
-    level_caption_mod = BooleanField(default=False)
-    sector_caption_mod = BooleanField(default=False)
+    has_profiel = BooleanField(default=False)
+    #level_caption = CharField(max_length=c.MAX_LENGTH_20, null=True)
+    #sector_caption = CharField(max_length=c.MAX_LENGTH_20, null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
     def __str__(self):
         return self.name
-
-    @property
-    def level_req_str(self):
-        return c.YES_NO_BOOL_DICT.get(self.level_req)
-
-    @property
-    def sector_req_str(self):
-        return c.YES_NO_BOOL_DICT.get(self.sector_req)
-
-    @property
-    def mode_str(self):
-        mode_str = '-'
-        if self.mode is not None:
-            mode_str = c.MODE_DICT.get(str(self.mode),'-')
-        return mode_str
 
 
 class Schoolbase(Model):  # PR2018-05-27 PR2018-11-11
@@ -354,7 +333,7 @@ class Schoolbase(Model):  # PR2018-05-27 PR2018-11-11
     country = ForeignKey(Country, related_name='+', on_delete=PROTECT)
     code = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
     # the role of new users is set to defaultrole of their schoolbase PR2021-01-25
-    # defaultroles are: school = 8, insp = 16, admin = 32, system = 64
+    # defaultroles are: school = 8, insp = 16, admin = 32, system = 128
     defaultrole = PositiveSmallIntegerField(default=0)
 
     def __str__(self):
@@ -428,9 +407,9 @@ class School(AwpBaseModel):  # PR2018-08-20 PR2018-11-11
 
     name = CharField(max_length=c.MAX_LENGTH_NAME)
     abbrev = CharField(max_length=c.MAX_LENGTH_SCHOOLABBREV)
-
     article = CharField(max_length=c.MAX_LENGTH_SCHOOLARTICLE, null=True)
-    depbases = ArrayField(IntegerField(), null=True)
+
+    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     isdayschool = BooleanField(default=False)
     iseveningschool = BooleanField(default=False)
@@ -470,7 +449,7 @@ class School_log(AwpBaseModel):
     name = CharField(max_length=c.MAX_LENGTH_NAME,null=True)
     abbrev = CharField(max_length=c.MAX_LENGTH_SCHOOLABBREV,null=True)
     article = CharField(max_length=c.MAX_LENGTH_SCHOOLARTICLE, null=True)
-    depbases = ArrayField(IntegerField(), null=True)
+    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     isdayschool = BooleanField(default=False)
     iseveningschool = BooleanField(default=False)
@@ -501,13 +480,33 @@ class School_message_log(AwpBaseModel):
     objects = AwpModelManager()
 
     school_message_id = IntegerField(db_index=True)
-    sent_to =  CharField(max_length=2048, null=True, blank=True)
-    title =  CharField(max_length=80, null=True, blank=True)
-    note =  CharField(max_length=4096, null=True, blank=True)
+    sent_to = CharField(max_length=2048, null=True, blank=True)
+    title = CharField(max_length=80, null=True, blank=True)
+    note = CharField(max_length=4096, null=True, blank=True)
     is_insp = BooleanField(default=False)
     is_unread = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+
+
+class Published(AwpBaseModel): # PR2020-12-02
+    objects = AwpModelManager()
+
+    school = ForeignKey(School, related_name='+', on_delete=CASCADE)
+    department = ForeignKey(Department, related_name='+', on_delete=CASCADE)
+
+    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
+    examperiod = PositiveSmallIntegerField(db_index=True) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
+
+    name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+
+    filename = CharField(max_length=255, null=True)
+
+    datepublished = DateField()
+
+    def __str__(self):
+        return self.name
+    # published has no published_log because its data don't change
 
 
 # PR2018-06-07

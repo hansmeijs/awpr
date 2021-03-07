@@ -121,8 +121,7 @@ def ImportData(ws_name, row_data, excel_data, mapped, sel_examyear, request):  #
                         sequence=sequence,
                         level_req=level_req,
                         sector_req=sector_req,
-                        level_caption=level_caption,
-                        sector_caption=sector_caption
+                        has_profiel=has_profiel
                     )
                     department.save(request=request)
                     logger.debug ('depbase created = ' + str(department))

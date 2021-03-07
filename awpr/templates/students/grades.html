@@ -6,6 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/grades210127.js' %}"></script>
+    <script src="{% static 'js/download210306.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -27,6 +28,12 @@
                 autocomplete="off" ondragstart="return false;" ondrop="return false;"
            >
             </select>
+        </div>
+
+        <div class="tw_200 m-2">
+            <h6 class="tw_200 line_height_normal px-2">{% trans 'Leerweg' %}:</h6>
+            <input id="id_SBR_select_level" type="text"
+                class="tw_200 border_none pointer_show px-2" readonly>
         </div>
 
         <div class="tw_200 m-2">

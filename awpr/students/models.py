@@ -19,7 +19,7 @@ from schools import models as sch_mod
 
 from schools.models import Examyear, Department, Department_log, School, School_log
 from subjects.models import Level, Level_log, Sector, Sector_log, Scheme, Scheme_log, Schemeitem, Schemeitem_log,\
-    Package, Package_log, Cluster, Cluster_log
+    Exam, Exam_log,Package, Package_log, Cluster, Cluster_log
 
 import logging
 logger = logging.getLogger(__name__)
@@ -94,25 +94,6 @@ class Birthplace_log(sch_mod.AwpBaseModel):
         return self.name
 
 
-class Published(sch_mod.AwpBaseModel): # PR2020-12-02
-    objects = CustomManager()
-
-    school = ForeignKey(School, related_name='+', on_delete=CASCADE)
-    department = ForeignKey(Department, related_name='+', on_delete=CASCADE)
-
-    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
-    examperiod = PositiveSmallIntegerField(db_index=True) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
-
-    name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
-
-    filename = CharField(max_length=255, null=True)
-
-    datepublished = DateField()
-
-    def __str__(self):
-        return self.name
-    # published has no published_log because its data don't change
-
 # =================
 class Studentbase(Model):# PR2018-10-17 PR2020-12-07
     objects = CustomManager()
@@ -147,6 +128,7 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     gradelistnumber = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_10)
 
     iseveningstudent = BooleanField(default=False)
+    islexstudent = BooleanField(default=False)
     hasdyslexia = BooleanField(default=False)
 
     locked = BooleanField(default=False)
@@ -340,23 +322,23 @@ class Studentsubject(sch_mod.AwpBaseModel):
 
     subj_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    subj_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    subj_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     exem_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     exem_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    exem_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    exem_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     reex_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     reex_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    reex_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    reex_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     reex3_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     reex3_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    reex3_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    reex3_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     pok_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pok_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    pok_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    pok_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     has_schoolnotes = BooleanField(default=False)
     has_inspnotes = BooleanField(default=False)
@@ -389,23 +371,23 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
 
     subj_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    subj_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    subj_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     exem_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     exem_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    exem_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    exem_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     reex_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     reex_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    reex_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    reex_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     reex3_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     reex3_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    reex3_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    reex3_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     pok_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pok_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    pok_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    pok_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     has_schoolnotes = BooleanField(default=False)
     has_inspnotes = BooleanField(default=False)
@@ -473,19 +455,19 @@ class Grade(sch_mod.AwpBaseModel):
     se_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    se_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    se_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     pe_status = PositiveSmallIntegerField(default=0)
     pe_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    pe_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    pe_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     ce_status = PositiveSmallIntegerField(default=0)
     ce_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    ce_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    ce_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     deleted = BooleanField(default=False)
     status = PositiveSmallIntegerField(default=0)
@@ -513,17 +495,17 @@ class Grade_log(sch_mod.AwpBaseModel):
     se_status = PositiveSmallIntegerField(default=0)
     se_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    se_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    se_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     pe_status = PositiveSmallIntegerField(default=0)
     pe_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    pe_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    pe_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     ce_status = PositiveSmallIntegerField(default=0)
     ce_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    ce_published = ForeignKey(Published, related_name='+', null=True, on_delete=PROTECT)
+    ce_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     deleted = BooleanField(default=False)
     status = PositiveSmallIntegerField(default=0)
@@ -532,3 +514,42 @@ class Grade_log(sch_mod.AwpBaseModel):
     @property
     def mode_str(self):
         return f.get_mode_str(self)
+
+# PR2021-03-04
+class Examresult(sch_mod.AwpBaseModel):
+    objects = CustomManager()
+
+    studentsubject = ForeignKey(Studentsubject, related_name='+', on_delete=CASCADE)
+
+    exam = ForeignKey(Exam, related_name='+', on_delete=CASCADE)
+    examperiod = PositiveSmallIntegerField(db_index=True,
+                                           default=1)  # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
+
+    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
+
+    result = CharField(max_length=2048, null=True, blank=True)
+
+    auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+
+
+class Examresult_log(sch_mod.AwpBaseModel):
+    objects = CustomManager()
+
+    answer_id = IntegerField(db_index=True)
+
+    studentsubject_log = ForeignKey(Studentsubject_log, related_name='+', on_delete=CASCADE)
+
+    examperiod = PositiveSmallIntegerField(db_index=True, default=1)  # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
+
+    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
+
+    result = CharField(max_length=2048, null=True, blank=True)
+
+    auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+

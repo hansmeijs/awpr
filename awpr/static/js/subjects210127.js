@@ -482,7 +482,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "map_dict ", map_dict);
           // --- insert row at row_index not necessary, map is ordered
                 const order_by = (map_dict.sequence) ? map_dict.sequence + 10000 : 90000;
-                const row_index = -1; // t_get_rowindex_by_orderby(tblBody_datatable, order_by)
+                const row_index = -1; // t_get_rowindex_by_sortby(tblBody_datatable, order_by)
                 let tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, map_dict, order_by, row_index)
           };
         }  // if(!!data_map)
@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', function() {
             tblRow.setAttribute("data-pk", map_dict.id);
             tblRow.setAttribute("data-ppk", map_dict.examyear_id);
             tblRow.setAttribute("data-table", tblName);
-            tblRow.setAttribute("data-orderby", order_by);
+            tblRow.setAttribute("data-sortby", order_by);
 
 // --- add EventListener to tblRow
             tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
@@ -624,7 +624,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "pk_int", pk_int);
 
 // ---  upload new setting
-        let new_setting = {page_grade: {mode: "get"}};
+        let new_setting = {page_grades: {mode: "get"}};
         if (tblName === "school") {
             new_setting.selected_pk = {sel_schoolbase_pk: pk_int, sel_depbase_pk: null}
         } else {
@@ -1871,7 +1871,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updated_columns.push("created")
     // ---  create row in table., insert in alphabetical order
                 const order_by = (update_dict.sequence) ? update_dict.sequence + 10000 : 90000;
-                const row_index = t_get_rowindex_by_orderby(tblBody_datatable, order_by)
+                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
                 tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, update_dict, order_by, row_index)
     // ---  scrollIntoView,
                 if(tblRow){

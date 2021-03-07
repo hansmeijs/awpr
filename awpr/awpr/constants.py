@@ -34,66 +34,6 @@ MAX_LEN_DICT_STUDENT = {
     'gradelistnumber': MAX_LENGTH_10
 }
 
-
-# PR2018-05-07
-ROLE_00_NONE = 0
-ROLE_02_STUDENT = 2
-ROLE_04_TEACHER = 4
-ROLE_08_SCHOOL = 8
-ROLE_16_INSP = 16
-ROLE_32_ADMIN = 32
-ROLE_64_SYSTEM = 64
-
-# PR2018-12-23 used in set_menu_items
-ROLE_STR_08_SCHOOL = 'school'
-ROLE_STR_16_INSP = 'insp'
-ROLE_STR_32_ADMIN = 'admin'
-ROLE_STR_64_SYSTEM = 'system'
-
-ROLE_DICT = {
-    ROLE_08_SCHOOL: ROLE_STR_08_SCHOOL,
-    ROLE_16_INSP: ROLE_STR_16_INSP,
-    ROLE_32_ADMIN: ROLE_STR_32_ADMIN,
-    ROLE_64_SYSTEM: ROLE_STR_64_SYSTEM
-    }
-
-# PR2018-05-21
-PERMIT_000_NONE = 0
-PERMIT_001_READ = 1
-PERMIT_002_EDIT = 2
-PERMIT_004_AUTH1 = 4
-PERMIT_008_AUTH2 = 8
-PERMIT_016_AUTH3 = 16
-PERMIT_032_ANALYZE = 32
-PERMIT_064_ADMIN = 64
-PERMIT_128_SYSTEM = 128
-
-# PR2018-12-23 used in set_menu_items
-
-PERMIT_DICT = {
-    PERMIT_000_NONE: 'none',
-    PERMIT_001_READ: 'read',
-    PERMIT_002_EDIT: 'edit',
-    PERMIT_004_AUTH1: 'auth1',
-    PERMIT_008_AUTH2:'auth2',
-    PERMIT_016_AUTH3: 'auth3',
-    PERMIT_032_ANALYZE: 'anlz',
-    PERMIT_064_ADMIN: 'admin',
-    PERMIT_128_SYSTEM: 'system'
-}
-
-PERMIT_LOOKUP = {
-    'perm_none': PERMIT_000_NONE,
-    'perm_read': PERMIT_001_READ,
-    'perm_edit': PERMIT_002_EDIT,
-    'perm_auth1': PERMIT_004_AUTH1,
-    'perm_auth2': PERMIT_008_AUTH2,
-    'perm_auth3': PERMIT_016_AUTH3,
-    'perm_anlz': PERMIT_032_ANALYZE,
-    'perm_admin': PERMIT_064_ADMIN,
-   'perm_system': PERMIT_128_SYSTEM
-}
-
 GENDER_NONE = '-'  # PR2018-09-05
 GENDER_MALE = 'M'
 GENDER_FEMALE = 'V'
@@ -105,22 +45,6 @@ GENDER_CHOICES = (
     (GENDER_MALE, _('M')),
     (GENDER_FEMALE, _('V')),
 )
-
-# PR2018-08-01
-CHOICES_ROLE = (
-    (ROLE_08_SCHOOL, _('School')),
-    (ROLE_16_INSP, _('Inspection')),
-    (ROLE_32_ADMIN, _('Administrator')),
-    (ROLE_64_SYSTEM, _('System'))
-)
-
-# PR2018-08-07
-CHOICES_ROLE_DICT = {
-    ROLE_08_SCHOOL: _('School'),
-    ROLE_16_INSP: _('Inspection'),
-    ROLE_32_ADMIN: _('Administrator'),
-    ROLE_64_SYSTEM: _('System')
-}
 
 MODE_C_CREATED = 'c'
 MODE_L_COPIED = 'l'
@@ -406,10 +330,11 @@ KEY_COLDEF = {
         #{'awpColdef': 'hasdyslexia', 'caption': _('Has dyslexia')},
         {'awpColdef': 'bis_exam', 'caption': _('Bis exam')},
         {'awpColdef': 'department', 'caption': _('Department')},
-        {'awpColdef': 'level', 'caption': _('Level')},
-        {'awpColdef': 'sector', 'caption': _('Sector/Profiel')})
-               }
 
+        {'awpColdef': 'level', 'caption': _('Level')},
+        {'awpColdef': 'sector', 'caption': _('Sector')},
+        {'awpColdef': 'profiel', 'caption': _('Profiel')})
+    }
 
 CAPTIONS = {'student': {'lastname': _('Last name'),
                         'firstname': _('First name'),
@@ -426,7 +351,8 @@ CAPTIONS = {'student': {'lastname': _('Last name'),
                         'bis_exam': _('Bis exam'),
                         'department': _('Department'),
                         'level': _('Level'),
-                        'sector': _('Sector/Profiel')}
+                        'sector': _('Sector'),
+                        'profiel': _('Profiel')}
             }
 
 CAPTION_IMPORT = {'no_file': _('No file is currently selected'),
@@ -482,5 +408,74 @@ FIELDS_GRADE =('studentsubject', 'examperiod', 'pescore', 'cescore',
 
 
 STRING_SPACE_30 = ' ' * 30
+STRING_SPACE_10 = ' ' * 10
 STRING_INDENT_5 = ' ' * 5
 STRING_DOUBLELINE_80 = '=' * 80
+
+
+# ============================================================================
+# ROLES AND PERMITS PR2021-02-23
+# ============================================================================
+
+# PR2018-05-07
+ROLE_000_NONE = 0
+ROLE_002_STUDENT = 2
+ROLE_004_TEACHER = 4
+ROLE_008_SCHOOL = 8
+ROLE_016_COMM = 16
+ROLE_032_INSP = 32
+ROLE_064_ADMIN = 64
+ROLE_128_SYSTEM = 128
+
+# PR2018-12-23 used in set_menu_items
+ROLE_STR_008_SCHOOL = 'school'
+ROLE_STR_016_COMM = 'comm'
+ROLE_STR_032_INSP = 'insp'
+ROLE_STR_064_ADMIN = 'admin'
+ROLE_STR_128_SYSTEM = 'system'
+
+ROLE_DICT = {
+    ROLE_008_SCHOOL: ROLE_STR_008_SCHOOL,
+    ROLE_016_COMM: ROLE_STR_016_COMM,
+    ROLE_032_INSP: ROLE_STR_032_INSP,
+    ROLE_064_ADMIN: ROLE_STR_064_ADMIN,
+    ROLE_128_SYSTEM: ROLE_STR_128_SYSTEM
+    }
+
+# PR2018-05-21
+PERMIT_000_NONE = 0
+PERMIT_001_READ = 1
+PERMIT_002_EDIT = 2
+PERMIT_004_AUTH1 = 4
+PERMIT_008_AUTH2 = 8
+PERMIT_016_AUTH3 = 16
+PERMIT_032_ANALYZE = 32
+PERMIT_064_ADMIN = 64
+PERMIT_128_SYSTEM = 128
+
+# PR2018-12-23 used in set_menu_items
+
+PERMIT_DICT = {
+    PERMIT_000_NONE: 'none',
+    PERMIT_001_READ: 'read',
+    PERMIT_002_EDIT: 'edit',
+    PERMIT_004_AUTH1: 'auth1',
+    PERMIT_008_AUTH2:'auth2',
+    PERMIT_016_AUTH3: 'auth3',
+    PERMIT_032_ANALYZE: 'anlz',
+    PERMIT_064_ADMIN: 'admin',
+    PERMIT_128_SYSTEM: 'system'
+}
+
+PERMIT_LOOKUP = {
+    'perm_none': PERMIT_000_NONE,
+    'perm_read': PERMIT_001_READ,
+    'perm_edit': PERMIT_002_EDIT,
+    'perm_auth1': PERMIT_004_AUTH1,
+    'perm_auth2': PERMIT_008_AUTH2,
+    'perm_auth3': PERMIT_016_AUTH3,
+    'perm_anlz': PERMIT_032_ANALYZE,
+    'perm_admin': PERMIT_064_ADMIN,
+   'perm_system': PERMIT_128_SYSTEM
+}
+

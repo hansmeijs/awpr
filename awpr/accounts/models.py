@@ -65,10 +65,10 @@ class User(AbstractUser):
     role = PositiveSmallIntegerField(default=0)
     permits = PositiveSmallIntegerField(default=0)
 
-    allowed_depbases = ArrayField(IntegerField(), null=True)
-    allowed_levelbases = ArrayField(IntegerField(), null=True)
-    allowed_subjectbases = ArrayField(IntegerField(), null=True)
-    allowed_clusterbases = ArrayField(IntegerField(), null=True)
+    allowed_depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    allowed_levelbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    allowed_subjectbases = CharField(max_length=2048, null=True)
+    allowed_clusterbases = CharField(max_length=2048, null=True)
 
     activated = BooleanField(default=False)
     activated_at = DateTimeField(null=True)
@@ -134,17 +134,6 @@ class User(AbstractUser):
         # PR2019-03-13 Show username 'Hans' instead of '000001Hans'
         return self.username[6:]
 
-    @property
-    def role_str(self):
-        # PR2018-05-31 NB: self.role = False when None or value = 0
-        #if self.role == c.ROLE_08_SCHOOL:
-        #    _role_str = _('School')
-        #elif self.role == c.ROLE_16_INSP:
-        #    _role_str = _('Inspection')
-        #elif self.role == c.ROLE_64_SYSTEM:
-        #    _role_str = _('System')
-        _role_str = c.CHOICES_ROLE_DICT.get(self.role,'')
-        return _role_str
 
     @property
     def permits_str(self):
@@ -213,18 +202,18 @@ class User(AbstractUser):
     # PR2018-07-31 debug. 'def': This is a method, not a @property. Property gave error: 'list' object is not callable
     # see: https://www.b-list.org/weblog/2006/aug/18/django-tips-using-properties-models-and-managers/?utm_medium=twitter&utm_source=twitterfeed
 
-    # PR2018-05-27 property returns True when user has ROLE_64_SYSTEM
+    # PR2018-05-27 property returns True when user has ROLE_128_SYSTEM
     @property
     def is_role_system(self):
         # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-        return self.is_authenticated and self.role is not None and self.role == c.ROLE_64_SYSTEM
+        return self.is_authenticated and self.role is not None and self.role == c.ROLE_128_SYSTEM
 
     @property
     def is_role_system_perm_admin(self):
         _has_permit = False
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_64_SYSTEM:
+                if self.role == c.ROLE_128_SYSTEM:
                     _has_permit = (c.PERMIT_064_ADMIN in self.permits_tuple)
         return _has_permit
 
@@ -233,32 +222,32 @@ class User(AbstractUser):
         # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
         # PR220-09-24 system has also admin rights
         return (self.is_authenticated) and (self.role is not None) and \
-               (self.role == c.ROLE_32_ADMIN)
+               (self.role == c.ROLE_064_ADMIN)
 
     @property
     def is_role_insp(self):
         # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-        return self.is_authenticated and self.role is not None and self.role == c.ROLE_16_INSP
+        return self.is_authenticated and self.role is not None and self.role == c.ROLE_032_INSP
 
     @property
     def is_role_school(self):
         # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-        return self.is_authenticated and self.role is not None and self.role == c.ROLE_08_SCHOOL
+        return self.is_authenticated and self.role is not None and self.role == c.ROLE_008_SCHOOL
 
     @property
     def is_role_teacher(self):
-        return self.is_authenticated and self.role is not None and self.role == c.ROLE_04_TEACHER
+        return self.is_authenticated and self.role is not None and self.role == c.ROLE_004_TEACHER
 
     @property
     def is_role_student(self):
-        return self.is_authenticated and self.role is not None and self.role == c.ROLE_02_STUDENT
+        return self.is_authenticated and self.role is not None and self.role == c.ROLE_002_STUDENT
 
     @property
     def is_role_insp_or_admin_or_system(self):
         _has_permit = False
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_64_SYSTEM or self.role == c.ROLE_32_ADMIN or self.role == c.ROLE_16_INSP:
+                if self.role == c.ROLE_128_SYSTEM or self.role == c.ROLE_064_ADMIN or self.role == c.ROLE_032_INSP:
                     _has_permit = True
         return _has_permit
 
@@ -267,7 +256,7 @@ class User(AbstractUser):
         _has_permit = False
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_64_SYSTEM or self.role == c.ROLE_16_INSP:
+                if self.role == c.ROLE_128_SYSTEM or self.role == c.ROLE_032_INSP:
                     if self.is_perm_admin:
                         _has_permit = True
         return _has_permit
@@ -277,7 +266,7 @@ class User(AbstractUser):
         _has_permit = False
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_32_ADMIN or self.role == c.ROLE_64_SYSTEM:
+                if self.role == c.ROLE_064_ADMIN or self.role == c.ROLE_128_SYSTEM:
                     if self.is_perm_admin or self.is_perm_system:
                         _has_permit = True
         return _has_permit
@@ -287,7 +276,7 @@ class User(AbstractUser):
         _has_permit = False
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_08_SCHOOL:
+                if self.role == c.ROLE_008_SCHOOL:
                     _has_permit = (c.PERMIT_064_ADMIN in self.permits_tuple)
         return _has_permit
 

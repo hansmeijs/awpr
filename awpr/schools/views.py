@@ -77,16 +77,16 @@ def home(request):
 
 
 def Loggedin(request):
-    logger.debug('  ==========  Loggedin ==========')
+    #logger.debug('  ==========  Loggedin ==========')
     # redirect to saved_href of last selected menubutton # PR2018-12-25 # PR2020-10-22 PR2021-01-25
 
 # retrieve last opened page from, so at next login this page will open. Uses in LoggedIn
     sel_page = None
     if request and request.user:
         req_user = request.user
-        logger.debug('req_user: ' + str(req_user))
+        #logger.debug('req_user: ' + str(req_user))
         sel_page_dict = req_user.get_usersetting_dict('sel_page')
-        logger.debug('sel_page_dict: ' + str(sel_page_dict))
+        #logger.debug('sel_page_dict: ' + str(sel_page_dict))
 
         if sel_page_dict is not None:
             sel_page = sel_page_dict.get('page')
@@ -483,7 +483,7 @@ class SchoolUploadView(View):  # PR2020-10-22
         update_wrap = {}
 
         #<PERMIT>
-        # - only ROLE_32_ADMIN and ROLE_64_SYSTEM can change school.
+        # - only ROLE_064_ADMIN and ROLE_128_SYSTEM can change school.
         # - only PERMIT_002_EDIT can ange schools
         has_permit = False
         if request.user is not None:
@@ -858,8 +858,8 @@ def create_school(examyear, upload_dict, request):
 def update_school(instance, upload_dict, msg_dict, request):
     # --- update existing and new instance PR2019-06-06
     # add new values to update_dict (don't reset update_dict, it has values)
-    #logger.debug(' ------- update_school -------')
-    #logger.debug('upload_dict' + str(upload_dict))
+    logger.debug(' ------- update_school -------')
+    logger.debug('upload_dict' + str(upload_dict))
 
     # upload_dict = {id: {table: "school", ppk: 1, pk: 1, mapid: "school_1"},
     #                depbases: {value: Array(1), update: true} }
@@ -887,19 +887,15 @@ def update_school(instance, upload_dict, msg_dict, request):
 
 # 3. save changes in depbases
                 elif field == 'depbases':
-                    # save new value when it has different length
-                    len_new = len(new_value) if new_value else 0
-                    len_saved = len(saved_value) if saved_value else 0
-                    if len_new != len_saved:
-                        setattr(instance, field, new_value)
+                    # depbases is string:  "1;2;3", sorted, otherwise "1;2;3" and "3;1;2" will not be equal
+                    if saved_value is None:
+                        saved_value = ''
+                    logger.debug('new_value]: ' + str(new_value) + ' ' + str(type(new_value)))
+                    logger.debug('saved_value]: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                    if new_value != saved_value:
+                        logger.debug('new_value != saved_value]: ' + str(new_value) + ' ' + str(saved_value))
+                        setattr(instance, 'depbases' , new_value)
                         save_changes = True
-                    elif len_new:
-                    # compare items in sorted list when len > 0 (givers error otherwise)
-                        new_value_sorted = sorted(new_value)
-                        saved_value_sorted = sorted(saved_value)
-                        if new_value_sorted != saved_value_sorted:
-                            setattr(instance, field, new_value_sorted)
-                            save_changes = True
 
 # 4. save changes in field 'inactive'
                 elif field in ['activated', 'locked']:

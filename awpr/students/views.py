@@ -12,7 +12,7 @@ from django.views.generic import UpdateView, DeleteView, View, ListView, CreateV
 
 from awpr import menus as awpr_menu
 from awpr import constants as c
-from students import validations as v
+from students import validators as v
 from awpr import functions as af
 from awpr import downloads as dl
 
@@ -107,8 +107,9 @@ def create_student_rows(setting_dict, append_dict, student_pk):
     sql_list = ["SELECT st.id, st.base_id, st.school_id AS s_id,",
         "st.department_id AS dep_id, st.level_id AS lvl_id, st.sector_id AS sct_id, st.scheme_id,",
         "dep.abbrev AS dep_abbrev,",
-        "dep.level_req AS lvl_req, dep.level_caption AS lvl_caption, lvl.abbrev AS lvl_abbrev,",
-        "dep.sector_req AS sct_req, dep.sector_caption AS sct_caption, sct.abbrev AS sct_abbrev,",
+        "dep.level_req AS lvl_req, lvl.abbrev AS lvl_abbrev,",
+        "dep.sector_req AS sct_req, sct.abbrev AS sct_abbrev,",
+        "dep.has_profiel AS dep_has_profiel, sct.abbrev AS sct_abbrev,",
         "CONCAT('student_', st.id::TEXT) AS mapid,",
         "st.lastname, st.firstname, st.prefix, st.gender,",
         "st.idnumber, st.birthdate, st.birthcountry, st.birthcity,",
@@ -298,7 +299,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
         # only if country/examyear/school/student not locked, examyear is published and school is activated
         has_permit = False
         if request.user and request.user.country and request.user.schoolbase:
-            has_permit = (request.user.role > c.ROLE_02_STUDENT and request.user.is_perm_edit)
+            has_permit = (request.user.role > c.ROLE_002_STUDENT and request.user.is_perm_edit)
         if has_permit:
 
         # - TODO check for double subjects, double subjects are ot allowed
@@ -610,7 +611,7 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
         # only if country/examyear/school/student not locked, examyear is published and school is activated
         has_permit = False
         if request.user and request.user.country and request.user.schoolbase:
-            has_permit = (request.user.role > c.ROLE_02_STUDENT and request.user.is_perm_edit)
+            has_permit = (request.user.role > c.ROLE_002_STUDENT and request.user.is_perm_edit)
         if has_permit:
 
 # - reset language
@@ -1124,7 +1125,7 @@ def update_student(instance, upload_dict, msg_dict, request):
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def create_studsubj(student, schemeitem, request):
+def create_studsubj(student, schemeitem, request, is_test=False):
     # --- create student subject # PR2020-11-21
     logger.debug(' ----- create_studsubj ----- ')
 
@@ -1142,13 +1143,15 @@ def create_studsubj(student, schemeitem, request):
                     student=student,
                     schemeitem=schemeitem
                 )
-                studsubj.save(request=request)
+                if not is_test:
+                    studsubj.save(request=request)
                 # also create grade of first examperiod
                 grade = stud_mod.Grade(
                     studentsubject=studsubj,
                     examperiod=c.EXAMPERIOD_FIRST
                 )
-                grade.save(request=request)
+                if not is_test:
+                    grade.save(request=request)
             except:
                 name = schemeitem.subject.name if schemeitem.subject and schemeitem.subject.name else '---'
                 msg_err = str(_("An error occurred. Subject '%(val)s' could not be added.") % {'val': name})
@@ -1184,7 +1187,7 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
         "si.is_mandatory, si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
         "si.elective_combi_allowed, si.has_practexam,",
 
-        "sjt.abbrev AS sjt_abbrev, sjt.has_prac AS sjt_has_prac,",
+        "sjt.id AS sjt_id, sjt.abbrev AS sjt_abbrev, sjt.has_prac AS sjt_has_prac,",
         "sjt.has_pws AS sjt_has_pws, sjt.one_allowed AS sjt_one_allowed,",
 
         "studsubj.subj_auth1by_id AS subj_auth1_id, SUBSTRING(subj_auth1.username, 7) AS subj_auth1_usr, subj_auth1.modified_at AS subj_auth1_modat,",
@@ -1222,23 +1225,23 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
 
         "LEFT JOIN accounts_user AS subj_auth1 ON (subj_auth1.id = studsubj.subj_auth1by_id)",
         "LEFT JOIN accounts_user AS subj_auth2 ON (subj_auth2.id = studsubj.subj_auth2by_id)",
-        "LEFT JOIN students_published AS subj_published ON (subj_published.id = studsubj.subj_published_id)",
+        "LEFT JOIN schools_published AS subj_published ON (subj_published.id = studsubj.subj_published_id)",
 
         "LEFT JOIN accounts_user AS exem_auth1 ON (exem_auth1.id = studsubj.exem_auth1by_id)",
         "LEFT JOIN accounts_user AS exem_auth2 ON (exem_auth2.id = studsubj.exem_auth2by_id)",
-        "LEFT JOIN students_published AS exem_published ON (exem_published.id = studsubj.exem_published_id)",
+        "LEFT JOIN schools_published AS exem_published ON (exem_published.id = studsubj.exem_published_id)",
 
         "LEFT JOIN accounts_user AS reex_auth1 ON (reex_auth1.id = studsubj.reex_auth1by_id)",
         "LEFT JOIN accounts_user AS reex_auth2 ON (reex_auth2.id = studsubj.reex_auth2by_id)",
-        "LEFT JOIN students_published AS reex_published ON (reex_published.id = studsubj.reex_published_id)",
+        "LEFT JOIN schools_published AS reex_published ON (reex_published.id = studsubj.reex_published_id)",
 
         "LEFT JOIN accounts_user AS reex3_auth1 ON (reex3_auth1.id = studsubj.reex3_auth1by_id)",
         "LEFT JOIN accounts_user AS reex3_auth2 ON (reex3_auth2.id = studsubj.reex3_auth2by_id)",
-        "LEFT JOIN students_published AS reex3_published ON (reex3_published.id = studsubj.reex3_published_id)",
+        "LEFT JOIN schools_published AS reex3_published ON (reex3_published.id = studsubj.reex3_published_id)",
 
         "LEFT JOIN accounts_user AS pok_auth1 ON (pok_auth1.id = studsubj.pok_auth1by_id)",
         "LEFT JOIN accounts_user AS pok_auth2 ON (pok_auth2.id = studsubj.pok_auth2by_id)",
-        "LEFT JOIN students_published AS pok_published ON (pok_published.id = studsubj.pok_published_id)",
+        "LEFT JOIN schools_published AS pok_published ON (pok_published.id = studsubj.pok_published_id)",
 
         "WHERE NOT studsubj.deleted"]
     sql_studsubjects = ' '.join(sql_studsubj_list)
@@ -1249,7 +1252,7 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
         "CONCAT('studsubj_', st.id::TEXT, '_', studsubj.studsubj_id::TEXT) AS mapid, 'studsubj' AS table,",
         "st.id AS stud_id, st.lastname, st.firstname, st.prefix, st.examnumber,",
         "st.scheme_id, st.iseveningstudent, st.locked, st.has_reex, st.bis_exam, st.withdrawn,",
-        "studsubj.subject_id AS subj_id, studsubj.subj_code, studsubj.subj_name, studsubj.sjt_abbrev,",
+        "studsubj.subject_id AS subj_id, studsubj.subj_code, studsubj.subj_name,",
         "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
 
         "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_elective_combi,",
@@ -1257,7 +1260,7 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
         "studsubj.has_exemption, studsubj.has_reex, studsubj.has_reex03, studsubj.has_pok,",
 
         "studsubj.is_mandatory, studsubj.is_combi, studsubj.extra_count_allowed, studsubj.extra_nocount_allowed, studsubj.elective_combi_allowed,",
-        "studsubj.sjt_has_prac, studsubj.sjt_has_pws, studsubj.sjt_one_allowed,",
+        "studsubj.sjt_id, studsubj.sjt_abbrev, studsubj.sjt_has_prac, studsubj.sjt_has_pws, studsubj.sjt_one_allowed,",
 
         "studsubj.subj_auth1_id, studsubj.subj_auth1_usr, studsubj.subj_auth1_modat,",
         "studsubj.subj_auth2_id, studsubj.subj_auth2_usr, studsubj.subj_auth2_modat,",
@@ -1682,7 +1685,7 @@ def SplitPrefix(name, is_firstname):
 # oooooooooooooo End of Functions Student name ooooooooooooooooooooooooooooooooooooooooooooooooooo
 
 
-def get_mapped_coldefs_student(request_user):  # PR2018-12-01
+def get_mapped_coldefs_studentNIU(request_user):  # PR2018-12-01
     # function creates dict of fieldnames of table Student
     # It is used in ImportSudent to map Excel fieldnames to AWP fieldnames
     # mapped_coldefs: {
@@ -1789,9 +1792,8 @@ def get_mapped_coldefs_student(request_user):  # PR2018-12-01
             mapped_coldefs = json.dumps(mapped_coldefs)
     return mapped_coldefs
 
-# ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 
-def get_student_column_list(request_user):
+def get_student_column_list_NIU(request_user):
     # function creates dict of fieldnames of table Student
     # It is used in ImportSudent to map Excel fieldnames to AWP fieldnames
     # mapped_coldefs: {
@@ -1852,7 +1854,8 @@ def get_student_column_list(request_user):
 
     return coldef_list
 
-def get_student_mapped_coldefs(request_user):
+
+def get_student_mapped_coldefs_NIU(request_user):
     logger.debug(        '---  get_student_mapped_coldefs  ------- ' + str(request_user))
     # get mapped excelColDef from table Schoolsetting
 
@@ -1897,7 +1900,7 @@ def get_student_mapped_coldefs(request_user):
     return  no_header, worksheetname, setting_columns, setting_levels, setting_sectors
 
 
-def get_mapped_levels_sectors(request_user):  # PR2019-01-01
+def get_mapped_levels_sectors_NIU(request_user):  # PR2019-01-01
     # function creates dict of fieldnames of table Student
     # It is used in ImportSudent to map Excel fieldnames to AWP fieldnames
     #     "settings_level_list": [{"awpLevel": "TKL", "excelLevel": ["tkl", "t.k.l."]"},

@@ -1,11 +1,9 @@
 # PR2020-12-06
 from django.contrib.auth.decorators import login_required
+from django.db import connection
 from django.http import HttpResponse
 
 from django.utils.decorators import method_decorator
-from django.utils.functional import Promise
-from django.utils.encoding import force_text
-from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.translation import activate, ugettext_lazy as _
 
 from django.views.generic import View
@@ -14,6 +12,8 @@ from awpr import functions as af
 from schools import functions as sf
 from schools import models as sch_mod
 from students import models as stud_mod
+from students import validators as stud_val
+from students import views as stud_view
 from subjects import models as subj_mod
 
 import json
@@ -26,7 +26,9 @@ logger = logging.getLogger(__name__)
 class UploadImportSettingView(View):   # PR2020-12-05
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
     def post(self, request, *args, **kwargs):
-        #logger.debug(' ============= UploadImportSettingView ============= ')
+        logging_on = True
+        if logging_on:
+            logger.debug(' ============= UploadImportSettingView ============= ')
 
         updated_stored_setting = {}
         has_permit = False
@@ -36,55 +38,71 @@ class UploadImportSettingView(View):   # PR2020-12-05
         if has_permit:
             if request.POST['upload']:
                 new_setting_dict = json.loads(request.POST['upload'])
-                #logger.debug('new_setting_dict' + str(new_setting_dict))
+
+                if logging_on:
+                    logger.debug('new_setting_dict' + str(new_setting_dict))
+
                 # new_setting_dict{'importtable': 'import_student', 'sel_schoolbase_pk': 16, 'sel_examyear_pk': 6,
                 # 'worksheetname': 'Compleetlijst', 'noheader': False}
                 # 'sector': {'CM': 4, 'EM': 5}}
+
                 if new_setting_dict:
-                    # setting_keys: 'import_student', 'import_subject'
+                    # setting_keys are: 'import_student', import_studentsubject
+                    # {importtable: "import_studentsubject", ...}
                     setting_key = new_setting_dict.get('importtable')
 
-                    sel_schoolbase_pk = new_setting_dict.get('sel_schoolbase_pk')
-                    sel_schoolbase = sch_mod.Schoolbase.objects.get_or_none(pk=sel_schoolbase_pk)
                     sel_examyear_pk = new_setting_dict.get('sel_examyear_pk')
                     sel_examyear = sch_mod.Examyear.objects.get_or_none(pk=sel_examyear_pk)
 
+                    sel_schoolbase_pk = new_setting_dict.get('sel_schoolbase_pk')
+                    sel_schoolbase = sch_mod.Schoolbase.objects.get_or_none(pk=sel_schoolbase_pk)
+
+                    sel_depbase_pk = new_setting_dict.get('sel_depbase_pk')
+                    sel_depbase = sch_mod.Schoolbase.objects.get_or_none(pk=sel_depbase_pk)
+
                     if setting_key and sel_schoolbase:
                         stored_setting_dict = sel_schoolbase.get_schoolsetting_dict(setting_key)
+                        if logging_on:
+                            logger.debug('stored_setting_dict' + str(stored_setting_dict))
 
-                        #logger.debug('stored_setting_dict' + str(stored_setting_dict))
                         new_stored_setting = {}
-                        for import_key in ('worksheetname', 'noheader', 'coldef', 'department', 'level', 'sector'):
+                        import_keys = ('worksheetname', 'noheader', 'coldef', 'department', 'level', 'sector', 'subject', 'subjecttype')
+                        for import_key in import_keys:
                             new_setting_value = new_setting_dict.get(import_key)
-                            #logger.debug('new_setting_value' + str(new_setting_value))
 
                             if new_setting_value is None and stored_setting_dict:
                                 new_setting_value = stored_setting_dict.get(import_key)
                             if import_key is 'noheader' and  new_setting_value is None:
                                 new_setting_value = False
-                            #logger.debug('new_setting_value' + str(new_setting_value))
+
+                            if logging_on:
+                                logger.debug('import_key: ' + str(import_key) + ' new_setting_value: ' + str(new_setting_value))
 
                             if new_setting_value is not None:
                                 new_stored_setting[import_key] = new_setting_value
 
-                        #logger.debug('new_stored_setting' + str(new_stored_setting))
+                        if logging_on:
+                            logger.debug('new_stored_setting: ' + str(new_stored_setting))
                         if new_stored_setting:
                             sel_schoolbase.set_schoolsetting_dict(setting_key, new_stored_setting)
 
-        # get updated stored_setting from database, return tp page to update mimp_stored
+        # get updated stored_setting from database, return to page to update mimp_stored
+                    # NIU: mimp_stored is updated in client js
                     #request_item_setting = {'setting_key': setting_key}
                     #updated_stored_setting['schoolsetting_dict'] = sf.get_schoolsetting(
-                    #    request_item_setting, sel_examyear, sel_schoolbase, request)
+                        #request_item_setting, sel_examyear, sel_schoolbase, sel_depbase)
 
         return HttpResponse(json.dumps(updated_stored_setting, cls=af.LazyEncoder))
 # - end of UploadImportSettingView
 
 
 @method_decorator([login_required], name='dispatch')
-class UploadImportDataView(View):  # PR2020-12-05
+class UploadImportDataView(View):  # PR2020-12-05 PR2021-02-23
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
     def post(self, request, *args, **kwargs):
-        #logger.debug(' ============= UploadImportDataView ============= ')
+        logging_on = True
+        if logging_on:
+            logger.debug(' ============= UploadImportDataView ============= ')
 
         update_dict = {}
         has_permit = False
@@ -94,7 +112,6 @@ class UploadImportDataView(View):  # PR2020-12-05
         if has_permit:
             if request.POST['upload']:
                 upload_dict = json.loads(request.POST['upload'])
-                #logger.debug('upload_dict' + str(upload_dict))
 
                 # new_setting_dict: {'importtable': 'student', 'coldefs': {'birthdate': 'GEB_DAT', 'classname': 'KLAS'}}
     # - Reset language
@@ -104,16 +121,405 @@ class UploadImportDataView(View):  # PR2020-12-05
 
                 importtable = upload_dict.get('importtable')
                 if importtable == 'import_student':
-                    update_dict = import_students(upload_dict, user_lang, request)
+                    update_dict = import_students(upload_dict, user_lang, logging_on, request)
+                elif importtable == 'import_studentsubject':
+                    update_dict = import_studentsubjects(upload_dict, user_lang, logging_on, request)
 
         return HttpResponse(json.dumps(update_dict, cls=af.LazyEncoder))
 # - end of UploadImportDataView
 
 
-def import_students(upload_dict, user_lang, request):  # PR2020-12-06
-    #logger.debug(' ============= import_students ============= ')
+def import_studentsubjects(upload_dict, user_lang, logging_on, request):  # PR2021-02-26
+    if logging_on:
+        logger.debug(' ============= import_studentsubjects ============= ')
+        logger.debug('upload_dict: ' + str(upload_dict))
+        """              
+        upload_dict: {
+            'importtable': 'import_studentsubject', 
+            'test': True, 
+            'is_crosstab': True, 
+            'sel_examyear_pk': 1, 
+            'sel_schoolbase_pk': 12, 
+            'sel_depbase_pk': 1, 
+            'lookup_field': 'examnumber', 
+            'data_list': [
+                   {'rowindex': 0, 
+                    'examnumber': '63', 
+                    'idnumber': '1999112405', 
+                        subjects: {subjectBasePk: subjecttypeBasePk, ..}
+                    'subjects': {'1': 4, '3': 0, '4': 0, '10': 0, '15': 0, '27': 0, '29': 0, '31': 0, '36': 0, '42': 7, '46': 0}
+                }, 
+                {'rowindex': 7, 'examnumber': '28', 'idnumber': '1999110505', 'subjects': {'1': 0, '3': 0, '4': 0, '10': 9, '15': 0, '27': 0, '29': 0, '31': 0, '34': 9, '42': 7, '46': 4}}, 
+                {'rowindex': 8, 'examnumber': '29', 'idnumber': '1997053111', 'subjects': {'1': 0, '3': 0, '4': 0, '10': 0, '15': 0, '27': 0, '29': 0, '31': 0, '34': 0, '42': 7, '46': 0}}
+                ]
+            }           
+        """
+# - get info from upload_dict
+    is_test = upload_dict.get('test', False)
+    lookup_field = upload_dict.get('lookup_field')
+    is_crosstab = upload_dict.get('is_crosstab', False)
+    data_list = upload_dict.get('data_list')
+    sel_examyear_pk = upload_dict.get('sel_examyear_pk')
+    sel_schoolbase_pk = upload_dict.get('sel_schoolbase_pk')
+    sel_depbase_pk = upload_dict.get('sel_depbase_pk')
 
-    #logger.debug('upload_dict: ' + str(upload_dict))
+    params = {}
+
+    if data_list:
+# - get lookup_field
+        # lookup_field is field that determines if student alreay exist.
+        # check if one of the fields 'examnumber', 'idnumber' exists
+        # first in the list is lookup_field
+        # gets value on client in import.js
+        if logging_on:
+            logger.debug( 'lookup_field: ' + str(lookup_field))
+            logger.debug( 'is_crosstab: ' + str(is_crosstab))
+            logger.debug( 'sel_examyear_pk: ' + str(sel_examyear_pk))
+            logger.debug( 'sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
+            logger.debug( 'sel_depbase_pk: ' + str(sel_depbase_pk))
+
+# - get examyear from sel_examyear_pk and request.user.country
+        examyear = sch_mod.Examyear.objects.get_or_none(pk=sel_examyear_pk, country=request.user.country)
+
+# - get school from sel_schoolbase_pk and sel_examyear_pk
+        school, school_name, department = None, None, None
+        if examyear:
+            schoolbase = sch_mod.Schoolbase.objects.get_or_none(pk=sel_schoolbase_pk, country=request.user.country)
+            school = sch_mod.School.objects.get_or_none(base=schoolbase, examyear=examyear)
+            school_name = school.base.code + ' ' + school.name
+
+# - get department from sel_depbase_pk and sel_examyear_pk
+            depbase = sch_mod.Departmentbase.objects.get_or_none(pk=sel_depbase_pk, country=request.user.country)
+            department = sch_mod.Department.objects.get_or_none(base=depbase, examyear=examyear)
+
+        if logging_on:
+            logger.debug('examyear: ' + str(examyear) + ' ' + str(type(examyear)))
+            logger.debug('school: ' + str(school) + ' ' + str(type(school)))
+            logger.debug('department: ' + str(department) + ' ' + str(type(department)))
+
+        if school and department:
+
+# - get subject list of this school/dep with number of occurrencies in scheme
+            count_subjectbase_dict = count_subjectbase_in_scheme(department)
+
+# - get subject_codes from subjects of this department
+            subject_code_dict = subjectbase_code_dict(department)
+
+    # - create logfile
+            today_dte = af.get_today_dateobj()
+            today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
+
+            logfile = [c.STRING_DOUBLELINE_80,
+                       '  ' + school_name + '  -  ' +
+                                str(_('Upload candidates')) + ' ' + str(_('date')) + ': ' + str(today_formatted),
+                       c.STRING_DOUBLELINE_80]
+
+            if lookup_field is None:
+                info_txt = str(_('There is no field given to lookup candidates. Candidates cannot be uploaded.'))
+                logfile.append(c.STRING_INDENT_5 + info_txt)
+            else:
+                if is_test:
+                    info_txt = str(_("This is a test. The subjects of the candidates will not be saved."))
+                else:
+                    info_txt = str(_("The subjects of the candidates are saved."))
+                logfile.append(c.STRING_INDENT_5 + info_txt)
+                lookup_caption = af.get_dict_value(c.CAPTIONS, ('student', lookup_field), '')
+                info_txt = str(_("Candidates are looked up by the field: '%(fld)s'.") % {'fld': lookup_caption})
+                logfile.append(c.STRING_INDENT_5 + info_txt)
+
+# +++++ loop through data_list
+                update_list = []
+                for data_dict in data_list:
+                    # from https://docs.quantifiedcode.com/python-anti-patterns/readability/not_using_items_to_iterate_over_a_dictionary.html
+                    # for key, val in student.items():
+                    # #logger.debug( str(key) +': ' + val + '" found in "' + str(student) + '"')
+
+    # - check if value of lookup_field occurs multiple times in data_list
+                    # only check for multiple lookup_values when is_crosstab
+                    # (in tabular each subject is in a separate row and lookup_value occurs multiple times in data_list)
+                    lookup_value = data_dict.get(lookup_field)
+                    occurrences_in_datalist = 0
+                    if is_crosstab and lookup_value:
+                        for dict in data_list:
+                            value = dict.get(lookup_field)
+                            if value and value == lookup_value:
+                                occurrences_in_datalist += 1
+                    if logging_on:
+                        logger.debug('lookup_value occurrences in datalist: ' + str(occurrences_in_datalist))
+
+    # - upload student
+                    update_dict = upload_studentsubject(data_dict, lookup_field, lookup_value, occurrences_in_datalist,
+                                                  count_subjectbase_dict, subject_code_dict, is_test, examyear, school, department, logfile, logging_on, request)
+                    # json_dumps_err_list = json.dumps(msg_list, cls=af.LazyEncoder)
+                    if update_dict:  # 'Any' returns True if any element of the iterable is true.
+                        update_list.append(update_dict)
+
+                if update_list:  # 'Any' returns True if any element of the iterable is true.
+                    params['data_list'] = update_list
+            if logfile:  # 'Any' returns True if any element of the iterable is true.
+                params['logfile'] = logfile
+                    # params.append(new_student)
+    return params
+# - end of import_studentsubjects
+
+
+def subjectbase_code_dict(department):  # PR2021-02-27
+    # get subject_codes from subjects of this department
+    code_dict = {}
+    schemeitems = subj_mod.Schemeitem.objects.filter(scheme__department=department)
+    for schemeitem in schemeitems:
+        subject_base = schemeitem.subject.base
+        if subject_base and  subject_base.id not in code_dict:
+            code_dict[subject_base.id] = subject_base.code
+    return code_dict
+
+
+def count_subjectbase_in_scheme(department):  # PR2021-02-27
+    #logger.debug('----------------- count_subjectbase_in_scheme  --------------------')
+    # function counts how many times a subject occurs in a scheme
+    # when a subjects occurs only once, a subjecttype is not needed to add the subject to a student
+    # output:
+    # count_dict: {8: {20: 1, 3: 1, 4: 1, 1: 1, 6: 2, 7: 2, 10: 1, 27: 1, 29: 1, 31: 1, 39: 1, 40: 1, 41: 1, 46: 1},
+    #              7: {3: 1, 4: 1, 1: 1, 6: 1, 7: 1, 10: 1, 15: 1, 27: 1, 29: 1, 31: 1, 33: 1, 34: 1, 35: 1, 36: 1, 37: 1, 38: 1, 46: 1},
+    count_dict = {}
+    schemeitems = subj_mod.Schemeitem.objects.filter(scheme__department=department)
+    for schemeitem in schemeitems:
+        scheme_id = schemeitem.scheme_id
+        subject = schemeitem.subject
+        subject_base_id = subject.base_id
+
+        if scheme_id not in count_dict:
+            count_dict[scheme_id] = {}
+        scheme_dict = count_dict[scheme_id]
+
+        if subject_base_id not in scheme_dict:
+            scheme_dict[subject_base_id] = 0
+        scheme_dict[subject_base_id] += 1
+
+    return count_dict
+# - end of count_subjectbase_in_scheme
+
+
+
+def upload_studentsubject(data_dict, lookup_field, lookup_value, occurrences_in_datalist, count_subjectbase_dict,
+                          subject_code_dict, is_test, examyear, school, department, logfile, logging_on, request):  # PR2021-02-26
+    if logging_on:
+        logger.debug('----------------- upload_studentsubject  --------------------')
+        logger.debug('data_dict: ' + str(data_dict))
+
+    """
+    data_dict: {'rowindex': 0, 'examnumber': '63', 'idnumber': '1999112405', 
+    'subjects': {'1': 4, '3': 0, '4': 0, '10': 0, '15': 0, '27': 0, '29': 0, '31': 0, '36': 0, '42': 7, '46': 0}}
+    """
+
+# - get row_index and lookup info from data_dict
+    row_index = data_dict.get('rowindex', -1)
+
+# - create update_dict
+    update_dict = {'id': {'table': 'studentsubject', 'rowindex': row_index}}
+
+# - lookup student in database
+    # multiple_found and exceeded_length return the lookup_value of the error field
+    lookup_field_caption = af.get_dict_value(c.CAPTIONS, ('student', lookup_field), '')
+    lookup_field_capitalized = '-'
+    if lookup_field_caption:
+        lookup_field_capitalized = lookup_field_caption.capitalize()
+    if logging_on:
+        logger.debug('lookup_field: ' + str(lookup_field) + ' lookup_field_caption: ' + str(lookup_field_caption))
+        logger.debug('lookup_value: ' + str(lookup_value))
+
+    student, multiple_found, found_in_diff_dep, exceeded_length, is_existing_student = None, None, None, False, False
+    student_name = '---'
+    if lookup_value:
+        # multiple_found returns lookup_value, returns None when 0 or 1 found
+        student, exceeded_length, multiple_found, found_in_diff_dep = \
+            lookup_student(school, department, lookup_field, lookup_value)
+        if student:
+            is_existing_student = True
+            student_name = student.fullname
+        else:
+            student_name = '---'
+    if logging_on:
+        logger.debug('student_name: ' + str(student_name))
+
+# - give row_error when lookup went wrong
+    skipped_str = student_name + str(_(" is skipped."))
+    is_added_str = str(_(' will be added.')) if is_test else str(_(' is added.'))
+    not_added_str = str(_(' will not be added.')) if is_test else str(_(' is not added.'))
+    logfile.append(c.STRING_INDENT_5)
+    msg_err = None
+    log_str = ''
+    if occurrences_in_datalist > 1:
+        log_str = str(_("%(fld)s '%(val)s' is not unique in Excel file.") % {'fld': lookup_field_capitalized, 'val': lookup_value})
+        msg_err = ' '.join((skipped_str, log_str))
+    elif not lookup_value:
+        log_str = str(_("No value for lookup field: '%(fld)s'.") % {'fld': lookup_field_caption})
+        msg_err = ' '.join((skipped_str, log_str))
+    elif found_in_diff_dep:
+        log_str = str(_("Value '%(fld)s' already exists in a different department.") % {'fld': lookup_value})
+        msg_err = ' '.join((skipped_str, log_str))
+    elif multiple_found:
+        log_str = str(_("Value '%(fld)s' is found multiple times.") % {'fld': lookup_value})
+        msg_err = ' '.join((skipped_str, log_str))
+
+    if msg_err:
+        logfile.append(student_name + str(_(' is not added.')))
+        update_dict['row_error'] = msg_err
+        update_dict[lookup_field] = {'error': msg_err}
+
+        logfile.append(c.STRING_INDENT_5 + log_str)
+        if logging_on:
+            logger.debug('lookup-went-wrong error: ' + str(log_str))
+    else:
+        save_instance = False
+
+        if student:
+            logfile.append(student.fullname + ' ' + str(student.scheme))
+            student_scheme_pk = student.scheme_id
+            student_scheme = student.scheme
+
+# - get list of 'count-of-occurrencies' of subjects of this scheme
+            # count_scheme_subjectbase: {20: 1, 3: 1, 4: 1, 1: 1, 6: 2, 7: 2, ... }
+            count_scheme_subjectbase = count_subjectbase_dict[student_scheme_pk]
+
+# - create list of subjects of this student - to speed up search
+            # student_subjectbase_list: [29, 7, 41, 27, 6, 46, 3]
+            student_subjectbase_dict = {}
+            studsubjects = stud_mod.Studentsubject.objects.filter(student=student)
+            for studsubject in studsubjects:
+                pk_int = studsubject.schemeitem.subject.base_id
+                subject_code = studsubject.schemeitem.subject.base.code
+                if pk_int in student_subjectbase_dict:
+                    caption_txt = c.STRING_INDENT_5 + (subject_code + c.STRING_SPACE_10)[:8]
+                    log_str = str(_('WARNING: This candidate already has this subject multiple times.'))
+                    logfile.append(caption_txt + ' ' + log_str)
+                else:
+                    student_subjectbase_dict[pk_int] = subject_code
+            if logging_on:
+                logger.debug('..... student: ' + str(student))
+                logger.debug('     student_scheme: ' + str(student_scheme_pk) + ' ' + str(student.scheme))
+                logger.debug('     count_scheme_subjectbase: ' + str(count_scheme_subjectbase))
+                logger.debug('     student_subjectbase_list: ' + str(student_subjectbase_dict))
+
+            # PR2020-06-03 debug: ... + (list_item) gives error: must be str, not __proxy__
+            # solved bij wrapping with str()
+
+            if 'subjects' in data_dict:
+                # 'subjects': {'1': 4, '3': 0, '4': 0, '10': 0, '15': 0, '27': 0, '29': 0, '31': 0, '36': 0, '42': 7, '46': 0}
+                subjects = data_dict.get('subjects')
+                if subjects:
+                    for subjectbase_pk_str, subjecttypeBasePk in subjects.items():
+                        subjectBasePk = int(subjectbase_pk_str)
+                        # subject_code_dict contains subject_codes from all subjects of this department,
+                        # to make sure subject_code_dict als ohas value when subject not in scheme of student
+                        subject_code = subject_code_dict.get(subjectBasePk, '---')
+                        caption_txt = c.STRING_INDENT_5 + (subject_code + c.STRING_SPACE_10)[:8]
+
+    # - skip if student already has this subject
+                        if subjectBasePk in student_subjectbase_dict:
+                            log_str = ' '.join( (caption_txt, not_added_str, str(_('This candidate already has this subject.'))))
+                            logfile.append(log_str)
+                            if logging_on:
+                                logger.debug('        subject: ' + str(subject_code) + ' already exists')
+
+# - check if this subject is found in scheme
+                        # count_scheme_subjectbase: {20: 1, 3: 1, 4: 1, 1: 1, 6: 2, 7: 2, 10: 1, 27: 1, 29: 1, 31: 1, 39: 1, 40: 1, 41: 1, 46: 1}
+                        elif subjectBasePk not in count_scheme_subjectbase:
+                            log_str = ' '.join((caption_txt, not_added_str, str(_('This subject does not occur in this subject scheme.'))))
+                            logfile.append(log_str)
+                            if logging_on:
+                                logger.debug('        subject: ' + str(subject_code) + ' not in subject scheme')
+                        else:
+                            count = count_scheme_subjectbase.get(subjectBasePk, 0)
+                            if logging_on:
+                                logger.debug('        subject: ' + str(subject_code) + ' count: ' + str(count))
+
+# - when subject occurs only once in scheme: if subjecttype provided: check if the same, if not: add subject
+                            if count == 1:
+                                schemeitem, subjecttype_pk, subjecttype_abbrev = None, None, '---'
+                                subject = subj_mod.Subject.objects.get_or_none(
+                                    base_id=subjectBasePk,
+                                    examyear=examyear)
+                                if logging_on:
+                                    logger.debug('        subject: ' + str(subject.name) + ' count: ' + str(count))
+
+                                if subject:
+        # check if subjecttype is the same as the upload subjecttype
+                                # if so. or no upload subjecttype given, add subject to student
+                                    schemeitem = stud_mod.Schemeitem.objects.get_or_none(
+                                        scheme=student_scheme,
+                                        subject=subject)
+                                    if logging_on:
+                                        logger.debug('        schemeitem: ' + str(schemeitem) + ' ' + str(type(schemeitem)))
+
+                                    upload_subjecttype = subj_mod.Subjecttype.objects.get_or_none(
+                                        base=subjecttypeBasePk,
+                                        examyear=examyear)
+
+                                    if logging_on:
+                                        logger.debug('        schemeitem: ' + str(schemeitem) + ' ' + str(type(schemeitem)))
+
+                                    if schemeitem:
+                                        lookup_subjecttypeBasePk = schemeitem.subjecttype.base.pk
+                                        subjecttype_abbrev = schemeitem.subjecttype.abbrev
+                                        if logging_on:
+                                            logger.debug( '        schemeitem: ' + str(subjecttype_abbrev))
+                                        # subjecttypeBasePk = 0 means: no value
+                                        if subjecttypeBasePk and subjecttypeBasePk != lookup_subjecttypeBasePk:
+                                            # skip if subjecttypeBasePk has value and is not the same as lookup
+                                            msg_err = _("Subject '%(subj)s - %(subjtype)s' does not occur in this subject scheme.") \
+                                                      % {'subj': subject_code, 'subjtype': subjecttype_abbrev}
+                                        else:
+# - add studentsubject
+                                            studsubj, msg_err = stud_view.create_studsubj(student, schemeitem, request)
+                                if msg_err:
+                                    log_str = ' '.join((caption_txt, msg_err))
+                                    logfile.append(log_str)
+                                    log_str = ' '.join((caption_txt, not_added_str, str(_('An error occurred.')) ))
+                                    logfile.append(log_str)
+                                else:
+                                    log_str = ' '.join((caption_txt, is_added_str, " (" + subjecttype_abbrev + ")" ))
+                                    logfile.append(log_str)
+                            elif count > 1:
+                                log_str = ' '.join((caption_txt, not_added_str, str(_("Subject '%(subj)s' occurs multiple times in this subject scheme. Please select a character."))))
+                                logfile.append(log_str)
+
+
+            # add field_dict to update_dict
+                   # update_dict[field] = field_dict
+
+        # - dont save data when it is a test run
+            if not is_test and save_instance:
+
+        # - get scheme and update in student, also remove if necessary
+                new_scheme = subj_mod.Scheme.objects.get_or_none(
+                    department=student.department,
+                    level=student.level,
+                    sector=student.sector)
+                setattr(student, 'scheme', new_scheme)
+
+                try:
+                    student.save(request=request)
+                    update_dict['id']['pk'] = student.pk
+                    #update_dict['id']['ppk'] = student.company.pk
+                except:
+    # - give error msg when creating student failed
+                    error_str = str(_("An error occurred. The student data is not saved."))
+                    # TODO
+                    code_text = '---'
+                    logfile.append(" ".join((code_text, error_str)))
+                    update_dict['row_error'] = error_str
+
+    return update_dict
+# --- end of upload_student
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+def import_students(upload_dict, user_lang, logging_on, request):  # PR2020-12-06 PR2021-02-23
+    if logging_on:
+        logger.debug(' ============= import_students ============= ')
+        logger.debug('upload_dict: ' + str(upload_dict))
+
 # - get info from upload_dict
     is_test = upload_dict.get('test', False)
     dateformat = upload_dict.get('dateformat', '')
@@ -125,8 +531,6 @@ def import_students(upload_dict, user_lang, request):  # PR2020-12-06
 
     params = {}
     if awpColdef_list and data_list:
-        #logger.debug('awpColdef_list: ' + str(awpColdef_list))
-
 # - get lookup_field
         # lookup_field is field that determines if student alreay exist.
         # check if one of the fields 'examnumber', 'idnumber' exists
@@ -136,7 +540,10 @@ def import_students(upload_dict, user_lang, request):  # PR2020-12-06
             lookup_field = 'examnumber'
         elif 'idnumber' in awpColdef_list:
             lookup_field = 'idnumber'
-        #logger.debug( 'lookup_field: ' + str(lookup_field))
+
+        if logging_on:
+            logger.debug('awpColdef_list: ' + str(awpColdef_list))
+            logger.debug( 'lookup_field: ' + str(lookup_field))
 
 # - get examyear from sel_examyear_pk and request.user.country
         examyear = sch_mod.Examyear.objects.get_or_none(pk=sel_examyear_pk, country=request.user.country)
@@ -192,11 +599,12 @@ def import_students(upload_dict, user_lang, request):  # PR2020-12-06
                             value = dict.get(lookup_field)
                             if value and value == lookup_value:
                                 occurrences_in_datalist += 1
-                    #logger.debug('occurrences_in_datalist: ' + str(occurrences_in_datalist))
+                    if logging_on:
+                        logger.debug('occurrences_in_datalist: ' + str(occurrences_in_datalist))
 
     # - upload student
                     update_dict = upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalist,
-                                                 awpColdef_list, is_test, examyear, school, department, dateformat, logfile, request)
+                                                 awpColdef_list, is_test, examyear, school, department, dateformat, logfile, logging_on, request)
                     # json_dumps_err_list = json.dumps(msg_list, cls=af.LazyEncoder)
                     if update_dict:  # 'Any' returns True if any element of the iterable is true.
                         update_list.append(update_dict)
@@ -211,9 +619,10 @@ def import_students(upload_dict, user_lang, request):  # PR2020-12-06
 
 
 def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalist,
-                   awpColdef_list, is_test, examyear, school, department, format_str, logfile, request):  # PR2019-12-17 PR2020-06-03
-    logger.debug('----------------- upload_student  --------------------')
-    #logger.debug('data_dict: ' + str(data_dict))
+                   awpColdef_list, is_test, examyear, school, department, format_str, logfile, logging_on, request):  # PR2019-12-17 PR2020-06-03
+    if logging_on:
+        logger.debug('----------------- upload_student  --------------------')
+        logger.debug('data_dict: ' + str(data_dict))
 
 
 # - required fields are: base, school, department, lastname, firstname and
@@ -235,22 +644,22 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
     row_index = data_dict.get('rowindex', -1)
     new_examnumber = data_dict.get('examnumber')
     new_idnumber = data_dict.get('idnumber')
-    #logger.debug('new_examnumber: ' + str(new_examnumber))
-    #logger.debug('new_idnumber: ' + str(new_idnumber))
+    if logging_on:
+        logger.debug('new_examnumber: ' + str(new_examnumber))
+        logger.debug('new_idnumber: ' + str(new_idnumber))
 
     new_lastname, new_firstname, new_prefix = None, None, None
     required_lastname_novalue, required_firstname_novalue = False, False
     required_lastname_toolong, required_firstname_toolong = False, False
 
+# ----- get student name
     lastname_input = data_dict.get('lastname')
-    #logger.debug('lastname_input: ' + str(lastname_input) + ' ' + str(type(lastname_input)))
     if lastname_input is None:
         required_lastname_novalue = True
     elif len(lastname_input) > c.MAX_LENGTH_FIRSTLASTNAME:
         required_lastname_toolong = True
     else:
         new_lastname = lastname_input
-    #logger.debug('new_lastname: ' + str(new_lastname))
 
     firstname_input = data_dict.get('firstname')
     if firstname_input is None:
@@ -259,7 +668,6 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
         required_firstname_toolong = True
     else:
         new_firstname = firstname_input
-    #logger.debug('new_lastname: ' + str(new_lastname))
 
     prefix_input = data_dict.get('prefix')
     prefix_str = ''
@@ -274,6 +682,9 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
     if new_firstname:  # put first_name after last_name
         new_full_name += ', ' + new_firstname.strip()
 
+    if logging_on:
+        logger.debug('lastname_input: ' + str(lastname_input) + ' ' + str(type(lastname_input)))
+        logger.debug('new_lastname: ' + str(new_lastname))
 # - create update_dict
     update_dict = {'id': {'table': 'student', 'rowindex': row_index}}
 
@@ -283,8 +694,9 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
     lookup_field_capitalized = '-'
     if lookup_field_caption:
         lookup_field_capitalized = lookup_field_caption.capitalize()
-    #logger.debug('lookup_field: ' + str(lookup_field) + ' lookup_field_caption: ' + str(lookup_field_caption))
-    #logger.debug('lookup_value: ' + str(lookup_value))
+    if logging_on:
+        logger.debug('lookup_field: ' + str(lookup_field) + ' lookup_field_caption: ' + str(lookup_field_caption))
+        logger.debug('lookup_value: ' + str(lookup_value))
 
     student, multiple_found, found_in_diff_dep, exceeded_length, is_existing_student = None, None, None, False, False
     student_name = '---'
@@ -299,7 +711,9 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
 
 # - give row_error when lookup went wrong
     skipped_str = student_name + str(_(" is skipped."))
-    #skipped_str = str(_("Skipped."))
+    is_added_str = str(_(' will be added.')) if is_test else str(_(' is added.'))
+    not_added_str = str(_(' will not be added.')) if is_test else str(_(' is not added.'))
+
     logfile.append(c.STRING_INDENT_5)
     msg_err = None
     log_str = ''
@@ -342,7 +756,7 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
         msg_err = ' '.join((skipped_str, log_str))
 
     if msg_err:
-        logfile.append(student_name + str(_(' is not added.')))
+        logfile.append(student_name + not_added_str)
         update_dict['row_error'] = msg_err
         update_dict[lookup_field] = {'error': msg_err}
         #logfile.append(code_text + is_skipped_str)
@@ -372,10 +786,10 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
             if student:
                 save_instance = True
                 update_dict['id']['created'] = True
-                logfile.append(student_name + str(_(' is added.')))
+                logfile.append(student_name + is_added_str)
             else:
     # - give error msg when creating student failed
-                error_str = str(_("An error occurred. The student is not added."))
+                error_str = str(_("An error occurred. The student")) + not_added_str
                 logfile.append(" ".join((student_name, error_str )))
                 update_dict['row_error'] = error_str
         else:
@@ -399,10 +813,8 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
             blank_str = '<' + str(_('blank')) + '>'
             was_str = str(_('was') + ': ')
 
-            fields = ('lastname', 'firstname', 'prefix', 'gender', 'idnumber', 'birthdate',
-                              'level', 'sector', 'scheme', 'package',
-                              'birthcountry',
-                              'birthcity',
+            fields = ('lastname', 'firstname', 'prefix', 'gender', 'idnumber', 'birthdate','birthcountry', 'birthcity',
+                              'level', 'sector', 'profiel', 'scheme', 'package',
                               'classname', 'examnumber', 'regnumber', 'diplomanumber', 'gradelistnumber',
                               'iseveningstudent', 'hasdyslexia',
                               'locked', 'has_reex', 'bis_exam', 'withdrawn', 'modifiedby', 'modifiedat')
@@ -416,7 +828,7 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
                     #logger.debug('field_caption: ' + str(field_caption))
                     caption_txt = (c.STRING_INDENT_5 + field_caption + c.STRING_SPACE_30)[:30]
                     # text fields
-                    if field in ('lastname', 'firstname', 'prefix', 'gender', 'idnumber',  'birthcountry', 'birthcity',
+                    if field in ('lastname', 'firstname', 'prefix', 'gender', 'idnumber', 'birthcountry', 'birthcity',
                           'classname', 'examnumber', 'regnumber', 'diplomanumber', 'gradelistnumber'):
                         new_value = data_dict.get(field)
                         max_len = c.MAX_LEN_DICT_STUDENT.get(field)
@@ -489,9 +901,11 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
                                     update_str = ((new_date_iso or blank_str) + c.STRING_SPACE_30)[:25] + old_value_str
                                     logfile.append(caption_txt + update_str)
 
-                    elif field in ('level', 'sector'):
+                    elif field in ('level', 'sector', 'profiel'):
+                        # 'profiel' is not a database field, will be stored in 'sector'
+                        db_field = 'sector' if field == 'profiel' else field
                         new_base_pk = data_dict.get(field)
-                        saved_instance = getattr(student, field)
+                        saved_instance = getattr(student, db_field)
 
                         #logger.debug('field: ' + str(field))
                         #logger.debug('new_base_pk: ' + str(new_base_pk))
@@ -499,9 +913,9 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
 
                          # check if dep / lvl / sct exists
                         new_instance = None
-                        if field == 'level':
+                        if db_field == 'level':
                             new_instance = subj_mod.Level.objects.get_or_none(base_id=new_base_pk, examyear=examyear)
-                        elif field == 'sector':
+                        elif db_field == 'sector':
                             new_instance = subj_mod.Sector.objects.get_or_none(base_id=new_base_pk, examyear=examyear)
                         #logger.debug('new_instance: ' + str(new_instance))
 
@@ -512,16 +926,18 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
                         #logger.debug('save_new_lvl_sct: ' + str(save_new_instance))
 
                         if save_new_instance:
-                            setattr(student, field, new_instance)
+                            setattr(student, db_field, new_instance)
                             field_dict['updated'] = True
                             save_instance = True
                             new_abbrev = new_instance.abbrev if new_instance else None
                             #logger.debug('new_abbrev: ' + str(new_abbrev))
 
                             if field == 'level':
-                                caption_txt = (c.STRING_INDENT_5 + department.level_caption + c.STRING_SPACE_30)[:30]
+                                caption_txt = (c.STRING_INDENT_5 + str(_('leerweg')) + c.STRING_SPACE_30)[:30]
                             elif field == 'sector':
-                                caption_txt = (c.STRING_INDENT_5 + department.sector_caption + c.STRING_SPACE_30)[:30]
+                                caption_txt = (c.STRING_INDENT_5 + str(_('sector')) + c.STRING_SPACE_30)[:30]
+                            elif field == 'profiel':
+                                caption_txt = (c.STRING_INDENT_5 + str(_('profiel')) + c.STRING_SPACE_30)[:30]
 
                             if not is_existing_student:
                                 logfile.append(caption_txt + (new_abbrev or blank_str))
@@ -564,12 +980,15 @@ def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalis
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def lookup_student(school, department, lookup_field, lookup_value):  # PR2019-12-17 PR2020-12-06 PR2020-12-31
-    #logger.debug('----------- lookup_student ----------- ')
+def lookup_student(school, department, lookup_field, lookup_value, logging_on=False):  # PR2019-12-17 PR2020-12-06 PR2020-12-31  PR2021-02-27
+    logger.debug('----------- lookup_student ----------- ')
     # function searches for existing student in the following order: examnumber, idnumber
-
-    #logger.debug('lookup_field: ' + str(lookup_field))
-    #logger.debug('lookup_value: ' + str(lookup_value) + ' ' + str(type(lookup_value)))
+    logging_on = False
+    if logging_on:
+        logger.debug('lookup_field: ' + str(lookup_field))
+        logger.debug('lookup_value: ' + str(lookup_value) + ' ' + str(type(lookup_value)))
+        logger.debug('school: ' + str(school))
+        logger.debug('department: ' + str(department))
 
     student = None
     exceeded_length = None
@@ -596,10 +1015,11 @@ def lookup_student(school, department, lookup_field, lookup_value):  # PR2019-12
                 students = stud_mod.Student.objects.filter(
                     examnumber__iexact=lookup_value, school=school, department=department)
             elif lookup_field == 'idnumber':
-                students = stud_mod.Student.objects.filter(idnumberr__iexact=lookup_value, school=school)
+                students = stud_mod.Student.objects.filter(idnumber__iexact=lookup_value, school=school)
             row_count = 0
             for row in students:
                 student = row
+                logger.debug('student: ' + str(student))
                 row_count += 1
             if row_count == 1:
                 if student.department != department:
@@ -608,8 +1028,17 @@ def lookup_student(school, department, lookup_field, lookup_value):  # PR2019-12
                 multiple_found = lookup_value
                 student = None
 
-    #logger.debug('lookup student: ' + str(student))
+    if logging_on:
+        logger.debug('lookup student: ' + str(student))
+        if exceeded_length:
+            logger.debug('exceeded_length: ' + str(exceeded_length))
+        if multiple_found:
+            logger.debug('multiple_found: ' + str(multiple_found))
+        if found_in_diff_dep:
+            logger.debug('found_in_diff_dep: ' + str(found_in_diff_dep))
+
     return student, exceeded_length, multiple_found, found_in_diff_dep
+# --- end of lookup_student
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -630,7 +1059,7 @@ def create_student(upload_dict, request):
             code = code_dict.get('value')
         if code:
 # - validate code checks null, max len and exists
-            msg_err = validate_code_name_identifier(
+            msg_err = stud_val.validate_code_name_identifier(
                 table='student',
                 field='code',
                 new_value=code,
@@ -683,7 +1112,7 @@ def update_student(instance, parent, upload_dict, msg_dict, request):
                     if field in ['code', 'identifier']:
                         if new_value != saved_value:
             # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
-                            msg_err = validate_code_name_identifier(
+                            msg_err = stud_val.validate_code_name_identifier(
                                 table='student',
                                 field=field,
                                 new_value=new_value, parent=parent,

@@ -54,7 +54,7 @@ class UserListView(ListView):
 
     def get(self, request, *args, **kwargs):
         User = get_user_model()
-        logger.debug(" =====  UserListView  =====")
+        #logger.debug(" =====  UserListView  =====")
         #PR2018-04-24 get all user of the country of the current user (for inspection users)
         #users = User.objects.filter(id__schoolcode_id__country=request_country)
 
@@ -73,19 +73,15 @@ class UserListView(ListView):
             elif request.user.is_role_insp:
                 if request.user.country is not None:
                     # filter only users from this country, with role == insp
-                    users = User.objects.filter(country=request.user.country, role__lte=c.ROLE_16_INSP).order_by('username')
+                    users = User.objects.filter(country=request.user.country, role__lte=c.ROLE_032_INSP).order_by('username')
             else:
                 if request.user.schoolbase is not None:
                     # filter only users from this school, with role == school
-                    users = User.objects.filter(schoolbase=request.user.schoolbase, role=c.ROLE_08_SCHOOL).order_by('username')
+                    users = User.objects.filter(schoolbase=request.user.schoolbase, role=c.ROLE_008_SCHOOL).order_by('username')
         else:
             messages.error(request, _("User has no role."))
 
-        _override_school = ''
-        if request.user.is_role_insp_or_admin_or_system:
-            _override_school = request.user.role_str
-        headerbar_param = awpr_menu.get_headerbar_param(request,
-            {'users': users, 'display_school': True, 'override_school': _override_school})
+        headerbar_param = awpr_menu.get_headerbar_param(request, {'users': users} )
 
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'users.html', headerbar_param)
@@ -102,8 +98,8 @@ class UserUploadView(View):
     #  when ok: it also sends an email to the user
 
     def post(self, request):
-        #logger.debug('  ')
-        #logger.debug(' ========== UserUploadView ===============')
+        logger.debug('  ')
+        logger.debug(' ========== UserUploadView ===============')
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None and request.user.schoolbase is not None:
@@ -226,6 +222,9 @@ class UserUploadView(View):
                             # - get permits of new user.
                             #       - new_permits is 'write' when user_school is same as requsr_school,
                             #       - permits is 'write' plus 'admin' when user_school is different from requsr_school
+
+                            is_existing_user = True if user_pk else False
+
                             if is_same_schoolbase:
                                 new_permits = c.PERMIT_002_EDIT
                             else:
@@ -601,10 +600,10 @@ def create_user_list(request, user_pk=None):
     #logger.debug(' =============== create_user_list ============= ')
     #logger.debug('user_pk: ' + str(user_pk))
 
-    #ROLE_08_SCHOOL = 8
-    #ROLE_16_INSP = 16
-    #ROLE_32_ADMIN = 32
-    #ROLE_64_SYSTEM = 64
+    #ROLE_008_SCHOOL = 8
+    #ROLE_032_INSP = 32
+    #ROLE_064_ADMIN = 64
+    #ROLE_128_SYSTEM = 128
 
     # <PERMIT> PR2020-10-12
     # PR2018-05-27 list of users in UserListView:
@@ -616,7 +615,7 @@ def create_user_list(request, user_pk=None):
 
     user_list = []
     if request.user.country and request.user.schoolbase:
-        if request.user.role >= c.ROLE_08_SCHOOL:
+        if request.user.role >= c.ROLE_008_SCHOOL:
             if request.user.is_perm_admin or request.user.is_perm_system :
 
                 sql_keys = {'country_id': request.user.country.pk, 'max_role': request.user.role}
@@ -645,7 +644,7 @@ def create_user_list(request, user_pk=None):
                 if user_pk:
                     sql_keys['u_id'] = user_pk
                     sql_list.append('AND u.id = %(u_id)s::INT')
-                elif request.user.role < c.ROLE_32_ADMIN:
+                elif request.user.role < c.ROLE_064_ADMIN:
                     schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
                     sql_keys['sb_id'] = schoolbase_pk
                     sql_list.append('AND u.schoolbase_id = %(sb_id)s::INT')
@@ -768,7 +767,6 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, perm
                 req_school += requsr_school.name
             else:
                 req_school = request.user.schoolbase.code if request.user.schoolbase.code else '---'
-
 
             usr_schoolname_with_article = ''
             if new_user_school and new_user_school.name:

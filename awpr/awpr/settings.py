@@ -57,6 +57,9 @@ INSTALLED_APPS = [
 
     'session_security', # PR2018-05-10
     'anymail', # PR2018-12-28
+
+# PR2021-03-06 from https://www.digitalocean.com/community/tutorials/how-to-set-up-object-storage-with-django
+    'storages'
 ]
 
 MIDDLEWARE = [
@@ -163,12 +166,27 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # PR2021-01-22 path to fonts dir in statis
 # PR2021-02-07 debug: backslash + '\\' gives error on server, use / instead
-# still error ... becaue file was name 'Arial.ttf' and I looked for 'Arial.ttf'
+# still error ... because font was name 'arial.ttf' and I looked for 'Arial.ttf'
 STATICFILES_FONTS_DIR = os.path.join(BASE_DIR, 'static', 'fonts') + '/'
-STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'static', 'media') + '/'
+# 'static', 'media' goes wrong on server, becasue collectsttaic puts all static file in one folder
+# was: STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'static', 'media') + '/'
+STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'published') + '/'
+
 # PR2021-01-22 from https://www.caktusgroup.com/blog/2017/08/28/advanced-django-file-handling/
 # how to handle DEFAULT_FILE_STORAGE ( i.e. MEDIAFILES_STORAGE)
-MEDIA_DIR = '/static/media/'
+# was: MEDIA_DIR = '/static/media/'
+# used to create filepath in create_published_rows
+MEDIA_DIR = '/published/'
+
+# PR2021-03-06 from https://www.digitalocean.com/community/tutorials/how-to-set-up-object-storage-with-django
+# SECURITY WARNING: keep the access key used in production secret!
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL')
+AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400',}
+AWS_LOCATION = os.path.join(BASE_DIR, 'media')
+
 
 # PR 2018-03-27
 LOGIN_URL = 'login'

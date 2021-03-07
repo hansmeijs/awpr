@@ -134,9 +134,9 @@ console.log("document.addEventListener students" )
 // ---  MODAL STUDENT SUBJECTS
         const el_MSTUDSUBJ_hdr = document.getElementById("id_MSTUDSUBJ_hdr")
         const el_MSTUDSUBJ_btn_add_selected = document.getElementById("id_MSTUDSUBJ_btn_add_selected")
-            el_MSTUDSUBJ_btn_add_selected.addEventListener("click", function() {MSTUDSUBJ_AddRemoveSubjct("add")}, false);
+            el_MSTUDSUBJ_btn_add_selected.addEventListener("click", function() {MSTUDSUBJ_AddRemoveSubject("add")}, false);
         const el_MSTUDSUBJ_btn_remove_selected = document.getElementById("id_MSTUDSUBJ_btn_remove_selected")
-            el_MSTUDSUBJ_btn_remove_selected.addEventListener("click", function() {MSTUDSUBJ_AddRemoveSubjct("remove")}, false);
+            el_MSTUDSUBJ_btn_remove_selected.addEventListener("click", function() {MSTUDSUBJ_AddRemoveSubject("remove")}, false);
         const el_MSTUDSUBJ_btn_add_package = document.getElementById("id_MSTUDSUBJ_btn_add_package")
             el_MSTUDSUBJ_btn_add_package.addEventListener("click", function() {MSTUDSUBJ_AddPackage()}, false);
 
@@ -244,7 +244,7 @@ console.log("document.addEventListener students" )
                 if ("locale_dict" in response) { refresh_locale(response.locale_dict)};
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict
-                    mimp_setting_dict = setting_dict;
+                    // NIU mimp_setting_dict = setting_dict;
                     // <PERMIT> PR220-10-02
                     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
                     //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
@@ -375,7 +375,7 @@ console.log("document.addEventListener students" )
 
 //=========  CreateTblHeader  === PR2020-07-31
     function CreateTblHeader() {
-        console.log("===  CreateTblHeader ===== ");
+        //console.log("===  CreateTblHeader ===== ");
         const tblName = get_tblName_from_selectedBtn();
 
 // --- reset table
@@ -390,16 +390,14 @@ console.log("document.addEventListener students" )
 
 //--- get info from selected department_map
             const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", setting_dict.sel_department_pk);
-            console.log("dep_dict", dep_dict);
+
             let sct_caption = null, lvl_req = false, sct_req = false;
             if(dep_dict){
                 sct_caption = (dep_dict.sct_caption) ? dep_dict.sct_caption : null;
                 lvl_req = (dep_dict.lvl_req) ? dep_dict.lvl_req : false;
                 sct_req = (dep_dict.sct_req) ? dep_dict.sct_req : false;
             }
-            console.log("sct_caption", sct_caption);
-            console.log("lvl_req", lvl_req);
-            console.log("sct_req", sct_req);
+
             // TODO hide col level when lvl_req = false, but implement col_hidden
 //--- insert table rows
             let tblRow_header = tblHead_datatable.insertRow (-1);
@@ -449,6 +447,7 @@ console.log("document.addEventListener students" )
                 tblRow_header.appendChild(th_header);
 
 // ++++++++++ create filter row +++++++++++++++
+                tblRow_filter.setAttribute("data-table", tblName);
 // --- add th to tblRow_filter.
                 const th_filter = document.createElement("th");
 // --- create element with tag from field_tags
@@ -502,7 +501,7 @@ console.log("document.addEventListener students" )
                 const schoolcode_lc_trail = ( (map_dict.sb_code) ? map_dict.sb_code.toLowerCase() : "" ) + " ".repeat(8) ;
                 const schoolcode_sliced = schoolcode_lc_trail.slice(0, 8);
                 const order_by = schoolcode_sliced +  ( (map_dict.username) ? map_dict.username.toLowerCase() : "");
-                const row_index = -1; // t_get_rowindex_by_orderby(tblBody_datatable, order_by)
+                const row_index = -1; // t_get_rowindex_by_sortby(tblBody_datatable, order_by)
                 let tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, map_dict, row_index)
           };
         }  // if(!!data_map)
@@ -532,7 +531,7 @@ console.log("document.addEventListener students" )
                 tblRow.setAttribute("data-pk", map_dict.id);
                 //tblRow.setAttribute("data-ppk", map_dict.company_id);
             }
-            tblRow.setAttribute("data-orderby", order_by);
+            tblRow.setAttribute("data-sortby", order_by);
 
 // --- add EventListener to tblRow
             tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
@@ -1424,9 +1423,9 @@ console.log("document.addEventListener students" )
         }
     }  // MSTUDSUBJ_SetInputFields
 
-//========= MSTUDSUBJ_AddRemoveSubjct  ============= PR2020-11-18
-    function MSTUDSUBJ_AddRemoveSubjct(mode) {
-        console.log("  =====  MSTUDSUBJ_AddRemoveSubjct  =====");
+//========= MSTUDSUBJ_AddRemoveSubject  ============= PR2020-11-18
+    function MSTUDSUBJ_AddRemoveSubject(mode) {
+        console.log("  =====  MSTUDSUBJ_AddRemoveSubject  =====");
         const tblBody = (mode === "add") ? el_tblBody_schemeitems : el_tblBody_studsubjects;
         const schemeitem_pk_list = []
 
@@ -1500,7 +1499,7 @@ console.log("document.addEventListener students" )
         //console.log("mod_studsubj_dict", mod_studsubj_dict);
         MSTUDSUBJ_FillTbls(schemeitem_pk_list)
 
-    }  // MSTUDSUBJ_AddRemoveSubjct
+    }  // MSTUDSUBJ_AddRemoveSubject
 
 //========= MSTUDSUBJ_AddPackage  ============= PR2020-11-18
     function MSTUDSUBJ_AddPackage() {
@@ -1807,7 +1806,7 @@ console.log("document.addEventListener students" )
                 updated_columns.push("created")
     // ---  create row in table., insert in alphabetical order
                 let order_by = (update_dict.fullname) ? update_dict.fullname.toLowerCase() : ""
-                const row_index = t_get_rowindex_by_orderby(tblBody_datatable, order_by)
+                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
                 tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, update_dict, row_index)
 
     // ---  scrollIntoView,
@@ -1903,7 +1902,7 @@ console.log("document.addEventListener students" )
 //- insert tblBody row
                 let tblRow = tblBody.insertRow(-1); //index -1 results in that the new row will be inserted at the last position.
                 tblRow.setAttribute("data-pk", pk_int);
-                tblRow.setAttribute("data-orderby", order_by);
+                tblRow.setAttribute("data-sortby", order_by);
 // -  highlight selected row
                 if (selected_pk && pk_int === selected_pk){
                     tblRow.classList.add(cls_selected)
@@ -1985,7 +1984,7 @@ console.log("document.addEventListener students" )
 
 //========= HandleFilterField  ====================================
     function HandleFilterField(el, col_index, event) {
-       //console.log( "===== HandleFilterField  ========= ");
+        console.log( "===== HandleFilterField  ========= ");
         // skip filter if filter value has not changed, update variable filter_text
 
         //console.log( "el_key", el_key);
@@ -1996,6 +1995,8 @@ console.log("document.addEventListener students" )
 // --- get filter tblRow and tblBody
         const tblRow = get_tablerow_selected(el);
         const tblName = get_attr_from_el(tblRow, "data-table")
+        //console.log( "tblRow", tblRow);
+        //console.log( "tblName", tblName);
 
 // --- reset filter row when clicked on 'Escape'
         const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
@@ -2033,19 +2034,18 @@ console.log("document.addEventListener students" )
                 add_or_remove_class(el_icon, "exclamation_0_2", filter_checked === -2)
                 add_or_remove_class(el_icon, "tickmark_0_1", filter_checked === -1)
                 add_or_remove_class(el_icon, "tickmark_0_2", filter_checked === 1)
-
             }
         }
 
-
-        Filter_TableRows(tblBody_datatable);
+        t_Filter_TableRows(tblBody_datatable, tblName, filter_dict, false, false, null)
+        //Filter_TableRows(tblBody_datatable);
     }; // HandleFilterField
 
 //========= Filter_TableRows  ==================================== PR2020-08-17
     function Filter_TableRows(tblBody) {
         //console.log( "===== Filter_TableRows  ========= ");
 
-        const tblName_settings = (selected_btn === "btn_user_list") ? "users" : "permissions";
+        const tblName_settings = (selected_btn === "btn_studsubj") ? "studsubj" : "student";
 
 // ---  loop through tblBody.rows
         for (let i = 0, tblRow, show_row; tblRow = tblBody.rows[i]; i++) {
@@ -2057,7 +2057,9 @@ console.log("document.addEventListener students" )
 //========= ShowTableRow  ==================================== PR2020-08-17
     function ShowTableRow(tblRow, tblName_settings) {
         // only called by Filter_TableRows
-        //console.log( "===== ShowTableRow  ========= ");
+        console.log( "===== ShowTableRow  ========= ");
+        console.log( "filter_dict", filter_dict);
+        console.log( "field_settings", field_settings);
         let hide_row = false;
         if (tblRow){
 // show all rows if filter_name = ""

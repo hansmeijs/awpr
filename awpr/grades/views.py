@@ -26,7 +26,7 @@ import random
 from awpr import functions as f
 from awpr import constants as c
 from awpr import settings as awpr_settings
-from students import validations as v
+from students import validators as v
 from awpr import menus as awpr_menu
 from awpr import functions as af
 from awpr import downloads as dl
@@ -37,7 +37,7 @@ from schools import models as sch_mod
 from students import models as stud_mod
 from students import views as stud_view
 from subjects import models as subj_mod
-from grades import validations as grad_val
+from grades import validators as grad_val
 from grades import exfiles as grade_exfiles
 
 import json # PR2018-12-03
@@ -90,8 +90,8 @@ class GradeApproveView(View):  # PR2021-01-19
         has_permit = False
         if request.user and request.user.country and request.user.schoolbase:
             req_user = request.user
-            # TODO ROLE_32_ADMIN, ROLE_64_SYSTEM is only for testing, must be removed
-            if req_user.role in (c.ROLE_08_SCHOOL, c.ROLE_32_ADMIN, c.ROLE_64_SYSTEM):
+            # TODO ROLE_064_ADMIN, ROLE_128_SYSTEM is only for testing, must be removed
+            if req_user.role in (c.ROLE_008_SCHOOL, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM):
                 has_permit = (req_user.is_perm_auth1 or req_user.is_perm_auth2 or req_user.is_perm_auth3)
             if has_permit:
 
@@ -165,7 +165,7 @@ class GradeApproveView(View):  # PR2021-01-19
                         row_count = stud_mod.Grade.objects.filter(crit).count()
                         logger.debug('row_count: ' + str(row_count))
 
-                        grades = stud_mod.Grade.objects.filter(crit)
+                        grades = stud_mod.Grade.objects.filter(crit).order_by('studentsubject__student__lastname', 'studentsubject__student__firstname')
                         msg_dict = {'count': 0,
                                     'already_published': 0,
                                     'double_approved': 0,
@@ -262,13 +262,12 @@ class GradeApproveView(View):  # PR2021-01-19
                                             msg_dict['no_value_text'] = _("  - 1 grade has no value")
                                         else:
                                             msg_dict['no_value_text'] = _("  - %(val)s grades have no value") % {'val': no_value}
-
                                     if double_approved:
-                                        msg_dict['double_approved_text'] = _("  - %(val)s approved multiple times by the same user, in different functions ") % \
-                                                                    {'val': get_grades_are_text(double_approved)}
+                                        msg_dict['double_approved_text'] = get_approved_text(double_approved) + str(_(', in a different function'))
+
                                     if already_approved_by_auth:
-                                        msg_dict['already_approved_by_auth_text'] = _("  - %(val)s already approved") % \
-                                                                    {'val': get_grades_are_text(already_approved_by_auth)}
+                                        msg_dict['already_approved_by_auth_text'] = get_approved_text(already_approved_by_auth)
+
                                     if is_approve:
                                         if not committed:
                                             msg_dict['saved_text'] = _("No grades will be approved.")
@@ -338,7 +337,7 @@ def create_published_instance(sel_school, sel_department, sel_examtype, sel_exam
     if len(name) > c.MAX_LENGTH_FIRSTLASTNAME:
         name = ' '.join(('Ex2A', school_code, depbase_code, today_iso))
 
-    published_instance = stud_mod.Published(
+    published_instance = sch_mod.Published(
         school=sel_school,
         department=sel_department,
         examtype=sel_examtype,
@@ -365,6 +364,15 @@ def get_grade_text(count):
 
 def get_grades_are_text(count):
     return _('no grades are') if not count else _('1 grade is') if count == 1 else str(count) + str(_(' grades are'))
+
+
+def get_approved_text(count):
+    msg_text = None
+    if count == 1:
+        msg_text = _(' - 1 grade is already approved by you')
+    else:
+        msg_text = ' - ' + str(count) + str(_(' grades are already approved by you'))
+    return msg_text
 
 
 def approve_grade(grade, sel_examtype, is_test, is_reset, msg_dict, request):  # PR2021-01-19
@@ -551,7 +559,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
         # only if country/examyear/school/student not locked, examyear is published and school is activated
         has_permit = False
         if request.user and request.user.country and request.user.schoolbase:
-            has_permit = (request.user.role > c.ROLE_02_STUDENT and request.user.is_perm_edit)
+            has_permit = (request.user.role > c.ROLE_002_STUDENT and request.user.is_perm_edit)
         if has_permit:
 
         # - TODO when deleting: return warning when subject grades have values
@@ -818,7 +826,7 @@ def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk):
         "CONCAT(%(mediadir)s, publ.filename) AS filepath,",
         "sb.code AS sb_code, school.name AS school_name, db.code AS db_code, ey.code AS ey_code",
 
-        "FROM students_published AS publ",
+        "FROM schools_published AS publ",
         "INNER JOIN schools_school AS school ON (school.id = publ.school_id)",
         "INNER JOIN schools_schoolbase AS sb ON (sb.id = school.base_id)",
         "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
@@ -914,11 +922,14 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
 
     try:
         # create PDF
-        file_path = ''.join((awpr_settings.STATICFILES_MEDIA_DIR, published_instance.filename))
+        file_dir = ''.join((awpr_settings.AWS_LOCATION, '/published/'))
+        # PR2021-03-06 was: file_path = ''.join((awpr_settings.STATICFILES_MEDIA_DIR, published_instance.filename))
+        file_path = ''.join((file_dir, published_instance.filename))
         file_name = published_instance.name
 
-        logger.debug('filepath: ' + str(file_path))
+        logger.debug('file_dir: ' + str(file_dir))
         logger.debug('file_name: ' + str(file_name))
+        logger.debug('filepath: ' + str(file_path))
 
         canvas = Canvas(file_path)
 

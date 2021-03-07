@@ -375,7 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
           for (const [map_id, map_dict] of data_map.entries()) {
           // --- insert row at row_index
                 const order_by = (map_dict.sb_code) ? map_dict.sb_code.toLowerCase() : "";
-                const row_index = t_get_rowindex_by_orderby(tblBody_datatable, order_by)
+                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
                 let tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, map_dict, row_index)
           };
         }  // if(!!data_map)
@@ -401,7 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
             tblRow.setAttribute("data-pk", map_dict.id);
             tblRow.setAttribute("data-ppk", map_dict.examyear_id);
             //tblRow.setAttribute("data-table", tblName);
-            tblRow.setAttribute("data-orderby", (map_dict.sb_code) ? map_dict.sb_code : "");
+            tblRow.setAttribute("data-sortby", (map_dict.sb_code) ? map_dict.sb_code : "");
 
 // --- add EventListener to tblRow
             tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
@@ -461,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  UpdateField  ================ PR2020-08-16
     function UpdateField(el_div, map_dict) {
-        //console.log("=========  UpdateField =========");
+        console.log("=========  UpdateField =========");
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
             const fld_value = map_dict[field_name];
@@ -471,13 +471,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (["article", "sb_code", "abbrev", "name", "last_name", "sequence"].indexOf(field_name) > -1){
                     el_div.innerText = map_dict[field_name];
                 } else if ( field_name === "depbases") {
-        //console.log("field_name: ", field_name);
-        //console.log("fld_value: ", fld_value);
                     let dep_codes = ""
                     if(fld_value){
-                        fld_value.forEach((pk_int, i) => {
-                            if(dep_codes) { dep_codes += ", "}
-                            dep_codes += department_list[pk_int];
+                        const arr = fld_value.split(";");
+                        arr.forEach((obj, i) => {
+                             const pk_int = Number(obj);
+                             if(pk_int){
+                                if(dep_codes) { dep_codes += ", "}
+                                dep_codes += department_list[pk_int];
+                             }
                          });
                     }
                      el_div.innerText = dep_codes;
@@ -679,19 +681,19 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("map_dict", map_dict)
                 if(!isEmpty(map_dict)){
 
-                    mod_MSCH_dict.id = map_dict.id
-                    mod_MSCH_dict.mapid = map_dict.mapid
-                    mod_MSCH_dict.base_id = map_dict.base_id
-                    mod_MSCH_dict.examyear_id = map_dict.examyear_id
+                    mod_MSCH_dict.id = map_dict.id;
+                    mod_MSCH_dict.mapid = map_dict.mapid;
+                    mod_MSCH_dict.base_id = map_dict.base_id;
+                    mod_MSCH_dict.examyear_id = map_dict.examyear_id;
 
-                    mod_MSCH_dict.code = map_dict.sb_code
-                    mod_MSCH_dict.abbrev = map_dict.abbrev
-                    mod_MSCH_dict.article = map_dict.article
-                    mod_MSCH_dict.name = map_dict.name
+                    mod_MSCH_dict.code = map_dict.sb_code;
+                    mod_MSCH_dict.abbrev = map_dict.abbrev;
+                    mod_MSCH_dict.article = map_dict.article;
+                    mod_MSCH_dict.name = map_dict.name;
                     mod_MSCH_dict.depbases = map_dict.depbases;
 
-                    mod_MSCH_dict.modby_username = map_dict.modby_username
-                    mod_MSCH_dict.modifiedat = map_dict.modifiedat
+                    mod_MSCH_dict.modby_username = map_dict.modby_username;
+                    mod_MSCH_dict.modifiedat = map_dict.modifiedat;
                 }
             }
     // ---  set header text
@@ -713,7 +715,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById("id_MSCH_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
             }
 
-            MSCH_FillSelectTableDepartment(mod_MSCH_dict.depbases);
+            MSCH_FillSelectTableDepartment();
 
     // ---  set focus to el_MSCH_abbrev
             setTimeout(function (){el_MSCH_abbrev.focus()}, 50);
@@ -753,11 +755,8 @@ document.addEventListener('DOMContentLoaded', function() {
             let form_elements = document.getElementById("id_div_form_controls").querySelectorAll(".awp_input_text")
             for (let i = 0, el_input; el_input = form_elements[i]; i++) {
                 const fldName = get_attr_from_el(el_input, "data-field");
-    //console.log( "fldName: ", fldName);
                 let new_value = (el_input.value) ? el_input.value : null;
                 let old_value = (mod_MSCH_dict[fldName]) ? mod_MSCH_dict[fldName] : null;
-    //console.log( "new_value: ", new_value);
-    //console.log( "old_value: ", old_value);
                 if(fldName === "sequence"){
                     new_value = (new_value && Number(new_value)) ? Number(new_value) : null;
                     old_value = (old_value && Number(old_value)) ? Number(old_value) : null;
@@ -785,8 +784,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // MSCH_Save
 
 //========= MSCH_FillSelectTableDepartment  ============= PR2020--09-30
-    function MSCH_FillSelectTableDepartment(school_depbases) {
-        //console.log("===== MSCH_FillSelectTableDepartment ===== ");
+    function MSCH_FillSelectTableDepartment() {
+        console.log("===== MSCH_FillSelectTableDepartment ===== ");
+        //console.log("department_map", department_map);
 
         const data_map = department_map;
         const tblBody_select = document.getElementById("id_MSCH_tbody_select");
@@ -795,20 +795,19 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  loop through data_map
         let row_count = 0
         if(data_map.size > 1) {
-            MSCH_FillSelectRow(tblBody_select, {}, [], "<" + loc.All_departments + ">");
+            MSCH_FillSelectRow(tblBody_select, {}, "<" + loc.All_departments + ">");
         }
         for (const [map_id, dict] of data_map.entries()) {
-            MSCH_FillSelectRow(tblBody_select, dict, school_depbases);
+            MSCH_FillSelectRow(tblBody_select, dict);
         }
 
     } // MSCH_FillSelectTableDepartment
 
 //========= MSCH_FillSelectRow  ============= PR2020--09-30
-    function MSCH_FillSelectRow(tblBody_select, dict, school_depbases, select_all_text) {
-        //console.log("===== MSCH_FillSelectRowDepartment ===== ");
+    function MSCH_FillSelectRow(tblBody_select, dict, select_all_text) {
+        console.log("===== MSCH_FillSelectRowDepartment ===== ");
         // add_select_all when not isEmpty(dict)
         //console.log("dict", dict);
-        //console.log("school_depbases ", school_depbases);
         let pk_int = null, map_id = null, abbrev = null
         if (isEmpty(dict)){
             pk_int = 0;
@@ -819,11 +818,12 @@ document.addEventListener('DOMContentLoaded', function() {
             map_id = "sel_depbase_" + dict.base_id;
             abbrev = (dict.abbrev) ? dict.base_code : "";
         };
-        // check if this dep is in school_depbases. Set tickmark if yes
+        // check if this dep is in mod_MSCH_dict.depbases. Set tickmark if yes
         let selected_int = 0;
-        if(school_depbases){
-            school_depbases.forEach((obj, i) => {
-                 if (pk_int === obj) { selected_int = 1}
+        if(mod_MSCH_dict.depbases){
+            const arr = mod_MSCH_dict.depbases.split(";");
+            arr.forEach((obj, i) => {
+                 if (pk_int === Number(obj)) { selected_int = 1}
              });
         }
         const tickmark_class = (selected_int === 1) ? "tickmark_2_2" : "tickmark_0_0";
@@ -925,17 +925,20 @@ document.addEventListener('DOMContentLoaded', function() {
     function MSCH_get_selected_depbases(){
         console.log( "  ---  MSCH_get_selected_depbases  --- ")
         const tblBody_select = document.getElementById("id_MSCH_tbody_select");
-        let dep_list = [];
+        let dep_list_arr = [];
         for (let i = 0, row; row = tblBody_select.rows[i]; i++) {
             let row_pk = get_attr_from_el_int(row, "data-pk");
             // skip row 'select_all'
             if(row_pk){
                 if(!!get_attr_from_el_int(row, "data-selected")){
-                    dep_list.push(row_pk);
+                    dep_list_arr.push(row_pk);
                 }
             }
         }
-        return dep_list;
+        dep_list_arr.sort((a, b) => a - b);
+        const dep_list_str = dep_list_arr.join(";");
+        console.log( "dep_list_str", dep_list_str)
+        return dep_list_str;
     }  // MSCH_get_selected_depbases
 
 
@@ -1365,7 +1368,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  create row in table., insert in alphabetical order
                 const order_by = (code) ? code.toLowerCase() : null;
         //console.log("order_by", order_by);
-                const row_index = t_get_rowindex_by_orderby(tblBody_datatable, order_by)
+                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
         //console.log("row_index", row_index);
                 tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, update_dict, row_index)
         //console.log("tblRow", tblRow);

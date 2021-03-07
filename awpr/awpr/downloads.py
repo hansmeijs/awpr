@@ -98,6 +98,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- examyears
                 if datalist_request.get('examyear_rows'):
                     datalists['examyear_rows'] = school_dicts.create_examyear_rows(request.user.country, {}, None)
+# ----- schools
+                if datalist_request.get('school_rows'):
+                    datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear, new_setting_dict)
 # ----- departments
                 if datalist_request.get('department_rows'):
                     datalists['department_rows'] = school_dicts.create_department_rows(sel_examyear)
@@ -107,9 +110,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- sectors
                 if datalist_request.get('sector_rows'):
                     datalists['sector_rows'] = school_dicts.create_sector_rows(sel_examyear)
-# ----- schools
-                if datalist_request.get('school_rows'):
-                    datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear, new_setting_dict)
 # ----- subjects
                 if datalist_request.get('subject_rows'):
                     datalists['subject_rows'] = sj_vw.create_subject_rows(new_setting_dict, {}, None)

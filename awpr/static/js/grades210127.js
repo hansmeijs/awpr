@@ -147,6 +147,8 @@ console.log("document.addEventListener students" )
             el_SBR_select_examperiod.addEventListener("change", function() {HandleSbrPeriod(el_SBR_select_examperiod)}, false )
         const el_SBR_select_examtype = document.getElementById("id_SBR_select_examtype");
             el_SBR_select_examtype.addEventListener("change", function() {HandleSbrExamtype(el_SBR_select_examtype)}, false )
+        const el_SBR_select_level = document.getElementById("id_SBR_select_level");
+            el_SBR_select_level.addEventListener("change", function() {HandleSbrLevel(el_SBR_select_level)}, false )
         const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
             el_SBR_select_subject.addEventListener("click",
                 function() {t_MSSS_Open(loc, "subject", subject_map, setting_dict, MSSS_Response)}, false )
@@ -254,7 +256,7 @@ console.log("document.addEventListener students" )
     if(has_view_permit){
         // period also returns emplhour_list
         const datalist_request = {
-                setting: {page_grade: {mode: "get"}},
+                setting: {page_grades: {mode: "get"}},
                 locale: {page: ["grades"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
@@ -346,6 +348,7 @@ console.log("document.addEventListener students" )
                     const filter_value = sel_examperiod;
                     t_FillOptionsFromList(el_SBR_select_examtype, loc.options_examtype, filter_value,
                         loc.Select_examtype, loc.No_examtypes_found, setting_dict.sel_examtype);
+
                 };
                 if(must_create_submenu){CreateSubmenu()};
 
@@ -356,6 +359,10 @@ console.log("document.addEventListener students" )
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
                 if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows) };
                 if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows) };
+
+                if ("level_rows" in response) {
+                    FillOptionsSelectLevel(response.level_rows)
+                };
 
                 if ("subject_rows" in response) { b_fill_datamap(subject_map, response.subject_rows) };
                 if ("student_rows" in response) { b_fill_datamap(student_map, response.student_rows) };
@@ -386,11 +393,13 @@ console.log("document.addEventListener students" )
     function CreateSubmenu() {
         //console.log("===  CreateSubmenu == ");
 
-       if (setting_dict.requsr_perm_auth1 || setting_dict.requsr_perm_auth2 || setting_dict.requsr_perm_auth3){
-        let el_submenu = document.getElementById("id_submenu")
+        if (setting_dict.requsr_perm_auth1 || setting_dict.requsr_perm_auth2 || setting_dict.requsr_perm_auth3){
+            let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MAG_Open("approve")});
             AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A_form, null, ["mx-2"], "id_submenu_download_ex2a", url_grade_download_ex2a);
-            AddSubmenuButton(el_submenu, loc.Submit_Ex2A_form, function() {MAG_Open("submit")});
+            if (setting_dict.requsr_perm_auth1 || setting_dict.requsr_perm_auth2){
+                AddSubmenuButton(el_submenu, loc.Submit_Ex2A_form, function() {MAG_Open("submit")});
+            };
         el_submenu.classList.remove(cls_hide);
         }
     };//function CreateSubmenu
@@ -404,7 +413,7 @@ console.log("document.addEventListener students" )
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
-            const upload_dict = {page_grade: {sel_btn: selected_btn}};
+            const upload_dict = {page_grades: {sel_btn: selected_btn}};
             UploadSettings (upload_dict, url_settings_upload);
         };
 
@@ -491,7 +500,7 @@ console.log("document.addEventListener students" )
             loc.Select_examtype, loc.No_examtypes_found);
 
 // ---  upload new setting
-        let new_setting = {page_grade: {mode: "get"}};
+        let new_setting = {page_grades: {mode: "get"}};
         new_setting.selected_pk = {sel_examperiod: sel_examperiod}
         const datalist_request = {setting: new_setting};
 
@@ -518,6 +527,35 @@ console.log("document.addEventListener students" )
         UploadSettings (upload_dict, url_settings_upload);
 
     }  // HandleSbrExamtype
+
+//=========  HandleSbrLevel  ================ PR2021-03-06
+    function HandleSbrLevel(el_select) {
+        console.log("=== HandleSbrLevel");
+        console.log( "el_select.value: ", el_select.value, typeof el_select.value)
+        // sel_examtype = "se", "pe", "ce", "re2", "re3", "exm"
+        setting_dict.sel_examtype = el_select.value;
+        const filter_value = Number(el_select.value);
+        t_FillOptionsFromList(el_SBR_select_examtype, loc.options_examtype, filter_value,
+            loc.Select_examtype, loc.No_examtypes_found, setting_dict.sel_examtype);
+
+        console.log( "setting_dict.sel_examtype: ", setting_dict.sel_examtype, typeof setting_dict.sel_examtype)
+
+// ---  upload new setting
+        const upload_dict = {selected_pk: {sel_examtype: setting_dict.sel_examtype}};
+        UploadSettings (upload_dict, url_settings_upload);
+
+    }  // HandleSbrLevel
+
+//=========  FillOptionsSelectLevel  ================ PR2021-03-06
+    function FillOptionsSelectLevel(level_rows) {
+        console.log("=== FillOptionsSelectLevel");
+        console.log("level_rows", level_rows);
+
+        t_FillOptionsFromList(el_SBR_select_level, level_rows, null,
+            loc.Select_level, loc.No_levels_found, setting_dict.sel_level);
+
+
+    }  // FillOptionsSelectLevel
 
 //=========  HandleShowAll  ================ PR2020-12-17
     function HandleShowAll() {
@@ -593,7 +631,7 @@ console.log("document.addEventListener students" )
                     //const schoolcode_lc_trail = ( (map_dict.sb_code) ? map_dict.sb_code.toLowerCase() : "" ) + " ".repeat(8) ;
                     //const schoolcode_sliced = schoolcode_lc_trail.slice(0, 8);
                     //const order_by = schoolcode_sliced +  ( (map_dict.username) ? map_dict.username.toLowerCase() : "");
-                    const row_index = -1; // t_get_rowindex_by_orderby(tblBody_datatable, order_by)
+                    const row_index = -1; // t_get_rowindex_by_sortby(tblBody_datatable, order_by)
                     let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict, row_index)
                 }
           };
@@ -690,12 +728,12 @@ console.log("document.addEventListener students" )
 // --- add data attributes to tblRow
         tblRow.setAttribute("data-pk", map_dict.id);
 
-// ---  add data-orderby attribute to tblRow, for ordering new rows
+// ---  add data-sortby attribute to tblRow, for ordering new rows
         // happens in UpdateTblRow
         const order_by_stud = (map_dict.fullname) ? map_dict.fullname.toLowerCase() : null;
         const order_by_subj = (map_dict.subj_name) ? map_dict.subj_name.toLowerCase() : null;
-        tblRow.setAttribute("data-orderby_stud", order_by_stud);
-        tblRow.setAttribute("data-orderby_subj", order_by_subj);
+        tblRow.setAttribute("data-sortby_stud", order_by_stud);
+        tblRow.setAttribute("data-sortby_subj", order_by_subj);
 
 // --- add EventListener to tblRow
         tblRow.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
@@ -741,6 +779,7 @@ console.log("document.addEventListener students" )
                     } else if (field_name === "filename"){
                         const name = (map_dict.name) ? map_dict.name : null;
                         const file_path = (map_dict.filepath) ? map_dict.filepath : null;
+                        console.log("file_path", file_path)
                         if (file_path){
                             el.setAttribute("href", file_path);
                             el.setAttribute("download", name);
@@ -935,7 +974,15 @@ console.log("document.addEventListener students" )
         const tblRow = get_tablerow_selected(el_input);
         const pk_int = get_attr_from_el_int(tblRow, "data-pk");
         const upload_dict = { published_pk: pk_int};
+
         UploadChanges(upload_dict, url_download_published_file);
+        // PR2021-03-06 from https://stackoverflow.com/questions/1999607/download-and-open-pdf-file-using-ajax
+        //$.ajax({
+        //    url: url_download_published_file,
+        //    success: download.bind(true, "<FILENAME_TO_SAVE_WITH_EXTENSION>", "application/pdf")
+        //    });
+
+
      } // DownloadPublished
 
 //========= UploadToggle  ============= PR2020-07-31  PR2021-01-14
@@ -1805,7 +1852,7 @@ console.log("document.addEventListener students" )
                 updated_columns.push("created")
     // ---  create row in table., insert in alphabetical order
                 let order_by = (update_dict.fullname) ? update_dict.fullname.toLowerCase() : ""
-                const row_index = t_get_rowindex_by_orderby(tblBody_datatable, order_by)
+                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
                 tblRow = CreateTblRow(map_id, update_dict, row_index)
     // ---  scrollIntoView,
                 if(tblRow){
@@ -2077,7 +2124,7 @@ console.log("document.addEventListener students" )
         console.log( "pk_int", pk_int);
 
 // ---  upload new setting
-        let new_setting = {page_grade: {mode: "get"}};
+        let new_setting = {page_grades: {mode: "get"}};
         if (tblName === "school") {
             new_setting.selected_pk = {sel_schoolbase_pk: pk_int, sel_depbase_pk: null}
         } else {

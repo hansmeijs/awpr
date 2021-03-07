@@ -755,9 +755,13 @@ def create_subject_rows(setting_dict, append_dict, subject_pk):
     # use: AND %(depbase_pk)s::INT = ANY(sj.depbases)
     # ANY must be on the right side of =
     # from https://lerner.co.il/2014/05/22/looking-postgresql-arrays/
+    # or
+    # from https://www.postgresqltutorial.com/postgresql-like/
+    # first_name LIKE '%Jen%';
     subject_rows = []
     if sel_examyear_pk:
-        sql_keys = {'ey_id': sel_examyear_pk, 'depbase_pk': sel_depbase_pk}
+        depbase_lookup = ''.join( ('%;', str(sel_depbase_pk), ';%') )
+        sql_keys = {'ey_id': sel_examyear_pk, 'depbase_pk': depbase_lookup}
         sql_list = ["""SELECT sj.id, sj.base_id, sj.examyear_id,
             CONCAT('subject_', sj.id::TEXT) AS mapid,
             sj.name, sb.code, sj.sequence, sj.depbases,
@@ -771,15 +775,16 @@ def create_subject_rows(setting_dict, append_dict, subject_pk):
             LEFT JOIN accounts_user AS au ON (au.id = sj.modifiedby_id) 
             
             WHERE sj.examyear_id = %(ey_id)s::INT
-            AND %(depbase_pk)s::INT = ANY(sj.depbases)
-            """]
+            AND CONCAT(';', sj.depbases::TEXT, ';') LIKE %(depbase_pk)s::TEXT
 
+            """]
+#             AND CONCAT(';', sj.depbases::TEXT, ';') LIKE CONCAT(';', %(depbase_pk)s::TEXT, ';')
         if subject_pk:
             # when employee_pk has value: skip other filters
             sql_list.append('AND sj.id = %(sj_id)s::INT')
             sql_keys['sj_id'] = subject_pk
         else:
-            sql_list.append('ORDER BY sj.sequence')
+            sql_list.append('ORDER BY sb.code')
 
         sql = ' '.join(sql_list)
 
@@ -1718,7 +1723,7 @@ def create_schemeitem_rows(setting_dict, append_dict, scheme_pk):
         sql_list = ["SELECT si.id, si.scheme_id, scheme.department_id, scheme.level_id, scheme.sector_id,",
             "CONCAT('schemeitem_', si.id::TEXT) AS mapid,",
             "si.subject_id AS subj_id, subj.name AS subj_name, subjbase.code AS subj_code,",
-            "si.subjecttype_id, subjtype.name AS sjt_name, subjtype.abbrev AS sjt_abbrev, subjtype.sequence AS sjt_sequence,",
+            "si.subjecttype_id AS sjt_id, subjtype.name AS sjt_name, subjtype.abbrev AS sjt_abbrev, subjtype.sequence AS sjt_sequence,",
             "subjtype.has_prac AS sjt_has_prac, subjtype.has_pws AS sjt_has_pws, subjtype.one_allowed AS sjt_one_allowed,",
             "scheme.name, scheme.fields,",
             "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",

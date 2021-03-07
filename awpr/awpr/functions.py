@@ -5,11 +5,11 @@ from django.utils import timezone
 from datetime import date, datetime
 
 from awpr import constants as c
+
+from students import models as stud_mod
 from schools import models as sch_mod
-from accounts import models as acc_mod
+from subjects import models as subj_mod
 
-
-import re
 import logging
 logger = logging.getLogger(__name__)
 
@@ -303,14 +303,17 @@ def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  #
 # - get allowed depbases from school and user
         may_select_department = False
         if sel_school and sel_school.depbases:
-            for depbase_pk in sel_school.depbases:
+            allowed_depbases_arr = req_user.allowed_depbases.split(';') if req_user.allowed_depbases else []
+            allowed_depbases_list = list(map(int, allowed_depbases_arr))
+
+            depbase_list = list(map(int, sel_school.depbases.split(';')))
+            for depbase_pk in depbase_list:
                 # skip if depbase not in list of req_user.allowed_depbases
                 # if req_user.allowed_depbases is empty, all depbases of the
                 # school are allowed
-                skip = req_user.allowed_depbases and depbase_pk not in req_user.allowed_depbases
+                skip = allowed_depbases_list and depbase_pk not in allowed_depbases_list
                 if not skip:
                     allowed_depbases.append(depbase_pk)
-        #logger.debug('allowed_depbases: ' + str(allowed_depbases))
 
 # - check if there is a new depbase_pk in request_item_setting,
         if request_item_setting is not None:
@@ -428,7 +431,47 @@ def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
 
-    update_examyearsetting(examyear, request)
+    #update_examyearsetting(examyear, request)
+    pass
+    #transfer_depbases_from_array_to_string()
+# - end of system_updates
+
+
+def transfer_depbases_from_array_to_string():
+    subjecttypes = subj_mod.Subjecttype.objects.all()
+    for subjecttype in subjecttypes:
+        if subjecttype.depbases:
+            depbases_list = list(map(str, subjecttype.depbases))
+            subjecttype.depbases = ';'.join(depbases_list)
+            subjecttype.depbases = None
+            subjecttype.save()
+
+    transfer_depbases(sch_mod.School.objects.all())
+    transfer_depbases(sch_mod.School_log.objects.all())
+
+    transfer_depbases(subj_mod.Level.objects.all())
+    transfer_depbases(subj_mod.Level_log.objects.all())
+
+    transfer_depbases(subj_mod.Sector.objects.all())
+    transfer_depbases(subj_mod.Sector_log.objects.all())
+
+    transfer_depbases(subj_mod.Subject.objects.all())
+    transfer_depbases(subj_mod.Subject_log.objects.all())
+
+    transfer_depbases(subj_mod.Subjecttype.objects.all())
+    transfer_depbases(subj_mod.Subjecttype_log.objects.all())
+
+    transfer_depbases(subj_mod.Cluster.objects.all())
+    transfer_depbases(subj_mod.Cluster_log.objects.all())
+
+
+def transfer_depbases(instances):
+    for instance in instances:
+        if instance.depbases:
+            depbases_list = list(map(str, instance.depbases))
+            instance.depbases = ';'.join(depbases_list)
+            instance.depbases = None
+            instance.save()
 
 
 def update_examyearsetting(examyear, request):

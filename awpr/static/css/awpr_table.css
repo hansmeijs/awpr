@@ -1214,7 +1214,7 @@ aXX:hover{
 .appr_0_0, .appr_0_1, .appr_0_2, .appr_0_3, .appr_0_4, .appr_0_5, .appr_0_6,
 .appr_1_0, .appr_1_1, .appr_1_2, .appr_1_3, .appr_1_4, .appr_1_5, .appr_1_6,
 .appr_2_0, .appr_2_1, .appr_2_2, .appr_2_3, .appr_2_4, .appr_2_5, .appr_2_6 {
-    background-image: url('/static/img/approved.png');
+    background-image: url('/static/img/appr210306.png');
     background-size: 140px 60px;
 }
 .appr_0_0 { background-position: -0px -0px;}

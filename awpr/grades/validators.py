@@ -15,9 +15,9 @@ def validate_input_grade(grade, field, input_value):  # PR2021-01-18
 
     is_score = field in ("pescore", "cescore")
     is_grade = field in ("segrade", "pegrade", "cegrade")
-    is_segrade = field == "segrade"
-    is_pe = field == "pegrade"
-    is_pe_or_ce = field in ("pescore", "pegrade", "cescore", "cegrade")
+    is_se_grade = (field == "segrade")
+    is_pe = (field in ("pescore", "pegrade"))
+    is_pe_or_ce = (field in ("pescore", "pegrade", "cescore", "cegrade"))
     #logger.debug("is_score", is_score, "is_grade", is_grade)
 
     examperiod_int = grade.examperiod
@@ -146,7 +146,7 @@ def validate_input_grade(grade, field, input_value):  # PR2021-01-18
 
 # - controleer weging
         if msg_err is None:
-            if is_segrade:
+            if is_se_grade:
                 if not weight_se:
                     msg_err = _('The SE weighing of this subject is zero.\nYou cannot enter a grade.')
             else:

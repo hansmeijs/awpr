@@ -173,7 +173,7 @@
     //PR2019-05-05 from https://coderwall.com/p/_g3x9q/how-to-check-if-javascript-object-is-empty'
     function isEmpty(obj) {
         "use strict";
-        for(var key in obj) {
+        for(let key in obj) {
             if(obj.hasOwnProperty(key))
                 {return false}
         }
@@ -694,6 +694,10 @@
         return img_class;
     }  // get_status_class
 
+
+
+
+
 //#########################################################################
 // +++++++++++++++++ DATAMAP +++++++++++++++++++++++++++++++++++++++
 
@@ -727,6 +731,32 @@
         return dict_clone;
     }  // deepcopy_dict
 
+
+//#########################################################################
+// +++++++++++++++++ SORT DICTIONARY +++++++++++++++++++++++++++++++++++++++
+
+//========= b_comparator_sortby  =========  PR2020-09-03
+// PR2020-09-01 from: https://stackoverflow.com/questions/5435228/sort-an-array-with-arrays-in-it-by-string/5435341
+// explained in https://www.javascripttutorial.net/javascript-array-sort/
+// function used in Array.sort to sort list of dicts by key 'code', null or '---' last  PR2021-02-25
+    function b_comparator_sortby(a, b) {
+        const max_len = 24 // CODE_MAX_LENGTH = 24;
+        const z_str = "z".repeat(max_len);
+
+        const a_lc = (a.sortby && a.sortby !== "---" && a.sortby !== "-") ? a.sortby.toLowerCase() : z_str;
+        const b_lc = (b.sortby && b.sortby !== "---" && b.sortby !== "-") ? b.sortby.toLowerCase() : z_str;
+
+        if (a_lc < b_lc) return -1;
+        if (a_lc > b_lc) return 1;
+        return 0;
+    }  // b_comparator_sortby
+
+// this one sorts integers, not in use yet PR2021-02-26
+    function b_comparator_sortby_integer(a, b) {
+    // PR2021-02-25 from https://stackoverflow.com/questions/1063007/how-to-sort-an-array-of-integers-correctly
+       // exc_subject_ColIndex_list.sort((a, b) => a - b);
+       return a - b;
+    };
 //#########################################################################
 // +++++++++++++++++ DATE FUNCTIONS +++++++++++++++++++++++++++++++++++++++
 

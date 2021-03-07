@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 //console.log( "map_dict ", map_dict);
           // --- insert row at row_index
                 const order_by = map_dict.examyear;
-                const row_index = -1; // t_get_rowindex_by_orderby(tblBody_datatable, order_by)
+                const row_index = -1; // t_get_rowindex_by_sortby(tblBody_datatable, order_by)
                 let tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, map_dict, row_index)
                 UpdateTblRow(tblRow, tblName, map_dict);
           };
@@ -497,7 +497,7 @@ document.addEventListener('DOMContentLoaded', function() {
             tblRow.setAttribute("data-pk", map_dict.examyear_id);
             tblRow.setAttribute("data-ppk", map_dict.country_id);
             tblRow.setAttribute("data-table", tblName);
-            tblRow.setAttribute("data-orderby", map_dict.examyear_int);
+            tblRow.setAttribute("data-sortby", map_dict.examyear_int);
 
             //console.log("tblRow", tblRow);
 // --- add EventListener to tblRow
@@ -1150,7 +1150,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("updated_columns", updated_columns);
     // ---  create row in table., insert in alphabetical order
                 //const order_by = (update_dict.examyear) ? update_dict.examyear: 0;
-                const row_index = 0 //  t_get_rowindex_by_orderby(tblBody_datatable, order_by)
+                const row_index = 0 //  t_get_rowindex_by_sortby(tblBody_datatable, order_by)
                 tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, update_dict, row_index)
         //console.log("tblRow", tblRow);
     // ---  scrollIntoView,

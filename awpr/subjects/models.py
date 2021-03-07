@@ -43,8 +43,7 @@ class Level(sch_mod.AwpBaseModel): # PR2018-08-12
     abbrev = CharField(max_length=8, # PR2018-10-20 set Unique per Examyear True.
         help_text=_('Required. {} characters or fewer.'.format('8')),)
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
-    depbases = ArrayField(IntegerField(), null=True)
-
+    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     class Meta:
         ordering = ['sequence',]
@@ -143,7 +142,7 @@ class Level_log(sch_mod.AwpBaseModel):
     name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
     abbrev = CharField(max_length=8, null=True)
     sequence = PositiveSmallIntegerField(null=True)
-    depbases = ArrayField(IntegerField(), null=True)
+    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -167,7 +166,7 @@ class Sector(sch_mod.AwpBaseModel):  # PR2018-06-06
     abbrev = CharField(max_length=8, # PR2018-10-20 set Unique per Examyear True.
         help_text=_('Required. {} characters or fewer.'.format('8')),)
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
-    depbases = ArrayField(IntegerField(), null=True)
+    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     class Meta:
         ordering = ['sequence',]
@@ -226,7 +225,7 @@ class Sector_log(sch_mod.AwpBaseModel):
     name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
     abbrev = CharField(max_length=8, null=True)
     sequence = PositiveSmallIntegerField(null=True)
-    depbases = ArrayField(IntegerField(), null=True)
+    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -249,7 +248,8 @@ class Subjecttype(sch_mod.AwpBaseModel):
     abbrev = CharField(db_index=True,max_length=20)
     code = CharField(db_index=True,max_length=4)
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
-    depbases = ArrayField(IntegerField(), null=True)
+    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+
     has_prac = BooleanField(default=False) # has practical exam
     has_pws = BooleanField(default=False) # has profielwerkstuk or sectorwerkstuk
     one_allowed = BooleanField(default=False) # if true: only one subject with this Subjecttype allowed per student
@@ -274,7 +274,8 @@ class Subjecttype_log(sch_mod.AwpBaseModel):
     abbrev = CharField(max_length=c.MAX_LENGTH_20,null=True)
     code = CharField(max_length=c.MAX_LENGTH_04,null=True)
     sequence = PositiveSmallIntegerField(null=True)
-    depbases = ArrayField(IntegerField(), null=True)
+    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+
     has_prac = BooleanField(default=False)
     has_pws = BooleanField(default=False)
     one_allowed = BooleanField(default=False)
@@ -325,7 +326,7 @@ class Scheme(sch_mod.AwpBaseModel):
     level = ForeignKey(Level, null=True, blank=True, related_name='schemes', on_delete=CASCADE)
     sector = ForeignKey(Sector, null=True,  blank=True, related_name='schemes', on_delete=CASCADE)
     name = CharField(max_length=50)  # TODO set department+level+sector Unique per examyear True.
-    fields = CharField(max_length=c.MAX_LENGTH_NAME, null=True,  blank=True, choices=c.SCHEMEFIELD_CHOICES)
+    fields = CharField(max_length=255, null=True, blank=True, choices=c.SCHEMEFIELD_CHOICES)
 
     class Meta:
         ordering = ['name',]
@@ -381,7 +382,6 @@ class Scheme_log(sch_mod.AwpBaseModel):
         return c.MODE_DICT.get(str(self.mode),'-')
 
 
-
 # =============  Subject Model  =====================================
 class Subjectbase(Model):
     objects = sch_mod.AwpModelManager()
@@ -403,7 +403,7 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
 
     name = CharField(max_length=c.MAX_LENGTH_NAME)
     sequence = PositiveSmallIntegerField(default=9999)
-    depbases = ArrayField(IntegerField(), null=True)
+    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     class Meta:
         ordering = ['sequence',]
@@ -447,10 +447,9 @@ class Subject_log(sch_mod.AwpBaseModel):
     name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
     code = CharField(max_length=c.MAX_LENGTH_10, null=True)  # stored in subjectbase PR2020-12-11
     sequence = PositiveSmallIntegerField(null=True)
-    depbases = ArrayField(IntegerField(), null=True)
+    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
-
 
 
 # PR2018-06-05
@@ -564,6 +563,49 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
+class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
+    # PR2021-03-04 contains exam possible ansewers per exam question
+    # subject abbrev is stored as 'code' in Subjectbase
+    # Subject has no country field: country is a field in examyear
+
+    objects = sch_mod.AwpModelManager()
+
+    subject = ForeignKey(Subject, related_name='+', on_delete=CASCADE)
+
+    examperiod = PositiveSmallIntegerField(db_index=True, default=1)
+    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
+
+    result = CharField(max_length=4096, null=True, blank=True)
+
+    auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+
+
+
+class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
+    # PR2021-03-04 contains exam possible ansewers per exam question
+    # subject abbrev is stored as 'code' in Subjectbase
+    # Subject has no country field: country is a field in examyear
+
+    objects = sch_mod.AwpModelManager()
+
+    exam_id = IntegerField(db_index=True)
+
+    subject_log = ForeignKey(Subject_log, related_name='+', on_delete=CASCADE)
+
+    examperiod = PositiveSmallIntegerField(db_index=True, default=1)
+    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
+
+    result = CharField(max_length=4096, null=True, blank=True)
+
+    auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+
+
 # PR2018-06-06 # PR2019-02-17
 class Package(sch_mod.AwpBaseModel):
     objects = sch_mod.AwpModelManager()
@@ -628,7 +670,7 @@ class Cluster(sch_mod.AwpBaseModel):
 
     name = CharField(max_length=50)
     abbrev = CharField(max_length=20)
-    depbases = ArrayField(IntegerField(), null=True)
+    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
 
     def __str__(self):
@@ -646,7 +688,7 @@ class Cluster_log(sch_mod.AwpBaseModel):
 
     name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
     abbrev = CharField(max_length=c.MAX_LENGTH_20, null=True)
-    depbases = ArrayField(IntegerField(), null=True)
+    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 

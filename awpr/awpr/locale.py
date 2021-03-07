@@ -142,10 +142,10 @@ def get_locale_dict(table_dict, user_lang):
         dict['No_worksheets'] = _('There are no worksheets.')
         dict['No_worksheets_with_data'] = _('There are no worksheets with data.')
 
-        dict['linkunique_The_field'] = _("The field ")
-        dict['linkunique_One_ofthe_fields'] = _("One of the fields ")
+        dict['link_The_field'] = _("The field ")
+        dict['link_One_ofthe_fields'] = _("One of the fields ")
         dict['_or_'] = _(" or ")
-        dict['linkunique_mustbelinked_and_unique'] = _(" must be linked and contain unique values.")
+        dict['link_mustbelinked'] = _(" must be linked.")
 
         dict['Link_sectors'] = _('Link sectors')
         dict['Link_profielen'] = _('Link profielen')
