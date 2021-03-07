@@ -206,13 +206,17 @@ urlpatterns = [
         path('grades', grade_views.GradeListView.as_view(), name='grades_url'),
         path('grade_upload', grade_views.GradeUploadView.as_view(), name='grade_upload_url'),
         path('grade_approve', grade_views.GradeApproveView.as_view(), name='grade_approve_url'),
-        path('download_published_file', grade_exfiles.DownloadPublishedFile.as_view(), name='download_published_file_url'),
+        #path('download_published_file', grade_exfiles.DownloadPublishedFile.as_view(), name='download_published_file_url'),
         path('grade_download_ex2a', grade_exfiles.GradeDownloadEx2aView.as_view(), name='grade_download_ex2a_url'),
 
         path('load_cities/', student_views.load_cities, name='load_cities_url'),  # PR2018-09-03
 
         path('uploadsetting', student_views.StudentImportUploadSetting.as_view(), name='student_uploadsetting_url'),
 
+# department PR2018-08-11 PR2019-02-27
+        path('exfiles/', include([
+            path('<filename>/', grade_exfiles.DownloadPublishedFile.as_view(), name='download_published_file_url'),
+        ])),
     ])),
 
     # PR2018-05-06 debug: don't forget the brackets at the end of as_view() !!

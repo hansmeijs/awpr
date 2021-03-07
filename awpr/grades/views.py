@@ -476,13 +476,16 @@ def approve_grade(grade, sel_examtype, is_test, is_reset, msg_dict, request):  #
 # - end of approve_grade
 
 def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, request):  # PR2021-01-21
-    logger.debug('----- submit_grade -----')
+    logging_on = False
+    if logging_on:
+        logger.debug('----- submit_grade -----')
 
     if grade and sel_examtype and sel_examtype in ('se', 'pe', 'ce'):
 
 # - check if this grade / examtype is already published
         published = getattr(grade, sel_examtype + '_published')
-        logger.debug('published: ' + str(published))
+        if logging_on:
+            logger.debug('published: ' + str(published))
         if published:
             msg_dict['already_published'] += 1
         else:
@@ -493,7 +496,8 @@ def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, req
             if sel_examtype in ('pe', 'ce'):
                 score_value = getattr(grade, sel_examtype + 'score')
             no_value = grade_value is None and score_value is None
-            logger.debug('no_value: ' + str(no_value))
+            if logging_on:
+                logger.debug('no_value: ' + str(no_value))
             if no_value:
                 msg_dict['no_value'] += 1
             else:
@@ -505,17 +509,19 @@ def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, req
                 # TODO dnot checking on auth3by ia only for testing. Must put it back
                 # auth_missing = auth1by is None or auth2by is None or auth3by is None
                 auth_missing = auth1by is None or auth2by is None
-                logger.debug('subject: ' + str(grade.studentsubject.schemeitem.subject.name))
-                logger.debug('auth1by: ' + str(auth1by))
-                logger.debug('auth2by: ' + str(auth2by))
-                logger.debug('auth3by: ' + str(auth3by))
-                logger.debug('auth_missing: ' + str(auth_missing))
+                if logging_on:
+                    logger.debug('subject: ' + str(grade.studentsubject.schemeitem.subject.name))
+                    logger.debug('auth1by: ' + str(auth1by))
+                    logger.debug('auth2by: ' + str(auth2by))
+                    logger.debug('auth3by: ' + str(auth3by))
+                    logger.debug('auth_missing: ' + str(auth_missing))
                 if auth_missing:
                     msg_dict['auth_missing'] += 1
                 else:
 # - check if all auth are different
                     double_approved = auth1by == auth2by or auth1by == auth3by or auth2by == auth3by
-                    logger.debug('double_approved: ' + str(double_approved))
+                    if logging_on:
+                        logger.debug('double_approved: ' + str(double_approved))
                     if double_approved and not auth_missing:
                         msg_dict['double_approved'] += 1
                     else:
@@ -531,10 +537,11 @@ def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, req
                             new_value_bool = True
                             new_status_sum = set_status_sum_by_index(saved_status_sum, status_index, new_value_bool)
 
-                            logger.debug('saved_status_sum: ' + str(saved_status_sum))
-                            logger.debug('status_index: ' + str(status_index))
-                            logger.debug('new_status_sum: ' + str(new_status_sum))
-                            setattr(grade, sel_examtype + '_status', new_status_sum)
+                            if logging_on:
+                                logger.debug('saved_status_sum: ' + str(saved_status_sum))
+                                logger.debug('status_index: ' + str(status_index))
+                                logger.debug('new_status_sum: ' + str(new_status_sum))
+                                setattr(grade, sel_examtype + '_status', new_status_sum)
 # - save changes
                             grade.save(request=request)
 # - end of approve_grade
@@ -920,10 +927,13 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
 # from https://stackoverflow.com/questions/26274021/simply-save-file-to-folder-in-django
 # from https://stackoverflow.com/questions/51139721/django-save-canvas-object-as-a-pdf-file-to-filefield
 
-    try:
+    #try:
+    if True:
         # create PDF
-        file_dir = ''.join((awpr_settings.AWS_LOCATION, '/published/'))
-        # PR2021-03-06 was: file_path = ''.join((awpr_settings.STATICFILES_MEDIA_DIR, published_instance.filename))
+        if awpr_settings.AWS_LOCATION:
+            file_dir = ''.join((awpr_settings.AWS_LOCATION, '/published/'))
+        else:
+            file_dir = awpr_settings.STATICFILES_MEDIA_DIR
         file_path = ''.join((file_dir, published_instance.filename))
         file_name = published_instance.name
 
@@ -942,8 +952,8 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
         canvas.save()
 
         logger.debug('canvas: ' + str(canvas))
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
+    #except Exception as e:
+   #     logger.error(getattr(e, 'message', str(e)))
 
     """
     else:

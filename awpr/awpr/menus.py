@@ -200,22 +200,22 @@ def get_headerbar_param(request, page):
     return headerbar
 
 def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-12-23
-    logger.debug('------------ get_saved_page_url ----------------')
-    logger.debug('sel_page: ' + str(sel_page))
+    #logger.debug('------------ get_saved_page_url ----------------')
+    #logger.debug('sel_page: ' + str(sel_page))
     # only called by schools.views.Loggedin,
     # retrieves submenu_href for: return HttpResponseRedirect(reverse_lazy(saved_href))
     lookup_page = sel_page if sel_page else 'examyear'
-    logger.debug('lookup_page: ' + str(lookup_page))
+    #logger.debug('lookup_page: ' + str(lookup_page))
     page_href = ''
     menu = menus_dict.get(lookup_page)
-    logger.debug('menu: ' + str(menu))
+    #logger.debug('menu: ' + str(menu))
     if menu:
         # function gets first href in href_tuple, when insp or admin it gets the second item
         page_href = get_href_from_href_tuple(menu, request)
     if not page_href:
         page_href = 'home_url'
 
-    logger.debug('page_href: ' + str(page_href))
+    #logger.debug('page_href: ' + str(page_href))
     return page_href
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++

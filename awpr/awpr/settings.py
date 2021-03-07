@@ -156,15 +156,16 @@ AUTH_USER_MODEL = 'accounts.User'
 
 # PR2021-03-07 https://www.ordinarycoders.com/blog/article/serve-django-static-and-media-files-in-production
 # Comment out the original STATIC_URL and STATICFILES_DIRS.
-    # STATIC_URL = '/static/'
-    # PR2018-03-06 This line tells Django to append static to the base url when searching for static files.
+STATIC_URL = '/static/'
+# PR2018-03-06 This line tells Django to append static to the base url when searching for static files.
 
-
-    # PR2018-03-03 Error: he STATICFILES_DIRS setting should not contain the STATIC_ROOT setting.
-    # PR2018-03-06 The STATICFILES_DIRS tells Django where to look for static files that are not tied to a particular app.
-    # STATICFILES_DIRS = [  os.path.join(BASE_DIR, 'static'),]
-    # PR 2018-03-06 STATIC_ROOT is the folder where all static files will be stored after a manage.py collectstatic.
-    # STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# PR2018-03-03 Error: he STATICFILES_DIRS setting should not contain the STATIC_ROOT setting.
+# PR2018-03-06 The STATICFILES_DIRS tells Django where to look for static files that are not tied to a particular app.
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+# PR 2018-03-06 STATIC_ROOT is the folder where all static files will be stored after a manage.py collectstatic.
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # PR2021-01-22 path to fonts dir in statis
 # PR2021-02-07 debug: backslash + '\\' gives error on server, use / instead
@@ -172,7 +173,7 @@ AUTH_USER_MODEL = 'accounts.User'
 STATICFILES_FONTS_DIR = os.path.join(BASE_DIR, 'static', 'fonts') + '/'
 # 'static', 'media' goes wrong on server, becasue collectsttaic puts all static file in one folder
 # was: STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'static', 'media') + '/'
-STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'published') + '/'
+STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'media', 'published') + '/'
 
 # PR2021-01-22 from https://www.caktusgroup.com/blog/2017/08/28/advanced-django-file-handling/
 # how to handle DEFAULT_FILE_STORAGE ( i.e. MEDIAFILES_STORAGE)
@@ -189,13 +190,9 @@ AWS_S3_CUSTOM_DOMAIN = config('AWS_S3_CUSTOM_DOMAIN')
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400',}
 AWS_LOCATION = config('AWS_LOCATION')
 
-STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
-STATIC_URL = 'https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN, AWS_LOCATION)
-
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
+# PR2021-03-07  don't put static files in spaces, goes wrong when collectstatic
+# STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+# was: STATIC_URL = 'https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN, AWS_LOCATION)
 
 # PR 2018-03-27
 LOGIN_URL = 'login'
