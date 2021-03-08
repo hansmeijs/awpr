@@ -2,7 +2,7 @@
 from django.contrib.auth.decorators import login_required
 
 from django.core.files.storage import default_storage, FileSystemStorage
-from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpResponseNotFound, FileResponse
 from django.utils.decorators import method_decorator
 from django.utils.translation import activate, ugettext_lazy as _
 from django.views.generic import View
@@ -27,6 +27,7 @@ from students import views as stud_view
 from subjects import models as subj_mod
 from grades import views as gr_vw
 
+from os import path
 import io
 import json
 import logging
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 @method_decorator([login_required], name='dispatch')
-class GradeDownloadPdfView(View):  # PR2021-02-0
+class GradeDownloadPdfViewNIU(View):  # PR2021-02-0
 
     def post(self, request):
         logger.debug(' ============= GradeDownloadPdfView ============= ')
@@ -72,8 +73,10 @@ class GradeDownloadPdfView(View):  # PR2021-02-0
 
                         if fs.exists(filename):
                             with fs.open(filename) as pdf:
-                                response = HttpResponse(content_type='application/pdf')
-                                response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                                response = FileResponse(pdf)
+
+                               # response = HttpResponse(content_type='application/pdf')
+                                #response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
                                 # response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
 
                                 response.write(pdf)
@@ -96,13 +99,34 @@ class GradeDownloadPdfView(View):  # PR2021-02-0
             raise Http404("Error creating Ex2A file")
 
 
+
+@method_decorator([login_required], name='dispatch')
+class DownloadPublishedFile_with_filename(View):  # PR2021-02-07
+
+    def post(self, request, filename):
+        logger.debug(' ============= DownloadPublishedFile ============= ')
+        logger.debug('filename: ' + str(filename))
+        # download published pdf file from server
+
+        response = None
+
+@method_decorator([login_required], name='dispatch')
+class DownloadPublishedFileNoname(View):  # PR2021-02-07
+
+    def get(self, request):
+        logger.debug('xxxxxxxxxxxx  ============= DownloadPublishedFile ============= ')
+
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
 @method_decorator([login_required], name='dispatch')
 class DownloadPublishedFile(View):  # PR2021-02-07
 
-    def post(self, request):
-        logger.debug(' ============= DownloadPublishedFile ============= ')
-        # download published pdf file from server
+    def get(self, request, pk):
+        logger.debug('xxxxxxxxxxxx  ============= DownloadPublishedFile ============= ')
 
+        logger.debug(' ============= DownloadPublishedFile ============= ')
+        logger.debug('pk: ' + str(pk))
+        # download published pdf file from server
 
         response = None
         # <PERMIT>
@@ -133,39 +157,47 @@ class DownloadPublishedFile(View):  # PR2021-02-07
                             file_name = published.filename
                             if file_name:
 
-                                logger.debug('file_name' + str(file_name))
-                                file_dir = ''.join((awpr_settings.AWS_LOCATION, '/published/'))
-                                # was: file_path = ''.join((awpr_settings.STATICFILES_MEDIA_DIR, file_name))
+                                logger.debug('file_name: ' + str(file_name))
+                                # file_dir = ''.join((awpr_settings.AWS_LOCATION, '/published/'))
+                                file_dir = awpr_settings.STATICFILES_MEDIA_DIR
                                 file_path = ''.join((file_dir, file_name))
                                 logger.debug('file_path: ' + str(file_path))
-                                # gives UnicodeDecodeError : 'charmap' codec can't decode byte 0x9d in position 656:
-                                # see https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
-                                # and https://www.edureka.co/community/51644/python-unicodedecodeerror-codec-decode-position-invalid
-                                # was: with open(file_path, 'r') as pdf:
-                                with open(file_path, 'r', encoding='utf-8', errors='ignore') as pdf:
-                                    logger.debug('pdf: ' + str(pdf) + ' ' + str((type(pdf))) )
-                                    read_data = pdf.read()
-                                    logger.debug('read_data: ' + str(read_data) + ' ' + str((type(read_data))) )
 
-                                    response = HttpResponse(read_data, content_type='application/pdf')
-                                    #response['Content-Disposition'] = 'inline;filename=some_file.pdf'
-                                    response['Content-Disposition'] = 'attachment;filename=some_file.pdf'
-                                    return response
+                                if path.exists(file_path):
+                                    logger.debug('file_path exists: ')
+                                    # gives UnicodeDecodeError : 'charmap' codec can't decode byte 0x9d in position 656:
+                                    # see https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
+                                    # and https://www.edureka.co/community/51644/python-unicodedecodeerror-codec-decode-position-invalid
+                                    # was: with open(file_path, 'r') as pdf:
 
-                                """
-                                try:
-                                    fs = FileSystemStorage()
-                                    if fs.exists(file_name):
-                                        logger.debug('fs.exists' + str(file_name))
-                                        with fs.open(file_name) as pdf:
-                                            response = HttpResponse(pdf, content_type='application/pdf')
-                                            response['Content-Disposition'] = 'attachment; filename="testfile.pdf"'
-                                            return response
-                                    else:
-                                        return HttpResponseNotFound('The requested pdf was not found in our server.')
-                                except:
-                                    raise Http404("Error creating Ex2A file")
-                                """
+                                    with open(file_path, 'rb') as file_object:
+                                        logger.debug("Name of the file: " + str(file_object.name))
+                                        logger.debug('pdf: ' + str(file_object) + ' ' + str((type(file_object))) )
+                                        read_data = file_object.read()
+
+
+
+
+                                        response = HttpResponse(read_data, content_type='application/pdf')
+                                        response['Content-Disposition'] = 'attachment; filename="some_file.pdf"'
+
+                                        logger.debug('response: ' + str(response))
+                                        return response
+
+                                    #try:
+                                        # fs = FileSystemStorage()
+                                        #fs = default_storage
+                                        #if fs.exists(file_name):
+                                        #    logger.debug('file_name' + str(file_name))
+                                        #    with open(file_name) as pdf:
+                                       #         response = HttpResponse(pdf, content_type='application/pdf')
+                                        #        response['Content-Disposition'] = "attachment; filename='" + file_name + ".pdf'"
+                                        #        return response
+                                       # else:
+                                       #     return HttpResponseNotFound('The requested pdf was not found in our server.')
+                                    #except:
+                                    #    raise Http404("Error creating Ex2A file")
+
         if response:
             return response
         else:

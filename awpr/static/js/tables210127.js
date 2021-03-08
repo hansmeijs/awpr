@@ -44,7 +44,7 @@
 
 //=========  t_MSSD_FillSelectTable  ================ PR2020-08-21 PR2020-12-18
     function t_MSSD_FillSelectTable(loc, tblName, data_map, setting_dict, MSESD_Response, selected_pk) {
-        console.log( "===== t_MSSD_FillSelectTable ========= ");
+        //console.log( "===== t_MSSD_FillSelectTable ========= ");
 
 // set header text
         const header_text = (tblName === "examyear") ? loc.Select_examyear :
@@ -65,8 +65,8 @@
                 let code_value = "---";
                 const locked = (map_dict.locked) ? map_dict.locked : false;
                 const activated = (map_dict.activated) ? map_dict.activated : false;
-        console.log( "map_dict", map_dict);
-        console.log( "activated", activated);
+        //console.log( "map_dict", map_dict);
+        //console.log( "activated", activated);
                 if(tblName === "examyear") {
                     code_value = (map_dict.examyear_code) ? map_dict.examyear_code : "---";
                 } else if(tblName === "school") {
@@ -80,8 +80,8 @@
                 }
                 let skip_row = false;
                 if(tblName === "department"){
-        console.log( "setting_dict", setting_dict);
-        console.log( "setting_dict.allowed_depbases", setting_dict.allowed_depbases);
+        //console.log( "setting_dict", setting_dict);
+        //console.log( "setting_dict.allowed_depbases", setting_dict.allowed_depbases);
                     if (setting_dict.allowed_depbases){
                         skip_row = !setting_dict.allowed_depbases.includes(pk_int);
                     } else {
@@ -102,7 +102,7 @@
 
 //=========  t_MSESD_CreateSelectRow  ================ PR2020-10-27 PR2020-12-18
     function t_MSESD_CreateSelectRow(tblName, tblBody_select, pk_int, code_value, activated, locked, MSESD_Response, selected_pk) {
-        console.log( "===== t_MSESD_CreateSelectRow ========= ");
+        //console.log( "===== t_MSESD_CreateSelectRow ========= ");
 
         const is_selected_pk = (selected_pk != null && pk_int === selected_pk)
 // ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
@@ -226,7 +226,6 @@
         const name = (tblName === "student") ? dict.fullname : dict.name
         const is_selected_row = (pk_int === selected_pk);
 
-        console.log("name", name);
 //--------- insert tblBody_select row at end
         const map_id = "sel_" + tblName + "_" + pk_int
         const tblRow = tblBody_select.insertRow(-1);
@@ -852,7 +851,8 @@ console.log("=========   handle_table_row_clicked   ======================") ;
     }  // t_FillOptionFromList
 
 //========= t_FillOptionsFromList  =======  PR2020-12-17
-    function t_FillOptionsFromList(el_select, data_list, filter_value, select_text, select_text_none, selected_value) {
+    function t_FillOptionsFromList(el_select, data_list, value_field, caption_field,
+                                    select_text, select_text_none, selected_value, filter_field, filter_value) {
         //console.log( "=== t_FillOptionsFromList ");
 
 // ---  fill options of select box
@@ -863,9 +863,12 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         if(data_list){
             for (let i = 0, len = data_list.length; i < len; i++) {
                 const item_dict = data_list[i];
-                const show_row = (filter_value) ? (item_dict.filter === filter_value) : true;
+                const item_filter = item_dict[filter_field];
+                const item_value = item_dict[value_field];
+                const item_caption = item_dict[caption_field];
+                const show_row = (item_filter && filter_value) ? (item_filter === filter_value) : true;
                 if(show_row){
-                    option_text += FillOptionTextNew(item_dict.value, item_dict.caption, selected_value)
+                    option_text += FillOptionTextNew(item_value, item_caption, selected_value)
                     row_count += 1
                 }
             }
@@ -874,11 +877,11 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 
 // show text "No items found" when no rows and select_text_none has value
         if (!row_count){
-            option_text = "<option value=\"\" disabled selected hidden>" + select_text_none + "...</option>"
+            option_text = "<option value=\"\" disabled selected hidden>" + select_text_none + "</option>"
         } else if (row_count === 1) {
             select_first_option = true
         } else if (row_count > 1 && select_text){
-            option_text = "<option value=\"\" disabled selected hidden>" + select_text + "...</option>" + option_text;
+            option_text = "<option value=\"\" disabled selected hidden>" + select_text + "</option>" + option_text;
         }
         el_select.innerHTML = option_text;
 // if there is only 1 option: select first option

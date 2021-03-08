@@ -745,6 +745,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
         "CONCAT('grade_', grade.id::TEXT) AS mapid, 'grade' AS table,",
 
         "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
+        "stud.level_id AS lvl_id, lvl.abbrev AS lvl_abbrev, stud.sector_id AS sct_id, sct.abbrev AS sct_abbrev,",
         "stud.iseveningstudent, ey.locked AS ey_locked, school.locked AS school_locked, stud.locked AS stud_locked,",
         "school.islexschool,",
         "ey.no_practexam, ey.no_centralexam, ey.combi_reex_allowed, ey.no_exemption_ce, ey.no_thirdperiod,",
@@ -765,6 +766,10 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
         "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grade.studentsubject_id)",
 
         "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+        "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+        "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
+
+
         "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
         "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
         "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
@@ -817,6 +822,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
 
     return grade_rows
 # --- end of create_grade_rows
+
 
 
 def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk):

@@ -15,14 +15,14 @@
         <div class="sidebar_header">
             <h3>{% trans 'Grades' %}</h3>
         </div>
-        <div class="tw_200 m-2">
+        <div id="id_SBR_container_examperiod" class="tw_200 m-2 display_hide">
             <h6 class="tw_200 line_height_normal px-2">{% trans 'Period' %}:</h6>
             <select id="id_SBR_select_period" class="tw_200 border_none px-1"
                 autocomplete="off" ondragstart="return false;" ondrop="return false;"
            ></select>
         </div>
 
-        <div class="tw_200 m-2">
+        <div id="id_SBR_container_examtype" class="tw_200 m-2 display_hide">
             <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam type' %}:</h6>
             <select id="id_SBR_select_examtype" class="tw_200 border_none px-1"
                 autocomplete="off" ondragstart="return false;" ondrop="return false;"
@@ -30,35 +30,41 @@
             </select>
         </div>
 
-        <div class="tw_200 m-2">
+        <div id="id_SBR_container_level" class="tw_200 m-2 display_hide">
             <h6 class="tw_200 line_height_normal px-2">{% trans 'Leerweg' %}:</h6>
-            <input id="id_SBR_select_level" type="text"
-                class="tw_200 border_none pointer_show px-2" readonly>
+            <select id="id_SBR_select_level" class="tw_200 border_none px-1"
+                autocomplete="off" ondragstart="return false;" ondrop="return false;"
+           ></select>
         </div>
 
-        <div class="tw_200 m-2">
+        <div id="id_SBR_container_sector" class="tw_200 m-2 display_hide">
+            <h6 id="id_SBR_select_sector_label" class="tw_200 line_height_normal px-2"></h6>
+            <select id="id_SBR_select_sector" class="tw_200 border_none px-1"
+                autocomplete="off" ondragstart="return false;" ondrop="return false;"
+           ></select>
+        </div>
+
+        <div id="id_SBR_container_subject" class="tw_200 m-2 display_hide">
             <h6 class="tw_200 line_height_normal px-2">{% trans 'Subject' %}:</h6>
             <input id="id_SBR_select_subject" type="text"
                 class="tw_200 border_none pointer_show px-2" readonly>
         </div>
 
-        <div class="tw_200 m-2 display_hide">
+        <div id="id_SBR_container_cluster" class="tw_200 m-2 display_hide">
             <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
            <input id="id_SBR_select_cluster" type="text"
                 class="tw_200 border_none pointer_show px-2" readonly>
         </div>
 
-        <div class="tw_200 m-2">
+        <div id="id_SBR_container_student" class="tw_200 m-2 display_hide">
             <h6 class="tw_200 line_height_normal px-2">{% trans 'Candidate' %}:</h6>
             <input id="id_SBR_select_student" type="text"
                 class="tw_200 border_none pointer_show px-1" readonly>
         </div>
 
-        <div class="tw_200 m-2">
+        <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
             <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all from this period' %}</h6>
         </div>
-
-
 
     </nav>
 {% endblock %}
@@ -142,7 +148,7 @@
                 data-studsubj_upload_url="{% url 'studsubj_upload_url' %}"
                 data-grade_upload_url="{% url 'grade_upload_url' %}"
                 data-grade_approve_url="{% url 'grade_approve_url' %}"
-                data-download_published_file_url="{% url 'download_published_file_url' %}"
+                data-download_published_file_url="{% url 'grades_download_noargs_url' %}"
                 data-grade_download_ex2a_url="{% url 'grade_download_ex2a_url' %}"
                 data-studentsubjectnote_upload_url="{% url 'studentsubjectnote_upload_url' %}"
             >

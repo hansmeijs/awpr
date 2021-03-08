@@ -106,10 +106,10 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['department_rows'] = school_dicts.create_department_rows(sel_examyear)
 # ----- levels
                 if datalist_request.get('level_rows'):
-                    datalists['level_rows'] = school_dicts.create_level_rows(sel_examyear)
+                    datalists['level_rows'] = school_dicts.create_level_rows(sel_examyear, sel_depbase)
 # ----- sectors
                 if datalist_request.get('sector_rows'):
-                    datalists['sector_rows'] = school_dicts.create_sector_rows(sel_examyear)
+                    datalists['sector_rows'] = school_dicts.create_sector_rows(sel_examyear, sel_depbase)
 # ----- subjects
                 if datalist_request.get('subject_rows'):
                     datalists['subject_rows'] = sj_vw.create_subject_rows(new_setting_dict, {}, None)
@@ -281,6 +281,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
             # setting_dict['sel_department_abbrev'] = sel_department_instance.abbrev
             # setting_dict['sel_department_name'] = sel_department_instance.name
             setting_dict['sel_dep_level_req'] = sel_department_instance.level_req
+            setting_dict['sel_dep_has_profiel'] = sel_department_instance.has_profiel
             # setting_dict['sel_dep_sector_req'] = sel_department_instance.sector_req
 
         #logger.debug('>>>>>>>>>> setting_dict[sel_department_abbrev]: ' + str(setting_dict['sel_department_abbrev']))

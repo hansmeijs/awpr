@@ -420,7 +420,7 @@ def get_department(old_examyear, new_examyear):
 
 # ===============================
 def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_depbase):  # PR2020-04-17 PR2020-12-28  PR2021-01-12
-    logging_on = True
+    logging_on = False
     if logging_on:
         logger.debug(' ---------------- get_schoolsetting ---------------- ')
         logger.debug('request_item_setting: ' + str(request_item_setting) + ' ' + str(type(request_item_setting)))

@@ -41,12 +41,18 @@
     }; //function SetMenubuttonActive()
 
 //=========  AddSubmenuButton  === PR2020-01-26
-    function AddSubmenuButton(el_div, a_innerText, a_function, classnames_list, a_id, a_href) {
+    function AddSubmenuButton(el_div, a_innerText, a_function, classnames_list, a_id, a_href, a_download) {
         //console.log(" ---  AddSubmenuButton --- ");
         let el_a = document.createElement("a");
             if(!!a_id){el_a.setAttribute("id", a_id)};
 
-            if(!!a_href) {el_a.setAttribute("href", a_href)};
+            if(a_href) {
+                el_a.setAttribute("href", a_href)
+                if(a_download){
+                    //el_a.setAttribute("download", true)
+                    el_a.setAttribute("target", "_blank")
+                }
+            };
             el_a.innerText = a_innerText;
             if(!!a_function){el_a.addEventListener("click", a_function, false)};
             // set background color of btn

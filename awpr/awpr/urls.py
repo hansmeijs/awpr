@@ -143,7 +143,6 @@ urlpatterns = [
         path('uploadsetting', school_views.SchoolImportUploadSetting.as_view(), name='school_uploadsetting_url'),
         path('uploaddata', school_views.SchoolImportUploadData.as_view(), name='school_uploaddata_url'),
 
-
         path('<int:pk>/', include([
             path('select/', school_views.SchoolSelectView.as_view(), name='school_selected_url'),
             path('log', school_views.SchoolLogView.as_view(), name='school_log_url'),
@@ -203,20 +202,23 @@ urlpatterns = [
 
         path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='studentsubjectnote_upload_url'),
 
-        path('grades', grade_views.GradeListView.as_view(), name='grades_url'),
-        path('grade_upload', grade_views.GradeUploadView.as_view(), name='grade_upload_url'),
-        path('grade_approve', grade_views.GradeApproveView.as_view(), name='grade_approve_url'),
-        #path('download_published_file', grade_exfiles.DownloadPublishedFile.as_view(), name='download_published_file_url'),
-        path('grade_download_ex2a', grade_exfiles.GradeDownloadEx2aView.as_view(), name='grade_download_ex2a_url'),
 
         path('load_cities/', student_views.load_cities, name='load_cities_url'),  # PR2018-09-03
 
         path('uploadsetting', student_views.StudentImportUploadSetting.as_view(), name='student_uploadsetting_url'),
 
-# department PR2018-08-11 PR2019-02-27
-        path('exfiles/', include([
-            path('<filename>/', grade_exfiles.DownloadPublishedFile.as_view(), name='download_published_file_url'),
-        ])),
+
+
+    ])),
+# ===== STUDENTS ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
+    path('grades/', include([
+        path('grade', grade_views.GradeListView.as_view(), name='grades_url'),
+        path('upload', grade_views.GradeUploadView.as_view(), name='grade_upload_url'),
+        path('approve', grade_views.GradeApproveView.as_view(), name='grade_approve_url'),
+        path('download_ex2a', grade_exfiles.GradeDownloadEx2aView.as_view(), name='grade_download_ex2a_url'),
+        path('download', grade_exfiles.DownloadPublishedFileNoname.as_view(), name='grades_download_noargs_url'),
+        path('download/<int:pk>/', grade_exfiles.DownloadPublishedFile.as_view(), name='grades_download_url'),
+
     ])),
 
     # PR2018-05-06 debug: don't forget the brackets at the end of as_view() !!
@@ -235,3 +237,5 @@ urlpatterns = [
         path('ajax_ssi_upload/', subject_views.SchemeitemUploadView.as_view(), name='ajax_ssi_upload_url'),
     ])),
 ]
+
+# department PR2018-08-11 PR2019-02-27

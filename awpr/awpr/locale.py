@@ -71,6 +71,7 @@ def get_locale_dict(table_dict, user_lang):
     dict['SectorenProfielen'] = _('Sectoren / Profielen')
     dict['SectorProfiel_twolines'] = _('Sector /\nProfiel')
     dict['Leerweg'] = _('Leerweg')
+    dict['Leerweg_twolines'] = _('Leer-\nweg')
     dict['Sectors'] = _('Sectors')
     dict['Abbreviation'] = _('Abbreviation')
     dict['Candidate'] = _('Candidate')
@@ -440,11 +441,14 @@ def get_locale_dict(table_dict, user_lang):
         dict['No_examperiods_found'] = _('No exam periods found')
         dict['Select_examtype'] = _('Select exam type')
         dict['No_examtypes_found'] = _('No exam types found')
+        dict['All_levels'] = _("All 'leerwegen'")
+        dict['All_sectors'] = _("All sectors")
+        dict['All_profielen'] = _("All 'profielen'")
+        dict['Profiel'] = _('Profiel')
 
         # options_examperiod PR2020-12-20
         dict['options_examperiod'] = c.EXAMPERIOD_OPTIONS
         dict['options_examtype'] = c.EXAMTYPE_OPTIONS
-
 
         dict['President'] = TXT_President
         dict['Secretary'] = TXT_Secretary
