@@ -187,12 +187,19 @@ MEDIA_DIR = '/published/'
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
-AWS_S3_CUSTOM_DOMAIN = config('AWS_S3_CUSTOM_DOMAIN')
+AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL')
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400',}
 AWS_LOCATION = config('AWS_LOCATION')
 
-STATIC_URL = 'https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN, AWS_LOCATION)
-STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+STATIC_URL = 'https://%s/%s/' % (AWS_S3_ENDPOINT_URL, AWS_LOCATION)
+# from Vitor de Freitas: STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+DEFAULT_FILE_STORAGE = 'awpr.storage_backends.MediaStorage'  # <-- here is where we reference it
+
+# PR2021-03-08 from the docs https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
+AWS_S3_REGION_NAME = 'nyc3'
+
 
 # PR 2018-03-27
 LOGIN_URL = 'login'
