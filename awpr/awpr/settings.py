@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'anymail', # PR2018-12-28
 
 # PR2021-03-06 from https://www.digitalocean.com/community/tutorials/how-to-set-up-object-storage-with-django
+# and from https://simpleisbetterthancomplex.com/tutorial/2017/08/01/how-to-setup-amazon-s3-in-a-django-project.html
     'storages'
 ]
 
@@ -156,7 +157,7 @@ AUTH_USER_MODEL = 'accounts.User'
 
 # PR2021-03-07 https://www.ordinarycoders.com/blog/article/serve-django-static-and-media-files-in-production
 # Comment out the original STATIC_URL and STATICFILES_DIRS.
-STATIC_URL = '/static/'
+# STATIC_URL = '/static/'
 # PR2018-03-06 This line tells Django to append static to the base url when searching for static files.
 
 # PR2018-03-03 Error: he STATICFILES_DIRS setting should not contain the STATIC_ROOT setting.
@@ -190,9 +191,8 @@ AWS_S3_CUSTOM_DOMAIN = config('AWS_S3_CUSTOM_DOMAIN')
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400',}
 AWS_LOCATION = config('AWS_LOCATION')
 
-# PR2021-03-07  don't put static files in spaces, goes wrong when collectstatic
-# STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-# was: STATIC_URL = 'https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN, AWS_LOCATION)
+STATIC_URL = 'https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN, AWS_LOCATION)
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
 # PR 2018-03-27
 LOGIN_URL = 'login'
