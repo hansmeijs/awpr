@@ -1,6 +1,7 @@
 from django.db import connection
 
 from awpr import constants as ac
+from awpr import functions as af
 from schools import models as sch_mod
 
 import logging
@@ -30,7 +31,7 @@ def create_examyear_rows(country, append_dict, examyear_pk):
 
     newcursor = connection.cursor()
     newcursor.execute(sql, sql_keys)
-    examyear_rows = sch_mod.dictfetchall(newcursor)
+    examyear_rows = af.dictfetchall(newcursor)
 
     # - add messages to subject_row
     if examyear_pk and examyear_rows:
@@ -68,7 +69,7 @@ def create_department_rows(examyear):
 
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
-        rows = sch_mod.dictfetchall(cursor)
+        rows = af.dictfetchall(cursor)
 
     return rows
 # --- end of create_department_rows
@@ -101,7 +102,7 @@ def create_level_rows(examyear, depbase):
 
                 with connection.cursor() as cursor:
                     cursor.execute(sql, sql_keys)
-                    rows = sch_mod.dictfetchall(cursor)
+                    rows = af.dictfetchall(cursor)
 
     return rows
 # --- end of create_level_rows
@@ -134,7 +135,7 @@ def create_sector_rows(examyear, depbase):
 
                 with connection.cursor() as cursor:
                     cursor.execute(sql, sql_keys)
-                    rows = sch_mod.dictfetchall(cursor)
+                    rows = af.dictfetchall(cursor)
 
     return rows
 # --- end of create_sector_rows
@@ -179,7 +180,7 @@ def create_school_rows(examyear, setting_dict):
     sql = ' '.join(sql_list)
     newcursor = connection.cursor()
     newcursor.execute(sql, sql_keys)
-    school_rows = sch_mod.dictfetchall(newcursor)
+    school_rows = af.dictfetchall(newcursor)
 
     return school_rows
 # --- end of create_school_rows

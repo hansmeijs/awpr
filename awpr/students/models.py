@@ -19,7 +19,7 @@ from schools import models as sch_mod
 
 from schools.models import Examyear, Department, Department_log, School, School_log
 from subjects.models import Level, Level_log, Sector, Sector_log, Scheme, Scheme_log, Schemeitem, Schemeitem_log,\
-    Exam, Exam_log,Package, Package_log, Cluster, Cluster_log
+    Exam, Exam_log, Package, Package_log, Cluster, Cluster_log
 
 import logging
 logger = logging.getLogger(__name__)
@@ -158,6 +158,39 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
             full_name = prefix_str.strip() + ' ' + full_name
         if first_name:  # put first_name after last_name
             full_name += ', ' + first_name.strip()
+        return full_name
+
+    @property
+    def fullnamewithinitials(self):
+        # PR2019-01-13 is str() necessary?.
+        # PR2020-12-07 Yes, must convert class 'CharField' to String,
+        # otherwise self.lastname.strip()  gets error: Unresolved attribute reference 'strip' for class 'CharField'
+        last_name = str(self.lastname) if self.lastname else ''
+        first_name = str(self.firstname) if self.firstname else ''
+        prefix_str = str(self.prefix) if self.prefix else ''
+        full_name = ''
+
+        if last_name:
+            full_name = last_name.strip()  # Trim
+        if prefix_str: # put prefix before last_name
+            full_name = prefix_str.strip() + ' ' + full_name
+        first_names = ''
+        first_name_stripped = first_name.strip()
+        if ' ' in first_name_stripped:
+            arr = first_name_stripped.split()
+            get_initial = False
+            initials = ''
+            for a in arr:
+                if not get_initial:
+                    first_names = a
+                    get_initial = True
+                else:
+                    a_strip = a.strip()
+                    if a_strip:
+                        initials += a_strip[0:1].upper()
+            if initials:
+                first_names += ' ' + initials
+        full_name += ', ' + first_names
         return full_name
 
     @property

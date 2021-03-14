@@ -45,7 +45,6 @@
         //console.log(" ---  AddSubmenuButton --- ");
         let el_a = document.createElement("a");
             if(!!a_id){el_a.setAttribute("id", a_id)};
-
             if(a_href) {
                 el_a.setAttribute("href", a_href)
                 if(a_download){

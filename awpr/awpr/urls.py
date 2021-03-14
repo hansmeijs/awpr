@@ -30,6 +30,7 @@ from schools import imports as school_imports
 from students import views as student_views
 from subjects import views as subject_views
 from grades import views as grade_views
+from grades import excel as grade_excel
 from grades import exfiles as grade_exfiles
 from reports import views as report_views
 
@@ -202,14 +203,13 @@ urlpatterns = [
 
         path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='studentsubjectnote_upload_url'),
 
+        path('download_ex1', grade_excel.StudsubjDownloadEx1View.as_view(), name='grade_download_ex1_url'),
 
         path('load_cities/', student_views.load_cities, name='load_cities_url'),  # PR2018-09-03
 
         path('uploadsetting', student_views.StudentImportUploadSetting.as_view(), name='student_uploadsetting_url'),
-
-
-
     ])),
+
 # ===== STUDENTS ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
     path('grades/', include([
         path('grade', grade_views.GradeListView.as_view(), name='grades_url'),

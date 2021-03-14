@@ -181,7 +181,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 let dict_list = [];
                 for (let i = 0; i < rowLength; i++) {
                     const row = mimp.curWorksheetData[i];
-                    console.log ("row", i,  row);
+                    //console.log ("row", i,  row);
 
 //------ loop through cells of row
                     // rowindex is index of tablerow. Index 0 is header, therefore rowindex starts with 1
@@ -190,16 +190,16 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                     let subject_dict = {}
                     for (let j = 0, len = row.length; j < len; j++) {
                         const cell_value = row[j];
-                        console.log ("    col_index", j, "cell_value", cell_value, typeof cell_value);
+                        //console.log ("    col_index", j, "cell_value", cell_value, typeof cell_value);
         // skip if cell is empty
                         if(cell_value) {  // cell_value is string , no need for cell_value != null
         // check if column is in mapped_awpColdefs
                             if(j in mapped_awpColdefs){
-                        console.log ("    column index " + j + "is in mapped_awpColdefs");
+                        //console.log ("    column index " + j + "is in mapped_awpColdefs");
         // add cellvalue to awpColdef
                                 const awpColdef = mapped_awpColdefs[j];
                                 dict[awpColdef] = cell_value
-                        console.log ("    awpColdef[" + awpColdef + "]", cell_value);
+                        //console.log ("    awpColdef[" + awpColdef + "]", cell_value);
         // check if column is subject column
                             } else if(j in mapped_subjects){
                                 // TODO also map cell_value with subjecttype
@@ -207,13 +207,13 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                                 // ---  check if value exists in linked_exc_values
                                 const subjectBasePk = Number(mapped_subjects[j]);
                                 if (subjectBasePk){
-                        console.log ("    subjectBasePk", subjectBasePk);
+                        //console.log ("    subjectBasePk", subjectBasePk);
 
                                     let subjecttypeBasePk = 0
                                     if(cell_value in mapped_subjecttypes && mapped_subjecttypes[cell_value]){
                                         subjecttypeBasePk = mapped_subjecttypes[cell_value]
                                     };
-                                    console.log ("     subjecttypeBasePk", subjecttypeBasePk, typeof subjecttypeBasePk);
+                                    //console.log ("     subjecttypeBasePk", subjecttypeBasePk, typeof subjecttypeBasePk);
                                     subject_dict[subjectBasePk] = subjecttypeBasePk;
                                 };
                             }  // if(j in mapped_subjects)
@@ -561,9 +561,11 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         mimp.unique = el_input.value;
 
         MIMP_HighlightAndDisableButtons();
-        UploadSettingsImport ("HandleSelectUnique");
+
         // ---  upload new settings
         UploadImportSetting ("select_unique");
+
+
     }; //MIMP_SelectUniqueChanged
 
 //=========   MIMP_CheckboxCrosstabTabularChanged   ======== PR2021-02-24
@@ -1059,8 +1061,10 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 // ---  check if unique field is linked
         const has_linked_identifier = MIMP_ValidateUniquefield()
+
 // ---  check if there are date fields in mimp_stored.coldefs
         const [datefields_awpKeys, datefields_caption] = MIMP_GetLinkedDatefields()
+
 // ---  detect dateformat of datefields_awpKeys
         mimp.excel_dateformat = detect_dateformat(mimp.curWorksheetData, datefields_awpKeys)
         const has_linked_datefields = (!!mimp.excel_dateformat)
@@ -1097,7 +1101,6 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 }
             }
         }
-
         //console.log("select_unique", select_unique);
         //console.log("no_select_unique_linked", no_select_unique_linked);
 
@@ -1170,40 +1173,29 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 //========= MIMP_ValidateUniquefield  ==================================== PR2020-12-06
     function MIMP_ValidateUniquefield() {
         //console.log("=== MIMP_ValidateUniquefield ===");
-        //console.log("mimp_loc", mimp_loc);
+        //console.log("mimp_stored.coldefs", mimp_stored.coldefs);
+
+// ---  get unique field
+        // el_select_unique.value = "examnumber" or "idnumber"
+        const select_unique = document.getElementById("id_select_unique").value
+
 // ---  check if unique field is linked
-        let has_linked_identifier = false, linkfields_caption = [];
+        let has_linked_identifier = false, unique_field_caption = null;
         if(mimp_stored.coldefs) {
+            // [ {awpColdef: "examnumber", caption: "Examennummer", linkfield: true},
+            //   {awpColdef: "idnumber", caption: "ID-nummer", linkfield: true}  ]
             for (let i = 0, stored_row; stored_row = mimp_stored.coldefs[i]; i++) {
                 // stored_row = {awpKey: "examnumber", caption: "Examennummer", linkfield: true}
-                if (stored_row.linkfield ) {
-                    linkfields_caption.push(stored_row.caption);
-                    if (stored_row.excColdef) {
-                        has_linked_identifier = true;
-        }}}};
+                if (stored_row.linkfield && stored_row.awpColdef === select_unique) {
+                    unique_field_caption = stored_row.caption;
+                    has_linked_identifier = (!!stored_row.excColdef)
+                    break;
+                }
+            }
+        };
+        const msg_text = mimp_loc.link_The_field + "'" + unique_field_caption + "'" + mimp_loc.link_mustbelinked;
+        document.getElementById("id_MIMP_msg_link_unique").innerText = msg_text;
 
-        let msg_text = null;
-        const len = linkfields_caption.length;
-        if (len){
-            if (len === 1) {
-                msg_text = mimp_loc.link_The_field + "'" + linkfields_caption[0] + "'" + mimp_loc.link_mustbelinked;
-            } else {
-                let fields_text = '';
-                for (let i = 0, caption; caption = linkfields_caption[i]; i++) {
-                    if(linkfields_caption[i]){
-                        const caption = "'" + linkfields_caption[i] + "'";
-                        if (!i){
-                            fields_text = caption ;
-                        } else if (i === len - 1){
-                            fields_text += mimp_loc._or_ + caption;
-                        } else {
-                            fields_text += ", " + caption ;
-                }}};
-                msg_text = mimp_loc.link_One_ofthe_fields + fields_text + mimp_loc.link_mustbelinked;
-        }};
-        if (msg_text){
-            document.getElementById("id_MIMP_msg_link_unique").innerText = msg_text;
-        }
         return has_linked_identifier;
     }
 

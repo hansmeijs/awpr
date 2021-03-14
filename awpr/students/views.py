@@ -106,7 +106,7 @@ def create_student_rows(setting_dict, append_dict, student_pk):
     sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
     sql_list = ["SELECT st.id, st.base_id, st.school_id AS s_id,",
         "st.department_id AS dep_id, st.level_id AS lvl_id, st.sector_id AS sct_id, st.scheme_id,",
-        "dep.abbrev AS dep_abbrev,",
+        "dep.abbrev AS dep_abbrev, db.code AS db_code,",
         "dep.level_req AS lvl_req, lvl.abbrev AS lvl_abbrev,",
         "dep.sector_req AS sct_req, sct.abbrev AS sct_abbrev,",
         "dep.has_profiel AS dep_has_profiel, sct.abbrev AS sct_abbrev,",
@@ -121,6 +121,7 @@ def create_student_rows(setting_dict, append_dict, student_pk):
         "FROM students_student AS st",
         "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
         "LEFT JOIN schools_department AS dep ON (dep.id = st.department_id)",
+        "INNER JOIN schools_departmentbase AS db ON (db.id = dep.base_id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
         "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
         "LEFT JOIN accounts_user AS au ON (au.id = st.modifiedby_id)",
@@ -135,7 +136,7 @@ def create_student_rows(setting_dict, append_dict, student_pk):
 
     newcursor = connection.cursor()
     newcursor.execute(sql, sql_keys)
-    student_rows = sch_mod.dictfetchall(newcursor)
+    student_rows = af.dictfetchall(newcursor)
 
 # - add lastname_firstname_initials to rows
     if student_rows:
@@ -246,7 +247,7 @@ class StudentUploadView(View):  # PR2020-10-01
                                     student = None
                                 # logger.debug('student_rows' + str(student_rows))
                     else:
-                        # D. Create new student
+# D. Create new student
                         if is_create:
                             student, msg_err = create_student(sel_country, sel_school, sel_department, upload_dict, request)
                             if student:
@@ -260,7 +261,7 @@ class StudentUploadView(View):  # PR2020-10-01
                     # I. add update_dict to update_wrap
                     if student:
                         logger.debug('student: ' + str(student))
-                        # F. Update student, also when it is created.
+# F. Update student, also when it is created.
                         #  Not necessary. Most fields are required. All fields are saved in create_student
                         # if student:
                         update_student(student, upload_dict, error_dict, request)
@@ -1065,34 +1066,28 @@ def update_student(instance, upload_dict, msg_dict, request):
                             else:
                                 msg_dict['err_' + field] = msg_err
 
-# 3. save changes in depbases
-                    elif field == 'department':
+# 3. save changes in department, level or sector
+                    # department cannot be changed
+                    if field in ('level','sector' ):
                         logger.debug('field' + str(field))
                         logger.debug('new_value' + str(new_value) + ' ' + str(type(new_value)))
                         logger.debug('saved_value' + str(saved_value) + ' ' + str(type(saved_value)))
                         if new_value != saved_value:
-                            setattr(instance, field, new_value)
+                            # TODO also change scheme when level changes.
+                            # delete student_subjects that are not in the new scheme
+                            if field == 'level':
+                                level_or_sector = subj_mod.Level.objects.get_or_none(pk=new_value)
+                            else:
+                                level_or_sector = subj_mod.Sector.objects.get_or_none(pk=new_value)
+                            setattr(instance, field, level_or_sector)
                             save_changes = True
                             update_scheme = True
-                    elif field =='level':
-                        logger.debug('field' + str(field))
-                        logger.debug('new_value' + str(new_value) + ' ' + str(type(new_value)))
-                        logger.debug('saved_value' + str(saved_value) + ' ' + str(type(saved_value)))
-                        if new_value != saved_value:
-                            level = subj_mod.Level.objects.get_or_none(pk=new_value)
-                            setattr(instance, field, level)
-                            save_changes = True
-                            update_scheme = True
-                    elif field == 'sector':
-                        logger.debug('field' + str(field))
-                        logger.debug('new_value' + str(new_value) + ' ' + str(type(new_value)))
-                        logger.debug('saved_value' + str(saved_value) + ' ' + str(type(saved_value)))
-                        if new_value != saved_value:
-                            sector = subj_mod.Sector.objects.get_or_none(pk=new_value)
-                            setattr(instance, field, sector)
-                            save_changes = True
-                            update_scheme = True
-# 4. save changes in field 'inactive'
+
+                            # - update scheme in student instance, also remove scheme if necessary
+                            # - update scheme in all studsubj of this student
+                            update_scheme_in_studsubj(instance, request)
+
+                    # 4. save changes in field 'inactive'
                     elif field == 'inactive':
                         #logger.debug('inactive new_value]: ' + str(new_value) + ' ' + str(type(new_value)))
                         saved_value = getattr(instance, field)
@@ -1123,6 +1118,63 @@ def update_student(instance, upload_dict, msg_dict, request):
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def update_scheme_in_studsubj(student, request):
+    # --- update_scheme_in_studsubj # PR2021-03-13
+    logger.debug(' ----- update_scheme_in_studsubj ----- ')
+
+    # - update scheme in student, also remove if necessary
+    new_scheme = subj_mod.Scheme.objects.get_or_none(
+        department=student.department,
+        level=student.level,
+        sector=student.sector)
+    setattr(student, 'scheme', new_scheme)
+
+# - loop through studsubj of this student
+    studsubjects = stud_mod.Studentsubject.objects.filter(student=student)
+    for studsubj in studsubjects:
+        if new_scheme is None:
+            # delete studsub when no scheme
+            studsubj.delete(request=request)
+        else:
+            # skip when studsub scheme equals new_scheme
+            if studsubj.schemeitem.scheme != new_scheme:
+                # check how many times this subjject occurs in new scheme
+                count_subject_in_newscheme = subj_mod.Schemeitem.objects.filter(
+                    scheme=new_scheme,
+                    subject=studsubj.schemeitem.subject
+                    ).count()
+                if not count_subject_in_newscheme:
+                    # delete studsub when subject does not exist in new_scheme
+                    studsubj.delete(request=request)
+                elif count_subject_in_newscheme == 1:
+                    # if subject occurs only once in mew_scheme: replace schemeitem by new schemeitem
+                    new_schemeitem = subj_mod.Schemeitem.objects.get_or_none(
+                        scheme=new_scheme,
+                        subject=studsubj.schemeitem.subject
+                    )
+                    if new_schemeitem:
+                        studsubj.schemeitem = new_schemeitem
+                        studsubj.save(request=request)
+                else:
+                    # if subject occurs multiple times in mew_scheme: check if one exist with same subjecttype
+                    new_schemeitem = subj_mod.Schemeitem.objects.get_or_none(
+                        scheme=new_scheme,
+                        subject=studsubj.schemeitem.subject,
+                        subjecttype=studsubj.schemeitem.subjecttype
+                    )
+                    if new_schemeitem:
+                        studsubj.schemeitem = new_schemeitem
+                        studsubj.save(request=request)
+                    else:
+                        # if no schemeitem exist with same subjecttype: get schemeitem with lowest sequence
+                        new_schemeitem = subj_mod.Schemeitem.objects.get_or_none(
+                            scheme=new_scheme,
+                            subject=studsubj.schemeitem.subject
+                        ).order_by('sequence').first()
+                        if new_schemeitem:
+                            studsubj.schemeitem = new_schemeitem
+                            studsubj.save(request=request)
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def create_studsubj(student, schemeitem, request, is_test=False):
@@ -1309,7 +1361,7 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
     #logger.debug('sql: ' + str(sql))
     newcursor = connection.cursor()
     newcursor.execute(sql, sql_keys)
-    student_rows = sch_mod.dictfetchall(newcursor)
+    student_rows = af.dictfetchall(newcursor)
 
 # - full name to rows
     if student_rows:
@@ -1376,7 +1428,7 @@ def create_studentsubjectnote_rows(setting_dict, request_item):  # PR2021-01-17
     sql = ' '.join(sql_list)
     newcursor = connection.cursor()
     newcursor.execute(sql, sql_keys)
-    note_rows = sch_mod.dictfetchall(newcursor)
+    note_rows = af.dictfetchall(newcursor)
 
     return note_rows
 

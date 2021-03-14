@@ -491,6 +491,7 @@ class SchemeitemLogView(View):
         _param = awpr_menu.get_headerbar_param(request,  {'schemeitem_log': schemeitem_log, 'schemeitem': schemeitem})
         return render(request, 'schemeitem_log.html', _param)
 
+
 @method_decorator([login_required], name='dispatch')
 class SchemeitemsDownloadView(View):  # PR2019-01-13
     # PR2019-01-17
@@ -790,7 +791,7 @@ def create_subject_rows(setting_dict, append_dict, subject_pk):
 
         newcursor = connection.cursor()
         newcursor.execute(sql, sql_keys)
-        subject_rows = sch_mod.dictfetchall(newcursor)
+        subject_rows = af.dictfetchall(newcursor)
 
         # - add messages to subject_row
         if subject_pk and subject_rows:
@@ -1669,6 +1670,7 @@ def create_scheme_rows(setting_dict, append_dict, scheme_pk):
     # logger.debug(' =============== create_scheme_rows ============= ')
     scheme_rows = []
     examyear_pk = setting_dict.get('sel_examyear_pk')
+    depbase_pk = setting_dict.get('sel_depbase_pk')
     if examyear_pk:
         sql_keys = {'ey_id': examyear_pk}
         sql_list = ["SELECT scheme.id, scheme.department_id, scheme.level_id, scheme.sector_id,",
@@ -1688,17 +1690,19 @@ def create_scheme_rows(setting_dict, append_dict, scheme_pk):
             "WHERE dep.examyear_id = %(ey_id)s::INT"]
 
         if scheme_pk:
-            # when employee_pk has value: skip other filters
-            sql_list.append('AND scheme.id = %(scheme_id)s::INT')
             sql_keys['scheme_id'] = scheme_pk
+            sql_list.append('AND scheme.id = %(scheme_id)s::INT')
         else:
+            if depbase_pk:
+                sql_keys['db_id'] = depbase_pk
+                sql_list.append('AND dep.base_id = %(db_id)s::INT')
             sql_list.append('ORDER BY scheme.name')
 
         sql = ' '.join(sql_list)
 
         newcursor = connection.cursor()
         newcursor.execute(sql, sql_keys)
-        scheme_rows = sch_mod.dictfetchall(newcursor)
+        scheme_rows = af.dictfetchall(newcursor)
 
         # - add messages to subject_row
         if scheme_pk and scheme_rows:
@@ -1759,7 +1763,7 @@ def create_schemeitem_rows(setting_dict, append_dict, scheme_pk):
 
         newcursor = connection.cursor()
         newcursor.execute(sql, sql_keys)
-        schemeitem_rows = sch_mod.dictfetchall(newcursor)
+        schemeitem_rows = af.dictfetchall(newcursor)
 
     return schemeitem_rows
 # --- end of create_schemeitem_rows

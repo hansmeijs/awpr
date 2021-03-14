@@ -773,7 +773,7 @@ def create_school_rows(examyear, append_dict, school_pk):
 
     newcursor = connection.cursor()
     newcursor.execute(sql, sql_keys)
-    school_rows = sch_mod.dictfetchall(newcursor)
+    school_rows = af.dictfetchall(newcursor)
 
     #logger.debug('school_rows' + str(school_rows))
     # - add messages to subject_row

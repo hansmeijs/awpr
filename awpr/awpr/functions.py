@@ -1,5 +1,6 @@
 # PR2018-05-28
 from django.contrib import messages
+from django.db import connection
 from django.utils.translation import activate, ugettext_lazy as _
 from django.utils import timezone
 from datetime import date, datetime
@@ -426,13 +427,12 @@ def get_depbase_list_field_sorted_zerostripped(depbase_list):  # PR2018-08-23
         return None
 
 
-
 def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
 
-    #update_examyearsetting(examyear, request)
-    pass
+    update_examyearsetting(examyear, request)
+
     #transfer_depbases_from_array_to_string()
 # - end of system_updates
 
@@ -510,13 +510,17 @@ def update_examyearsetting(examyear, request):
 
         ('ex1', 'title', 'Genummerde alfabetische naamlijst van de kandidaten'),
         ('ex1', 'submit_before', 'Inzenden vóór 1 november *'),
-        ('ex1', 'title', 'Dit formulier dient tevens voor bestelling schriftelijk werk.'),
-        ('ex1', 'title', 'Ex.nr.: onder dit nummer doet de kandidaat examen.'),
-        ('ex1', 'title', 'Vakken waarin geëxamineerd moet worden aangeven met x.'),
-        ('ex1', 'footnote01', 'het getekend exemplaar en een digitale versie'),
-        ('ex1', 'footnote02', 'vóór 1 november inzenden naar de Onderwijs Inspectie'),
-        ('ex1', 'footnote03', 'en een digitale versie naar het ETE.'),
-        ('ex1', 'footnote03', 'en een digitale versie naar het ETE.'),
+        ('ex1', 'footnote01', 'Dit formulier dient tevens voor bestelling schriftelijk werk.'),
+        ('ex1', 'footnote02', 'Ex.nr.: onder dit nummer doet de kandidaat examen.'),
+        ('ex1', 'footnote03', 'Vakken waarin geëxamineerd moet worden aangeven met x.'),
+        ('ex1', 'footnote04', None),
+        ('ex1', 'footnote05', None),
+        ('ex1', 'footnote06', '*  Het getekend exemplaar en een digitale versie'),
+        ('ex1', 'footnote07', '   vóór 1 november inzenden naar de Onderwijs Inspectie'),
+        ('ex1', 'footnote08', '   en een digitale versie naar het ETE.'),
+        ('ex1', 'lex_footnote07', '   vóór 1 november inzenden naar de Onderwijs Inspectie.'),
+        ('ex1', 'lex_footnote08', None),
+
 
         ('ex2', 'title', 'Verzamellijst van cijfers van schoolexamens'),
         ('ex2', 'submit', 'Inzenden ten minste 3 dagen vóór aanvang van de centrale examens*'),
@@ -612,12 +616,12 @@ def update_examyearsetting(examyear, request):
         ('diploma', 'id_nr', 'Id.nr.:'),
     ]
     for key_value in key_value_list:
-        instance = sch_mod.Examyearsetting.objects.filter(
+        instance = sch_mod.ExfilesText.objects.filter(
             examyear=examyear,
             key=key_value[0],
             subkey=key_value[1]).first()
         if instance is None:
-            instance = sch_mod.Examyearsetting(
+            instance = sch_mod.ExfilesText(
                 examyear=examyear,
                 key=key_value[0],
                 subkey=key_value[1],
@@ -626,3 +630,58 @@ def update_examyearsetting(examyear, request):
         else:
             instance.setting = key_value[2]
         instance.save()
+
+
+def get_exform_text(examyear, key_list):  # PR2021-03-10
+    # get text for exform etc from ExfilesText
+    return_dict = {}
+    # key_list must be list, not tuple
+    if examyear and key_list:
+        sql_keys = {'ey_id': examyear.pk, 'key_arr': key_list}
+        sql = "SELECT eft.subkey, eft.setting FROM schools_exfilestext AS eft " + \
+                "WHERE eft.examyear_id = %(ey_id)s::INT AND eft.key IN ( SELECT UNNEST( %(key_arr)s::TEXT[])) ORDER BY eft.subkey"
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            for row in cursor.fetchall():
+                return_dict[row[0]] = row[1]
+
+    return return_dict
+# --- end of get_exform_text
+
+
+def dictfetchall(cursor):
+    # PR2019-10-25 from https://docs.djangoproject.com/en/2.1/topics/db/sql/#executing-custom-sql-directly
+    # creates dict from output cusror.execute instead of list
+    columns = [col[0] for col in cursor.description]
+    return [
+        dict(zip(columns, row))
+        for row in cursor.fetchall()
+    ]
+
+
+def dictfetchone(cursor):
+    # Return one row from a cursor as a dict  PR2020-06-28
+    return_dict = {}
+    try:
+        columns = [col[0] for col in cursor.description]
+        return_dict = dict(zip(columns, cursor.fetchone()))
+    except:
+        pass
+    return return_dict
+
+
+def dictfetchrows(cursor):
+    # PR2019-10-25 from https://docs.djangoproject.com/en/2.1/topics/db/sql/#executing-custom-sql-directly
+    # creates dict from output cusror.execute instead of list
+    # key is first column of row
+    #starttime = timer()
+    columns = [col[0] for col in cursor.description]
+    return_dict = {}
+    for row in cursor.fetchall():
+        return_dict[row[0]] = dict(zip(columns, row))
+    #elapsed_seconds = int(1000 * (timer() - starttime) ) /1000
+    #elapsed_seconds = (timer() - starttime)
+    #return_dict['elapsed_milliseconds'] = elapsed_seconds * 1000
+    return return_dict
+

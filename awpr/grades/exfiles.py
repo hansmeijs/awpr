@@ -2,6 +2,7 @@
 from django.contrib.auth.decorators import login_required
 
 from django.core.files.storage import default_storage, FileSystemStorage
+
 from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpResponseNotFound, FileResponse
 from django.utils.decorators import method_decorator
 from django.utils.translation import activate, ugettext_lazy as _

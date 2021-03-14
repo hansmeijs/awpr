@@ -8,7 +8,7 @@ from django.contrib.postgres.fields import ArrayField #, JSONField
 
 from django.db import connection
 from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
-from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, DateField
+from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, DateField, FileField
 from django.utils import timezone
 
 import json
@@ -17,6 +17,7 @@ import json
 from awpr.settings import AUTH_USER_MODEL
 from django.utils.translation import ugettext_lazy as _
 from awpr import constants as c
+from awpr.storage_backends import PrivateMediaStorage
 
 # PR2018-09-15 Departmnet moved from Subjects to Schools; because this doesn/'t work, circular reference: from subjects.models import Department
 
@@ -224,7 +225,7 @@ class Examyear_log(AwpBaseModel):
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
-class Examyearsetting(Model):  # PR2021-01-
+class ExfilesText(Model):  # PR2021-01-
     # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
     objects = AwpModelManager()
 
@@ -232,7 +233,7 @@ class Examyearsetting(Model):  # PR2021-01-
 
     key = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
     subkey = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
-    setting = CharField(db_index=True, max_length=2048)
+    setting = CharField(max_length=2048, null=True, blank=True)
 
     # +++++++++++++++++++  get and set setting +++++++++++++++++++++++
     def get_setting_dict(cls, key_str, user):  # PR2019-03-09 PR2021-01-25
@@ -508,6 +509,24 @@ class Published(AwpBaseModel): # PR2020-12-02
         return self.name
     # published has no published_log because its data don't change
 
+# PR2021-03-08 from https://simpleisbetterthancomplex.com/tutorial/2017/08/01/how-to-setup-amazon-s3-in-a-django-project.html
+# PR2021-03-13 test
+class PrivateDocument(AwpBaseModel):
+    objects = AwpModelManager()
+
+    school = ForeignKey(School, related_name='+', on_delete=CASCADE)
+    department = ForeignKey(Department, related_name='+', on_delete=CASCADE)
+
+    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
+    examperiod = PositiveSmallIntegerField(db_index=True) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
+
+    name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+
+    document = FileField(storage=PrivateMediaStorage())
+
+    datepublished = DateField()
+
+
 
 # PR2018-06-07
 class Entrylist(AwpBaseModel):
@@ -759,22 +778,3 @@ def save_to_log(instance, req_mode, request):
 
 #######################################
 
-
-def dictfetchall(cursor):
-    # PR2019-10-25 from https://docs.djangoproject.com/en/2.1/topics/db/sql/#executing-custom-sql-directly
-    # creates dict from output cusror.execute instead of list
-    columns = [col[0] for col in cursor.description]
-    return [
-        dict(zip(columns, row))
-        for row in cursor.fetchall()
-    ]
-
-def dictfetchone(cursor):
-    # Return one row from a cursor as a dict  PR2020-06-28
-    return_dict = {}
-    try:
-        columns = [col[0] for col in cursor.description]
-        return_dict = dict(zip(columns, cursor.fetchone()))
-    except:
-        pass
-    return return_dict

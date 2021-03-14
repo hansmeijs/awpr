@@ -345,6 +345,7 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['No_subject_selected'] = _('No subject selected.')
 
+        dict['Profiel'] = _('Profiel')
 
 # ====== PAGE STUDENTSUBJECTS ========================= PR2020-12-21
     if 'studentsubjects' in page_list:
@@ -360,6 +361,30 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['at_'] = pgettext_lazy('at_date', 'at ')
         dict['_of_'] = TXT__of_
+
+
+        dict['Submit_Ex1_form'] = _('Submit Ex2A form')
+        dict['Approve_grades'] = _('Approve grades')
+        dict['Submit_Ex1_form'] = _('Submit Ex2A form')
+        dict['Preliminary_Ex1_form'] = _('Preliminary Ex1 form')
+        dict['Approve'] = _('Approve')
+        dict['Check_grades'] = _('Check grades')
+        dict['Submit'] = TXT_Submit
+
+        dict['MAG_info'] = {
+            'subheader_approve': _('The following grades will be approved:'),
+            'subheader_submit': _('An Ex2A form with the following grades will be submitted:'),
+            'approve_0': _("Click 'Check grades' to check the selected grades before approving."),
+            'approve_1': _('After the grades are approved by the president, secretary and commissioner,'),
+            'approve_2': _('the Ex2A form can be submitted by the president or secretary.'),
+
+            'submit_0': _("Click 'Check grades' to check the selected grades before submitting."),
+            'submit_1': _("If the check is OK, click 'Submit Ex2A form' to submit the selected grades."),
+            'submit_2': _("After the grades are submitted, you can only change them with permission of the Inpsection."),
+
+            'submit_ok_01': _("The Ex2A form is succesfully created."),
+
+        }
 
 
 # ====== PAGE GRADES ========================= PR2020-10-27
@@ -433,6 +458,8 @@ def get_locale_dict(table_dict, user_lang):
         dict['PE_grade_twolines'] = _('PE-\ngrade')
         dict['CE_grade_twolines'] = _('CE-\ngrade')
         dict['PECE_grade_twolines'] = _('PE-CE\ngrade')
+        dict['SECE_weighing'] = _('SE-CE\nweighing')
+
         dict['Final_grade_twolines'] = _('Final\ngrade')
 
         dict['No_subject_selected'] = _('No subject selected.')
@@ -453,6 +480,8 @@ def get_locale_dict(table_dict, user_lang):
         dict['President'] = TXT_President
         dict['Secretary'] = TXT_Secretary
         dict['Commissioner'] = TXT_Commissioner
+        dict['Approved_by'] = TXT_Approved_by
+        dict['Submitted_by'] = TXT_Submitted_by
 
         dict['grade_err_list'] = {
             'examyear_locked': _('The exam year is locked.'),
@@ -495,6 +524,8 @@ TXT_Commissioner = _('Commissioner')
 TXT__of_ = _(' of ')
 TXT_Submit = _('Submit')
 
+TXT_Approved_by = _('Approved by')
+TXT_Submitted_by = _('Submitted by')
 
 # get weekdays translated
 TXT_weekdays_abbrev = ('', _('Mon'), _('Tue'), _('Wed'), _('Thu'), _('Fri'), _('Sat'), _('Sun'))

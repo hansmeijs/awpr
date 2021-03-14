@@ -310,6 +310,9 @@ KEY_COLDEF = {
     KEY_IMPORT_STUDENTSUBJECT:
         ({'awpColdef': 'examnumber', 'caption': _('Exam number'), 'linkfield': True},
             {'awpColdef': 'idnumber', 'caption': _('ID-number'), 'linkfield': True},
+            {'awpColdef': 'pws_title', 'caption': _('Title assignment')},
+            {'awpColdef': 'pws_subjects', 'caption': _('Subjects assignment')},
+
             # to be used for tabular upload :
             {'awpColdef': 'subject', 'caption': _('Subject'), 'tabularfield': True},
             {'awpColdef': 'subjecttype', 'caption': _('Character'), 'tabularfield': True}

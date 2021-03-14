@@ -55,6 +55,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const url_settings_upload = get_attr_from_el(el_data, "data-settings_upload_url");
     const url_student_upload = get_attr_from_el(el_data, "data-student_upload_url");
     const url_studsubj_upload = get_attr_from_el(el_data, "data-studsubj_upload_url");
+
+    const url_grade_download_ex1 = get_attr_from_el(el_data, "data-grade_download_ex1_url");
+
     // importdata_upload_url is stored in id_MIMP_data of modimport.html
     const columns_shown = {select: true, examnumber: true, fullname: true, subj_code: true, subj_name: true, sjt_abbrev: true,
                     dep_abbrev: true, lvl_abbrev: true, sct_abbrev: true, has_exemption: true, has_reex: true, has_reex03: true, has_pok: true,
@@ -205,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const datalist_request = {
                 setting: {page_studentsubjects: {mode: "get"}},
                 schoolsetting: {setting_key: "import_studentsubject"},
-                locale: {page: ["studentsubjects", "upload"]},
+                locale: {page: ["studentsubjects", "subjects", "upload"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true},
@@ -308,13 +311,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
-        //console.log("===  CreateSubmenu == ");
+        console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Add_subject, function() {MSTUD_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_subject, function() {ModConfirmOpen("delete")}, ["mx-2"]);
+            AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, null, ["mx-2"], "id_submenu_download_ex1", url_grade_download_ex1, false);  // true = download
             AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open("import_studentsubject")}, ["mx-2"], "id_submenu_import");
 
          el_submenu.classList.remove(cls_hide);
+        console.log("el_submenu", el_submenu);
     };//function CreateSubmenu
 
 //###########################################################################

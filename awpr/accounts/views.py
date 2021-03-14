@@ -654,7 +654,7 @@ def create_user_list(request, user_pk=None):
 
                 newcursor = connection.cursor()
                 newcursor.execute(sql, sql_keys)
-                user_list = sch_mod.dictfetchall(newcursor)
+                user_list = af.dictfetchall(newcursor)
     return user_list
 
 

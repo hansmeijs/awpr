@@ -4,7 +4,7 @@ from django.db import connection
 from django.http import HttpResponse
 
 from django.utils.decorators import method_decorator
-from django.utils.translation import activate, ugettext_lazy as _
+from django.utils.translation import activate, pgettext_lazy, ugettext_lazy as _
 
 from django.views.generic import View
 from awpr import constants as c
@@ -146,7 +146,9 @@ def import_studentsubjects(upload_dict, user_lang, logging_on, request):  # PR20
                    {'rowindex': 0, 
                     'examnumber': '63', 
                     'idnumber': '1999112405', 
-                        subjects: {subjectBasePk: subjecttypeBasePk, ..}
+                    'pws_title': 'titel werkstuk', 
+                    'pws_subjects': 'vakken werkstuk', 
+                        (format of subjects: {subjectBasePk: subjecttypeBasePk, ..})
                     'subjects': {'1': 4, '3': 0, '4': 0, '10': 0, '15': 0, '27': 0, '29': 0, '31': 0, '36': 0, '42': 7, '46': 0}
                 }, 
                 {'rowindex': 7, 'examnumber': '28', 'idnumber': '1999110505', 'subjects': {'1': 0, '3': 0, '4': 0, '10': 9, '15': 0, '27': 0, '29': 0, '31': 0, '34': 9, '42': 7, '46': 4}}, 
@@ -154,6 +156,7 @@ def import_studentsubjects(upload_dict, user_lang, logging_on, request):  # PR20
                 ]
             }           
         """
+
 # - get info from upload_dict
     is_test = upload_dict.get('test', False)
     lookup_field = upload_dict.get('lookup_field')
@@ -205,7 +208,7 @@ def import_studentsubjects(upload_dict, user_lang, logging_on, request):  # PR20
 # - get subject_codes from subjects of this department
             subject_code_dict = subjectbase_code_dict(department)
 
-    # - create logfile
+# - create logfile
             today_dte = af.get_today_dateobj()
             today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
 
@@ -309,6 +312,8 @@ def upload_studentsubject(data_dict, lookup_field, lookup_value, occurrences_in_
 
     """
     data_dict: {'rowindex': 0, 'examnumber': '63', 'idnumber': '1999112405', 
+                    'pws_title': 'titel werkstuk', 'pws_subjects': 'vakken werkstuk',     
+           (format of subjects: {subjectBasePk: subjecttypeBasePk, ..})
     'subjects': {'1': 4, '3': 0, '4': 0, '10': 0, '15': 0, '27': 0, '29': 0, '31': 0, '36': 0, '42': 7, '46': 0}}
     """
 
@@ -335,18 +340,21 @@ def upload_studentsubject(data_dict, lookup_field, lookup_value, occurrences_in_
         student, exceeded_length, multiple_found, found_in_diff_dep = \
             lookup_student(school, department, lookup_field, lookup_value)
         if student:
-            is_existing_student = True
-            student_name = student.fullname
+            #student_name = student.fullname
+            student_name = student.fullnamewithinitials
         else:
             student_name = '---'
     if logging_on:
         logger.debug('student_name: ' + str(student_name))
 
 # - give row_error when lookup went wrong
-    skipped_str = student_name + str(_(" is skipped."))
+    skipped_str = student_name + str(_(' will be skipped.')) if is_test else str(_(' is skipped.'))
     is_added_str = str(_(' will be added.')) if is_test else str(_(' is added.'))
     not_added_str = str(_(' will not be added.')) if is_test else str(_(' is not added.'))
+    not_added_plural_str = str(pgettext_lazy('plural', ' will not be added.')) if is_test else str(pgettext_lazy('plural', ' is not added.'))
+
     logfile.append(c.STRING_INDENT_5)
+
     msg_err = None
     log_str = ''
     if occurrences_in_datalist > 1:
@@ -404,48 +412,55 @@ def upload_studentsubject(data_dict, lookup_field, lookup_value, occurrences_in_
             # PR2020-06-03 debug: ... + (list_item) gives error: must be str, not __proxy__
             # solved bij wrapping with str()
 
+# +++ subjects ++++++++++++++++++++++++++++++++++++++
             if 'subjects' in data_dict:
                 # 'subjects': {'1': 4, '3': 0, '4': 0, '10': 0, '15': 0, '27': 0, '29': 0, '31': 0, '36': 0, '42': 7, '46': 0}
                 subjects = data_dict.get('subjects')
                 if subjects:
-                    for subjectbase_pk_str, subjecttypeBasePk in subjects.items():
-                        subjectBasePk = int(subjectbase_pk_str)
+                    for subjectbase_pk_str, upload_subjecttypeBasePk in subjects.items():
+                        upload_subjectBasePk = int(subjectbase_pk_str)
                         # subject_code_dict contains subject_codes from all subjects of this department,
                         # to make sure subject_code_dict als ohas value when subject not in scheme of student
-                        subject_code = subject_code_dict.get(subjectBasePk, '---')
+                        subject_code = subject_code_dict.get(upload_subjectBasePk, '---')
                         caption_txt = c.STRING_INDENT_5 + (subject_code + c.STRING_SPACE_10)[:8]
 
     # - skip if student already has this subject
-                        if subjectBasePk in student_subjectbase_dict:
+                        if upload_subjectBasePk in student_subjectbase_dict:
+                            # TODO save new subjecttype if different from saved subjecttype
                             log_str = ' '.join( (caption_txt, not_added_str, str(_('This candidate already has this subject.'))))
                             logfile.append(log_str)
                             if logging_on:
                                 logger.debug('        subject: ' + str(subject_code) + ' already exists')
 
-# - check if this subject is found in scheme
+    # - skip if this subject is not found in scheme
                         # count_scheme_subjectbase: {20: 1, 3: 1, 4: 1, 1: 1, 6: 2, 7: 2, 10: 1, 27: 1, 29: 1, 31: 1, 39: 1, 40: 1, 41: 1, 46: 1}
-                        elif subjectBasePk not in count_scheme_subjectbase:
+                        elif upload_subjectBasePk not in count_scheme_subjectbase:
                             log_str = ' '.join((caption_txt, not_added_str, str(_('This subject does not occur in this subject scheme.'))))
                             logfile.append(log_str)
                             if logging_on:
                                 logger.debug('        subject: ' + str(subject_code) + ' not in subject scheme')
                         else:
-                            count = count_scheme_subjectbase.get(subjectBasePk, 0)
+
+    # - if student does not have this subject and subject is found in scheme:
+                            count = count_scheme_subjectbase.get(upload_subjectBasePk, 0)
                             if logging_on:
                                 logger.debug('        subject: ' + str(subject_code) + ' count: ' + str(count))
 
-# - when subject occurs only once in scheme: if subjecttype provided: check if the same, if not: add subject
+        # - when subject occurs only once in scheme:
+# if subjecttype provided: check if the same, if not: add subject
                             if count == 1:
                                 schemeitem, subjecttype_pk, subjecttype_abbrev = None, None, '---'
+                # - get subject
                                 subject = subj_mod.Subject.objects.get_or_none(
-                                    base_id=subjectBasePk,
+                                    base_id=upload_subjectBasePk,
                                     examyear=examyear)
                                 if logging_on:
                                     logger.debug('        subject: ' + str(subject.name) + ' count: ' + str(count))
 
                                 if subject:
-        # check if subjecttype is the same as the upload subjecttype
-                                # if so. or no upload subjecttype given, add subject to student
+
+                # - get schemeitem and upload_subjecttype
+ # if so. or no upload subjecttype given, add subject to student
                                     schemeitem = stud_mod.Schemeitem.objects.get_or_none(
                                         scheme=student_scheme,
                                         subject=subject)
@@ -453,40 +468,90 @@ def upload_studentsubject(data_dict, lookup_field, lookup_value, occurrences_in_
                                         logger.debug('        schemeitem: ' + str(schemeitem) + ' ' + str(type(schemeitem)))
 
                                     upload_subjecttype = subj_mod.Subjecttype.objects.get_or_none(
-                                        base=subjecttypeBasePk,
+                                        base=upload_subjecttypeBasePk,
                                         examyear=examyear)
-
                                     if logging_on:
-                                        logger.debug('        schemeitem: ' + str(schemeitem) + ' ' + str(type(schemeitem)))
+                                        logger.debug('        upload_subjecttype: ' + str(upload_subjecttype) + ' ' + str(type(upload_subjecttype)))
 
+                # - check if lookup subjecttype is the same as the upload subjecttype
                                     if schemeitem:
                                         lookup_subjecttypeBasePk = schemeitem.subjecttype.base.pk
                                         subjecttype_abbrev = schemeitem.subjecttype.abbrev
                                         if logging_on:
                                             logger.debug( '        schemeitem: ' + str(subjecttype_abbrev))
-                                        # subjecttypeBasePk = 0 means: no value
-                                        if subjecttypeBasePk and subjecttypeBasePk != lookup_subjecttypeBasePk:
-                                            # skip if subjecttypeBasePk has value and is not the same as lookup
+                    # - skip if upload_subjecttypeBasePk has value and is not the same as lookup
+                                        # upload_subjecttypeBasePk = 0 means: no value
+                                        if upload_subjecttypeBasePk and upload_subjecttypeBasePk != lookup_subjecttypeBasePk:
                                             msg_err = _("Subject '%(subj)s - %(subjtype)s' does not occur in this subject scheme.") \
                                                       % {'subj': subject_code, 'subjtype': subjecttype_abbrev}
                                         else:
-# - add studentsubject
+                    # - add studentsubject if upload- and lookup- subjecttype are the same or if no upload_subjecttype given
                                             studsubj, msg_err = stud_view.create_studsubj(student, schemeitem, request)
                                 if msg_err:
-                                    log_str = ' '.join((caption_txt, msg_err))
-                                    logfile.append(log_str)
-                                    log_str = ' '.join((caption_txt, not_added_str, str(_('An error occurred.')) ))
-                                    logfile.append(log_str)
+                                    logfile.append(' '.join((caption_txt, msg_err)))
+                                    logfile.append(' '.join((caption_txt, not_added_str, str(_('An error occurred.')) )))
                                 else:
-                                    log_str = ' '.join((caption_txt, is_added_str, " (" + subjecttype_abbrev + ")" ))
-                                    logfile.append(log_str)
+                                    logfile.append(' '.join((caption_txt, is_added_str, " (" + subjecttype_abbrev + ")" )))
                             elif count > 1:
-                                log_str = ' '.join((caption_txt, not_added_str, str(_("Subject '%(subj)s' occurs multiple times in this subject scheme. Please select a character."))))
+                                log_str = ' '.join((caption_txt, not_added_str, str(_("Subject '%(subj)s' occurs multiple times in this subject scheme.\nPlease select a character."))))
                                 logfile.append(log_str)
 
+# +++ pws_title pws_subjects ++++++++++++++++++++++++++++++++++++++
+            # - add pws_title and pws_subjects
+            if 'pws_title' in data_dict or 'pws_subjects' in data_dict:
 
-            # add field_dict to update_dict
-                   # update_dict[field] = field_dict
+                upload_pws_title = data_dict.get('pws_title')
+                upload_pws_subjects = data_dict.get('pws_subjects')
+
+                caption_txt = ''
+                not_added_single_plural = not_added_str
+                if upload_pws_title:
+                    if upload_pws_subjects:
+                        caption_txt = str(_('Assignment title and -subjects'))
+                        not_added_single_plural = not_added_plural_str
+                    else:
+                        caption_txt = str(_('Assignment title'))
+                elif upload_pws_subjects:
+                    caption_txt = str(_('Assignment subjects'))
+                    not_added_single_plural = not_added_plural_str
+
+                studsubj, lookup_pws_title, lookup_pws_subjects = None, None, None
+                studsubj_with_pws_found = False
+                multiple_studsubj_with_pws_found = False
+
+        # - get student_subjects with subjecttype has_pws = True
+                # check if there is none or multiple
+                studsubjects = stud_mod.Studentsubject.objects.filter(
+                        student=student,
+                        schemeitem__subjecttype__has_pws=True)
+                if studsubjects:
+                    for studsubj in studsubjects:
+                        if not studsubj_with_pws_found:
+                            lookup_pws_title = studsubj.pws_title
+                            lookup_pws_subjects = studsubj.pws_subjects
+                            studsubj_with_pws_found = True
+                        else:
+                            multiple_studsubj_with_pws_found = True
+                            studsubj = None
+                            lookup_pws_title = None
+                            lookup_pws_subjects = None
+                if not studsubj_with_pws_found:
+                    logfile.append(''.join( (caption_txt, not_added_single_plural, '\n', str(_('Candidate has no subject with assignment.')))))
+                elif multiple_studsubj_with_pws_found:
+                    logfile.append(''.join( (caption_txt, not_added_single_plural, '\n', str(_('Candidate has multiple subjects with assignment.')))))
+                else:
+                    # only save if value has changed, skip if upload_pws has no value
+                    save_studsubj = False
+                    if upload_pws_title and upload_pws_title != lookup_pws_title:
+                        studsubj.pws_title = lookup_pws_title
+                        save_studsubj = True
+                    if upload_pws_subjects and upload_pws_subjects != lookup_pws_subjects:
+                        studsubj.pws_subjects = lookup_pws_subjects
+                        save_studsubj = True
+                    if not is_test and save_studsubj:
+                        studsubj.save(request=request)
+                    # add field_dict to update_dict
+                       # update_dict[field] = field_dict
 
         # - dont save data when it is a test run
             if not is_test and save_instance:

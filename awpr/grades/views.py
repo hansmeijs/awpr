@@ -3,41 +3,25 @@ from django.contrib.auth.decorators import login_required
 
 from django.db.models import Q
 from django.db import connection
-from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.utils.translation import activate, ugettext_lazy as _
 from django.views.generic import View
 
-from django.core.files.storage import default_storage
 from reportlab.pdfgen.canvas import Canvas
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from django.core.files import File
 
-import io
-import codecs
-import platform
-import os
-
-import string
-import random
-
-from awpr import functions as f
 from awpr import constants as c
 from awpr import settings as awpr_settings
-from students import validators as v
 from awpr import menus as awpr_menu
 from awpr import functions as af
 from awpr import downloads as dl
-from awpr import calc_finalgrade as calc_final
 
-from accounts import models as acc_mod
 from schools import models as sch_mod
 from students import models as stud_mod
 from students import views as stud_view
 from subjects import models as subj_mod
-from grades import validators as grad_val
+from grades import validators as grad_val, calc_finalgrade as calc_final
 from grades import exfiles as grade_exfiles
 
 import json # PR2018-12-03
@@ -46,9 +30,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 # PR2019-01-04 from https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
-from django.utils.functional import Promise
-from django.utils.encoding import force_text
-from django.core.serializers.json import DjangoJSONEncoder
 
 # ========  Student  =====================================
 
@@ -299,7 +280,7 @@ class GradeApproveView(View):  # PR2021-01-19
                         update_wrap['msg_dict'] = msg_dict
 
 # - return update_wrap
-        return HttpResponse(json.dumps(update_wrap, cls=f.LazyEncoder))
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of GradeUploadView
 
 
@@ -555,7 +536,10 @@ def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, req
 class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
 
     def post(self, request):
-        #logger.debug(' ============= GradeUploadView ============= ')
+        logging_on = True
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= GradeUploadView ============= ')
         # function creates, deletes and updates grade records of current studentsubject PR2020-11-21
         update_wrap = {}
 
@@ -579,20 +563,23 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 upload_dict = json.loads(upload_json)
-                #logger.debug('upload_dict' + str(upload_dict))
 
 # - get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, is_locked, \
                 examyear_published, school_activated, is_requsr_school = \
                     dl.get_selected_examyear_school_dep_from_usersetting(request)
-# - get selected examperiod and examtype from usersettings
-                sel_examperiod, sel_examtype, sel_subject_pkNIU = \
-                    dl.get_selected_examperiod_examtype_from_usersetting(request)
+
+# - get selected examperiod and examtype from upload_dict
+                # don't get it from usersettings, get it from upload_dict instead
+                # was: sel_examperiod, sel_examtype, sel_subject_pkNIU = dl.get_selected_examperiod_examtype_from_usersetting(request)
+                examperiod_int = upload_dict.get('examperiod')
+                grade_pk = upload_dict.get('grade_pk')
+                mode = upload_dict.get('mode')
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                 student = None
                 # TODO may_edit is not activated for testing:
-                #  may_edit = examyear_published and school_activated and is_requsr_school and sel_department and not is_locked
+                #  may_edit = examyear_published and school_activated and not is_locked and is_requsr_school and sel_department
                 # sel_department only has value when sel_examyear and sel_school have value
                 may_edit = sel_department and not is_locked
                 #logger.debug('may_edit: ' + str(may_edit))
@@ -604,40 +591,40 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
                         department=sel_department,
                         locked=False
                     )
-                if student:
+
 # - get current studentsubject
+                studentsubject = None
+                if student:
                     studsubj_pk = upload_dict.get('studsubj_pk')
                     studentsubject = stud_mod.Studentsubject.objects.get_or_none(
                         id=studsubj_pk,
                         student=student
                     )
-                    #logger.debug('studentsubject: ' + str(studentsubject))
-
+                if studentsubject:
                     append_dict = {}
                     error_dict = {}
-# - get current grade - when mode is 'create': studsubj is None. It will be created at "elif mode == 'create'"
-                    examperiod_int = upload_dict.get('examperiod')
-                    grade_pk = upload_dict.get('grade_pk')
-                    grade = None
-                    if studentsubject:
-                        grade = stud_mod.Grade.objects.get_or_none(
-                            id=grade_pk,
-                            studentsubject =studentsubject,
-                            examperiod=examperiod_int
-                        )
-                    #logger.debug('examperiod_int: ' + str(examperiod_int))
-                    #logger.debug('grade_pk: ' + str(grade_pk))
-                    #logger.debug('grade: ' + str(grade))
+
+# - get current grade
+                    grade = stud_mod.Grade.objects.get_or_none(
+                        id=grade_pk,
+                        studentsubject =studentsubject,
+                        examperiod=examperiod_int
+                    )
+                    if grade:
+                        if logging_on:
+                            logger.debug('student   : ' + str(student))
+                            logger.debug('subject   : ' + str(studentsubject.schemeitem.subject.base.code))
+                            logger.debug('examperiod: ' + str(grade.examperiod))
+                            logger.debug('grade_pk  : ' + str(grade_pk))
+                            logger.debug('mode      : ' + str(mode))
 
 # +++ update existing grade - also when grade is created - grade is None when deleted
-                    mode = upload_dict.get('mode')
-                    #logger.debug('mode: ' + str(mode))
-                    if grade and mode == 'update':
-                        update_grade(grade, upload_dict, error_dict, request)
+                        if mode == 'update':
+                            update_grade(grade, upload_dict, error_dict, logging_on, request)
 
 # - add update_dict to update_wrap
-                    grade_rows = []
-                    if grade:
+                        grade_rows = []
+
                         # TODO check value of error_dict
                         if error_dict:
                             append_dict['error'] = error_dict
@@ -645,27 +632,26 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
                             sel_examyear_pk=sel_examyear.pk,
                             sel_schoolbase_pk=sel_school.base_id,
                             sel_depbase_pk=sel_department.base_id,
-                            sel_examperiod=sel_examperiod,
+                            sel_examperiod=grade.examperiod,
                             append_dict=append_dict,
                             grade_pk=grade.pk)
                         if rows:
                             row = rows[0]
                             if row:
                                 grade_rows.append(row)
-                    if grade_rows:
-                        update_wrap['updated_grade_rows'] = grade_rows
-
+                        if grade_rows:
+                            update_wrap['updated_grade_rows'] = grade_rows
 # - return update_wrap
-        return HttpResponse(json.dumps(update_wrap, cls=f.LazyEncoder))
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of GradeUploadView
 
 
 #######################################################
-def update_grade(instance, upload_dict, err_dict, request):
+def update_grade(instance, upload_dict, err_dict, logging_on, request):
     # --- update existing grade PR2020-12-16
     # add new values to update_dict (don't reset update_dict, it has values)
-    #logger.debug(' ------- update_grade -------')
-    #logger.debug('upload_dict' + str(upload_dict))
+    if logging_on:
+        logger.debug(' ------- update_grade -------')
     # upload_dict{'id': {'pk': 6, 'table': 'grade', 'student_pk': 5, 'studsubj_pk': 10, 'examperiod': 1,
     #                   'mode': 'update', 'mapid': 'grade_6'},
     #             'segrade': 'ww'}
@@ -678,39 +664,34 @@ def update_grade(instance, upload_dict, err_dict, request):
     save_changes = False
     recalc_finalgrade = False
     for field, new_value in upload_dict.items():
-        if field in ('pescore', 'cescore', 'segrade', 'pegrade', 'cegrade', 'pecegrade'):
+        if field in ('pescore', 'cescore', 'segrade', 'pegrade', 'cegrade'):
 
 # a. get saved_value
             saved_value = getattr(instance, field)
 
-            #logger.debug('field: ' + str(field))
-            #logger.debug('new_value: ' + str(new_value))
-            #logger.debug('saved_value: ' + str(saved_value))
-
 # - validate new_value
-            input_number, validated_value, msg_err = grad_val.validate_input_grade(instance, field, new_value)
-            #logger.debug('input_number: ' + str(input_number) + ' ' + str(type(input_number)))
-            #logger.debug('validated_value: ' + str(validated_value) + ' ' + str(type(validated_value)))
-            #logger.debug('msg_err: ' + str(msg_err))
+            validated_value, msg_err = grad_val.validate_input_grade(instance, field, new_value, logging_on)
+
             if msg_err:
                 err_dict[field] = msg_err
             else:
-# 2. save changes
+# 2. save changes if changed and no_error
                 if validated_value != saved_value:
-                    # c. save field if changed and no_error
                     setattr(instance, field, validated_value)
                     save_changes = True
                     recalc_finalgrade = True
                 else:
                     err_dict[field] = msg_err
+            if logging_on:
+                logger.debug('field          : ' + str(field))
+                logger.debug('new_value      : ' + str(new_value))
+                logger.debug('validated_value: ' + str(validated_value) + ' ' + str(type(validated_value)))
+                logger.debug('saved_value    : ' + str(saved_value))
+                logger.debug('msg_err        : ' + str(msg_err))
+                logger.debug('recalc_final   : ' + str(recalc_finalgrade))
 
-# - save changes in fields 'se_status', 'pe_status', 'ce_status'
-        elif field in ('se_status', 'pe_status', 'ce_status'):
-            pass
-            # fields are updated in GradeApproveView
-
-# 3. save changes in fields 'namefirst', 'namelast'
-        elif field in ('sepublished', 'pepublished', 'cepublished'):
+# - save changes in fields 'xx_status' and 'xxpublished'
+        elif field in ('se_status', 'pe_status', 'ce_status', 'sepublished', 'pepublished', 'cepublished'):
             pass
             # fields are updated in GradeApproveView
 
@@ -719,17 +700,17 @@ def update_grade(instance, upload_dict, err_dict, request):
 # 5. save changes`
     if save_changes:
         if recalc_finalgrade:
-            calc_final.calc_final_grade(instance)
+            calc_final.update_finalgrade(instance, logging_on)
 
-        instance.save(request=request)
-        #logger.debug('The changes have been saved' + str(instance))
-        """
         try:
             instance.save(request=request)
-            logger.debug('The changes have been saved' + str(instance))
+            if logging_on:
+                logger.debug('The changes have been saved.')
         except:
-            err_dict['err_update'] = _('An error occurred. The changes have not been saved.')
-        """
+            msg_err = _('An error occurred. The changes have not been saved.')
+            err_dict['err_update'] = msg_err
+            if logging_on:
+                logger.debug(msg_err)
 # --- end of update_grade
 
 
@@ -801,7 +782,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
 
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
-        grade_rows = sch_mod.dictfetchall(cursor)
+        grade_rows = af.dictfetchall(cursor)
 
 # - add full name to rows
     if grade_rows:
@@ -856,7 +837,7 @@ def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk):
 
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
-        published_rows = sch_mod.dictfetchall(cursor)
+        published_rows = af.dictfetchall(cursor)
 
     return published_rows
 # --- end of create_grade_rows
@@ -1060,7 +1041,7 @@ def create_grade_rowsXXX(setting_dict, append_dict, student_pk):
 
     newcursor = connection.cursor()
     newcursor.execute(sql, sql_keys)
-    student_rows = sch_mod.dictfetchall(newcursor)
+    student_rows = af.dictfetchall(newcursor)
 
 # - add lastname_firstname_initials to rows
     if student_rows:

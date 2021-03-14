@@ -276,9 +276,13 @@ class Subjecttype_log(sch_mod.AwpBaseModel):
     sequence = PositiveSmallIntegerField(null=True)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
+    # has_prac only enables the has_practexam option of a schemeitem
     has_prac = BooleanField(default=False)
     has_pws = BooleanField(default=False)
+    # TODO replace one_allowed by min and max allowed
     one_allowed = BooleanField(default=False)
+    min_allowed = PositiveSmallIntegerField(null=True)
+    max_allowed = PositiveSmallIntegerField(null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -472,6 +476,13 @@ class Schemeitem(sch_mod.AwpBaseModel):
     extra_nocount_allowed = BooleanField(default=False)
     elective_combi_allowed = BooleanField(default=False)
     has_practexam = BooleanField(default=False)
+    has_pws = BooleanField(default=False)
+
+    #   extra_count_allowed: only at Havo Vwo) 'PR2017-01-28
+    #   extra_nocount_allowed: at Vsbo TKL and Havo Vwo)) 'PR2017-01-28
+    #   elective_combi_allowed: only at Vwo and subject du fr sp 'PR2017-01-28
+    #   has_practexam: only at Vsbo PBL and PKL, all sectorprogramma's except uv 'PR2017-01-28
+
 
 #  ++++++++++  Class methods  +++++++++++++++++++++++++++
     @classmethod
@@ -549,11 +560,6 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     is_mandatory = BooleanField(default=False)
     is_combination = BooleanField(default=False)
     is_combi = BooleanField(default=False)
-
-#   extra_count_allowed: only at Havo Vwo) 'PR2017-01-28
-#   extra_nocount_allowed: at Vsbo TKL and Havo Vwo)) 'PR2017-01-28
-#   elective_combi_allowed: only at Vwo and subject du fr sp 'PR2017-01-28
-#   has_practexam: only at Vsbo PBL and PKL, all sectorprogramma's except uv 'PR2017-01-28
 
     extra_count_allowed = BooleanField(default=False)
     extra_nocount_allowed = BooleanField(default=False)
@@ -646,20 +652,6 @@ class Packageitem(sch_mod.AwpBaseModel):
 
     package = ForeignKey(Package, related_name='packageschemes', on_delete=CASCADE)
     schemeitem = ForeignKey(Schemeitem, related_name='packageschemes', on_delete=CASCADE)
-
-
-# PR2018-06-06
-class Packageitem_log(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
-
-    packageitem_id = IntegerField(db_index=True)
-
-    # TODO: refer to log table
-    package_log = ForeignKey(Package_log, related_name='+', on_delete=CASCADE)
-    schemeitem_log = ForeignKey(Schemeitem_log, related_name='+', on_delete=CASCADE)
-
-    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
-
 
 # PR2018-06-06
 class Cluster(sch_mod.AwpBaseModel):

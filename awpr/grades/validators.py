@@ -2,23 +2,21 @@
 from django.utils.translation import ugettext_lazy as _
 
 from awpr import constants as c
-from awpr import calc_finalgrade as calc_final
+from grades import calc_finalgrade as calc_final
 
 import logging
 logger = logging.getLogger(__name__)
 
 
 #######################################################
-def validate_input_grade(grade, field, input_value):  # PR2021-01-18
-    #logger.debug(' ------- validate_input_grade -------')
-    #logger.debug("field", field, "input_value", input_value)
+def validate_input_grade(grade, field, input_value, logging_on):  # PR2021-01-18
+    logging_on = False
 
     is_score = field in ("pescore", "cescore")
     is_grade = field in ("segrade", "pegrade", "cegrade")
     is_se_grade = (field == "segrade")
     is_pe = (field in ("pescore", "pegrade"))
     is_pe_or_ce = (field in ("pescore", "pegrade", "cescore", "cegrade"))
-    #logger.debug("is_score", is_score, "is_grade", is_grade)
 
     examperiod_int = grade.examperiod
 
@@ -61,8 +59,14 @@ def validate_input_grade(grade, field, input_value):  # PR2021-01-18
     scalelength_pe =  norm.scalelength_pe if norm else None
     scalelength_reex =  norm.scalelength_reex if norm else None
 
+    if logging_on:
+        logger.debug(' ------- validate_input_grade -------')
+        logger.debug("subject: ", subject.base.code, "student: ", student)
+        logger.debug("field: ", field, "input_value: ", input_value)
+        logger.debug("is_score: ", is_score, "is_grade: ", is_grade, "is_pe: ", is_pe)
+
 # - reset output parameters
-    input_number, output_text, msg_err = None, None, None
+    output_str, msg_err = None, None
 
 # - exit als kandidaat is vergrendeld >>> handle outside this function
     #  if (dict.ey_locked) { msg_err = err_list.examyear_locked} else
@@ -90,7 +94,7 @@ def validate_input_grade(grade, field, input_value):  # PR2021-01-18
     elif examperiod_int == c.EXAMPERIOD_EXEMPTION:
         field_allowed = field in ("segrade", "cegrade")
 
-# - exit als input_value  niet ingevuld (msg_err = None, geen foutmelding)
+# - exit als input_value niet ingevuld (msg_err = None, geen foutmelding)
     if field_allowed and input_value:
 
 # - Corona: check if no_centralexam (not when examperiod is exemption)
@@ -188,11 +192,15 @@ def validate_input_grade(grade, field, input_value):  # PR2021-01-18
                 elif gradetype == c.GRADETYPE_02_CHARACTER:  # goed / voldoende / onvoldoende
                     value_lc = input_value.lower()
                     if value_lc in ('o', 'v', 'g'):
-                        output_text = value_lc
+                        output_str = value_lc
                     else:
                         msg_err = _("Grade can only be 'g', 'v' or 'o'.")
 
                 elif gradetype == c.GRADETYPE_01_NUMBER:
-                    input_number, output_text, msg_err = calc_final.get_number_from_inputgrade(input_value)
+                    output_str, msg_err = calc_final.get_grade_from_input_str(input_value, logging_on)
 
-    return input_number, output_text, msg_err
+    if logging_on:
+        logger.debug("output_str: " + str(output_str))
+        if msg_err:
+            logger.debug("msg_err: " + str(msg_err))
+    return output_str, msg_err

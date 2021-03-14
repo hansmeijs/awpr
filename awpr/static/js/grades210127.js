@@ -39,6 +39,8 @@ console.log("document.addEventListener students" )
     let examyear_map = new Map();
     let school_map = new Map();
     let department_map = new Map();
+    let level_map = new Map();
+    let sector_map = new Map();
     let student_map = new Map();
     let subject_map = new Map();
     let grade_map = new Map()
@@ -71,7 +73,7 @@ console.log("document.addEventListener students" )
                             segrade: true, se_status: true,
                             pegrade: true, pe_status: true,
                             cegrade: true, ce_status: true,
-                            pecegrade: true, finalgrade: true, hasnote: true,
+                            pecegrade: true, weighing: true, finalgrade: true, hasnote: true,
                             // in table published:
                             name: true, examperiod: true, examtype: true, datepublished: true, filename: true
                            }
@@ -80,32 +82,32 @@ console.log("document.addEventListener students" )
                                   "SE_grade_twolines", "",
                                   "PE_score_twolines", "PE_grade_twolines", "",
                                   "CE_score_twolines", "CE_grade_twolines", "",
-                                  "PECE_grade_twolines", "Final_grade_twolines", ""],
+                                  "PECE_grade_twolines", "SECE_weighing",  "Final_grade_twolines", ""],
                     field_names: ["select", "examnumber", "fullname",  "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name",
                                   "segrade", "se_status",
                                   "pescore", "pegrade", "pe_status",
                                   "cescore", "cegrade","ce_status",
-                                  "pecegrade", "finalgrade", "hasnote"],
+                                  "pecegrade", "weighing", "finalgrade", "hasnote"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div",
                                 "input", "div",
                                 "input", "input", "div",
                                 "input","input","div",
-                                "div", "div", "div"],
+                                "div", "div", "div", "div"],
                     filter_tags: ["text", "text","text", "text", "text", "text", "text",
                                  "text", "text",
                                   "text","text", "text",
                                   "text", "text", "text",
-                                  "text", "text","text"],
+                                  "text", "text", "text", "text"],
                     field_width: ["020", "060", "120", "060", "060", "100", "120",
                                  "060", "020",
                                 "060", "060", "020",
                                 "060","060","020",
-                                "060", "060", "020"],
+                                "060", "060", "060", "020"],
                     field_align: ["c", "r", "l", "l", "l", "l", "l",
                                  "r", "c",
                                  "r","r","c",
                                  "r","r","c",
-                                 "r", "r", "c"]},
+                                 "r", "r", "r", "c"]},
             published: {field_caption: ["", "Name_ex_form", "Exam_period", "Exam_type", "Date_submitted", ""],
                     field_names: ["select", "name", "examperiod",  "examtype", "datepublished", "filename"],
                     field_tags: ["div", "div", "div", "div", "div", "a"],
@@ -356,9 +358,16 @@ console.log("document.addEventListener students" )
                 if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows) };
                 if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows) };
 
-                if ("level_rows" in response) { FillOptionsSelectLevelSector("level", response.level_rows)};
-                if ("sector_rows" in response) { FillOptionsSelectLevelSector("sector", response.sector_rows)};
-
+                if ("level_rows" in response) {
+                    b_fill_datamap(level_map, response.level_rows)
+                    console.log ("response.level_rows", response.level_rows)
+                    console.log ("level_map", level_map)
+                    FillOptionsSelectLevelSector("level", response.level_rows)
+                };
+                if ("sector_rows" in response) {
+                    b_fill_datamap(sector_map, response.level_rows)
+                    FillOptionsSelectLevelSector("sector", response.sector_rows)
+                };
                 if ("subject_rows" in response) { b_fill_datamap(subject_map, response.subject_rows) };
                 if ("student_rows" in response) { b_fill_datamap(student_map, response.student_rows) };
                 if ("studentsubject_rows" in response) { b_fill_datamap(studentsubject_map, response.studentsubject_rows) };
@@ -528,16 +537,25 @@ console.log("document.addEventListener students" )
     function HandleSbrLevelSector(tblName, el_select) {
         console.log("=== HandleSbrLevelSector");
         console.log( "el_select.value: ", el_select.value, typeof el_select.value)
-        // sel_examtype = "se", "pe", "ce", "re2", "re3", "exm"
-        setting_dict.sel_level_pk =( Number(el_select.value)) ? Number(el_select.value) : null;
-        const filter_value = setting_dict.sel_level_pk;
+
+        // tblName = "level" or "sector"
+        const sel_pk_int = (Number(el_select.value)) ? Number(el_select.value) : null;
+        const filter_value = sel_pk_int;
+        const sel_dict = {};
+        if (tblName === "level"){
+            setting_dict.sel_level_pk = sel_pk_int;
+            sel_dict.sel_level_pk = sel_pk_int;
+        } else if (tblName === "sector"){
+            setting_dict.sel_sector_pk = sel_pk_int;
+            sel_dict.sel_sector_pk = sel_pk_int;
+        }
 
 // ---  upload new setting
-        const upload_dict = {selected_pk: {sel_level_pk: setting_dict.sel_level_pk}};
+        const upload_dict = {selected_pk: sel_dict};
+        console.log( "upload_dict: ", upload_dict)
         UploadSettings (upload_dict, url_settings_upload);
 
         FillTblRows();
-
     }  // HandleSbrLevelSector
 
 //=========  FillOptionsExamperiodExamtype  ================ PR2021-03-08
@@ -604,12 +622,17 @@ console.log("document.addEventListener students" )
     function HandleShowAll() {
         console.log("=== HandleShowAll");
         setting_dict.sel_level_pk =  null;
+        setting_dict.sel_sector_pk =  null;
         setting_dict.sel_student_pk =  null;
         setting_dict.sel_subject_pk =  null;
 
         el_SBR_select_level.value = "0";
+        el_SBR_select_sector.value = "0";
         MSSS_display_in_sbr();
-        FillTblRows();
+
+        HandleBtnSelect("grade_by_all", true) // true = skip_upload
+
+        // FillTblRows(); is in HandleBtnSelect
     }
 
 //========= UpdateHeaderText  ================== PR2020-07-31
@@ -645,7 +668,7 @@ console.log("document.addEventListener students" )
         console.log( "show_all_grades", show_all_grades);
         columns_shown.pescore = show_all_grades; columns_shown.cescore = show_all_grades;
         columns_shown.segrade = show_all_grades; columns_shown.pegrade = show_all_grades;  columns_shown.cegrade = show_all_grades;
-        columns_shown.pecegrade = show_all_grades; columns_shown.finalgrade = show_all_grades;
+        columns_shown.pecegrade = show_all_grades; columns_shown.weighing = show_all_grades; columns_shown.finalgrade = show_all_grades;
         columns_shown.se_status = false; columns_shown.pe_status = false; columns_shown.ce_status = false;
         columns_shown.hasnote = true;
         const sel_examtype = setting_dict.sel_examtype
@@ -664,9 +687,10 @@ console.log("document.addEventListener students" )
             columns_shown.cegrade = true; columns_shown.ce_status = true;
         }
 
-        if(setting_dict.sel_level_pk){
+        columns_shown.lvl_abbrev = (!!setting_dict.sel_level_pk);
+        columns_shown.sct_abbrev = (!!setting_dict.sel_sector_pk);
 
-        } else if(setting_dict.sel_subject_pk){
+        if(setting_dict.sel_subject_pk){
             // if sel_subject_pk has value: show subject in header, hide subject columns
             columns_shown.examnumber = true;
             columns_shown.fullname = true;
@@ -715,6 +739,7 @@ console.log("document.addEventListener students" )
             // only show rows of selected student / subject
                 let show_row = (tblName === "published") ? true :
                                 (!setting_dict.sel_level_pk || map_dict.lvl_id === setting_dict.sel_level_pk) &&
+                                (!setting_dict.sel_sector_pk || map_dict.sct_id === setting_dict.sel_sector_pk) &&
                                 (!setting_dict.sel_student_pk || map_dict.student_id === setting_dict.sel_student_pk) &&
                                 (!setting_dict.sel_subject_pk || map_dict.subject_id === setting_dict.sel_subject_pk);
 
@@ -760,6 +785,7 @@ console.log("document.addEventListener students" )
                     const el_header = document.createElement("div");
                         el_header.innerText = caption;
         // --- add width, text_align, right padding in examnumber
+                        th_header.classList.add(class_width, class_align);
                         el_header.classList.add(class_width, class_align);
                         if(field_name === "examnumber"){el_header.classList.add("pr-2")}
                     th_header.appendChild(el_header)
@@ -791,6 +817,7 @@ console.log("document.addEventListener students" )
                         }
 
         // --- add width, text_align
+                        th_filter.classList.add(class_width, class_align);
                         el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
                     th_filter.appendChild(el_filter)
                 tblRow_filter.appendChild(th_filter);
@@ -834,7 +861,9 @@ console.log("document.addEventListener students" )
 // +++  insert td's into tblRow
         for (let j = 0; j < column_count; j++) {
             const field_name = field_names[j];
-            //console.log("field_name", field_name);
+            const class_width = "tw_" + field_width[j];
+            const class_align = "ta_" + field_align[j];
+
       // skip columns if not in columns_shown
             if (columns_shown[field_name]){
         // --- insert td element,
@@ -860,15 +889,22 @@ console.log("document.addEventListener students" )
                         el.classList.add("input_text");
                     }
 
-                    el.classList.add("ta_" + field_setting.field_align[j]);
+    // --- add width, text_align, right padding in examnumber
+                    td.classList.add(class_width, class_align);
+                    if(["fullname", "subj_code"].indexOf(field_name) > -1){
+                        // dont set width in field student and subject, to adjust width to length of name
+                        el.classList.add(class_align);
+                    } else {
+                        el.classList.add(class_width, class_align);
+                    }
+                    if(field_name === "examnumber"){el.classList.add("pr-2")}
 
                     if (field_name.includes("status")){
-// --- add column with status icon
-                        el.classList.add("tw_032", "stat_0_1")
+    // --- add column with status icon
+                        //el.classList.add("tw_032", "stat_0_1")
+                        el.classList.add("stat_0_1")
                     } else if (field_name === "hasnote"){
                         el.classList.add("note_1_4")
-                    } else if(field_name === "examnumber"){
-                        el.classList.add("pr-2")
                     } else if (field_name === "filename"){
                         const name = (map_dict.name) ? map_dict.name : null;
                         const file_path = (map_dict.filepath) ? map_dict.filepath : null;
@@ -903,8 +939,7 @@ console.log("document.addEventListener students" )
                     add_hover(td);
                 }
                 //td.classList.add("pointer_show", "px-2");
-    // --- add field_width and text_align
-                //el.classList.add("tw_XX" + field_width[j], "ta_" + field_align[j]);
+
     // --- put value in field
                 UpdateField(el, map_dict)
             }  //  if (columns_shown[field_name])
@@ -1647,6 +1682,9 @@ console.log("document.addEventListener students" )
             const auth_by = (setting_dict.requsr_perm_auth1) ? loc.President :
                          (setting_dict.requsr_perm_auth2) ? loc.Secretary :
                          (setting_dict.requsr_perm_auth3) ? loc.Commissioner : null;
+
+            const caption = (is_submit_mode) ? loc.Submitted_by : loc.Approved_by;
+            document.getElementById("id_MAG_approved_by_label").innerText = caption + ":";
             document.getElementById("id_MAG_approved_by").innerText = auth_by
             document.getElementById("id_MAG_approved_name").innerText = setting_dict.requsr_name
 
@@ -2385,6 +2423,13 @@ console.log("document.addEventListener students" )
         }
         el_SBR_select_student.value = student_text;
         document.getElementById("id_SBR_container_student").classList.remove(cls_hide);
+
+
+        if(setting_dict.sel_level_pk){
+            const dict = get_mapdict_from_datamap_by_tblName_pk(level_map, "student", sel_student_pk);
+            student_text = (dict.fullname) ? dict.fullname : "---"
+        }
+
 
         const header_text = (sel_subject_pk) ? subject_text : (sel_student_pk) ? student_text : loc.All_subjects_and_candidates;
 

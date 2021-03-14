@@ -2,7 +2,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
-console.log("document.addEventListener students" )
     // <PERMIT> PR220-10-02
     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
     //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
@@ -49,6 +48,7 @@ console.log("document.addEventListener students" )
     let student_map = new Map();
     let subject_map = new Map();
     let studentsubject_map = new Map()
+    let scheme_map = new Map()
     let schemeitem_map = new Map()
 
     let filter_dict = {};
@@ -65,7 +65,7 @@ console.log("document.addEventListener students" )
 // --- get field_settings
     const field_settings = {
         student: {  field_caption: ["", "Examnumber_twolines", "Last_name", "First_name", "Gender", "ID_number", "Department", "Leerweg", "SectorProfiel_twolines"],
-                    field_names: ["select", "examnumber", "lastname", "firstname", "gender", "idnumber", "dep_abbrev", "lvl_abbrev", "sct_abbrev"],
+                    field_names: ["select", "examnumber", "lastname", "firstname", "gender", "idnumber", "db_code", "lvl_abbrev", "sct_abbrev"],
                     filter_tags: ["select", "text", "text",  "text", "text", "text", "text", "text", "text"],
                     field_width:  ["020", "090", "180", "240", "090", "120", "120", "090", "090"],
                     field_align: ["c", "c", "l", "l", "c", "l", "c","c", "c"]},
@@ -123,7 +123,6 @@ console.log("document.addEventListener students" )
         }
         const el_MSTUD_abbrev = document.getElementById("id_MSTUD_abbrev")
         const el_MSTUD_name = document.getElementById("id_MSTUD_name")
-        const el_MSTUD_sequence = document.getElementById("id_MSTUD_sequence")
 
         const el_MSTUD_tbody_select = document.getElementById("id_MSTUD_tblBody_department")
         const el_MSTUD_btn_delete = document.getElementById("id_MSTUD_btn_delete");
@@ -206,9 +205,10 @@ console.log("document.addEventListener students" )
                 department_rows: {get: true},
                 level_rows: {get: true},
                 sector_rows: {get: true},
-                student_rows: {get: true}
-                //studentsubject_rows: {get: true},
-                //schemeitem_rows: {get: true}
+                student_rows: {get: true},
+                studentsubject_rows: {get: true},
+                scheme_rows: {get: true},
+                schemeitem_rows: {get: true}
             };
 
         DatalistDownload(datalist_request, "DOMContentLoaded");
@@ -271,9 +271,10 @@ console.log("document.addEventListener students" )
                 if ("student_rows" in response) {
                     const tblName = "student";
                     const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                    RefreshDataMap(tblName, field_names, response.student_rows, student_map)
+                    RefreshDataMap(tblName, field_names, response.student_rows, student_map, false)  // false = no update
                 }
                 if ("studentsubject_rows" in response)  { b_fill_datamap(studentsubject_map, response.studentsubject_rows) };
+                if ("scheme_rows" in response)  { b_fill_datamap(scheme_map, response.scheme_rows) };
                 if ("schemeitem_rows" in response)  { b_fill_datamap(schemeitem_map, response.schemeitem_rows) };
 
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
@@ -546,7 +547,7 @@ console.log("document.addEventListener students" )
 
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
-                } else if (["examnumber", "lastname", "firstname", "gender", "idnumber", "dep_abbrev", "lvl_abbrev", "sct_abbrev",
+                } else if (["examnumber", "lastname", "firstname", "gender", "idnumber", "db_code", "lvl_abbrev", "sct_abbrev",
                             "fullname", "subj_code", "subj_name", "sjt_abbrev"].indexOf(field_name) > -1){
                     if(tblName === "student"){
                         el_td.addEventListener("click", function() {MSTUD_Open(el_td)}, false)
@@ -588,7 +589,7 @@ console.log("document.addEventListener students" )
             if(field_name){
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
-                } else if (["examnumber", "lastname", "firstname", "gender", "idnumber", "dep_abbrev", "lvl_abbrev", "sct_abbrev",
+                } else if (["examnumber", "lastname", "firstname", "gender", "idnumber", "db_code", "lvl_abbrev", "sct_abbrev",
                             "fullname", "subj_code", "subj_name", "sjt_abbrev"].indexOf(field_name) > -1){
                     el_div.innerText = (fld_value) ? fld_value : null;
                 }
@@ -624,14 +625,14 @@ console.log("document.addEventListener students" )
                         if(el_MSTUD_loader){ el_MSTUD_loader.classList.add(cls_visible_hide)};
                         const tblName = "student";
                         const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                        RefreshDataMap(tblName, field_names, response.updated_student_rows, student_map);
+                        RefreshDataMap(tblName, field_names, response.updated_student_rows, student_map, true)  // true = update
                     };
                     $("#id_mod_student").modal("hide");
 
                     if ("updated_studsubj_rows" in response) {
                         const tblName = "studsubj";
                         const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                        RefreshDataMap(tblName, field_names, response.updated_studsubj_rows, studentsubject_map);
+                        RefreshDataMap(tblName, field_names, response.updated_studsubj_rows, studentsubject_map, true)  // true = update
                     }
 
                 },  // success: function (response) {
@@ -660,25 +661,30 @@ console.log("document.addEventListener students" )
             mod_MSTUD_dict = {}
             let tblName = "student";
             if(is_addnew){
-                mod_MSTUD_dict = {is_addnew: is_addnew}
+                mod_MSTUD_dict = {is_addnew: is_addnew, db_code: setting_dict.sel_depbase_code}
             } else {
                 const tblRow = get_tablerow_selected(el_input);
                 const map_dict = get_mapdict_from_datamap_by_id(student_map, tblRow.id);
                 mod_MSTUD_dict = deepcopy_dict(map_dict);
             }
-            console.log("mod_MSTUD_dict", mod_MSTUD_dict)
+
     // ---  set header text
             MSTUD_headertext(is_addnew, tblName, mod_MSTUD_dict.name);
 
     // ---  fill level and sector options, set select team in selectbox
             const selected_pk = null;
-            const department_pk = (is_addnew) ? setting_dict.requsr_department_pk : mod_MSTUD_dict.dep_id;
+            const department_pk = (is_addnew) ? setting_dict.sel_department_pk : mod_MSTUD_dict.dep_id;
             const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", department_pk);
             const depbase_pk = dep_dict.base_id;
             const lvl_req = (dep_dict.lvl_req) ? dep_dict.lvl_req : false;
             const sct_req = (dep_dict.sct_req) ? dep_dict.sct_req : false;
-            document.getElementById("id_MSTUD_level_label").innerText = dep_dict.lvl_caption + ':';
-            document.getElementById("id_MSTUD_sector_label").innerText = dep_dict.sct_caption + ':';
+
+            console.log("dep_dict", dep_dict)
+            console.log(",,,,,,,,,,,,,,,,,,,sct_req", sct_req)
+            const sct_caption = (dep_dict.has_profiel) ? loc.Profiel : loc.Sector;
+
+            document.getElementById("id_MSTUD_level_label").innerText = loc.Leerweg + ':';
+            document.getElementById("id_MSTUD_sector_label").innerText = sct_caption + ':';
             document.getElementById("id_MSTUD_level_select").innerHTML = t_FillOptionLevelSectorFromMap("level", level_map, depbase_pk, selected_pk)
             document.getElementById("id_MSTUD_sector_select").innerHTML = t_FillOptionLevelSectorFromMap("sector", sector_map, depbase_pk, selected_pk)
 
@@ -696,8 +702,6 @@ console.log("document.addEventListener students" )
             if (!is_addnew){
                 //el_MSTUD_abbrev.value = (mod_MSTUD_dict.abbrev) ? mod_MSTUD_dict.abbrev : null;
                 //el_MSTUD_name.value = (mod_MSTUD_dict.name) ? mod_MSTUD_dict.name : null;
-                //el_MSTUD_sequence.value = (mod_MSTUD_dict.sequence) ? mod_MSTUD_dict.sequence : null;
-               // el_MSTUD_sequence.value = mod_MSTUD_dict.sequence;
 
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSTUD_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
@@ -711,7 +715,7 @@ console.log("document.addEventListener students" )
 
     // ---  disable btn submit, hide delete btn when is_addnew
            // add_or_remove_class(el_MSTUD_btn_delete, cls_hide, is_addnew )
-            //const disable_btn_save = (!el_MSTUD_abbrev.value || !el_MSTUD_name.value || !el_MSTUD_sequence.value )
+            //const disable_btn_save = (!el_MSTUD_abbrev.value || !el_MSTUD_name.value  )
             //el_MSTUD_btn_save.disabled = disable_btn_save;
 
             //MSTUD_validate_and_disable();
@@ -728,7 +732,7 @@ console.log("document.addEventListener students" )
 
         if(has_permit_edit){
             const is_delete = (crud_mode === "delete")
-
+            let new_level_pk = null, new_sector_pk = null, level_or_sector_has_changed = false;;
             let upload_dict = {
                 table: 'student',
                 sel_examyear_pk: setting_dict.sel_examyear_pk,
@@ -751,7 +755,7 @@ console.log("document.addEventListener students" )
                 const fldName = get_attr_from_el(el_input, "data-field");
                 let new_value = (el_input.value) ? el_input.value : null;
                 let old_value = (mod_MSTUD_dict[fldName]) ? mod_MSTUD_dict[fldName] : null;
-                if(fldName === "sequence"){
+                if(["lvl_id", "sct_id"].indexOf(fldName) > -1){
                     new_value = (new_value && Number(new_value)) ? Number(new_value) : null;
                     old_value = (old_value && Number(old_value)) ? Number(old_value) : null;
                 }
@@ -759,6 +763,13 @@ console.log("document.addEventListener students" )
                     const field = (fldName === "lvl_id") ? "level" :
                                   (fldName === "sct_id") ? "sector" : fldName;
                     upload_dict[field] = {value: new_value, update: true}
+                    if(fldName === "lvl_id"){
+                        new_level_pk = new_value;
+                        level_or_sector_has_changed = true;
+                    } else if(fldName === "sct_id"){
+                        new_sector_pk = new_value;
+                        level_or_sector_has_changed = true;
+                    }
     // put changed new value in tblRow before uploading
                     //const tblRow = document.getElementById(mod_MSTUD_dict.mapid);
                     //if(tblRow){
@@ -767,6 +778,17 @@ console.log("document.addEventListener students" )
                     //}
                 };
             };
+
+    console.log( "upload_dict.student_pk: ", upload_dict.student_pk);
+    console.log( "level_or_sector_has_changed: ", level_or_sector_has_changed);
+    console.log( "new_level_pk: ", new_level_pk);
+    console.log( "new_sector_pk: ", new_sector_pk);
+    // ---  check if schemeitems must be changed when level or sector changes
+            if (upload_dict.student_pk){
+                if (level_or_sector_has_changed){
+                    check_new_scheme(upload_dict.student_pk, new_level_pk, new_sector_pk)
+                }
+            }
     // ---  get selected departments
             //let dep_list = MSTUD_get_selected_depbases();
             //upload_dict['depbases'] = {value: dep_list, update: true}
@@ -774,7 +796,7 @@ console.log("document.addEventListener students" )
             // TODO add loader
             //document.getElementById("id_MSTUD_loader").classList.remove(cls_visible_hide)
             // modal is closed by data-dismiss="modal"
-            UploadChanges(upload_dict, url_student_upload);
+            //UploadChanges(upload_dict, url_student_upload);
         };
     }  // MSTUD_Save
 
@@ -904,15 +926,17 @@ console.log("document.addEventListener students" )
     }  // validate_duplicates_in_department
 
 //========= MSTUD_SetElements  ============= PR2020-08-03
-    function MSTUD_SetElements(also_remove_values){
+    function MSTUD_SetElements(){
         //console.log( "===== MSTUD_SetElements  ========= ");
+        //console.log( "mod_MSTUD_dict", mod_MSTUD_dict);
 // --- loop through input elements
         let form_elements = el_MSTUD_div_form_controls.querySelectorAll(".form-control")
         for (let i = 0, el, fldName, fldValue, len = form_elements.length; i < len; i++) {
             el = form_elements[i];
             if(el){
                 fldName = get_attr_from_el(el, "data-field");
-                el.value = (mod_MSTUD_dict[fldName]) ? mod_MSTUD_dict[fldName] : null;
+                fldValue = (mod_MSTUD_dict[fldName]) ? mod_MSTUD_dict[fldName] : null;
+                el.value = fldValue;
             };
         }
 
@@ -1053,7 +1077,7 @@ console.log("document.addEventListener students" )
 
     // ---  set header text
                 let header_text = loc.Subjects + loc._of_ + map_dict.fullname
-                let dep_lvl_sct_text = (map_dict.dep_abbrev) ? map_dict.dep_abbrev + " - " : "";
+                let dep_lvl_sct_text = (map_dict.db_code) ? map_dict.db_code + " - " : "";
                 if(map_dict.lvl_abbrev) {dep_lvl_sct_text += map_dict.lvl_abbrev + " - "};
                 if(map_dict.sct_abbrev) {dep_lvl_sct_text += map_dict.sct_abbrev};
                 if (dep_lvl_sct_text) {header_text += " (" + dep_lvl_sct_text + ")"};
@@ -1074,7 +1098,7 @@ console.log("document.addEventListener students" )
 
         // ---  disable btn submit, hide delete btn when is_addnew
                // add_or_remove_class(el_MSTUD_btn_delete, cls_hide, is_addnew )
-                //const disable_btn_save = (!el_MSTUD_abbrev.value || !el_MSTUD_name.value || !el_MSTUD_sequence.value )
+                //const disable_btn_save = (!el_MSTUD_abbrev.value || !el_MSTUD_name.value  )
                 //el_MSTUD_btn_save.disabled = disable_btn_save;
 
                 //MSTUD_validate_and_disable();
@@ -1610,7 +1634,6 @@ console.log("document.addEventListener students" )
                 mod_dict.id = map_dict.id;
                 mod_dict.abbrev = map_dict.abbrev;
                 mod_dict.name = map_dict.name;
-                mod_dict.sequence = map_dict.sequence;
                 mod_dict.depbases = map_dict.depbases;
                 mod_dict.mapid = map_id;
             };
@@ -1767,10 +1790,8 @@ console.log("document.addEventListener students" )
 // +++++++++++++++++ REFRESH DATA MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
 
 //=========  RefreshDataMap  ================ PR2020-08-16 PR2020-09-30
-    function RefreshDataMap(tblName, field_names, data_rows, data_map) {
-        console.log(" --- RefreshDataMap  ---");
-        console.log("data_rows", data_rows);
-        console.log("!!data_rows", !!data_rows);
+    function RefreshDataMap(tblName, field_names, data_rows, data_map, is_update) {
+        //console.log(" --- RefreshDataMap  ---");
         // PR2021-01-13 debug: when data_rows = [] then !!data_rows = true. Must add !!data_rows.length
         if (data_rows && data_rows.length ) {
             const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
@@ -1779,9 +1800,9 @@ console.log("document.addEventListener students" )
             }
         } else {
             // empty the datamap when data_rows is empty PR2021-01-13 debug forgot to empty data_map
-            data_map.clear();
+            // PR2021-03-13 debug. Don't empty de data_map when is update. Returns [] when no changes made
+           if(!is_update) {data_map.clear()};
         }
-        console.log("data_map", data_map);
     }  //  RefreshDataMap
 
 //=========  RefreshDatamapItem  ================ PR2020-08-16 PR2020-09-30
@@ -2191,6 +2212,131 @@ console.log("document.addEventListener students" )
         DatalistDownload(datalist_request);
 
     }  // MSESD_Response
+//###########################################################################
+
+//========= check_new_scheme  ======== // PR2021-03-13
+    function check_new_scheme(student_pk, new_level_pk, new_sector_pk) {
+        console.log( "check_new_scheme ");
+        console.log( "studentsubject_map", studentsubject_map);
+/*
+    'PR 3 okt 09:
+        'Deze functie controleert VakSchemaItemID in vakkenlijst van kandidaat, nodig wanneer leerweg of sector gewijzigd wordt
+            'elk KandVak heeft een VakSchemaItem, dat hoort bij het VakSchema van de leerweg en sector van deze kandidaat
+            'Als de leerweg of sector gewijzigd wordt, moet ook het VakSchemaItem van dit KandVak worden aangepast
+            'Deze functie controleert:
+            '- of het vak ook voorkomt in het nieuwe vakschema. Zo niet, zet een vlag om het vak te wissen
+            '- zo ja, of het vak in het nieuwe vakschema ook voorkomt met hetzelfde vaktype.
+
+        'strMsgText = IIf(pblAfd.CurIsHavoVwo, "Het profiel van ", "De leerweg van ") & GetKandidaatNaam(lngKandidaatID) & vbCrLf & "wordt gewijzigd in '" & strAfk_Studierichting & IIf(pblAfd.CurIsHavoVwo, "'.", "', sector  " & strAfk_Sector & ".") & vbCrLf & vbCrLf
+
+*/
+// get new scheme
+        const lookup_level_pk = (new_level_pk) ? new_level_pk : mod_MSTUD_dict.lvl_id;
+        const lookup_sector_pk = (new_sector_pk) ? new_sector_pk : mod_MSTUD_dict.sct_id;
+        let new_scheme_pk = null, new_scheme_name = null;
+        for (const [map_id, map_dict] of scheme_map.entries()) {
+            if (map_dict.department_id === mod_MSTUD_dict.dep_id &&
+                map_dict.level_id === lookup_level_pk &&
+                map_dict.sector_id === lookup_sector_pk) {
+                    new_scheme_pk = map_dict.id;
+                    new_scheme_name = map_dict.name;
+                    break;
+            }
+        }
+        console.log( "====================== new_scheme_pk", new_scheme_pk);
+        console.log( "====================== new_scheme_name", new_scheme_name);
+
+//--- loop through studsubj of this student
+        if(student_pk){
+            for (const [map_id, map_dict] of studentsubject_map.entries()) {
+                if (map_dict.stud_id === student_pk) {
+                    const subject_pk = map_dict.subj_id;
+                    const subj_name = (map_dict.subj_name) ? map_dict.subj_name : "---";
+                    const sjt_abbrev = (map_dict.sjt_abbrev) ? map_dict.sjt_abbrev : "";
+                    console.log( "subj_name", subj_name);
+                    if (new_scheme_pk == null) {
+                        // delete studsub when no scheme
+                        // skip when studsub scheme equals new_scheme
+                    } else if (map_dict.scheme_id !== new_scheme_pk){
+                        // check how many times this subject occurs in new scheme
+                        const [count, count_same_subjecttype, new_schemeitem_pk] = count_subject_in_newscheme(new_scheme_pk, subject_pk)
+                    console.log( "count", count);
+                    console.log( "count_same_subjecttype", count_same_subjecttype);
+                    console.log( "new_schemeitem_pk", new_schemeitem_pk);
+                        if (!count) {
+                    console.log( "delete studsub , subject does not exist in new_scheme");
+                        } else if (count === 1 ) {
+                            // if subject occurs only once in mew_scheme: replace schemeitem by new schemeitem
+                    console.log( "subject occurs only once in mew_scheme: replace schemeitem by new schemeitem");
+                        } else {
+                            // if subject occurs multiple times in mew_scheme: check if one exist with same subjecttype
+                            if (count_same_subjecttype === 1) {
+                                // if only one exist with same subjecttype: replace schemeitem by new schemeitem
+                    console.log( "only one exist with same subjecttype");
+                            } else {
+                                // if no schemeitem exist with same subjecttype: get schemeitem with lowest sequence
+                    console.log( "no schemeitem exist with same subjecttype");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+//========= count_subject_in_newscheme  ======== // PR2021-03-13
+    function count_subject_in_newscheme(scheme_pk, subject_pk, subjecttype_pk) {
+        console.log( " =====  count_subject_in_newscheme  ===== ");
+        console.log( "scheme_pk", scheme_pk);
+        console.log( "subject_pk", subject_pk);
+        // check how many times this subject occurs in new scheme
+        let count = 0, count1_schemeitem_pk = null;
+        let count_same_subjecttype = 0, samesubjecttype_schemeitem_pk = null;
+        let lowestsequence_schemeitem_pk = null, lowest_sequence = null;
+        if(scheme_pk && subject_pk){
+            for (const [map_id, map_dict] of schemeitem_map.entries()) {
+                if (map_dict.scheme_id === scheme_pk && map_dict.subj_id === subject_pk) {
+                    count += 1;
+                    count1_schemeitem_pk = (count === 1) ? map_dict.id : null;
+                    if (subjecttype_pk && map_dict.sjt_id === subjecttype_pk) {
+                        count_same_subjecttype += 1;
+                        samesubjecttype_schemeitem_pk = (count_same_subjecttype === 1) ? map_dict.id : null;
+                    }
+                    if (lowest_sequence == null || map_dict.sequence < lowest_sequence) {
+                        lowest_sequence = map_dict.sjt_sequence;
+                        lowestsequence_schemeitem_pk = map_dict.id;
+                    }
+                }
+            }
+        }
+        let new_schemeitem_pk = null;
+        if (count === 1){
+            new_schemeitem_pk = count1_schemeitem_pk;
+        } else if (count_same_subjecttype === 1){
+            new_schemeitem_pk = samesubjecttype_schemeitem_pk;
+        } else if (lowestsequence_schemeitem_pk){
+            new_schemeitem_pk = lowestsequence_schemeitem_pk;
+        }
+        return [count, count_same_subjecttype, new_schemeitem_pk ]
+    }
+
+//========= get_schemeitem_with_same_subjtype  ======== // PR2021-03-13
+    function get_schemeitem_with_same_subjtype(scheme_pk, subject_pk) {
+        console.log( " =====  get_schemeitem_with_same_subjtype  ===== ");
+        console.log( "scheme_pk", scheme_pk);
+        console.log( "subject_pk", subject_pk);
+        // check how many times this subject occurs in new scheme
+        let count = 0;
+        if(scheme_pk && subject_pk){
+            for (const [map_id, map_dict] of schemeitem_map.entries()) {
+        console.log( "map_dict", map_dict);
+                if (map_dict.scheme_id === scheme_pk && map_dict.subject_id === subject_pk) {
+                    count += 1;
+                }
+            }
+        }
+    }
+
+
 //###########################################################################
 
 //========= get_tblName_from_selectedBtn  ======== // PR2020-11-14
