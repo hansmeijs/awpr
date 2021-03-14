@@ -147,7 +147,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # PR2021-03-09 from https://stackabuse.com/serving-static-files-in-python-with-django-aws-s3-and-whitenoise/
 # STATIC_URL is the URL used when referring to static files. It must end with /
-#STATIC_URL = '/static/'
+STATIC_URL = '/static/'
 # PR2018-03-06 This line tells Django to append static to the base url when searching for static files.
 
 # PR2018-03-03 Error: the STATICFILES_DIRS setting should not contain the STATIC_ROOT setting.
@@ -178,22 +178,21 @@ AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
 AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL')
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400',}
-AWS_LOCATION = config('AWS_LOCATION')
+#AWS_LOCATION = config('AWS_LOCATION')
 
 # from Vitor de Freitas, used in storage_backends.py
-AWS_STATIC_LOCATION = config('AWS_STATIC_LOCATION')
+# AWS_STATIC_LOCATION = config('AWS_STATIC_LOCATION')
 AWS_PUBLIC_MEDIA_LOCATION = config('AWS_PUBLIC_MEDIA_LOCATION')
 AWS_PRIVATE_MEDIA_LOCATION = config('AWS_PRIVATE_MEDIA_LOCATION')
 
-
-STATIC_URL = 'https://%s/%s/' % (AWS_S3_ENDPOINT_URL, AWS_LOCATION)
+#STATIC_URL = 'https://%s/%s/' % (AWS_S3_ENDPOINT_URL, AWS_LOCATION)
 # PR2021-03-08 from https://simpleisbetterthancomplex.com/tutorial/2017/08/01/how-to-setup-amazon-s3-in-a-django-project.html
 # from Vitor de Freitas: STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
 DEFAULT_FILE_STORAGE = 'awpr.storage_backends.MediaStorage'  # <-- here is where we reference it
 
 # PR2021-03-08 from the docs https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
-STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
+#STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
 AWS_S3_REGION_NAME = 'nyc3'
 
 
