@@ -111,21 +111,31 @@ def calc_final_grade(se_grade, pece_grade, weight_se, weight_ce, logging_on):
         elif not no_pece_grade:
             final_grade = pece_grade
     else:
-        se_grade_dot = se_grade.replace(',', '.')
-        pece_grade_dot = pece_grade.replace(',', '.')
-        decimal_notrounded = (Decimal(se_grade_dot) * Decimal(str(weight_se)) +
-                                 Decimal(pece_grade_dot) * Decimal(str(weight_ce))) \
-                                / (Decimal(str(weight_se)) + Decimal(str(weight_ce)))
-        logger.debug('decimal_notrounded: ' + str(decimal_notrounded) + ' ' + str(type(decimal_notrounded)))
-        output_decimal = decimal_notrounded.quantize(Decimal("1"), rounding='ROUND_HALF_UP')
-
-        final_dot = str(output_decimal) if output_decimal else None
-        if final_dot:
-            final_grade = final_dot.replace('.', ',')
-
+        if se_grade and pece_grade:
+            se_grade_dot = se_grade.replace(',', '.')
+            pece_grade_dot = pece_grade.replace(',', '.')
+            decimal_notrounded = (Decimal(se_grade_dot) * Decimal(str(weight_se)) +
+                                     Decimal(pece_grade_dot) * Decimal(str(weight_ce))) \
+                                    / (Decimal(str(weight_se)) + Decimal(str(weight_ce)))
+        elif se_grade:
+            se_grade_dot = se_grade.replace(',', '.')
+            decimal_notrounded = Decimal(se_grade_dot)
+        elif pece_grade:
+            pece_grade_dot = pece_grade.replace(',', '.')
+            decimal_notrounded = Decimal(pece_grade_dot)
+        else:
+            decimal_notrounded = None
         if logging_on:
-            logger.debug('output_decimal: ' + str(output_decimal) + ' ' + str(type(output_decimal)))
+            logger.debug('decimal_notrounded: ' + str(decimal_notrounded) + ' ' + str(type(decimal_notrounded)))
 
+        if decimal_notrounded:
+            output_decimal = decimal_notrounded.quantize(Decimal("1"), rounding='ROUND_HALF_UP')
+            if logging_on:
+                logger.debug('output_decimal: ' + str(output_decimal) + ' ' + str(type(output_decimal)))
+            final_dot = str(output_decimal)
+            final_grade = final_dot.replace('.', ',')
+        else:
+            final_grade = None
 
     if logging_on:
         logger.debug('final_grade: ' + str(final_grade) + ' ' + str(type(final_grade)))

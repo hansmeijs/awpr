@@ -492,7 +492,6 @@ class Noteattachment(sch_mod.AwpBaseModel):
     studentsubjectnote = ForeignKey(Studentsubjectnote, related_name='+', on_delete=CASCADE)
     contenttype = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
     filename = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME)
-
     file = FileField(storage=PrivateMediaStorage())
 
 #==== GRADES ======================================================

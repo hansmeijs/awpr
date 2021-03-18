@@ -742,7 +742,8 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
         "si.subject_id, si.subjecttype_id, si.gradetype,",
         "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_combi, si.extra_count_allowed,",
         "si.extra_nocount_allowed, si.elective_combi_allowed, si.has_practexam,",
-        "subj.name AS subj_name, subjbase.code AS subj_code",
+        "subj.name AS subj_name, subjbase.code AS subj_code,",
+        "studsubj.note_status",
 
         "FROM students_grade AS grade",
         "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grade.studentsubject_id)",

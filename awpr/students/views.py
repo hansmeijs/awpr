@@ -327,46 +327,11 @@ class NoteAttachmentDownloadView(View): # PR2021-03-17
             attachment = stud_mod.Noteattachment.objects.get_or_none(pk=pk_int)
             logger.debug('attachment' + str(attachment))
             if attachment:
-                file_name = attachment.file
-                file_dir = settings.STATICFILES_MEDIA_DIR
-                file_path = ''.join((file_dir, file_name))
-                logger.debug('file_path: ' + str(file_path))
-                if not os.path.isfile(attachment.path):
-                    data = open(file_path)
-                    sequences = ast.parse(data.read())
+                file = attachment.file
+                logger.debug('file: ' + str(file) + ' ' + str(type(file)))
+                file_url = file.url
+                logger.debug('file_url: ' + str(file_url) + ' ' + str(type(file_url)))
 
-                    logger.debug('file_path exists: ' + str(sequences))
-                    # gives UnicodeDecodeError : 'charmap' codec can't decode byte 0x9d in position 656:
-                    # see https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
-                    # and https://www.edureka.co/community/51644/python-unicodedecodeerror-codec-decode-position-invalid
-                    # was: with open(file_path, 'r') as pdf:
-
-#  https://boto3.amazonaws.com/v1/documentation/api/latest/guide/s3-presigned-urls.html
-
-                    with open(file_path, 'rb') as file_object:
-                        logger.debug("Name of the file: " + str(file_object.name))
-                        logger.debug('pdf: ' + str(file_object) + ' ' + str((type(file_object))) )
-                        read_data = file_object.read()
-
-                        response = HttpResponse(read_data, content_type='application/pdf')
-                        response['Content-Disposition'] = 'attachment; filename="some_file.pdf"'
-
-                        logger.debug('response: ' + str(response))
-                        return response
-
-                    #try:
-                        # fs = FileSystemStorage()
-                        #fs = default_storage
-                        #if fs.exists(file_name):
-                        #    logger.debug('file_name' + str(file_name))
-                        #    with open(file_name) as pdf:
-                       #         response = HttpResponse(pdf, content_type='application/pdf')
-                        #        response['Content-Disposition'] = "attachment; filename='" + file_name + ".pdf'"
-                        #        return response
-                       # else:
-                       #     return HttpResponseNotFound('The requested pdf was not found in our server.')
-                    #except:
-                    #    raise Http404("Error creating Ex2A file")
 
         if response:
             return response
@@ -374,35 +339,6 @@ class NoteAttachmentDownloadView(View): # PR2021-03-17
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of DownloadPublishedFile
-
-
-import logging
-import boto3
-from botocore.exceptions import ClientError
-
-# PR2021-03-17 from https://boto3.amazonaws.com/v1/documentation/api/latest/guide/s3-presigned-urls.html
-def create_presigned_url(bucket_name, object_name, expiration=3600):
-    """Generate a presigned URL to share an S3 object
-
-    :param bucket_name: string
-    :param object_name: string
-    :param expiration: Time in seconds for the presigned URL to remain valid
-    :return: Presigned URL as string. If error, returns None.
-    """
-
-    # Generate a presigned URL for the S3 object
-    s3_client = boto3.client('s3')
-    try:
-        response = s3_client.generate_presigned_url('get_object',
-                                                    Params={'Bucket': bucket_name,
-                                                            'Key': object_name},
-                                                    ExpiresIn=expiration)
-    except ClientError as e:
-        logging.error(e)
-        return None
-
-    # The response contains the presigned URL
-    return response
 
 
 #################################################################################
@@ -728,17 +664,14 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
 class StudentsubjectnoteUploadView(View):  # PR2021-01-16
 
     def post(self, request):
-        logger.debug(' ============= StudentsubjectnoteUploadView ============= ')
-        logger.debug('request.POST: ' + str(request.POST))
-        upload_file = request.POST.get('upload_file')
-        logger.debug('upload_file: ' + str(upload_file))
+        logging_on = True
 
         files = request.FILES
-        logger.debug('files: ' + str(files) + ' ' + str(type(files)))
         file = files.get('file')
-        file_name = files.get('file_name')
-        file_type = files.get('file_type')
-        logger.debug('file: ' + str(file) + ' ' + str(type(file)))
+        if logging_on:
+            logger.debug(' ============= StudentsubjectnoteUploadView ============= ')
+            logger.debug('files: ' + str(files) + ' ' + str(type(files)))
+            logger.debug('file: ' + str(file) + ' ' + str(type(file)))
 
         # function creates, deletes and updates studentsubject records of current student PR2020-11-21
         update_wrap = {}
@@ -773,6 +706,9 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                 studsubj_pk = upload_dict.get('studsubj_pk')
                 note = upload_dict.get('note')
 
+                file_type = upload_dict.get('file_type')
+                file_name = upload_dict.get('file_name')
+                file_size = upload_dict.get('file_size')
 
                 studsubj = stud_mod.Studentsubject.objects.get_or_none(
                     id=studsubj_pk,
@@ -784,7 +720,7 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
 
 # - Create new studsubjnote if is_create:
                 # studsubjnote is also called when studsubjnote is_created, save_to_log is called in update_studsubjnote
-                if studsubj and note:
+                if studsubj and (note or file):
                     note_status = upload_dict.get('note_status')
                     intern_schoolbase_pk = upload_dict.get('intern_schoolbase_pk')
                     schoolbase = sch_mod.Schoolbase.objects.get_or_none(pk=intern_schoolbase_pk)
@@ -798,6 +734,14 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                     logger.debug('studsubjnote.note: ' + str(studsubjnote.note))
                     studsubjnote.save(request=request)
                     logger.debug('studsubjnote.pk: ' + str(studsubjnote.pk))
+                    logger.debug('file_type: ' + str(file_type))
+                    logger.debug('file_name: ' + str(file_name))
+                    logger.debug('file: ' + str(file))
+
+                    # put note_status also in studentsubject
+                    studsubj = studsubjnote.studentsubject
+                    studsubj.note_status = note_status
+                    studsubj.save()
 
                     if studsubjnote and file:
                         instance = stud_mod.Noteattachment(
@@ -1585,10 +1529,16 @@ def create_studentsubjectnote_rows(upload_dict, request):  # PR2021-03-16
                     rows = newcursor.fetchall()
 
                     logger.debug('rows: ' + str(rows))
+
+                    attachments = stud_mod.Noteattachment.objects.filter(
+                        studentsubjectnote=ssn_id)
             # get list of attachments
                     nat_rows = []
-                    for row in rows:
-                        nat_rows.append({'id': row[0], 'file': row[1], 'contenttype': row[2]})
+                    if attachments:
+                        for attachment in attachments:
+                            file = attachment.file
+                            url = file.url
+                            nat_rows.append({'id': attachment.pk, 'file_name': str(file), 'url': url})
                     if nat_rows:
                         note_row['attachments'] = nat_rows
 

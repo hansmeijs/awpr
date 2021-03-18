@@ -288,16 +288,36 @@ def set_menu_items(selected_menu_key, request):
 
     return menu_item_tags
 
-def get_href_from_href_tuple(menu, request): # PR2020-12-23
-    #logger.debug('------------ get_href_from_href_tuple ----------------')
+def get_href_from_href_tuple(menu, request): # PR2020-12-23 PR2021-03-18
+    logger.debug('------------ get_href_from_href_tuple ----------------')
     # function gets first href in menu_href_tuple, when role is insp or admin: it gets the second item
     menu_href = None
     menu_href_tuple = menu.get('href_tuple', ('',))
     if menu_href_tuple:
-        if len(menu_href_tuple) > 1 and (request.user.is_role_admin or request.user.is_role_insp):
-            menu_href = menu_href_tuple[1]
-        else:
-            menu_href = menu_href_tuple[0]
+        # PR2021-03-18 debug: page that must be shown depends on selected_school, not on requsr_role
+        # only role_admin, role_insp, role_insp, role_system can view pages that are meant for them
+        href_index = 0
+        if request.user.is_role_admin or request.user.is_role_insp  or request.user.is_role_system:
+            # - selected_dict contains saved selected_pk's from Usersetting, key: selected_pk
+            # changes are stored in this dict, saved at the end when
+            selected_dict = request.user.get_usersetting_dict(c.KEY_SELECTED_PK)
+            if selected_dict:
+                sel_schoolbase_pk = selected_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
+                if sel_schoolbase_pk:
+                    sb = sch_mod.Schoolbase.objects.get_or_none(pk=sel_schoolbase_pk)
+
+                    logger.debug('sb.defaultrole: ' + str(sb.defaultrole) + ' ' + str(type(sb.defaultrole)))
+                    if sb and sb.defaultrole in (c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM):
+                        href_index = 1
+
+        # reset href_index when menu_href_tuple has no or empty index '1'
+        logger.debug('href_index: ' + str(href_index) + ' ' + str(type(href_index)))
+        if href_index == 1 and (len(menu_href_tuple) < 2 or not menu_href_tuple[href_index]):
+            href_index = 0
+        menu_href = menu_href_tuple[href_index]
+        logger.debug('href_index: ' + str(href_index) + ' ' + str(type(href_index)))
+        logger.debug('menu_href: ' + str(menu_href) + ' ' + str(type(menu_href)))
+
     if menu_href is None:
         menu_href = 'home_url'
     return menu_href

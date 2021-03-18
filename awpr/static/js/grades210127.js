@@ -76,7 +76,7 @@ console.log("document.addEventListener students" )
                             segrade: true, se_status: true,
                             pegrade: true, pe_status: true,
                             cegrade: true, ce_status: true,
-                            pecegrade: true, weighing: true, finalgrade: true, hasnote: true,
+                            pecegrade: true, weighing: true, finalgrade: true, note_status: true,
                             // in table published:
                             name: true, examperiod: true, examtype: true, datepublished: true, filename: true
                            }
@@ -90,7 +90,7 @@ console.log("document.addEventListener students" )
                                   "segrade", "se_status",
                                   "pescore", "pegrade", "pe_status",
                                   "cescore", "cegrade","ce_status",
-                                  "pecegrade", "weighing", "finalgrade", "hasnote"],
+                                  "pecegrade", "weighing", "finalgrade", "note_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div",
                                 "input", "div",
                                 "input", "input", "div",
@@ -794,7 +794,7 @@ console.log("document.addEventListener students" )
                             el_header.classList.add("pr-2")
                         } else if (["se_status", "pe_status", "ce_status"].indexOf(field_name) > -1) {
                             el_header.classList.add("appr_0_1")
-                        } else if(field_name === "hasnote"){
+                        } else if(field_name === "note_status"){
                             el_header.classList.add("note_0_1")
                         }
                     th_header.appendChild(el_header)
@@ -838,8 +838,8 @@ console.log("document.addEventListener students" )
 
 //=========  CreateTblRow  ================ PR2020-06-09
     function CreateTblRow(tblName, field_setting, map_id, map_dict, row_index) {
-        console.log("=========  CreateTblRow =========");
-        console.log("map_dict", map_dict);
+        //console.log("=========  CreateTblRow =========");
+        //console.log("map_dict", map_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -909,7 +909,7 @@ console.log("document.addEventListener students" )
                     if (field_name.includes("status")){
     // --- add column with status icon
                         el.classList.add("stat_0_1")
-                    } else if (field_name === "hasnote"){
+                    } else if (field_name === "note_status"){
                         el.classList.add("note_0_0")
                     } else if (field_name === "filename"){
                         const name = (map_dict.name) ? map_dict.name : null;
@@ -932,14 +932,14 @@ console.log("document.addEventListener students" )
                     }
 
                 td.appendChild(el);
-                 if (field_name.includes("status")){
+                if (["se_status", "pe_status", "ce_status"].indexOf(field_name) > -1) {
                     td.addEventListener("click", function() {UploadToggle(el)}, false)
+                    add_hover(td);
+                } else if (field_name === "note_status"){
+                    td.addEventListener("click", function() {ModNote_Open(el)}, false)
                     add_hover(td);
                 } else if (field_name === "filename"){
                     const file_name = (map_dict.name) ? map_dict.name : "";
-
-                } else if (field_name === "hasnote"){
-                    td.addEventListener("click", function() {ModNote_Open(el)}, false)
                     add_hover(td);
                 }
                 //td.classList.add("pointer_show", "px-2");
@@ -977,16 +977,15 @@ console.log("document.addEventListener students" )
                 el.className = b_get_status_iconclass(map_dict.pe_published_id, map_dict.pe_auth1by_id, map_dict.pe_auth2by_id, map_dict.pe_auth3by_id);
             } else if (field_name ==="ce_status"){
                 el.className = b_get_status_iconclass(map_dict.ce_published_id, map_dict.ce_auth1by_id, map_dict.ce_auth2by_id, map_dict.ce_auth3by_id);
-            } else if (field_name === "hasnote"){
-                //el.className = "tw032 note_1_1"
-                el.className = "note_1_1"
+            } else if (field_name === "note_status"){
+                const note_icon = "note_" + ( (fld_value && fld_value !== "0" ) ? (fld_value.length === 3) ? fld_value : "0_1" : "0_0" )
+                el.className = note_icon
             } else if (field_name === "examperiod"){
                 el.innerText = loc.examperiod_caption[map_dict.examperiod];
             } else if (field_name === "examtype"){
                 el.innerText = loc.examtype_caption[map_dict.examtype];
             } else if (field_name === "datepublished"){
                 el.innerText = format_dateISO_vanilla (loc, map_dict.datepublished, true, false, true, false);
-
             } else if (field_name === "filename"){
                 el.innerHTML = "&#8681;";
                 //el.innetText = map_dict.file_name;
@@ -1008,7 +1007,7 @@ console.log("document.addEventListener students" )
                             segrade: true, se_status: true,
                             pegrade: true, pe_status: true,
                             cegrade: true, ce_status: true,
-                            pecegrade: true, finalgrade: true, hasnote: true,
+                            pecegrade: true, finalgrade: true, note_status: true,
         */
 
                 // sel_examtype = "se", "pe", "ce", "re2", "re3", "exm"
@@ -1018,7 +1017,7 @@ console.log("document.addEventListener students" )
         columns_shown.segrade = show_all_grades; columns_shown.pegrade = show_all_grades;  columns_shown.cegrade = show_all_grades;
         columns_shown.pecegrade = show_all_grades; columns_shown.weighing = show_all_grades; columns_shown.finalgrade = show_all_grades;
         columns_shown.se_status = show_all_grades; columns_shown.pe_status = show_all_grades; columns_shown.ce_status = show_all_grades;
-        columns_shown.hasnote = true;
+        columns_shown.note_status = true;
         const sel_examperiod = setting_dict.sel_examperiod;
         const sel_examtype = setting_dict.sel_examtype;
         console.log( "show_all_grades", show_all_grades);
@@ -1914,48 +1913,42 @@ console.log("document.addEventListener students" )
         console.log("===  ModNote_Save  =====");
         const filename = document.getElementById("id_ModNote_filedialog").value;
 
+        console.log("has_permit_add_notes", has_permit_add_notes);
         if(has_permit_add_notes){
             const note = el_ModNote_input_note.value;
             const note_status = (!mod_note_dict.is_internal) ? "1_" + mod_note_dict.sel_icon : "0_1";
 
+// get attachment infor
+            const file = document.getElementById("id_ModNote_filedialog").files[0];  // file from input
+            const file_type = (file) ? file.type : null;
+            const file_name = (file) ? file.name : null;
+            const file_size = (file) ? file.size : 0;
 
-
+           // may check size or type here with
             // ---  upload changes
                 const upload_dict = { table: mod_note_dict.table,
                                        create: true,
                                        studsubj_pk: mod_note_dict.studsubj_pk,
                                        intern_schoolbase_pk: mod_note_dict.intern_schoolbase_pk,
                                        note: note,
-                                       note_status: note_status
+                                       note_status: note_status,
+                                       file_type: file_type,
+                                       file_name: file_name,
+                                       file_size: file_size
                                        };
                 const upload_json = JSON.stringify (upload_dict)
 
-            if(note){
-
-// upload attachment
-            const file = document.getElementById("id_ModNote_filedialog").files[0];  // file from input
+            if(note || file_size){
 
         console.log("file", file);
-            const upload = new Upload(upload_json, file, url_studentsubjectnote_upload);
+                const upload = new Upload(upload_json, file, url_studentsubjectnote_upload);
+            console.log("upload_dict", upload_dict);
 
-            // maby check size or type here with
+                // execute upload
+                upload.doUpload();
 
-            upload.getSize()
+        console.log("after upload.doUpload()");
 
-        console.log("upload.getSize()", upload.getSize());
-            upload.getType()
-        console.log("upload.getType()", upload.getType());
-
-            // execute upload
-            upload.doUpload();
-
-        console.log("aftre upload.doUpload()");
-
-
-
-
-        console.log("upload_dict", upload_dict) ;
-                //UploadChanges(upload_dict, url_studentsubjectnote_upload) ;
            }
        }
 // hide modal
@@ -1991,17 +1984,22 @@ console.log("document.addEventListener students" )
         // formData.append('myfiles[]', file, file.name);
 
         // add assoc key values, this will be posts values
+        console.log( this.getType())
+        console.log( this.getName())
+
+        formData.append("upload_file", true);
+        formData.append("filename", this.getName());
+        formData.append("contenttype", this.getType());
+
         if (this.file){
             formData.append("file", this.file, this.getName());
-            formData.append("upload_file", true);
-            formData.append("file_name", this.getName());
-            formData.append("file_type", this.getType());
         }
         // from https://stackoverflow.com/questions/16761987/jquery-post-formdata-and-csrf-token-together
         const csrftoken = Cookies.get('csrftoken');
         formData.append('csrfmiddlewaretoken', csrftoken);
         formData.append('upload', this.upload_json);
 
+        console.log(formData)
         $.ajax({
             type: "POST",
             url: this.url_str,
@@ -2174,9 +2172,8 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                     const att_rows = row.attachments;
                     for (let i = 0, att_row; att_row = att_rows[i]; i++) {
                          const att_id = att_row.id;
-                         const att_name = (att_row.file) ? att_row.file : null;
-                         const att_contenttype = (att_row.contenttype) ? att_row.contenttype : null;
-
+                         const att_name = (att_row.file_name) ? att_row.file_name : loc.Attachment;
+                         const att_url = (att_row.url) ? att_row.url : null;
                         if (att_id){
         // --- create div element 'ss_note_attachment' --------------------------------------
                             const el_note_attachment = document.createElement("div");
@@ -2192,12 +2189,8 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                                     el_note_btn_attment.appendChild(el_icon_attment);
                             // --- create href
                                     const el_attment = document.createElement("a");
-
-                                    // url_noteattachment_download = "/noteattachment_download/0/"
-                                    const len = url_noteattachment_download.length;
-                                    const href = url_noteattachment_download.slice(0, len - 2) + att_id
                                     el_attment.innerText = att_name;
-                                    el_attment.setAttribute("href", href)
+                                    el_attment.setAttribute("href", att_url)
                                     el_note_btn_attment.appendChild(el_attment);
 
                         }  //  if (att_id){
