@@ -111,22 +111,15 @@ class DownloadPublishedFile_with_filename(View):  # PR2021-02-07
 
         response = None
 
-@method_decorator([login_required], name='dispatch')
-class DownloadPublishedFileNoname(View):  # PR2021-02-07
-
-    def get(self, request):
-        logger.debug('xxxxxxxxxxxx  ============= DownloadPublishedFile ============= ')
-
-        return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 @method_decorator([login_required], name='dispatch')
 class DownloadPublishedFile(View):  # PR2021-02-07
 
-    def get(self, request, pk):
+    def post(self, request):
         logger.debug('xxxxxxxxxxxx  ============= DownloadPublishedFile ============= ')
-
+        pk_int = 0
         logger.debug(' ============= DownloadPublishedFile ============= ')
-        logger.debug('pk: ' + str(pk))
+        logger.debug('pk_int: ' + str(pk_int))
         # download published pdf file from server
 
         response = None

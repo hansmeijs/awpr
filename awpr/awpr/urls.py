@@ -150,36 +150,6 @@ urlpatterns = [
         ])),
     ])),
 
-    # PR 2018-08-31 from https://simpleisbetterthancomplex.com/tutorial/2018/01/29/how-to-implement-dependent-or-chained-dropdown-list-with-django.html
-    # re_path(r'^ajax/load-levels/$', subject_views.load_levels, name='ajax_load_levels'),
-
-
-# level PR2018-11-10
-    url(r'^subjecttype/$', subject_views.SubjecttypeListView.as_view(), name='subjecttype_list_url'),
-    url(r'^subjecttype/add/$', subject_views.SubjecttypeAddView.as_view(), name='subjecttype_add_url'),
-    url(r'^subjecttype/(?P<pk>\d+)/edit$', subject_views.SubjecttypeEditView.as_view(), name='subjecttype_edit_url'),
-    url(r'^subjecttype/(?P<pk>\d+)/delete/$', subject_views.SubjecttypeDeleteView.as_view(), name='subjecttype_delete_url'),
-    url(r'^subjecttype/(?P<pk>\d+)/log$', subject_views.SubjecttypeLogView.as_view(), name='subjecttype_log_url'),
-
-# scheme PR2018-08-23
-    url(r'^scheme/$', subject_views.SchemeListView.as_view(), name='scheme_list_url'),
-    url(r'^scheme/add/$', subject_views.SchemeAddView.as_view(), name='scheme_add_url'),
-    url(r'^scheme/(?P<pk>\d+)/edit$', subject_views.SchemeEditView.as_view(), name='scheme_edit_url'),
-    url(r'^scheme/(?P<pk>\d+)/delete/$', subject_views.SchemeDeleteView.as_view(), name='scheme_delete_url'),
-    url(r'^scheme/(?P<pk>\d+)/log$', subject_views.SchemeLogView.as_view(), name='scheme_log_url'),
-
-    path('scheme/load_levels/', subject_views.load_levels, name='load_levels_url'),  # PR2018-10-03
-    path('scheme/load_sectors/', subject_views.load_sectors, name='load_sectors_url'),  # PR2018-10-03
-
-# schemeitem PR2018-11-09
-    url(r'^schemeitem/$', subject_views.SchemeitemListView.as_view(), name='schemeitem_list_url'),
-    url(r'^schemeitem/add/$', subject_views.SchemeitemAddView.as_view(), name='schemeitem_add_url'),
-    url(r'^schemeitem/(?P<pk>\d+)/edit$', subject_views.SchemeitemEditView.as_view(), name='schemeitem_edit_url'),
-    url(r'^schemeitem/(?P<pk>\d+)/delete/$', subject_views.SchemeitemDeleteView.as_view(), name='schemeitem_delete_url'),
-    url(r'^schemeitem/(?P<pk>\d+)/log$', subject_views.SchemeitemLogView.as_view(), name='schemeitem_log_url'),
-
-# package PR2019-02-27
-   # url(r'^package/$', subject_views.PackageView.as_view(), name='scheme_list_url'),
 
 # ===== SUBJECTS ==========================  PR2018-08-23 PR2020-10-20
     path('subjects/', include([
@@ -189,6 +159,7 @@ urlpatterns = [
         path('uploadsetting', subject_views.SubjectImportUploadSetting.as_view(), name='subject_uploadsetting_url'),
         path('uploaddata', subject_views.SubjectImportUploadData.as_view(), name='subject_uploaddata_url'),
     ])),
+
 
 # ===== STUDENTS ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
     path('students/', include([
@@ -202,23 +173,22 @@ urlpatterns = [
         path('studentsubject_upload', student_views.StudentsubjectUploadView.as_view(), name='studsubj_upload_url'),
 
         path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='studentsubjectnote_upload_url'),
+        path('studentsubjectnote_download', student_views.StudentsubjectnoteDownloadView.as_view(), name='studentsubjectnote_download_url'),
+        path('noteattachment_download/<int:pk_int>/', student_views.NoteAttachmentDownloadView.as_view(), name='noteattachment_download_url'),
 
         path('download_ex1', grade_excel.StudsubjDownloadEx1View.as_view(), name='grade_download_ex1_url'),
 
-        path('load_cities/', student_views.load_cities, name='load_cities_url'),  # PR2018-09-03
 
         path('uploadsetting', student_views.StudentImportUploadSetting.as_view(), name='student_uploadsetting_url'),
     ])),
 
-# ===== STUDENTS ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
+# ===== GRADES ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
     path('grades/', include([
         path('grade', grade_views.GradeListView.as_view(), name='grades_url'),
         path('upload', grade_views.GradeUploadView.as_view(), name='grade_upload_url'),
         path('approve', grade_views.GradeApproveView.as_view(), name='grade_approve_url'),
         path('download_ex2a', grade_exfiles.GradeDownloadEx2aView.as_view(), name='grade_download_ex2a_url'),
-        path('download', grade_exfiles.DownloadPublishedFileNoname.as_view(), name='grades_download_noargs_url'),
-        path('download/<int:pk>/', grade_exfiles.DownloadPublishedFile.as_view(), name='grades_download_url'),
-
+        path('download/', grade_exfiles.DownloadPublishedFile.as_view(), name='grades_download_published_url'),
     ])),
 
     # PR2018-05-06 debug: don't forget the brackets at the end of as_view() !!

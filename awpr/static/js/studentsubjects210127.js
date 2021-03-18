@@ -59,21 +59,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const url_grade_download_ex1 = get_attr_from_el(el_data, "data-grade_download_ex1_url");
 
     // importdata_upload_url is stored in id_MIMP_data of modimport.html
-    const columns_shown = {select: true, examnumber: true, fullname: true, subj_code: true, subj_name: true, sjt_abbrev: true,
-                    dep_abbrev: true, lvl_abbrev: true, sct_abbrev: true, has_exemption: true, has_reex: true, has_reex03: true, has_pok: true,
-                    auth1: true, auth2: true, auth_submitted: true, status: true, }
+    const columns_shown = {select: true, examnumber: true, fullname: true, lvl_abbrev: true, sct_abbrev: true,
+                            subj_code: true, subj_name: true, sjt_abbrev: true, subj_status: true,
+                            has_exemption: true, exm_status: true, has_reex: true, re2_status: true,
+                            has_reex03: true, re3_status: true, has_pok: true, pok_status: true
+                          }
 // --- get field_settings
     const field_settings = {
-        studsubj: {  field_caption: ["", "Examnumber_twolines", "Candidate", "Abbreviation", "Subject", "Character",
-                                "Department", "Leerweg", "SectorProfiel_twolines",
-                                "Exemption", "Re_examination", "Re_exam_3rd_2lns", "Proof_of_knowledge_2lns",
-                                "Authorized_chairman", "Authorized_secretary", "Submitted", ""],
-                    field_names: ["select", "examnumber", "fullname", "subj_code", "subj_name", "sjt_abbrev",
-                            "dep_abbrev", "lvl_abbrev", "sct_abbrev", "has_exemption", "has_reex", "has_reex03", "has_pok",
-                                "auth1", "auth2", "auth_submitted", "status"],
-                    filter_tags: ["select", "text", "text",  "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text"],
-                    field_width:  ["020", "075", "180", "075", "180", "090", "090", "090", "090", "090", "090", "090", "090", "090", "090", "090", "032"],
-                    field_align: ["c", "r", "l", "l", "l", "l", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c"]}
+        studsubj: {  field_caption: ["", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines",
+                                "Abbreviation", "Subject", "Character", "",
+                                "Exemption", "", "Re_examination","",  "Re_exam_3rd_2lns", "",
+                                "Proof_of_knowledge_2lns", ""],
+                    field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
+                                "subj_code", "subj_name", "sjt_abbrev", "subj_status",
+                                "has_exemption", "exm_status", "has_reex", "re2_status", "has_reex03", "re3_status",
+                                "has_pok", "pok_status"],
+
+                    filter_tags: ["select", "text", "text",  "text",  "text",
+                                "text", "text", "text",  "text",
+                                 "toggle", "text", "toggle", "text", "toggle", "text",
+                                 "toggle", "text"],
+                    field_width:  ["020", "075", "180",  "075", "075",
+                                    "075", "180","090", "032",
+                                    "090", "032", "090", "032", "090", "032",
+                                    "090", "032"],
+                    field_align: ["c", "r", "l", "c", "c",
+                                    "l", "l", "l", "c",
+                                    "c", "c", "c", "c", "c", "c", "c",
+                                    "c"]}
         };
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -93,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.addEventListener("click", function() {HandleBtnSelect(data_btn)}, false )
             };
         }
-// --- header bar elements
+// ---  HEADER BAR ------------------------------------
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
             el_hdrbar_examyear.addEventListener("click", function() {
                 t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, MSESD_Response)}, false )
@@ -104,9 +117,19 @@ document.addEventListener('DOMContentLoaded', function() {
             el_hdrbar_department.addEventListener("click", function() {
                 t_MSESD_Open(loc, "department", department_map, setting_dict, MSESD_Response)}, false )
 
-// ---  MODAL SIDEBAR FILTER ------------------------------------
-        const el_SBR_filter = document.getElementById("id_SBR_filter")
-            el_SBR_filter.addEventListener("keyup", function() {MSTUD_InputKeyup(el_SBR_filter)}, false );
+// ---  SIDEBAR ------------------------------------
+        const el_SBR_select_level = document.getElementById("id_SBR_select_level");
+            el_SBR_select_level.addEventListener("change", function() {HandleSbrLevelSector("level", el_SBR_select_level)}, false )
+        const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");
+            el_SBR_select_sector.addEventListener("change", function() {HandleSbrLevelSector("sector", el_SBR_select_sector)}, false )
+        const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
+            el_SBR_select_subject.addEventListener("click",
+                function() {t_MSSS_Open(loc, "subject", subject_map, setting_dict, MSSS_Response)}, false )
+        const el_SBR_select_student = document.getElementById("id_SBR_select_student");
+            el_SBR_select_student.addEventListener("click",
+                function() {t_MSSS_Open(loc, "student", student_map, setting_dict, MSSS_Response)}, false )
+        const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
+            el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false )
 
 // ---  MODAL STUDENT
         const el_MSTUD_div_form_controls = document.getElementById("id_MSTUD_div_form_controls")
@@ -303,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  refresh_locale  ================  PR2020-07-31
     function refresh_locale(locale_dict) {
-        console.log ("===== refresh_locale ==== ")
+        //console.log ("===== refresh_locale ==== ")
         loc = locale_dict;
         mimp_loc = locale_dict;
         CreateSubmenu()
@@ -311,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
-        console.log("===  CreateSubmenu == ");
+        //console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Add_subject, function() {MSTUD_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_subject, function() {ModConfirmOpen("delete")}, ["mx-2"]);
@@ -319,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function() {
             AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open("import_studentsubject")}, ["mx-2"], "id_submenu_import");
 
          el_submenu.classList.remove(cls_hide);
-        console.log("el_submenu", el_submenu);
+
     };//function CreateSubmenu
 
 //###########################################################################
@@ -340,9 +363,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  show only the elements that are used in this tab
         show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
-
-// ---  fill sidebar selecttable students
-        SBR_FillSelectTable();
 
 // ---  fill datatable
         FillTblRows();
@@ -387,46 +407,27 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= FillTblRows  ====================================
     function FillTblRows() {
         //console.log( "===== FillTblRows  === ");
+        //console.log( "setting_dict", setting_dict);
+
         const tblName = "studsubj";
         const field_setting = field_settings[tblName]
-
         const data_map = get_datamap_from_tblName(tblName);
+
+// --- show columns
+        set_columns_shown();
 
 // --- reset table
         tblHead_datatable.innerText = null;
         tblBody_datatable.innerText = null;
-
-// --- set columns_shown
-        //console.log( "tblName", tblName);
-        //console.log( "selected_btn", selected_btn);
-
-        const is_btn_studsubj = (selected_btn === "btn_studsubj")
-        columns_shown.sjt_abbrev = is_btn_studsubj;
-        columns_shown.dep_abbrev = is_btn_studsubj;
-        columns_shown.lvl_abbrev = is_btn_studsubj;
-        columns_shown.sct_abbrev = is_btn_studsubj;
-        columns_shown.has_pok = is_btn_studsubj;
-
-        const is_btn_exemption = (selected_btn === "btn_exemption")
-        columns_shown.has_exemption = is_btn_exemption;
-
-        const is_btn_reex = (selected_btn === "btn_reex")
-        columns_shown.has_reex = is_btn_reex;
-        columns_shown.has_reex03 = is_btn_reex;
-
-        const is_btn_auth = (setting_dict.requsr_perm_auth1 || setting_dict.requsr_perm_auth2 || setting_dict.requsr_perm_auth3)
-        columns_shown.auth1 = is_btn_auth ;
-        columns_shown.auth2 = is_btn_auth;
-        columns_shown.auth_submitted = is_btn_auth;
 
 // --- create table header
         CreateTblHeader(field_setting);
 
         if(data_map){
 // --- loop through data_map
-          for (const [map_id, map_dict] of data_map.entries()) {
-          // --- insert row at row_index
-                let tblRow = CreateTblRow(tblBody_datatable, tblName, map_dict)
+            for (const [map_id, map_dict] of data_map.entries()) {
+            // --- insert row at row_index
+                let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict)
           };
         }  // if(!!data_map)
 
@@ -444,13 +445,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //--- insert th's to tblHead_datatable
         for (let j = 0; j < column_count; j++) {
-            const key = field_setting.field_caption[j];
-            const caption = (loc[key]) ? loc[key] : key;
 
             const field_name = field_setting.field_names[j];
             const filter_tag = field_setting.filter_tags[j];
             const class_width = "tw_" + field_setting.field_width[j] ;
             const class_align = "ta_" + field_setting.field_align[j];
+
+            const key = field_setting.field_caption[j];
+            let caption = (loc[key]) ? loc[key] : key;
+            if (field_name === "sct_abbrev") {
+                caption = (setting_dict.sel_dep_has_profiel) ? loc.Profiel : loc.Sector;
+            }
 
             // skip columns if not in columns_shown
             if (columns_shown[field_name]){
@@ -463,7 +468,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- add checked image to first column
                            // TODO add multiple selection
                             //AppendChildIcon(el_header, imgsrc_stat00);
-                        } else if (field_name === "status"){
+                        } else  if (field_name.includes("_status")){
                             // --- add  statud icon.
                             el_header.classList.add("stat_0_4")
 
@@ -497,10 +502,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         el_filter.setAttribute("autocomplete", "off");
                         el_filter.setAttribute("ondragstart", "return false;");
                         el_filter.setAttribute("ondrop", "return false;");
-                    } else if (["toggle", "activated", "inactive"].indexOf(filter_tag) > -1) {
+                    } else if (["toggle"].indexOf(filter_tag) > -1) {
+
                         // default empty icon necessary to set pointer_show
                         // default empty icon necessary to set pointer_show
-                        append_background_class(el_filter,"tickmark_0_0");
+                        append_background_class(el_filter,"tickmark_1_2");
                     }
 
 // --- add width, text_align
@@ -512,16 +518,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     };  //  CreateTblHeader
 
-//=========  CreateTblRow  ================ PR2020-06-09 PR2021-03-05
-    function CreateTblRow(tblBody, tblName, map_dict) {
+//=========  CreateTblRow  ================ PR2020-06-09 PR2021-03-15
+    function CreateTblRow(tblName, field_setting, map_id, map_dict) {
         //console.log("=========  CreateTblRow =========", tblName);
         //console.log("map_dict", map_dict);
 
-        let tblRow = null;
-
-        const field_setting = field_settings[tblName];
         const field_names = field_setting.field_names;
+        const field_tags = field_setting.field_tags;
         const field_align = field_setting.field_align;
+        const field_width = field_setting.field_width;
         const column_count = field_names.length;
 
         const fullname_lc_trail = ( (map_dict.fullname) ? map_dict.fullname.toLowerCase() : "" ) + " ".repeat(24) ;
@@ -529,9 +534,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const sort_by = fullname_sliced +  ( (map_dict.subj_code) ? map_dict.subj_code.toLowerCase() : "");
         const row_index = t_get_rowindex_by_sortby(tblBody_datatable, sort_by);
 
-        const map_id = map_dict.mapid;
+
 // --- insert tblRow into tblBody at row_index
-        tblRow = tblBody.insertRow(row_index);
+        let tblRow = tblBody_datatable.insertRow(row_index);
         tblRow.id = map_id
 
 // --- add data attributes to tblRow
@@ -547,17 +552,24 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++  insert td's into tblRow
         for (let j = 0; j < column_count; j++) {
             const field_name = field_names[j];
-    // skip columns if not in columns_shown
+            const class_width = "tw_" + field_width[j];
+            const class_align = "ta_" + field_align[j];
+
+// skip columns if not in columns_shown
             if (columns_shown[field_name]){
-// --- insert td element,
+        // --- insert td element,
                 let td = tblRow.insertCell(-1);
 // --- add data-field attribute
-                td.setAttribute("data-field", field_name);
-
+                //td.setAttribute("data-field", field_name);
+        // --- create element
+                let el = document.createElement("div");
+        // --- add data-field attribute
+                el.setAttribute("data-field", field_name);
+        // --- add EventListener
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
                 } else if (["examnumber", "fullname", "subj_code", "subj_name", "sjt_abbrev",
-                        "dep_abbrev", "lvl_abbrev", "sct_abbrev"].indexOf(field_name) > -1){
+                        "lvl_abbrev", "sct_abbrev"].indexOf(field_name) > -1){
                     if(tblName === "student"){
                         td.addEventListener("click", function() {MSTUD_Open(td)}, false)
                     } else if(tblName === "studsubj"){
@@ -567,35 +579,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     add_hover(td);
                     if(field_name === "examnumber"){td.classList.add("pr-4")}
 
-                } else if (["has_exemption", "has_reex", "has_reex03", "has_pok", "auth1", "auth2"].indexOf(field_name) > -1){
+                } else if (field_name.includes("has_")){
+                    el.classList.add("tickmark_0_0")
 
-    // --- add el with tickmark to tblRow.
-                    let el_div = document.createElement("div");
-                        el_div.classList.add("tw_020")
-                    td.appendChild(el_div);
-
-                    //<PERMIT>
-                    let has_permit = false;
-                    if (field_name === "auth1"){
-                        has_permit = setting_dict.requsr_perm_auth1;
-                    } else if (field_name === "auth2"){
-                        has_permit = setting_dict.requsr_perm_auth2;
-                    } else if (field_name === "auth3"){
-                        has_permit = setting_dict.requsr_perm_auth3;
-                    } else {
-                        has_permit = setting_dict.requsr_perm_edit;
-                    }
-                    if (has_permit){
-                        // td attribute "data-value" is set in UpdateField
-                        td.addEventListener("click", function() {UploadToggle(td)}, false)
-                        add_hover(td);
-                    }  // if (has_permit){
-
+                } else  if (field_name.includes("_status")){
+                    el.classList.add("stat_0_1")
                 }
-// --- add  text_align
-               td.classList.add("ta_" + field_align[j]);
+
+                td.appendChild(el);
+
+                 if (field_name.includes("has_")){
+                    td.addEventListener("click", function() {UploadToggle(el)}, false)
+                    add_hover(td);
+                } else if (field_name.includes("_status")){
+                //<PERMIT>
+                    td.addEventListener("click", function() {UploadToggle(el)}, false)
+                    add_hover(td);
+                }
+    // --- add width, text_align, right padding in examnumber
+                td.classList.add(class_width, class_align);
+                if(["fullname", "subj_name"].indexOf(field_name) > -1){
+                    // dont set width in field student and subject, to adjust width to length of name
+                    el.classList.add(class_align);
+                } else {
+                    el.classList.add(class_width, class_align);
+                }
+                if(field_name === "examnumber"){el.classList.add("pr-2")}
+
 // --- put value in field
-               UpdateField(td, map_dict)
+               UpdateField(el, map_dict)
             }  //  if (columns_shown[field_name])
         }  // for (let j = 0; j < 8; j++)
 
@@ -614,7 +626,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  UpdateField  ================ PR2020-08-16
     function UpdateField(el_div, map_dict) {
-        //console.log("=========  UpdateField =========");
+       //console.log("=========  UpdateField =========");
         //console.log("map_dict", map_dict);
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
@@ -625,17 +637,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (["examnumber", "lastname", "firstname", "gender", "idnumber", "dep_abbrev", "lvl_abbrev", "sct_abbrev",
                             "fullname", "subj_code", "subj_name", "sjt_abbrev"].indexOf(field_name) > -1){
                     el_div.innerText = (fld_value) ? fld_value : null;
-                } else if (["has_exemption", "has_reex", "has_reex03", "has_pok"].indexOf(field_name) > -1){
+
+                } else if (field_name.includes("has_")){
+
+
+        //console.log("field_name", field_name);
+        //console.log("fld_value", fld_value);
                     const data_value = (fld_value) ? "1" : "0";
                     el_div.setAttribute("data-value", data_value);
-                    const el_img = el_div.children[0];
-                    if (el_img) {add_or_remove_class (el_img, "tickmark_0_0", true)};
+                    add_or_remove_class (el_div, "tickmark_2_2", fld_value, "tickmark_0_0");
 
-                } else if (["auth1", "auth2"].indexOf(field_name) > -1){
+                } else if (field_name.includes("_status")){
                     const prefix_mapped = {btn_studsubj: "subj_", btn_exemption: "exem_", btn_reex: "reex_", btn_reex3: "reex3_", btn_pok: "pok_", }
                     const field_auth_id = prefix_mapped[selected_btn] + field_name + "_id" // exem_auth1_id
                     const field_auth_usr = prefix_mapped[selected_btn] + field_name + "_usr" // exem_auth1_usr
                     const field_auth_mod = prefix_mapped[selected_btn] + field_name + "_modat" // exem_auth1_modat
+
+                /*
+                exem_auth1_id: null
+                exem_auth1_modat: null
+                exem_auth1_usr: null
+                exem_auth2_id: null
+                exem_auth2_modat: null
+                exem_auth2_usr: null
+                exem_publ_id: null
+                exem_publ_modat: null
+                */
 
                     const auth_id = (map_dict[field_auth_id]) ? map_dict[field_auth_id] : null;
                     //console.log("auth_id", auth_id);
@@ -666,6 +693,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }  // if(field_name)
         }  // if(el_div)
     };  // UpdateField
+
+//========= set_columns_shown  ====== PR2021-03-15
+    function set_columns_shown() {
+        //console.log( "===== set_columns_shown  === ");
+        //console.log( "tblName", tblName);
+        //console.log( "selected_btn", selected_btn);
+
+        columns_shown.subj_status = (selected_btn === "btn_studsubj");
+        columns_shown.has_exemption = (selected_btn === "btn_exemption");
+        columns_shown.exm_status = (selected_btn === "btn_exemption");
+        columns_shown.has_reex = (selected_btn === "btn_reex");
+
+        columns_shown.re2_status = (selected_btn === "btn_reex");
+        columns_shown.has_reex03 = (selected_btn === "btn_reex3");
+        columns_shown.re3_status = (selected_btn === "btn_reex3");
+        columns_shown.has_pok = (selected_btn === "btn_pok");
+        columns_shown.pok_status = (selected_btn === "btn_pok");
+    };  // set_columns_shown
 
 
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
@@ -1927,11 +1972,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }  //  RefreshDataMap
 
-//=========  RefreshDatamapItem  ================ PR2020-08-16 PR2020-09-30
+//=========  RefreshDatamapItem  ================ PR2020-08-16 PR2020-09-30 PR2021-0315
     function RefreshDatamapItem(tblName, field_names, update_dict, data_map) {
         //console.log(" --- RefreshDatamapItem  ---");
         //console.log("update_dict", update_dict);
         if(!isEmpty(update_dict)){
+
 // ---  update or add update_dict in subject_map
             let updated_columns = [];
     // get existing map_item
@@ -1941,6 +1987,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const is_deleted = get_dict_value(update_dict, ["deleted"], false)
             const is_created = get_dict_value(update_dict, ["created"], false)
+            const err_dict = (update_dict.error) ? update_dict.error : null;
+            //console.log("err_dict", err_dict);
 
 // ++++ created ++++
             if(is_created){
@@ -1948,15 +1996,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 data_map.set(map_id, update_dict);
                 updated_columns.push("created")
     // ---  create row in table., insert in alphabetical order
-                tblRow = CreateTblRow(tblBody_datatable, tblName, update_dict)
-
+                tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
     // ---  scrollIntoView,
                 if(tblRow){
                     tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
     // ---  make new row green for 2 seconds,
                     ShowOkElement(tblRow);
                 }
-                // ---  remove the row without subject, if it exists
+    // ---  remove the row without subject, if it exists
                 remove_studsubjrow_without_subject(map_id);
 
 // ++++ deleted ++++
@@ -1967,6 +2014,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (tblRow){tblRow.parentNode.removeChild(tblRow)};
             } else {
                 const old_map_dict = (map_id) ? data_map.get(map_id) : null;
+                console.log("old_map_dict", old_map_dict);
     // ---  check which fields are updated, add to list 'updated_columns'
                 if(!isEmpty(old_map_dict) && field_names){
                     // skip first column (is margin)
@@ -1975,6 +2023,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (old_map_dict[col_field] !== update_dict[col_field] ) {
                                 updated_columns.push(col_field)
                             }}}}
+
+                console.log("updated_columns", updated_columns);
     // ---  update item
                 data_map.set(map_id, update_dict)
             }
@@ -1987,14 +2037,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     ShowOkElement(tblRow);
                 } else {
     // loop through cells of row
-                    for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
-                        if (el){
-                            el_fldName = get_attr_from_el(el, "data-field")
-                            UpdateField(el, update_dict);
-    // make gield green when field name is in updated_columns
-                            if(updated_columns.includes(el_fldName)){
-                                ShowOkElement(el);
-                            }}}}}
+                    for (let i = 1, el_fldName, td, el; td = tblRow.cells[i]; i++) {
+                        if (td){
+                            el = td.children[0];
+                            if (el){
+                                el_fldName = get_attr_from_el(el, "data-field")
+        // update field and make field green when field name is in updated_columns
+                                if(updated_columns.includes(el_fldName)){
+                                    UpdateField(el, update_dict);
+                                    ShowOkElement(el);
+                                }}}}}}
         }
     }  // RefreshDatamapItem
 
@@ -2040,140 +2092,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 //###########################################################################
-// +++++++++++++++++ SIDEBAR SELECT TABLE STUDENTS ++++++++++++++++++++++++++
-
-//========= SBR_FillSelectTable  ============= PR2020-11-14
-    function SBR_FillSelectTable(selected_pk) {
-        //console.log( "=== SBR_FillSelectTable === ");
-        //console.log( "selected_pk", selected_pk);
-        //console.log( "mod_SBR_dict", mod_SBR_dict);
-        let tblBody = document.getElementById("id_SBR_tblbody_select");
-        tblBody.innerText = null;
-
-        const data_map = student_map;
-        let row_count = 0
-        if (data_map.size){
-//--- loop through student_map
-            for (const [map_id, map_dict] of data_map.entries()) {
-                const pk_int = map_dict.id;
-                const full_name = (map_dict.fullname) ? map_dict.fullname : "---";
-                const first_name = (map_dict.firstname) ? map_dict.firstname : "";
-                const last_name = (map_dict.firstname) ? map_dict.firstname : "";
-                const sort_by = (map_dict.fullname) ? map_dict.fullname.toLowerCase() : null;
-
-//- insert tblBody row
-                let tblRow = tblBody.insertRow(-1); //index -1 results in that the new row will be inserted at the last position.
-                tblRow.setAttribute("data-pk", pk_int);
-                tblRow.setAttribute("data-sortby", sort_by);
-// -  highlight selected row
-                if (selected_pk && pk_int === selected_pk){
-                    tblRow.classList.add(cls_selected)
-                }
-//- add hover to tblBody row
-                add_hover(tblRow);
-//- add EventListener to Modal SelectEmployee row
-                tblRow.addEventListener("click", function() {SBR_SelectRowClicked(tblRow)}, false )
-// - add first td to tblRow.
-                let td = tblRow.insertCell(-1);
-// --- add a element to td, necessary to get same structure as item_table, used for filtering
-                let el = document.createElement("div");
-                    el.innerText = full_name;
-                    el.classList.add("mx-1")
-                td.appendChild(el);
-                row_count += 1;
-
-            } // for (const [map_id, item_dict] of employee_map.entries())
-        }  //  if (employee_map.size === 0)
-//--- when no items found: show 'select_employee_none'
-        if(!row_count){
-            let tblRow = tblBody.insertRow(-1); //index -1 results in that the new row will be inserted at the last position.
-            let td = tblRow.insertCell(-1);
-            td.innerText = loc.No_candidates;
-        }
-    } // SBR_FillSelectTable
-
-
-//=========  SBR_SelectRowClicked  ================ PR2020-11-15
-    function SBR_SelectRowClicked(sel_tblRow) {
-        console.log( "===== SBR_SelectRowClicked ========= ");
-
-// ---  deselect all highlighted rows
-        DeselectHighlightedRows(sel_tblRow, cls_selected)
-
-        if(sel_tblRow) {
-// ---  highlight clicked row
-            sel_tblRow.classList.add(cls_selected)
-// ---  put value in input box, put employee_pk in mod_MAB_dict, set focus to select_abscatselect_abscat
-
-// ---  update selected_student_pk
-            selected_student_pk = null;
-            // only select employee from select table
-            const pk_int = get_attr_from_el_int(sel_tblRow, "data-pk");
-            let student_name = null, student_level = null, student_sector = null, student_class = null;
-            if(pk_int){
-                const map_dict = get_mapdict_from_datamap_by_tblName_pk(student_map, "student", pk_int);
-        console.log( "map_dict", map_dict);
-                selected_student_pk = map_dict.id;
-                const last_name = (map_dict.lastname) ? map_dict.lastname : "";
-                const first_name = (map_dict.firstname) ? map_dict.firstname : "";
-                student_name = last_name + ", " + first_name
-                student_level = (map_dict.lvl_abbrev) ? map_dict.lvl_abbrev : null;
-                student_sector = (map_dict.sct_abbrev) ? map_dict.sct_abbrev : null;
-                student_class = (map_dict.classname) ? map_dict.classname : null;
-            }
-// ---  put info in header box
-            document.getElementById("id_hdr_left").innerText = student_name;
-            document.getElementById("id_hdr_textright1").innerText = student_level;
-            document.getElementById("id_hdr_textright2").innerText = student_sector;
-
-            let tblRow = t_HighlightSelectedTblRowByPk(tblBody_datatable, selected_student_pk)
-            // ---  scrollIntoView, only in tblBody customer
-            if (tblRow){
-                tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
-            };
-
-
-
-// ---  enable btn_save and input elements
-            //MAB_BtnSaveEnable();
-        }  // if(!!tblRow) {
-    }  // SBR_SelectRowClicked
-
-
-
-//###########################################################################
 // +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
 
 //========= HandleFilterField  ====================================
-    function HandleFilterField(el, col_index, event) {
-       //console.log( "===== HandleFilterField  ========= ");
+    function HandleFilterField(el_key, col_index, event) {
+        console.log( "===== HandleFilterField  ========= ");
         // skip filter if filter value has not changed, update variable filter_text
 
-        //console.log( "el_key", el_key);
-        //console.log( "col_index", col_index);
-        const filter_tag = get_attr_from_el(el, "data-filtertag")
-        //console.log( "filter_tag", filter_tag);
+        console.log( "el_key", el_key);
+        console.log( "col_index", col_index);
+        const filter_tag = get_attr_from_el(el_key, "data-filtertag")
+        console.log( "filter_tag", filter_tag);
 
 // --- get filter tblRow and tblBody
-        const tblRow = get_tablerow_selected(el);
+        const tblRow = get_tablerow_selected(el_key);
         const tblName = get_attr_from_el(tblRow, "data-table")
 
 // --- reset filter row when clicked on 'Escape'
-        const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
+        const skip_filter = t_SetExtendedFilterDict(el_key, col_index, filter_dict, event.key);
+        console.log( "skip_filter", skip_filter);
 
-         if ( ["toggle", "inactive"].indexOf(filter_tag) > -1) {
+        if (filter_tag === "toggle") {
 // ---  toggle filter_checked
             let filter_checked = (col_index in filter_dict) ? filter_dict[col_index] : 0;
     // ---  change icon
-            let el_icon = el.children[0];
+            let el_icon = el_key.children[0];
             if(el_icon){
                 add_or_remove_class(el_icon, "tickmark_0_0", !filter_checked)
                 if(filter_tag === "toggle"){
                     add_or_remove_class(el_icon, "tickmark_0_1", filter_checked === -1)
                     add_or_remove_class(el_icon, "tickmark_0_2", filter_checked === 1)
-                } else  if(filter_tag === "inactive"){
-                    add_or_remove_class(el_icon, "inactive_0_2", filter_checked === -1)
-                    add_or_remove_class(el_icon, "inactive_1_3", filter_checked === 1)
                 }
             }
 

@@ -2,6 +2,7 @@
 from django.contrib.auth.decorators import login_required
 
 from django.db.models.functions import Lower
+
 from django.db import connection
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render, redirect
@@ -12,6 +13,7 @@ from django.views.generic import UpdateView, DeleteView, View, ListView, CreateV
 
 from awpr import menus as awpr_menu
 from awpr import constants as c
+from awpr import settings
 from students import validators as v
 from awpr import functions as af
 from awpr import downloads as dl
@@ -21,6 +23,12 @@ from schools import models as sch_mod
 from students import models as stud_mod
 from subjects import models as subj_mod
 
+import boto3
+from boto3 import session
+from botocore.client import Config
+from boto3.s3.transfer import S3Transfer
+import ast
+import os
 import json # PR2018-12-03
 # PR2018-04-27
 import logging
@@ -285,9 +293,129 @@ class StudentUploadView(View):  # PR2020-10-01
 
 
 @method_decorator([login_required], name='dispatch')
+class StudentsubjectnoteDownloadView(View):  # PR2021-03-15
+
+    def post(self, request):
+        logger.debug(' ============= StudentsubjectnoteDownloadView ============= ')
+        logger.debug('request.POST: ' + str(request.POST))
+        datalists_json = '{}'
+        if request.user and request.user.country and request.user.schoolbase:
+            if 'upload' in request.POST and request.POST['upload']:
+                upload_dict = json.loads(request.POST['upload'])
+                datalists = {'studentsubjectnote_rows': create_studentsubjectnote_rows(upload_dict, request) }
+
+
+# get list of downloaded files
+
+
+                datalists_json = json.dumps(datalists, cls=af.LazyEncoder)
+
+        return HttpResponse(datalists_json)
+
+
+############################################################################
+@method_decorator([login_required], name='dispatch')
+class NoteAttachmentDownloadView(View): # PR2021-03-17
+
+    def get(self, request, pk_int):
+        logger.debug(' ============= NoteAttachmentDownloadView ============= ')
+        logger.debug('pk_int: ' + str(pk_int))
+        # download pdf file from server
+        response = None
+
+        if pk_int:
+            attachment = stud_mod.Noteattachment.objects.get_or_none(pk=pk_int)
+            logger.debug('attachment' + str(attachment))
+            if attachment:
+                file_name = attachment.file
+                file_dir = settings.STATICFILES_MEDIA_DIR
+                file_path = ''.join((file_dir, file_name))
+                logger.debug('file_path: ' + str(file_path))
+                if not os.path.isfile(attachment.path):
+                    data = open(file_path)
+                    sequences = ast.parse(data.read())
+
+                    logger.debug('file_path exists: ' + str(sequences))
+                    # gives UnicodeDecodeError : 'charmap' codec can't decode byte 0x9d in position 656:
+                    # see https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
+                    # and https://www.edureka.co/community/51644/python-unicodedecodeerror-codec-decode-position-invalid
+                    # was: with open(file_path, 'r') as pdf:
+
+#  https://boto3.amazonaws.com/v1/documentation/api/latest/guide/s3-presigned-urls.html
+
+                    with open(file_path, 'rb') as file_object:
+                        logger.debug("Name of the file: " + str(file_object.name))
+                        logger.debug('pdf: ' + str(file_object) + ' ' + str((type(file_object))) )
+                        read_data = file_object.read()
+
+                        response = HttpResponse(read_data, content_type='application/pdf')
+                        response['Content-Disposition'] = 'attachment; filename="some_file.pdf"'
+
+                        logger.debug('response: ' + str(response))
+                        return response
+
+                    #try:
+                        # fs = FileSystemStorage()
+                        #fs = default_storage
+                        #if fs.exists(file_name):
+                        #    logger.debug('file_name' + str(file_name))
+                        #    with open(file_name) as pdf:
+                       #         response = HttpResponse(pdf, content_type='application/pdf')
+                        #        response['Content-Disposition'] = "attachment; filename='" + file_name + ".pdf'"
+                        #        return response
+                       # else:
+                       #     return HttpResponseNotFound('The requested pdf was not found in our server.')
+                    #except:
+                    #    raise Http404("Error creating Ex2A file")
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+# - end of DownloadPublishedFile
+
+
+import logging
+import boto3
+from botocore.exceptions import ClientError
+
+# PR2021-03-17 from https://boto3.amazonaws.com/v1/documentation/api/latest/guide/s3-presigned-urls.html
+def create_presigned_url(bucket_name, object_name, expiration=3600):
+    """Generate a presigned URL to share an S3 object
+
+    :param bucket_name: string
+    :param object_name: string
+    :param expiration: Time in seconds for the presigned URL to remain valid
+    :return: Presigned URL as string. If error, returns None.
+    """
+
+    # Generate a presigned URL for the S3 object
+    s3_client = boto3.client('s3')
+    try:
+        response = s3_client.generate_presigned_url('get_object',
+                                                    Params={'Bucket': bucket_name,
+                                                            'Key': object_name},
+                                                    ExpiresIn=expiration)
+    except ClientError as e:
+        logging.error(e)
+        return None
+
+    # The response contains the presigned URL
+    return response
+
+
+#################################################################################
+
+
+
+
+
+
+@method_decorator([login_required], name='dispatch')
 class StudentsubjectUploadView(View):  # PR2020-11-20
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         logger.debug(' ============= StudentsubjectUploadView ============= ')
 
         # function creates, deletes and updates studentsubject records of current student PR2020-11-21
@@ -538,7 +666,7 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
        # - if it does not exist and new has_exemption etc. is True: create new grade row
                     grade = stud_mod.Grade(
                         studentsubject=instance,
-                        examperiod=c.EXAMPERIOD_EXEMPTION)
+                        examperiod=exam_period)
                     grade.save(request=request)
                 if grade:
                     grade.save(request=request)
@@ -599,8 +727,18 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
 @method_decorator([login_required], name='dispatch')
 class StudentsubjectnoteUploadView(View):  # PR2021-01-16
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         logger.debug(' ============= StudentsubjectnoteUploadView ============= ')
+        logger.debug('request.POST: ' + str(request.POST))
+        upload_file = request.POST.get('upload_file')
+        logger.debug('upload_file: ' + str(upload_file))
+
+        files = request.FILES
+        logger.debug('files: ' + str(files) + ' ' + str(type(files)))
+        file = files.get('file')
+        file_name = files.get('file_name')
+        file_type = files.get('file_type')
+        logger.debug('file: ' + str(file) + ' ' + str(type(file)))
 
         # function creates, deletes and updates studentsubject records of current student PR2020-11-21
         update_wrap = {}
@@ -623,7 +761,7 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 upload_dict = json.loads(upload_json)
-                logger.debug('upload_dict' + str(upload_dict))
+                logger.debug('upload_dict: ' + str(upload_dict))
 
                 # - get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, is_locked, \
@@ -635,6 +773,7 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                 studsubj_pk = upload_dict.get('studsubj_pk')
                 note = upload_dict.get('note')
 
+
                 studsubj = stud_mod.Studentsubject.objects.get_or_none(
                     id=studsubj_pk,
                     student__school=sel_school,
@@ -643,19 +782,33 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                 logger.debug('studsubj: ' + str(studsubj))
                 logger.debug('note: ' + str(note))
 
-# - Create new orderhour / emplhour if is_create:
-                # update_emplhour is also called when emplhour is_created, save_to_log is called in update_emplhour
+# - Create new studsubjnote if is_create:
+                # studsubjnote is also called when studsubjnote is_created, save_to_log is called in update_studsubjnote
                 if studsubj and note:
-                    logger.debug('>>> studsubj.pk: ' + str(studsubj.pk))
+                    note_status = upload_dict.get('note_status')
+                    intern_schoolbase_pk = upload_dict.get('intern_schoolbase_pk')
+                    schoolbase = sch_mod.Schoolbase.objects.get_or_none(pk=intern_schoolbase_pk)
+
                     studsubjnote = stud_mod.Studentsubjectnote(
                         studentsubject=studsubj,
+                        intern_schoolbase=schoolbase,
                         note=note,
-                        is_insp=False,
-                        is_public=False
+                        note_status=note_status
                     )
                     logger.debug('studsubjnote.note: ' + str(studsubjnote.note))
                     studsubjnote.save(request=request)
                     logger.debug('studsubjnote.pk: ' + str(studsubjnote.pk))
+
+                    if studsubjnote and file:
+                        instance = stud_mod.Noteattachment(
+                            studentsubjectnote=studsubjnote,
+                            contenttype=file_type,
+                            filename=file_name,
+                            file=file)
+
+                        logger.debug('instance: ' + str(instance))
+                        instance.save()
+                        logger.debug('instance.pk: ' + str(instance.pk))
 
                 """
 # - also set emplhour.hasnote = True, save emplhour and update last_emplhour_updated PR2020-10-26
@@ -1232,7 +1385,6 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
         "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_elective_combi,",
         "studsubj.pws_title, studsubj.pws_subjects,",
         "studsubj.has_exemption, studsubj.has_reex, studsubj.has_reex03, studsubj.has_pok,",
-
         "si.subject_id, si.subjecttype_id, si.gradetype,",
         "subjbase.code AS subj_code, subj.name AS subj_name,",
         "si.weight_se AS si_se, si.weight_ce AS si_ce,",
@@ -1384,53 +1536,104 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
 # --- end of create_studentsubject_rows
 
 
-def create_studentsubjectnote_rows(setting_dict, request_item):  # PR2021-01-17
-    # --- create rows of all students of this examyear / school PR2020-10-27
-    logger.debug(' =============== create_student_rows ============= ')
-    # logger.debug('append_dict', append_dict)
-    # create list of students of this school / examyear, possibly with filter student_pk or studsubj_pk
-    # with left join of studentsubjects with deleted=False
+def create_studentsubjectnote_rows(upload_dict, request):  # PR2021-03-16
+    # --- create rows of notes of this studentsubject
+    logger.debug(' =============== create_studentsubjectnote_rows ============= ')
+    logger.debug('upload_dict: ' + str(upload_dict))
+    # create list of studentsubjectnote of this studentsubject, filter intern_schoolbase
+    # to show intern note only to user of the same school/insp: filter intern_schoolbase = requsr.schoolbase or null
+    note_rows = []
+    if upload_dict:
+        studsubj_pk =  upload_dict.get('studsubj_pk')
+        if studsubj_pk:
+            requsr_intern_schoolbase_pk = request.user.schoolbase_id
+            logger.debug('studsubj_pk: ' + str(studsubj_pk))
+            logger.debug('requsr_intern_schoolbase_pk: ' + str(requsr_intern_schoolbase_pk))
 
-    sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
-    sel_schoolbase_pk = af.get_dict_value(setting_dict, ('sel_schoolbase_pk',))
-    sel_depbase_pk = af.get_dict_value(setting_dict, ('sel_depbase_pk',))
-    sel_schoolbase_equals_requsr_sb = af.get_dict_value(setting_dict, ('sel_schoolbase_equals_requsr_sb',), False)
-    requsr_role_insp = af.get_dict_value(setting_dict, ('requsr_role_insp',), False)
+            sql_keys = {'ss_id': studsubj_pk, 'int_sb_id': requsr_intern_schoolbase_pk}
+            sql_user = "SELECT au.id, COALESCE(SUBSTRING (au.username, 7), '') AS name, sb.code AS sb_code " + \
+                            "FROM accounts_user AS au INNER JOIN schools_schoolbase AS sb ON (sb.id = au.schoolbase_id)"
+            sql_list = ["SELECT ssn.id, ssn.studentsubject_id, ssn.note, ssn.note_status, ssn.intern_schoolbase_id,",
+                        "ssn.modifiedat, au.name AS modifiedby, au.sb_code AS schoolcode",
+                        "FROM students_studentsubjectnote AS ssn",
+                        "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = ssn.studentsubject_id)",
+                        "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+                        "LEFT JOIN ( " + sql_user + ") AS au ON (au.id = ssn.modifiedby_id)",
+                        "WHERE ssn.studentsubject_id = %(ss_id)s::INT"
+                        ]
+            sql_list.append("ORDER BY ssn.modifiedat DESC")
 
-    studsubj_pk = af.get_dict_value(request_item, ('studsubj_pk',))
-    sql_keys = {'ss_id': studsubj_pk, 'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
-    sql_user = "SELECT au.id, COALESCE(SUBSTRING (au.username, 7), '') AS name, sb.code AS sb_code " + \
-                    "FROM accounts_user AS au INNER JOIN schools_schoolbase AS sb ON (sb.id = au.schoolbase_id)"
+            sql = ' '.join(sql_list)
+            newcursor = connection.cursor()
+            newcursor.execute(sql, sql_keys)
+            note_rows = af.dictfetchall(newcursor)
+            if note_rows:
+                for note_row in note_rows:
+                    ssn_id = note_row.get('id')
+                    logger.debug('note_row: ' + str(note_row))
+                    logger.debug('ssn_id: ' + str(ssn_id))
+                    sql_keys = {'ssn_id': ssn_id}
+                    sql_list = [
+                        "SELECT nat.id, nat.file, nat.contenttype, nat.studentsubjectnote_id",
+                        "FROM students_noteattachment AS nat",
+                        "WHERE nat.studentsubjectnote_id = %(ssn_id)s::INT"
+                        ]
+                    #                         "WHERE nat.studentsubjectnote_id = %(ssn_id)s::INT"
+                    sql_list.append("ORDER BY nat.file")
+                    sql = ' '.join(sql_list)
+                    newcursor.execute(sql, sql_keys)
+                    rows = newcursor.fetchall()
 
-    sql_list = ["SELECT ssn.id, ssn.studentsubject_id, ssn.note, ssn.is_insp, ssn.is_public, ssn.modifiedat,",
-                "au.name AS modifiedby, au.sb_code AS schoolcode",
-                "FROM students_studentsubjectnote AS ssn",
-                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = ssn.studentsubject_id)",
-                "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-                "INNER JOIN schools_school AS school ON (school.id = st.school_id)",
-                "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
-                "LEFT JOIN ( " + sql_user + ") AS au ON (au.id = ssn.modifiedby_id)",
-                "WHERE ssn.studentsubject_id = %(ss_id)s::INT"]
-                #"AND school.base_id = %(sb_id)s::INT AND school.examyear_id = %(ey_id)s::INT AND dep.base_id = %(db_id)s::INT"]
-
-    #if sel_schoolbase_equals_requsr_sb:
-        # if user is from this school: display schoolnotes and public notes
-        #sql_list.append("AND (ssn.is_public OR NOT is_insp)")
-    #elif requsr_role_insp:
-        # if user is insp: display schoolnotes and public notes
-        #sql_list.append("AND (ssn.is_public OR is_insp)")
-   # else:
-        # only show public notes
-        #sql_list.append("AND (ssn.is_public)")
-
-    sql_list.append("ORDER BY ssn.modifiedat DESC")
-
-    sql = ' '.join(sql_list)
-    newcursor = connection.cursor()
-    newcursor.execute(sql, sql_keys)
-    note_rows = af.dictfetchall(newcursor)
+                    logger.debug('rows: ' + str(rows))
+            # get list of attachments
+                    nat_rows = []
+                    for row in rows:
+                        nat_rows.append({'id': row[0], 'file': row[1], 'contenttype': row[2]})
+                    if nat_rows:
+                        note_row['attachments'] = nat_rows
 
     return note_rows
+# - end of create_studentsubjectnote_rows
+
+def create_ssnote_attachment_rows(upload_dict, request):  # PR2021-03-17
+    # --- create rows of notes of this studentsubject
+    logger.debug(' =============== create_studentsubjectnote_rows ============= ')
+    logger.debug('upload_dict: ' + str(upload_dict))
+    # create list of studentsubjectnote of this studentsubject, filter intern_schoolbase
+    # to show intern note only to user of the same school/insp: filter intern_schoolbase = requsr.schoolbase or null
+    note_rows = []
+    if upload_dict:
+        studsubj_pk =  upload_dict.get('studsubj_pk')
+        if studsubj_pk:
+            requsr_intern_schoolbase_pk = request.user.schoolbase_id
+            logger.debug('studsubj_pk: ' + str(studsubj_pk))
+            logger.debug('requsr_intern_schoolbase_pk: ' + str(requsr_intern_schoolbase_pk))
+
+            sql_keys = {'ss_id': studsubj_pk, 'int_sb_id': requsr_intern_schoolbase_pk}
+            sql_user = "SELECT au.id, COALESCE(SUBSTRING (au.username, 7), '') AS name, sb.code AS sb_code " + \
+                            "FROM accounts_user AS au INNER JOIN schools_schoolbase AS sb ON (sb.id = au.schoolbase_id)"
+
+            sql_list = ["SELECT ssn.id, ssn.studentsubject_id, ssn.note, ssn.note_status, ssn.intern_schoolbase_id,",
+                        "ssn.modifiedat, au.name AS modifiedby, au.sb_code AS schoolcode",
+                        "FROM students_studentsubjectnote AS ssn",
+                        "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = ssn.studentsubject_id)",
+                        "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+                        "LEFT JOIN ( " + sql_user + ") AS au ON (au.id = ssn.modifiedby_id)",
+                        "WHERE ssn.studentsubject_id = %(ss_id)s::INT"
+
+                        ]
+                        #"AND ( ssn.intern_schoolbase_id IS NULL OR ssn.intern_schoolbase_id = %(int_sb_id)s::INT ) "
+
+            sql_list.append("ORDER BY ssn.modifiedat DESC")
+
+            sql = ' '.join(sql_list)
+            newcursor = connection.cursor()
+            newcursor.execute(sql, sql_keys)
+            note_rows = af.dictfetchall(newcursor)
+
+    return note_rows
+# - end of create_studentsubjectnote_rows
+
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1951,182 +2154,3 @@ def get_student_mapped_coldefs_NIU(request_user):
             logger.debug('setting_columns: ' + str(setting_columns) + ' type: ' + str(type(setting_columns)))
     return  no_header, worksheetname, setting_columns, setting_levels, setting_sectors
 
-
-def get_mapped_levels_sectors_NIU(request_user):  # PR2019-01-01
-    # function creates dict of fieldnames of table Student
-    # It is used in ImportSudent to map Excel fieldnames to AWP fieldnames
-    #     "settings_level_list": [{"awpLevel": "TKL", "excelLevel": ["tkl", "t.k.l."]"},
-    #                            {"awpLevel": "PBL", "excelLevel": [], ....]
-
-    logger.debug('==============get_mapped_levels_student ============= ' )
-    level_abbrev_list = Level.get_abbrev_list(request_user)
-    sector_abbrev_list = Sector.get_abbrev_list(request_user)
-    # sector_abbrev_list =  [{'base_id': 29, 'abbrev': 'ec'},
-    #                        {'base_id': 30, 'abbrev': 'tech'},
-    #                        {'base_id': 31, 'abbrev': 'z&w'}]
-
-    # get mapped levels and mapped sectors from table Schoolsetting
-    """
-    TODO: settings_level_list and settings_sector_list not defined PR2019-02-11
-    mapped_level_list = []
-    # iterate through list of levels: [{"base_id": 1, "caption": TKL}, {"base_id": 2, "caption": PKL}, {"base_id": 3, "caption": PBL}]
-    for level_abbrev in level_abbrev_list:
-        level_dict = {'awpKey': str(level_abbrev.get('base_id')), 'caption': level_abbrev.get('abbrev')}
-    # check if this awpLevel is stored in settings_level_list
-        for settings_dict in settings_level_list:
-            # settings_dict = {"id": 2, "caption": "pkl"},
-            if 'awpKey' in settings_dict:
-                if settings_dict['awpKey'] == level_dict['awpKey']:
-    # check if this awpLevel has excKey
-                    if "excKey" in settings_dict:
-    # if so: add to  awpLevel is stored in settings_level_list
-                        level_dict['excKey'] = settings_dict['excKey']
-                        break
-        mapped_level_list.append(level_dict)
-
-    mapped_sector_list = []
-    # iterate through list of sectors ["eco", "techn", "z&w"]
-    for sector_abbrev in sector_abbrev_list:
-        sector_dict = {'awpKey': str(sector_abbrev.get('base_id')), 'caption': sector_abbrev.get('abbrev')}
-    # check if this awpSector is stored in settings_sector_list
-        for settings_dict in settings_sector_list:
-            # dict = {"awpSct": "tkl", "excKey": ["tkl", "t.k.l."]"},
-            if 'awpKey' in settings_dict:
-                if settings_dict['awpKey'] == sector_dict['awpKey']:
-    # check if this awpSector has excKey
-                    if "excKey" in dict:
-    # if so: add to  awpSector is stored in settings_sector_list
-                        sector_dict['excKey'] = settings_dict['excKey']
-                        break
-        mapped_sector_list.append(sector_dict)
-
-    logger.debug('mapped_sector_list: ' + str(mapped_sector_list))
-    logger.debug('mapped_level_list: ' + str(mapped_level_list))
-    return mapped_level_list, mapped_sector_list
-
-    """
-# ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
-
-
-#  =========== Ajax requests  ===========
-# PR2018-09-03 from https://simpleisbetterthancomplex.com/tutorial/2018/01/29/how-to-implement-dependent-or-chained-dropdown-list-with-django.html
-def load_cities(request):
-    # logger.debug('load_cities request: ' + str(request) + ' Type: ' + str(type(request)))
-    # load_cities request: <WSGIRequest: GET '/student/ajax/load_cities/?birthcountry_id=16'> Type: WSGIRequest
-    birthcountry_id = request.GET.get('birthcountry_id')
-    # logger.debug('load_cities country_id ' + str(birthcountry_id) + ' Type: ' + str(type(birthcountry_id)))
-
-    # create list of tuples
-    # items = [(0, '---')]
-    # for _city in Birthcity.objects.filter(birthcountry_id=birthcountry_id).order_by('name'):
-    #     items.append((_city.id, _city.name))
-    # see: https: // www.journaldev.com / 15891 / python - zip - function
-
-    # create list of dicts
-    items =[] # [{'id': 0, 'name': '---'}]
-    keys = ['id', 'name']
-    for _city in Birthcity.objects.filter(birthcountry_id=birthcountry_id).order_by('name'):
-        values = [_city.id, _city.name]
-        items.append(dict(zip(keys, values)))
-
-    logger.debug('load_cities items: ' + str(items) + ' Type: ' + str(type(items)))
-    # was: cities: < QuerySet[ < Birthcity: Anderlecht >, ... , < Birthcity: Wilrijk >] > Type: <class 'QuerySet'>
-    # items: [{'id': 13, 'name': 'Anderlecht'}, ... , {'id': 27, 'name': 'Wilrijk'}]Type: <class 'list'>
-
-    return render(request, 'dropdown_list_options.html', {'items': items})
-
-
-"""
-
-      $(document).ready(function(){
-        $("#id_birthcountry").change(function () {
-          var url = $("#StudentAddForm").attr("data-cities-url");  // get the url of the `load_cities` view
-          var birthcountryId = $(this).val();  // get the selected country ID from the HTML input
-
-          $.ajax({                       // initialize an AJAX request
-            url: url,                    // set the url of the request (= localhost:8000/hr/ajax/load-cities/)
-            data: {
-              'birthcountry': birthcountryId       // add the country id to the GET parameters
-            },
-            success: function (data) {   // `data` is the return of the `load_cities` view function
-              $("#id_birthcity").html(data);  // replace the contents of the city input with the data that came from the server
-            }
-
-        });
-      });
-"""
-
-"""
-
-      $(document).ready(function(){
-      // from http://jsfiddle.net/CZcvM/
-
-        var sel = $('#testing'),
-            opts =[],
-            debug = $('#debug');
-
-      debug.append(typeof sel);
-      var opt_array = sel.attr('options');
-      //for(var i = 0, len = opt_array.length; i < len; ++i)
-      for (var a in opt_array)
-      {
-          debug.append(a + ':' + opt_array[a] + "<br>");
-          //opts.push(opt_array[a]);
-      }
-      //delete the first option
-      function remove()
-      {
-          $('#testing option:first').remove();
-      }
-
-      function restore()
-      {
-          sel.options.length = 0;
-          for(var i = 0, len = opts.length; i < len; ++i)
-          {
-              //debug.append(a + ':' + opts[a] + '<br>');
-              sel.options.add(opts[i]);
-          }
-      }
-      */
-      $('#remove').click(remove);
-      $('#restore').click(restore);
-
-
-
-
-
-
-
-
-        $("#testbutton").click(function(){
-            $(this).css("background-color", "pink");
-
-            var temp = "myXXValue";
-
-            // Create New Option.
-            var newOption = $("<option>");
-
-            newOption.attr("value", temp).text(temp);
-            $("#showtext").html(newOption.value);
-
-            // Append that to the DropDownList.
-            $('#carselect').append(newOption);
-
-            // Select the Option.
-            // $("#carselect" > [value=" + temp + "]").attr("selected", "true");
-
-
-            $("#showtext").html(temp);
-
-        });
-                 // $("p").hover(function(){
-                 //        $(this).css("background-color", "yellow");
-                 //        }, function(){
-                 //        $(this).css("background-color", "pink");
-                 //    });
-      });
-     </script>
-
-
-"""

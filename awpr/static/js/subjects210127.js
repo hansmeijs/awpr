@@ -624,7 +624,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "pk_int", pk_int);
 
 // ---  upload new setting
-        let new_setting = {page_grades: {mode: "get"}};
+        let new_setting = {page_grade: {mode: "get"}};
         if (tblName === "school") {
             new_setting.selected_pk = {sel_schoolbase_pk: pk_int, sel_depbase_pk: null}
         } else {

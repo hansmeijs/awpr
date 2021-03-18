@@ -419,6 +419,9 @@ def get_locale_dict(table_dict, user_lang):
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
 
+        dict['Re_examination'] = _('Re-examination')
+        dict['Re_examination_3rd_period'] = _('Re-exam third period')
+
         dict['Submit_Ex2A_form'] = _('Submit Ex2A form')
         dict['Approve_grades'] = _('Approve grades')
         dict['Submit_Ex2A_form'] = _('Submit Ex2A form')
@@ -472,6 +475,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['All_sectors'] = _("All sectors")
         dict['All_profielen'] = _("All 'profielen'")
         dict['Profiel'] = _('Profiel')
+        dict['Attachment'] = _('Attachment')
 
         # options_examperiod PR2020-12-20
         dict['options_examperiod'] = c.EXAMPERIOD_OPTIONS

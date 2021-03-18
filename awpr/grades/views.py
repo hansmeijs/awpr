@@ -717,6 +717,7 @@ def update_grade(instance, upload_dict, err_dict, logging_on, request):
 def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, append_dict=None,
                        sel_subject_pk=None, grade_pk=None):
     # --- create rows of all students of this examyear / school PR2020-12-14
+    # note: don't forget to filter deleted = false!! PR2021-03-15
     #logger.debug(' ----- create_grade_rows -----')
 
     sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
@@ -762,6 +763,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
         "WHERE ey.id = %(ey_id)s::INT",
         "AND school.base_id = %(sb_id)s::INT",
         "AND dep.base_id = %(depbase_id)s::INT",
+        "AND NOT grade.deleted",
         "AND grade.examperiod = %(experiod)s::INT"
         ]
 
@@ -917,8 +919,11 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
     #try:
     if True:
         # create PDF
-        if awpr_settings.AWS_LOCATION:
-            file_dir = ''.join((awpr_settings.AWS_LOCATION, '/published/'))
+        # PR2021-03-17 was:
+        #if awpr_settings.AWS_LOCATION:
+            #file_dir = ''.join((awpr_settings.AWS_LOCATION, '/published/'))
+        if awpr_settings.AWS_PRIVATE_MEDIA_LOCATION:
+            file_dir = ''.join((awpr_settings.AWS_PRIVATE_MEDIA_LOCATION, '/published/'))
         else:
             file_dir = awpr_settings.STATICFILES_MEDIA_DIR
         file_path = ''.join((file_dir, published_instance.filename))

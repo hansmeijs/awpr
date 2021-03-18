@@ -23,14 +23,14 @@ def get_permits(request, page):
                 permits = {}
             elif page == 'page_studsubj':
                 permits = {}
-            elif page == 'page_grades':
-                permits = get_permits_page_grades(role)
+            elif page == 'page_grade':
+                permits = get_permits_page_grade(role)
             elif page == 'page_user':
                 permits = {}
 
     return permits
 
-def get_permits_page_grades(role):
+def get_permits_page_grade(role):
     permits = {}
     if role == ROLE_008_SCHOOL:
         permits = {}

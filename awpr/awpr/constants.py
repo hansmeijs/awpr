@@ -222,6 +222,7 @@ EXAMTYPE_OPTIONS = [
         {'value': 're3', 'filter': EXAMPERIOD_THIRD, 'caption': _('Re-examination 3rd period')},
     {'value': 'exm', 'filter': EXAMPERIOD_EXEMPTION, 'caption': _('School- / Central exam')}
     ]
+
 EXAMTYPE_CAPTION = {
     'se': _('School exam'),
     'pe': _('Practical exam'),
@@ -292,6 +293,8 @@ KEY_SEL_EXAMPERIOD = 'sel_examperiod'
 KEY_SEL_EXAMTYPE = 'sel_examtype'
 KEY_SEL_SUBJECT_PK = 'sel_subject_pk'
 KEY_SEL_STUDENT_PK = 'sel_student_pk'
+KEY_SEL_LEVEL_PK = 'sel_level_pk'
+KEY_SEL_SECTOR_PK = 'sel_sector_pk'
 
 # SCHOOL SETTING KEYS PR2018-12-03  PR2020-12-04
 

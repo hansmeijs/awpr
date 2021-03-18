@@ -20,7 +20,9 @@ from awpr import locale as loc
 from schools import models as sch_mod
 from schools import functions as sch_fnc
 from schools import dicts as school_dicts
+from subjects import models as subj_mod
 from subjects import views as sj_vw
+from students import models as stud_mod
 from students import views as st_vw
 from grades import views as gr_vw
 
@@ -120,9 +122,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if datalist_request.get('studentsubject_rows'):
                     datalists['studentsubject_rows'] = st_vw.create_studentsubject_rows(new_setting_dict, {})
 # ----- studentsubjectnote
-                request_item = datalist_request.get('studentsubjectnote_rows')
-                if request_item:
-                    datalists['studentsubjectnote_rows'] = st_vw.create_studentsubjectnote_rows(new_setting_dict,request_item)
+                #request_item = datalist_request.get('studentsubjectnote_rows')
+                #if request_item:
+                #    datalists['studentsubjectnote_rows'] = st_vw.create_studentsubjectnote_rows(request_item, request)
 # ----- grades
                 if datalist_request.get('grade_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
@@ -323,8 +325,40 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
     request_examtype = af.get_dict_value(request_item_setting,
                                               (c.KEY_SELECTED_PK, c.KEY_SEL_EXAMTYPE))
 
+    #logger.debug('saved_examtype: ' + str(saved_examtype) + ' request_examtype: ' + str(request_examtype))
     if saved_examtype is None and request_examtype is None:
         request_examtype = 'se'
+
+# - check if examtype is allowed in this saved_examperiod_int
+        """
+        EXAMTYPE_OPTIONS = [
+            {'value': 'se', 'filter': EXAMPERIOD_FIRST, 'caption': _('School exam')},
+            {'value': 'pe', 'filter': EXAMPERIOD_FIRST, 'caption': _('Practical exam')},
+            {'value': 'ce', 'filter': EXAMPERIOD_FIRST, 'caption': _('Central exam')},
+            {'value': 're2', 'filter': EXAMPERIOD_SECOND, 'caption': _('Re-examination')},
+            {'value': 're3', 'filter': EXAMPERIOD_THIRD, 'caption': _('Re-examination 3rd period')},
+            {'value': 'exm', 'filter': EXAMPERIOD_EXEMPTION, 'caption': _('School- / Central exam')}
+            ]
+        """
+    allowed = False
+    default_examtype = None
+    for dict in c.EXAMTYPE_OPTIONS:
+        #logger.debug('dict: ' + str(dict))
+        # filter this examperiod
+        if dict.get('filter', -1) == saved_examperiod_int:
+            value = dict.get('value')
+
+            # make first examtype the default_examtype
+            if default_examtype is None:
+                default_examtype = value
+
+            # if examtype is found: it is allowed
+            if request_examtype == value:
+                allowed = True
+
+                break
+    if not allowed:
+        request_examtype = default_examtype
 
     # - use request_examtype when it has value and is different from the saved one
     if request_examtype and request_examtype != saved_examtype:
@@ -340,8 +374,8 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
         setting_dict['sel_examtype_caption'] = c.EXAMTYPE_CAPTION.get(saved_examtype)
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-# ===== SUBJECT and STUDENT ======================= PR2021-01-23
-    for key_str in (c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK):
+# ===== SUBJECT, STUDENT, LEVEL,SECTOR ======================= PR2021-01-23 PR2021-03-14
+    for key_str in (c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK, c.KEY_SEL_LEVEL_PK, c.KEY_SEL_SECTOR_PK):
     # - get saved_pk_str
         saved_pk_str = selected_dict.get(key_str)
     # - check if there is a new pk_str in request_item_setting
@@ -357,7 +391,25 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
             selected_dict[key_str] = saved_pk_str
     # - add info to setting_dict, will be sent back to client
         if saved_pk_str:
-            setting_dict[key_str] = int(saved_pk_str)
+            pk_int = int(saved_pk_str)
+            setting_dict[key_str] = int(pk_int)
+            if key_str == c.KEY_SEL_SUBJECT_PK:
+                subject = subj_mod.Subject.objects.get_or_none(pk=pk_int)
+                if subject:
+                    setting_dict['sel_subject_code'] = subject.base.code
+            elif key_str == c.KEY_SEL_STUDENT_PK:
+                student = stud_mod.Student.objects.get_or_none(pk=pk_int)
+                if student:
+                    setting_dict['sel_student_name'] = student.fullname
+            elif key_str == c.KEY_SEL_LEVEL_PK:
+                level = subj_mod.Level.objects.get_or_none(pk=pk_int)
+                if level:
+                    setting_dict['sel_level_abbrev'] = level.abbrev
+            elif key_str == c.KEY_SEL_SECTOR_PK:
+                sector = subj_mod.Sector.objects.get_or_none(pk=pk_int)
+                if sector:
+                    setting_dict['sel_sector_abbrev'] = sector.abbrev
+
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # ===== SELECTED_PK SETTINGS =======================
     # request_item_setting: {'selected_pk': {'sel_examyear_pk': 23, 'sel_schoolbase_pk': 15}, 'sel_depbase_pk': 15}}
@@ -380,7 +432,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
                 if key[:5] == 'page_':
                     # if 'page_' in request: and saved_btn == 'planning': also retrieve period
                     setting_dict['sel_page'] = key
-                    # logger.debug('setting_dict: ' + str(setting_dict))
+                    #logger.debug('setting_dict: ' + str(setting_dict))
                     sel_keys = ('sel_btn', 'period_start', 'period_end', 'grid_range')
                     for sel_key in sel_keys:
                         saved_value = saved_setting_dict.get(sel_key)
@@ -424,7 +476,7 @@ def get_selected_examperiod_examtype_from_usersetting(request):  # PR2021-01-20
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def get_selected_examyear_school_dep_from_usersetting(request):  # PR2021-1-13
     #logger.debug(' ----- get_selected_examyear_school_dep_from_usersetting ----- ' )
-    # logger.debug('request_item_setting: ' + str(request_item_setting) )
+    #logger.debug('request_item_setting: ' + str(request_item_setting) )
     # this function get settingss from request_item_setting.
     # if not in request_item_setting, it takes the saved settings.
 

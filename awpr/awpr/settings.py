@@ -160,7 +160,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'),]
 STATICFILES_FONTS_DIR = os.path.join(BASE_DIR, 'static', 'fonts') + '/'
 # 'static', 'media' goes wrong on server, becasue collectstatic puts all static file in one folder
 # was: STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'static', 'media') + '/'
-STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'media', 'published') + '/'
+STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'media', 'private', 'published') + '/'
 
 # PR2021-01-22 from https://www.caktusgroup.com/blog/2017/08/28/advanced-django-file-handling/
 # how to handle DEFAULT_FILE_STORAGE ( i.e. MEDIAFILES_STORAGE)

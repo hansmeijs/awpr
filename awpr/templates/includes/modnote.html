@@ -17,17 +17,26 @@
                     placeholder="{% trans 'Type your note here...'%}"></textarea>
                 <div class="pt-2">
                     <div class="content_header">
-                        <div id="id_ModNote_memo_internal" data-index="internal" class="note_flex_1 pointer_show tr_hover">
-                            <div class="note_1_1"></div>
+                        <div id="id_ModNote_memo_internal" data-internal="1" class="note_flex_1 tr_hover pointer_show">
+                            <div id="id_ModNote_internal_icon" class="note_1_1"></div>
                             <div class="c_form_text pr-5">{% trans 'Internal memo' %}</div>
                         </div>
-                        <div id="id_ModNote_memo_external" data-index="external" class="note_flex_1 pointer_show mx-2">
-                            <div data-index="2" class="note_0_2"></div>
-                            <div data-index="3" class="note_0_3"></div>
-                            <div data-index="4" class="note_0_4"></div>
-                            <div data-index="5" class="note_0_5"></div>
+                        <div id="id_ModNote_memo_external" class="note_flex_2 pointer_show mx-2">
+                            <div data-icon="1" class="note_0_1 ml-2"></div>
+                            <div data-icon="2" class="note_0_2"></div>
+                            <div data-icon="3" class="note_0_3"></div>
+                            <div data-icon="4" class="note_0_4"></div>
                             <div data-index="label" class="c_form_text">{% trans 'External memo' %}</div>
                         </div>
+
+                        <div class="note_attachment_wrapper">
+                            <div data-index="attachment" class="note_flex_1">
+                                <div class="note_1_8 mx-2"></div>
+                                <div class="c_form_text m-0 p-2">{% trans 'Attachment' %}</div>
+                                <input id="id_ModNote_filedialog" type="file"/>
+                            </div>
+                        </div>
+
                         <div class="flex_1 text_align_right">
                             <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
                             <button id="id_ModNote_btn_save" type="button" class="btn btn-primary">{% trans 'Save' %}</button>
@@ -35,12 +44,40 @@
                     </div>
                 </div>
             </div>
+            <div id="id_ModNote_loader" class="display_hide mx-4 mt-2">
+                <div class="image_container">
+                    <img src="{% static 'img/loader.gif' %}" class="icon_24">
+                </div>
+            </div>
+            <div id="id_ModNote_notes_container" class="mx-2 my-2">
+                <div class="ss_note_container">
+                    <div class="ss_note_titlebar">
+                        <div class="ss_note_icon_modby">
+                            <div class="note_1_1"></div>
+                            <small>{% trans 'Internal memo' %}</small>
+                        </div>
+                        <div class="ss_note_btn_attment">
+                            <div class="note_1_8"></div>
+                            <small>{% trans 'Attachment' %}</small>
+                        </div>
+                    </div>
 
-            <div id="id_ModNote_note_container" class="mx-2 my-4">
+                    <div class="ss_note_textarea">
+                        <textarea rows="1" class="form-control mt-2"
+                            autocomplete="off" ondragstart="return false;" ondrop="return false;"
+                            ></textarea>
+                    </div>
+                </div>
+
+
+                <div class="ss_note_container pb-2">
+                    ppp
+                </div>
+
             </div>
 
             <div class="modal-footer mx-4">
-
+                modal-footer
             </div>
 
         </div>

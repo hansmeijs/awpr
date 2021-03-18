@@ -63,8 +63,8 @@ class UserListView(ListView):
         # - when role is inspection: all users with role 'inspection' and country == request_user.country
         # - else (role is school): all users with role 'school' and schoolcode == request_user.schooldefault
 
-        # logger.debug('UserListView get self: ' + str(self))
-        # logger.debug('UserListView get request.user: ' + str(request.user))
+        #logger.debug('UserListView get self: ' + str(self))
+        #logger.debug('UserListView get request.user: ' + str(request.user))
 
         users = None  # User.objects.filter(False) gives error: 'bool' object is not iterable
         if request.user.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
@@ -98,8 +98,8 @@ class UserUploadView(View):
     #  when ok: it also sends an email to the user
 
     def post(self, request):
-        logger.debug('  ')
-        logger.debug(' ========== UserUploadView ===============')
+        #logger.debug('  ')
+        #logger.debug(' ========== UserUploadView ===============')
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None and request.user.schoolbase is not None:
@@ -120,7 +120,7 @@ class UserUploadView(View):
                 upload_json = request.POST.get("upload")
                 if upload_json:
                     upload_dict = json.loads(upload_json)
-                    logger.debug('upload_dict: ' + str(upload_dict))
+                    #logger.debug('upload_dict: ' + str(upload_dict))
 
                     # upload_dict: {'mode': 'validate', 'company_pk': 3, 'pk_int': 114, 'user_ppk': 3,
                     #               'employee_pk': None, 'employee_code': None, 'username': 'Giterson_Lisette',
@@ -141,10 +141,10 @@ class UserUploadView(View):
                     is_validate_only = (mode == 'validate')
                     update_wrap['mode'] = mode
 
-                    logger.debug('user_pk: ' + str(user_pk))
-                    logger.debug('user_schoolbase_pk: ' + str(user_schoolbase_pk))
-                    logger.debug('map_id: ' + str(map_id))
-                    logger.debug('mode: ' + str(mode))
+                    #logger.debug('user_pk: ' + str(user_pk))
+                    #logger.debug('user_schoolbase_pk: ' + str(user_schoolbase_pk))
+                    #logger.debug('map_id: ' + str(map_id))
+                    #logger.debug('mode: ' + str(mode))
 
     # - check if the user schoolbase exists
                     user_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
@@ -152,8 +152,8 @@ class UserUploadView(View):
                         country=req_user.country
                     )
                     is_same_schoolbase = (user_schoolbase and user_schoolbase == req_user.schoolbase)
-                    logger.debug('user_schoolbase: ' + str(user_schoolbase))
-                    logger.debug('is_same_schoolbase: ' + str(is_same_schoolbase))
+                    #logger.debug('user_schoolbase: ' + str(user_schoolbase))
+                    #logger.debug('is_same_schoolbase: ' + str(is_same_schoolbase))
 
                     # <PERMIT> PR220-09-24
                     # user may edit users from their own school
@@ -190,11 +190,11 @@ class UserUploadView(View):
                                         country=req_user.country,
                                         schoolbase=req_user.schoolbase
                                     )
-                                logger.debug('instance: ' + str(instance))
+                                #logger.debug('instance: ' + str(instance))
 
                                 if instance:
                                     deleted_instance_list = create_user_list(request, instance.pk)
-                                    logger.debug('deleted_instance_list: ' + str(deleted_instance_list))
+                                    #logger.debug('deleted_instance_list: ' + str(deleted_instance_list))
                                     if deleted_instance_list:
                                         updated_dict = deleted_instance_list[0]
                                         updated_dict['mapid'] = map_id
@@ -207,15 +207,15 @@ class UserUploadView(View):
                                             # PR2021-02-05 debug: CASCADE delete usersetting not working. Delete manually
                                             usersettings = Usersetting.objects.filter(user=instance)
                                             for usersetting in usersettings:
-                                                logger.debug('usersetting delete: ' + str(usersetting))
+                                                #logger.debug('usersetting delete: ' + str(usersetting))
                                                 usersetting.delete()
                                             instance.delete()
                                             updated_dict['deleted'] = True
-                                            logger.debug('deleted: ' + str(True))
+                                            #logger.debug('deleted: ' + str(True))
                                         except:
                                             err_dict['msg01'] = _("User '%(val)s' can not be deleted.\nInstead, you can make the user inactive.") \
                                                                 % {'val': instance.username_sliced}
-                                            logger.debug('err_dict msg01: ' + str(err_dict['msg01']))
+                                            #logger.debug('err_dict msg01: ' + str(err_dict['msg01']))
 
     # ++++  create or validate new user ++++++++++++
                         elif mode in ('create', 'validate'):
@@ -290,7 +290,7 @@ class UserUploadView(View):
 class UserSettingsUploadView(UpdateView):  # PR2019-10-09
 
     def post(self, request, *args, **kwargs):
-        logger.debug(' ============= UserSettingsUploadView ============= ')
+        #logger.debug(' ============= UserSettingsUploadView ============= ')
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None:
@@ -334,7 +334,7 @@ def account_activation_sent(request):
 
 # === SignupActivateView ===================================== PR2020-09-29
 def SignupActivateView(request, uidb64, token):
-    logger.debug('  === SignupActivateView =====')
+    #logger.debug('  === SignupActivateView =====')
     #logger.debug('request: ' + str(request))
     #logger.debug('uidb64: ' + str(uidb64))
     #logger.debug('token: ' + str(token))
@@ -353,9 +353,9 @@ def SignupActivateView(request, uidb64, token):
         user = User.objects.get_or_none(pk=uid)
     except (TypeError, ValueError, OverflowError):
         user = None
-    logger.debug('user: ' + str(user))
-    logger.debug('user.is_authenticated: ' + str(user.is_authenticated))
-    logger.debug('user.activated: ' + str(user.activated))
+    #logger.debug('user: ' + str(user))
+    #logger.debug('user.is_authenticated: ' + str(user.is_authenticated))
+    #logger.debug('user.activated: ' + str(user.activated))
 
 # - get language from user
     # PR2019-03-15 Debug: language gets lost, get request.user.lang again
@@ -373,9 +373,9 @@ def SignupActivateView(request, uidb64, token):
 
 # - get schoolname PR2020-12-24
         examyear = af.get_todays_examyear_or_latest_instance(user.country)
-        logger.debug('examyear: ' + str(examyear))
+        #logger.debug('examyear: ' + str(examyear))
         school = sch_mod.School.objects.get_or_none( base=user.schoolbase, examyear=examyear)
-        logger.debug('school: ' + str(school))
+        #logger.debug('school: ' + str(school))
         usr_schoolname_with_article = '---'
         if school and school.name:
             if school.article:
@@ -387,12 +387,12 @@ def SignupActivateView(request, uidb64, token):
         # PR2021-01-20 this one does not translate to Dutch, because language is not set. Text moved to template
         # msg_txt = _("Your account with username '%(usr)s' is created at %(school)s.") % {'usr': user_name, 'school': usr_schoolname_with_article}
         # update_wrap['schoolnamewithArticle'] = msg_txt
-        logger.debug('usr_schoolname_with_article: ' + str(usr_schoolname_with_article))
+        #logger.debug('usr_schoolname_with_article: ' + str(usr_schoolname_with_article))
         update_wrap['schoolnamewithArticle'] = usr_schoolname_with_article
 
 # - check activation_token
         activation_token_ok = account_activation_token.check_token(user, token)
-        logger.debug('activation_token_ok: ' + str(activation_token_ok))
+        #logger.debug('activation_token_ok: ' + str(activation_token_ok))
 
         if not activation_token_ok:
             update_wrap['msg_01'] = _('The link to active your account is no longer valid.')
@@ -401,23 +401,23 @@ def SignupActivateView(request, uidb64, token):
 
     # don't activate user and company until user has submitted valid password
     update_wrap['activation_token_ok'] = activation_token_ok
-    logger.debug('update_wrap: ' + str(update_wrap))
+    #logger.debug('update_wrap: ' + str(update_wrap))
 
     if request.method == 'POST':
-        logger.debug('request.POST' + str(request.POST))
+        #logger.debug('request.POST' + str(request.POST))
         form = SetPasswordForm(user, request.POST)
-        logger.debug('form: ' + str(form))
+        #logger.debug('form: ' + str(form))
 
         form_is_valid = form.is_valid()
 
         non_field_errors = af.get_dict_value(form, ('non_field_errors',))
         field_errors = [(field.label, field.errors) for field in form]
-        logger.debug('non_field_errors' + str(non_field_errors))
-        logger.debug('field_errors' + str(field_errors))
-        logger.debug('form_is_valid' + str(form_is_valid))
+        #logger.debug('non_field_errors' + str(non_field_errors))
+        #logger.debug('field_errors' + str(field_errors))
+        #logger.debug('form_is_valid' + str(form_is_valid))
 
         if form_is_valid:
-            logger.debug('form_is_valid' + str(form_is_valid))
+            #logger.debug('form_is_valid' + str(form_is_valid))
             user = form.save()
             update_session_auth_hash(request, user)  # Important!
 
@@ -432,12 +432,12 @@ def SignupActivateView(request, uidb64, token):
             user.activatedat = datetime_activated
             user.save()
             newuser_activated = user.activated
-            logger.debug('user.saved: ' + str(user))
+            #logger.debug('user.saved: ' + str(user))
 
             #login_user = authenticate(username=user.username, password=password1)
             #login(request, login_user)
             login(request, user)
-            logger.debug('user.login' + str(user))
+            #logger.debug('user.login' + str(user))
             #if request.user:
             #    update_wrap['msg_01'] = _("Congratulations.")
             #    update_wrap['msg_02'] = _("Your account is succesfully activated.")
@@ -445,11 +445,11 @@ def SignupActivateView(request, uidb64, token):
         else:
             # TODO check if this is correct when user enters wrong password PR2021-02-05
             form = SetPasswordForm(user)
-            logger.debug('form: ' + str(form))
+            #logger.debug('form: ' + str(form))
             update_wrap['form'] = form
     else:
         form = SetPasswordForm(user)
-        logger.debug('form: ' + str(form))
+        #logger.debug('form: ' + str(form))
         update_wrap['form'] = form
     update_wrap['newuser_activated'] = newuser_activated
     # PR2021-02-05 debug: when a new user tries to activat his account
@@ -458,11 +458,11 @@ def SignupActivateView(request, uidb64, token):
     #                     use variable 'newuser_activated' and add this error trap to form:
     #                     {% elif user.is_authenticated and user.activated and not newuser_activated %}
     #                     instead of  {% elif user.is_authenticated %}
-    logger.debug('activation_token_ok: ' + str(activation_token_ok))
-    logger.debug('user.is_authenticated: ' + str(user.is_authenticated))
-    logger.debug('user.activated: ' + str(user.activated))
-    logger.debug('newuser_activated: ' + str(newuser_activated))
-    logger.debug('update_wrap: ' + str(update_wrap))
+    #logger.debug('activation_token_ok: ' + str(activation_token_ok))
+    #logger.debug('user.is_authenticated: ' + str(user.is_authenticated))
+    #logger.debug('user.activated: ' + str(user.activated))
+    #logger.debug('newuser_activated: ' + str(newuser_activated))
+    #logger.debug('update_wrap: ' + str(update_wrap))
     # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
     return render(request, 'signup_setpassword.html', update_wrap)
 # === end of SignupActivateView =====================================
@@ -807,8 +807,8 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, perm
 
 # === update_user_instance ========== PR2020-08-16 PR2020-09-24
 def update_user_instance(instance, user_pk, upload_dict, is_validate_only, request):
-    logger.debug('-----  update_user_instance  -----')
-    logger.debug('upload_dict: ' + str(upload_dict))
+    #logger.debug('-----  update_user_instance  -----')
+    #logger.debug('upload_dict: ' + str(upload_dict))
     has_error = False
     err_dict = {}
     ok_dict = {}
@@ -866,10 +866,10 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
                     new_permit_bool = field_dict.get('value', False)
                     new_permit_int = c.PERMIT_LOOKUP[permit_field] if permit_field else 0
                     saved_permit_list = list(get_permits_tuple(instance.permits))
-                    logger.debug('permit_field: ' + str(permit_field))
-                    logger.debug('new_permit_bool: ' + str(new_permit_bool))
-                    logger.debug('new_permit_int: ' + str(new_permit_int))
-                    logger.debug('saved_permit_list: ' + str(saved_permit_list))
+                    #logger.debug('permit_field: ' + str(permit_field))
+                    #logger.debug('new_permit_bool: ' + str(new_permit_bool))
+                    #logger.debug('new_permit_int: ' + str(new_permit_int))
+                    #logger.debug('saved_permit_list: ' + str(saved_permit_list))
             # - sysadmins cannot remove sysadmin permission from their own account
                     if request.user.is_perm_admin or request.user.is_perm_system:
                         if permit_field in ('perm_admin', 'perm_system'):
@@ -896,8 +896,8 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
 
                             new_permit_sum = get_permit_sum_from_tuple(saved_permit_list)
 
-                            logger.debug('saved_permit_list: ' + str(saved_permit_list))
-                            logger.debug('new_permit_sum: ' + str(new_permit_sum))
+                            #logger.debug('saved_permit_list: ' + str(saved_permit_list))
+                            #logger.debug('new_permit_sum: ' + str(new_permit_sum))
 
                             instance.permits = new_permit_sum
                             data_has_changed = True

@@ -156,7 +156,7 @@
     function t_MSSS_Open (loc, tblName, data_map, setting_dict, MSSS_Response) {
         console.log(" ===  t_MSSS_Open  =====", tblName) ;
         console.log( "setting_dict", setting_dict);
-        // tblNames are: page grades: "subject", "student", "MAG_subject"
+        // tblNames are: page grades: "subject", "student"
         const selected_pk = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_pk : null;
 
         const el_MSSS_input = document.getElementById("id_MSSS_input")

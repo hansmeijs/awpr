@@ -1,25 +1,18 @@
 # PR2018-07-20
-from django.db.models import Model, Manager, ForeignKey, OneToOneField, PROTECT, CASCADE, SET_NULL
+from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
 from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, \
     DecimalField, BooleanField, DateField, FileField
 
 from django.db.models.functions import Lower
 
-from django.utils import timezone
-
 # PR2018-05-05 use AUTH_USER_MODEL
-#from django.contrib.auth.models import User
-#from accounts.models import User
-from django.utils.translation import ugettext_lazy as _
 from awpr.settings import AUTH_USER_MODEL
+from awpr.storage_backends import PrivateMediaStorage
 from awpr import constants as c
 from awpr import functions as f
 
 from schools import models as sch_mod
-
-from schools.models import Examyear, Department, Department_log, School, School_log
-from subjects.models import Level, Level_log, Sector, Sector_log, Scheme, Scheme_log, Schemeitem, Schemeitem_log,\
-    Exam, Exam_log, Package, Package_log, Cluster, Cluster_log
+from subjects import models as subj_mod
 
 import logging
 logger = logging.getLogger(__name__)
@@ -105,12 +98,12 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
 
     base = ForeignKey(Studentbase, related_name='students', on_delete=PROTECT)
 
-    school = ForeignKey(School, related_name='students', on_delete=CASCADE)
-    department = ForeignKey(Department, related_name='students', on_delete=CASCADE)
-    level = ForeignKey(Level, null=True, blank=True, related_name='students', on_delete=SET_NULL)
-    sector = ForeignKey(Sector, null=True,blank=True, related_name='students', on_delete=SET_NULL)
-    scheme = ForeignKey(Scheme, null=True, blank=True, related_name='students', on_delete=SET_NULL)
-    package = ForeignKey(Package, null=True, blank=True, related_name='students', on_delete=SET_NULL)
+    school = ForeignKey(sch_mod.School, related_name='students', on_delete=CASCADE)
+    department = ForeignKey(sch_mod.Department, related_name='students', on_delete=CASCADE)
+    level = ForeignKey(subj_mod.Level, null=True, blank=True, related_name='students', on_delete=SET_NULL)
+    sector = ForeignKey(subj_mod.Sector, null=True,blank=True, related_name='students', on_delete=SET_NULL)
+    scheme = ForeignKey(subj_mod.Scheme, null=True, blank=True, related_name='students', on_delete=SET_NULL)
+    package = ForeignKey(subj_mod.Package, null=True, blank=True, related_name='students', on_delete=SET_NULL)
 
     lastname = CharField(db_index=True, max_length=c.MAX_LENGTH_FIRSTLASTNAME)
     firstname= CharField(db_index=True, max_length=c.MAX_LENGTH_FIRSTLASTNAME)
@@ -207,12 +200,12 @@ class Student_log(sch_mod.AwpBaseModel):
 
     base = ForeignKey(Studentbase, related_name='+', on_delete=PROTECT)
 
-    school_log = ForeignKey(School_log, related_name='+', on_delete=CASCADE)
-    dep_log = ForeignKey(Department_log, related_name='+', on_delete=CASCADE)
-    level_log = ForeignKey(Level_log, null=True, related_name='+', on_delete=SET_NULL)
-    sector_log = ForeignKey(Sector_log, null=True, related_name='+', on_delete=SET_NULL)
-    scheme_log = ForeignKey(Scheme_log, null=True, related_name='+', on_delete=SET_NULL)
-    package_log = ForeignKey(Package_log, null=True, related_name='+', on_delete=SET_NULL)
+    school_log = ForeignKey(sch_mod.School_log, related_name='+', on_delete=CASCADE)
+    dep_log = ForeignKey(sch_mod.Department_log, related_name='+', on_delete=CASCADE)
+    level_log = ForeignKey(subj_mod.Level_log, null=True, related_name='+', on_delete=SET_NULL)
+    sector_log = ForeignKey(subj_mod.Sector_log, null=True, related_name='+', on_delete=SET_NULL)
+    scheme_log = ForeignKey(subj_mod.Scheme_log, null=True, related_name='+', on_delete=SET_NULL)
+    package_log = ForeignKey(subj_mod.Package_log, null=True, related_name='+', on_delete=SET_NULL)
 
     lastname = CharField(db_index=True, max_length=c.MAX_LENGTH_FIRSTLASTNAME)
     firstname = CharField(db_index=True, max_length=c.MAX_LENGTH_FIRSTLASTNAME)
@@ -338,8 +331,8 @@ class Studentsubject(sch_mod.AwpBaseModel):
     objects = CustomManager()
 
     student = ForeignKey(Student, related_name='+', on_delete=CASCADE)
-    schemeitem = ForeignKey(Schemeitem, related_name='+', on_delete=PROTECT)
-    cluster = ForeignKey(Cluster, null=True, blank=True, related_name='+', on_delete=SET_NULL)
+    schemeitem = ForeignKey(subj_mod.Schemeitem, related_name='+', on_delete=PROTECT)
+    cluster = ForeignKey(subj_mod.Cluster, null=True, blank=True, related_name='+', on_delete=SET_NULL)
 
     is_extra_nocount = BooleanField(default=False)
     is_extra_counts = BooleanField(default=False)
@@ -373,9 +366,25 @@ class Studentsubject(sch_mod.AwpBaseModel):
     pok_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pok_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
+    ex_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    ex_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    ex_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+
+    reex_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    reex_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    reex_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+
+    reex3_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    reex3_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    reex3_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+
+    gradelist_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    gradelist_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    gradelist_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+
     has_schoolnotes = BooleanField(default=False)
     has_inspnotes = BooleanField(default=False)
-    note_status = PositiveSmallIntegerField(default=0)
+    note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
     deleted = BooleanField(default=False)
 
@@ -387,8 +396,8 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
 
     # PR2019-02-14 changed: refer to log table student_log instead of student, to prevent ref_int with table student
     student_log = ForeignKey(Student_log, null=True, related_name='+', on_delete=CASCADE)
-    schemeitem_log = ForeignKey(Schemeitem_log, null=True, related_name='+', on_delete=SET_NULL)
-    cluster_log = ForeignKey(Cluster_log,null=True,  related_name='+', on_delete=SET_NULL)
+    schemeitem_log = ForeignKey(subj_mod.Schemeitem_log, null=True, related_name='+', on_delete=SET_NULL)
+    cluster_log = ForeignKey(subj_mod.Cluster_log,null=True,  related_name='+', on_delete=SET_NULL)
 
     is_extra_nocount = BooleanField(default=False)
     is_extra_counts = BooleanField(default=False)
@@ -422,48 +431,69 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     pok_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pok_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
+    ex_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    ex_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    ex_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+
+    reex_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    reex_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    reex_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+
+    reex3_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    reex3_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    reex3_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+
+    gradelist_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    gradelist_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    gradelist_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+
     has_schoolnotes = BooleanField(default=False)
     has_inspnotes = BooleanField(default=False)
-    note_status = PositiveSmallIntegerField(default=0)
+    note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
     deleted = BooleanField(default=False)
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
-# PR2018-106-17
 class Studentsubjectnote(sch_mod.AwpBaseModel):
     objects = CustomManager()
 
     studentsubject = ForeignKey(Studentsubject, related_name='+', on_delete=CASCADE)
 
+    # intern_school only has value when it is an intern memo.
+    # It has the value of the school of the user, NOT the school of the student
+    intern_schoolbase = ForeignKey(sch_mod.Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
+
     note = CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
-    is_insp = BooleanField(default=False)  # False: school note True: insp / admin note PR2021-01-16
-    is_public = BooleanField(default=False)  # True: visbible for schools and insp / admin PR2021-01-16
-
-    # TODO: refer to log table studentsubject_log
+    note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
 
-# PR2018-106-17
 class Studentsubjectnote_log(sch_mod.AwpBaseModel):
     objects = CustomManager()
 
     studentsubjectnote_id = IntegerField(db_index=True)
 
     studentsubject_log = ForeignKey(Studentsubject_log, related_name='+', on_delete=CASCADE)
+    intern_schoolbase = ForeignKey(sch_mod.Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
 
     note = CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
-
-    is_insp = BooleanField(default=False)  # False: school note True: insp / admin note PR2021-01-16
-    is_public = BooleanField(default=False)  # True: visbible for schools and insp / admin PR2021-01-16
-
-    studentsubject_mod = BooleanField(default=False)
-    note_mod = BooleanField(default=False)
-    mailto_user_mod = BooleanField(default=False)
-    is_insp_mod = BooleanField(default=False)
+    note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+
+
+# PR2021-03-08 from https://simpleisbetterthancomplex.com/tutorial/2017/08/01/how-to-setup-amazon-s3-in-a-django-project.html
+# PR2021-03-13 test
+class Noteattachment(sch_mod.AwpBaseModel):
+    objects = CustomManager()
+
+    studentsubjectnote = ForeignKey(Studentsubjectnote, related_name='+', on_delete=CASCADE)
+    contenttype = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+    filename = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME)
+
+    file = FileField(storage=PrivateMediaStorage())
 
 #==== GRADES ======================================================
 
@@ -554,7 +584,7 @@ class Examresult(sch_mod.AwpBaseModel):
 
     studentsubject = ForeignKey(Studentsubject, related_name='+', on_delete=CASCADE)
 
-    exam = ForeignKey(Exam, related_name='+', on_delete=CASCADE)
+    exam = ForeignKey(subj_mod.Exam, related_name='+', on_delete=CASCADE)
     examperiod = PositiveSmallIntegerField(db_index=True,
                                            default=1)  # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
 
@@ -566,7 +596,6 @@ class Examresult(sch_mod.AwpBaseModel):
     auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
-
 
 class Examresult_log(sch_mod.AwpBaseModel):
     objects = CustomManager()

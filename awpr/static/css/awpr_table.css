@@ -988,6 +988,7 @@ aXX:hover{
 .tw_110 { width: 110px; }
 .tw_100 { width: 100px; }
 .tw_090 { width: 90px; }
+.tw_080 { width: 80px; }
 .tw_075 { width: 75px; }
 .tw_060 { width: 60px; }
 .tw_032 { width: 32px; }
@@ -1190,9 +1191,9 @@ aXX:hover{
 .inactive_0_0, .inactive_0_1, .inactive_0_2, .inactive_0_3,
 .inactive_1_0, .inactive_1_1, .inactive_1_2, .inactive_1_3,
 
-.note_0_0, .note_0_1, .note_0_2, .note_0_3, .note_0_4, .note_0_5, .note_0_6,
-.note_1_0, .note_1_1, .note_1_2, .note_1_3, .note_1_4, .note_1_5, .note_1_6,
-.note_2_0, .note_2_1, .note_2_2, .note_2_3, .note_2_4, .note_2_5, .note_2_6,
+.note_0_0, .note_0_1, .note_0_2, .note_0_3, .note_0_4, .note_0_5, .note_0_6, .note_0_7, .note_0_8,
+.note_1_0, .note_1_1, .note_1_2, .note_1_3, .note_1_4, .note_1_5, .note_1_6, .note_1_7, .note_1_8,
+.note_2_0, .note_2_1, .note_2_2, .note_2_3, .note_2_4, .note_2_5, .note_2_6,  .note_2_7, .note_2_8,
 
 .xmark_0_0, .xmark_0_1, .xmark_0_2, .xmark_0_3,
 .exclamation_0_0, .exclamation_0_1, .exclamation_0_2,
@@ -1212,7 +1213,7 @@ aXX:hover{
 .appr_0_0, .appr_0_1, .appr_0_2, .appr_0_3, .appr_0_4, .appr_0_5, .appr_0_6,
 .appr_1_0, .appr_1_1, .appr_1_2, .appr_1_3, .appr_1_4, .appr_1_5, .appr_1_6,
 .appr_2_0, .appr_2_1, .appr_2_2, .appr_2_3, .appr_2_4, .appr_2_5, .appr_2_6 {
-    background-image: url('/static/img/appr210306.png');
+    background-image: url('/static/img/appr210314.png');
     background-size: 140px 60px;
 }
 .appr_0_0 { background-position: -0px -0px;}
@@ -1271,11 +1272,11 @@ aXX:hover{
 .inactive_1_2 { background-position: -40px -20px;}
 .inactive_1_3 { background-position: -60px -20px;}
 
-.note_0_0, .note_0_1, .note_0_2, .note_0_3, .note_0_4, .note_0_5, .note_0_6,
-.note_1_0, .note_1_1, .note_1_2, .note_1_3, .note_1_4, .note_1_5, .note_1_6,
-.note_2_0, .note_2_1, .note_2_2, .note_2_3, .note_2_4, .note_2_5, .note_2_6 {
-    background-image: url('/static/img/notes.png');
-    background-size: 140px 60px;
+.note_0_0, .note_0_1, .note_0_2, .note_0_3, .note_0_4, .note_0_5, .note_0_6, .note_0_7, .note_0_8,
+.note_1_0, .note_1_1, .note_1_2, .note_1_3, .note_1_4, .note_1_5, .note_1_6, .note_1_7, .note_1_8,
+.note_2_0, .note_2_1, .note_2_2, .note_2_3, .note_2_4, .note_2_5, .note_2_6,  .note_2_7, .note_2_8 {
+    background-image: url('/static/img/notes210314.png');
+    background-size: 180px 60px;
 }
 .note_0_0 { background-position: -0px -0px;}
 .note_0_1 { background-position: -20px -0px;}
@@ -1284,6 +1285,8 @@ aXX:hover{
 .note_0_4 { background-position: -80px -0px;}
 .note_0_5 { background-position: -100px -0px;}
 .note_0_6 { background-position: -120px -0px;}
+.note_0_7 { background-position: -140px -0px;}
+.note_0_8 { background-position: -160px -0px;}
 .note_1_0 { background-position: -0px -20px;}
 .note_1_1 { background-position: -20px -20px;}
 .note_1_2 { background-position: -40px -20px;}
@@ -1291,6 +1294,8 @@ aXX:hover{
 .note_1_4 { background-position: -80px -20px;}
 .note_1_5 { background-position: -100px -20px;}
 .note_1_6 { background-position: -120px -20px;}
+.note_1_7 { background-position: -140px -20px;}
+.note_1_8 { background-position: -160px -20px;}
 .note_2_0 { background-position: -0px -40px;}
 .note_2_1 { background-position: -20px -40px;}
 .note_2_2 { background-position: -40px -40px;}
@@ -1298,6 +1303,8 @@ aXX:hover{
 .note_2_4 { background-position: -80px -40px;}
 .note_2_5 { background-position: -100px -40px;}
 .note_2_6 { background-position: -120px -40px;}
+.note_2_7 { background-position: -140px -40px;}
+.note_2_8 { background-position: -160px -40px;}
 
 .xmark_0_0, .xmark_0_1, .xmark_0_2, .xmark_0_3 {
     background-image: url('/static/img/xmark.png');
@@ -1319,7 +1326,7 @@ aXX:hover{
 .tickmark_0_0, .tickmark_0_1, .tickmark_0_2,
 .tickmark_1_0, .tickmark_1_1, .tickmark_1_2,
 .tickmark_2_0, .tickmark_2_1, .tickmark_2_2 {
-    background-image: url('/static/img/tickmark.png');
+    background-image: url('/static/img/tickmark210315.png');
     background-size: 60px 60px;
 }
 .tickmark_0_0 { background-position: -0px -0px;}
