@@ -26,7 +26,7 @@ import openpyxl
 class ImportAllView(View):  #PR2020-12-13
 
     def get(self, request):
-        # permission: user.is_authenticated AND user.is_role_adm_or_sys_and_perm_adm_or_sys
+        # permission: user.is_authenticated AND user.is_role_adm_or_sys_and_group_system
         header_text = _('Upload') + ' ' + str(_('All').lower())
         return render(request, 'import.html', {'header': header_text})
 

@@ -281,8 +281,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     //  - can add/delete/edit only 'role_school' + same_school plus 'perm_edit'
                     //  - cannot edit when country, examyear or schoolis locked
                     //  - can only edit when school is published
-                    has_permit_edit = (setting_dict.requsr_role_admin && setting_dict.requsr_perm_edit) ||
-                                      (setting_dict.requsr_role_system && setting_dict.requsr_perm_edit);
+                    has_permit_edit = (setting_dict.requsr_role_admin && setting_dict.requsr_group_edit) ||
+                                      (setting_dict.requsr_role_system && setting_dict.requsr_group_edit);
                     // <PERMIT> PR2020-10-27
                     // - every user may change examyear and department
                     // -- only insp, admin and system may change school
@@ -747,10 +747,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 let model_field = null;
                 if (["auth1", "auth2"].indexOf(fldName) > -1){
-        console.log( "setting_dict.requsr_perm_auth1", setting_dict.requsr_perm_auth1);
-        console.log( "setting_dict.requsr_perm_auth2", setting_dict.requsr_perm_auth2);
-        console.log( "setting_dict.requsr_perm_auth3", setting_dict.requsr_perm_auth3);
-                    if ( fldName === "auth1" && setting_dict.requsr_perm_auth1 || fldName === "auth2" && setting_dict.requsr_perm_auth2  || fldName === "auth3" && setting_dict.requsr_perm_auth3 ) {
+        console.log( "setting_dict.requsr_group_auth1", setting_dict.requsr_group_auth1);
+        console.log( "setting_dict.requsr_group_auth2", setting_dict.requsr_group_auth2);
+        console.log( "setting_dict.requsr_group_auth3", setting_dict.requsr_group_auth3);
+                    if ( fldName === "auth1" && setting_dict.requsr_group_auth1 || fldName === "auth2" && setting_dict.requsr_group_auth2  || fldName === "auth3" && setting_dict.requsr_group_auth3 ) {
                         const prefix = (selected_btn === "btn_studsubj") ? "subj" :
                                         (selected_btn === "btn_exemption") ? "exem" :
                                         (selected_btn === "btn_reex") ? "reex" :

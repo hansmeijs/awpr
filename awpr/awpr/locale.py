@@ -152,7 +152,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Link_profielen'] = _('Link profielen')
 
 # ====== PAGE USER ========================= PR2019-11-19
-    if 'user' in page_list:
+    if 'users' in page_list:
 
         dict['User_list'] = _('User list')
         dict['Permissions'] = _('Permissions')
@@ -161,11 +161,15 @@ def get_locale_dict(table_dict, user_lang):
         dict['Read_only'] = _('Read only')
         dict['Read_only_2lines'] =  pgettext_lazy('2 lines', 'Read\nonly')
         dict['Edit'] = _('Edit')
+        dict['pagelist'] = c.PAGE_LIST
 
         dict['President'] = TXT_President
         dict['Secretary'] = TXT_Secretary
         dict['Commissioner'] = TXT_Commissioner
 
+        dict['Organization'] = _('Organization')
+        dict['Action'] = _('Action')
+        dict['Page'] = _('Page')
         dict['Commissioner_2lines'] =  pgettext_lazy('2 lines', 'Commis-\nsioner')
         dict['Analyze'] = _('Analyze')
         dict['Administrator'] = _('Administrator')
@@ -191,6 +195,8 @@ def get_locale_dict(table_dict, user_lang):
         dict['Submit'] = TXT_Submit
         dict['Inactive'] = TXT_Inactive
 
+        dict['Add_permission'] = _('Add permission')
+
         dict['No_user_selected']  = _('There is no user selected.')
         dict['Make_user_inactive'] = _('Make user inactive')
         dict['Make_user_active'] = _('Make user active')
@@ -215,7 +221,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Yes_send_email'] = _('Yes, send email')
 
 # ====== PAGE EXAM YEAR ========================= PR2020-10-04
-    if 'examyear' in page_list:
+    if 'examyears' in page_list:
         dict['Created_on'] = _('Created on ')
 
         dict['Published'] = _('Published')

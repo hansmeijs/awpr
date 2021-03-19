@@ -4,7 +4,7 @@
 {% block content %}
 <div id="id_content" class="content_margin_top78">
   {% if user.is_authenticated %}
-    {% if user.is_role_adm_or_sys_and_perm_adm_or_sys %}
+    {% if user.is_role_adm_or_sys_and_group_system %}
         <h4>{{ header }}</h4>
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}

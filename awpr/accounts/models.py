@@ -138,12 +138,7 @@ class User(AbstractUser):
     @property
     def permits_str(self):
         # PR2018-05-26 permits_str displays list of permits un UserListForm, e.g.: 'Schooladmin, Authorize, Write'
-        permits_all_dict = {
-            c.PERMIT_001_READ: _('Read'),
-            c.PERMIT_002_EDIT: _('Write'),
-            c.PERMIT_004_AUTH1: _('Authorize'),
-            c.PERMIT_064_ADMIN: _('Admin'),
-        }
+        permits_all_dict = c.GROUP_CAPTION
         permits_str = ''
         if self.permits_tuple is not None:
             #logger.debug('class User(AbstractUser): permits_tuple: ' + str(self.permits_tuple))
@@ -158,7 +153,7 @@ class User(AbstractUser):
                     permits_str = permits_str + ', ' + str(list_item)
                     # stop when write permission is found . 'Read' will then not be displayed
                     # PR2018-07-26 debug: doesn't work, because tuple is not in reverse order
-                    # if permit_int == c.PERMIT_002_EDIT:
+                    # if permit_int == c.GROUP_002_EDIT:
                     #    break
         if not permits_str: # means: if permits_str == '':
             permits_str = ', None'
@@ -187,7 +182,7 @@ class User(AbstractUser):
     def permits_str_tuple(self): # 2018-12-23
         permits_list = []
         for permit_int in self.permits_tuple:
-            permit_str = c.PERMIT_DICT.get(permit_int)
+            permit_str = c.GROUP_DICT.get(permit_int)
             if permit_str:
                 permits_list.append(permit_str)
         return tuple(permits_list)
@@ -209,12 +204,12 @@ class User(AbstractUser):
         return self.is_authenticated and self.role is not None and self.role == c.ROLE_128_SYSTEM
 
     @property
-    def is_role_system_perm_admin(self):
+    def is_role_system_group_system(self):
         _has_permit = False
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
                 if self.role == c.ROLE_128_SYSTEM:
-                    _has_permit = (c.PERMIT_064_ADMIN in self.permits_tuple)
+                    _has_permit = (c.GROUP_128_SYSTEM in self.permits_tuple)
         return _has_permit
 
     @property
@@ -252,65 +247,61 @@ class User(AbstractUser):
         return _has_permit
 
     @property
-    def is_role_insp_or_system_and_perm_admin(self):
+    def is_role_insp_or_system_and_group_admin(self):
         _has_permit = False
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
                 if self.role == c.ROLE_128_SYSTEM or self.role == c.ROLE_032_INSP:
-                    if self.is_perm_admin:
+                    if self.is_group_system:
                         _has_permit = True
         return _has_permit
 
     @property
-    def is_role_adm_or_sys_and_perm_adm_or_sys(self):
+    def is_role_adm_or_sys_and_group_system(self):
         _has_permit = False
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
                 if self.role == c.ROLE_064_ADMIN or self.role == c.ROLE_128_SYSTEM:
-                    if self.is_perm_admin or self.is_perm_system:
+                    if self.is_group_system:
                         _has_permit = True
         return _has_permit
 
     @property
-    def is_role_school_perm_admin(self):
+    def is_role_school_group_system(self):
         _has_permit = False
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
                 if self.role == c.ROLE_008_SCHOOL:
-                    _has_permit = (c.PERMIT_064_ADMIN in self.permits_tuple)
+                    _has_permit = (c.GROUP_128_SYSTEM in self.permits_tuple)
         return _has_permit
 
     @property
-    def is_perm_system(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_128_SYSTEM in self.permits_tuple
+    def is_group_system(self):
+        return self.is_authenticated and self.permits_tuple and c.GROUP_128_SYSTEM in self.permits_tuple
 
     @property
-    def is_perm_admin(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_064_ADMIN in self.permits_tuple
+    def is_group_anlz(self):
+        return self.is_authenticated and self.permits_tuple and c.GROUP_032_ANALYZE in self.permits_tuple
 
     @property
-    def is_perm_anlz(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_032_ANALYZE in self.permits_tuple
+    def is_group_auth3(self):
+        return self.is_authenticated and self.permits_tuple and c.GROUP_016_AUTH3 in self.permits_tuple
 
     @property
-    def is_perm_auth3(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_016_AUTH3 in self.permits_tuple
+    def is_group_auth2(self):
+        return self.is_authenticated and self.permits_tuple and c.GROUP_008_AUTH2 in self.permits_tuple
 
     @property
-    def is_perm_auth2(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_008_AUTH2 in self.permits_tuple
+    def is_group_auth1(self):
+        return self.is_authenticated and self.permits_tuple and c.GROUP_004_AUTH1 in self.permits_tuple
 
     @property
-    def is_perm_auth1(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_004_AUTH1 in self.permits_tuple
+    def is_group_edit(self):
+        return self.is_authenticated and self.permits_tuple and c.GROUP_002_EDIT in self.permits_tuple
 
     @property
-    def is_perm_edit(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_002_EDIT in self.permits_tuple
-
-    @property
-    def is_perm_read(self):
-        return self.is_authenticated and self.permits_tuple and c.PERMIT_001_READ in self.permits_tuple
+    def is_group_read(self):
+        return self.is_authenticated and self.permits_tuple and c.GROUP_001_READ in self.permits_tuple
 
     @property
     def may_add_or_edit_users(self):
@@ -319,7 +310,7 @@ class User(AbstractUser):
         # role insp:   if perm_admin and country not None
         # role school: if perm_admin and country not None and schooldefault not None
         _has_permit = False
-        if self.is_perm_admin:
+        if self.is_group_system:
             if self.is_role_system:
                 _has_permit = True
             elif self.is_role_insp:
@@ -407,7 +398,7 @@ class User(AbstractUser):
         # PR2020-10-04 not any more, don't know why
         # - loop through keys of upload_dict
 
-        # key = 'page_examyear', dict = {'sel_btn': 'examyear'}
+        # key = 'page_examyear', dict = {'sel_btn': 'examyears'}
         saved_settings_dict = cls.get_usersetting_dict(key)
         # logger.debug('new_setting_dict: ' + str(new_setting_dict))
         # logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
@@ -460,7 +451,7 @@ class User(AbstractUser):
         enable_modify = False
         enable_view = not bool(self.message('country_view'))
         if enable_view:
-            if self.is_perm_admin:
+            if self.is_group_system:
                 enable_modify = True
         return enable_modify
 
@@ -569,7 +560,7 @@ class User(AbstractUser):
         # school admin may add his own school, subjects etc. Is function, not form
         # system and insp may add schoolyear
         #         _has_permit = False
-        # self.is_role_insp_or_system_and_perm_admin is: self.is_authenticated AND (self.is_role_system OR self.is_role_insp) AND (self.is_perm_admin:
+        # self.is_role_insp_or_system_and_group_admin is: self.is_authenticated AND (self.is_role_system OR self.is_role_insp) AND (self.is_group_system:
 
         _no_permission =_("You don't have permission to view this page.")
 
@@ -596,7 +587,7 @@ class User(AbstractUser):
     # - userlist: only admin can view and modify userlist
         if page_name == 'user_view_modify':
             # only admins can view user list
-            if not self.is_perm_admin:
+            if not self.is_group_system:
                 return _no_permission
             else:
                 return None
@@ -636,7 +627,7 @@ class User(AbstractUser):
         if page_name == 'examyear_view':
             # logger.debug('page: examyear_view')
             if not self.is_role_insp_or_admin_or_system:
-                # logger.debug('page: is_role_insp_or_system_and_perm_admin')
+                # logger.debug('page: is_role_insp_or_system_and_group_admin')
                 return _("You don't have permission to view exam years.")
             else:
                 # logger.debug('page: return False')
@@ -646,8 +637,8 @@ class User(AbstractUser):
         # TODO exclude read, authorize and None permissions
         if page_name == 'examyear_modify':
             # logger.debug('page: examyear_modify')
-            if not self.is_role_insp_or_system_and_perm_admin:
-                # logger.debug('page: is_role_insp_or_system_and_perm_admin')
+            if not self.is_role_insp_or_system_and_group_admin:
+                # logger.debug('page: is_role_insp_or_system_and_group_admin')
                 return _("You don't have permission to modify exam years.")
             elif self.country_locked:
                 # logger.debug('page: country_locked')
@@ -668,7 +659,7 @@ class User(AbstractUser):
         # - departments / levels / sectors:  can only be viewed by role_system and role_insp
         if page_name == 'default_items_view':
             if not self.is_role_insp_or_admin_or_system:
-                # logger.debug('page: is_role_insp_or_system_and_perm_admin')
+                # logger.debug('page: is_role_insp_or_system_and_group_admin')
                 return _("You don't have permission to view these items.")
             else:
                 # logger.debug('page: return False')
@@ -677,7 +668,7 @@ class User(AbstractUser):
         # - departments / levels / sectors: can only be modified by role_system and role_insp, only admin
         # TODO exclude read, authorize and None permissions
         if page_name == 'default_items_modify':
-            if not self.is_role_insp_or_system_and_perm_admin:
+            if not self.is_role_insp_or_system_and_group_admin:
                 return _("You don't have permission to modify these items.")
             elif self.country_locked:
                 return _("This country is locked. You cannot modify these items.")
@@ -691,7 +682,7 @@ class User(AbstractUser):
         # - scheme, PR2018-08-23   >>>>>>>>>schooldefault / subjectdefault / departments / levels / sectors: can only be modified by role_system and role_insp, only admin
         if page_name == 'scheme_etc_edit':
             # TODO exclude read, authorize and None permissions
-            if not self.is_role_insp_or_system_and_perm_admin:
+            if not self.is_role_insp_or_system_and_group_admin:
                 return _("You don't have permission to modify these items.")
             elif self.country_locked:
                 return _("This country is locked. You cannot modify these items.")
@@ -722,7 +713,7 @@ class User(AbstractUser):
                 return _("This country is locked. You cannot modify schools.")
             elif self.examyear_locked:
                 return _("This examyear is locked. You cannot modify schools.")
-            elif not self.is_perm_admin:
+            elif not self.is_group_system:
                 # only admin users can modify school
                 # filter that role-school users can only modify their own school is part of form-get
                 return _("You don't have permission to modify schools.")
@@ -805,6 +796,18 @@ class User_log(Model):
         if self.mode is not None:
             mode_str = c.MODE_DICT.get(str(self.mode))
         return mode_str
+
+
+class Permit(Model):  # PR2021-03-18
+    # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
+    objects = CustomUserManager()
+
+    role = PositiveSmallIntegerField(default=0)
+    page = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
+    action = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
+    groups = PositiveSmallIntegerField(default=0)
+    # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
+
 
 # PR2018-05-06
 class Usersetting(Model):

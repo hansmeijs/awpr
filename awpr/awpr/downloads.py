@@ -52,7 +52,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
         awp_messages = []
         if request.user and request.user.country and  request.user.schoolbase:
             if request.POST['download']:
-
 # ----- get user_lang
                 user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
                 activate(user_lang)
@@ -93,9 +92,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 # elapsed_seconds to the rescue: now datalists will never be empty
 
 # ----- get users
-                request_item_setting = datalist_request.get('user_rows')
-                if request_item_setting:
+                if datalist_request.get('user_rows'):
                     datalists['user_rows'] = av.create_user_list(request)
+                    datalists['permit_rows'] = av.create_permit_list()
 
 # ----- examyears
                 if datalist_request.get('examyear_rows'):
@@ -547,21 +546,19 @@ def create_settingdict_with_role_and_permits(req_user, user_lang):
         setting_dict['requsr_role_system'] = req_user.is_role_system
 
 # - get permissions from req_user, put them in setting_dict
-    if req_user.is_perm_read:
-        setting_dict['requsr_perm_read'] = req_user.is_perm_read
-    if req_user.is_perm_edit:
-        setting_dict['requsr_perm_edit'] = req_user.is_perm_edit
-    if req_user.is_perm_auth1:
-        setting_dict['requsr_perm_auth1'] = req_user.is_perm_auth1
-    if req_user.is_perm_auth2:
-        setting_dict['requsr_perm_auth2'] = req_user.is_perm_auth2
-    if req_user.is_perm_auth3:
-        setting_dict['requsr_perm_auth3'] = req_user.is_perm_auth3
-    if req_user.is_perm_anlz:
-        setting_dict['requsr_perm_anlz'] = req_user.is_perm_anlz
-    if req_user.is_perm_admin:
-        setting_dict['requsr_perm_admin'] = req_user.is_perm_admin
-    if req_user.is_perm_system:
-        setting_dict['requsr_perm_system'] = req_user.is_perm_system
+    if req_user.is_group_read:
+        setting_dict['requsr_group_read'] = req_user.is_group_read
+    if req_user.is_group_edit:
+        setting_dict['requsr_group_edit'] = req_user.is_group_edit
+    if req_user.is_group_auth1:
+        setting_dict['requsr_group_auth1'] = req_user.is_group_auth1
+    if req_user.is_group_auth2:
+        setting_dict['requsr_group_auth2'] = req_user.is_group_auth2
+    if req_user.is_group_auth3:
+        setting_dict['requsr_group_auth3'] = req_user.is_group_auth3
+    if req_user.is_group_anlz:
+        setting_dict['requsr_group_anlz'] = req_user.is_group_anlz
+    if req_user.is_group_system:
+        setting_dict['requsr_group_system'] = req_user.is_group_system
 
     return setting_dict

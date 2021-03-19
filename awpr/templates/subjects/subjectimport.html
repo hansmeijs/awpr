@@ -37,7 +37,7 @@
 
 <div id="id_content" class="content_margin_top78">
   {% if user.is_authenticated %}
-        {% if user.is_role_adm_or_sys_and_perm_adm_or_sys %}
+        {% if user.is_role_adm_or_sys_and_group_system %}
         <!-- =================== MODAL CONFIRM  =================== -->
             {% include 'includes/modconfirm.html' %}
             <h4 class="ta_l mx-4 mt-4">{% trans 'Upload subjects' %}</h4>

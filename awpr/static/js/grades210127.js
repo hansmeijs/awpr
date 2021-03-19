@@ -302,7 +302,7 @@ console.log("document.addEventListener students" )
                      if (setting_dict.sel_examyear_published && setting_dict.sel_school_activated &&
                             !setting_dict.requsr_country_locked && !setting_dict.sel_examyear_locked &&
                             !setting_dict.sel_school_locked){
-                        if (setting_dict.requsr_perm_edit){
+                        if (setting_dict.requsr_group_edit){
                             // TODO activate rule, rule left out for testing PR2021-01-26
                             // TODO add role_teacher in the future
                             //if(setting_dict.requsr_role_school){has_permit_edit = true}
@@ -368,11 +368,11 @@ console.log("document.addEventListener students" )
     function CreateSubmenu() {
         //console.log("===  CreateSubmenu == ");
 
-        if (setting_dict.requsr_perm_auth1 || setting_dict.requsr_perm_auth2 || setting_dict.requsr_perm_auth3){
+        if (setting_dict.requsr_group_auth1 || setting_dict.requsr_group_auth2 || setting_dict.requsr_group_auth3){
             let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MAG_Open("approve")});
             AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A_form, null, ["mx-2"], "id_submenu_download_ex2a", url_grade_download_ex2a, true);  // true = download
-            if (setting_dict.requsr_perm_auth1 || setting_dict.requsr_perm_auth2){
+            if (setting_dict.requsr_group_auth1 || setting_dict.requsr_group_auth2){
                 AddSubmenuButton(el_submenu, loc.Submit_Ex2A_form, function() {MAG_Open("submit")});
             };
         el_submenu.classList.remove(cls_hide);
@@ -1280,9 +1280,9 @@ console.log("document.addEventListener students" )
         mod_dict = {};
         const tblRow = get_tablerow_selected(el_input);
         if(tblRow){
-            const perm_auth1 = (setting_dict.requsr_perm_auth1) ? setting_dict.requsr_perm_auth1 : false;
-            const perm_auth2 = (setting_dict.requsr_perm_auth2) ? setting_dict.requsr_perm_auth2 : false;
-            const perm_auth3 = (setting_dict.requsr_perm_auth3) ? setting_dict.requsr_perm_auth3 : false;
+            const perm_auth1 = (setting_dict.requsr_group_auth1) ? setting_dict.requsr_group_auth1 : false;
+            const perm_auth2 = (setting_dict.requsr_group_auth2) ? setting_dict.requsr_group_auth2 : false;
+            const perm_auth3 = (setting_dict.requsr_group_auth3) ? setting_dict.requsr_group_auth3 : false;
 
             if(perm_auth1 || perm_auth2 || perm_auth3){
                 const map_id = tblRow.id
@@ -1621,8 +1621,8 @@ console.log("document.addEventListener students" )
         const is_submit_mode = (mode === "submit");
 
         mod_MAG_dict = {}
-        const has_permit_submit = (setting_dict.requsr_perm_auth1 || setting_dict.requsr_perm_auth2)
-        const has_permit_approve = (has_permit_submit || (is_approve_mode && setting_dict.requsr_perm_auth3));
+        const has_permit_submit = (setting_dict.requsr_group_auth1 || setting_dict.requsr_group_auth2)
+        const has_permit_approve = (has_permit_submit || (is_approve_mode && setting_dict.requsr_group_auth3));
 
         if (has_permit_submit || has_permit_approve) {
             // modes are 'approve' 'submit_test' 'submit_submit'
@@ -1660,9 +1660,9 @@ console.log("document.addEventListener students" )
             }
             el_MAG_subject.innerText = subject_text;
 
-            const auth_by = (setting_dict.requsr_perm_auth1) ? loc.President :
-                         (setting_dict.requsr_perm_auth2) ? loc.Secretary :
-                         (setting_dict.requsr_perm_auth3) ? loc.Commissioner : null;
+            const auth_by = (setting_dict.requsr_group_auth1) ? loc.President :
+                         (setting_dict.requsr_group_auth2) ? loc.Secretary :
+                         (setting_dict.requsr_group_auth3) ? loc.Commissioner : null;
 
             const caption = (is_submit_mode) ? loc.Submitted_by : loc.Approved_by;
             document.getElementById("id_MAG_approved_by_label").innerText = caption + ":";

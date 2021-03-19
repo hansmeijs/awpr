@@ -100,6 +100,7 @@ urlpatterns = [
     path('user/', include([
         path('users', account_views.UserListView.as_view(), name='users_url'),
         path('user_upload', account_views.UserUploadView.as_view(), name='user_upload_url'),
+        path('group_upload', account_views.UsergroupUploadView.as_view(), name='group_permit_upload_url'),
         path('settings_upload', account_views.UserSettingsUploadView.as_view(), name='settings_upload_url'),
 
         #url(r'^users/(?P<pk>\d+)/log$', account_views.UserLogView.as_view(), name='user_log_url'),

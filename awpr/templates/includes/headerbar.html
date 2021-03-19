@@ -30,6 +30,7 @@
                 </li>
                 <li id="id_hdrbar_school" class="nav-item awp_navbar_item">
                     {{school}}
+
                 </li>
                 <li id="id_hdrbar_school_locked" class="nav-item awp_navbar ml-0 mt-1">
                     <div class="stat_0_0"></div>
@@ -44,7 +45,7 @@
                            href="#" data-toggle="dropdown"
                            aria-haspopup="true" aria-expanded="false">{{ user.username_sliced }}</a>
                         <div class="dropdown-menu" aria-labelledby="userMenu">
-                            {% if user.is_perm_admin or user.is_perm_system %}
+                            {% if user.is_group_system %}
                                 <a class="dropdown-item" href="{% url 'users_url' %}" >{% trans 'Users' %}</a>
                             {% endif %}
                             <a class="dropdown-item" href="{% url 'password_change' %}">{% trans 'Change password' %}</a>
@@ -86,29 +87,27 @@
         </button>
 
         <div id="collapsible_testbar" class="menubar_navbar navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
-
             <div>
-
-            {% if user.is_authenticated %}
-                {% for menu_item in menu_items %}
-                    <svg id="{{menu_item.svg_id}}" height="{{menu_item.height}}" width="{{menu_item.width}}" class="svg_menu_item">
-                        <a href="{{menu_item.href}}" >
-                            <polygon id="{{menu_item.polygon_id}}" points="{{menu_item.points}}" class="{{menu_item.class}}"></polygon>
-                            <text id="'id_txt' +{{menu_item.index}}"
-                                x="{{menu_item.x}}"
-                                y="{{menu_item.y}}"
-                                fill="{{menu_item.fill}}"
-                                text-anchor="middle"
-                                alignment-baseline="middle">
-                                    {{menu_item.caption}}
-                            </text>
-                        </a>
-                    </svg>
-                {% endfor %}
-            {% endif %}
-        </div>
-
+                {% if user.is_authenticated %}
+                    {% for menu_item in menu_items %}
+                        <svg id="{{menu_item.svg_id}}" height="{{menu_item.height}}" width="{{menu_item.width}}" class="svg_menu_item">
+                            <a href="{{menu_item.href}}" >
+                                <polygon id="{{menu_item.polygon_id}}" points="{{menu_item.points}}" class="{{menu_item.class}}"></polygon>
+                                <text id="'id_txt' +{{menu_item.index}}"
+                                    x="{{menu_item.x}}"
+                                    y="{{menu_item.y}}"
+                                    fill="{{menu_item.fill}}"
+                                    text-anchor="middle"
+                                    alignment-baseline="middle">
+                                        {{menu_item.caption}}
+                                </text>
+                            </a>
+                        </svg>
+                    {% endfor %}
+                {% endif %}
             </div>
+
+        </div>
     </nav>
 
 <!-- MENU BAR -->

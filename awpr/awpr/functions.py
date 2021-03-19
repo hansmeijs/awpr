@@ -26,6 +26,80 @@ class LazyEncoder(DjangoJSONEncoder):
             return force_text(obj)
         return super(LazyEncoder, self).default(obj)
 
+
+############################################################
+# also for permits
+def get_status_list_from_status_sum(status_sum):  # PR2021-01-15
+    # status_sum:                            117
+    # bin:                             0b1110101
+    # binary_str:                        1110101
+    # binary_str_extended: 000000000000001110101
+    # binary_str_cut:            000000001110101
+    # binary_str_reversed:       101011100000000
+    # status_list: ['1', '0', '1', '0', '1', '1', '1', '0', '0', '0', '0', '0', '0', '0', '0']
+
+    if status_sum is None:
+        status_sum = 0
+    binary_str = bin(status_sum)[2:]
+    binary_str_extended = '00000000000000' + binary_str
+    binary_str_cut = binary_str_extended[-15:]
+    binary_str_reversed = binary_str_cut[-1::-1]
+    status_list = list(binary_str_reversed)
+    return status_list
+# --- end of get_status_bool_by_index
+
+
+def get_status_bool_by_index(status_sum, index):  # PR2021-01-15
+    status_list = list(bin(status_sum)[-1:1:-1])
+    status_bool = False
+    if len(status_list) > index and status_list[index] == '1':
+        status_bool = True
+    return status_bool
+# --- end of get_status_bool_by_index
+
+
+def set_status_sum_by_index(status_sum, index, new_value_bool):  # PR2021-01-15
+    #logger.debug(' =============== set_status_sum_by_index ============= ')
+    # bin(status_sum): '0b0010111' <class 'str'>   binary string from int
+    # bin(status_sum)[-1:1:-1]: '1110100' <class 'str'>     reversed string from binary string, leave out '0b'
+    # status_list: ['1', '1', '1', '0', '1', '0', '0']  convert to list
+
+    #logger.debug('status_sum: ' + str(status_sum))
+    #logger.debug('index: ' + str(index))
+    #logger.debug('new_value_bool: ' + str(new_value_bool))
+# - convert status_sum to status_list
+    status_list = list(bin(status_sum)[-1:1:-1])
+    #logger.debug('status_list: ' + str(status_list))
+# - if index > length of list: extend list with zero's
+    length = len(status_list)
+    if length <= index:
+        for i in range(length, index + 1):
+            status_list.append('0')
+    #logger.debug('extended status_list: ' + str(status_list))
+
+# - replace binary value at index with '1' if new_value_bool = True, else with '0'
+    status_list[index] = '1' if new_value_bool else '0'
+
+    #logger.debug('new status_list: ' + str(status_list))
+    new_status_str = ''.join(status_list)
+    #logger.debug('new new_status_str: ' + str(new_status_str))
+    new_status_str_reversed = new_status_str[::-1]
+    #logger.debug('new new_status_str_reversed: ' + str(new_status_str_reversed))
+# - convert status_list to new_status_sum
+    # PR2021-02-06 from https://stackoverflow.com/questions/8928240/convert-base-2-binary-number-string-to-int
+    new_status_sum = int(new_status_str_reversed, 2)
+    #logger.debug('new_status_sum: ' + str(new_status_sum))
+
+    return new_status_sum
+# --- end of set_status_sum_by_index
+
+
+
+#################################################################
+
+
+
+
 # ---------- Date functions ---------------
 def get_today_dateobj():  # PR2020-10-20
     # function gets today in '2019-12-05' format
@@ -652,7 +726,7 @@ def get_exform_text(examyear, key_list):  # PR2021-03-10
 
 def dictfetchall(cursor):
     # PR2019-10-25 from https://docs.djangoproject.com/en/2.1/topics/db/sql/#executing-custom-sql-directly
-    # creates dict from output cusror.execute instead of list
+    # creates dict from output cursor.execute instead of list
     columns = [col[0] for col in cursor.description]
     return [
         dict(zip(columns, row))
@@ -676,9 +750,19 @@ def dictfetchrows(cursor):
     # creates dict from output cusror.execute instead of list
     # key is first column of row
     #starttime = timer()
+
+    #  cursor.description:
+    #  (Column(name='action', type_code=1043, display_size=None, internal_size=24, precision=None, scale=None, null_ok=None),
+    #  Column(name='perm_system', type_code=16, display_size=None, internal_size=1, precision=None, scale=None, null_ok=None),
+    #  Column(name='perm_admin', type_code=16, display_size=None, internal_size=1, precision=None, scale=None, null_ok=None),
+
+    #  columns:
+    #  ['action', 'perm_system', 'perm_admin', 'perm_anlz', 'perm_auth3', 'perm_auth2', 'perm_auth1', 'perm_edit', 'perm_read']
+
     columns = [col[0] for col in cursor.description]
     return_dict = {}
     for row in cursor.fetchall():
+        logger.debug(">>>>> row: " + str(row))
         return_dict[row[0]] = dict(zip(columns, row))
     #elapsed_seconds = int(1000 * (timer() - starttime) ) /1000
     #elapsed_seconds = (timer() - starttime)

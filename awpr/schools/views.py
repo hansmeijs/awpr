@@ -62,7 +62,7 @@ def home(request):
     if request.user:
         _display_school = True
         _display_dep = True
-    _param = awpr_menu.get_headerbar_param(request, {
+    _param = awpr_menu.get_headerbar_param(request, 'home', {
         'display_school': _display_school,
         'display_dep': _display_dep
     })
@@ -138,7 +138,7 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
         # - olny permit admin or system can create or change examyear
         has_permit = False
         if request.user is not None and request.user.country is not None and request.user.schoolbase is not None:
-            has_permit = request.user.is_role_adm_or_sys_and_perm_adm_or_sys
+            has_permit = request.user.is_role_adm_or_sys_and_group_system
         if has_permit:
 # - reset language
             user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -358,7 +358,7 @@ class DepartmentListView(View): # PR2018-08-11
     def get(self, request):
         # filter Department of request.user.examyear
         #logger.debug('DepartmentListView request.user.examyear: ' + str(request.user.examyear))
-        _params = awpr_menu.get_headerbar_param(request, {'select_country': True})
+        _params = awpr_menu.get_headerbar_param(request, 'countries', {'select_country': True})
         if request.user.examyear is not None:
             # filter Departments of request.user.examyear. Country is parent of Examyear
             departments = Department.objects.filter(examyear=request.user.examyear)
@@ -395,7 +395,7 @@ class DepartmentLogView(View):
             'department': department,
             'display_school': True,
             'override_school': request.user.role_str}
-        _headerbar_param = awpr_menu.get_headerbar_param(request, _param)
+        _headerbar_param = awpr_menu.get_headerbar_param(request, 'departments', _param)
         return render(request, 'department_log.html', _headerbar_param)
 
 
@@ -467,7 +467,7 @@ class SchoolLogView(View):
         school = School.objects.get(id=pk)
 
         param = {'display_school': True, 'select_examyear': True,'display_user': True, 'override_school': request.user.role_str}
-        headerbar_param = awpr_menu.get_headerbar_param(request, param)
+        headerbar_param = awpr_menu.get_headerbar_param(request, 'school_log', param)
         headerbar_param['school_log'] = school_log
         headerbar_param['school'] = school
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
@@ -484,12 +484,12 @@ class SchoolUploadView(View):  # PR2020-10-22
 
         #<PERMIT>
         # - only ROLE_064_ADMIN and ROLE_128_SYSTEM can change school.
-        # - only PERMIT_002_EDIT can ange schools
+        # - only GROUP_002_EDIT can ange schools
         has_permit = False
         if request.user is not None:
             if request.user.country is not None and request.user.schoolbase is not None:
                 if request.user.is_role_admin or request.user.is_role_system:
-                    if request.user.is_perm_edit:
+                    if request.user.is_group_edit:
                         has_permit = True
         if has_permit:
 
@@ -652,7 +652,7 @@ class SchoolImportView(View):  # PR2020-10-01
 
             captions = json.dumps(captions_dict, cls=LazyEncoder)
 
-            param = awpr_menu.get_headerbar_param(request, {'captions': captions, 'setting': coldefs_json})
+            param = awpr_menu.get_headerbar_param(request, 'school_import', {'captions': captions, 'setting': coldefs_json})
 
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'subjectimport.html', param)
@@ -667,7 +667,7 @@ class SchoolImportUploadSetting(View):   # PR2019-03-10
         schoolsetting_dict = {}
         has_permit = False
         if request.user is not None and request.user.examyear is not None and request.user.schoolbase is not None:
-            has_permit = (request.user.is_role_adm_or_sys_and_perm_adm_or_sys)
+            has_permit = (request.user.is_role_adm_or_sys_and_group_system)
         if has_permit:
             if request.POST['upload']:
                 new_setting_json = request.POST['upload']
@@ -722,7 +722,7 @@ class SchoolImportUploadData(View):  # PR2018-12-04 PR2019-08-05 PR2020-06-04
         has_permit = False
         is_not_locked = False
         if request.user is not None and request.user.examyear is not None and request.user.schoolbase is not None:
-            has_permit = (request.user.is_role_adm_or_sys_and_perm_adm_or_sys)
+            has_permit = (request.user.is_role_adm_or_sys_and_group_system)
             is_not_locked = not request.user.examyear.locked
 
         if is_not_locked and has_permit:

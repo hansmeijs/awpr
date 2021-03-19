@@ -434,54 +434,88 @@ ROLE_064_ADMIN = 64
 ROLE_128_SYSTEM = 128
 
 # PR2018-12-23 used in set_menu_items
-ROLE_STR_008_SCHOOL = 'school'
-ROLE_STR_016_COMM = 'comm'
-ROLE_STR_032_INSP = 'insp'
-ROLE_STR_064_ADMIN = 'admin'
-ROLE_STR_128_SYSTEM = 'system'
-
 ROLE_DICT = {
-    ROLE_008_SCHOOL: ROLE_STR_008_SCHOOL,
-    ROLE_016_COMM: ROLE_STR_016_COMM,
-    ROLE_032_INSP: ROLE_STR_032_INSP,
-    ROLE_064_ADMIN: ROLE_STR_064_ADMIN,
-    ROLE_128_SYSTEM: ROLE_STR_128_SYSTEM
+    ROLE_008_SCHOOL: 'school',
+    ROLE_016_COMM: 'comm',
+    ROLE_032_INSP: 'insp',
+    ROLE_064_ADMIN: 'admin',
+    ROLE_128_SYSTEM: 'system'
+    }
+ROLE_CAPTION = {
+    ROLE_008_SCHOOL: _('School'),
+    ROLE_016_COMM: _('Commissioner'),
+    ROLE_032_INSP: _('Inspection'),
+    ROLE_064_ADMIN: _('Division of Examinations'),
+    ROLE_128_SYSTEM: _('System manager')
     }
 
+
 # PR2018-05-21
-PERMIT_000_NONE = 0
-PERMIT_001_READ = 1
-PERMIT_002_EDIT = 2
-PERMIT_004_AUTH1 = 4
-PERMIT_008_AUTH2 = 8
-PERMIT_016_AUTH3 = 16
-PERMIT_032_ANALYZE = 32
-PERMIT_064_ADMIN = 64
-PERMIT_128_SYSTEM = 128
+GROUP_000_NONE = 0
+GROUP_001_READ = 1
+GROUP_002_EDIT = 2
+GROUP_004_AUTH1 = 4
+GROUP_008_AUTH2 = 8
+GROUP_016_AUTH3 = 16
+GROUP_032_ANALYZE = 32
+#GROUP_064_ADMIN = 64
+GROUP_128_SYSTEM = 128
 
 # PR2018-12-23 used in set_menu_items
 
-PERMIT_DICT = {
-    PERMIT_000_NONE: 'none',
-    PERMIT_001_READ: 'read',
-    PERMIT_002_EDIT: 'edit',
-    PERMIT_004_AUTH1: 'auth1',
-    PERMIT_008_AUTH2:'auth2',
-    PERMIT_016_AUTH3: 'auth3',
-    PERMIT_032_ANALYZE: 'anlz',
-    PERMIT_064_ADMIN: 'admin',
-    PERMIT_128_SYSTEM: 'system'
+GROUP_DICT = {
+    GROUP_000_NONE: 'none',
+    GROUP_001_READ: 'read',
+    GROUP_002_EDIT: 'edit',
+    GROUP_004_AUTH1: 'auth1',
+    GROUP_008_AUTH2: 'auth2',
+    GROUP_016_AUTH3: 'auth3',
+    GROUP_032_ANALYZE: 'anlz',
+    #GROUP_064_ADMIN: 'admin',
+    GROUP_128_SYSTEM: 'system'
+}
+GROUP_CAPTION = {
+    GROUP_001_READ: _('Read'),
+    GROUP_002_EDIT: _('Edit'),
+    GROUP_004_AUTH1: _('President'),
+    GROUP_008_AUTH2: _('Secretary'),
+    GROUP_016_AUTH3: _('Commmissioner'),
+    GROUP_032_ANALYZE: _('Analyze'),
+    #GROUP_064_ADMIN: _('Administrator'),
+    GROUP_128_SYSTEM: _('System'),
 }
 
-PERMIT_LOOKUP = {
-    'perm_none': PERMIT_000_NONE,
-    'perm_read': PERMIT_001_READ,
-    'perm_edit': PERMIT_002_EDIT,
-    'perm_auth1': PERMIT_004_AUTH1,
-    'perm_auth2': PERMIT_008_AUTH2,
-    'perm_auth3': PERMIT_016_AUTH3,
-    'perm_anlz': PERMIT_032_ANALYZE,
-    'perm_admin': PERMIT_064_ADMIN,
-   'perm_system': PERMIT_128_SYSTEM
+
+GROUP_LOOKUP = {
+    'perm_none': GROUP_000_NONE,
+    'perm_read': GROUP_001_READ,
+    'perm_edit': GROUP_002_EDIT,
+    'perm_auth1': GROUP_004_AUTH1,
+    'perm_auth2': GROUP_008_AUTH2,
+    'perm_auth3': GROUP_016_AUTH3,
+    'perm_anlz': GROUP_032_ANALYZE,
+    #'perm_admin': GROUP_064_ADMIN,
+   'perm_system': GROUP_128_SYSTEM
+}
+
+GROUP_INDEX_LOOKUP = {
+    'perm_read': 0,
+    'perm_edit': 1,
+    'perm_auth1': 2,
+    'perm_auth2': 3,
+    'perm_auth3': 4,
+    'perm_anlz': 5,
+    #'perm_admin': 6,
+    'perm_system': 7
+}
+
+PAGE_LIST = {
+    'users': _('Users'),
+    'examyears': _('Exam years'),
+    'subjects': _('Subjects'),
+    'schools': _('Schools'),
+    'students': _('Students'),
+    'studentsubjects': _('Subjects of students'),
+    'grades': _('Grades')
 }
 

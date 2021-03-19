@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
                      if (setting_dict.sel_examyear_published && setting_dict.sel_school_activated &&
                             !setting_dict.requsr_country_locked && !setting_dict.sel_examyear_locked &&
                             !setting_dict.sel_school_locked){
-                        if (setting_dict.requsr_perm_edit){
+                        if (setting_dict.requsr_group_edit){
                             // TODO activate rule, rule left out for testing PR2021-01-26
                             // TODO add role_teacher in the future
                             //if(setting_dict.requsr_role_school){has_permit_edit = true}

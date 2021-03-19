@@ -21,7 +21,7 @@
 
 {% block content %}
     <div id="id_content">
-        {% if user.is_perm_admin or user.is_perm_system %}
+        {% if user.is_group_system %}
     <!-- =================== MODAL SELECT EXAM YEAR =================== -->
             {% include 'schools/modselectexamyear.html' %}
     <!-- =================== MODAL SELECT SCHOOL OR DEPARTMENT=================== -->
@@ -30,6 +30,8 @@
             {% include 'includes/modconfirm.html' %}
     <!-- =================== MODAL USER  =================== -->
             {% include 'accounts/moduser.html' %}
+    <!-- =================== MODAL GROUP PERMIT  =================== -->
+            {% include 'accounts/modgrouppermit.html' %}
 
             <div class="content_margin_top78">
 
@@ -57,7 +59,8 @@
 <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block mx-2 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="btn_user_list" class="btn btn-secondary ">{% trans 'User list' %}</button>
-                    <button data-btn="btn_permissions" class="btn btn-secondary ">{% trans 'Permissions' %}</button>
+                    <button data-btn="btn_permissions" class="btn btn-secondary ">{% trans 'User permissions' %}</button>
+                    <button data-btn="btn_groups" class="btn btn-secondary ">{% trans 'Group permissions' %}</button>
                 </div>
 <!-- end BUTTON GROUP -->
 
@@ -77,6 +80,7 @@
                 data-settings_upload_url="{% url 'settings_upload_url' %}"
 
                 data-user_upload_url="{% url 'user_upload_url' %}"
+                data-group_permit_upload_url="{% url 'group_permit_upload_url' %}"
             >
         </div>
 

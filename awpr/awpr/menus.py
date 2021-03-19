@@ -8,7 +8,7 @@ from django.utils import timezone
 
 import json #PR2018-12-21
 
-from accounts import models as acc_mod
+from accounts import views as acc_view
 from awpr import constants as c
 from awpr import functions as af
 from awpr import settings as awpr_settings
@@ -29,7 +29,7 @@ fill_sel = '#EDF2F8'
 fill_unsel = '#212529'
 
 menus_dict = {
-'examyear': {'index': 0, 'href_tuple': ('examyears_url',),
+'examyears': {'index': 0, 'href_tuple': ('examyears_url',),
                'caption': str(_('Exam year')), 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
                'indent_left': indent_none, 'indent_right': indent_10,
                'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
@@ -78,13 +78,13 @@ menus_dict = {
 
 
 
-def get_headerbar_param(request, page):
+def get_headerbar_param(request, page, param=None):
     # PR2018-05-28 set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
     #logger.debug('===== get_headerbar_param ===== ' + str(page))
 
-    headerbar = {}
+    headerbar = param if param else {}
     req_user = request.user
     if req_user.is_authenticated and req_user.country:
         awp_messages = []
@@ -104,6 +104,11 @@ def get_headerbar_param(request, page):
         elif requsr_lang == 'pm':
             _class_flag = 'flag_1_2'
             _class_flag2_hidden = 'display_hide'
+
+        logger.debug('page: ' + str(page) + ' ' + str(type(page)))
+        logger.debug('req_user.role: ' + str(req_user.role) + ' ' + str(type(req_user.role)))
+        permit_list, usergroup_list = acc_view.create_userpermit_list(page, req_user)
+        logger.debug('permit_list: ' + str(permit_list) + ' ' + str(type(permit_list)))
 
 # +++ display examyear -------- PR2020-11-17 PR2020-12-24
     # - get selected examyear from Usersetting
@@ -175,7 +180,7 @@ def get_headerbar_param(request, page):
         #XXX return_dict = lookup_button_key_with_viewpermit(request)
         #XXX setting = return_dict['setting']
         #XXX selected_menu_key = return_dict['menu_key']
-        selected_menu_key = page if page else 'examyear'  # default is 'examyear'
+        selected_menu_key = page if page else 'examyears'  # default is 'examyears'
         menu_items = set_menu_items(selected_menu_key, request)
 
         # return_dict: {'setting': None, 'menu_key': 'mn_exyr', 'button_key': None}
@@ -194,7 +199,9 @@ def get_headerbar_param(request, page):
             'class_flag1_hidden': _class_flag1_hidden,
             'class_flag2_hidden': _class_flag2_hidden,
             'menu_items': menu_items,
-            'awp_messages': awp_messages
+            'awp_messages': awp_messages,
+            'permit_list': permit_list,
+            'usergroup_list': usergroup_list
         }
 
     return headerbar
@@ -204,7 +211,7 @@ def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-
     #logger.debug('sel_page: ' + str(sel_page))
     # only called by schools.views.Loggedin,
     # retrieves submenu_href for: return HttpResponseRedirect(reverse_lazy(saved_href))
-    lookup_page = sel_page if sel_page else 'examyear'
+    lookup_page = sel_page if sel_page else 'examyears'
     #logger.debug('lookup_page: ' + str(lookup_page))
     page_href = ''
     menu = menus_dict.get(lookup_page)
@@ -289,7 +296,7 @@ def set_menu_items(selected_menu_key, request):
     return menu_item_tags
 
 def get_href_from_href_tuple(menu, request): # PR2020-12-23 PR2021-03-18
-    logger.debug('------------ get_href_from_href_tuple ----------------')
+    #logger.debug('------------ get_href_from_href_tuple ----------------')
     # function gets first href in menu_href_tuple, when role is insp or admin: it gets the second item
     menu_href = None
     menu_href_tuple = menu.get('href_tuple', ('',))
@@ -306,17 +313,19 @@ def get_href_from_href_tuple(menu, request): # PR2020-12-23 PR2021-03-18
                 if sel_schoolbase_pk:
                     sb = sch_mod.Schoolbase.objects.get_or_none(pk=sel_schoolbase_pk)
 
-                    logger.debug('sb.defaultrole: ' + str(sb.defaultrole) + ' ' + str(type(sb.defaultrole)))
+                    #logger.debug('sb.defaultrole: ' + str(sb.defaultrole) + ' ' + str(type(sb.defaultrole)))
                     if sb and sb.defaultrole in (c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM):
                         href_index = 1
 
         # reset href_index when menu_href_tuple has no or empty index '1'
-        logger.debug('href_index: ' + str(href_index) + ' ' + str(type(href_index)))
+        # don't. Make separate btn and hide it
+        #logger.debug('href_index: ' + str(href_index) + ' ' + str(type(href_index)))
         if href_index == 1 and (len(menu_href_tuple) < 2 or not menu_href_tuple[href_index]):
             href_index = 0
+        href_index = 0
         menu_href = menu_href_tuple[href_index]
-        logger.debug('href_index: ' + str(href_index) + ' ' + str(type(href_index)))
-        logger.debug('menu_href: ' + str(menu_href) + ' ' + str(type(menu_href)))
+        #logger.debug('href_index: ' + str(href_index) + ' ' + str(type(href_index)))
+        #logger.debug('menu_href: ' + str(menu_href) + ' ' + str(type(menu_href)))
 
     if menu_href is None:
         menu_href = 'home_url'
@@ -340,7 +349,7 @@ def has_view_permit(request, viewpermits):
     allowed = False
     if viewpermits:
         # allowed if key 'all' in viewpermits: {'all': 'all'}
-        allowed = False  # c.PERMIT_STR_15_ALL in viewpermits
+        allowed = False  # c.GROUP_STR_15_ALL in viewpermits
         if not allowed:
             # role_abbr: 'system'
             role_abbr = c.ROLE_DICT.get(request.user.role, '')
@@ -349,7 +358,7 @@ def has_view_permit(request, viewpermits):
                 permits = viewpermits.get(role_abbr, '')
                 if permits:
                     # is_allowed = True when 'all' in permits
-                    allowed =  False  # c.PERMIT_STR_15_ALL in permits
+                    allowed =  False  # c.GROUP_STR_15_ALL in permits
                     if not allowed:
                         # is_allowed = True when user_permit found in permits
                         if request.user.permits_str_tuple is not None:

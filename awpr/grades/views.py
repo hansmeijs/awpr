@@ -37,16 +37,18 @@ logger = logging.getLogger(__name__)
 class GradeListView(View):  # PR2020-12-03
 
     def get(self, request):
-        #logger.debug('  =====  GradeListView ===== ')
+        logger.debug('  =====  GradeListView ===== ')
         #logger.debug('request: ' + str(request) + ' Type: ' + str(type(request)))
 
 # - set headerbar parameters PR2018-08-06
         page = 'grades'
+        logger.debug('page: ' + str(page) + ' ' + str(type(page)))
         params = awpr_menu.get_headerbar_param(
             request=request,
             page=page
         )
 
+        logger.debug('params: ' + str(params) + ' Type: ' + str(type(params)))
 # - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request.user:
             request.user.set_usersetting_dict('sel_page', {'page': page})
@@ -73,7 +75,7 @@ class GradeApproveView(View):  # PR2021-01-19
             req_user = request.user
             # TODO ROLE_064_ADMIN, ROLE_128_SYSTEM is only for testing, must be removed
             if req_user.role in (c.ROLE_008_SCHOOL, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM):
-                has_permit = (req_user.is_perm_auth1 or req_user.is_perm_auth2 or req_user.is_perm_auth3)
+                has_permit = (req_user.is_group_auth1 or req_user.is_group_auth2 or req_user.is_group_auth3)
             if has_permit:
 
     # - reset language
@@ -382,11 +384,11 @@ def approve_grade(grade, sel_examtype, is_test, is_reset, msg_dict, request):  #
                 msg_dict['no_value'] += 1
             else:
                 authby_field = None
-                if req_user.is_perm_auth1:
+                if req_user.is_group_auth1:
                     authby_field = sel_examtype + '_auth1by'
-                elif req_user.is_perm_auth2:
+                elif req_user.is_group_auth2:
                     authby_field = sel_examtype + '_auth2by'
-                elif req_user.is_perm_auth3:
+                elif req_user.is_group_auth3:
                     authby_field = sel_examtype + '_auth3by'
                 logger.debug('authby_field: ' + str(authby_field))
 
@@ -406,9 +408,9 @@ def approve_grade(grade, sel_examtype, is_test, is_reset, msg_dict, request):  #
                 else:
 
 # - skip if this grade is already approved by this auth
-                    already_approved_by_auth = req_user.is_perm_auth1 and auth1by or \
-                                               req_user.is_perm_auth2 and auth2by or \
-                                               req_user.is_perm_auth3 and auth3by
+                    already_approved_by_auth = req_user.is_group_auth1 and auth1by or \
+                                               req_user.is_group_auth2 and auth2by or \
+                                               req_user.is_group_auth3 and auth3by
                     logger.debug('already_approved_by_auth: ' + str(already_approved_by_auth))
                     if already_approved_by_auth:
                         msg_dict['already_approved_by_auth'] += 1
@@ -416,11 +418,11 @@ def approve_grade(grade, sel_examtype, is_test, is_reset, msg_dict, request):  #
 
 # - skip if this author (like 'president') has already approved this grade
             # under a different permit (like 'secretary' or 'commissioner')
-                        if req_user.is_perm_auth1:
+                        if req_user.is_group_auth1:
                             double_approved = (auth2by and auth2by == req_user) or (auth3by and auth3by == req_user)
-                        elif req_user.is_perm_auth2:
+                        elif req_user.is_group_auth2:
                             double_approved = (auth1by and auth1by == req_user) or (auth3by and auth3by == req_user)
-                        elif req_user.is_perm_auth3:
+                        elif req_user.is_group_auth3:
                             double_approved = (auth1by and auth1by == req_user) or (auth2by and auth2by == req_user)
 
                         logger.debug('double_approved: ' + str(double_approved))
@@ -438,9 +440,9 @@ def approve_grade(grade, sel_examtype, is_test, is_reset, msg_dict, request):  #
                     else:
                         msg_dict['saved'] += 1
 
-                        status_index = 1 if req_user.is_perm_auth1 else \
-                            2 if req_user.is_perm_auth2 else \
-                            3 if req_user.is_perm_auth3 else None
+                        status_index = 1 if req_user.is_group_auth1 else \
+                            2 if req_user.is_group_auth2 else \
+                            3 if req_user.is_group_auth3 else None
                         logger.debug('status_index: ' + str(status_index))
                         logger.debug('is_reset: ' + str(is_reset))
 
@@ -448,7 +450,7 @@ def approve_grade(grade, sel_examtype, is_test, is_reset, msg_dict, request):  #
                         logger.debug('saved_status_sum: ' + str(saved_status_sum))
 
                         new_value_bool = True if not is_reset else False
-                        new_status_sum = set_status_sum_by_index(saved_status_sum, status_index, new_value_bool)
+                        new_status_sum = af.set_status_sum_by_index(saved_status_sum, status_index, new_value_bool)
                         logger.debug('new_status_sum: ' + str(new_status_sum))
                         setattr(grade, sel_examtype + '_status', new_status_sum)
 
@@ -516,7 +518,7 @@ def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, req
                             status_index = 4 # c.STATUS_04_SUBMITTED # STATUS_04_SUBMITTED = 16
                             saved_status_sum = getattr(grade, sel_examtype + '_status')
                             new_value_bool = True
-                            new_status_sum = set_status_sum_by_index(saved_status_sum, status_index, new_value_bool)
+                            new_status_sum = af.set_status_sum_by_index(saved_status_sum, status_index, new_value_bool)
 
                             if logging_on:
                                 logger.debug('saved_status_sum: ' + str(saved_status_sum))
@@ -550,7 +552,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
         # only if country/examyear/school/student not locked, examyear is published and school is activated
         has_permit = False
         if request.user and request.user.country and request.user.schoolbase:
-            has_permit = (request.user.role > c.ROLE_002_STUDENT and request.user.is_perm_edit)
+            has_permit = (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
         if has_permit:
 
         # - TODO when deleting: return warning when subject grades have values
@@ -844,70 +846,6 @@ def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk):
 
     return published_rows
 # --- end of create_grade_rows
-
-
-def get_status_list_from_status_sum(status_sum):  # PR2021-01-15
-    # status_sum:                            117
-    # bin:                             0b1110101
-    # binary_str:                        1110101
-    # binary_str_extended: 000000000000001110101
-    # binary_str_cut:            000000001110101
-    # binary_str_reversed:       101011100000000
-    # status_list: ['1', '0', '1', '0', '1', '1', '1', '0', '0', '0', '0', '0', '0', '0', '0']
-
-    if status_sum is None:
-        status_sum = 0
-    binary_str = bin(status_sum)[2:]
-    binary_str_extended = '00000000000000' + binary_str
-    binary_str_cut = binary_str_extended[-15:]
-    binary_str_reversed = binary_str_cut[-1::-1]
-    status_list = list(binary_str_reversed)
-    return status_list
-# --- end of get_status_bool_by_index
-
-def get_status_bool_by_index(status_sum, index):  # PR2021-01-15
-    status_list = list(bin(status_sum)[-1:1:-1])
-    status_bool = False
-    if len(status_list) > index and status_list[index] == '1':
-        status_bool = True
-    return status_bool
-# --- end of get_status_bool_by_index
-
-
-def set_status_sum_by_index(status_sum, index, new_value_bool):  # PR2021-01-15
-    #logger.debug(' =============== set_status_sum_by_index ============= ')
-    # bin(status_sum): '0b0010111' <class 'str'>   binary string from int
-    # bin(status_sum)[-1:1:-1]: '1110100' <class 'str'>     reversed string from binary string, leave out '0b'
-    # status_list: ['1', '1', '1', '0', '1', '0', '0']  convert to list
-
-    #logger.debug('status_sum: ' + str(status_sum))
-    #logger.debug('index: ' + str(index))
-    #logger.debug('new_value_bool: ' + str(new_value_bool))
-# - convert status_sum to status_list
-    status_list = list(bin(status_sum)[-1:1:-1])
-    #logger.debug('status_list: ' + str(status_list))
-# - if index > length of list: extend list with zero's
-    length = len(status_list)
-    if length <= index:
-        for i in range(length, index + 1):
-            status_list.append('0')
-    #logger.debug('extended status_list: ' + str(status_list))
-
-# - replace binary value at index with '1' if new_value_bool = True, else with '0'
-    status_list[index] = '1' if new_value_bool else '0'
-
-    #logger.debug('new status_list: ' + str(status_list))
-    new_status_str = ''.join(status_list)
-    #logger.debug('new new_status_str: ' + str(new_status_str))
-    new_status_str_reversed = new_status_str[::-1]
-    #logger.debug('new new_status_str_reversed: ' + str(new_status_str_reversed))
-# - convert status_list to new_status_sum
-    # PR2021-02-06 from https://stackoverflow.com/questions/8928240/convert-base-2-binary-number-string-to-int
-    new_status_sum = int(new_status_str_reversed, 2)
-    #logger.debug('new_status_sum: ' + str(new_status_sum))
-
-    return new_status_sum
-# --- end of set_status_sum_by_index
 
 
 def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, sel_subject, sel_examperiod, sel_examtype, grade_rows, request):

@@ -364,7 +364,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
         # only if country/examyear/school/student not locked, examyear is published and school is activated
         has_permit = False
         if request.user and request.user.country and request.user.schoolbase:
-            has_permit = (request.user.role > c.ROLE_002_STUDENT and request.user.is_perm_edit)
+            has_permit = (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
         if has_permit:
 
         # - TODO check for double subjects, double subjects are ot allowed
@@ -683,7 +683,7 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
         # only if country/examyear/school/student not locked, examyear is published and school is activated
         has_permit = False
         if request.user and request.user.country and request.user.schoolbase:
-            has_permit = (request.user.role > c.ROLE_002_STUDENT and request.user.is_perm_edit)
+            has_permit = (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
         if has_permit:
 
 # - reset language
@@ -848,7 +848,7 @@ class StudentImportView(View):  # PR2020-10-01
 
             captions = json.dumps(captions_dict, cls=LazyEncoder)
 
-            param = awpr_menu.get_headerbar_param(request, {'captions': captions, 'setting': coldefs_json})
+            param = awpr_menu.get_headerbar_param(request, 'studentimport', {'captions': captions, 'setting': coldefs_json})
 
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'import_student.html', param)
@@ -863,7 +863,7 @@ class StudentImportUploadSetting(View):  # PR2019-03-10
         schoolsetting_dict = {}
         has_permit = False
         if request.user is not None and request.user.examyear is not None and request.user.schoolbase is not None:
-            has_permit = (request.user.is_role_adm_or_sys_and_perm_adm_or_sys)
+            has_permit = (request.user.is_role_adm_or_sys_and_group_system)
         if has_permit:
             if request.POST['upload']:
                 new_setting_json = request.POST['upload']
@@ -921,7 +921,7 @@ class StudentImportUploadData(View):  # PR2018-12-04 PR2019-08-05 PR2020-06-04
         has_permit = False
         is_not_locked = False
         if request.user is not None and request.user.examyear is not None and request.user.schoolbase is not None:
-            has_permit = (request.user.is_role_adm_or_sys_and_perm_adm_or_sys)
+            has_permit = (request.user.is_role_adm_or_sys_and_group_system)
             is_not_locked = not request.user.examyear.locked
 
         if is_not_locked and has_permit:

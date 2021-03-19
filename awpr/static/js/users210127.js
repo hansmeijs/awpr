@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let user_list = [];
     let school_rows = [];
     let user_map = new Map();
+    let permit_map = new Map();
 
     let filter_dict = {};
     let filter_mod_employee = false;
@@ -31,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const url_datalist_download = get_attr_from_el(el_data, "data-datalist_download_url");
     const url_settings_upload = get_attr_from_el(el_data, "data-settings_upload_url");
     const url_user_upload = get_attr_from_el(el_data, "data-user_upload_url");
+    const url_group_permit_upload = get_attr_from_el(el_data, "data-group_permit_upload_url");
 
 // --- get field_settings
     const field_settings = {
@@ -41,11 +43,33 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_width:  ["032", "090", "150",  "180", "240",  "120", "180", "090"],
                     field_align: ["c", "l", "l", "l",  "l",  "c", "l", "c"]},
         permissions: {
-                    field_caption: ["", "School", "User", "Edit", "President", "Secretary", "Commissioner_2lines", "System_manager_2lines"],
-                    field_names: ["select", "sb_code", "username", "perm_edit", "perm_auth1", "perm_auth2", "perm_auth3", "perm_admin"],
-                    filter_tags: ["select", "text", "text",  "toggle", "toggle", "toggle","toggle",  "toggle"],
-                    field_width:  ["032", "090", "150", "090", "090", "090", "090", "090"],
-                    field_align: ["c", "l", "l", "c", "c", "c", "c", "c"]}
+                    field_caption: ["", "School", "User", "Read_only_2lines", "Edit",
+                                    "President", "Secretary", "Commissioner_2lines",
+                                    "Analyze",  "System_manager_2lines"],
+                    field_names: ["select", "sb_code", "username", "perm_read", "perm_edit",
+                                    "perm_auth1", "perm_auth2", "perm_auth3",
+                                    "perm_anlz", "perm_system"],
+                    filter_tags: ["select", "text", "text",  "toggle", "toggle",
+                                    "toggle", "toggle", "toggle",
+                                     "toggle", "toggle"],
+                    field_width:  ["032", "090", "150", "090", "090",
+                                    "090", "090", "090",
+                                    "090", "090"],
+                    field_align: ["c", "l", "l", "c", "c",
+                     "c", "c", "c",
+                     "c", "c"]},
+        groups: {
+                    field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
+                                    "President", "Secretary", "Commissioner_2lines",
+                                    "Analyze", "System_manager_2lines"],
+                    field_names: ["select", "role", "page", "action", "perm_read", "perm_edit",
+                                    "perm_auth1", "perm_auth2", "perm_auth3",
+                                    "perm_anlz", "perm_system"],
+                    filter_tags: ["select", "text", "text","text",  "toggle", "toggle",
+                                    "toggle", "toggle", "toggle", "toggle", "toggle"],
+                    field_width:  ["032", "100", "090","090", "090", "090",
+                                    "090", "090", "090", "090", "090"],
+                    field_align: ["c", "l", "l", "l", "c", "c", "c", "c", "c", "c", "c"]}
         };
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -66,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener("click", function() {HandleBtnSelect(data_btn)}, false )
         };
 
-// ---  MODAL USER ADD
+// ---  MODAL USER
         const el_MUA_schoolname = document.getElementById("id_MUA_schoolname")
             el_MUA_schoolname.addEventListener("keyup", function() {MUA_InputSchoolname(el_MUA_schoolname, event.key)}, false )
         const el_MUA_username = document.getElementById("id_MUA_username")
@@ -83,6 +107,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MUA_footer01 = document.getElementById("id_MUA_footer01")
         const el_MUA_footer02 = document.getElementById("id_MUA_footer02")
         const el_MUA_loader = document.getElementById("id_MUA_loader");
+
+// ---  MODAL GROUP PERMISSION
+        const el_MGP_btn_delete = document.getElementById("id_MGP_btn_delete");
+            el_MGP_btn_delete.addEventListener("click", function() {UploadNewGroupPermit("delete")}, false )
+        const el_MGP_btn_submit = document.getElementById("id_MGP_btn_submit");
+            el_MGP_btn_submit.addEventListener("click", function() {UploadNewGroupPermit("save")}, false )
+
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_confirm_header");
@@ -102,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // period also returns emplhour_list
     const datalist_request = {
             setting: {page_user: {mode: "get"}},
-            locale: {page: ["user"]},
+            locale: {page: ["users"]},
             user_rows: {get: true},
             school_rows: {get: true}
         };
@@ -147,6 +178,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
 
                 if ("user_rows" in response) { refresh_user_map(response.user_rows)}
+                if ("permit_rows" in response) {
+        console.log( "response.permit_rows", response.permit_rows);
+
+                refresh_permit_map(response.permit_rows)
+                }
                 if ("school_rows" in response) { school_rows = response.school_rows}
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
 
@@ -173,6 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")});
             AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("delete")}, ["mx-2"]);
+            AddSubmenuButton(el_submenu, loc.Add_permission, function() {MGP_Open("addnew")});
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
 
@@ -197,11 +234,9 @@ document.addEventListener('DOMContentLoaded', function() {
         //show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
 // ---  fill datatable
-        CreateTblHeader();
         FillTblRows();
 
     }  // HandleBtnSelect
-
 //=========  HandleTableRowClicked  ================ PR2020-08-03
     function HandleTableRowClicked(tr_clicked) {
         //console.log("=== HandleTableRowClicked");
@@ -225,11 +260,36 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "selected_user_pk: ", selected_user_pk, typeof selected_user_pk);
     }  // HandleTableRowClicked
 
+//========= FillTblRows  ====================================
+    function FillTblRows() {
+        //console.log( "===== FillTblRows  === ");
+        const tblName = get_tblName();
+        const data_map = get_data_map();
+// --- reset table
+        tblBody_datatable.innerText = null
+
+// --- create table header and filter row
+        CreateTblHeader();
+
+        if(data_map){
+// --- loop through data_map
+          for (const [map_id, map_dict] of data_map.entries()) {
+            //console.log( "map_dict ", map_dict);
+          // --- insert row at row_index
+                const schoolcode_lc_trail = ( (map_dict.sb_code) ? map_dict.sb_code.toLowerCase() : "" ) + " ".repeat(8) ;
+                const schoolcode_sliced = schoolcode_lc_trail.slice(0, 8);
+                const order_by = schoolcode_sliced +  ( (map_dict.username) ? map_dict.username.toLowerCase() : "");
+                const row_index = -1; // t_get_rowindex_by_sortby(tblBody_datatable, order_by)
+                let tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, map_dict, row_index)
+          };
+        }  // if(!!data_map)
+
+    }  // FillTblRows
+
 //=========  CreateTblHeader  === PR2020-07-31
     function CreateTblHeader() {
         //console.log("===  CreateTblHeader ===== ");
-        const tblName = (selected_btn === "btn_user_list") ? "users" :
-                        (selected_btn === "btn_permissions") ? "permissions" : null;
+        const tblName = get_tblName();
 
 // --- reset table
         tblHead_datatable.innerText = null;
@@ -304,37 +364,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }  // if(field_settings[tblName]){
     };  //  CreateTblHeader
 
-//========= FillTblRows  ====================================
-    function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
-        const tblName = (selected_btn === "btn_user_list") ? "users" :
-                        (selected_btn === "btn_permissions") ? "permissions" : null;
-// --- reset table
-        tblBody_datatable.innerText = null
-        if(user_map){
-// --- loop through user_map
-          for (const [map_id, map_dict] of user_map.entries()) {
-            //console.log( "map_dict ", map_dict);
-          // --- insert row at row_index
-                const schoolcode_lc_trail = ( (map_dict.sb_code) ? map_dict.sb_code.toLowerCase() : "" ) + " ".repeat(8) ;
-                const schoolcode_sliced = schoolcode_lc_trail.slice(0, 8);
-                const order_by = schoolcode_sliced +  ( (map_dict.username) ? map_dict.username.toLowerCase() : "");
-                const row_index = -1; // t_get_rowindex_by_sortby(tblBody_datatable, order_by)
-                let tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, map_dict, row_index)
-          };
-        }  // if(!!data_map)
-
-    }  // FillTblRows
-
 //=========  CreateTblRow  ================ PR2020-06-09
     function CreateTblRow(tblBody, tblName, map_id, map_dict, row_index) {
         //console.log("=========  CreateTblRow =========", tblName);
         //console.log("map_dict", map_dict);
         let tblRow = null;
 
-        const settings_tblName = (selected_btn === "btn_user_list") ? "users" : "permissions";
-
-        const field_setting = field_settings[settings_tblName]
+        const tblName_settings = get_tblName();
+        const field_setting = field_settings[tblName_settings];
         if(field_setting){
             const field_names = field_setting.field_names;
             const field_align = field_setting.field_align;
@@ -344,6 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
             tblRow = tblBody.insertRow(row_index);
             tblRow.id = map_id
 
+        //console.log("map_id", map_id);
 // --- add data attributes to tblRow
             tblRow.setAttribute("data-pk", map_dict.id);
             tblRow.setAttribute("data-ppk", map_dict.company_id);
@@ -409,16 +447,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  UpdateField  ================ PR2020-08-16
     function UpdateField(el_div, map_dict) {
-        //console.log("=========  UpdateField =========");
+        console.log("=========  UpdateField =========");
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
             if(field_name){
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
-                } else if (["sb_code", "username", "last_name", "email", "employee_code"].indexOf(field_name) > -1){
+                } else if (["sb_code", "username", "last_name", "email", "employee_code", "role", "page", "action"].indexOf(field_name) > -1){
                     el_div.innerText = map_dict[field_name];
                 } else if (field_name.slice(0, 4) === "perm") {
-                    // map_dict[field_name] example: perm_admin: true
+                    // map_dict[field_name] example: perm_system: true
                     const permit_bool = (map_dict[field_name]) ? map_dict[field_name] : false;
                     el_div.setAttribute("data-permit_bool", (permit_bool) ? "1" : 0 );
 
@@ -481,6 +519,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
 
+//========= UploadNewGroupPermit  ============= PR2021-03-19
+   function UploadNewGroupPermit(args) {
+        console.log("=== UploadNewGroupPermit === ");
+        // args = "save", "delete
+        //console.log("args: ", args);
+        if(args === "save") {
+                    const role = document.getElementById("id_MGP_role").value;
+                    const page = document.getElementById("id_MGP_page").value;
+                    const action = document.getElementById("id_MGP_action").value;
+                    console.log("role: ", role);
+                    console.log("page: ", page);
+                    console.log("action: ", action);
+
+        // ---  upload changes
+                    const url_str = url_group_permit_upload;
+                    console.log( "url_str", url_str);
+                    const upload_dict = { mode: "create",
+                                          role: role,
+                                          page: page,
+                                          action: action
+                                       };
+                    UploadChanges(upload_dict, url_str);
+
+        }
+        //  args = 'save'     when called by el_MUA_btn_submit
+        //  args = time_stamp when called by MUA_InputKeyup
+
+            $("#id_mod_group_permit").modal("hide");
+
+    }
 //========= UploadNewUser  ============= PR2020-08-02 PR2020-08-15
    function UploadNewUser(args) {
         console.log("=== UploadNewUser === ");
@@ -595,61 +663,84 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= UploadToggle  ============= PR2020-07-31
     function UploadToggle(el_input) {
         console.log( " ==== UploadToggle ====");
-        console.log( "el_input", el_input);
+        //console.log( "el_input", el_input);
 
         mod_dict = {};
         // <PERMIT> PR2020-10-12
-        // - only perm_admin and perm_system can change users
-        if(setting_dict.requsr_perm_admin || setting_dict.requsr_perm_system){
+        // - only perm_system can change users
+        if(setting_dict.requsr_group_system){
             const tblRow = get_tablerow_selected(el_input);
             if(tblRow){
                 const tblName = get_attr_from_el(tblRow, "data-table")
                 const map_id = tblRow.id
-                const map_dict = get_mapdict_from_datamap_by_id(user_map, map_id);
+                const data_map = get_data_map();
+                const map_dict = get_mapdict_from_datamap_by_id(data_map, map_id);
+        console.log( "tblName", tblName);
+        //console.log( "map_dict", map_dict);
 
                 if(!isEmpty(map_dict)){
                     const fldName = get_attr_from_el(el_input, "data-field");
                     let data_permit_bool = get_attr_from_el(el_input, "data-permit_bool");
                     let permit_bool = (data_permit_bool === "1");
 
+        //console.log( "fldName", fldName);
                     const is_request_user = (setting_dict.requsr_pk && setting_dict.requsr_pk === map_dict.id)
+                    if(tblName === "groups"){
+        // ---  toggle permission el_input
+                            permit_bool = (!permit_bool);
+                            console.log( "new permit_bool", permit_bool);
+        // ---  put new permission in el_input
+                            el_input.setAttribute("data-permit_bool", permit_bool)
+        // ---  change icon, before uploading
+                            const img_class = (permit_bool) ? "tickmark_1_2" : "tickmark_0_0";
+                            b_refresh_icon_class(el_input, img_class)
+        // ---  upload changes
+                            const url_str = url_group_permit_upload;
+                            console.log( "url_str", url_str);
+                            const upload_dict = { permit_pk: map_dict.id,
+                                                  mode: "update",
+                                                  mapid: map_id,
+                                                  permits: {field: fldName, value: permit_bool, update: true}};
+                            UploadChanges(upload_dict, url_str);
 
-    // show message when sysadmin tries to delete sysadmin permit
-                    if(fldName === "perm_admin" && is_request_user && permit_bool ){
-                        ModConfirmOpen("permission_sysadm", el_input)
                     } else {
+    // show message when sysadmin tries to delete sysadmin permit
+                        if(fldName === "perm_system" && is_request_user && permit_bool ){
+                            ModConfirmOpen("permission_sysadm", el_input)
+                        } else {
 
-    // ---  toggle permission el_input
-                        permit_bool = (!permit_bool);
-                        console.log( "new permit_bool", permit_bool);
-    // ---  put new permission in el_input
-                        el_input.setAttribute("data-permit_bool", permit_bool)
-    // ---  change icon, before uploading
-                        const img_class = (permit_bool) ? "tickmark_1_2" : "tickmark_0_0";
-                        b_refresh_icon_class(el_input, img_class)
+        // ---  toggle permission el_input
+                            permit_bool = (!permit_bool);
+                            console.log( "new permit_bool", permit_bool);
+        // ---  put new permission in el_input
+                            el_input.setAttribute("data-permit_bool", permit_bool)
+        // ---  change icon, before uploading
+                            const img_class = (permit_bool) ? "tickmark_1_2" : "tickmark_0_0";
+                            b_refresh_icon_class(el_input, img_class)
 
-    // ---  loop through row cells to get value of permissions.
-                        // Don't get them from map_dict, might not be correct while changing permissions
-                        let new_permit_sum = 0, new_permit_value = 0
-                        for (let i = 0, cell, cell_name, cell_value; cell = tblRow.cells[i]; i++) {
-                            cell_name = get_attr_from_el(cell, "data-field");
-                            if (cell_name.slice(0, 4) === "perm") {
-                                cell_value = get_attr_from_el_int(cell, "data-value");
-                                new_permit_sum += cell_value
-                            };
+        // ---  loop through row cells to get value of permissions.
+                            // Don't get them from map_dict, might not be correct while changing permissions
+                            let new_permit_sum = 0, new_permit_value = 0
+                            for (let i = 0, cell, cell_name, cell_value; cell = tblRow.cells[i]; i++) {
+                                cell_name = get_attr_from_el(cell, "data-field");
+                                if (cell_name.slice(0, 4) === "perm") {
+                                    cell_value = get_attr_from_el_int(cell, "data-value");
+                                    new_permit_sum += cell_value
+                                };
+                            }
+
+        // ---  upload changes
+                            const upload_dict = { user_pk: map_dict.id,
+                                                  schoolbase_pk: map_dict.schoolbase_id,
+                                                  mode: "update",
+                                                  mapid: map_id,
+                                                  permits: {field: fldName, value: permit_bool, update: true}};
+                            UploadChanges(upload_dict, url_user_upload);
                         }
-
-    // ---  upload changes
-                        const upload_dict = { user_pk: map_dict.id,
-                                              schoolbase_pk: map_dict.schoolbase_id,
-                                              mode: "update",
-                                              mapid: map_id,
-                                              permits: {field: fldName, value: permit_bool, update: true}};
-                        UploadChanges(upload_dict, url_user_upload);
-                    }
+                    }  // if(tblName === "groups"){
                 }  //  if(!isEmpty(map_dict)){
             }  //   if(!!tblRow)
-        }  // if(setting_dict.requsr_perm_admin)
+        }  // if(setting_dict.requsr_group_system)
     }  // UploadToggle
 
 //========= UploadChanges  ============= PR2020-08-03
@@ -712,7 +803,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // - else (teacher, student) : no access
         // - only perm_system can create user_list
 
-        const may_create_edit_users = (setting_dict.requsr_perm_admin || setting_dict.requsr_perm_system);
+        const may_create_edit_users = (setting_dict.requsr_group_system);
         const may_add_user_to_other_schools = (setting_dict.requsr_role_admin || setting_dict.requsr_role_system);
         if(may_create_edit_users){
 
@@ -1032,7 +1123,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }; // MUA_InputSchoolname
 
-
 //=========  MUA_InputKeyup  ================ PR2020-09-24
     function MUA_InputKeyup(el_input, event_key) {
         console.log( "===== MUA_InputKeyup  ========= ");
@@ -1112,7 +1202,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return {selected_pk: sel_pk, selected_value: sel_value, selected_mapid: sel_mapid};
     }; // MUA_Filter_SelectRows
 
-
 //=========  MUA_headertext  ================ PR2020-09-25
     function MUA_headertext(mode) {
         let header_text = (mode === "update") ? loc.User + ":  " + mod_MUA_dict.username : loc.Add_user;
@@ -1120,7 +1209,20 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById("id_MUA_header").innerText = header_text;
     }  // MUA_headertext
 
-// +++++++++ END MOD SELECT USER ++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++++++ END MOD USER ++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+// +++++++++ MOD GROUP PERMIT ++++++++++++++++ PR2021-03-19
+    function MGP_Open(mode, el_input){
+        console.log(" -----  MUP_Open   ---- mode: ", mode)  // modes are: addnew, update
+        // mode = 'addnew' when called by SubmenuButton
+        // mode = 'update' when called by tblRow event
+
+    // ---  show modal
+        $("#id_mod_group_permit").modal({backdrop: true});
+    };
+
+
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03
@@ -1194,7 +1296,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if(is_mode_permission_sysadm){
                 hide_save_btn = true;
                 const fldName = get_attr_from_el(el_input, "data-field")
-                if (fldName === "perm_admin") {
+                if (fldName === "perm_system") {
                     msg_01_txt = loc.Sysadm_cannot_remove_sysadm_perm
                 }
             } else if (is_mode_resend_activation_email) {
@@ -1337,6 +1439,102 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // ModConfirmResponse
 
 //###########################################################################
+
+
+// +++++++++++++++++ REFRESH PERMIT MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
+//=========  refresh_permit_map  ================ PR2021-03-18
+    function refresh_permit_map(update_list) {
+        //console.log(" --- refresh_permit_map  ---");
+        //console.log( "update_list", update_list);
+        if (update_list) {
+            for (let i = 0, update_dict; update_dict = update_list[i]; i++) {
+        console.log( "update_dict", update_dict);
+                refresh_permitmap_item(update_dict);
+            }
+        }
+    }  //  refresh_permit_map
+
+
+    function refresh_permitmap_item(update_dict) {
+        //console.log(" --- refresh_permitmap_item  ---");
+        //console.log("update_dict", update_dict);
+        if(!isEmpty(update_dict)){
+// ---  update or add update_dict in user_map
+            let updated_columns = [];
+    // get existing map_item
+            const data_map = permit_map;
+            const tblName = update_dict.table;
+            const map_id = update_dict.mapid;
+            let tblRow = document.getElementById(map_id);
+
+            const is_deleted = get_dict_value(update_dict, ["deleted"], false)
+            const is_created = get_dict_value(update_dict, ["created"], false)
+
+            const tblName_settings =  get_tblName();
+            const field_names = field_settings[tblName_settings].field_names;
+
+        //console.log("field_names", field_names);
+// ++++ created ++++
+            if(is_created){
+    // ---  insert new item
+                data_map.set(map_id, update_dict);
+        console.log("data_map", data_map);
+                updated_columns.push("created")
+        console.log("updated_columns", updated_columns);
+    // ---  create row in table., insert in alphabetical order
+                const order_by = update_dict.username.toLowerCase();
+                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
+                tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, update_dict, row_index)
+    // ---  scrollIntoView,
+                if(tblRow){
+                    tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
+    // ---  make new row green for 2 seconds,
+                    ShowOkElement(tblRow);
+                }
+
+// ++++ deleted ++++
+            } else if(is_deleted){
+                data_map.delete(map_id);
+    //--- delete tblRow
+                if (tblRow){tblRow.parentNode.removeChild(tblRow)};
+            } else {
+                const old_map_dict = (map_id) ? data_map.get(map_id) : null;
+        console.log("old_map_dict", old_map_dict);
+    // ---  check which fields are updated, add to list 'updated_columns'
+                if(!isEmpty(old_map_dict)){
+                    // skip first column (is margin)
+                    for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
+                        if (col_field in old_map_dict && col_field in update_dict){
+                            if (old_map_dict[col_field] !== update_dict[col_field] ) {
+                                updated_columns.push(col_field)
+                            }}}}
+    // ---  update item
+                data_map.set(map_id, update_dict)
+            }
+        //console.log("data_map", data_map);
+        //console.log("updated_columns", updated_columns);
+    // ---  make update
+            // note: when updated_columns is empty, then updated_columns is still true.
+            // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
+            if(tblRow && updated_columns.length){
+    // ---  make entire row green when row is created
+                if(updated_columns.includes("created")){
+                    ShowOkElement(tblRow);
+                } else {
+    // loop through cells of row
+                    for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
+                        if (el){
+                            el_fldName = get_attr_from_el(el, "data-field")
+                            UpdateField(el, update_dict);
+    // make gield green when field name is in updated_columns
+                            if(updated_columns.includes(el_fldName)){
+                                ShowOkElement(el);
+                            }}}}}
+        }
+
+
+    }  // refresh_permitmap_item
+
 // +++++++++++++++++ REFRESH USER MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
 
 //=========  refresh_user_map  ================ PR2020-08-16
@@ -1365,7 +1563,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const is_deleted = get_dict_value(update_dict, ["deleted"], false)
             const is_created = get_dict_value(update_dict, ["created"], false)
 
-            const tblName_settings = (selected_btn === "btn_user_list") ? "users" : "permissions";
+            const tblName_settings = get_tblName();
             const field_names = field_settings[tblName_settings].field_names;
 
 // ++++ created ++++
@@ -1421,6 +1619,18 @@ document.addEventListener('DOMContentLoaded', function() {
                             }}}}}
         }
     }  // refresh_usermap_item
+
+    function get_tblName() {
+        return (selected_btn === "btn_user_list") ? "users" :
+                (selected_btn === "btn_permissions") ? "permissions" :
+                (selected_btn === "btn_groups") ? "groups" : null;
+    }
+    function get_data_map() {
+        return (selected_btn === "btn_user_list") ? user_map :
+                (selected_btn === "btn_permissions") ? user_map :
+                (selected_btn === "btn_groups") ? permit_map : null;
+    }
+
 
 //###########################################################################
 // +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1487,7 +1697,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function Filter_TableRows(tblBody) {
         //console.log( "===== Filter_TableRows  ========= ");
 
-        const tblName_settings = (selected_btn === "btn_user_list") ? "users" : "permissions";
+        const tblName_settings = get_tblName();
 
 // ---  loop through tblBody.rows
         for (let i = 0, tblRow, show_row; tblRow = tblBody.rows[i]; i++) {

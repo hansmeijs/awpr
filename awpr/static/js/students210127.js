@@ -248,8 +248,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     // <PERMIT> PR220-10-02
                     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
                     //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
-                    has_permit_edit = (setting_dict.requsr_role_admin && setting_dict.requsr_perm_edit) ||
-                                      (setting_dict.requsr_role_system && setting_dict.requsr_perm_edit);
+                    has_permit_edit = (setting_dict.requsr_role_admin && setting_dict.requsr_group_edit) ||
+                                      (setting_dict.requsr_role_system && setting_dict.requsr_group_edit);
 
                     selected_btn = (setting_dict.sel_btn)
 
