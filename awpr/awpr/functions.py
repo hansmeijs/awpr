@@ -7,6 +7,7 @@ from datetime import date, datetime
 
 from awpr import constants as c
 
+from accounts import models as acc_mod
 from students import models as stud_mod
 from schools import models as sch_mod
 from subjects import models as subj_mod
@@ -322,22 +323,22 @@ def get_sel_examyear_instance(request, request_item_setting=None):  # PR2020-12-
 # --- end of get_sel_examyear_instance
 
 
-def get_sel_schoolbase_instance(request, request_item_setting=None):  # PR2020-12-25
+def get_sel_schoolbase_instance(request, request_item_setting=None):  # PR2020-12-25 PR2021-03-25
     #logger.debug('  -----  get_sel_schoolbase_instance  -----')
     #logger.debug('request_item_setting: ' + str(request_item_setting))
 
-# ===== SCHOOLBASE ======================= PR2020-12-18
-    # - get schoolbase from settings / request when role is insp, admin or system, from req_user otherwise
+    # - get schoolbase from settings / request when role is comm, insp, admin or system, from req_user otherwise
     # req_user.schoolbase cannot be changed
     # Selected schoolbase is stored in {selected_pk: {sel_schoolbase_pk: val}}
 
     sel_schoolbase_instance = None
-    sel_schoolbase_save = False
+    save_sel_schoolbase = False
     if request.user and request.user.country:
         req_user = request.user
         requsr_country = req_user.country
-        may_select_schoolbase = req_user.is_role_insp or req_user.is_role_admin or req_user.is_role_system
 
+        #<PERMIT>
+        may_select_schoolbase = req_user.is_role_comm or req_user.is_role_insp or req_user.is_role_admin or req_user.is_role_system
         if may_select_schoolbase:
 
     # - check if there is a new schoolbase_pk in request_item_setting, check if request_schoolbase exists
@@ -345,22 +346,23 @@ def get_sel_schoolbase_instance(request, request_item_setting=None):  # PR2020-1
                 r_sb_pk = get_dict_value(request_item_setting, (c.KEY_SELECTED_PK, c.KEY_SEL_SCHOOLBASE_PK))
                 sel_schoolbase_instance = sch_mod.Schoolbase.objects.get_or_none(pk=r_sb_pk, country=requsr_country)
                 if sel_schoolbase_instance is not None:
-                    sel_schoolbase_save = True
+                    save_sel_schoolbase = True
 
             if sel_schoolbase_instance is None:
     # - get saved_schoolbase_pk from Usersetting, check if saved_schoolbase exists
                 selected_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
                 s_sb_pk = selected_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
                 sel_schoolbase_instance = sch_mod.Schoolbase.objects.get_or_none(pk=s_sb_pk, country=requsr_country)
-    # - if there is no saved nor request examyear: get schoolbase of this user
+
+    # - if there is no saved nor request schoolbase: get schoolbase of this user
             if sel_schoolbase_instance is None:
                 sel_schoolbase_instance = req_user.schoolbase
                 if sel_schoolbase_instance is not None:
-                    sel_schoolbase_save = True
+                    save_sel_schoolbase = True
         else:
             sel_schoolbase_instance = req_user.schoolbase
 
-    return sel_schoolbase_instance, sel_schoolbase_save
+    return sel_schoolbase_instance, save_sel_schoolbase
 # --- end of get_sel_schoolbase_instance
 
 
@@ -368,7 +370,7 @@ def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  #
     #logger.debug('  -----  get_sel_depbase_instance  -----')
     #logger.debug('sel_school: ' + str(sel_school))
     sel_depbase_instance = None
-    sel_depbase_save = False
+    save_sel_depbase = False
     allowed_depbases = []
 
     if request.user and request.user.country:
@@ -376,16 +378,14 @@ def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  #
         requsr_country = req_user.country
 
 # - get allowed depbases from school and user
-        may_select_department = False
         if sel_school and sel_school.depbases:
             allowed_depbases_arr = req_user.allowed_depbases.split(';') if req_user.allowed_depbases else []
             allowed_depbases_list = list(map(int, allowed_depbases_arr))
 
-            depbase_list = list(map(int, sel_school.depbases.split(';')))
-            for depbase_pk in depbase_list:
+            school_depbase_list = list(map(int, sel_school.depbases.split(';')))
+            for depbase_pk in school_depbase_list:
                 # skip if depbase not in list of req_user.allowed_depbases
-                # if req_user.allowed_depbases is empty, all depbases of the
-                # school are allowed
+                # if req_user.allowed_depbases is empty, all depbases of the school are allowed
                 skip = allowed_depbases_list and depbase_pk not in allowed_depbases_list
                 if not skip:
                     allowed_depbases.append(depbase_pk)
@@ -393,17 +393,15 @@ def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  #
 # - check if there is a new depbase_pk in request_item_setting,
         if request_item_setting is not None:
             r_depbase_pk = get_dict_value(request_item_setting, (c.KEY_SELECTED_PK, c.KEY_SEL_DEPBASE_PK))
-            #logger.debug('request_item_setting instance: ' + str(request_item_setting))
-            #logger.debug('r_depbase_pk instance: ' + str(r_depbase_pk))
             # check if it is in allowed_depbases,
             if r_depbase_pk in allowed_depbases:
                 # check if request_depbase exists
                 sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=r_depbase_pk, country=requsr_country)
                 if sel_depbase_instance is not None:
-                    sel_depbase_save = True
+                    save_sel_depbase = True
 
         #logger.debug('request_depbase instance: ' + str(sel_depbase_instance))
-        #logger.debug('sel_depbase_save: ' + str(sel_depbase_save))
+        #logger.debug('save_sel_depbase: ' + str(save_sel_depbase))
 
         if sel_depbase_instance is None:
 # - get depbase_pk from Usersetting, check if request_depbase exists
@@ -415,16 +413,16 @@ def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  #
                 sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=s_depbase_pk, country=requsr_country)
         #logger.debug('saved_depbase instance: ' + str(sel_depbase_instance))
 
-# - if there is no saved nor request examyear: get first allowed depbase_pk
+# - if there is no saved nor request depbase: get first allowed depbase_pk
         if sel_depbase_instance is None:
             if allowed_depbases and len(allowed_depbases):
                 a_depbase_pk = allowed_depbases[0]
                 sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=a_depbase_pk, country=requsr_country)
                 if sel_depbase_instance is not None:
-                    sel_depbase_save = True
+                    save_sel_depbase = True
 
         #logger.debug('sel_depbase_instance instance: ' + str(sel_depbase_instance))
-    return sel_depbase_instance, sel_depbase_save, allowed_depbases
+    return sel_depbase_instance, save_sel_depbase, allowed_depbases
 # --- end of get_sel_depbase_instance
 
 
@@ -506,6 +504,8 @@ def system_updates(examyear, request):
     # after uploading the new version the function can be removed
 
     update_examyearsetting(examyear, request)
+    # PR2021-03-26
+    load_default_permits(request)
 
     #transfer_depbases_from_array_to_string()
 # - end of system_updates
@@ -547,6 +547,24 @@ def transfer_depbases(instances):
             instance.depbases = None
             instance.save()
 
+
+def load_default_permits(request):
+    # Once-only function to fill table accounts.permit PR2021-03-26
+
+    rowcount = acc_mod.Permit.objects.count()
+    if not rowcount:
+
+        permits = c.DEFAULT_PERMITS
+        for permit in permits:
+            acc_mod.Permit.objects.create(
+                role=permit.get('role'),
+                page=permit.get('page'),
+                sequence=permit.get('sequence'),
+                action=permit.get('action'),
+                usergroups=permit.get('usergroups'),
+                modifidat= timezone.now(),
+                modifiedby=request.user
+            )
 
 def update_examyearsetting(examyear, request):
     # Once-only function to add sysadmin permit to admin users PR2020-07-30

@@ -1626,7 +1626,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (tblName === "department") {
             selected_pk_dict.sel_depbase_pk = pk_int;
         }
-        const new_setting = {page_studentsubjects: {mode: "get"}, selected_pk: selected_pk_dict};
+        const new_setting = {page_studsubj: {mode: "get"}, selected_pk: selected_pk_dict};
         const datalist_request = {setting: new_setting};
 
 // also retrieve the tables that have been changed because of the change in school / dep

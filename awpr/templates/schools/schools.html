@@ -36,7 +36,11 @@
 
 {% block content %}
     <div id="id_content">
-        {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
+        {% if no_access %}
+            <div class="mx-4 mt-5 pt-5">
+                <div class="alert alert-danger">{{ no_access_message }}</div>
+            </div>
+        {% else %}
 
     <!-- =================== MODAL SELECT EXAM YEAR =================== -->
             {% include 'schools/modselectexamyear.html' %}
@@ -91,11 +95,6 @@
                 data-school_upload_url="{% url 'school_upload_url' %}"
                 data-school_import_url="{% url 'school_import_url' %}"
             >
-            </div>
-
-        {% else %}
-            <div class="mx-4 mt-5 pt-5">
-                <div class="alert alert-danger">{% trans "You don't have permission to view this page." %}</div>
             </div>
         {% endif %}
     </div>

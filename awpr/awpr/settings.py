@@ -246,6 +246,9 @@ LOCALE_PATHS = (
     os.path.join(BASE_DIR, 'locale'),
 )
 
+# PR2021-03-26
+LOGGING_ON = config('LOGGING_ON', default=False, cast=bool)
+
 LOGGING = {
     'version': 1,
     #'disable_existing_loggers': False,

@@ -109,18 +109,18 @@ class UserUploadView(View):
             #  - only role_system and role_admin (ETE) can add users of other schools
             #  - role_system, role_admin, role_insp and role_school can add users of their own school
 
-            has_permit_this_school, has_permit_all_schools = False, False
-            if req_user.is_group_system:
-                has_permit_all_schools = req_user.is_role_admin or req_user.is_role_system
-                has_permit_this_school = req_user.is_role_insp or req_user.is_role_school
+            #has_permit_this_school, has_permit_all_schools = False, False
+            #if req_user.is_group_system:
+            #    has_permit_all_schools = req_user.is_role_admin or req_user.is_role_system
+            #    has_permit_this_school = req_user.is_role_insp or req_user.is_role_school
 
-            if has_permit_this_school or has_permit_all_schools:
-
+            #if has_permit_this_school or has_permit_all_schools:
+            if True:
 # - get upload_dict from request.POST
                 upload_json = request.POST.get("upload")
                 if upload_json:
                     upload_dict = json.loads(upload_json)
-                    #logger.debug('upload_dict: ' + str(upload_dict))
+                    logger.debug('upload_dict: ' + str(upload_dict))
 
                     # upload_dict: {'mode': 'validate', 'company_pk': 3, 'pk_int': 114, 'user_ppk': 3,
                     #               'employee_pk': None, 'employee_code': None, 'username': 'Giterson_Lisette',
@@ -141,10 +141,10 @@ class UserUploadView(View):
                     is_validate_only = (mode == 'validate')
                     update_wrap['mode'] = mode
 
-                    #logger.debug('user_pk: ' + str(user_pk))
-                    #logger.debug('user_schoolbase_pk: ' + str(user_schoolbase_pk))
-                    #logger.debug('map_id: ' + str(map_id))
-                    #logger.debug('mode: ' + str(mode))
+                    logger.debug('user_pk: ' + str(user_pk))
+                    logger.debug('user_schoolbase_pk: ' + str(user_schoolbase_pk))
+                    logger.debug('map_id: ' + str(map_id))
+                    logger.debug('mode: ' + str(mode))
 
     # - check if the user schoolbase exists
                     user_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
@@ -160,12 +160,13 @@ class UserUploadView(View):
 
                     err_dict = {}
                     has_permit = False
-                    if user_schoolbase:
-                        if has_permit_all_schools:
-                            has_permit = True
-                        elif has_permit_this_school:
-                            has_permit = is_same_schoolbase
-
+                    #if user_schoolbase:
+                    #    if has_permit_all_schools:
+                   #         has_permit = True
+                   #     elif has_permit_this_school:
+                    #        has_permit = is_same_schoolbase
+                    # TODO
+                    has_permit = True
                     if not has_permit:
                         err_dict['msg01'] = _("You don't have permission to perform this action.")
                     else:
@@ -179,7 +180,7 @@ class UserUploadView(View):
                         elif mode == 'delete':
                             if user_pk:
                                 instance = None
-                                if has_permit_all_schools:
+                                if True: # if has_permit_all_schools:
                                     instance = acc_mod.User.objects.get_or_none(
                                         id=user_pk,
                                         country=req_user.country
@@ -250,14 +251,14 @@ class UserUploadView(View):
                         else:
     # - +++++++++ update ++++++++++++
                             instance = None
-                            if has_permit_all_schools:
+                            if True: # if has_permit_all_schools:
                                 instance = acc_mod.User.objects.get_or_none(id=user_pk, country=req_user.country)
-                            elif has_permit_this_school:
-                                instance = acc_mod.User.objects.get_or_none(
-                                    id=user_pk,
-                                    country=req_user.country,
-                                    schoolbase=req_user.schoolbase
-                                )
+                            #elif has_permit_this_school:
+                            #    instance = acc_mod.User.objects.get_or_none(
+                            #        id=user_pk,
+                            #        country=req_user.country,
+                            #        schoolbase=req_user.schoolbase
+                            #    )
                             if instance:
                                 err_dict, ok_dict = update_user_instance(instance, user_pk, upload_dict, is_validate_only, request)
                                 if err_dict:
@@ -272,7 +273,7 @@ class UserUploadView(View):
 
     # - +++++++++ en of is update ++++++++++++
                         if updated_dict:
-                            update_wrap['updated_list'] = [updated_dict]
+                            update_wrap['updated_userlist'] = [updated_dict]
                     if err_dict:
                         update_wrap['msg_err'] = err_dict
                     elif is_validate_only:
@@ -287,15 +288,15 @@ class UserUploadView(View):
 
 
 ########################################################################
-# === UsergroupUploadView ===================================== PR2021-03-18
+# === UserGroupPermitUploadView ===================================== PR2021-03-18
 @method_decorator([login_required], name='dispatch')
-class UsergroupUploadView(View):
-    #  UsergroupUploadView is called from Users form
+class UserGroupPermitUploadView(View):
+    #  UserGroupPermitUploadView is called from Users form
     #  it returns a HttpResponse, with ok_msg or err-msg
 
     def post(self, request):
         logger.debug('  ')
-        logger.debug(' ========== UsergroupUploadView ===============')
+        logger.debug(' ========== UserGroupPermitUploadView ===============')
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None and request.user.schoolbase is not None:
@@ -305,9 +306,9 @@ class UsergroupUploadView(View):
             #  - only role_system and role_admin (ETE) can add users of other schools
             #  - role_system, role_admin, role_insp and role_school can add users of their own school
             has_permit = False
-            if req_user.is_group_system:
-                has_permit = req_user.is_role_system
-
+            #if req_user.is_group_system:
+            #    has_permit = req_user.is_role_system
+            has_permit = True
             if has_permit:
 
 # - get upload_dict from request.POST
@@ -323,66 +324,128 @@ class UsergroupUploadView(View):
 
                     # - get info from upload_dict
                     mode = upload_dict.get('mode')
-                    map_id = upload_dict.get('mapid')
                     permit_pk = upload_dict.get('permit_pk')
-                    role = upload_dict.get('role')
+                    #role = upload_dict.get('role')
                     page = upload_dict.get('page')
                     action = upload_dict.get('action')
-                    permits_dict = upload_dict.get('permits')
+                    sequence = upload_dict.get('sequence', 1)
+                    #permits_dict = upload_dict.get('permits')
 
-# ++++  delete permit ++++++++++++
+                    logger.debug('page:   ' + str(page))
+                    logger.debug('action: ' + str(action))
+
+                    append_dict = {}
+                    error_dict = {}
+                    updated_permit_rows = []
+
+# +++  get current permit - when mode is 'create': permit is None. It will be created at "elif mode == 'create'"
+                    instance = acc_mod.Permit.objects.get_or_none(
+                        pk=permit_pk
+                    )
+
+                    logger.debug('instance: ' + str(instance))
+# +++  delete permit ++++++++++++
                     if mode == 'delete':
-                        instance = acc_mod.Permit.objects.get_or_none(pk=permit_pk)
                         if instance:
-                            instance.delete()
-    # ++++  create new permit ++++++++++++
+                            page = instance.page
+                            action = instance.action
+                            instance = None
+
+                            logger.debug('page  : ' + str(page))
+                            logger.debug('action: ' + str(action))
+                            #try:
+                            if True:
+                                instances = acc_mod.Permit.objects.filter(page=page, action=action)
+                                for permit_instance in instances:
+                                    permit_instance_pk = permit_instance.pk
+                                    logger.debug('permit_instance_pk: ' + str(permit_instance_pk))
+                                    permit_instance.delete(request=request)
+                                    logger.debug('permit_instance_ deleted: ' + str(permit_instance))
+                                    # - add deleted_row to updated_permit_rows
+                                    updated_permit_rows.append({'permit_pk': permit_instance_pk,
+                                                      'mapid': 'permit_' + str(permit_instance_pk),
+                                                      'deleted': True})
+                            #except Exception as e:
+                            #    append_dict['err_delete'] = getattr(e, 'message', str(e))
+
+# ++++  create new permit ++++++++++++
                     elif mode == 'create':
-                        if role and page and action:
-                            instance = acc_mod.Permit(
-                                role=role,
-                                page=page,
-                                action=action
-                            )
-                            instance.save()
-                    else:
-                        instance = acc_mod.Permit.objects.get_or_none(pk=permit_pk)
-                        if instance:
-                            save_changes = False
+                        if page and action:
+                            logger.debug('page: ' + str(page))
+                            logger.debug('action: ' + str(action))
+                            try:
+                                role_list = (c.ROLE_008_SCHOOL, c.ROLE_016_COMM, c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM)
+                                for role in role_list:
+                                    instance = acc_mod.Permit(
+                                        role=role,
+                                        page=page,
+                                        action=action,
+                                        sequence=sequence
+                                    )
+                                    instance.save()
+                                    logger.debug('instance: ' + str(instance))
+                            except Exception as e:
+                                logger.debug('e: ' + str(e))
+                                append_dict['err_create'] = getattr(e, 'message', str(e))
+                            finally:
+                                append_dict['created'] = True
 
-                            if role:
-                                instance.role = role
-                            if page:
-                                instance.page = page
-                            if action:
-                                instance.action = action
-
-                            if permits_dict:
-                                permit_field = permits_dict.get('field')
-                                new_permit_bool = permits_dict.get('value', False)
-                                new_permit_index = c.GROUP_INDEX_LOOKUP[permit_field] if permit_field else None
-                                if new_permit_index is not None:
-                                    saved_permit_sum = getattr(instance, 'groups')
-
-                                    logger.debug('permit_field: ' + str(permit_field))
-                                    logger.debug('saved_permit_sum: ' + str(saved_permit_sum))
-                                    logger.debug('new_permit_index: ' + str(new_permit_index))
-                                    logger.debug('new_permit_bool: ' + str(new_permit_bool))
-                                    new_permit_sum = af.set_status_sum_by_index(saved_permit_sum, new_permit_index, new_permit_bool)
-
-                                    logger.debug('new_permit_sum: ' + str(new_permit_sum))
-                                    if new_permit_sum != saved_permit_sum:
-                                        save_changes = True
-                                        instance.groups = new_permit_sum
-
-                            if save_changes:
-                                instance.save()
+# +++ update existing studsubj - also when studsubj is created - studsubj is None when deleted
+                    if instance and mode in ('create', 'update'):
+                        update_grouppermit(instance, upload_dict, error_dict, request)
+                    logger.debug('error_dict' + str(error_dict))
 
 # - add update_dict to update_wrap
-                    update_wrap['setting'] = {'result': 'ok'}
-# F. return update_wrap
-        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+                    if instance:
+                        if error_dict:
+                            append_dict['error'] = error_dict
 
-# - end of UsergroupUploadView
+                        logger.debug('append_dict' + str(append_dict))
+               # - add update_dict to update_wrap
+                        permit_row = create_permit_list(instance.pk)
+                        if permit_row:
+                            update_wrap['updated_permit_rows'] = permit_row
+
+# F. return update_wrap
+            return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of UserGroupPermitUploadView
+
+
+def update_grouppermit(instance, upload_dict, msg_dict, request):
+    # --- update existing and new instance PR2021-03-20
+    # add new values to update_dict (don't reset update_dict, it has values)
+    logger.debug(' ------- update_grouppermit -------')
+    logger.debug('upload_dict' + str(upload_dict))
+
+    save_changes = False
+    for field, new_value in upload_dict.items():
+        if field in ['role', 'page', 'action', 'sequence']:
+            saved_value = getattr(instance, field)
+            logger.debug('field' + str(field))
+            logger.debug('saved_value' + str(saved_value) + str(type(saved_value)))
+            logger.debug('new_value' + str(new_value) + str(type(new_value)))
+
+            if new_value and new_value != saved_value:
+                setattr(instance, field, new_value)
+                save_changes = True
+
+        elif field =='usergroups':
+            # 'permits': {'group_read': True}}
+            usergroups_haschanged = update_usergroups(instance, new_value)
+            if usergroups_haschanged:
+                save_changes = True
+
+
+    # - save changes`
+    logger.debug('save_changes' + str(save_changes) + str(type(save_changes)))
+    if save_changes:
+        try:
+            instance.save(request=request)
+        except Exception as e:
+            msg_dict['err_update'] = getattr(e, 'message', str(e))
+            #msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
+    logger.debug('msg_dict' + str(msg_dict) + str(type(msg_dict)))
+# --- end of update_grouppermit
 
 
 @method_decorator([login_required], name='dispatch')
@@ -715,13 +778,13 @@ def create_user_list(request, user_pk=None):
     user_list = []
     if request.user.country and request.user.schoolbase:
         if request.user.role >= c.ROLE_008_SCHOOL:
-            if request.user.is_group_system :
-
+            #if request.user.is_group_system :
+            if True:
                 sql_keys = {'country_id': request.user.country.pk, 'max_role': request.user.role}
                 sql_list = ["SELECT u.id, u.schoolbase_id,",
                     "CONCAT('user_', u.id) AS mapid, 'user' AS table,",
                     "SUBSTRING(u.username, 7) AS username,",
-                    "u.last_name, u.email, u.role, u.permits,",
+                    "u.last_name, u.email, u.role, u.permits, u.usergroups,",
                     "(TRUNC(u.permits / 128) = 1) AS perm_system,",
                     "(TRUNC( MOD(u.permits, 128) / 64) = 1) AS perm_admin,",
                     "(TRUNC( MOD(u.permits, 64) / 32) = 1) AS perm_anlz,",
@@ -759,24 +822,20 @@ def create_user_list(request, user_pk=None):
 
 ########################################################################
 
-def create_permit_list():
+def create_permit_list(permit_pk=None):
     # --- create list of all permits PR2021-03-18
     logger.debug(' =============== create_permit_list ============= ')
 
     sql_keys = {}
-    sql_list = ["SELECT p.id, p.role, p.page, p.action, p.groups,",
-                "CONCAT('permit_', p.id::TEXT) AS mapid,",
-                "(TRUNC(p.groups / 128) = 1) AS perm_system,",
-                "(TRUNC( MOD(p.groups, 128) / 64) = 1) AS perm_admin,",
-                "(TRUNC( MOD(p.groups, 64) / 32) = 1) AS perm_anlz,",
-                "(TRUNC( MOD(p.groups, 32) / 16) = 1) AS perm_auth3,",
-                "(TRUNC( MOD(p.groups, 16) / 8) = 1) AS perm_auth2,",
-                "(TRUNC( MOD(p.groups, 8) / 4) = 1) AS perm_auth1,",
-                "(TRUNC( MOD(p.groups, 4) / 2) = 1) AS perm_edit,",
-                "(MOD(p.groups, 2) = 1) AS perm_read",
+    sql_list = ["SELECT p.id, CONCAT('permit_', p.id::TEXT) AS mapid,",
+                "p.role, p.page, p.action, p.sequence, p.usergroups",
                 "FROM accounts_permit AS p",
-                "ORDER BY LOWER(p.page), LOWER(p.action)"
                 ]
+    if permit_pk:
+        sql_keys['pk'] = permit_pk
+        sql_list.append("WHERE p.id = %(pk)s::INT")
+    else:
+        sql_list.append("ORDER BY p.sequence")
     sql = ' '.join(sql_list)
 
     with connection.cursor() as cursor:
@@ -787,73 +846,65 @@ def create_permit_list():
 # - end of create_permit_list
 
 
-def create_userpermit_list(page, req_user):
-    # --- create list of all permits of the toe and usergroups of req_usr PR2021-03-19
-    #logger.debug(' =============== create_userpermit_list ============= ')
-    #logger.debug('page: ' + str(page) + ' ' + str(type(page)))
+def get_userpermit_list(page, req_user):
+    # --- create list of all permits and usergroups of req_usr PR2021-03-19
+    logger.debug(' =============== get_userpermit_list ============= ')
+    logger.debug('page: ' + str(page) + ' ' + str(type(page)))
     role = req_user.role
 
+    requsr_usergroups_list = []
+    if req_user.usergroups:
+        requsr_usergroups_list = req_user.usergroups.split(';')
+
     permit_list = []
-    usergroup_list = []
     if role and page:
-        # filter user_permits
         sql_filter = ""
-        if req_user.is_group_read:
-            sql_filter += " OR (MOD(p.groups, 2) = 1)"
-            usergroup_list.append(c.GROUP_DICT.get(c.GROUP_001_READ))
-        if req_user.is_group_edit:
-            sql_filter += " OR (TRUNC( MOD(p.groups, 4) / 2) = 1)"
-            usergroup_list.append(c.GROUP_DICT.get(c.GROUP_002_EDIT))
-        if req_user.is_group_auth1:
-            sql_filter += " OR (TRUNC( MOD(p.groups, 8) / 4) = 1)"
-            usergroup_list.append(c.GROUP_DICT.get(c.GROUP_004_AUTH1))
-        if req_user.is_group_auth2:
-            sql_filter += " OR (TRUNC( MOD(p.groups, 16) / 8) = 1)"
-            usergroup_list.append(c.GROUP_DICT.get(c.GROUP_008_AUTH2))
-        if req_user.is_group_auth3:
-            sql_filter += " OR (TRUNC( MOD(p.groups, 32) / 16) = 1)"
-            usergroup_list.append(c.GROUP_DICT.get(c.GROUP_016_AUTH3))
-        if req_user.is_group_anlz:
-            sql_filter += " OR (TRUNC( MOD(p.groups, 64) / 32) = 1)"
-            usergroup_list.append(c.GROUP_DICT.get(c.GROUP_032_ANALYZE))
-        #elif req_user.is_group_admin:
-        #    sql_filter += " OR (TRUNC( MOD(p.groups, 128) / 64) = 1)"
-        #    usergroup_list.append(c.GROUP_DICT.get(c.GROUP_064_ADMIN))
-        if req_user.is_group_system:
-            sql_filter += " OR (TRUNC(p.groups / 128) = 1)"
-            usergroup_list.append(c.GROUP_DICT.get(c.GROUP_128_SYSTEM))
+        for usergroup in requsr_usergroups_list:
+            sql_filter += " OR (POSITION('" + usergroup + "' IN p.usergroups) > 0)"
 
         if sql_filter:
             sql_filter = "AND (" + sql_filter[4:] + ")"
 
             sql_keys = {'page': page, 'role': role}
-            sql_list = ["SELECT p.action",
-                        #"(TRUNC(p.groups / 128) = 1) AS perm_system,",
-                        #"(TRUNC( MOD(p.groups, 128) / 64) = 1) AS perm_admin,",
-                        #"(TRUNC( MOD(p.groups, 64) / 32) = 1) AS perm_anlz,",
-                        #"(TRUNC( MOD(p.groups, 32) / 16) = 1) AS perm_auth3,",
-                        #"(TRUNC( MOD(p.groups, 16) / 8) = 1) AS perm_auth2,",
-                        #"(TRUNC( MOD(p.groups, 8) / 4) = 1) AS perm_auth1,",
-                        #"(TRUNC( MOD(p.groups, 4) / 2) = 1) AS perm_edit,",
-                        #"(MOD(p.groups, 2) = 1) AS perm_read",
-                        "FROM accounts_permit AS p",
-                        "WHERE p.page = %(page)s AND p.role = %(role)s::INT",
-                        sql_filter,
-                        "ORDER BY LOWER(p.action)"
+            sql_list = ["SELECT p.action FROM accounts_permit AS p",
+                        "WHERE (p.page = %(page)s OR p.page = 'page_all') AND p.role = %(role)s::INT",
+                        sql_filter
                         ]
             sql = ' '.join(sql_list)
-
             logger.debug('sql: ' + str(sql))
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)
                 for row in cursor.fetchall():
-                    permit_list.append(row[0])
-                    logger.debug('-------------row: ' + str(row))
+                    if row[0] not in permit_list:
+                        permit_list.append(row[0])
 
-    #logger.debug('permit_list: ' + str(permit_list))
-    #logger.debug('usergroup_list: ' + str(usergroup_list))
-    return permit_list, usergroup_list
-# - end of create_userpermit_list
+    logger.debug('permit_list: ' + str(permit_list))
+    logger.debug('requsr_usergroups_list: ' + str(requsr_usergroups_list))
+
+    get_full_permit_list()
+
+    return permit_list, requsr_usergroups_list
+# - end of get_userpermit_list
+
+
+def get_full_permit_list():
+    # --- create list of all permits  PR2021-03-26, to be imported on server
+    logger.debug(' =============== get_full_permit_list ============= ')
+
+    sql_list = ["SELECT p.role, p.page, p.sequence, p.action, p.usergroups",
+                "FROM accounts_permit AS p",
+                "ORDER BY p.role, LOWER(p.page), p.sequence"]
+    sql = ' '.join(sql_list)
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        rows = af.dictfetchall(cursor)
+
+        logger.debug(' ')
+        logger.debug(str(rows))
+        logger.debug(' ')
+# - end of get_userpermit_list
+
+
 ########################################################################
 
 
@@ -982,9 +1033,14 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, perm
                 'req_school': req_school,
                 'req_user': req_user,
                 'domain': current_site.domain,
+
                 # PR2018-04-24 debug: In Django 2.0 you should call decode() after base64 encoding the uid, to convert it to a string:
                 # 'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-                'uid': urlsafe_base64_encode(force_bytes(new_user.pk)).decode(),
+                # PR2021-03-24 debug. Gave error: 'str' object has no attribute 'decode'
+                # apparently force_bytes(user.pk) returns already a string, no need for decode() any more
+                # from https://stackoverflow.com/questions/28583565/str-object-has-no-attribute-decode-python-3-error
+                # was: 'uid': urlsafe_base64_encode(force_bytes(new_user.pk)).decode(),
+                'uid': urlsafe_base64_encode(force_bytes(new_user.pk)),
                 'token': account_activation_token.make_token(new_user),
             })
             # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
@@ -1002,10 +1058,10 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, perm
 
 # - +++++++++ end of create_or_validate_user_instance ++++++++++++
 
-# === update_user_instance ========== PR2020-08-16 PR2020-09-24
+# === update_user_instance ========== PR2020-08-16 PR2020-09-24 PR2021-03-24
 def update_user_instance(instance, user_pk, upload_dict, is_validate_only, request):
-    #logger.debug('-----  update_user_instance  -----')
-    #logger.debug('upload_dict: ' + str(upload_dict))
+    logger.debug('-----  update_user_instance  -----')
+    logger.debug('upload_dict: ' + str(upload_dict))
     has_error = False
     err_dict = {}
     ok_dict = {}
@@ -1014,11 +1070,11 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
         country = request.user.country
         schoolbase = request.user.schoolbase
         data_has_changed = False
-        fields = ('username', 'last_name', 'email', 'permits', 'is_active')
+        fields = ('username', 'last_name', 'email', 'usergroups', 'is_active')
         for field in fields:
             # --- get field_dict from  item_dict  if it exists
             field_dict = upload_dict[field] if field in upload_dict else {}
-            if field_dict and 'update' in field_dict:
+            if field_dict: # and 'update' in field_dict:
 # - check if this username already exists
                 if field == 'username':
                     new_username = field_dict.get('value')
@@ -1057,17 +1113,13 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
                     if not has_error and new_email and new_email != instance.email:
                         instance.email = new_email
                         data_has_changed = True
+                elif field == 'usergroups':
+                    usergroups_haschanged = update_usergroups(instance, field_dict)
+                    if usergroups_haschanged:
+                        data_has_changed = True
 
-                elif field == 'permits':
-                    permit_field = field_dict.get('field')
-                    new_permit_bool = field_dict.get('value', False)
-                    new_permit_int = c.GROUP_LOOKUP[permit_field] if permit_field else 0
-                    saved_permit_list = list(get_permits_tuple(instance.permits))
-                    #logger.debug('permit_field: ' + str(permit_field))
-                    #logger.debug('new_permit_bool: ' + str(new_permit_bool))
-                    #logger.debug('new_permit_int: ' + str(new_permit_int))
-                    #logger.debug('saved_permit_list: ' + str(saved_permit_list))
             # - sysadmins cannot remove sysadmin permission from their own account
+                    """
                     if request.user.is_group_system:
                         if permit_field in ('perm_admin', 'perm_system'):
                             if instance == request.user:
@@ -1077,6 +1129,7 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
 
                     if not has_error:
             # - validation: user cannot have perm04_auth1 and perm08_auth2 at the same time - resert other auth field
+
                         permit_sum_has_changed = False
                         if new_permit_bool:
                             if new_permit_int not in saved_permit_list:
@@ -1087,7 +1140,7 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
                                 saved_permit_list.remove(new_permit_int)
                                 permit_sum_has_changed = True
                         if permit_sum_has_changed:
-# - remove value of other auth permits when auth permit is set
+                        # - remove value of other auth permits when auth permit is set
                             if new_permit_bool:
                                 remove_other_auth_permits(permit_field, saved_permit_list)
 
@@ -1098,7 +1151,7 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
 
                             instance.permits = new_permit_sum
                             data_has_changed = True
-
+                        """
                 elif field == 'is_active':
                     new_isactive = field_dict.get('value', False)
                     # sysadmins cannot remove is_active from their own account
@@ -1128,6 +1181,40 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
     return err_dict, ok_dict
 # - +++++++++ end of update_user_instance ++++++++++++
 
+# === update_usergroups ===================================== PR2021-03-24
+def update_usergroups(instance, field_dict):
+    # called by update user and update permit
+    # usergroups: {auth2: false}
+    logger.debug('-----  update_usergroups  -----')
+    logger.debug('field_dict: ' + str(field_dict))
+    saved_usergroups_str = instance.usergroups
+    saved_usergroups_list = []
+    data_has_changed = False
+    if instance.usergroups:
+        saved_usergroups_list = instance.usergroups.split(';')
+    logger.debug('saved_usergroups_str:  ' + str(saved_usergroups_str))
+    logger.debug('saved_usergroups_list: ' + str(saved_usergroups_list))
+
+    if field_dict:
+        for usergroup, new_value in field_dict.items():
+            logger.debug('usergroup: ' + str(usergroup))
+            logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+            if new_value:
+                saved_usergroups_list.append(usergroup)
+            else:
+                logger.debug('new_value: ' + str(new_value) + '' + str(type(new_value)))
+                if usergroup in saved_usergroups_list:
+                    saved_usergroups_list.remove(usergroup)
+
+    logger.debug('saved_usergroups_list: ' + str(saved_usergroups_list))
+    # sort the list before saving, to be able to compare new and saved usergroups
+    saved_usergroups_list.sort()
+    new_usergroups_str = ';'.join(saved_usergroups_list)
+    logger.debug('new_usergroups_str: ' + str(new_usergroups_str))
+    if new_usergroups_str != saved_usergroups_list:
+        setattr(instance, 'usergroups', new_usergroups_str)
+        data_has_changed = True
+    return data_has_changed
 
 # === resend_activation_email ===================================== PR2020-08-15
 def resend_activation_email(user_pk, update_wrap, err_dict, request):
@@ -1159,7 +1246,11 @@ def resend_activation_email(user_pk, update_wrap, err_dict, request):
                     'domain': current_site.domain,
                     # PR2018-04-24 debug: In Django 2.0 you should call decode() after base64 encoding the uid, to convert it to a string:
                     # 'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-                    'uid': urlsafe_base64_encode(force_bytes(user.pk)).decode(),
+                    # PR2021-03-24 debug. Gave error: 'str' object has no attribute 'decode'
+                    # apparently force_bytes(user.pk) returns already a string, no need for decode() any more
+                    # from https://stackoverflow.com/questions/28583565/str-object-has-no-attribute-decode-python-3-error
+                    # was: 'uid': urlsafe_base64_encode(force_bytes(user.pk)).decode(),
+                    'uid': urlsafe_base64_encode(force_bytes(user.pk)),
                     'token': account_activation_token.make_token(user),
                 })
                 # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)

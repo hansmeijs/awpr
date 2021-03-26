@@ -45,7 +45,7 @@
                            href="#" data-toggle="dropdown"
                            aria-haspopup="true" aria-expanded="false">{{ user.username_sliced }}</a>
                         <div class="dropdown-menu" aria-labelledby="userMenu">
-                            {% if user.is_group_system %}
+                            {% if 'view_users' in permit_list %}
                                 <a class="dropdown-item" href="{% url 'users_url' %}" >{% trans 'Users' %}</a>
                             {% endif %}
                             <a class="dropdown-item" href="{% url 'password_change' %}">{% trans 'Change password' %}</a>

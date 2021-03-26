@@ -796,7 +796,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // TODO add loader
             //document.getElementById("id_MSTUD_loader").classList.remove(cls_visible_hide)
             // modal is closed by data-dismiss="modal"
-            //UploadChanges(upload_dict, url_student_upload);
+            UploadChanges(upload_dict, url_student_upload);
         };
     }  // MSTUD_Save
 

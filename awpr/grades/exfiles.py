@@ -132,7 +132,7 @@ class DownloadPublishedFile(View):  # PR2021-02-07
         if request.user and request.user.country and request.user.schoolbase:
             req_user = request.user
             # TODO set permit properly
-            has_permit = (req_user.role > c.ROLE_002_STUDENT)
+            has_permit = True
             if has_permit:
                 # - reset language
                 user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT

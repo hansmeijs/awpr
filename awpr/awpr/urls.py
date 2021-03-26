@@ -72,8 +72,17 @@ urlpatterns = [
         name='password_change_done'),
 
 # ++++ SIGN UP +++++++++++++++++++++++++++++++++++++++ PR2020-09-25
-    url(r'^signup_activate/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
-        account_views.SignupActivateView, name='signup_activate_url'),
+
+    # PR2021-03-24 debug. After upgrading to django 3 this error came up:
+    # Reverse for 'signup_activate_url' not found.
+    #  from https://www.reddit.com/r/django/comments/jgmbz7/trying_to_resolve_noreversematcherror_for/
+    # solved with https://learndjango.com/tutorials/django-password-reset-tutorial
+    # solved by changing 'url' with 'path'
+    # was:
+    # url(r'^signup_activate/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+    #    account_views.SignupActivateView, name='signup_activate_url'),
+    path('signup_activate/<uidb64>/<token>/', account_views.SignupActivateView, name='signup_activate_url'),
+
 
 # PR2018-04-24
     url(r'^account_activation_sent/$', account_views.account_activation_sent, name='account_activation_sent_url'),
@@ -97,10 +106,10 @@ urlpatterns = [
 
 # PR2018-03-21 PR2020-09-17
     # PR2018-04-21 debug: don't forget the .as_view() with brackets in the urlpattern!!!
-    path('user/', include([
-        path('users', account_views.UserListView.as_view(), name='users_url'),
+    path('users/', include([
+        path('user', account_views.UserListView.as_view(), name='users_url'),
         path('user_upload', account_views.UserUploadView.as_view(), name='user_upload_url'),
-        path('group_upload', account_views.UsergroupUploadView.as_view(), name='group_permit_upload_url'),
+        path('group_upload', account_views.UserGroupPermitUploadView.as_view(), name='group_permit_upload_url'),
         path('settings_upload', account_views.UserSettingsUploadView.as_view(), name='settings_upload_url'),
 
         #url(r'^users/(?P<pk>\d+)/log$', account_views.UserLogView.as_view(), name='user_log_url'),
@@ -179,7 +188,6 @@ urlpatterns = [
 
         path('download_ex1', grade_excel.StudsubjDownloadEx1View.as_view(), name='grade_download_ex1_url'),
 
-
         path('uploadsetting', student_views.StudentImportUploadSetting.as_view(), name='student_uploadsetting_url'),
     ])),
 
@@ -197,7 +205,6 @@ urlpatterns = [
 
     # PR2019-02-25
     path('downloads/', report_views.download, name='downloads_url'),
-
 
 # ajax PR2018-12-02
     path('ajax/', include([

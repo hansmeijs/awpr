@@ -11,8 +11,10 @@ from django.views.generic import View
 
 from reportlab.pdfgen.canvas import Canvas
 
+from accounts import views as acc_view
+
 from awpr import constants as c
-from awpr import settings as awpr_settings
+from awpr import settings as s
 from awpr import menus as awpr_menu
 from awpr import functions as af
 from awpr import downloads as dl
@@ -34,21 +36,15 @@ logger = logging.getLogger(__name__)
 # ========  Student  =====================================
 
 @method_decorator([login_required], name='dispatch')
-class GradeListView(View):  # PR2020-12-03
+class GradeListView(View):  # PR2020-12-03 PR2021-03-25
 
     def get(self, request):
-        logger.debug('  =====  GradeListView ===== ')
-        #logger.debug('request: ' + str(request) + ' Type: ' + str(type(request)))
+        #logger.debug('  =====  GradeListView ===== ')
 
 # - set headerbar parameters PR2018-08-06
-        page = 'grades'
-        logger.debug('page: ' + str(page) + ' ' + str(type(page)))
-        params = awpr_menu.get_headerbar_param(
-            request=request,
-            page=page
-        )
+        page = 'page_grade'
+        params = awpr_menu.get_headerbar_param(request, page)
 
-        logger.debug('params: ' + str(params) + ' Type: ' + str(type(params)))
 # - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request.user:
             request.user.set_usersetting_dict('sel_page', {'page': page})
@@ -61,7 +57,9 @@ class GradeListView(View):  # PR2020-12-03
 class GradeApproveView(View):  # PR2021-01-19
 
     def post(self, request):
-        logger.debug(' ============= GradeApproveView ============= ')
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= GradeApproveView ============= ')
         # function creates, deletes and updates grade records of current studentsubject PR2020-11-21
         update_wrap = {}
 
@@ -70,14 +68,49 @@ class GradeApproveView(View):  # PR2021-01-19
         # only school that is requsr_school can be changed
         #   current schoolbase can be different from request.user.schoolbase (when role is insp, admin, system)
         # only if country/examyear/school/student not locked, examyear is published and school is activated
-        has_permit = False
+
         if request.user and request.user.country and request.user.schoolbase:
             req_user = request.user
-            # TODO ROLE_064_ADMIN, ROLE_128_SYSTEM is only for testing, must be removed
-            if req_user.role in (c.ROLE_008_SCHOOL, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM):
-                has_permit = (req_user.is_group_auth1 or req_user.is_group_auth2 or req_user.is_group_auth3)
-            if has_permit:
 
+            permit_list, usergroup_list = acc_view.get_userpermit_list('page_grade', req_user)
+
+            is_auth1 = 'auth1' in usergroup_list
+            is_auth2 = 'auth2' in usergroup_list
+            is_auth3 = 'auth3' in usergroup_list
+
+            msg_dict = {}
+            has_permit = False
+            functions = None
+            authby = None
+            if is_auth1 and is_auth2 and is_auth3:
+                functions = _('President, Secretary and Commissioner')
+            elif is_auth1 and is_auth2 :
+                functions = _('President and Secretary')
+            elif is_auth1 and is_auth3:
+                functions = _('President and Commissioner')
+            elif is_auth2 and is_auth3:
+                functions = _('Secretary and Commissioner')
+            elif is_auth1:
+                authby = 'auth1'
+            elif is_auth2:
+                authby = 'auth2'
+            elif is_auth3:
+                authby = 'auth3'
+
+            if authby:
+                has_permit = 'approve_grade' in permit_list
+            elif functions:
+                msg_dict['double_auth'] = ' '.join((
+                        _('You have the functions of %(fnc)s.') % {'fnc': functions},
+                        _('Only 1 function is allowed.'),
+                        _('You cannot approve grades.')))
+
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('usergroups:  ' + str(usergroup_list))
+                logger.debug('has_permit   ' + str(has_permit))
+
+            if has_permit:
     # - reset language
                 user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
                 activate(user_lang)
@@ -86,16 +119,22 @@ class GradeApproveView(View):  # PR2021-01-19
                 upload_json = request.POST.get('upload', None)
                 if upload_json:
                     upload_dict = json.loads(upload_json)
-                    logger.debug('upload_dict' + str(upload_dict))
 
     # - get selected mode. Modes are 'approve' 'submit_test' 'submit_submit', 'reset'
                     mode = upload_dict.get('mode')
+                    status_index = upload_dict.get('status_index')
+                    status_bool_at_index = upload_dict.get('status_bool_at_index')
 
                     is_approve = True if mode in ('approve_test', 'approve_submit', 'approve_reset') else False
                     is_submit = True if mode in ('submit_test', 'submit_submit') else False
                     is_reset = True if mode == 'approve_reset' else False
                     is_test = True if mode in ('approve_test', 'submit_test') else False
-                    logger.debug('mode: ' + str(mode))
+
+                    if logging_on:
+                        logger.debug('upload_dict' + str(upload_dict))
+                        logger.debug('mode: ' + str(mode))
+                        logger.debug('status_index: ' + str(status_index))
+                        logger.debug('status_bool_at_index: ' + str(status_bool_at_index))
 
     # - get selected examyear, school and department from usersettings
                     sel_examyear, sel_school, sel_department, is_locked, \
@@ -110,33 +149,43 @@ class GradeApproveView(View):  # PR2021-01-19
 
     # - get selected grade from upload_dict - only if clicked on a grade tblRow
                     grade_pk = upload_dict.get('grade_pk')
-                    logger.debug('grade_pk: ' + str(grade_pk))
+                    if logging_on:
+                        logger.debug('grade_pk: ' + str(grade_pk))
 
     # - if  grade_pk has value: get sel_examtype from upload_dict instead of from settings
                     sel_subject_pk = None
                     if grade_pk:
                         sel_examtype = upload_dict.get('examtype')
-                        logger.debug('sel_examtype: ' + str(sel_examtype))
                     else:
+
     # - if  grade_pk has no value: get selected examperiod, examtype and subject_pk from usersettings
                         # update usersetting if new values in upload_dict
                         new_examtype = upload_dict.get('examtype')
                         new_subject_pk = upload_dict.get('subject_pk')
-                        logger.debug('new_subject_pk: ' + str(new_subject_pk))
                         if new_examtype or new_subject_pk:
                             new_setting_dict = {}
                             if new_examtype:
                                 new_setting_dict[c.KEY_SEL_EXAMTYPE] = new_examtype
                             if new_subject_pk:
                                 new_setting_dict[c.KEY_SEL_SUBJECT_PK] = new_subject_pk
-                            logger.debug('new_setting_dict: ' + str(new_setting_dict))
+
                             saved_setting_dict = req_user.set_usersetting_from_upload_subdict(c.KEY_SELECTED_PK, new_setting_dict)
-                            logger.debug('saved_setting_dict: ' + str(saved_setting_dict))
+
+                            if logging_on:
+                                logger.debug('new_examtype: ' + str(new_examtype))
+                                logger.debug('new_subject_pk: ' + str(new_subject_pk))
+                                logger.debug('saved_setting_dict: ' + str(saved_setting_dict))
+
+
                         sel_examperiodNIU, sel_examtype, sel_subject_pk = \
                             dl.get_selected_examperiod_examtype_from_usersetting(request)
 
-                    if sel_examyear and sel_school and sel_department and sel_examperiod and sel_examtype:
+                    if logging_on:
+                        logger.debug('sel_examtype: ' + str(sel_examtype))
                         logger.debug('sel_examperiod: ' + str(sel_examperiod))
+
+                    if sel_examyear and sel_school and sel_department and sel_examperiod and sel_examtype:
+
     # +++ get selected grade_rows
                         crit = Q(studentsubject__student__school=sel_school) & \
                                Q(studentsubject__student__department=sel_department) & \
@@ -146,7 +195,11 @@ class GradeApproveView(View):  # PR2021-01-19
                         elif sel_subject_pk:
                             crit.add(Q(studentsubject__schemeitem__subject_id=sel_subject_pk), crit.connector)
                         row_count = stud_mod.Grade.objects.filter(crit).count()
-                        logger.debug('row_count: ' + str(row_count))
+
+                        if logging_on:
+                            logger.debug('grade_pk:       ' + str(grade_pk))
+                            logger.debug('sel_subject_pk: ' + str(sel_subject_pk))
+                            logger.debug('row_count:      ' + str(row_count))
 
                         grades = stud_mod.Grade.objects.filter(crit).order_by('studentsubject__student__lastname', 'studentsubject__student__firstname')
                         msg_dict = {'count': 0,
@@ -161,18 +214,21 @@ class GradeApproveView(View):  # PR2021-01-19
                                     'test_is_ok': False
                                     }
                         if grades is not None:
+
        # create new published_instance. Only save it when it is not a test
                             published_instance = None
                             if is_submit and not is_test:
                                 published_instance = create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, request)
+
         # +++++ loop through  grades
                             grade_rows = []
-                            logger.debug('grade_rows: ' + str(grade_rows))
                             for grade in grades:
-                                logger.debug('grade: ' + str(grade))
+                                if logging_on:
+                                    logger.debug('grade: ' + str(grade))
+
                                 msg_dict['count'] += 1
                                 if is_approve:
-                                    approve_grade(grade, sel_examtype, is_test, is_reset, msg_dict, request)
+                                    approve_grade(grade, sel_examtype, authby, status_index, status_bool_at_index, is_test, is_reset, msg_dict, request)
                                 elif is_submit:
                                     submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, request)
 
@@ -279,7 +335,7 @@ class GradeApproveView(View):  # PR2021-01-19
                                                              {'val': saved}
 
     # - add  msg_dict to update_wrap
-                        update_wrap['msg_dict'] = msg_dict
+            update_wrap['msg_dict'] = msg_dict
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -358,17 +414,20 @@ def get_approved_text(count):
     return msg_text
 
 
-def approve_grade(grade, sel_examtype, is_test, is_reset, msg_dict, request):  # PR2021-01-19
-    logger.debug('----- approve_grade -----')
-    logger.debug('sel_examtype: ' + str(sel_examtype))
-    logger.debug('is_reset: ' + str(is_reset))
+def approve_grade(grade, sel_examtype, authby, status_index, status_bool_at_index, is_test, is_reset, msg_dict, request):  # PR2021-01-19
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- approve_grade -----')
+        logger.debug('sel_examtype: ' + str(sel_examtype))
+        logger.debug('is_reset:     ' + str(is_reset))
 
     if grade and sel_examtype and sel_examtype in ('se', 'pe', 'ce'):
         req_user = request.user
 
 # - skip if this grade / examtype is already published
         published = getattr(grade, sel_examtype + '_published')
-        logger.debug('published: ' + str(published))
+        if logging_on:
+            logger.debug('published: ' + str(published))
         if published:
             msg_dict['already_published'] += 1
         else:
@@ -379,18 +438,16 @@ def approve_grade(grade, sel_examtype, is_test, is_reset, msg_dict, request):  #
             if sel_examtype in ('pe', 'ce'):
                 score_value = getattr(grade, sel_examtype + 'score')
             no_value = grade_value is None and score_value is None
-            logger.debug('no_value: ' + str(no_value))
+            if logging_on:
+                logger.debug('no_value:  ' + str(no_value))
+
             if no_value:
                 msg_dict['no_value'] += 1
             else:
-                authby_field = None
-                if req_user.is_group_auth1:
-                    authby_field = sel_examtype + '_auth1by'
-                elif req_user.is_group_auth2:
-                    authby_field = sel_examtype + '_auth2by'
-                elif req_user.is_group_auth3:
-                    authby_field = sel_examtype + '_auth3by'
-                logger.debug('authby_field: ' + str(authby_field))
+                locked_field = sel_examtype + '_locked'
+                authby_field = sel_examtype + '_' + authby + 'by'
+                if logging_on:
+                    logger.debug('authby_field: ' + str(authby_field))
 
 # - skip if other_auth has already approved and other_auth is same as this auth. - may not approve if same auth has already approved
                 auth1by = getattr(grade, sel_examtype + '_auth1by')
@@ -404,6 +461,15 @@ def approve_grade(grade, sel_examtype, is_test, is_reset, msg_dict, request):  #
                 if is_reset:
                     setattr(grade, authby_field, None)
                     msg_dict['reset'] += 1
+
+                    # make locked false, only if no other approvals
+                    # get value of _auth1by again, to catch updated value
+                    auth1by = getattr(grade, sel_examtype + '_auth1by')
+                    auth2by = getattr(grade, sel_examtype + '_auth2by')
+                    auth3by = getattr(grade, sel_examtype + '_auth3by')
+
+                    if auth1by is None and auth2by is None and auth3by is None:
+                        setattr(grade, locked_field, False)
                     save_changes = True
                 else:
 
@@ -411,7 +477,8 @@ def approve_grade(grade, sel_examtype, is_test, is_reset, msg_dict, request):  #
                     already_approved_by_auth = req_user.is_group_auth1 and auth1by or \
                                                req_user.is_group_auth2 and auth2by or \
                                                req_user.is_group_auth3 and auth3by
-                    logger.debug('already_approved_by_auth: ' + str(already_approved_by_auth))
+                    if logging_on:
+                        logger.debug('already_approved_by_auth: ' + str(already_approved_by_auth))
                     if already_approved_by_auth:
                         msg_dict['already_approved_by_auth'] += 1
                     else:
@@ -424,14 +491,19 @@ def approve_grade(grade, sel_examtype, is_test, is_reset, msg_dict, request):  #
                             double_approved = (auth1by and auth1by == req_user) or (auth3by and auth3by == req_user)
                         elif req_user.is_group_auth3:
                             double_approved = (auth1by and auth1by == req_user) or (auth2by and auth2by == req_user)
+                        if logging_on:
+                            logger.debug('double_approved: ' + str(double_approved))
 
-                        logger.debug('double_approved: ' + str(double_approved))
                         if double_approved:
                             msg_dict['double_approved'] += 1
                         else:
                             setattr(grade, authby_field, req_user)
+                            # lock grade
+                            setattr(grade, locked_field, True)
+
                             save_changes = True
-                            logger.debug('save_changes: ' + str(save_changes))
+                            if logging_on:
+                                logger.debug('save_changes: ' + str(save_changes))
 
 # - set value of authby_field
                 if save_changes:
@@ -440,19 +512,18 @@ def approve_grade(grade, sel_examtype, is_test, is_reset, msg_dict, request):  #
                     else:
                         msg_dict['saved'] += 1
 
-                        status_index = 1 if req_user.is_group_auth1 else \
-                            2 if req_user.is_group_auth2 else \
-                            3 if req_user.is_group_auth3 else None
-                        logger.debug('status_index: ' + str(status_index))
-                        logger.debug('is_reset: ' + str(is_reset))
-
                         saved_status_sum = getattr(grade, sel_examtype + '_status')
-                        logger.debug('saved_status_sum: ' + str(saved_status_sum))
 
                         new_value_bool = True if not is_reset else False
                         new_status_sum = af.set_status_sum_by_index(saved_status_sum, status_index, new_value_bool)
-                        logger.debug('new_status_sum: ' + str(new_status_sum))
+
                         setattr(grade, sel_examtype + '_status', new_status_sum)
+
+                        if logging_on:
+                            logger.debug('is_reset:         ' + str(is_reset))
+                            logger.debug('status_index:     ' + str(status_index))
+                            logger.debug('saved_status_sum: ' + str(saved_status_sum))
+                            logger.debug('new_status_sum:   ' + str(new_status_sum))
 
     # - save changes
                         grade.save(request=request)
@@ -552,7 +623,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
         # only if country/examyear/school/student not locked, examyear is published and school is activated
         has_permit = False
         if request.user and request.user.country and request.user.schoolbase:
-            has_permit = (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
+            has_permit = True # (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
         if has_permit:
 
         # - TODO when deleting: return warning when subject grades have values
@@ -630,6 +701,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
                         # TODO check value of error_dict
                         if error_dict:
                             append_dict['error'] = error_dict
+
                         rows = create_grade_rows(
                             sel_examyear_pk=sel_examyear.pk,
                             sel_schoolbase_pk=sel_school.base_id,
@@ -736,9 +808,9 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
         "grade.examperiod, grade.pescore, grade.cescore, grade.segrade, grade.pegrade, grade.cegrade,",
         "grade.pecegrade, grade.finalgrade,",
 
-        "se_status, se_auth1by_id, grade.se_auth2by_id, grade.se_auth3by_id, grade.se_published_id,",
-        "pe_status, pe_auth1by_id, grade.pe_auth2by_id, grade.pe_auth3by_id, grade.pe_published_id,",
-        "ce_status, ce_auth1by_id, grade.ce_auth2by_id, grade.ce_auth3by_id, grade.ce_published_id,",
+        "se_status, se_auth1by_id, grade.se_auth2by_id, grade.se_auth3by_id, grade.se_published_id, grade.se_locked,",
+        "pe_status, pe_auth1by_id, grade.pe_auth2by_id, grade.pe_auth3by_id, grade.pe_published_id, grade.pe_locked,",
+        "ce_status, ce_auth1by_id, grade.ce_auth2by_id, grade.ce_auth3by_id, grade.ce_published_id, grade.ce_locked,",
 
         "norm.scalelength_ce, norm.scalelength_reex, norm.scalelength_pe,",
         "si.subject_id, si.subjecttype_id, si.gradetype,",
@@ -818,7 +890,7 @@ def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk):
     sql_keys = {'ey_id': sel_examyear_pk,
                 'sb_id': sel_schoolbase_pk,
                 'depbase_id': sel_depbase_pk,
-                'mediadir': awpr_settings.MEDIA_DIR}
+                'mediadir': s.MEDIA_DIR}
 
     sql_list = ["SELECT publ.id, CONCAT('published_', publ.id::TEXT) AS mapid, 'published' AS table,",
         "publ.name, publ.examtype, publ.examperiod, publ.datepublished, publ.filename,",
@@ -859,12 +931,12 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
     if True:
         # create PDF
         # PR2021-03-17 was:
-        #if awpr_settings.AWS_LOCATION:
-            #file_dir = ''.join((awpr_settings.AWS_LOCATION, '/published/'))
-        if awpr_settings.AWS_PRIVATE_MEDIA_LOCATION:
-            file_dir = ''.join((awpr_settings.AWS_PRIVATE_MEDIA_LOCATION, '/published/'))
+        #if s.AWS_LOCATION:
+            #file_dir = ''.join((s.AWS_LOCATION, '/published/'))
+        if s.AWS_PRIVATE_MEDIA_LOCATION:
+            file_dir = ''.join((s.AWS_PRIVATE_MEDIA_LOCATION, '/published/'))
         else:
-            file_dir = awpr_settings.STATICFILES_MEDIA_DIR
+            file_dir = s.STATICFILES_MEDIA_DIR
         file_path = ''.join((file_dir, published_instance.filename))
         file_name = published_instance.name
 
@@ -886,33 +958,7 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
     #except Exception as e:
    #     logger.error(getattr(e, 'message', str(e)))
 
-    """
-    else:
-        cur_platform = platform.system()
-        logger.debug('cur_platform: ' + str(cur_platform))
-        if cur_platform != 'Windows':
-            try:
-                # change owner to uaw, see if this works
-                # PR2021-02-07 fro m https://www.tutorialspoint.com/How-to-change-the-owner-of-a-file-using-Python
-                # https://stackoverflow.com/questions/5994840/how-to-change-the-user-and-group-permissions-for-a-directory-by-name
-                # module pwd only available on Unix
-                import pwd
-                import grp
-                import os
 
-
-                uid = pwd.getpwnam('uaw').pw_uid
-                logger.debug('uid: ' + str(uid))
-
-                gid = grp.getgrnam('uaw').gr_gid
-                logger.debug('gid: ' + str(gid))
-
-                logger.debug('filepath: ' + str(filepath))
-                os.chown(filepath, uid, gid)
-
-            except Exception as e:
-                logger.error(getattr(e, 'message', str(e)))
-    """
     #io_file = io.open(filename, encoding="utf-8")
 
     #io_file = codecs.open(filepath, "r", encoding='utf-8', errors='ignore')
@@ -1007,5 +1053,35 @@ def create_grade_rowsXXX(setting_dict, append_dict, student_pk):
     return student_rows
 
 # --- end of create_grade_rows
+"""
+
+"""
+PR2021-03-26 change owner of file not necessary to retrieve files from spaces
+tried: 
+
+    cur_platform = platform.system()
+    logger.debug('cur_platform: ' + str(cur_platform))
+    if cur_platform != 'Windows':
+        try:
+            # change owner to uaw, see if this works
+            # PR2021-02-07 fro m https://www.tutorialspoint.com/How-to-change-the-owner-of-a-file-using-Python
+            # https://stackoverflow.com/questions/5994840/how-to-change-the-user-and-group-permissions-for-a-directory-by-name
+            # module pwd only available on Unix
+            import pwd
+            import grp
+            import os
+
+
+            uid = pwd.getpwnam('uaw').pw_uid
+            logger.debug('uid: ' + str(uid))
+
+            gid = grp.getgrnam('uaw').gr_gid
+            logger.debug('gid: ' + str(gid))
+
+            logger.debug('filepath: ' + str(filepath))
+            os.chown(filepath, uid, gid)
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
 """
 

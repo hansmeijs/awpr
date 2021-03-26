@@ -582,8 +582,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         // PR2019-01-22 returns true if ;value; is found in list_str
         let found = false;
         if (!!value && !!list_str ) {
-            let n = list_str.indexOf(";" + value + ";");
-            found = (n > -1);
+            found = list_str.includes(";" + value + ";");
         }
         return (found);
     }
@@ -946,7 +945,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                                     let el_value = el_div.innerText;
                                     if(el_value){
                                         el_value = el_value.toLowerCase();
-                                        if (el_value.indexOf(filter_text_lower) !== -1) {
+                                        if (el_value.includes(filter_text_lower)) {
                                             found = true;
                                             break;
                     }}}}}}
@@ -1128,9 +1127,8 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                                     } else {
                                         const el_value_lc = el_value.toLowerCase() ;
         console.log("el_value_lc",  el_value_lc);
-        console.log("el_value_lc.indexOf(filter_text)",  el_value_lc.indexOf(filter_text));
                                         // hide row if filter_text not found
-                                        if (el_value_lc.indexOf(filter_text) === -1) {hide_row = true};
+                                        if (!el_value_lc.includes(filter_text)) {hide_row = true};
                                     }
                                 }  //  if(!!filter_text)
                             }  // if (!!el) {
@@ -1148,9 +1146,9 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 // ++++++++++++  FILTER PAYROLL TABLES +++++++++++++++++++++++++++++++++++++++
 //========= t_SetExtendedFilterDict  ======================== PR2020-07-12 PR2020-08-29
     function t_SetExtendedFilterDict(el, col_index, filter_dict, event_key) {
-       //console.log( "===== t_SetExtendedFilterDict  ========= ");
-       //console.log( "col_index ", col_index, "event_key ", event_key);
-        // filter_dict = [ ["text", "m", ""], ["duration", 180, "gt"] ]
+       console.log( "===== t_SetExtendedFilterDict  ========= ");
+       console.log( "col_index ", col_index, "event_key ", event_key);
+        // filter_dict = [ ["text", "m", ""], ["number", 180, "gt"] ]
 
         //  filter_dict[col_index] = [filter_tag, filter_value, mode]
         //  modes are: 'blanks_only', 'no_blanks', 'lte', 'gte', 'lt', 'gt'
@@ -1158,13 +1156,13 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 // --- get filter tblRow and tblBody
         let tblRow = get_tablerow_selected(el);
         const filter_tag = get_attr_from_el(el, "data-filtertag")
-        //console.log( "filter_tag ", filter_tag);
+        console.log( "filter_tag ", filter_tag);
 
         const col_count = tblRow.cells.length
         //console.log( "col_count ", col_count);
         let mode = "", filter_value = null, skip_filter = false;
 // --- skip filter row when clicked on Shift, Control, Alt, Tab. Filter is set by the other key that is pressed
-        if (["Shift", "Control", "Alt", "Tab"].indexOf(event.key) > -1 ) {
+        if (["Shift", "Control", "Alt", "Tab"].includes(event.key)) {
             skip_filter = true
 // --- reset filter row when clicked on 'Escape'
         // PR2020-09-03 don't use event.which = 27. Is deprecated. Use event_key === "Escape" instead
@@ -1189,17 +1187,16 @@ console.log("=========   handle_table_row_clicked   ======================") ;
             if(new_value < 0) { new_value = 1};
             filter_dict[col_index] = [filter_tag, new_value];
 
-        } else if ( ["boolean", "toggle_2", "toggle_3"].indexOf(filter_tag) > -1) {
+        } else if ( ["boolean", "toggle", "toggle_2", "toggle_3"].includes(filter_tag)) {
             // //filter_dict = [ ["boolean", "1"] ];
-            // toggle value 0 / 1 when boolean
-            let arr = (filter_dict && filter_dict[col_index]) ? filter_dict[col_index] : "";
-            const value = (arr && arr[1] ) ? arr[1] : 0;
-            let new_value = 0;
-            if ( ["boolean", "toggle_2"].indexOf(filter_tag) > -1) {
-                new_value = Math.abs(value - 1);
-            } else if ( ["inactive", "activated", ].indexOf(filter_tag) > -1) {
-                new_value = value + 1;
-                if (new_value > 2) {new_value = 0};
+            // toggle value "0" / "1" when boolean
+            let arr = (filter_dict && filter_dict[col_index]) ? filter_dict[col_index] : null;
+            const value = (arr && arr[1] ) ? arr[1] : "0";
+            let new_value = "0";
+            if ( ["boolean", "toggle", "toggle_2"].includes(filter_tag)) {
+                new_value = (value === "0") ? "1" : "0";
+            } else if ( ["inactive", "activated", ].includes(filter_tag)) {
+                new_value = (value === "0") ? "1" : (value === "1") ? "2" : "0";
             }
             if (!new_value){
                 if (filter_dict[col_index]){
@@ -1225,10 +1222,9 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                 } else if (filter_tag === "text") {
                     // employee/rosterdate and order columns, no special mode on these columns
                     filter_value = filter_text;
-                } else {
-                    // lt and gt sign must be followed by number. Skip filter when only lt or gt sign is eneterd
-                    if (["amount", "duration"].indexOf(filter_tag) > -1 &&
-                        [">", ">=", "<", "<="].indexOf(filter_text) > -1 ) {
+                } else if (filter_tag === "number") {
+                    // lt and gt sign must be followed by number. Skip filter when only lt or gt sign is entered
+                    if ( [">", ">=", "<", "<="].includes(filter_text) ) {
                        skip_filter = true;
                     }
                     if(!skip_filter) {
@@ -1241,37 +1237,16 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                             mode = (first_char === "<" && remainder) ? "lt" : (first_char === ">" && remainder) ? "gt" : "";
                         }
                         // remove "<" , "<=", ">" or ">=" from filter_text
-                        let filter_str = (["lte", "gte"].indexOf(mode) > -1) ? filter_text.slice(2) :
-                                         (["lt", "gt"].indexOf(mode) > -1) ? filter_text.slice(1) : filter_text;
+                        let filter_str = (["lte", "gte"].includes(mode)) ? filter_text.slice(2) :
+                                         (["lt", "gt"].includes(mode)) ? filter_text.slice(1) : filter_text;
                         filter_value = 0;
                         const value_number = Number(filter_str.replace(/\,/g,"."));
+                        filter_value = (value_number) ? value_number : null;
 
-                        //console.log( "filter_tag ", filter_tag);
-                        //console.log( "filter_str ", filter_str);
-                        //console.log( "value_number ", value_number);
+                        console.log( "filter_tag ", filter_tag);
+                        console.log( "filter_str ", filter_str);
+                        console.log( "value_number ", value_number);
 
-                        if (filter_tag === "amount") {
-                            // replace comma's with dots, check if value = numeric, convert to minutes
-                            if (value_number) { filter_value = 100 * value_number};
-                        //.log( "value_number ", value_number);
-                            filter_value = (value_number) ? value_number : null;
-                        } else if (filter_tag === "duration") {
-                            // convert to minutes if ":" in filter_str
-                            if(filter_str.indexOf(":") > -1){
-                                const arr = filter_str.split(":");
-                                const hours = Number(arr[0]);
-                                const minutes = Number(arr[1]);
-                                if( (hours || hours === 0) && (minutes || minutes === 0) ){
-                                    filter_value = 60 * hours + minutes;
-                                }
-                            } else {
-                        // replace comma's with dots, check if value = numeric, convert to minutes
-                                if (value_number) { filter_value = 60 * value_number};
-                            }
-                            //console.log( "filter_value ", filter_value);
-                        } else {
-                            skip_filter = true;
-                        }
                     }
                 }; // other
                 if (!skip_filter) {
@@ -1283,12 +1258,11 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         return skip_filter;
     }  // t_SetExtendedFilterDict
 
-//========= t_ShowTableRowExtended  ==================================== PR2020-07-12 PR2020-09-12
-    function t_ShowTableRowExtended(filter_row, filter_dict, tblRow) {
+//========= t_ShowTableRowExtended  ==================================== PR2020-07-12 PR2020-09-12 PR2021-03-23
+    function t_ShowTableRowExtended(filter_dict, tblRow) {
         // only called by FillPayrollRows,
-        //console.log( "===== t_ShowTableRowExtended  ========= ");
+        console.log( "===== t_ShowTableRowExtended  ========= ");
         //console.log( "filter_dict", filter_dict);
-        //console.log( "filter_row", filter_row);
         // filter_dict = {2: ["text", "r", ""], 4: ["text", "y", ""] }
         //  filter_row = [empty × 2, "acu - rif", empty, "agata mm"]
 
@@ -1302,124 +1276,110 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         // - It is more concise than a conventional for loop and doesn't have as many edge cases as for/in and forEach().
         let hide_row = false;
 
-// ---  show all rows if filter_name = ""
-        if (!isEmpty(filter_dict)){
-// ---  loop through filter_dict key = col_index, value = filter_value
-           // Object.keys(filter_dict).forEach(function(index_str) {
+// ---  show all rows if filter_dict is empty
+        if (tblRow && !isEmpty(filter_dict)){
+// ---  loop through filter_dict key = index_str, value = filter_arr
            for (const [index_str, filter_arr] of Object.entries(filter_dict)) {
-        //console.log( "filter_arr", filter_arr);
 
-// ---  skip column if no filter on this column
-                if(filter_arr){
+// ---  skip column if no filter on this column, also if hide_row is already true
+                if(!hide_row && filter_arr){
                     // filter text is already trimmed and lowercase
                     const col_index = Number(index_str);
                     const filter_tag = filter_arr[0];
                     const filter_value = filter_arr[1];
                     const filter_mode = filter_arr[2];
-        //console.log( "filter_tag", filter_tag);
-        //console.log( "col_index", col_index);
 
-                    if(tblRow){
-                    // used in abscat table
-                        //TODO convert cell_values to format of filter_row
-                        const cell = tblRow.cells[col_index];
-                        if(cell){
-                            const el = cell.children[0];
-                            if (el){
-                                if (filter_tag === "triple"){
-                                   //console.log( "el", el);
-                                    const cell_value = get_attr_from_el_int(el, "data-filter")
-                                    if (filter_value === 2){
-                                        // show only rows with tickmark
-                                        if (!cell_value) { hide_row = true}
-                                    } else if (filter_value === 1){
-                                        // show only rows without tickmark
-                                        if (cell_value) { hide_row = true}
+       console.log( "filter_arr", filter_arr);;
+       console.log( "filter_value", filter_value, typeof filter_value);
+                    const cell = tblRow.cells[col_index];
+                    if(cell){
+                        const el = cell.children[0];
+                        if (el){
+                            const cell_value = get_attr_from_el(el, "data-filter")
+       console.log( "cell_value", cell_value, typeof cell_value);
+                            if (filter_tag === "triple"){
+                                // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+                                if (filter_value === "2"){
+                                    // only show rows without tickmark
+                                     if (cell_value === "1") { hide_row = true };
+                                } else if (filter_value === "1"){
+                                    // only show rows with tickmark
+                                     if (cell_value !== "1") { hide_row = true };
+                                }
+                            } else if(filter_mode === "blanks_only"){  // # : show only blank cells
+                                if (cell_value) { hide_row = true };
+                            } else if(filter_mode === "no_blanks"){  // # : show only non-blank cells
+                                if (!cell_value) {hide_row = true};
+                            } else if( filter_tag === "text") {
+                                // hide row if filter_value not found or when cell is empty
+                                 if (cell_value) {
+                                    if (!cell_value.includes(filter_value)) { hide_row = true };
+                                 } else {
+                                    hide_row = true;
+                                 }
+                            } else if( filter_tag === "number") {
+                                // numeric columns: make blank cells zero
+
+                                if(!Number(filter_value)) {
+                                    // hide all rows when filter is not numeric
+                                    hide_row = true;
+                                } else {
+                                    const filter_number = Number(filter_value);
+                                    const cell_number = (Number(cell_value)) ? Number(cell_value) : 0;
+       console.log( "cell_number", cell_number, typeof cell_number);
+                                    if ( filter_mode === "lte") {
+                                        if (cell_number > filter_number) {hide_row = true};
+                                    } else if ( filter_mode === "lt") {
+                                        if (cell_number >= filter_number) {hide_row = true};
+                                    } else if (filter_mode === "gte") {
+                                        if (cell_number < filter_number) {hide_row = true};
+                                    } else if (filter_mode === "gt") {
+                                        if (cell_number <= filter_number) {hide_row = true};
+                                    } else {
+                                        if (cell_number !== filter_number) {hide_row = true};
+                                    }
+                                }
+
+                            } else if( filter_tag === "status") {
+
+                                // TODO
+                                if(filter_value === 1) {
+                                    if(cell_value){
+                                        // cell_value = "status_1_5", '_1_' means data_has_changed
+                                        const arr = cell_value.split('_')
+                                        hide_row = (arr[1] && arr[1] !== "1")
                                     }
                                 }
                             }
+       console.log( "hide_row", hide_row);
                         }
-
-                    } else if (filter_row){
-                        let cell_value = (filter_row[col_index]) ? filter_row[col_index] : null;
-       //console.log( "========== cell_value", cell_value, typeof cell_value);
-
-                        // PR2020-06-13 debug: don't use: "hide_row = (!el_value)", once hide_row = true it must stay like that
-                        if( filter_tag === "boolean") {
-                            // skip, filter is set outside this function
-
-                        } else if (filter_tag === "triple"){
-                            const cell = filter_row.cells[col_index]
-                            if(cell){
-                                cell_value = get_attr_from_el(cell, "data-filter")
-
-                            }
-                        } else if(filter_mode === "blanks_only"){  // # : show only blank cells
-                            if(cell_value){hide_row = true};
-                        } else if(filter_mode === "no_blanks"){  // # : show only non-blank cells
-                            if(!cell_value){hide_row = true};
-                        } else if( filter_tag === "text") {
-                        // employee / rosterdate and order column
-                            // filter_row text is already trimmed and lowercase
-                            const cell_value = filter_row[col_index];
-                            // hide row if filter_value not found or when cell is empty
-                             if(cell_value){
-                                if(cell_value.indexOf(filter_value) === -1){hide_row = true};
-                             } else {
-                                hide_row = true;
-                             }
-                            //console.log( "text cell_value", cell_value, "filter_value", filter_value, "hide_row", hide_row);
-                        } else if(["duration", "amount"].indexOf(filter_tag) > -1) {
-                            // duration columns or numeric columns, make blank cells zero
-                            cell_value = (cell_value) ? cell_value : 0;
-                            if ( filter_mode === "lte") {
-                                if (cell_value > filter_value) {hide_row = true};
-                            } else if ( filter_mode === "lt") {
-                                if (cell_value >= filter_value) {hide_row = true};
-                            } else if (filter_mode === "gte") {
-                                if (cell_value < filter_value) {hide_row = true};
-                            } else if (filter_mode === "gt") {
-                                if (cell_value <= filter_value) {hide_row = true};
-                            } else {
-                                if (cell_value !== filter_value) {hide_row = true};
-                            }
-       //console.log( "duration cell_value", cell_value, "filter_value", filter_value, "hide_row", hide_row);
-                        } else if( filter_tag === "status") {
-                            if(filter_value === 1) {
-                                if(cell_value){
-                                    // cell_value = "status_1_5", '_1_' means data_has_changed
-                                    const arr = cell_value.split('_')
-                                    hide_row = (arr[1] && arr[1] !== "1")
-                                }
-                            }
-                        }
-
-                    }  // else if (filter_row){
-                };  //   if(value){
-            };  // Object.keys(filter_dict).forEach(function(col_index) {
-        }  // if (!hide_row)
+                    };  // if(cell)
+                };  //  if(filter_arr)
+            };  // for (const [index_str, filter_arr] of Object.entries(filter_dict))
+        }  // if (tblRow && !isEmpty(filter_dict))
        //console.log("hide_row", hide_row);
        return !hide_row
     }; // t_ShowTableRowExtended
 
 //========= t_create_filter_row  ====================================
-    function t_create_filter_row(tblRow, filter_dict) {  // PR2020-09-14
+    function t_create_filter_row(tblRow, filter_dict) {  // PR2020-09-14 PR2021-03-23
         //console.log( "===== t_create_filter_row  ========= ");
+        //console.log( "filter_dict", filter_dict);
         let filter_row = [];
         if (tblRow){
-            Object.keys(filter_dict).forEach(function(index_str) {
+            for (const index_str of Object.keys(filter_dict)) {
                 const col_index = (Number(index_str)) ? Number(index_str) : 0;
                 const el = tblRow.cells[col_index].children[0];
                 if(el){
                     let data_filter = get_attr_from_el(el, "data-filter")
-                    if( ["number", "duration", "amount"].indexOf(filter_dict[index_str][0]) > -1){
+                    if( ["number", "duration", "amount"].includes(filter_dict[index_str][0])){
                         data_filter = (Number(data_filter)) ? Number(data_filter) : null;
                     }
                     if (data_filter) {
                         filter_row[col_index] = data_filter
                     }
                 }
-            });
+            };
         }
         return filter_row
     }; // t_create_filter_row

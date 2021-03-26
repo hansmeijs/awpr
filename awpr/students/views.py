@@ -49,55 +49,42 @@ class LazyEncoder(DjangoJSONEncoder):
 # ========  Student  =====================================
 
 @method_decorator([login_required], name='dispatch')
-class StudentListView(View):  # PR2018-09-02 PR2020-10-27
+class StudentListView(View):  # PR2018-09-02 PR2020-10-27 PR2021-03-25
 
     def get(self, request):
-        logger.debug('  =====  StudentListView ===== ')
-        # logger.debug('request: ' + str(request) + ' Type: ' + str(type(request)))
+        #logger.debug('  =====  StudentListView ===== ')
 
-        # <PERMIT>
-        # - school-user can only view his own school
-        # - insp-users can only view schools from his country
-        # - system-users can only view school from request_user,country
-
-        # -  get user_lang
+# -  get user_lang
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
 
-        # set headerbar parameters PR2018-08-06
-        page = 'students'
-        params = awpr_menu.get_headerbar_param(
-            request=request,
-            page=page
-        )
+# - get headerbar parameters
+        page = 'page_student'
+        params = awpr_menu.get_headerbar_param(request, page)
 
-        # save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
+# - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request and request.user:
             request.user.set_usersetting_dict('sel_page', {'page': page})
 
         return render(request, 'students.html', params)
 
 
-# ========  StudentsubjectListView  ======= # PR2020-09-29
+# ========  StudentsubjectListView  =======
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectListView(View):
+class StudentsubjectListView(View): # PR2020-09-29 PR2021-03-25
 
     def get(self, request):
-        logger.debug(" =====  StudentsubjectListView  =====")
+        #logger.debug(" =====  StudentsubjectListView  =====")
+
 # -  get user_lang
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
 
-        #requsr_examyear = sch_mod.Examyear.objects.get_or_none(country_id=request.user.country_id, pk=request.user.examyear_id)
-        #requsr_examyear_text = str(_('Examyear')) + ' ' + str(requsr_examyear) if requsr_examyear else _('<No examyear selected>')
-
-        #requsr_school = sch_mod.School.objects.get_or_none( examyear=request.user.examyear, base=request.user.schoolbase)
-        #requsr_school_text = requsr_school.base.code + ' ' + requsr_school.name if requsr_school else _('<No school selected>')
-
-        # set headerbar parameters PR2018-08-06
-        page = 'subjects'
+# - get headerbar parameters
+        page = 'page_studsubj'
         params = awpr_menu.get_headerbar_param(request, page)
-        # save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
+
+# - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request.user:
             request.user.set_usersetting_dict('sel_page', {'page': page})
 
@@ -352,7 +339,9 @@ class NoteAttachmentDownloadView(View): # PR2021-03-17
 class StudentsubjectUploadView(View):  # PR2020-11-20
 
     def post(self, request):
-        logger.debug(' ============= StudentsubjectUploadView ============= ')
+        logging_on = False
+        if logging_on:
+            logger.debug(' ============= StudentsubjectUploadView ============= ')
 
         # function creates, deletes and updates studentsubject records of current student PR2020-11-21
         update_wrap = {}
@@ -364,7 +353,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
         # only if country/examyear/school/student not locked, examyear is published and school is activated
         has_permit = False
         if request.user and request.user.country and request.user.schoolbase:
-            has_permit = (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
+            has_permit = True # (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
         if has_permit:
 
         # - TODO check for double subjects, double subjects are ot allowed
@@ -378,22 +367,23 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 upload_dict = json.loads(upload_json)
-                logger.debug('upload_dict' + str(upload_dict))
 
 # ----- get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, is_locked, \
                     examyear_published, school_activated, is_requsr_school = \
                         dl.get_selected_examyear_school_dep_from_usersetting(request)
-                logger.debug('sel_examyear: ' + str(sel_examyear))
-                logger.debug('sel_school: ' + str(sel_school))
-                logger.debug('sel_department: ' + str(sel_department))
-                logger.debug('is_locked: ' + str(is_locked))
+
+                if logging_on:
+                    logger.debug('upload_dict' + str(upload_dict))
+                    logger.debug('sel_examyear: ' + str(sel_examyear))
+                    logger.debug('sel_school: ' + str(sel_school))
+                    logger.debug('sel_department: ' + str(sel_department))
+                    logger.debug('is_locked: ' + str(is_locked))
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                 student = None
                 # TODO : may_edit = examyear_published and school_activated and is_requsr_school and sel_department and not is_locked
                 may_edit = sel_department and not is_locked
-                logger.debug('may_edit: ' + str(may_edit))
                 if may_edit:
                     student_pk = upload_dict.get('student_pk')
                     student = stud_mod.Student.objects.get_or_none(
@@ -402,7 +392,9 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                         department=sel_department,
                         locked=False
                     )
-                logger.debug('student: ' + str(student))
+                if logging_on:
+                    logger.debug('may_edit: ' + str(may_edit))
+                    logger.debug('student: ' + str(student))
 
 # - get list of studentsubjects from upload_dict
                 studsubj_list = None
@@ -410,6 +402,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                     studsubj_list = upload_dict.get('studsubj_list')
                 if studsubj_list:
                     studsubj_rows = []
+
 # - loop through list of uploaded studentsubjects
                     for studsubj_dict in studsubj_list:
                         # values of mode are: 'delete', 'create', 'update'
@@ -417,10 +410,11 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                         studsubj_pk = studsubj_dict.get('studsubj_pk')
                         schemeitem_pk = studsubj_dict.get('schemeitem_pk')
 
-                        logger.debug('---------- ')
-                        logger.debug('studsubj mode: ' + str(mode))
-                        logger.debug('studsubj_pk: ' + str(studsubj_pk))
-                        logger.debug('schemeitem_pk: ' + str(schemeitem_pk))
+                        if logging_on:
+                            logger.debug('---------- ')
+                            logger.debug('studsubj mode: ' + str(mode))
+                            logger.debug('studsubj_pk: ' + str(studsubj_pk))
+                            logger.debug('schemeitem_pk: ' + str(schemeitem_pk))
 
                         append_dict = {}
                         error_dict = {}
@@ -430,8 +424,10 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                             id=studsubj_pk,
                             student=student
                         )
-                        logger.debug('studsubj: ' + str(studsubj))
-# +++ delete studsubj
+                        if logging_on:
+                            logger.debug('studsubj: ' + str(studsubj))
+
+# +++ delete studsubj ++++++++++++
                         if mode == 'delete':
                             # published fields are: subj_published, exem_published, reex_published, reex3_published, pok_published
                             # if published: don't delete, but set deleted=True, so its remains in the Ex1 form
@@ -443,7 +439,9 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                                     subject = studsubj.schemeitem.subject
                                     if subject and subject.name:
                                         this_text = _("Subject '%(tbl)s' ") % {'tbl': subject.name}
-                                logger.debug('this_text: ' + str(this_text))
+
+                                if logging_on:
+                                    logger.debug('this_text: ' + str(this_text))
 
                                 if studsubj.subj_published or \
                                     studsubj.exem_published or \
@@ -453,40 +451,51 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                                     # if published: set deleted=True, so its remains in the Ex1 form
                                     setattr(studsubj, 'deleted', True)
                                     studsubj.save(request=request)
-                                    logger.debug('studsubj.deleted: ' + str(studsubj.deleted))
+                                    if logging_on:
+                                        logger.debug('studsubj.deleted: ' + str(studsubj.deleted))
                                     grades = stud_mod.Grade.objects.filter(studentsubject=studsubj)
                             # also set grades deleted=True
                                     if grades:
                                         for grade in grades:
                                             setattr(grade, 'deleted', True)
                                             grade.save(request=request)
-                                            logger.debug('grade.deleted: ' + str(grade.deleted))
+                                            if logging_on:
+                                                logger.debug('grade.deleted: ' + str(grade.deleted))
                                 else:
 
                                     deleted_ok = sch_mod.delete_instance(studsubj, error_dict, request, this_text)
-                                    logger.debug('deleted_ok: ' + str(deleted_ok))
+                                    if logging_on:
+                                        logger.debug('deleted_ok: ' + str(deleted_ok))
                                     if deleted_ok:
                                         # - add deleted_row to studsubj_rows
                                         studsubj_rows.append({'studsubj_id': studsubj_pk,
                                                              'mapid': 'studsubj_' + str(student.pk) + '_' + str(studsubj_pk),
                                                              'deleted': True})
                                         studsubj = None
-                                        logger.debug('deleted_row: ' + str(studsubj_rows))
+
+                                        if logging_on:
+                                            logger.debug('deleted_row: ' + str(studsubj_rows))
 
 # +++ create new studentsubject, also create grade of first examperiod
                         elif mode == 'create':
                             schemeitem = subj_mod.Schemeitem.objects.get_or_none(id=schemeitem_pk)
-                            logger.debug('schemeitem: ' + str(schemeitem))
+
                             studsubj, msg_err = create_studsubj(student, schemeitem, request)
-                            logger.debug('studsubj: ' + str(studsubj))
+
                             if studsubj:
                                 append_dict['created'] = True
                             elif msg_err:
                                 append_dict['err_create'] = msg_err
-                            logger.debug('append_dict: ' + str(append_dict))
+
+                            if logging_on:
+                                logger.debug('schemeitem: ' + str(schemeitem))
+                                logger.debug('studsubj: ' + str(studsubj))
+                                logger.debug('append_dict: ' + str(append_dict))
+
 # +++ update existing studsubj - also when studsubj is created - studsubj is None when deleted
                         if studsubj and mode in ('create', 'update'):
-                            logger.debug('studsubj and mode: ' + str(studsubj))
+                            if logging_on:
+                                logger.debug('studsubj and mode: ' + str(studsubj))
                             update_studsubj(studsubj, studsubj_dict, error_dict, request)
 
 # - add update_dict to update_wrap
@@ -511,7 +520,6 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                     if studsubj_rows:
                         update_wrap['updated_studsubj_rows'] = studsubj_rows
 
-        #logger.debug('update_wrap: ' + str(update_wrap))
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of StudentsubjectUploadView
@@ -683,7 +691,7 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
         # only if country/examyear/school/student not locked, examyear is published and school is activated
         has_permit = False
         if request.user and request.user.country and request.user.schoolbase:
-            has_permit = (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
+            has_permit = True # (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
         if has_permit:
 
 # - reset language
@@ -1888,219 +1896,4 @@ def SplitPrefix(name, is_firstname):
 
 
 # oooooooooooooo End of Functions Student name ooooooooooooooooooooooooooooooooooooooooooooooooooo
-
-
-def get_mapped_coldefs_studentNIU(request_user):  # PR2018-12-01
-    # function creates dict of fieldnames of table Student
-    # It is used in ImportSudent to map Excel fieldnames to AWP fieldnames
-    # mapped_coldefs: {
-    #     "worksheetname": "Compleetlijst",
-    #     "no_header": 0,
-    #     "mapped_coldef_list": [{"awpKey": "idnumber", "caption": "ID nummer", "excKey": "ID"},
-    #                            {"awpKey": "lastname", "caption": "Achternaam", "excKey": "ANAAM"}, ....]
-
-    logger.debug('==============get_mapped_coldefs_student ============= ' )
-
-    # get mapped excelColDef from table Schoolsetting
-    mapped_coldefs = {}
-    if request_user is not None:
-        if request_user.examyear is not None and request_user.schoolbase is not None and request_user.depbase is not None:
-
-            # get list of level base_id and abbrev of this school, examyear and department
-            level_abbrev_list = Level.get_abbrev_list(request_user)
-
-            # get saved settings from schoolsettings
-            no_header, worksheetname, setting_columns, setting_levels, setting_sectors = get_student_mapped_coldefs(request_user)
-            # setting_columns: {'gender': 'MV', 'birthdate': 'GEB_DAT', 'birthcountry': 'geboorte_land',
-            #                   'birthcity': 'geboorte_plaats', 'sector': 'Profiel', 'classname': 'KLAS'}
-            # setting_sectors: {'29': 'em', '30': 'ng', '31': 'cm'}
-
-# add excKey to coldef if found in setting_columns
-            column_list = get_student_column_list(request_user)
-            # column_list is list of default student coldef keys and captions
-            # column_list = [{"awpKey": "idnumber", "caption": "ID nummer"},
-            #                {"awpKey": "fullname", "caption": "Volledige naam"}, ...]
-            for coldef in column_list:
-                awpKey = coldef.get('awpKey')
-                # awpKey: 'idnumber'
-                if awpKey: # awpKey should always be present
-                    if setting_columns:
-                        # lookup awpKey 'idnumber' in setting_columns, return None if not found
-                        # setting_columns: {'idnumber': 'ID', ...}
-                        excKey = setting_columns.get(awpKey)
-                        # excKey: 'ID'
-                        if excKey:
-                        # if 'idnumber' found in setting_columns, add {'excKey': 'ID'} to coldef
-                            coldef['excKey'] = excKey
-            # column_list: [{'awpKey': 'idnumber', 'caption': 'ID nummer', 'excKey': 'ID'},
-
-            # level_list is list of levels of this school, dep and examyear
-            # level_list =  [{'base_id': 7, 'abbrev': 'TKL'},
-            #                {'base_id': 8, 'abbrev': 'PKL'},
-            #                {'base_id': 9, 'abbrev': 'PBL'}]
-            level_list = Level.get_abbrev_list(request_user)
-            logger.debug('level_list: ' + str(level_list) + ' type: ' + str(type(level_list)))
-
-            mapped_level_list = []
-            for level in level_list:
-                base_id_str = str(level.get('base_id',''))
-                abbrev = level.get('abbrev')
-                level_dict = {}
-                if base_id_str and abbrev:
-                    level_dict['awpKey'] = base_id_str
-                    level_dict['caption'] = abbrev
-                    # check if base_id_str of this level is stored in setting_levels
-                    # setting_levels: {'29': 'em', '30': 'ng', '31': 'cm'}
-                    if base_id_str in setting_levels:
-                        excKey = setting_levels[base_id_str]
-                        if excKey:
-                            level_dict['excKey'] = excKey
-                if level_dict:
-                    mapped_level_list.append(level_dict)
-            logger.debug('mapped_level_list: ' + str(mapped_level_list) + ' type: ' + str(type(mapped_level_list)))
-
-
-            # sector_list is list of sectors of this school, dep and examyear
-            # sector_list =  [{'base_id': 29, 'abbrev': 'ec'},
-            #                 {'base_id': 30, 'abbrev': 'tech'},
-            #                 {'base_id': 31, 'abbrev': 'z&w'}]
-            sector_list = Sector.get_abbrev_list(request_user)
-            mapped_sector_list = []
-            for sector in sector_list:
-                base_id_str = str(sector.get('base_id',''))
-                abbrev = sector.get('abbrev')
-                sector_dict = {}
-                if base_id_str and abbrev:
-                    sector_dict['awpKey'] = base_id_str
-                    sector_dict['caption'] = abbrev
-                    # check if base_id_str of this sector is stored in setting_sectors
-                    # setting_sectors: {'29': 'em', '30': 'ng', '31': 'cm'}
-                    if base_id_str in setting_sectors:
-                        excKey = setting_sectors[base_id_str]
-                        if excKey:
-                            sector_dict['excKey'] = excKey
-                if sector_dict:
-                    mapped_sector_list.append(sector_dict)
-            #logger.debug('mapped_sector_list: ' + str(mapped_sector_list) + ' type: ' + str(type(mapped_sector_list)))
-
-            mapped_coldefs = {
-                "worksheetname": worksheetname,
-                "no_header": no_header,
-                "mapped_coldef_list": column_list
-            }
-            if mapped_level_list:
-                mapped_coldefs['mapped_level_list'] = mapped_level_list
-            if mapped_sector_list:
-                mapped_coldefs['mapped_sector_list'] = mapped_sector_list
-
-            logger.debug('mapped_coldefs: ' + str(mapped_coldefs) + ' type: ' + str(type(mapped_coldefs)))
-            mapped_coldefs = json.dumps(mapped_coldefs)
-    return mapped_coldefs
-
-
-def get_student_column_list_NIU(request_user):
-    # function creates dict of fieldnames of table Student
-    # It is used in ImportSudent to map Excel fieldnames to AWP fieldnames
-    # mapped_coldefs: {
-    #     "worksheetname": "Compleetlijst",
-    #     "no_header": 0,
-    #     "mapped_coldef_list": [{"awpKey": "idnumber", "caption": "ID nummer", "excKey": "ID"},
-    #                            {"awpKey": "lastname", "caption": "Achternaam", "excKey": "ANAAM"}, ....]
-
-    # logger.debug('==============get_mapped_coldefs_student ============= ' )
-
-    # caption Sector/Profiel depends on department
-    sector_caption = Sector.get_caption(request_user)
-    skip_level = True
-    if request_user.depbase:
-        dep = request_user.department
-        if dep.abbrev == "Vsbo":
-            skip_level = False
-
-    if request_user.lang == 'nl':
-        coldef_list = [
-            {"awpKey": "idnumber", "caption": "ID nummer"},
-            {"awpKey": "fullname", "caption": "Volledige naam"},
-            {"awpKey": "lastname", "caption": "Achternaam"},
-            {"awpKey": "firstname", "caption": "Voornamen"},
-            {"awpKey": "prefix", "caption": "Voorvoegsel"},
-            {"awpKey": "gender", "caption": "Geslacht"},
-            {"awpKey": "birthdate", "caption": "Geboortedatum"},
-            {"awpKey": "birthcountry", "caption": "Geboorteland"},
-            {"awpKey": "birthcity", "caption": "Geboorteplaats"},
-        ]
-    else:
-        coldef_list = [
-            {"awpKey": "idnumber", "caption": "ID number"},
-            {"awpKey": "fullname", "caption": "Full name"},
-            {"awpKey": "lastname", "caption": "Last name"},
-            {"awpKey": "firstname", "caption": "First name"},
-            {"awpKey": "prefix", "caption": "Prefix"},
-            {"awpKey": "gender", "caption": "Gender"},
-            {"awpKey": "birthdate", "caption": "Birthdate"},
-            {"awpKey": "birthcountry", "caption": "Birth country"},
-            {"awpKey": "birthcity", "caption": "Birth place"},
-        ]
-
-    if not skip_level:
-        coldef_list.append({"awpKey": "level", "caption": "Leerweg"})
-    coldef_list.append({"awpKey": "sector", "caption": sector_caption})
-
-    if request_user.lang == 'nl':
-        coldef_list.extend((
-            {"awpKey": "classname", "caption": "Klas"},
-            {"awpKey": "examnumber", "caption": "Examennummer"}
-        ))
-    else:
-        coldef_list.extend((
-            {"awpKey": "classname", "caption": "Class"},
-            {"awpKey": "examnumber", "caption": "Exam number"}
-        ))
-
-    return coldef_list
-
-
-def get_student_mapped_coldefs_NIU(request_user):
-    logger.debug(        '---  get_student_mapped_coldefs  ------- ' + str(request_user))
-    # get mapped excelColDef from table Schoolsetting
-
-    no_header = False
-    worksheetname = ''
-    setting_columns = {}
-    setting_levels = {}
-    setting_sectors = {}
-
-    if request_user is not None:
-        if request_user.schoolbase is not None:
-            logger.debug('request_user.schoolbase: ' + str(request_user.schoolbase) + ' type: ' + str(type(request_user.schoolbase)))
-            setting = sch_mod.Schoolsetting.objects.filter(
-                schoolbase=request_user.schoolbase,
-                key_str=c.KEY_IMPORT_STUDENT
-            ).first()
-
-            if setting:
-                no_header = int(setting.bool01)
-
-                # setting_columns: {'firstname': 'Voornamen', 'classname': 'STAMKLAS'} type: <class 'dict'>
-                if setting.char01:
-                    try:
-                        setting_columns = json.loads(setting.char01)
-                    except:
-                        pass
-
-                if setting.char02:
-                    worksheetname = setting.char02
-
-                if setting.char03:
-                    try:
-                        setting_levels = json.loads(setting.char03)
-                    except:
-                        pass
-                if setting.char04:
-                    try:
-                        setting_sectors = json.loads(setting.char04)
-                    except:
-                        pass
-            logger.debug('setting_columns: ' + str(setting_columns) + ' type: ' + str(type(setting_columns)))
-    return  no_header, worksheetname, setting_columns, setting_levels, setting_sectors
 

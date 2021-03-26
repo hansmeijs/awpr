@@ -74,22 +74,19 @@
 
 {% block content %}
     <div id="id_content">
-        {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
-    <!-- =================== MODAL APPROVE GRADE  =================== -->
+        {% if no_access %}
+            <div class="mx-4 mt-5 pt-5">
+                <div class="alert alert-danger">{{ no_access_message }}</div>
+            </div>
+        {% else %}
+
             {% include 'students/modapprovegrade.html' %}
-    <!-- =================== MODAL SELECT EXAM YEAR =================== -->
             {% include 'schools/modselectexamyear.html' %}
-    <!-- =================== MODAL SELECT SCHOOL OR DEPARTMENT=================== -->
             {% include 'schools/modselectschoolordep.html' %}
-    <!-- =================== MODAL SELECT SUBJECT STUDENT  =================== -->
             {% include 'includes/modselectsubjectstudent.html' %}
-    <!-- =================== MODAL CONFIRM  =================== -->
             {% include 'includes/modconfirm.html' %}
-    <!-- =================== MODAL STATUS  =================== -->
             {% include 'includes/modstatus.html' %}
-    <!-- =================== MODAL NOTE  =================== -->
             {% include 'includes/modnote.html' %}
-    <!-- =================== MODAL MESSAGE  =================== -->
             {% include 'includes/modmessage.html' %}
 
             <div class="content_margin_top78">
@@ -151,11 +148,6 @@
                 data-noteattachment_download_url="{% url 'noteattachment_download_url' pk_int=0 %}"
 
             >
-            </div>
-
-        {% else %}
-            <div class="mx-4 mt-5 pt-5">
-                <div class="alert alert-danger">{% trans "You don't have permission to view this page." %}</div>
             </div>
         {% endif %}
     </div>

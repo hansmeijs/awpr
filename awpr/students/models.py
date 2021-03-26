@@ -518,18 +518,21 @@ class Grade(sch_mod.AwpBaseModel):
     se_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    se_locked = BooleanField(default=False)
 
     pe_status = PositiveSmallIntegerField(default=0)
     pe_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    pe_locked = BooleanField(default=False)
 
     ce_status = PositiveSmallIntegerField(default=0)
     ce_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    ce_locked = BooleanField(default=False)
 
     deleted = BooleanField(default=False)
     status = PositiveSmallIntegerField(default=0)
@@ -558,16 +561,19 @@ class Grade_log(sch_mod.AwpBaseModel):
     se_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    se_locked = BooleanField(default=False)
 
     pe_status = PositiveSmallIntegerField(default=0)
     pe_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    pe_locked = BooleanField(default=False)
 
     ce_status = PositiveSmallIntegerField(default=0)
     ce_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    ce_locked = BooleanField(default=False)
 
     deleted = BooleanField(default=False)
     status = PositiveSmallIntegerField(default=0)

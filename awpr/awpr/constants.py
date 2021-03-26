@@ -424,9 +424,9 @@ STRING_DOUBLELINE_80 = '=' * 80
 # ============================================================================
 
 # PR2018-05-07
-ROLE_000_NONE = 0
-ROLE_002_STUDENT = 2
-ROLE_004_TEACHER = 4
+#ROLE_000_NONE = 0
+#ROLE_002_STUDENT = 2
+#ROLE_004_TEACHER = 4
 ROLE_008_SCHOOL = 8
 ROLE_016_COMM = 16
 ROLE_032_INSP = 32
@@ -458,8 +458,7 @@ GROUP_004_AUTH1 = 4
 GROUP_008_AUTH2 = 8
 GROUP_016_AUTH3 = 16
 GROUP_032_ANALYZE = 32
-#GROUP_064_ADMIN = 64
-GROUP_128_SYSTEM = 128
+GROUP_064_ADMIN = 64
 
 # PR2018-12-23 used in set_menu_items
 
@@ -471,20 +470,17 @@ GROUP_DICT = {
     GROUP_008_AUTH2: 'auth2',
     GROUP_016_AUTH3: 'auth3',
     GROUP_032_ANALYZE: 'anlz',
-    #GROUP_064_ADMIN: 'admin',
-    GROUP_128_SYSTEM: 'system'
+    GROUP_064_ADMIN: 'admin'
 }
 GROUP_CAPTION = {
     GROUP_001_READ: _('Read'),
     GROUP_002_EDIT: _('Edit'),
     GROUP_004_AUTH1: _('President'),
     GROUP_008_AUTH2: _('Secretary'),
-    GROUP_016_AUTH3: _('Commmissioner'),
+    GROUP_016_AUTH3: _('Commissioner'),
     GROUP_032_ANALYZE: _('Analyze'),
-    #GROUP_064_ADMIN: _('Administrator'),
-    GROUP_128_SYSTEM: _('System'),
+    GROUP_064_ADMIN: _('Administrator')
 }
-
 
 GROUP_LOOKUP = {
     'perm_none': GROUP_000_NONE,
@@ -494,8 +490,8 @@ GROUP_LOOKUP = {
     'perm_auth2': GROUP_008_AUTH2,
     'perm_auth3': GROUP_016_AUTH3,
     'perm_anlz': GROUP_032_ANALYZE,
-    #'perm_admin': GROUP_064_ADMIN,
-   'perm_system': GROUP_128_SYSTEM
+    'perm_admin': GROUP_064_ADMIN
+
 }
 
 GROUP_INDEX_LOOKUP = {
@@ -518,4 +514,77 @@ PAGE_LIST = {
     'studentsubjects': _('Subjects of students'),
     'grades': _('Grades')
 }
+
+DEFAULT_PERMITS = [
+    {'role': 8, 'page': 'page_all', 'sequence': 10, 'action': 'view_users', 'usergroups': 'admin'},
+    {'role': 8, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
+    {'role': 8, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 8, 'page': 'page_grade', 'sequence': 20, 'action': 'edit_grade', 'usergroups': 'edit'},
+    {'role': 8, 'page': 'page_grade', 'sequence': 30, 'action': 'approve_grade', 'usergroups': 'auth1;auth2'},
+    {'role': 8, 'page': 'page_grade', 'sequence': 40, 'action': 'submit_grade', 'usergroups': 'auth1;auth2'},
+    {'role': 8, 'page': 'page_grade', 'sequence': 50, 'action': 'unlock_grade', 'usergroups': None},
+    {'role': 8, 'page': 'page_grade', 'sequence': 60, 'action': 'read_note', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 8, 'page': 'page_grade', 'sequence': 70, 'action': 'write_note_intern', 'usergroups': 'auth1;auth2;auth3;edit'},
+    {'role': 8, 'page': 'page_grade', 'sequence': 80, 'action': 'write_note_extern', 'usergroups': 'auth1;auth2'},
+    {'role': 8, 'page': 'page_school', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 8, 'page': 'page_student', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 8, 'page': 'page_studsubj', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 8, 'page': 'page_subject', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
+    {'role': 16, 'page': 'page_all', 'sequence': 10, 'action': 'view_users', 'usergroups': 'admin'},
+    {'role': 16, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
+    {'role': 16, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 16, 'page': 'page_grade', 'sequence': 20, 'action': 'edit_grade', 'usergroups': ''},
+    {'role': 16, 'page': 'page_grade', 'sequence': 30, 'action': 'approve_grade', 'usergroups': 'auth3'},
+    {'role': 16, 'page': 'page_grade', 'sequence': 40, 'action': 'submit_grade', 'usergroups': None},
+    {'role': 16, 'page': 'page_grade', 'sequence': 50, 'action': 'unlock_grade', 'usergroups': None},
+    {'role': 16, 'page': 'page_grade', 'sequence': 60, 'action': 'read_note', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 16, 'page': 'page_grade', 'sequence': 70, 'action': 'write_note_intern', 'usergroups': 'auth3'},
+    {'role': 16, 'page': 'page_grade', 'sequence': 80, 'action': 'write_note_extern', 'usergroups': 'auth3'},
+    {'role': 16, 'page': 'page_school', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 16, 'page': 'page_student', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 16, 'page': 'page_studsubj', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 16, 'page': 'page_subject', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
+    {'role': 32, 'page': 'page_all', 'sequence': 10, 'action': 'view_users', 'usergroups': 'admin'},
+    {'role': 32, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
+    {'role': 32, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 32, 'page': 'page_grade', 'sequence': 20, 'action': 'edit_grade', 'usergroups': ''},
+    {'role': 32, 'page': 'page_grade', 'sequence': 30, 'action': 'approve_grade', 'usergroups': ''},
+    {'role': 32, 'page': 'page_grade', 'sequence': 40, 'action': 'submit_grade', 'usergroups': None},
+    {'role': 32, 'page': 'page_grade', 'sequence': 50, 'action': 'unlock_grade', 'usergroups': 'edit'},
+    {'role': 32, 'page': 'page_grade', 'sequence': 60, 'action': 'read_note', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 32, 'page': 'page_grade', 'sequence': 70, 'action': 'write_note_intern', 'usergroups': 'auth1;auth2;auth3;edit'},
+    {'role': 32, 'page': 'page_grade', 'sequence': 80, 'action': 'write_note_extern', 'usergroups': 'auth1;auth2'},
+    {'role': 32, 'page': 'page_school', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 32, 'page': 'page_student', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 32, 'page': 'page_studsubj', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 32, 'page': 'page_subject', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
+    {'role': 64, 'page': 'page_all', 'sequence': 10, 'action': 'view_users', 'usergroups': 'admin'},
+    {'role': 64, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
+    {'role': 64, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 64, 'page': 'page_grade', 'sequence': 20, 'action': 'edit_grade', 'usergroups': ''},
+    {'role': 64, 'page': 'page_grade', 'sequence': 30, 'action': 'approve_grade', 'usergroups': None},
+    {'role': 64, 'page': 'page_grade', 'sequence': 40, 'action': 'submit_grade', 'usergroups': None},
+    {'role': 64, 'page': 'page_grade', 'sequence': 50, 'action': 'unlock_grade', 'usergroups': None},
+    {'role': 64, 'page': 'page_grade', 'sequence': 60, 'action': 'read_note', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 64, 'page': 'page_grade', 'sequence': 70, 'action': 'write_note_intern', 'usergroups': 'auth1;auth2;auth3;edit'},
+    {'role': 64, 'page': 'page_grade', 'sequence': 80, 'action': 'write_note_extern', 'usergroups': 'auth1;auth2'},
+    {'role': 64, 'page': 'page_school', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 64, 'page': 'page_student', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 64, 'page': 'page_studsubj', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 64, 'page': 'page_subject', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
+    {'role': 128, 'page': 'page_all', 'sequence': 10, 'action': 'view_users', 'usergroups': 'admin'},
+    {'role': 128, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
+    {'role': 128, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 128, 'page': 'page_grade', 'sequence': 20, 'action': 'edit_grade', 'usergroups': 'edit'},
+    {'role': 128, 'page': 'page_grade', 'sequence': 30, 'action': 'approve_grade', 'usergroups': 'auth1;auth2;auth3'},
+    {'role': 128, 'page': 'page_grade', 'sequence': 40, 'action': 'submit_grade', 'usergroups': 'auth1;auth2'},
+    {'role': 128, 'page': 'page_grade', 'sequence': 50, 'action': 'unlock_grade', 'usergroups': None},
+    {'role': 128, 'page': 'page_grade', 'sequence': 60, 'action': 'read_note', 'usergroups': 'anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 128, 'page': 'page_grade', 'sequence': 70, 'action': 'write_note_intern', 'usergroups': 'auth1;auth2;auth3;edit'},
+    {'role': 128, 'page': 'page_grade', 'sequence': 80, 'action': 'write_note_extern', 'usergroups': 'auth1;auth2'},
+    {'role': 128, 'page': 'page_school', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 128, 'page': 'page_student', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 128, 'page': 'page_studsubj', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
+    {'role': 128, 'page': 'page_subject', 'sequence': 10, 'action': 'view_page', 'usergroups': None}
+]
 

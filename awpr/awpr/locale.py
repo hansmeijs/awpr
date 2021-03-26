@@ -79,7 +79,6 @@ def get_locale_dict(table_dict, user_lang):
     dict['Name'] = _('Name')
     dict['Department'] = _('Department')
     dict['Departments'] = _('Departments')
-    dict['Sequence'] = _('Sequence')
     dict['Inactive'] = _('Inactive')
     dict['Last_modified_on'] = _('Last modified on ')
     dict['by'] = _(' by ')
@@ -113,7 +112,7 @@ def get_locale_dict(table_dict, user_lang):
     dict['err_msg_is_invalid_number'] = _(' is an invalid number.')
     dict['err_msg_must_be_integer'] = _(' must be an integer.')
     dict['err_msg_must_be_number_between'] =  _(' must be a number between ')
-    dict['err_msg_and'] = _(' and ')
+    dict['err_msg_and'] = TXT__and
     dict['err_msg_must_be_number_less_than_or_equal_to'] = _(' must be a number less than or equal to ')
     dict['err_msg_must_be_number_greater_than_or_equal_to'] = _(' must be a number greater than or equal to ')
 
@@ -138,7 +137,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Select_valid_Excelfile'] = _('Please select a valid Excel file.')
         dict['Not_valid_Excelfile'] = _('This is not a valid Excel file.')
         dict['Only'] = _('Only ')
-        dict['and'] = _(' and ')
+        dict['and'] = TXT__and
         dict['are_supported'] = _(' are supported.')
         dict['No_worksheets'] = _('There are no worksheets.')
         dict['No_worksheets_with_data'] = _('There are no worksheets with data.')
@@ -152,8 +151,9 @@ def get_locale_dict(table_dict, user_lang):
         dict['Link_profielen'] = _('Link profielen')
 
 # ====== PAGE USER ========================= PR2019-11-19
-    if 'users' in page_list:
+    if 'page_user' in page_list:
 
+        dict['School'] = TXT_School
         dict['User_list'] = _('User list')
         dict['Permissions'] = _('Permissions')
         dict['Set_permissions'] = _('Set permissions')
@@ -195,12 +195,17 @@ def get_locale_dict(table_dict, user_lang):
         dict['Submit'] = TXT_Submit
         dict['Inactive'] = TXT_Inactive
 
+        dict['Sequence'] = _('Sequence')
+        dict['Sequence_2lines'] =  pgettext_lazy('2 lines', 'Sequence')
+
         dict['Add_permission'] = _('Add permission')
 
         dict['No_user_selected']  = _('There is no user selected.')
         dict['Make_user_inactive'] = _('Make user inactive')
         dict['Make_user_active'] = _('Make user active')
         dict['This_user_is_inactive'] = _('This user is inactive.')
+
+        dict['role_caption'] = c.ROLE_DICT
 
         dict['msg_user_info'] = [
             str(_('Required, maximum %(max)s characters. Letters, digits and @/./+/-/_ only.') % {'max': c.USERNAME_SLICED_MAX_LENGTH}),
@@ -221,7 +226,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Yes_send_email'] = _('Yes, send email')
 
 # ====== PAGE EXAM YEAR ========================= PR2020-10-04
-    if 'examyears' in page_list:
+    if 'page_examyear' in page_list:
         dict['Created_on'] = _('Created on ')
 
         dict['Published'] = _('Published')
@@ -270,7 +275,7 @@ def get_locale_dict(table_dict, user_lang):
         }
 
 # ====== PAGE SUBJECTS ========================= PR2020-09-30
-    if 'subjects' in page_list:
+    if 'page_subject' in page_list:
 
         dict['Add_subject'] = _('Add subject')
         dict['Add_department'] = _('Add department')
@@ -309,14 +314,14 @@ def get_locale_dict(table_dict, user_lang):
         dict['All_departments'] = _('All departments')
         dict['already_exists_in_departments'] = _(' already exists in one of the departments.')
 
-# ====== PAGE SCHOOLS ========================= PR2020-09-30
-    if 'schools' in page_list:
+# ====== PAGE SCHOOL ========================= PR2020-09-30
+    if 'page_school' in page_list:
 
         dict['Article'] = _('Article')
         dict['Short_name'] = _('Short name')
         dict['Activated'] = _('Activated')
         dict['Locked'] = _('Locked')
-        dict['School'] = _('School')
+        dict['School'] = TXT_School
         dict['Add_school'] = _('Add school')
         dict['Delete_school'] = _('Delete school')
         dict['No_schools'] = _('No schools')
@@ -331,7 +336,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Upload_awpdata'] = _('Upload AWP data file')
 
 # ====== PAGE STUDENTS ========================= PR2020-10-27
-    if 'students' in page_list:
+    if 'page_student' in page_list:
 
         dict['Add_candidate'] = _('Add candidate')
         dict['Delete_candidate'] = _('Delete candidate')
@@ -354,7 +359,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Profiel'] = _('Profiel')
 
 # ====== PAGE STUDENTSUBJECTS ========================= PR2020-12-21
-    if 'studentsubjects' in page_list:
+    if 'page_studsubj' in page_list:
         dict['Character'] = _('Character')
         dict['Examnumber_twolines'] = _('Exam\nnumber')
         dict['This_candidate_has_nosubjects_yet'] = _('This candidate has no subjects yet.')
@@ -394,7 +399,7 @@ def get_locale_dict(table_dict, user_lang):
 
 
 # ====== PAGE GRADES ========================= PR2020-10-27
-    if 'grades' in page_list:
+    if 'page_grade' in page_list:
 
         dict['No_candidate_selected'] = _('No candidate selected')
         dict['This_candidate_has_nosubjects_yet'] = _('This candidate has no subjects yet.')
@@ -493,6 +498,8 @@ def get_locale_dict(table_dict, user_lang):
         dict['Approved_by'] = TXT_Approved_by
         dict['Submitted_by'] = TXT_Submitted_by
 
+        dict['and'] = TXT__and
+
         dict['grade_err_list'] = {
             'examyear_locked': _('The exam year is locked.'),
             'school_locked': _('The school data is locked.'),
@@ -519,11 +526,21 @@ def get_locale_dict(table_dict, user_lang):
             'is_not_allowed': _(' is not allowed.'),
             'Grade_mustbe_between_1_10': _('The grade must be a number between 1 and 10.'),
             'Grade_may_only_have_1_decimal': _('The grade may only have one digit after the dot.'),
-            'Score_mustbe_between_0_and': _('The score must be a number between 0 and ')
+            'Score_mustbe_between_0_and': _('The score must be a number between 0 and '),
+
+            'no_permission': _("You don't have permission to enter grades."),
+            'grade_approved': _("This grade has already been approved. You can only change it after the approvals are removed."),
+            'grade_submitted': _("This grade has already been submitted. You can only change it with permission of the Inspection.")
         }
 
+    dict['approve_err_list'] = {'You_have_functions': _('You have the functions of '),
+                                'Only_1_allowed': _('Only 1 function is allowed. '),
+                               'cannot_approve': _('You cannot approve grades.'),
+                               'cannot_submit': _('You cannot approve grades.')}
     return dict
 
+
+TXT_School = _('School')
 TXT_Email_address = _('Email address')
 
 TXT_Inactive = _("Inactive")
@@ -536,6 +553,8 @@ TXT_Submit = _('Submit')
 
 TXT_Approved_by = _('Approved by')
 TXT_Submitted_by = _('Submitted by')
+
+TXT__and = _(' and ')
 
 # get weekdays translated
 TXT_weekdays_abbrev = ('', _('Mon'), _('Tue'), _('Wed'), _('Thu'), _('Fri'), _('Sat'), _('Sun'))

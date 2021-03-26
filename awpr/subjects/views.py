@@ -280,26 +280,22 @@ class SchemeitemUploadView(View):  # PR2019-01-24
         return HttpResponse(json.dumps(params, cls=af.LazyEncoder))
 
 
-# ========  SubjectListView  ======= # PR2020-09-29
+# ========  SubjectListView  ======= # PR2020-09-29  PR2021-03-25
 @method_decorator([login_required], name='dispatch')
 class SubjectListView(View):
 
     def get(self, request):
         #logger.debug(" =====  SubjectListView  =====")
+
 # -  get user_lang
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
 
-        #requsr_examyear = sch_mod.Examyear.objects.get_or_none(country_id=request.user.country_id, pk=request.user.examyear_id)
-        #requsr_examyear_text = str(_('Examyear')) + ' ' + str(requsr_examyear) if requsr_examyear else _('<No examyear selected>')
-
-        #requsr_school = sch_mod.School.objects.get_or_none( examyear=request.user.examyear, base=request.user.schoolbase)
-        #requsr_school_text = requsr_school.base.code + ' ' + requsr_school.name if requsr_school else _('<No school selected>')
-
-        # set headerbar parameters PR2018-08-06
-        page = 'subjects'
+# - get headerbar parameters
+        page = 'page_subject'
         params = awpr_menu.get_headerbar_param(request, page)
-        # save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
+
+# - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request.user:
             request.user.set_usersetting_dict('sel_page', {'page': page})
 

@@ -100,29 +100,24 @@ def Loggedin(request):
 # === EXAMYEAR =====================================
 @method_decorator([login_required], name='dispatch')
 class ExamyearListView(View):
-    # PR2018-08-06 PR2018-05-10 PR2018-03-02 PR2020-10-04
+    # PR2018-08-06 PR2018-05-10 PR2018-03-02 PR2020-10-04 PR2021-03-25
 
     def get(self, request):
-        logger.debug(" =====  ExamyearListView  =====")
+        #logger.debug(" =====  ExamyearListView  =====")
 
 # -  get user_lang
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
 
-        # set headerbar parameters PR2018-08-06
-        page = 'examyears'
-        params = awpr_menu.get_headerbar_param(
-            request=request,
-            page=page
-        )
+# - get headerbar parameters
+        page = 'page_examyear'
+        params = awpr_menu.get_headerbar_param(request, page)
 
-        # save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
+# - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request and request.user:
             request.user.set_usersetting_dict('sel_page', {'page': page})
 
-        logger.debug("params: " + str(params))
         return render(request, 'examyears.html', params)
-###################################################
 
 
 @method_decorator([login_required], name='dispatch')
@@ -413,20 +408,16 @@ class DepartmentLogView(View):
 
 # === School =====================================
 @method_decorator([login_required], name='dispatch')
-class SchoolListView(View):  # PR2018-08-25 PR2020-10-21
+class SchoolListView(View):  # PR2018-08-25 PR2020-10-21 PR2021-03-25
 
     def get(self, request):
         #logger.debug('  =====  SchoolListView ===== ')
-        #logger.debug('request: ' + str(request) + ' Type: ' + str(type(request)))
 
-# - set headerbar parameters PR2018-08-06
-        page = 'schools'
-        params = awpr_menu.get_headerbar_param(
-            request=request,
-            page=page
-        )
+# - get headerbar parameters
+        page = 'page_school'
+        params = awpr_menu.get_headerbar_param(request, page)
 
-# save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
+# - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request and request.user:
             request.user.set_usersetting_dict('sel_page', {'page': page})
 

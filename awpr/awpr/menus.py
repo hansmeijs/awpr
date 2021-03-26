@@ -29,45 +29,45 @@ fill_sel = '#EDF2F8'
 fill_unsel = '#212529'
 
 menus_dict = {
-'examyears': {'index': 0, 'href_tuple': ('examyears_url',),
+'page_examyear': {'index': 0, 'href_tuple': ('examyears_url',),
                'caption': str(_('Exam year')), 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
                'indent_left': indent_none, 'indent_right': indent_10,
                'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
                'submenu': ('cntrlst', 'exyrlst', 'schllst', 'deplst','levllst', 'sectlst')
                 },
-'schools': {'index': 1, 'href_tuple': ('school_list_url',),
+'page_school': {'index': 1, 'href_tuple': ('school_list_url',),
                'caption': str(_('School')), 'width': 90, 'height': height, 'pos_x': 45, 'pos_y': pos_y,
                'indent_left': indent_10, 'indent_right': indent_10,
                'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
                'submenu': ('cntrlst', 'exyrlst', 'schllst', 'deplst','levllst', 'sectlst')
                },
-'students': {'index': 2, 'href_tuple': ('students_url',),
+'page_student': {'index': 2, 'href_tuple': ('students_url',),
                'caption': str(_('Students')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
                  'indent_left': indent_10, 'indent_right': indent_10,
                  'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                  },
-'subjects': {'index': 3, 'href_tuple': ('studentsubjects_url','subjects_url'),
+'page_subject': {'index': 3, 'href_tuple': ('studentsubjects_url','subjects_url'),
                'caption': str(_('Subjects')), 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
                  'indent_left': indent_10, 'indent_right': indent_10,
                  'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
                  'submenu': ('subjlst', 'subjtyplst', 'schemlst', 'schemitemlst')
                  },
-'grades': {'index': 4, 'href_tuple': ('grades_url',),
+'page_grade': {'index': 4, 'href_tuple': ('grades_url',),
                'caption': str(_('Grades')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
                  'indent_left': indent_10, 'indent_right': indent_10,
                  'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                  },
-'results': {'index': 5, 'href_tuple': ('subjects_url',),
+'page_result': {'index': 5, 'href_tuple': ('subjects_url',),
                'caption': str(_('Results')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
                 'indent_left': indent_10, 'indent_right': indent_10,
                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                 },
-'reports': {'index': 6, 'href_tuple': ('subjects_url',),
+'page_report': {'index': 6, 'href_tuple': ('subjects_url',),
                'caption': str(_('Reports')), 'width': 120, 'height': height,  'pos_x': 60,  'pos_y': pos_y,
                'indent_left': indent_10, 'indent_right': indent_10,
                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                 },
-'analysis': {'index': 7, 'href_tuple': ('subjects_url',),
+'page_analysis': {'index': 7, 'href_tuple': ('subjects_url',),
                'caption':  str(_('Analysis')), 'width': 90, 'height': height,  'pos_x': 45,  'pos_y': pos_y,
                'indent_left': indent_10, 'indent_right': indent_none,
                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
@@ -78,15 +78,17 @@ menus_dict = {
 
 
 
-def get_headerbar_param(request, page, param=None):
+def get_headerbar_param(request, page, param=None):  # PR2021-03-25
     # PR2018-05-28 set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
-    #logger.debug('===== get_headerbar_param ===== ' + str(page))
+    logging_on = True
+    if logging_on:
+        logger.debug('===== get_headerbar_param ===== ' + str(page))
 
     headerbar = param if param else {}
     req_user = request.user
-    if req_user.is_authenticated and req_user.country:
+    if req_user.is_authenticated and req_user.country and req_user.schoolbase:
         awp_messages = []
 
 # -  get user_lang
@@ -105,66 +107,83 @@ def get_headerbar_param(request, page, param=None):
             _class_flag = 'flag_1_2'
             _class_flag2_hidden = 'display_hide'
 
-        logger.debug('page: ' + str(page) + ' ' + str(type(page)))
-        logger.debug('req_user.role: ' + str(req_user.role) + ' ' + str(type(req_user.role)))
-        permit_list, usergroup_list = acc_view.create_userpermit_list(page, req_user)
-        logger.debug('permit_list: ' + str(permit_list) + ' ' + str(type(permit_list)))
+        permit_list, usergroup_list = acc_view.get_userpermit_list(page, req_user)
+
+        if logging_on:
+            logger.debug('page:           ' + str(page))
+            logger.debug('req_user.role:  ' + str(req_user.role))
+            logger.debug('permit_list:    ' + str(permit_list))
+            logger.debug('usergroup_list: ' + str(usergroup_list))
 
 # +++ display examyear -------- PR2020-11-17 PR2020-12-24
     # - get selected examyear from Usersetting
+        no_access, no_examyears, examyear_not_published = False, False, False
+        no_access_message = None
+        sel_country_abbrev, sel_country_name, country_locked = None, None, False
+        sel_examyear_code = None
         sel_examyear, sel_examyear_save, may_select_examyear = af.get_sel_examyear_instance(request)
-        if sel_examyear:
+        if sel_examyear is None:
+            # there is always an examyear selected, unless country has no examyears
+            sel_examyear_str = ' <' + str(_('No exam years')) + '>'
+            no_examyears = True
+        else:
             # examyear.code is PositiveSmallIntegerField
             sel_examyear_code = sel_examyear.code
             sel_examyear_str = str(_('Exam year')) + ' ' + str(sel_examyear_code)
-        else:
-            # there is always an examyear selected, unless country has no examyears
-            sel_examyear_str = ' <' + str(_('No exam years')) + '>'
-
+            sel_country_abbrev = sel_examyear.country.abbrev
+            sel_country_name = sel_examyear.country.name
+# +++ do not display pages when country is locked,
+            country_locked = sel_examyear.country.locked
+# +++ do not display pages when examyear is not published yet,
+            examyear_not_published = not sel_examyear.published
 # +++ give warning when examyear is different from current examyear,
-        todays_examyear_instance = af.get_todays_examyear_instance(req_user.country)
-        # niu, I think class_examyear_warning = ''
-        if sel_examyear and todays_examyear_instance:
-            if sel_examyear.pk != todays_examyear_instance.pk:
-                # class_examyear_warning = 'navbar-item-warning'
-                # PR2018-08-24 debug: in base.html  href="#" is needed,
-                # because bootstrap line 233: a:not([href]):not([tabindex]) overrides navbar-item-warning
-                awp_message = {'info': _("Please note: the selected exam year is different from the current exam year."),
-                               'class': 'alert-warning',
-                               'id': 'id_diff_exyr'}
-                awp_messages.append(awp_message)
+            todays_examyear_instance = af.get_todays_examyear_instance(req_user.country)
+            # niu, I think class_examyear_warning = ''
+            if todays_examyear_instance:
+                if sel_examyear.pk != todays_examyear_instance.pk:
+                    # class_examyear_warning = 'navbar-item-warning'
+                    # PR2018-08-24 debug: in base.html  href="#" is needed,
+                    # because bootstrap line 233: a:not([href]):not([tabindex]) overrides navbar-item-warning
+                    awp_message = {'info': _("Please note: the selected exam year is different from the current exam year."),
+                                   'class': 'alert-warning',
+                                   'id': 'id_diff_exyr'}
+                    awp_messages.append(awp_message)
 
 # +++ display_school -------- PR2020-10-27
         # <PERMIT> PR2020-10-27
         # - requsr_school is set when user is created and never changes
         # - may_select_school is True when:
-        #   - req_user is_role_insp, is_role_admin or is_role_system:
+        #   - req_user is_role_comm, is_role_insp, is_role_admin or is_role_system:
         #   - selected school is stored in usersettings
         #   - otherwise sel_schoolbase_pk is equal to _requsr_schoolbase_pk
         # note: may_select_school only sets hover of school. Permissions are set in JS HandleHdrbarSelect
+        # TODO hide school in certain pages
         display_school = True  # params.get('display_school', True)
         sel_school = None
+        sel_school_activated = False
         schoolname = ''
         if sel_examyear and display_school:
-            sel_schoolbase, sel_schoolbase_save = af.get_sel_schoolbase_instance(request)
+            sel_schoolbase, save_sel_schoolbase_NIU = af.get_sel_schoolbase_instance(request)
             schoolname = sel_schoolbase.code if sel_schoolbase.code else ''
-
-            # get school from sel_schoolbase and sel_examyear
+    # - get school from sel_schoolbase and sel_examyear
             sel_school = sch_mod.School.objects.get_or_none(
                 base=sel_schoolbase,
                 examyear=sel_examyear)
 
-            #logger.debug('requsr_schoolbase: ' + str(requsr_schoolbase))
             if sel_school:
                 schoolname += ' ' + sel_school.name
+                sel_school_activated = sel_school.activated
             else:
                 schoolname += ' <' + str(_('School not found in this exam year')) + '>'
+            logger.debug('sel_school: ' + str(sel_school))
+            logger.debug('sel_school_activated: ' + str(sel_school_activated))
 
 # +++ display department -------- PR2029-10-27 PR2020-11-17
         depname = ''
-        menu_items = {}
 
 # PR2018-08-24 select department PR2020-10-13
+        # TODO hide department if necessary
+        # <PERMIT>
         display_dep = True
         if display_dep:
             sel_depbase, sel_depbase_save, allowed_depbases = af.get_sel_depbase_instance(sel_school, request)
@@ -180,14 +199,32 @@ def get_headerbar_param(request, page, param=None):
         #XXX return_dict = lookup_button_key_with_viewpermit(request)
         #XXX setting = return_dict['setting']
         #XXX selected_menu_key = return_dict['menu_key']
-        selected_menu_key = page if page else 'examyears'  # default is 'examyears'
+        selected_menu_key = page if page else 'page_examyear'  # default is 'page_examyear'
         menu_items = set_menu_items(selected_menu_key, request)
 
-        # return_dict: {'setting': None, 'menu_key': 'mn_exyr', 'button_key': None}
-        # selected_menu_key: mn_exyr
-        #logger.debug('selected_menu_key: ' + str(selected_menu_key))
-        #logger.debug('menu_items: ' + str(menu_items))
 
+# ------- set no_access message -------- PR2021-03-25
+        if 'view_page' not in permit_list:
+            no_access = True
+            no_access_message = _("You don't have permission to view this page.")
+        elif no_examyears:
+            no_access = True
+            no_access_message = _("There are no exam years yet.")
+        elif country_locked:
+            no_access = True
+            no_access_message = _("%(country)s has no license to use AWP-online.") % \
+                                                 {'country': sel_country_name}
+        elif examyear_not_published:
+            no_access = True
+            admin = _('The Division of Examinations') if sel_country_abbrev.lower() == "sxm" else _('The ETE')
+            no_access_message = _("%(admin)s has not yet published examyear %(exyr)s. You cannot enter data yet.") % \
+                                                 {'admin': admin, 'exyr': str(sel_examyear_code)}
+
+        elif not sel_school_activated:
+            # block certain pages when not sel_school_activated
+            if page in ('page_student', 'page_studsubj', 'page_grade'):
+                no_access = True
+                no_access_message = _("You must first activate the examyear before you can enter data. Go to the page 'School' and activate the examyear.")
 
         headerbar = {
             'request': request,
@@ -200,10 +237,15 @@ def get_headerbar_param(request, page, param=None):
             'class_flag2_hidden': _class_flag2_hidden,
             'menu_items': menu_items,
             'awp_messages': awp_messages,
-            'permit_list': permit_list,
-            'usergroup_list': usergroup_list
+            'permit_list': permit_list
         }
+        if no_access:
+            headerbar['no_access'] = no_access
+            headerbar['no_access_message'] = no_access_message
 
+        if logging_on:
+            logger.debug('no_access:           ' + str(no_access))
+            logger.debug('no_access_message:  ' + str(no_access_message))
     return headerbar
 
 def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-12-23
@@ -211,7 +253,7 @@ def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-
     #logger.debug('sel_page: ' + str(sel_page))
     # only called by schools.views.Loggedin,
     # retrieves submenu_href for: return HttpResponseRedirect(reverse_lazy(saved_href))
-    lookup_page = sel_page if sel_page else 'examyears'
+    lookup_page = sel_page if sel_page else 'page_examyear'
     #logger.debug('lookup_page: ' + str(lookup_page))
     page_href = ''
     menu = menus_dict.get(lookup_page)

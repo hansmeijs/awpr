@@ -934,13 +934,12 @@
 //#########################################################################
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++
 
-    function b_show_mod_message(header_text, msg_text){  // PR2021-01-26
+    function b_show_mod_message(msg_html, header_text){  // PR2021-01-26 PR2021-03-25
         // TODO header, set focus after closing messagebox
-        // el_mod_message_header.innerText = loc.Enter_grade;
-        document.getElementById("id_mod_message_header").innerText = header_text;
-        document.getElementById("id_mod_message_text").innerText = msg_text;
+        document.getElementById("id_mod_message_header").innerText = (header_text) ? header_text : null;
+        document.getElementById("id_mod_message_text").innerHTML = (msg_html) ? msg_html : null;
         $("#id_mod_message").modal({backdrop: false});
-        set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
+        set_focus_on_el_with_timeout(document.getElementById("id_modmessage_btn_cancel"), 150 )
     }  // show_mod_message
 
 

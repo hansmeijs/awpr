@@ -11,7 +11,7 @@ from django.views.generic import View
 
 from timeit import default_timer as timer
 
-from accounts import views as av
+from accounts import views as acc_view
 
 from awpr import constants as c
 from awpr import functions as af
@@ -52,6 +52,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
         awp_messages = []
         if request.user and request.user.country and  request.user.schoolbase:
             if request.POST['download']:
+
 # ----- get user_lang
                 user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
                 activate(user_lang)
@@ -59,6 +60,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- get datalist_request
                 datalist_request = json.loads(request.POST['download'])
                 #logger.debug('datalist_request: ' + str(datalist_request) + ' ' + str(type(datalist_request)))
+
+# ----- get permit_list
+                page = datalist_request.get('permit_list')
+                permit_list, usergroup_list = acc_view.get_userpermit_list(page, request.user)
+                if permit_list:
+                    datalists['permit_list'] = permit_list
+                    datalists['usergroup_list'] = usergroup_list
 
 # ----- get user settings -- first get settings, these are used in other downloads
                 # download_setting will update usersetting with items in request_item_setting, and retrieve saved settings
@@ -93,8 +101,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- get users
                 if datalist_request.get('user_rows'):
-                    datalists['user_rows'] = av.create_user_list(request)
-                    datalists['permit_rows'] = av.create_permit_list()
+                    datalists['user_rows'] = acc_view.create_user_list(request)
+                    datalists['permit_rows'] = acc_view.create_permit_list()
 
 # ----- examyears
                 if datalist_request.get('examyear_rows'):
@@ -532,10 +540,6 @@ def create_settingdict_with_role_and_permits(req_user, user_lang):
                     'requsr_pk': req_user.pk,
                     'requsr_name': req_user.last_name,
                     'requsr_role': req_user.role}
-    if req_user.is_role_student:
-        setting_dict['requsr_role_student'] = req_user.is_role_student
-    if req_user.is_role_teacher:
-        setting_dict['requsr_role_teacher'] = req_user.is_role_teacher
     if req_user.is_role_school:
         setting_dict['requsr_role_school'] = req_user.is_role_school
     if req_user.is_role_insp:
@@ -558,7 +562,9 @@ def create_settingdict_with_role_and_permits(req_user, user_lang):
         setting_dict['requsr_group_auth3'] = req_user.is_group_auth3
     if req_user.is_group_anlz:
         setting_dict['requsr_group_anlz'] = req_user.is_group_anlz
-    if req_user.is_group_system:
-        setting_dict['requsr_group_system'] = req_user.is_group_system
+    if req_user.is_group_admin:
+        setting_dict['requsr_group_admin'] = req_user.is_group_admin
+    #if req_user.is_group_system:
+    #    setting_dict['requsr_group_system'] = req_user.is_group_system
 
     return setting_dict

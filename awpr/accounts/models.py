@@ -14,6 +14,7 @@ from django.utils.translation import ugettext_lazy as _
 from schools.models import Country, Examyear, Departmentbase, Department, Schoolbase, School
 from awpr import constants as c
 from awpr.settings import AUTH_USER_MODEL
+from schools import models as sch_mod
 
 import json #PR2018-12-19
 import logging # PR2018-05-10
@@ -63,8 +64,10 @@ class User(AbstractUser):
     email = EmailField( _('email address'),)
     # PR2018-08-01 role choices cannot be set in Model, because allowed values depend on request_user. Use role_list in Form instead
     role = PositiveSmallIntegerField(default=0)
+    # TODO replcae permit by usergroups
     permits = PositiveSmallIntegerField(default=0)
 
+    usergroups = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
     allowed_depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     allowed_levelbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     allowed_subjectbases = CharField(max_length=2048, null=True)
@@ -225,17 +228,15 @@ class User(AbstractUser):
         return self.is_authenticated and self.role is not None and self.role == c.ROLE_032_INSP
 
     @property
+    def is_role_comm(self):
+        # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
+        return self.is_authenticated and self.role is not None and self.role == c.ROLE_016_COMM
+
+    @property
     def is_role_school(self):
         # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
         return self.is_authenticated and self.role is not None and self.role == c.ROLE_008_SCHOOL
 
-    @property
-    def is_role_teacher(self):
-        return self.is_authenticated and self.role is not None and self.role == c.ROLE_004_TEACHER
-
-    @property
-    def is_role_student(self):
-        return self.is_authenticated and self.role is not None and self.role == c.ROLE_002_STUDENT
 
     @property
     def is_role_insp_or_admin_or_system(self):
@@ -267,17 +268,8 @@ class User(AbstractUser):
         return _has_permit
 
     @property
-    def is_role_school_group_system(self):
-        _has_permit = False
-        if self.is_authenticated:
-            if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_008_SCHOOL:
-                    _has_permit = (c.GROUP_128_SYSTEM in self.permits_tuple)
-        return _has_permit
-
-    @property
-    def is_group_system(self):
-        return self.is_authenticated and self.permits_tuple and c.GROUP_128_SYSTEM in self.permits_tuple
+    def is_group_admin(self):
+        return self.is_authenticated and self.permits_tuple and c.GROUP_064_ADMIN in self.permits_tuple
 
     @property
     def is_group_anlz(self):
@@ -798,9 +790,10 @@ class User_log(Model):
         return mode_str
 
 
-class Permit(Model):  # PR2021-03-18
+class Permit(sch_mod.AwpBaseModel):  # PR2021-03-18
     # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
-    objects = CustomUserManager()
+    # AwpModelManager already is in AwpBaseModel
+    #objects = sch_mod.AwpModelManager()
 
     role = PositiveSmallIntegerField(default=0)
     page = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
@@ -808,6 +801,9 @@ class Permit(Model):  # PR2021-03-18
     groups = PositiveSmallIntegerField(default=0)
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
 
+    usergroups = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+
+    sequence = PositiveSmallIntegerField(db_index=True, default=1)
 
 # PR2018-05-06
 class Usersetting(Model):

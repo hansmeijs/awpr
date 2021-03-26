@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(has_view_permit){
         // period also returns emplhour_list
         const datalist_request = {
-                setting: {page_studentsubjects: {mode: "get"}},
+                setting: {page_studsubj: {mode: "get"}},
                 schoolsetting: {setting_key: "import_studentsubject"},
                 locale: {page: ["studentsubjects", "subjects", "upload"]},
                 examyear_rows: {get: true},
@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
-            const upload_dict = {page_studentsubjects: {sel_btn: selected_btn}};
+            const upload_dict = {page_studsubj: {sel_btn: selected_btn}};
             UploadSettings (upload_dict, url_settings_upload);
         };
 
@@ -639,7 +639,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_div.innerText = (fld_value) ? fld_value : null;
 
                 } else if (field_name.includes("has_")){
-
 
         //console.log("field_name", field_name);
         //console.log("fld_value", fld_value);
@@ -2095,28 +2094,28 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
 
 //========= HandleFilterField  ====================================
-    function HandleFilterField(el_key, col_index, event) {
-        console.log( "===== HandleFilterField  ========= ");
+    function HandleFilterField(el_filter, col_index, event) {
+        //console.log( "===== HandleFilterField  ========= ");
         // skip filter if filter value has not changed, update variable filter_text
 
-        console.log( "el_key", el_key);
-        console.log( "col_index", col_index);
-        const filter_tag = get_attr_from_el(el_key, "data-filtertag")
+        //console.log( "el_filter", el_filter);
+        //console.log( "col_index", col_index);
+        const filter_tag = get_attr_from_el(el_filter, "data-filtertag")
         console.log( "filter_tag", filter_tag);
 
 // --- get filter tblRow and tblBody
-        const tblRow = get_tablerow_selected(el_key);
+        const tblRow = get_tablerow_selected(el_filter);
         const tblName = get_attr_from_el(tblRow, "data-table")
 
 // --- reset filter row when clicked on 'Escape'
-        const skip_filter = t_SetExtendedFilterDict(el_key, col_index, filter_dict, event.key);
+        const skip_filter = t_SetExtendedFilterDict(el_filter, col_index, filter_dict, event.key);
         console.log( "skip_filter", skip_filter);
 
         if (filter_tag === "toggle") {
 // ---  toggle filter_checked
             let filter_checked = (col_index in filter_dict) ? filter_dict[col_index] : 0;
     // ---  change icon
-            let el_icon = el_key.children[0];
+            let el_icon = el_filter.children[0];
             if(el_icon){
                 add_or_remove_class(el_icon, "tickmark_0_0", !filter_checked)
                 if(filter_tag === "toggle"){
@@ -2142,10 +2141,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 add_or_remove_class(el_icon, "exclamation_0_2", filter_checked === -2)
                 add_or_remove_class(el_icon, "tickmark_0_1", filter_checked === -1)
                 add_or_remove_class(el_icon, "tickmark_0_2", filter_checked === 1)
-
             }
         }
-
 
         Filter_TableRows(tblBody_datatable);
     }; // HandleFilterField
@@ -2301,7 +2298,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (tblName === "department") {
             selected_pk_dict.sel_depbase_pk = pk_int;
         }
-        const new_setting = {page_studentsubjects: {mode: "get"}, selected_pk: selected_pk_dict};
+        const new_setting = {page_studsubj: {mode: "get"}, selected_pk: selected_pk_dict};
         const datalist_request = {setting: new_setting};
 
 // also retrieve the tables that have been changed because of the change in school / dep

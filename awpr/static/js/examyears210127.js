@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // period also returns emplhour_list
         const datalist_request = {
                 setting: {page_examyear: {mode: "get"}, },
-                locale: {page: ["examyear"]},
+                locale: {page: ["page_examyear"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true}

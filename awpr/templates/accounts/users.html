@@ -21,7 +21,7 @@
 
 {% block content %}
     <div id="id_content">
-        {% if user.is_group_system %}
+        {% if user.is_group_system or not user.is_group_system %}
     <!-- =================== MODAL SELECT EXAM YEAR =================== -->
             {% include 'schools/modselectexamyear.html' %}
     <!-- =================== MODAL SELECT SCHOOL OR DEPARTMENT=================== -->
@@ -57,17 +57,17 @@
                 </div>
 
 <!-- BUTTON GROUP -->
-                <div id="id_btn_container" class="btn-group btn-block mx-2 my-2" role="group" aria-label="Choose option" >
+                <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="btn_user_list" class="btn btn-secondary ">{% trans 'User list' %}</button>
-                    <button data-btn="btn_permissions" class="btn btn-secondary ">{% trans 'User permissions' %}</button>
-                    <button data-btn="btn_groups" class="btn btn-secondary ">{% trans 'Group permissions' %}</button>
+                    <button data-btn="btn_usergroups" class="btn btn-secondary ">{% trans 'User groups' %}</button>
+                    <button data-btn="btn_grouppermits" class="btn btn-secondary ">{% trans 'Group permissions' %}</button>
                 </div>
 <!-- end BUTTON GROUP -->
 
 <!-- CONTENT BODY -->
                 <div class="content_body ml-2 mr-0">
         <!-- =================== DATA TABLE  =================== -->
-                    <table class="table tsa_tbl">
+                    <table class="table tsa_tbl pl-0 pr-4 my-2">
                         <thead id="id_tblHead_datatable"></thead>
                         <tbody id="id_tblBody_datatable"></tbody>
                     </table>
