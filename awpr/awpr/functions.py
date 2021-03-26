@@ -549,22 +549,26 @@ def transfer_depbases(instances):
 
 
 def load_default_permits(request):
+    logger.debug(' =============== load_default_permits ============= ')
     # Once-only function to fill table accounts.permit PR2021-03-26
 
     rowcount = acc_mod.Permit.objects.count()
-    if not rowcount:
+    logger.debug('rowcount: ' + str(rowcount))
 
-        permits = c.DEFAULT_PERMITS
-        for permit in permits:
-            acc_mod.Permit.objects.create(
-                role=permit.get('role'),
-                page=permit.get('page'),
-                sequence=permit.get('sequence'),
-                action=permit.get('action'),
-                usergroups=permit.get('usergroups'),
-                modifidat= timezone.now(),
+    if not rowcount:
+        default_permits = c.DEFAULT_PERMITS
+        for row in default_permits:
+            permit = acc_mod.Permit(
+                role=row.get('role'),
+                page=row.get('page'),
+                sequence=row.get('sequence'),
+                action=row.get('action'),
+                usergroups=row.get('usergroups'),
+                modifiedat= timezone.now(),
                 modifiedby=request.user
             )
+            permit.save()
+            logger.debug('permit: ' + str(permit))
 
 def update_examyearsetting(examyear, request):
     # Once-only function to add sysadmin permit to admin users PR2020-07-30
