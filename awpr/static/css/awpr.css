@@ -317,16 +317,9 @@ select.form-control:not([size]):not([multiple]) {
    margin-left: 248px;
   /* background-color: #fbedba !important; /* lighter shade of tsa yellow */
 }
-.border_bg_invalid {
-    border: 1px solid #dc3545;    /*  red like in django is-invalid */
-    border-radius: .25rem;
-    /*background-color: #f1b5b5;*/
-    background: #ffe8e8; /* licht lichtrood; */
-}
-.border_invalid {
-    border: 1px solid #dc3545;    /*  red like in django is-invalid */
-    border-radius: .25rem;
-}
+
+
+
 z_index_1070 {
     z-index: 1090;
 }

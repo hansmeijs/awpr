@@ -28,10 +28,11 @@
                 <li id="id_hdrbar_department" class="nav-item awp_navbar_item">
                     {{department}}
                 </li>
-                <li id="id_hdrbar_school" class="nav-item awp_navbar_item">
-                    {{school}}
-
-                </li>
+                {% if display_school %}
+                    <li id="id_hdrbar_school" class="nav-item awp_navbar_item">
+                        {{school}}
+                    </li>
+                {% endif %}
                 <li id="id_hdrbar_school_locked" class="nav-item awp_navbar ml-0 mt-1">
                     <div class="stat_0_0"></div>
                 </li>
@@ -45,7 +46,7 @@
                            href="#" data-toggle="dropdown"
                            aria-haspopup="true" aria-expanded="false">{{ user.username_sliced }}</a>
                         <div class="dropdown-menu" aria-labelledby="userMenu">
-                            {% if 'view_users' in permit_list %}
+                            {% if 'href_userpage' in permit_list %}
                                 <a class="dropdown-item" href="{% url 'users_url' %}" >{% trans 'Users' %}</a>
                             {% endif %}
                             <a class="dropdown-item" href="{% url 'password_change' %}">{% trans 'Change password' %}</a>

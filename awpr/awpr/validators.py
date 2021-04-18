@@ -207,3 +207,90 @@ def validate_subject_code(code, cur_subject=None):  # PR2020-12-11
     return msg_err
 
 
+def validate_code_name_identifier(table, field, new_value, is_absence, parent, update_dict, msg_dict, request, this_pk=None):
+    # validate if code already_exists in this table PR2019-07-30 PR2020-06-14 PR2021-03-28
+    # from https://stackoverflow.com/questions/1285911/how-do-i-check-that-multiple-keys-are-in-a-dict-in-a-single-pass
+                    # if all(k in student for k in ('idnumber','lastname', 'firstname')):
+    #logger.debug('validate_code_name_identifier: ' + str(table) + ' ' + str(field) + ' ' + str(new_value) + ' ' + str(parent) + ' ' + str(this_pk))
+    # filter is_absence is only used in table 'order' PR2020-06-14
+    # TODO function is from tsa, must change part of it
+    # TODO update_dict to be deprecated, to be replaced by msg_dict
+    msg_err = None
+    if not parent:
+        msg_err = _("No parent record.")
+    else:
+        max_len = 0
+        if field == 'code':
+            if table == 'subjecttype':
+                max_len = c.MAX_LENGTH_04
+            else:
+                max_len = c.MAX_LENGTH_SCHOOLCODE
+        elif field == 'name':
+            max_len = c.MAX_LENGTH_NAME
+
+        length = 0
+        if new_value:
+            length = len(new_value)
+
+        blank_not_allowed = False
+        fld = ''
+        if field == 'code':
+            fld = _('Code')
+            blank_not_allowed = True
+        elif field == 'name':
+            fld = _('Name')
+            blank_not_allowed = True
+
+        if blank_not_allowed and length == 0:
+            msg_err = _('%(fld)s cannot be blank.') % {'fld': fld}
+        elif length > max_len:
+            # msg_err = _('%(fld)s is too long. %(max)s characters or fewer.') % {'fld': fld, 'max': max_len}
+            msg_err = _("%(fld)s '%(val)s' is too long, %(max)s characters or fewer.") % {'fld': fld, 'val': new_value, 'max': max_len}
+            # msg_err = _('%(fld)s cannot be blank.') % {'fld': fld}
+        if not msg_err:
+            crit = None
+            if table in ('departmentbase', 'schoolbase', 'subjectbase', 'subjecttype'):
+                crit = Q(company=request.user.company)
+            else:
+                msg_err = _("Model '%(mdl)s' not found.") % {'mdl': table}
+
+    # filter code, name, identifier, not case sensitive
+            if field == 'code':
+                crit.add(Q(code__iexact=new_value), crit.connector)
+            elif field == 'name':
+                crit.add(Q(name__iexact=new_value), crit.connector)
+    # exclude this record
+            if this_pk:
+                crit.add(~Q(pk=this_pk), crit.connector)
+
+            exists = False
+            is_inactive = False
+            instance = None
+            if table == 'employee':
+                instance = m.Employee.objects.filter(crit).first()
+
+            else:
+                msg_err = _("Model '%(mdl)s' not found.") % {'mdl': table}
+            # TODO msg not working yet
+            #logger.debug('instance: ' + str(instance))
+            if instance:
+                exists = True
+                is_inactive = getattr(instance, 'inactive', False)
+            if exists:
+                if is_inactive:
+                    msg_err = _("%(fld)s '%(val)s' exists, but is inactive.") % {'fld': fld, 'val': new_value}
+                else:
+                    msg_err = _("%(fld)s '%(val)s' already exists.") % {'fld': fld, 'val': new_value}
+
+    #logger.debug('msg_err: ' + str(msg_err))
+    if msg_err:
+        # empty update_dict {} is Falsey
+        if update_dict:
+            if field not in update_dict:
+                update_dict[field] = {}
+            update_dict[field]['error'] = msg_err
+        elif msg_dict:
+            update_dict['err_' + field] = msg_err
+
+    return msg_err
+

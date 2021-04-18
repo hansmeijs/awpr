@@ -534,6 +534,20 @@ class Grade(sch_mod.AwpBaseModel):
     ce_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_locked = BooleanField(default=False)
 
+    pe_exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
+    pe_exam_result = CharField(max_length=2048, null=True)
+    pe_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    pe_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    pe_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    pe_exam_locked = BooleanField(default=False)
+
+    ce_exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
+    ce_exam_result = CharField(max_length=2048, null=True)
+    ce_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    ce_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    ce_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    ce_exam_locked = BooleanField(default=False)
+
     deleted = BooleanField(default=False)
     status = PositiveSmallIntegerField(default=0)
 
@@ -560,63 +574,39 @@ class Grade_log(sch_mod.AwpBaseModel):
     se_status = PositiveSmallIntegerField(default=0)
     se_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    se_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     se_locked = BooleanField(default=False)
 
     pe_status = PositiveSmallIntegerField(default=0)
     pe_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    pe_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     pe_locked = BooleanField(default=False)
 
     ce_status = PositiveSmallIntegerField(default=0)
     ce_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    ce_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_locked = BooleanField(default=False)
 
+    pe_exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
+    pe_exam_result = CharField(max_length=2048, null=True)
+    pe_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    pe_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    pe_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    pe_exam_locked = BooleanField(default=False)
+
+    ce_exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
+    ce_exam_result = CharField(max_length=2048, null=True)
+    ce_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    ce_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    ce_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    ce_exam_locked = BooleanField(default=False)
+
     deleted = BooleanField(default=False)
     status = PositiveSmallIntegerField(default=0)
+
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
-
-    @property
-    def mode_str(self):
-        return f.get_mode_str(self)
-
-# PR2021-03-04
-class Examresult(sch_mod.AwpBaseModel):
-    objects = CustomManager()
-
-    studentsubject = ForeignKey(Studentsubject, related_name='+', on_delete=CASCADE)
-
-    exam = ForeignKey(subj_mod.Exam, related_name='+', on_delete=CASCADE)
-    examperiod = PositiveSmallIntegerField(db_index=True,
-                                           default=1)  # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
-
-    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
-
-    result = CharField(max_length=2048, null=True, blank=True)
-
-    auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
-
-class Examresult_log(sch_mod.AwpBaseModel):
-    objects = CustomManager()
-
-    answer_id = IntegerField(db_index=True)
-
-    studentsubject_log = ForeignKey(Studentsubject_log, related_name='+', on_delete=CASCADE)
-
-    examperiod = PositiveSmallIntegerField(db_index=True, default=1)  # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
-
-    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
-
-    result = CharField(max_length=2048, null=True, blank=True)
-
-    auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
-

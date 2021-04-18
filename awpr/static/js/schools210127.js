@@ -2,17 +2,12 @@
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
-    // <PERMIT> PR220-10-02
-    //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
-    //  roles are:   'role_student', 'role_teacher', 'role_school', 'role_insp', 'role_admin', 'role_system'
-    //  permits are: 'perm_read', 'perm_edit', 'perm_auth1', 'perm_auth2', 'perm_docs', 'perm_admin', 'perm_system'
-
-// ---  check if user has permit to view this page. If not: el_loader does not exist PR2020-10-02
     let el_loader = document.getElementById("id_loader");
-    const has_view_permit = (!!el_loader);
-    // has_edit_permit gets value after downloading settings
-    let has_edit_permit = false;
+
+    // permit dict gets value after downloading permit_list PR2021-03-27
+    //  if user has no permit to view this page ( {% if no_access %} ): el_loader does not exist PR2020-10-02
+    const permit = {view_page: (!!el_loader)}
+    let usergroups = [];
 
     const cls_hide = "display_hide";
     const cls_hover = "tr_hover";
@@ -62,32 +57,9 @@ document.addEventListener('DOMContentLoaded', function() {
              if (event.key === "Escape") { ResetFilterRows()}
         });
 
-// --- header bar elements
-        const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
-            el_hdrbar_examyear.addEventListener("click", function() {
-                t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, MSESD_Response)}, false )
-        const el_hdrbar_school = document.getElementById("id_hdrbar_school")
-            el_hdrbar_school.addEventListener("click", function() {
-                t_MSESD_Open(loc, "school", school_map, setting_dict, MSESD_Response)}, false )
-        const el_hdrbar_department = document.getElementById("id_hdrbar_department")
-            el_hdrbar_department.addEventListener("click", function() {
-                t_MSESD_Open(loc, "department", department_map, setting_dict, MSESD_Response)}, false )
-
-// ---  MOD SELECT EXAM YEAR ------------------------------------
-        //let el_MSEY_tblBody_select = document.getElementById("id_MSEY_tblBody_select");
-// ---  MOD SELECT SCHOOL OR DEPARTMENT ------------------------------------
-        //let el_ModSelSchOrDep_tblBody_select = document.getElementById("id_MSESD_tblBody_select");
-
-        // ---  MOD SELECT EXAM YEAR ------------------------------------
-        const el_SBR_school = document.getElementById("id_SBR_school")
-            el_SBR_school.addEventListener("click", function() {ModSelSchOrDep_Open()}, false )
-            add_hover(el_SBR_school);
-        const el_SBR_department = document.getElementById("id_SBR_department")
-            el_SBR_department.addEventListener("click", function() {ModSelect_Open("department")}, false )
-
-// --- buttons in btn_container
+// --- BUTTON CONTAINER ------------------------------------
         const el_btn_container = document.getElementById("id_btn_container")
-        if (has_view_permit){
+        if (permit.view_page){
             const btns = el_btn_container.children;
             for (let i = 0, btn; btn = btns[i]; i++) {
                 const data_btn = get_attr_from_el(btn,"data-btn")
@@ -95,28 +67,48 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
 
+// ---  HEADER BAR ------------------------------------
+        const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
+        const el_hdrbar_school = document.getElementById("id_hdrbar_school");
+        const el_hdrbar_department = document.getElementById("id_hdrbar_department");
+
+        if (permit.view_page){
+            el_hdrbar_examyear.addEventListener("click", function() {
+                t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, MSESD_Response)}, false );
+            el_hdrbar_school.addEventListener("click", function() {
+                t_MSESD_Open(loc, "school", school_map, setting_dict, MSESD_Response)}, false );
+            el_hdrbar_department.addEventListener("click", function() {
+                t_MSESD_Open(loc, "department", department_map, setting_dict, MSESD_Response)}, false );
+        }
+
+// ---  MOD SELECT EXAM YEAR ------------------------------------
+        const el_SBR_school = document.getElementById("id_SBR_school")
+            el_SBR_school.addEventListener("click", function() {ModSelSchOrDep_Open()}, false )
+            add_hover(el_SBR_school);
+        const el_SBR_department = document.getElementById("id_SBR_department")
+            el_SBR_department.addEventListener("click", function() {ModSelect_Open("department")}, false )
+
 // ---  MOD SELECT SCHOOL ------------------------------------
         let el_ModSelSch_tblBody_select = document.getElementById("id_MSESD_tblBody_select");
 
 // ---  MODAL SCHOOL
         const el_MSCH_div_form_controls = document.getElementById("id_div_form_controls")
-        if(has_view_permit){
+        const el_MSCH_code = document.getElementById("id_MSCH_code")
+        const el_MSCH_abbrev = document.getElementById("id_MSCH_abbrev")
+        const el_MSCH_article = document.getElementById("id_MSCH_article")
+        const el_MSCH_name = document.getElementById("id_MSCH_name")
+        const el_MSCH_tbody_select = document.getElementById("id_MSCH_tbody_select")
+        const el_MSCH_btn_delete = document.getElementById("id_MSCH_btn_delete");
+        const el_MSCH_btn_save = document.getElementById("id_MSCH_btn_save");
+        if(permit.view_page){
             let form_elements = el_MSCH_div_form_controls.querySelectorAll(".awp_input_text")
             for (let i = 0, el, len = form_elements.length; i < len; i++) {
                 el = form_elements[i];
                 if(el){el.addEventListener("keyup", function() {MSCH_InputKeyup(el)}, false )};
             }
-        }
-        const el_MSCH_code = document.getElementById("id_MSCH_code")
-        const el_MSCH_abbrev = document.getElementById("id_MSCH_abbrev")
-        const el_MSCH_article = document.getElementById("id_MSCH_article")
-        const el_MSCH_name = document.getElementById("id_MSCH_name")
-
-        const el_MSCH_tbody_select = document.getElementById("id_MSCH_tbody_select")
-        const el_MSCH_btn_delete = document.getElementById("id_MSCH_btn_delete");
-        if(has_view_permit){el_MSCH_btn_delete.addEventListener("click", function() {MSCH_Save("delete")}, false )}
-        const el_MSCH_btn_save = document.getElementById("id_MSCH_btn_save");
-        if(has_view_permit){ el_MSCH_btn_save.addEventListener("click", function() {MSCH_Save("save")}, false )}
+            el_MSCH_btn_delete.addEventListener("click", function() {MSCH_Save("delete")}, false )
+            el_MSCH_btn_save.addEventListener("click", function() {MSCH_Save("save")}, false );
+        };
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_confirm_header");
@@ -128,16 +120,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let el_confirm_btn_cancel = document.getElementById("id_confirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_confirm_btn_save");
-        if(has_view_permit){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
+        if(permit.view_page){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
 
 // ---  set selected menu button active
 // TODO
     SetMenubuttonActive(document.getElementById("id_hdr_school"));
-    if(has_view_permit){
+    if(permit.view_page){
         // period also returns emplhour_list
         const datalist_request = {
+                permit_list: "page_school",
                 setting: {page_school: {mode: "get"}},
-                locale: {page: ["schools"]},
+                locale: {page: ["page_school"]},
                 examyear_rows: {get: true},
                 department_rows: {get: true},
                 school_rows: {get: true}
@@ -173,17 +166,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 let check_status = false;
                 let call_DisplayCustomerOrderEmployee = true;
 
-                if ("locale_dict" in response) { refresh_locale(response.locale_dict)};
+                if ("locale_dict" in response) {
+                    refresh_locale(response.locale_dict)
+        console.log("loc: ", loc);
+                };
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict
-                    // <PERMIT> PR220-10-02
-                    //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-                    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
-                    has_edit_permit = (setting_dict.requsr_role_admin && setting_dict.requsr_group_edit) ||
-                                      (setting_dict.requsr_role_system && setting_dict.requsr_group_edit);
+        console.log("setting_dict: ", setting_dict);
                     selected_btn = (setting_dict.sel_btn)
 
                     b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                };
+
+                // get_permits uses setting_dict. Must come after setting_dict and before CreateSubmenu and FiLLTbl
+                if ("permit_list" in response) {
+                    get_permits(response.permit_list)
+        console.log("permit: ", permit);
+                };
+                if ("usergroup_list" in response) {
+                    usergroups = response.usergroup_list;
+        console.log("usergroups: ", usergroups);
                 };
 
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
@@ -222,11 +224,10 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
         //console.log("===  CreateSubmenu == ");
-
         let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Add_school, function() {MSCH_Open()});
-            AddSubmenuButton(el_submenu, loc.Delete_school, function() {ModConfirmOpen("delete")}, ["mx-2"]);
-            AddSubmenuButton(el_submenu, loc.Upload_awpdata, function() {UploadAwpData()}, ["mx-2"]);
+            AddSubmenuButton(el_submenu, loc.Delete_school, function() {ModConfirmOpen("delete")}, ["ml-2"]);
+            AddSubmenuButton(el_submenu, loc.Upload_awpdata, function() {UploadAwpData()}, ["ml-2"]);
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
 
@@ -461,7 +462,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  UpdateField  ================ PR2020-08-16
     function UpdateField(el_div, map_dict) {
-        console.log("=========  UpdateField =========");
+        //console.log("=========  UpdateField =========");
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
             const fld_value = map_dict[field_name];
@@ -656,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- also used for level, sector,
     function MSCH_Open(el_input){
         console.log(" -----  MSCH_Open   ----")
-        if( has_edit_permit){
+        if(permit.edit_school){
             let user_pk = null, user_country_pk = null, user_schoolbase_pk = null, mapid = null;
             const fldName = get_attr_from_el(el_input, "data-field");
 
@@ -717,8 +718,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             MSCH_FillSelectTableDepartment();
 
-    // ---  set focus to el_MSCH_abbrev
-            setTimeout(function (){el_MSCH_abbrev.focus()}, 50);
+    // ---  set focus to el_MSCH_code
+            setTimeout(function (){el_MSCH_code.focus()}, 50);
 
     // ---  disable btn submit, hide delete btn when is_addnew
            // add_or_remove_class(el_MSCH_btn_delete, cls_hide, is_addnew )
@@ -737,13 +738,11 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  MSCH_save  ----", crud_mode);
         console.log( "mod_MSCH_dict: ", mod_MSCH_dict);
 
-        if(has_edit_permit){
+        if(permit.edit_school){
             const is_delete = (crud_mode === "delete")
 
-            let upload_dict = {sel_examyear_pk: setting_dict.sel_examyear_pk,
-                    table: 'school',
+            let upload_dict = {table: 'school', examyear_pk: setting_dict.sel_examyear_pk}
 
-                }
             if(mod_MSCH_dict.is_addnew) {
                 upload_dict.create = true;
             } else {
@@ -1146,7 +1145,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "delete", "inactive" or "resend_activation_email", "permission_sysadm"
 
-        if(has_edit_permit){
+        if(permit.edit_school){
 
     // ---  get selected_pk
             let tblName = null, selected_pk = null;
@@ -1235,9 +1234,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
-        let close_modal = !has_edit_permit;
+        let close_modal = !permit.edit_school;
 
-        if(has_edit_permit){
+        if(permit.edit_school){
             let tblRow = document.getElementById(mod_dict.mapid);
             let upload_dict = {};
 
@@ -1660,4 +1659,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     }  // UploadAwpData
+
+//###########################################################################
+//========= get_permits  ======== PR2021-03-27
+    function get_permits(permit_list) {
+
+        // <PERMIT> PPR2021-03-27
+        //  edit permits can only be true if:
+        //   - country is not locked
+        //   - AND examyear is published AND not locked
+        //   - AND school is activated AND not locked
+
+        // reset permits -- not necessary. Function is only called once in first DatalistDownload
+        // user cannot open page when no view-permit or country_locked or not examyear_published  or not school_activated
+        // no_access is set on server when user has no view-permit or country_locked or not examyear_published  or not school_activated
+
+        // permit.view_page: (!!el_loader), got value at start of script
+
+        const locked = (setting_dict.sel_examyear_locked || setting_dict.sel_school_locked);
+        permit.edit_school = (!locked && permit_list.includes("edit_school"));
+    }  // get_permits
+
+
+
 })  // document.addEventListener('DOMContentLoaded', function()

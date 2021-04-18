@@ -191,6 +191,14 @@ urlpatterns = [
         path('uploadsetting', student_views.StudentImportUploadSetting.as_view(), name='student_uploadsetting_url'),
     ])),
 
+# ===== EXAMS ========================== PR2021-04-04
+    path('exams/', include([
+        path('exam', subject_views.ExamListView.as_view(), name='exams_url'),
+        path('upload', subject_views.ExamUploadView.as_view(), name='exam_upload_url'),
+        path('approve', subject_views.ExamApproveView.as_view(), name='exam_approve_url'),
+    ])),
+
+
 # ===== GRADES ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
     path('grades/', include([
         path('grade', grade_views.GradeListView.as_view(), name='grades_url'),

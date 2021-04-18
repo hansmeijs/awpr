@@ -2,6 +2,14 @@
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
+    let el_loader = document.getElementById("id_loader");
+
+// ---  get permits
+    // permit dict gets value after downloading permit_list PR2021-03-27
+    //  if user has no permit to view this page ( {% if no_access %} ): el_loader does not exist PR2020-10-02
+    const permit = {view_page: (!!el_loader)}
+    let usergroups = [];
+
     const cls_hide = "display_hide";
     const cls_hover = "tr_hover";
     const cls_visible_hide = "visibility_hide";
@@ -79,8 +87,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
 
-// ---  get elements
-    let el_loader = document.getElementById("id_loader");
 
 // === EVENT HANDLERS ===
 // === reset filter when ckicked on Escape button ===
@@ -88,37 +94,56 @@ document.addEventListener('DOMContentLoaded', function() {
              if (event.key === "Escape") { ResetFilterRows()}
         });
 
-// --- buttons in btn_container
-        const btns = document.getElementById("id_btn_container").children;
-        for (let i = 0, btn; btn = btns[i]; i++) {
-            const data_btn = get_attr_from_el(btn,"data-btn")
-            btn.addEventListener("click", function() {HandleBtnSelect(data_btn)}, false )
+// --- BUTTON CONTAINER ------------------------------------
+        const el_btn_container = document.getElementById("id_btn_container");
+        if (permit.view_page){
+            const btns = document.getElementById("id_btn_container").children;
+            for (let i = 0, btn; btn = btns[i]; i++) {
+                const data_btn = get_attr_from_el(btn,"data-btn")
+                btn.addEventListener("click", function() {HandleBtnSelect(data_btn)}, false )
+            };
         };
 
+// ---  HEADER BAR ------------------------------------
+        const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
+        const el_hdrbar_school = document.getElementById("id_hdrbar_school");
+        const el_hdrbar_department = document.getElementById("id_hdrbar_department");
+        if (permit.view_page){
+            el_hdrbar_examyear.addEventListener("click",
+                function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, MSESD_Response)}, false );
+            el_hdrbar_school.addEventListener("click",
+                function() {t_MSESD_Open(loc, "school", school_map, setting_dict, MSESD_Response)}, false );
+            el_hdrbar_department.addEventListener("click",
+                function() {t_MSESD_Open(loc, "department", department_map, setting_dict, MSESD_Response)}, false );
+        }
+
 // ---  MODAL USER
-        const el_MUA_schoolname = document.getElementById("id_MUA_schoolname")
-            el_MUA_schoolname.addEventListener("keyup", function() {MUA_InputSchoolname(el_MUA_schoolname, event.key)}, false )
-        const el_MUA_username = document.getElementById("id_MUA_username")
-            el_MUA_username.addEventListener("keyup", function() {MUA_InputKeyup(el_MUA_username, event.key)}, false )
-        const el_MUA_last_name = document.getElementById("id_MUA_last_name")
-            el_MUA_last_name.addEventListener("keyup", function() {MUA_InputKeyup(el_MUA_last_name, event.key)}, false )
-        const el_MUA_email = document.getElementById("id_MUA_email")
-            el_MUA_email.addEventListener("keyup", function() {MUA_InputKeyup(el_MUA_email, event.key)}, false )
+        const el_MUA_schoolname = document.getElementById("id_MUA_schoolname");
+        const el_MUA_username = document.getElementById("id_MUA_username");
+        const el_MUA_last_name = document.getElementById("id_MUA_last_name");
+        const el_MUA_email = document.getElementById("id_MUA_email");
         const el_MUA_btn_delete = document.getElementById("id_MUA_btn_delete");
-            el_MUA_btn_delete.addEventListener("click", function() {ModConfirmOpen("delete")}, false )
         const el_MUA_btn_submit = document.getElementById("id_MUA_btn_submit");
-            el_MUA_btn_submit.addEventListener("click", function() {MUA_Save("save")}, false )
-        const el_MUA_footer_container = document.getElementById("id_MUA_footer_container")
-        const el_MUA_footer01 = document.getElementById("id_MUA_footer01")
-        const el_MUA_footer02 = document.getElementById("id_MUA_footer02")
+        const el_MUA_footer_container = document.getElementById("id_MUA_footer_container");
+        const el_MUA_footer01 = document.getElementById("id_MUA_footer01");
+        const el_MUA_footer02 = document.getElementById("id_MUA_footer02");
         const el_MUA_loader = document.getElementById("id_MUA_loader");
+        if (permit.view_page){
+            el_MUA_schoolname.addEventListener("keyup", function() {MUA_InputSchoolname(el_MUA_schoolname, event.key)}, false);
+            el_MUA_username.addEventListener("keyup", function() {MUA_InputKeyup(el_MUA_username, event.key)}, false);
+            el_MUA_last_name.addEventListener("keyup", function() {MUA_InputKeyup(el_MUA_last_name, event.key)}, false);
+            el_MUA_email.addEventListener("keyup", function() {MUA_InputKeyup(el_MUA_email, event.key)}, false);
+            el_MUA_btn_delete.addEventListener("click", function() {ModConfirmOpen("delete")}, false);
+            el_MUA_btn_submit.addEventListener("click", function() {MUA_Save("save")}, false);
+        };
 
 // ---  MODAL GROUP PERMISSION
         const el_MGP_btn_delete = document.getElementById("id_MGP_btn_delete");
-            el_MGP_btn_delete.addEventListener("click", function() {MGP_Save("delete")}, false )
         const el_MGP_btn_submit = document.getElementById("id_MGP_btn_submit");
-            el_MGP_btn_submit.addEventListener("click", function() {MGP_Save("save")}, false )
-
+        if (permit.view_page){
+            el_MGP_btn_delete.addEventListener("click", function() {MGP_Save("delete")}, false);
+            el_MGP_btn_submit.addEventListener("click", function() {MGP_Save("save")}, false);
+        };
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_confirm_header");
@@ -127,24 +152,27 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_confirm_msg01 = document.getElementById("id_confirm_msg01")
         let el_confirm_msg02 = document.getElementById("id_confirm_msg02")
         let el_confirm_msg03 = document.getElementById("id_confirm_msg03")
-
         let el_confirm_btn_cancel = document.getElementById("id_confirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_confirm_btn_save");
+        if (permit.view_page){
             el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()});
-
-// ---  set selected menu button active
-    SetMenubuttonActive(document.getElementById("id_hdr_users"));
-
-    // period also returns emplhour_list
-    const datalist_request = {
-            setting: {page_user: {mode: "get"}},
-            locale: {page: ["page_user"]},
-            user_rows: {get: true},
-            school_rows: {get: true}
         };
 
-    DatalistDownload(datalist_request, "DOMContentLoaded");
+    if(permit.view_page){
+// ---  set selected menu button active
+        SetMenubuttonActive(document.getElementById("id_hdr_users"));
 
+        // period also returns emplhour_list
+        const datalist_request = {
+                permit_list: "page_user",
+                setting: {page_user: {mode: "get"}},
+                locale: {page: ["page_user"]},
+                user_rows: {get: true},
+                school_rows: {get: true}
+            };
+
+        DatalistDownload(datalist_request, "DOMContentLoaded");
+    };
 //  #############################################################################################################
 
 //========= DatalistDownload  ===================== PR2020-07-31
@@ -172,13 +200,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 // hide loader
                 el_loader.classList.add(cls_visible_hide)
                 let check_status = false;
-                let call_DisplayCustomerOrderEmployee = true;
+                let must_create_submenu = false;
 
-                if ("locale_dict" in response) { refresh_locale(response.locale_dict)};
+                if ("locale_dict" in response) {
+                    loc = response.locale_dict;
+                    must_create_submenu = true;
+                };
+
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict;
                     selected_btn = (setting_dict.sel_btn);
+
+                    b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
+
+                // get_permits uses setting_dict. Must come after setting_dict and before CreateSubmenu and FiLLTbl
+                if ("permit_list" in response) {get_permits(response.permit_list)};
+                if ("usergroup_list" in response) {usergroups = response.usergroup_list};
+
+                if(must_create_submenu){CreateSubmenu()};
 
                 if ("user_rows" in response) { refresh_user_map(response.user_rows)};
                 if ("permit_rows" in response) { refresh_permit_map(response.permit_rows) };
@@ -195,20 +235,25 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }  // function DatalistDownload
 
-//=========  refresh_locale  ================  PR2020-07-31
-    function refresh_locale(locale_dict) {
-        //console.log ("===== refresh_locale ==== ")
-        loc = locale_dict;
-        CreateSubmenu()
-    }  // refresh_locale
-
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
-        //console.log("===  CreateSubmenu == ");
+        console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
-            AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")});
-            AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("delete")}, ["mx-2"]);
-            AddSubmenuButton(el_submenu, loc.Add_permission, function() {MGP_Open("addnew")});
+        console.log("permit", permit);
+        console.log("permit.crud_user", permit.crud_user);
+        console.log("permit.crud_permit", permit.crud_permit);
+        console.log("setting_dict.requsr_role_system", setting_dict.requsr_role_system);
+        console.log("usergroups", usergroups);
+        console.log("usergroups.includes(admin)", usergroups.includes("admin"));
+            // hardcode access of system admin
+            if (permit.crud_user || (setting_dict.requsr_role_system && usergroups.includes("admin"))){
+                AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")});
+                AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("delete")}, ["ml-2"]);
+            }
+            // hardcode access of system admin
+            if (permit.crud_permit || (setting_dict.requsr_role_system && usergroups.includes("admin"))){
+                AddSubmenuButton(el_submenu, loc.Add_permission, function() {MGP_Open("addnew")}, ["ml-2"]);
+            };
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
 
@@ -294,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-03-23
     function CreateTblHeader() {
-        console.log("===  CreateTblHeader ===== ");
+        //console.log("===  CreateTblHeader ===== ");
 
         const tblName = get_tblName_from_selectedBtn();
         const field_setting = field_settings[tblName]
@@ -318,8 +363,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const class_width = "tw_" + field_setting.field_width[j] ;
             const class_align = "ta_" + field_setting.field_align[j];
 
-        console.log("field_setting.field_caption[j]", field_setting.field_caption[j]);
-        console.log("field_caption", field_caption);
+        //console.log("field_setting.field_caption[j]", field_setting.field_caption[j]);
+        //console.log("field_caption", field_caption);
 // ++++++++++ create header row +++++++++++++++
     // --- add th to tblRow.
             let th_header = document.createElement("th");
@@ -674,16 +719,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // mode = 'addnew' when called by SubmenuButton
         // mode = 'update' when called by tblRow event
 
-        // <PERMIT> PR2020-10-12
-        // - when role is system or admin (ETE): req_user can select school, table school and iput school are visible
-        // - when role is inspection or school: user.schoolbase = request.user.schoolbase
-        // - else (teacher, student) : no access
-        // - only perm_system can create user_list
-
-        const may_create_edit_users = (setting_dict.requsr_group_system);
-        const may_add_user_to_other_schools = (setting_dict.requsr_role_admin || setting_dict.requsr_role_system);
-        if(may_create_edit_users){
-
+        if(permit.crud_user){
             let user_dict = {}, user_pk = null;
             let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null;
             const fldName = get_attr_from_el(el_input, "data-field");
@@ -700,7 +736,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     user_schoolbase_pk = user_dict.schoolbase_id;
                     user_schoolbase_code = user_dict.sb_code;
                 }
-            } else if (!may_add_user_to_other_schools){
+            } else if (!permit.crud_user_otherschool){
                 // when new user and not role_admin or role_system: : get user_schoolbase_pk from request_user
                 user_schoolbase_pk = setting_dict.requsr_schoolbase_pk;
                 user_schoolbase_code = setting_dict.requsr_schoolbase_code;
@@ -738,7 +774,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---  show only the elements that are used in this tab
             const container_element = document.getElementById("id_mod_user");
-            let tab_str = (is_addnew) ? (may_add_user_to_other_schools) ? "tab_addnew_may_select_school" : "tab_addnew_noschool" : "tab_update";
+            let tab_str = (is_addnew) ? (permit.crud_user_otherschool) ? "tab_addnew_may_select_school" : "tab_addnew_noschool" : "tab_update";
             show_hide_selected_elements_byClass("tab_show", tab_str, container_element)
 
     // ---  set header text
@@ -747,7 +783,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUA_header.innerText = header_text;
 
     // ---  fill selecttable
-            if(may_add_user_to_other_schools){
+            if(permit.crud_user_otherschool){
                 MUA_FillSelectTableSchool();
             }
 
@@ -762,8 +798,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_MUA_email.value = mod_MUA_dict.email;
             }
     // ---  set focus to next el
-            const el_focus = (is_addnew && may_add_user_to_other_schools) ? el_MUA_schoolname :
-                             ( (is_addnew && !may_add_user_to_other_schools) || (fldName === "username") ) ? el_MUA_username :
+            const el_focus = (is_addnew && permit.crud_user_otherschool) ? el_MUA_schoolname :
+                             ( (is_addnew && !permit.crud_user_otherschool) || (fldName === "username") ) ? el_MUA_username :
                              (fldName === "last_name") ? el_MUA_last_name :
                              (fldName === "email") ? el_MUA_email : null;
             if(el_focus){setTimeout(function (){el_focus.focus()}, 50)};
@@ -1841,5 +1877,15 @@ document.addEventListener('DOMContentLoaded', function() {
        };
         FillTblRows();
     }  // function ResetFilterRows
+
+//###########################################################################
+//========= get_permits  ========
+    function get_permits(permit_list) {
+        // <PERMIT> PPR2021-03-27
+        // permit.view_page: (!!el_loader), got value at start of script
+        permit.crud_permit = (permit_list.includes("crud_permit"));
+        permit.crud_user = (permit_list.includes("crud_user"));
+        permit.crud_user_otherschool = (permit_list.includes("crud_user_otherschool"));
+    }  // get_permits
 
 })  // document.addEventListener('DOMContentLoaded', function()

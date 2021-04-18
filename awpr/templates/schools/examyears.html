@@ -25,6 +25,9 @@
                     readonly>
             </div>
         {% endif %}
+        {% if user.is_role_system %}
+            <a href="{% static 'data/AWP 2021.02.accdb' %}" class="btn btn-secondary py-2 px-4 m-4 ">{% trans 'AWP2021.02' %}</a>
+        {% endif %}
     </nav>
 {% endblock %}
 <!-- END SIDE BAR -->

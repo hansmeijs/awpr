@@ -1095,20 +1095,27 @@ aXX:hover{
     border-color: #a5a5a5; /* medium grey; 165 165 165 */
 }
 
+
+.color_invalid {
+    color: #dc3545;    /*  red like in django is-invalid */
+}
+.color_orange {
+    color: orange;
+}
+
+
+  color: orange;
+
 .border_bg_invalid {
     border: 1px solid #dc3545;    /*  red like in django is-invalid */
     border-radius: .25rem;
     /*background-color: #f1b5b5;*/
     background: #ffe8e8; /* licht lichtrood; */
 }
+
 .border_invalid {
     border: 1px solid #dc3545;    /*  red like in django is-invalid */
     border-radius: .25rem;
-}
-
-
-.color_invalid {
-    color: #dc3545;    /*  red like in django is-invalid */
 }
 
 .border_bg_valid {
@@ -1158,13 +1165,19 @@ aXX:hover{
     height: 390px;
     width: 220px;
 }
+.tbl_div_390_360 {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 390px;
+    width: 360px;
+}
+
 .tbl_div_390_420 {
     overflow-x: hidden;
     overflow-y: auto;
     height: 390px;
     width: 420px;
 }
-
 .tbl_div_450_480 {
     overflow-x: hidden;
     overflow-y: auto;

@@ -852,7 +852,17 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 //========= t_FillOptionsFromList  =======  PR2020-12-17
     function t_FillOptionsFromList(el_select, data_list, value_field, caption_field,
                                     select_text, select_text_none, selected_value, filter_field, filter_value) {
-        //console.log( "=== t_FillOptionsFromList ");
+
+/*
+        console.log( "=== t_FillOptionsFromList ");
+        console.log( "data_list", data_list);
+        console.log( "value_field", value_field);
+        console.log( "caption_field", caption_field);
+        console.log( "select_text", select_text);
+        console.log( "select_text_none", select_text_none);
+        console.log( "filter_field", filter_field);
+        console.log( "filter_value", filter_value, typeof filter_value);
+*/
 
 // ---  fill options of select box
         let option_text = "";
@@ -866,6 +876,12 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                 const item_value = item_dict[value_field];
                 const item_caption = item_dict[caption_field];
                 const show_row = (item_filter && filter_value) ? (item_filter === filter_value) : true;
+/*
+console.log( "item_filter", item_filter);
+console.log( "item_value", item_value);
+console.log( "item_caption", item_caption);
+console.log( "show_row", show_row);
+*/
                 if(show_row){
                     option_text += FillOptionTextNew(item_value, item_caption, selected_value)
                     row_count += 1

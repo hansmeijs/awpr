@@ -1,7 +1,5 @@
 # PR2018-07-20
 from django.contrib.auth.decorators import login_required # PR2018-04-01
-from django.core.paginator import Paginator # PR2018-07-20
-from django.core.exceptions import PermissionDenied # PR2018-11-03
 
 from django.utils.functional import Promise
 from django.utils.encoding import force_text
@@ -9,37 +7,26 @@ from django.core.serializers.json import DjangoJSONEncoder
 
 from django.db import connection
 from django.db.models.functions import Lower
-from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.shortcuts import render, redirect #, get_object_or_404
-from django.urls import reverse_lazy
+from django.http import HttpResponse
+from django.shortcuts import render
+
 from django.utils.decorators import method_decorator
 from django.utils.translation import activate, ugettext_lazy as _
-from django.views.generic import UpdateView, DeleteView, View, ListView, CreateView
+from django.views.generic import View
 
-from schools import models as sch_mod
+from awpr import settings as s
 from awpr import menus as awpr_menu
-from awpr import validators as av
-from awpr import functions as af
 
 from subjects import models as subj_mod
 
-from django.contrib.auth.mixins import UserPassesTestMixin
-
-from subjects.forms import SubjectAddForm, SubjectEditForm, \
-    LevelAddForm, LevelEditForm, SectorAddForm, SectorEditForm, \
-    SubjecttypeAddForm, SubjecttypeEditForm, \
-    SchemeAddForm, SchemeEditForm, SchemeitemAddForm, SchemeitemEditForm
-
 from awpr import constants as c
-from awpr import downloads as d
 from awpr import functions as af
 from awpr import validators as av
 
-from accounts import models as acc_mod
 from schools import models as sch_mod
 from subjects import models as sbj_mod
 
-import json # PR2018-10-25
+import json  # PR2018-10-25
 # PR2018-04-27
 import logging
 logger = logging.getLogger(__name__)
@@ -51,13 +38,11 @@ class LazyEncoder(DjangoJSONEncoder):
         return super(LazyEncoder, self).default(obj)
 
 
-
 # === Schemeitem =====================================
-
 @method_decorator([login_required], name='dispatch')
 class SchemeitemsDownloadView(View):  # PR2019-01-13
     # PR2019-01-17
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         # logger.debug(' ============= SchemeitemsDownloadView ============= ')
         # logger.debug('request.POST' + str(request.POST) )
 
@@ -306,6 +291,7 @@ def create_subject_rows(setting_dict, append_dict, subject_pk):
     # --- create rows of all subjects of this examyear  PR2020-09-29 PR2020-10-30 PR2020-12-02
     #logger.debug(' =============== create_subject_rows ============= ')
 
+
     sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
     # TODO filter sel_depbase_pk
     sel_depbase_pk = af.get_dict_value(setting_dict, ('sel_depbase_pk',))
@@ -456,9 +442,10 @@ class SubjectUploadView(View):  # PR2020-10-01
                     if subject:
                         if error_dict:
                             append_dict['error'] = error_dict
-
+# def create_subject_rows(setting_dict, append_dict, subject_pk):
+                        setting_dict = {'sel_examyear_pk': examyear.pk}
                         subject_rows = create_subject_rows(
-                            examyear_pk=examyear.pk,
+                            setting_dict=setting_dict,
                             append_dict=append_dict,
                             subject_pk=subject.pk
                         )
@@ -467,6 +454,284 @@ class SubjectUploadView(View):  # PR2020-10-01
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+
+
+# ========  EXAMS  =====================================
+
+@method_decorator([login_required], name='dispatch')
+class ExamListView(View):  # PR2021-04-04
+
+    def get(self, request):
+        logging_on = False  # s.LOGGING_ON
+
+# - set headerbar parameters PR2018-08-06
+        page = 'page_exam'
+        param = {'display_school': False}
+        params = awpr_menu.get_headerbar_param(request, page, param)
+
+        if logging_on:
+            logger.debug('  =====  ExamListView ===== ')
+            logger.debug('params: ' + str(params))
+
+# - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
+        if request.user:
+            request.user.set_usersetting_dict('sel_page', {'page': page})
+
+        return render(request, 'exams.html', params)
+# - end of ExamListView
+
+
+@method_decorator([login_required], name='dispatch')
+class ExamUploadView(View): # PR2021-04-04
+
+    def post(self, request):
+        logging_on = True
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= ExamUploadView ============= ')
+        # function creates, deletes and updates grade records of current studentsubject PR2020-11-21
+        update_wrap = {}
+
+# set permit TODO
+        has_permit = False
+        if request.user and request.user.country:
+            has_permit = True # (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
+
+        if has_permit:
+            req_user = request.user
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                error_list = []
+                deleted_list = []
+                append_dict = {}
+
+# - get variables from upload_dict
+                # don't get it from usersettings, get it from upload_dict instead
+                mode = upload_dict.get('mode')
+                examyear_pk = upload_dict.get('examyear_pk')
+                exam_pk = upload_dict.get('exam_pk')
+                subject_pk = upload_dict.get('subject_pk')
+
+                if logging_on:
+                    logger.debug('upload_dict:    ' + str(upload_dict))
+                    logger.debug('mode:    ' + str(upload_dict))
+                    logger.debug('examyear_pk:    ' + str(upload_dict))
+                    logger.debug('exam_pk:    ' + str(upload_dict))
+                    logger.debug('subject_pk:    ' + str(upload_dict))
+
+# - get examyear
+                examyear = sch_mod.Examyear.objects.get_or_none(
+                    pk=examyear_pk,
+                    country=req_user.country
+                )
+# - get subject
+                subject = subj_mod.Subject.objects.get_or_none(
+                    pk=subject_pk,
+                    examyear=examyear
+                )
+
+                if logging_on:
+                    logger.debug('subject: ' + str(subject))
+
+# +++++ Create new instance if is_create:
+                if mode == 'create':
+                    exam = create_exam_instance(subject, upload_dict, error_list, request)
+                else:
+    # - else: get existing exam instance
+                    exam = subj_mod.Exam.objects.get_or_none(
+                        id=exam_pk,
+                        subject=subject
+                    )
+                if logging_on:
+                    logger.debug('exam: ' + str(exam))
+
+                if exam:
+# +++++ Delete instance if is_delete
+                    if mode == 'delete':
+                        deleted_row = delete_exam_instance(exam, error_list, request)
+                        if deleted_row:
+                            deleted_list.append(deleted_row)
+                    else:
+
+# +++++ Update instance, also when it is created, not when is_delete
+                        update_exam_instance(exam, upload_dict, error_list, request)
+
+# 6. create list of updated exam_rows
+                filter_dict = {'sel_examyear_pk': examyear.pk}
+                exam_rows = create_exam_rows(filter_dict, append_dict, exam_pk)
+                if deleted_list:
+                    exam_rows.extend(deleted_list)
+                if exam_rows:
+                    update_wrap['updated_exam_rows'] = exam_rows
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# --- end of ExamUploadView
+
+
+@method_decorator([login_required], name='dispatch')
+class ExamApproveView(View):  # PR2021-04-04
+
+    def post(self, request):
+        logging_on = True
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= ExamApproveView ============= ')
+        # function creates, deletes and updates grade records of current studentsubject PR2020-11-21
+        update_wrap = {}
+
+        # - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# --- end of ExamApproveView
+
+
+def create_exam_instance(subject, upload_dict, error_list, request):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' --- create_exam_instance --- ')
+
+    exam = None
+# - create exam
+    try:
+        examperiod_int = upload_dict.get('examperiod')
+        examtype = upload_dict.get('examtype')
+
+        exam = subj_mod.Exam(
+            subject=subject,
+            examperiod=examperiod_int,
+            examtype=examtype
+        )
+        exam.save(request=request)
+    except Exception as e:
+# - create error when exam is  not created
+        logger.error(getattr(e, 'message', str(e)))
+        error_list.append(_('This item could not be created.'))
+
+    return exam
+# - end of create_exam_instance
+
+def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05
+    #logger.debug('-----  delete_emplhour  -----')
+
+# - create deleted_row
+    deleted_row = {'pk': instance.pk,
+                       'mapid': 'exam_' + str(instance.pk),
+                       'deleted': True}
+# - delete instance
+    try:
+        instance.delete()
+    except Exception as e:
+        deleted_row = None
+        logger.error(getattr(e, 'message', str(e)))
+        error_list.append(_('This item could not be created.'))
+
+    return deleted_row
+# - end of delete_exam_instance
+
+def update_exam_instance(instance, upload_dict, error_list, request):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' --------- update_exam_instance -------------')
+        logger.debug('upload_dict: ' + str(upload_dict))
+
+    has_changed = False
+    if instance:
+        mode = upload_dict.get('mode')
+        is_create = (mode == "create")
+        save_changes = False
+        for field, new_value in upload_dict.items():
+            if logging_on:
+                logger.debug('field: ' + str(field))
+                logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+
+# --- get field_dict from  upload_dict  if it exists
+            if field in ('mode', 'examyear_pk', 'subject_pk', 'exam_pk', 'examperiod_int', 'examtype'):
+                pass
+# ---   save changes in field 'rosterdate'
+            elif field in ('depbases', 'levelbases', 'sectorbases'):
+                pass
+            elif field in ('assignment', 'amount', 'maxscore'):
+                old_value = getattr(instance, field)
+                if new_value != old_value:
+                    setattr(instance, field, new_value)
+                    save_changes = True
+
+            elif field in ('auth1by', 'auth2by'):
+                pass
+            elif field == 'published':
+                pass
+
+# - save orderhour
+        if save_changes:
+            try:
+                instance.save(request=request)
+
+# - save to log after saving emplhour and orderhour, also when emplhour is_created
+                #m.save_to_emplhourlog(emplhour.pk, request, False) # is_deleted=False
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                msg_err = _('An error occurred. This exam could not be updated.')
+                error_list.append(msg_err)
+
+# - end of update_exam_instance
+
+def create_exam_rows(setting_dict, append_dict, exam_pk):
+    # --- create rows of all exams of this examyear  PR2021-04-05
+    # logger.debug(' =============== create_exam_rows ============= ')
+
+    sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
+
+    exam_rows = []
+    if sel_examyear_pk:
+        sql_keys = {'ey_id': sel_examyear_pk}
+        sql_list = [
+            "SELECT ex.id, ex.subject_id, subj.base_id AS subj_base_id, subj.examyear_id AS subj_examyear_id,",
+            "CONCAT('exam_', ex.id::TEXT) AS mapid,",
+            "ex.examperiod, ex.examtype, ex.depbases, ex.levelbases, ex.sectorbases,",
+            "ex.assignment, ex.amount, ex.maxscore,",
+            "ex.status, ex.auth1by_id, ex.auth2by_id, ex.locked,",
+            "ex.modifiedby_id, ex.modifiedat,",
+            "sb.code AS subj_base_code, subj.name AS subj_name,",
+            "ey.code AS ey_code, ey.locked AS ey_locked,",
+            "SUBSTRING(au.username, 7) AS modby_username",
+
+            "FROM subjects_exam AS ex",
+            "INNER JOIN subjects_subject AS subj ON (subj.id = ex.subject_id)",
+            "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
+            "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
+
+            "WHERE ey.id = %(ey_id)s::INT"
+        ]
+        if exam_pk:
+            sql_keys['ex_id'] = exam_pk
+            sql_list.append('AND ex.id = %(ex_id)s::INT')
+        else:
+            sql_list.append("ORDER BY LOWER(sb.code)")
+
+        sql = ' '.join(sql_list)
+
+        newcursor = connection.cursor()
+        newcursor.execute(sql, sql_keys)
+        exam_rows = af.dictfetchall(newcursor)
+
+        # - add messages to exam_row
+        if exam_pk and exam_rows:
+            # when exam_pk has value there is only 1 row
+            row = exam_rows[0]
+            if row:
+                for key, value in append_dict.items():
+                    row[key] = value
+
+    return exam_rows
+# --- end of create_exam_rows
 
 
 @method_decorator([login_required], name='dispatch')

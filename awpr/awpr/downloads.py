@@ -122,6 +122,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- subjects
                 if datalist_request.get('subject_rows'):
                     datalists['subject_rows'] = sj_vw.create_subject_rows(new_setting_dict, {}, None)
+# ----- exams
+                if datalist_request.get('exam_rows'):
+                    datalists['exam_rows'] = sj_vw.create_exam_rows(new_setting_dict, {}, None)
 # ----- students
                 if datalist_request.get('student_rows'):
                     datalists['student_rows'] = st_vw.create_student_rows(new_setting_dict, {}, None)

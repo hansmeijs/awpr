@@ -246,7 +246,7 @@ class Subjecttype(sch_mod.AwpBaseModel):
 
     name = CharField(max_length=50)
     abbrev = CharField(db_index=True,max_length=20)
-    code = CharField(db_index=True,max_length=4)
+    code = CharField(db_index=True,max_length=c.MAX_LENGTH_04)
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
@@ -571,24 +571,28 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
 
 class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     # PR2021-03-04 contains exam possible ansewers per exam question
-    # subject abbrev is stored as 'code' in Subjectbase
-    # Subject has no country field: country is a field in examyear
 
     objects = sch_mod.AwpModelManager()
 
     subject = ForeignKey(Subject, related_name='+', on_delete=CASCADE)
 
     examperiod = PositiveSmallIntegerField(db_index=True, default=1)
-    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
+    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True, default='ce')
 
-    result = CharField(max_length=4096, null=True, blank=True)
+    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    levelbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    sectorbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
+    amount = PositiveSmallIntegerField(null=True)
+    maxscore = PositiveSmallIntegerField(null=True)
+
+    assignment = CharField(max_length=2048, null=True)
+
+    status = PositiveSmallIntegerField(default=0)
     auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
-
-
+    locked = BooleanField(default=False)
 
 class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     # PR2021-03-04 contains exam possible ansewers per exam question
@@ -604,12 +608,20 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     examperiod = PositiveSmallIntegerField(db_index=True, default=1)
     examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
 
-    result = CharField(max_length=4096, null=True, blank=True)
+    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    levelbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    sectorbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
+    amount = PositiveSmallIntegerField(null=True)
+    maxscore = PositiveSmallIntegerField(null=True)
+
+    assignment = CharField(max_length=2048, null=True)
+
+    status = PositiveSmallIntegerField(default=0)
     auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    locked = BooleanField(default=False)
 
 
 # PR2018-06-06 # PR2019-02-17

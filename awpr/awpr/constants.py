@@ -64,40 +64,11 @@ MODE_DICT = {
     MODE_S_SYSTEM: _('System')
 }
 
-
 def get_mode_str(self):  # PR2018-11-20
     mode_str = '-'
     if self.mode is not None:
         mode_str = MODE_DICT.get(str(self.mode))
     return mode_str
-
-
-# choises must be tuple or list, dictionary gives error: 'int' object is not iterable
-CHOICES_NO_YES = (
-    (False, _('No')),
-    (True, _('Yes'))
-)
-
-# choises must be tuple or list, dictionary gives error: 'int' object is not iterable
-CHOICES_NO_YES_DICT = {
-    0: _('No'),
-    1: _('Yes')
-}
-# choises must be tuple or list, dictionary gives error: 'int' object is not iterable
-YES_NO_INT_TUPLE = (
-    (1, _('Yes')),
-    (0, _('No'))
-)
-
-YES_NO_DICT = {
-    0: _('No'),
-    1: _('Yes')
-}
-
-YES_NO_BOOL_DICT = {
-    0: _('No'),
-    1: _('Yes')
-}
 
 
 # choises must be tuple or list, dictionary gives error: 'int' object is not iterable
@@ -207,6 +178,10 @@ EXAMPERIOD_OPTIONS = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam perio
                         {'value': EXAMPERIOD_SECOND, 'caption': _('Second exam period')},
                         {'value': EXAMPERIOD_THIRD, 'caption': _('Third exam period')},
                         {'value': EXAMPERIOD_EXEMPTION, 'caption': _('Exemption')}]
+
+EXAMPERIOD_OPTIONS_123ONLY = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam period')},
+                        {'value': EXAMPERIOD_SECOND, 'caption': _('Second exam period')},
+                        {'value': EXAMPERIOD_THIRD, 'caption': _('Third exam period')}]
 
 
 def get_examperiod_caption(examperiod_int):
@@ -516,7 +491,7 @@ PAGE_LIST = {
 }
 
 DEFAULT_PERMITS = [
-    {'role': 8, 'page': 'page_all', 'sequence': 10, 'action': 'view_users', 'usergroups': 'admin'},
+    {'role': 8, 'page': 'page_all', 'sequence': 10, 'action': 'href_userpage', 'usergroups': 'admin'},
     {'role': 8, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
     {'role': 8, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
     {'role': 8, 'page': 'page_grade', 'sequence': 20, 'action': 'edit_grade', 'usergroups': 'edit'},
@@ -530,7 +505,7 @@ DEFAULT_PERMITS = [
     {'role': 8, 'page': 'page_student', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
     {'role': 8, 'page': 'page_studsubj', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
     {'role': 8, 'page': 'page_subject', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
-    {'role': 16, 'page': 'page_all', 'sequence': 10, 'action': 'view_users', 'usergroups': 'admin'},
+    {'role': 16, 'page': 'page_all', 'sequence': 10, 'action': 'href_userpage', 'usergroups': 'admin'},
     {'role': 16, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
     {'role': 16, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
     {'role': 16, 'page': 'page_grade', 'sequence': 20, 'action': 'edit_grade', 'usergroups': ''},
@@ -544,7 +519,7 @@ DEFAULT_PERMITS = [
     {'role': 16, 'page': 'page_student', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
     {'role': 16, 'page': 'page_studsubj', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
     {'role': 16, 'page': 'page_subject', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
-    {'role': 32, 'page': 'page_all', 'sequence': 10, 'action': 'view_users', 'usergroups': 'admin'},
+    {'role': 32, 'page': 'page_all', 'sequence': 10, 'action': 'href_userpage', 'usergroups': 'admin'},
     {'role': 32, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
     {'role': 32, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
     {'role': 32, 'page': 'page_grade', 'sequence': 20, 'action': 'edit_grade', 'usergroups': ''},
@@ -558,7 +533,7 @@ DEFAULT_PERMITS = [
     {'role': 32, 'page': 'page_student', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
     {'role': 32, 'page': 'page_studsubj', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
     {'role': 32, 'page': 'page_subject', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
-    {'role': 64, 'page': 'page_all', 'sequence': 10, 'action': 'view_users', 'usergroups': 'admin'},
+    {'role': 64, 'page': 'page_all', 'sequence': 10, 'action': 'href_userpage', 'usergroups': 'admin'},
     {'role': 64, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
     {'role': 64, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
     {'role': 64, 'page': 'page_grade', 'sequence': 20, 'action': 'edit_grade', 'usergroups': ''},
@@ -572,7 +547,7 @@ DEFAULT_PERMITS = [
     {'role': 64, 'page': 'page_student', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
     {'role': 64, 'page': 'page_studsubj', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
     {'role': 64, 'page': 'page_subject', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
-    {'role': 128, 'page': 'page_all', 'sequence': 10, 'action': 'view_users', 'usergroups': 'admin'},
+    {'role': 128, 'page': 'page_all', 'sequence': 10, 'action': 'href_userpage', 'usergroups': 'admin'},
     {'role': 128, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
     {'role': 128, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
     {'role': 128, 'page': 'page_grade', 'sequence': 20, 'action': 'edit_grade', 'usergroups': 'edit'},

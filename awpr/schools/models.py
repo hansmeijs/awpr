@@ -149,7 +149,6 @@ class Country_log(AwpBaseModel):
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
-
     def __str__(self):
         return self.name
 

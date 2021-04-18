@@ -397,6 +397,45 @@ def get_locale_dict(table_dict, user_lang):
 
         }
 
+# ====== PAGE EXAM ========================= PR2021-04-04
+    if 'page_exam' in page_list:
+
+        dict['Select_examperiod'] = _('Select exam period')
+        dict['No_examperiods_found'] = _('No exam periods found')
+        dict['Select_examtype'] = _('Select exam type')
+        dict['No_examtypes_found'] = _('No exam types found')
+        dict['All_levels'] = _("All 'leerwegen'")
+        dict['All_sectors'] = _("All sectors")
+        dict['All_profielen'] = _("All 'profielen'")
+        dict['Profiel'] = _('Profiel')
+
+        dict['options_examperiod'] = c.EXAMPERIOD_OPTIONS_123ONLY
+        dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
+        dict['options_examtype'] = c.EXAMTYPE_OPTIONS
+        dict['examtype_caption'] = c.EXAMTYPE_CAPTION
+
+        dict['All_leerwegen'] = _("All 'leerwegen'")
+
+        dict['Exam'] = _("Exam")
+        dict['Add_exam'] = _("Add exam")
+        dict['Delete_exam'] = _("Delete exam")
+        dict['Publish_exam'] = _("Publish exam")
+
+        dict['Quest'] = _('Quest.')
+        dict['Number_of_questions'] = _('Number of questions')
+
+        dict['Maximum_score'] = _('Maximum score')
+        dict['Sequence_2lines'] = pgettext_lazy('2 lines', 'Sequence')
+
+        dict['err_list'] = {
+            'Amount': _("Amount"),
+            'not_allowed': _(" is not allowed."),
+            'Amount_cannot_be_blank': _("The amount cannot be blank."),
+            'amount_mustbe_between': _('The amount must be a whole number between 1 and 250.'),
+            'Character': pgettext_lazy('Teken', 'Character'),
+            'character_mustbe_between': _('The character must be between A and Z or between a and z.'),
+            'maxscore_mustbe_between': _('The maximum score must be a whole number between 1 and 99.'),
+        }
 
 # ====== PAGE GRADES ========================= PR2020-10-27
     if 'page_grade' in page_list:
@@ -536,7 +575,16 @@ def get_locale_dict(table_dict, user_lang):
     dict['approve_err_list'] = {'You_have_functions': _('You have the functions of '),
                                 'Only_1_allowed': _('Only 1 function is allowed. '),
                                'cannot_approve': _('You cannot approve grades.'),
-                               'cannot_submit': _('You cannot approve grades.')}
+                               'cannot_submit': _('You cannot approve grades.'),
+                               'This_grade_is_submitted': _('This grade is submitted.'),
+                               'You_cannot_remove_approval': _('You cannot remove the approval.'),
+                               'This_grade_has_no_value': _('This grade has no value.'),
+                               'You_cannot_approve': _('You cannot approve this grade.'),
+                               'Approved_different_function': _('You have approved this grade already in a different function.'),
+                               'You_cannot_approve_again': _('You cannot approve this grade again.'),
+
+
+                                }
     return dict
 
 

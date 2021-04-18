@@ -20,9 +20,12 @@ from django.views.generic import UpdateView, DeleteView, View, ListView, CreateV
 
 from schools.models import Country, Country_log, Examyear, Examyear_log, Department, Department_log, Schoolbase, School, School_log
 
+from accounts import views as acc_view
+
+from awpr import settings as s
 from awpr import functions as af
 from awpr import constants as c
-from awpr import validators as v
+from awpr import validators as av
 from awpr import menus as awpr_menu
 
 from schools import functions as sf
@@ -174,7 +177,7 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
                         if examyear:
                             this_text = _("Exam year '%(tbl)s' ") % {'tbl': str(examyear.code)}
         # - check if examyear is closed or schools have activated or locked it
-                            msg_err = v.validate_delete_examyear(examyear)
+                            msg_err = av.validate_delete_examyear(examyear)
                             #logger.debug('msg_err: ' + str(msg_err))
                             if msg_err:
                                 error_dict['err_delete'] = msg_err
@@ -240,7 +243,7 @@ def create_examyear(country, upload_dict, request):
     if country:
         # - get value of 'abbrev'
         examyear_int = af.get_dict_value(upload_dict, ('examyear', 'value'))
-        msg_err = v.validate_unique_examyear(examyear_int, request)
+        msg_err = av.validate_unique_examyear(examyear_int, request)
 # - create and save examyear
         if not msg_err:
             try:
@@ -292,7 +295,7 @@ def update_examyear(instance, upload_dict, msg_dict, request):
                     # 2. save changes in field 'code', required field
                     if field in ['examyear']:
                         if new_value != saved_value:
-                            msg_err = v.validate_unique_examyear(new_value, request)
+                            msg_err = av.validate_unique_examyear(new_value, request)
                             # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
                             if not msg_err:
                                 # c. save field if changed and no_error
@@ -466,118 +469,131 @@ class SchoolLogView(View):
 
 
 @method_decorator([login_required], name='dispatch')
-class SchoolUploadView(View):  # PR2020-10-22
+class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
 
     def post(self, request):
-        logger.debug(' ============= SchoolUploadView ============= ')
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= SchoolUploadView ============= ')
 
         update_wrap = {}
 
         #<PERMIT>
         # - only ROLE_064_ADMIN and ROLE_128_SYSTEM can change school.
         # - only GROUP_002_EDIT can ange schools
-        has_permit = False
-        if request.user is not None:
-            if request.user.country is not None and request.user.schoolbase is not None:
-                if request.user.is_role_admin or request.user.is_role_system:
-                    if request.user.is_group_edit:
-                        has_permit = True
-        if has_permit:
 
-# --- reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
+        if request.user and request.user.country and request.user.schoolbase:
+            req_user = request.user
 
-# --- get upload_dict from request.POST
-            upload_json = request.POST.get('upload', None)
-            if upload_json:
-                upload_dict = json.loads(upload_json)
-                logger.debug('upload_dict' + str(upload_dict))
-                # upload_dict = {''table': 'school', 'ppk': 1, 'create': True,
-                                # 'code': 'CURETE',
-                                # 'abbrev': 'ETE',
-                                # 'article': 'het',
-                                # name': 'Expertisecentrum voor Toetsen & Examens',
-                                # 'depbases':  [],
-                # upload_dict {'sel_examyear_pk': 6, 'table': 'school', 'school_pk': 1, 'mapid': 'school_1', 'depbases': [1]}
+            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_school', req_user)
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
 
-# --- get variables from upload_dict PR2020-12-25
-                sel_examyear_pk = upload_dict.get('sel_examyear_pk')
-                school_pk = upload_dict.get('school_pk')
-                is_create = upload_dict.get('create', False)
-                is_delete = upload_dict.get('delete', False)
-                #logger.debug('school_pk: ' + str(school_pk))
-                #logger.debug('is_create: ' + str(is_create))
-                #logger.debug('is_delete: ' + str(is_delete))
+            permit_create = 'create_school' in permit_list
+            permit_edit = 'edit_school' in permit_list
+            permit_delete ='delete_school' in permit_list
 
-                school_rows = []
-                append_dict = {}
-                error_dict = {}
+            if permit_create or permit_edit or permit_delete:
+    # -  get user_lang
+                requsr_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+                activate(requsr_lang)
 
-# --- check if examyear exists  (examyear is parent of school)
-                examyear = sch_mod.Examyear.objects.get_or_none(pk=sel_examyear_pk)
-                logger.debug('examyear: ' + str(examyear))
-                if examyear:
-                    school = None
-# +++ Create new school
-                    if is_create:
-                        school, msg_err = create_school(examyear, upload_dict, request)
+    # --- get upload_dict from request.POST
+                upload_json = request.POST.get('upload', None)
+                if upload_json:
+                    upload_dict = json.loads(upload_json)
 
-                        #logger.debug('school: ' + str(school))
-                        #logger.debug('msg_err: ' + str(msg_err))
+    # --- get variables from upload_dict PR2020-12-25
+                    examyear_pk = upload_dict.get('examyear_pk')
+                    school_pk = upload_dict.get('school_pk')
+                    is_create = upload_dict.get('create', False)
+                    is_delete = upload_dict.get('delete', False)
 
-                        if school:
-                            append_dict['created'] = True
-                        elif msg_err:
-                            error_dict['err_create'] = msg_err
-# +++ Delete school
-                    elif is_delete:
-                        school = sch_mod.School.objects.get_or_none(id=school_pk, examyear=examyear)
-                        #logger.debug('school: ' + str(school))
-                        if school:
-                            this_text = _("School '%(tbl)s' ") % {'tbl': school.name}
-                            #logger.debug('this_text: ' + str(this_text))
-                    # a. check if school has child rows, put msg_err in update_dict when error
-                            msg_err = None #validate_employee_has_emplhours(employee)
-                            if msg_err:
-                                error_dict['err_delete'] = msg_err
-                            else:
-                    # b. check if there are teammembers with this employee: absence teammembers, remove employee from shift teammembers
-                                # delete_employee_from_teammember(employee, request)
-                    # c. delete school
-                                deleted_ok = sch_mod.delete_instance(school, error_dict, request, this_text)
-                                #logger.debug('deleted_ok' + str(deleted_ok))
-                                if deleted_ok:
-                     # - add deleted_row to school_rows
-                                    school_rows.append({'pk': school_pk,
-                                                        'table': 'school',
-                                                         'mapid': 'school_' + str(school_pk),
-                                                         'deleted': True})
-                                    school = None
-                                #logger.debug('school_rows' + str(school_rows))
-# --- get existing school
+                    school_rows = []
+                    append_dict = {}
+                    error_dict = {}
+
+                    if logging_on:
+                        logger.debug('upload_dict' + str(upload_dict))
+                        logger.debug('school_pk: ' + str(school_pk))
+                        logger.debug('is_create: ' + str(is_create))
+                        logger.debug('is_delete: ' + str(is_delete))
+
+    # --- get examyear (examyear is parent of school)
+                    examyear = sch_mod.Examyear.objects.get_or_none(pk=examyear_pk)
+                    if examyear is None:
+                        msg_err = _("Exam year not found.")
+                        if logging_on :
+                            logger.debug('msg_err: ' + str(msg_err))
                     else:
-                        school = sch_mod.School.objects.get_or_none(id=school_pk, examyear=examyear)
+                        school = None
+# +++ Create new school
+                        if is_create:
+                            if permit_create:
 
-                    if school:
-# F. Update school, also when it is created. When deleted: school is None
-                    #  Not necessary. Most fields are required. All fields are saved in create_school
-                    #if school:
-                        update_school(school, upload_dict, error_dict, request)
+                                school, msg_err = create_school(examyear, upload_dict, request)
 
+                                if school:
+                                    append_dict['created'] = True
+                                elif msg_err:
+                                    error_dict['err_create'] = msg_err
 
-                        #logger.debug('error_dict' + str(error_dict))
-# I. add update_dict to update_wrap
-                        if error_dict:
-                            append_dict['error'] = error_dict
+                                if logging_on:
+                                    logger.debug('school: ' + str(school))
 
-                        school_rows = create_school_rows(
-                            examyear=examyear,
-                            append_dict=append_dict,
-                            school_pk=school.pk
-                        )
+    # +++ Delete school
+                        elif is_delete:
+                            if permit_delete:
+                                school = sch_mod.School.objects.get_or_none(id=school_pk)
 
-                update_wrap['updated_school_rows'] = school_rows
+                                if logging_on:
+                                    logger.debug('school: ' + str(school))
+
+                                if school:
+                                    this_text = _("School '%(tbl)s' ") % {'tbl': school.name}
+                                    #logger.debug('this_text: ' + str(this_text))
+                            # a. check if school has child rows, put msg_err in update_dict when error
+                                    msg_err = None #validate_employee_has_emplhours(employee)
+                                    if msg_err:
+                                        error_dict['err_delete'] = msg_err
+                                    else:
+                            # b. check if there are teammembers with this employee: absence teammembers, remove employee from shift teammembers
+                                        # delete_employee_from_teammember(employee, request)
+                            # c. delete school
+                                        deleted_ok = sch_mod.delete_instance(school, error_dict, request, this_text)
+                                        #logger.debug('deleted_ok' + str(deleted_ok))
+                                        if deleted_ok:
+                             # - add deleted_row to school_rows
+                                            school_rows.append({'pk': school_pk,
+                                                                'table': 'school',
+                                                                 'mapid': 'school_' + str(school_pk),
+                                                                 'deleted': True})
+                                            school = None
+                                        #logger.debug('school_rows' + str(school_rows))
+
+    # --- get existing school
+                        else:
+                            school = sch_mod.School.objects.get_or_none(id=school_pk)
+
+                        if school:
+                            if permit_create or permit_edit:
+    # --- Update school, also when it is created. When deleted: school is None
+                            #  Not necessary when created. Most fields are required. All fields are saved in create_school
+
+                                update_school(school, upload_dict, error_dict, request)
+
+                                #logger.debug('error_dict' + str(error_dict))
+    # --- add update_dict to update_wrap
+                                if error_dict:
+                                    append_dict['error'] = error_dict
+
+                                school_rows = create_school_rows(
+                                    examyear=examyear,
+                                    append_dict=append_dict,
+                                    school_pk=school.pk
+                                )
+
+                        update_wrap['updated_school_rows'] = school_rows
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=LazyEncoder))
@@ -783,26 +799,27 @@ def create_school_rows(examyear, append_dict, school_pk):
 
 def create_school(examyear, upload_dict, request):
     # --- create school # PR2019-07-30 PR2020-10-22
-    #logger.debug(' ----- create_school ----- ')
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_school ----- ')
 
     school = None
     msg_err = None
 
-    #logger.debug('examyear: ' + str(examyear))
-
     if examyear:
 # - get value of 'abbrev'
-        code = af.get_dict_value(upload_dict, ('code', 'value'))
-        abbrev = af.get_dict_value(upload_dict, ('abbrev', 'value'))
-        name = af.get_dict_value(upload_dict, ('name', 'value'))
-        article = af.get_dict_value(upload_dict, ('article', 'value'))
-        depbases = af.get_dict_value(upload_dict, ('depbases', 'value'))
+        code = upload_dict.get('code')
+        abbrev = upload_dict.get('abbrev')
+        name = upload_dict.get('name')
+        article = upload_dict.get('article')
+        depbases = upload_dict.get('depbases')
 
-        #logger.debug('code: ' + str(code))
-        #logger.debug('abbrev: ' + str(abbrev))
-        #logger.debug('name: ' + str(name))
-        #logger.debug('article: ' + str(article))
-        #logger.debug('depbases: ' + str(depbases) + str(type(depbases)))
+        if logging_on:
+            logger.debug('code: ' + str(code))
+            logger.debug('abbrev: ' + str(abbrev))
+            logger.debug('name: ' + str(name))
+            logger.debug('article: ' + str(article))
+            logger.debug('depbases: ' + str(depbases) + str(type(depbases)))
 
         msg_err = None
         if abbrev and name and code:
@@ -816,8 +833,12 @@ def create_school(examyear, upload_dict, request):
                     else:
                         msg_err = _("School code '%(fld)s' already exists in other exam years.") % {'fld': lookup_value}
 # - if schoolbase exitsts but child school does not exist this examyear: add school
-            #logger.debug('schoolbase: ' + str(schoolbase))
-            #logger.debug('msg_err: ' + str(msg_err))
+
+            if logging_on:
+                logger.debug('schoolbase: ' + str(schoolbase))
+                if msg_err:
+                    logger.debug('msg_err: ' + str(msg_err))
+
 # - create and save school
             if msg_err is None:
                 #try:
@@ -827,7 +848,9 @@ def create_school(examyear, upload_dict, request):
                         country=request.user.country,
                         code=code
                     )
-                    #logger.debug('schoolbase: ' + str(schoolbase))
+                    if logging_on:
+                        logger.debug('schoolbase: ' + str(schoolbase))
+
                     school = sch_mod.School(
                         base=schoolbase,
                         examyear=examyear,
@@ -837,7 +860,8 @@ def create_school(examyear, upload_dict, request):
                         depbases=depbases
                     )
                     school.save(request=request)
-                    #logger.debug('schoolbase: ' + str(schoolbase))
+                    if logging_on:
+                        logger.debug('schoolbase: ' + str(schoolbase))
                 #except:
                 else:
                     msg_err = str(_("An error occurred. School '%(val)s' could not be added.") % {'val': name})
@@ -849,8 +873,10 @@ def create_school(examyear, upload_dict, request):
 def update_school(instance, upload_dict, msg_dict, request):
     # --- update existing and new instance PR2019-06-06
     # add new values to update_dict (don't reset update_dict, it has values)
-    logger.debug(' ------- update_school -------')
-    logger.debug('upload_dict' + str(upload_dict))
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- update_school -------')
+        logger.debug('upload_dict' + str(upload_dict))
 
     # upload_dict = {id: {table: "school", ppk: 1, pk: 1, mapid: "school_1"},
     #                depbases: {value: Array(1), update: true} }
@@ -860,57 +886,93 @@ def update_school(instance, upload_dict, msg_dict, request):
         #                  'isdayschool', 'iseveningschool', 'islexschool',
         #                  'activated', 'locked', 'activatedat', 'lockedat', 'modifiedby', 'modifiedat')
         save_changes = False
+        save_parent = False
         for field, new_value in upload_dict.items():
-            if field in c.FIELDS_SCHOOL:
-# - get saved_value from instance
-                saved_value = getattr(instance, field)
+            if logging_on:
+                logger.debug('field]: ' + str(field) + ' ' + str(type(field)))
+                logger.debug('new_value]: ' + str(new_value) + ' ' + str(type(new_value)))
+
 # - save changes in field 'name', 'abbrev'
-                if field in ['name', 'abbrev', 'article']:
-                    if new_value != saved_value:
-                        # TODO validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
-                        # msg_err = validate_code_name_identifier(
-                        msg_err = None
-                        if not msg_err:
-                            setattr(instance, field, new_value)
-                            save_changes = True
-                        else:
-                            msg_dict['err_' + field] = msg_err
+            if field == 'code':
+                schoolbase = instance.base
+                saved_value = getattr(schoolbase, field)
+
+                if new_value != saved_value:
+                    # TODO validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
+                    #msg_err = av.validate_code_name_identifier()
+                    setattr(schoolbase, field, new_value)
+                    save_parent = True
+
+                if logging_on:
+                    logger.debug('saved_value]: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                    logger.debug('save_parent]: ' + str(save_parent))
+
+            elif field in ['name', 'abbrev', 'article']:
+                saved_value = getattr(instance, field)
+                if new_value != saved_value:
+                    # TODO validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
+                    # msg_err = validate_code_name_identifier(
+                    msg_err = None
+                    if not msg_err:
+                        setattr(instance, field, new_value)
+                        save_changes = True
+                    else:
+                        msg_dict['err_' + field] = msg_err
+
+                if logging_on:
+                    logger.debug('saved_value]: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                    logger.debug('save_changes]: ' + str(save_changes))
 
 # 3. save changes in depbases
-                elif field == 'depbases':
-                    # depbases is string:  "1;2;3", sorted, otherwise "1;2;3" and "3;1;2" will not be equal
-                    if saved_value is None:
-                        saved_value = ''
-                    logger.debug('new_value]: ' + str(new_value) + ' ' + str(type(new_value)))
+            elif field == 'depbases':
+                # depbases is string:  "1;2;3", sorted, otherwise "1;2;3" and "3;1;2" will not be equal
+                saved_value = getattr(instance, field)
+                if saved_value is None:
+                    saved_value = ''
+
+                if new_value != saved_value:
+                    logger.debug('new_value != saved_value]: ' + str(new_value) + ' ' + str(saved_value))
+                    setattr(instance, 'depbases' , new_value)
+                    save_changes = True
+
+                if logging_on:
                     logger.debug('saved_value]: ' + str(saved_value) + ' ' + str(type(saved_value)))
-                    if new_value != saved_value:
-                        logger.debug('new_value != saved_value]: ' + str(new_value) + ' ' + str(saved_value))
-                        setattr(instance, 'depbases' , new_value)
-                        save_changes = True
+                    logger.debug('save_changes]: ' + str(save_changes))
 
 # 4. save changes in field 'inactive'
-                elif field in ['activated', 'locked']:
-                    #logger.debug('inactive new_value]: ' + str(new_value) + ' ' + str(type(new_value)))
-                    saved_value = getattr(instance, field)
-                    #logger.debug('inactive saved_value]: ' + str(saved_value) + ' ' + str(type(saved_value)))
-                    if new_value != saved_value:
-                        setattr(instance, field, new_value)
-                        save_changes = True
-                        if field in ['activated', 'locked']:
-                            # set time modified if new_value = True, remove time modified when new_value = False
-                            mod_at_field = 'activatedat' if field == 'activated' else 'lockedat'
-                            mod_at = timezone.now() if new_value else None
-                            setattr(instance, mod_at_field, mod_at)
-                else:
-                    if new_value != saved_value:
-                        setattr(instance, field, new_value)
-                        save_changes = True
+            elif field in ['activated', 'locked']:
+                #logger.debug('inactive new_value]: ' + str(new_value) + ' ' + str(type(new_value)))
+                saved_value = getattr(instance, field)
+                #logger.debug('inactive saved_value]: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                if new_value != saved_value:
+                    setattr(instance, field, new_value)
+                    save_changes = True
+                    if field in ['activated', 'locked']:
+                        # set time modified if new_value = True, remove time modified when new_value = False
+                        mod_at_field = 'activatedat' if field == 'activated' else 'lockedat'
+                        mod_at = timezone.now() if new_value else None
+                        setattr(instance, mod_at_field, mod_at)
+
+                if logging_on:
+                    logger.debug('saved_value]: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                    logger.debug('save_changes]: ' + str(save_changes))
 # --- end of for loop ---
 
 # 5. save changes
+        if save_parent:
+            try:
+                schoolbase = instance.base
+                schoolbase.save()
+                if logging_on:
+                    logger.debug('parent changes saved')
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
         if save_changes:
             try:
                 instance.save(request=request)
+                if logging_on:
+                    logger.debug('instance changes saved')
             except:
                 msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
 

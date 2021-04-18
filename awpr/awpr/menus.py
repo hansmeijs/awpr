@@ -52,22 +52,27 @@ menus_dict = {
                  'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
                  'submenu': ('subjlst', 'subjtyplst', 'schemlst', 'schemitemlst')
                  },
-'page_grade': {'index': 4, 'href_tuple': ('grades_url',),
+'page_exam': {'index': 4, 'href_tuple': ('exams_url',),
+               'caption': str(_('Exams')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
+                 'indent_left': indent_10, 'indent_right': indent_10,
+                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
+                 },
+'page_grade': {'index': 5, 'href_tuple': ('grades_url',),
                'caption': str(_('Grades')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
                  'indent_left': indent_10, 'indent_right': indent_10,
                  'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                  },
-'page_result': {'index': 5, 'href_tuple': ('subjects_url',),
+'page_result': {'index': 6, 'href_tuple': ('subjects_url',),
                'caption': str(_('Results')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
                 'indent_left': indent_10, 'indent_right': indent_10,
                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                 },
-'page_report': {'index': 6, 'href_tuple': ('subjects_url',),
+'page_report': {'index': 7, 'href_tuple': ('subjects_url',),
                'caption': str(_('Reports')), 'width': 120, 'height': height,  'pos_x': 60,  'pos_y': pos_y,
                'indent_left': indent_10, 'indent_right': indent_10,
                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                 },
-'page_analysis': {'index': 7, 'href_tuple': ('subjects_url',),
+'page_analysis': {'index': 8, 'href_tuple': ('subjects_url',),
                'caption':  str(_('Analysis')), 'width': 90, 'height': height,  'pos_x': 45,  'pos_y': pos_y,
                'indent_left': indent_10, 'indent_right': indent_none,
                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
@@ -85,6 +90,8 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
     logging_on = True
     if logging_on:
         logger.debug('===== get_headerbar_param ===== ' + str(page))
+
+    param = param if param else {}
 
     headerbar = param if param else {}
     req_user = request.user
@@ -157,8 +164,9 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
         #   - selected school is stored in usersettings
         #   - otherwise sel_schoolbase_pk is equal to _requsr_schoolbase_pk
         # note: may_select_school only sets hover of school. Permissions are set in JS HandleHdrbarSelect
-        # TODO hide school in certain pages
-        display_school = True  # params.get('display_school', True)
+
+        # hide school in page_exam when role is insp, admin, system
+        display_school = param.get('display_school', True)
         sel_school = None
         sel_school_activated = False
         schoolname = ''

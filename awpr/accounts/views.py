@@ -16,13 +16,9 @@ from django.utils.decorators import method_decorator
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.translation import activate, ugettext_lazy as _
-from django.views.generic import ListView, View, CreateView, UpdateView, DeleteView
-from django.contrib.auth.views import PasswordResetConfirmView # PR2018-10-14
+from django.views.generic import ListView, View, UpdateView, DeleteView
 from django.contrib.auth.forms import SetPasswordForm # PR2018-10-14
-from django.views.decorators.debug import sensitive_post_parameters # PR2018-10-14
-from django.views.decorators.csrf import csrf_protect # PR2018-10-14
-from django.contrib.auth import update_session_auth_hash # PR2018-10-14
-from django.views.decorators.cache import never_cache # PR2018-10-14
+
 from django.contrib.auth import (
     REDIRECT_FIELD_NAME, get_user_model, login as auth_login,
     logout as auth_logout, update_session_auth_hash,
@@ -33,6 +29,7 @@ from .tokens import account_activation_token
 from .models import User, User_log, Usersetting
 
 from accounts import models as acc_mod
+from awpr import settings as s
 from awpr import constants as c
 from awpr import validators as v
 
@@ -40,8 +37,6 @@ from awpr import functions as af
 from awpr import menus as awpr_menu
 
 from schools import models as sch_mod
-from schools import functions as sch_fnc
-
 
 from datetime import datetime
 import pytz
@@ -295,44 +290,42 @@ class UserGroupPermitUploadView(View):
     #  it returns a HttpResponse, with ok_msg or err-msg
 
     def post(self, request):
-        logger.debug('  ')
-        logger.debug(' ========== UserGroupPermitUploadView ===============')
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('  ')
+            logger.debug(' ========== UserGroupPermitUploadView ===============')
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None and request.user.schoolbase is not None:
             req_user = request.user
-            # <PERMIT> PR2020-09-24
-            #  - only perm_admin and perm_system can add / edit / delete users
-            #  - only role_system and role_admin (ETE) can add users of other schools
-            #  - role_system, role_admin, role_insp and role_school can add users of their own school
-            has_permit = False
-            #if req_user.is_group_system:
-            #    has_permit = req_user.is_role_system
-            has_permit = True
+            permit_list, requsr_usergroups_list = get_userpermit_list('page_user', req_user)
+            has_permit = 'crud_permit' in permit_list
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
             if has_permit:
+# -  get user_lang
+                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+                activate(user_lang)
 
 # - get upload_dict from request.POST
                 upload_json = request.POST.get("upload")
                 if upload_json:
-                    err_dict = {}
-
                     upload_dict = json.loads(upload_json)
-                    logger.debug('upload_dict: ' + str(upload_dict))
 
-                    # upload_dict: {'permit_pk': 1, 'mode': 'update', 'mapid': 'permit_1',
-                    # 'permits': {'field': 'perm_auth1', 'value': True, 'update': True}}
-
-                    # - get info from upload_dict
+# - get selected mode. Modes are  'create"  'update' 'delete'
                     mode = upload_dict.get('mode')
                     permit_pk = upload_dict.get('permit_pk')
-                    #role = upload_dict.get('role')
+
                     page = upload_dict.get('page')
                     action = upload_dict.get('action')
                     sequence = upload_dict.get('sequence', 1)
-                    #permits_dict = upload_dict.get('permits')
 
-                    logger.debug('page:   ' + str(page))
-                    logger.debug('action: ' + str(action))
+                    if logging_on:
+                        logger.debug('mode:   ' + str(mode))
+                        logger.debug('page:   ' + str(page))
+                        logger.debug('action: ' + str(action))
 
                     append_dict = {}
                     error_dict = {}
@@ -342,31 +335,24 @@ class UserGroupPermitUploadView(View):
                     instance = acc_mod.Permit.objects.get_or_none(
                         pk=permit_pk
                     )
+                    if logging_on:
+                        logger.debug('instance: ' + str(instance))
 
-                    logger.debug('instance: ' + str(instance))
 # +++  delete permit ++++++++++++
                     if mode == 'delete':
                         if instance:
-                            page = instance.page
-                            action = instance.action
-                            instance = None
+                            try:
+                                instance.delete(request=request)
+                                # - add deleted_row to updated_permit_rows
+                                updated_permit_rows.append({'permit_pk': permit_pk,
+                                                  'mapid': 'permit_' + str(permit_pk),
+                                                  'deleted': True})
+                                if logging_on:
+                                    logger.debug('instance: ' + str(instance))
 
-                            logger.debug('page  : ' + str(page))
-                            logger.debug('action: ' + str(action))
-                            #try:
-                            if True:
-                                instances = acc_mod.Permit.objects.filter(page=page, action=action)
-                                for permit_instance in instances:
-                                    permit_instance_pk = permit_instance.pk
-                                    logger.debug('permit_instance_pk: ' + str(permit_instance_pk))
-                                    permit_instance.delete(request=request)
-                                    logger.debug('permit_instance_ deleted: ' + str(permit_instance))
-                                    # - add deleted_row to updated_permit_rows
-                                    updated_permit_rows.append({'permit_pk': permit_instance_pk,
-                                                      'mapid': 'permit_' + str(permit_instance_pk),
-                                                      'deleted': True})
-                            #except Exception as e:
-                            #    append_dict['err_delete'] = getattr(e, 'message', str(e))
+                            except Exception as e:
+                                logger.error(getattr(e, 'message', str(e)))
+                                append_dict['err_delete'] = getattr(e, 'message', str(e))
 
 # ++++  create new permit ++++++++++++
                     elif mode == 'create':
@@ -461,6 +447,7 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
             upload_json = request.POST.get('upload')
             if upload_json:
                 upload_dict = json.loads(upload_json)
+                #logger.debug('upload_dict: ' + str(upload_dict))
                 req_user.set_usersetting_from_uploaddict(upload_dict)
 # - add update_dict to update_wrap
                 update_wrap['setting'] = {'result': 'ok'}
@@ -824,7 +811,7 @@ def create_user_list(request, user_pk=None):
 
 def create_permit_list(permit_pk=None):
     # --- create list of all permits PR2021-03-18
-    logger.debug(' =============== create_permit_list ============= ')
+    #logger.debug(' =============== create_permit_list ============= ')
 
     sql_keys = {}
     sql_list = ["SELECT p.id, CONCAT('permit_', p.id::TEXT) AS mapid,",
@@ -848,8 +835,8 @@ def create_permit_list(permit_pk=None):
 
 def get_userpermit_list(page, req_user):
     # --- create list of all permits and usergroups of req_usr PR2021-03-19
-    logger.debug(' =============== get_userpermit_list ============= ')
-    logger.debug('page: ' + str(page) + ' ' + str(type(page)))
+    #logger.debug(' =============== get_userpermit_list ============= ')
+    #logger.debug('page: ' + str(page) + ' ' + str(type(page)))
     role = req_user.role
 
     requsr_usergroups_list = []
@@ -871,7 +858,7 @@ def get_userpermit_list(page, req_user):
                         sql_filter
                         ]
             sql = ' '.join(sql_list)
-            logger.debug('sql: ' + str(sql))
+            #logger.debug('sql: ' + str(sql))
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)
                 for row in cursor.fetchall():
@@ -889,7 +876,7 @@ def get_userpermit_list(page, req_user):
 
 def get_full_permit_list():
     # --- create list of all permits  PR2021-03-26, to be imported on server
-    logger.debug(' =============== get_full_permit_list ============= ')
+    #logger.debug(' =============== get_full_permit_list ============= ')
 
     sql_list = ["SELECT p.role, p.page, p.sequence, p.action, p.usergroups",
                 "FROM accounts_permit AS p",
@@ -899,9 +886,9 @@ def get_full_permit_list():
         cursor.execute(sql)
         rows = af.dictfetchall(cursor)
 
-        logger.debug(' ')
-        logger.debug(str(rows))
-        logger.debug(' ')
+        #logger.debug(' ')
+        #logger.debug(str(rows))
+        #logger.debug(' ')
 # - end of get_userpermit_list
 
 
