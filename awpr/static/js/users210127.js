@@ -253,6 +253,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // hardcode access of system admin
             if (permit.crud_permit || (setting_dict.requsr_role_system && usergroups.includes("admin"))){
                 AddSubmenuButton(el_submenu, loc.Add_permission, function() {MGP_Open("addnew")}, ["ml-2"]);
+                AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MGP_Open("addnew")}, ["ml-2"]);
+                AddSubmenuButton(el_submenu, loc.Download_permissions, function() {MGP_Open("addnew")}, ["ml-2"]);
             };
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
