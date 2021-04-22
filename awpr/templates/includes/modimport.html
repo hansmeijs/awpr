@@ -37,12 +37,8 @@
                                 <div class="content_subheader_left mx-4">
                                     <input id="id_MIMP_filedialog" type="file" name="file" class="mb-0" accept=".xlsx, .xls, csv">
                                 </div>
-                                <div class="mx-2 my-0"><small id="id_MIMP_msg_filedialog" class="text-danger display_hide"></small></div>
-
-                                <div id="id_msg_novalidfile" class="m-0 px-4 py-0" >
-                                    <small class="text-danger">
-                                        {% trans "You must select a valid Excel file before you can proceed." %}
-                                    </small>
+                                <div class="m-0 px-4 py-0" >
+                                    <small id="id_MIMP_msg_filedialog" class="text-danger"></small>
                                 </div>
 
                                 <label class="mx-2 mt-4 mb-2">B. {% trans 'Select a worksheet' %}:</label>
@@ -73,17 +69,18 @@
                             <div class="mx-4 mt-2 btn_show btn_step2 display_hide">
                                 <div class="mx-2"><small>{% trans "Click corresponding names in the left and right list to link an Excel column to an AWP-column." %}</small></div>
                                 <div class="mx-2"><small >{% trans "Click linked names in the lower list to unlink these columns." %}</small></div>
-                                <h6 class="mx-2 mt-2">{% trans "Select the field that AWP must use to lookup existing candidates:" %}</h6>
-                                <select id="id_select_unique" class="form-control"
-                                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                    <option value="examnumber">{% trans "Exam number" %}</option>
-                                    <option value="idnumber">{% trans "ID-number" %}</option>
-                                </select>
-                                <div class="m-0 px-2 py-0" >
-                                <small id="id_msg_err_select_unique" class="text-danger"></small>
+                                <div id="id_MIMP_selectunique_container" >
+                                    <h6 class="mx-2 mt-2">{% trans "Select the column that AWP must use to lookup existing candidates:" %}</h6>
+                                    <select id="id_MIMP_select_unique" class="form-control"
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                     <!--   <option value="examnumber">{% trans "Exam number" %}</option>
+                                        <option value="idnumber">{% trans "ID-number" %}</option> -->
+                                    </select>
+                                    <div class="m-0 px-2 py-0" >
+                                    <small id="id_msg_err_select_unique" class="text-danger"></small>
+                                    </div>
                                 </div>
-
-                                <div class="mx-2"><small id="id_MIMP_msg_link_unique" class="text-danger"></small></div>
+                                <div class="mx-2"><small id="id_MIMP_msg_selectunique" class="text-danger"></small></div>
 
                                 <div id="id_MIMP_crosstab_container" >
                                     <h6 class="mx-2 mt-2">{% trans "Select if each subject has a separate column, or all subjects are in one column 'Subject':" %}</h6>

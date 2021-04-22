@@ -7,9 +7,12 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import activate, pgettext_lazy, ugettext_lazy as _
 
 from django.views.generic import View
+
+from accounts import models as acc_mod
 from awpr import constants as c
 from awpr import functions as af
-from schools import functions as sf
+from awpr import settings as s
+
 from schools import models as sch_mod
 from students import models as stud_mod
 from students import validators as stud_val
@@ -26,7 +29,7 @@ logger = logging.getLogger(__name__)
 class UploadImportSettingView(View):   # PR2020-12-05
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
     def post(self, request, *args, **kwargs):
-        logging_on = True
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= UploadImportSettingView ============= ')
 
@@ -46,6 +49,16 @@ class UploadImportSettingView(View):   # PR2020-12-05
                 # 'worksheetname': 'Compleetlijst', 'noheader': False}
                 # 'sector': {'CM': 4, 'EM': 5}}
 
+                """
+                new_setting_dict{
+                'importtable': 'import_permits', 
+                'sel_examyear_pk': None, 
+                'sel_schoolbase_pk': None, 
+                'sel_depbase_pk': None, 
+                'worksheetname': 'Permits', 
+                'noheader': False}
+                """
+
                 if new_setting_dict:
                     # setting_keys are: 'import_student', import_studentsubject
                     # {importtable: "import_studentsubject", ...}
@@ -60,6 +73,10 @@ class UploadImportSettingView(View):   # PR2020-12-05
                     sel_depbase_pk = new_setting_dict.get('sel_depbase_pk')
                     sel_depbase = sch_mod.Schoolbase.objects.get_or_none(pk=sel_depbase_pk)
 
+                    if logging_on:
+                        logger.debug('setting_key: ' + str(setting_key))
+                        logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+
                     if setting_key and sel_schoolbase:
                         stored_setting_dict = sel_schoolbase.get_schoolsetting_dict(setting_key)
                         if logging_on:
@@ -72,11 +89,9 @@ class UploadImportSettingView(View):   # PR2020-12-05
 
                             if new_setting_value is None and stored_setting_dict:
                                 new_setting_value = stored_setting_dict.get(import_key)
+
                             if import_key is 'noheader' and  new_setting_value is None:
                                 new_setting_value = False
-
-                            if logging_on:
-                                logger.debug('import_key: ' + str(import_key) + ' new_setting_value: ' + str(new_setting_value))
 
                             if new_setting_value is not None:
                                 new_stored_setting[import_key] = new_setting_value
@@ -102,6 +117,7 @@ class UploadImportDataView(View):  # PR2020-12-05 PR2021-02-23
     def post(self, request, *args, **kwargs):
         logging_on = True
         if logging_on:
+            logger.debug(' ')
             logger.debug(' ============= UploadImportDataView ============= ')
 
         update_dict = {}
@@ -113,7 +129,6 @@ class UploadImportDataView(View):  # PR2020-12-05 PR2021-02-23
             if request.POST['upload']:
                 upload_dict = json.loads(request.POST['upload'])
 
-                # new_setting_dict: {'importtable': 'student', 'coldefs': {'birthdate': 'GEB_DAT', 'classname': 'KLAS'}}
     # - Reset language
                 # PR2019-03-15 Debug: language gets lost, get request.user.lang again
                 user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -124,6 +139,8 @@ class UploadImportDataView(View):  # PR2020-12-05 PR2021-02-23
                     update_dict = import_students(upload_dict, user_lang, logging_on, request)
                 elif importtable == 'import_studentsubject':
                     update_dict = import_studentsubjects(upload_dict, user_lang, logging_on, request)
+                elif importtable == 'import_permits':
+                    update_dict = import_permits(upload_dict, user_lang, logging_on, request)
 
         return HttpResponse(json.dumps(update_dict, cls=af.LazyEncoder))
 # - end of UploadImportDataView
@@ -301,7 +318,6 @@ def count_subjectbase_in_scheme(department):  # PR2021-02-27
 
     return count_dict
 # - end of count_subjectbase_in_scheme
-
 
 
 def upload_studentsubject(data_dict, lookup_field, lookup_value, occurrences_in_datalist, count_subjectbase_dict,
@@ -684,7 +700,8 @@ def import_students(upload_dict, user_lang, logging_on, request):  # PR2020-12-0
 
 
 def upload_student(data_dict, lookup_field, lookup_value, occurrences_in_datalist,
-                   awpColdef_list, is_test, examyear, school, department, format_str, logfile, logging_on, request):  # PR2019-12-17 PR2020-06-03
+                   awpColdef_list, is_test, examyear, school, department, format_str,
+                   logfile, logging_on, request):  # PR2019-12-17 PR2020-06-03
     if logging_on:
         logger.debug('----------------- upload_student  --------------------')
         logger.debug('data_dict: ' + str(data_dict))
@@ -1272,7 +1289,163 @@ def update_student(instance, parent, upload_dict, msg_dict, request):
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+def import_permits(upload_dict, user_lang, logging_on, request):  # PR2021-04-20
+    if logging_on:
+        logger.debug(' ============= import_permits ============= ')
+        logger.debug('upload_dict: ' + str(upload_dict))
+    """
+    upload_dict: {'importtable': 'import_permits', 
+        'awpColdef_list': ['c_abbrev', 'page', 'role', 'action', 'usergroups', 'sequence'], 
+        'data_list': [{'rowindex': 0, 'c_abbrev': 'cur', 'page': 'page_all', 'role': 'href_userpage', 'action': 'admin', 'usergroups': '128', 'sequence': '10'},
+            {'rowindex': 1, 'c_abbrev': 'cur', 'page': 'page_exam', 'role': 'view_page', 'action': 'admin;read', 'usergroups': '8', 'sequence': '10'},
+            {'rowindex': 2, 'c_abbrev': 'cur', 'page': 'page_grade', 'role': 'read_note', 'action': 'admin;anlz;auth1;auth2;auth3;edit;read', 'usergroups': '8', 'sequence': '60'}]}
+    """
+# - get info from upload_dict
+    is_test = upload_dict.get('test', False)
+    awpColdef_list = upload_dict.get('awpColdef_list')
+    data_list = upload_dict.get('data_list')
 
+    params = {}
+    logfile = []
+
+    if awpColdef_list and data_list:
+
+        if logging_on:
+            logger.debug('awpColdef_list: ' + str(awpColdef_list))
+            # - create logfile
+            today_dte = af.get_today_dateobj()
+            today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
+
+            logfile = [c.STRING_DOUBLELINE_80,
+                       str(_('Upload permissions')) + ' ' + str(_('date')) + ': ' + str(today_formatted),
+                       c.STRING_DOUBLELINE_80]
+            # awpColdef_list: ['c_abbrev', 'page', 'role', 'action', 'usergroups', 'sequence']
+            lookup_field_missing = False
+            for lookup_field in ('c_abbrev', 'page', 'role', 'action'):
+                if lookup_field not in awpColdef_list:
+                    lookup_field_missing = True
+            if lookup_field_missing:
+                info_txt = str(_('Not all required fields to lookup permissions are linked. Permits cannot be uploaded.'))
+                logfile.append(c.STRING_INDENT_5 + info_txt)
+            else:
+                if is_test:
+                    info_txt = str(_("This is a test. The permission data are not saved."))
+                else:
+                    info_txt = str(_("The permission data are saved."))
+                logfile.append(c.STRING_INDENT_5 + info_txt)
+                logfile.append(' ')
+
+# +++++ loop through data_list
+        update_list = []
+        for data_dict in data_list:
+            # from https://docs.quantifiedcode.com/python-anti-patterns/readability/not_using_items_to_iterate_over_a_dictionary.html
+            # for key, val in student.items():
+            # #logger.debug( str(key) +': ' + val + '" found in "' + str(student) + '"')
+
+# - upload permit
+            update_dict = upload_permit(data_dict, is_test, logfile, logging_on, request)
+            # json_dumps_err_list = json.dumps(msg_list, cls=af.LazyEncoder)
+            if update_dict:  # 'Any' returns True if any element of the iterable is true.
+                update_list.append(update_dict)
+
+        if update_list:  # 'Any' returns True if any element of the iterable is true.
+            params['data_list'] = update_list
+    if logfile:  # 'Any' returns True if any element of the iterable is true.
+        params['logfile'] = logfile
+            # params.append(new_student)
+    return params
+# - end of import_permits
+
+
+def upload_permit(data_dict, is_test, logfile, logging_on, request):   # PR2021-04-20
+    if logging_on:
+        logger.debug('----------------- upload_permit  --------------------')
+        logger.debug('data_dict: ' + str(data_dict))
+
+    """
+    'data_list': [{'rowindex': 0, 'c_abbrev': 'cur', 'page': 'page_all', 'role': 'href_userpage', 'action': 'admin', 'usergroups': '128', 'sequence': '10'},
+        {'rowindex': 1, 'c_abbrev': 'cur', 'page': 'page_exam', 'role': 'view_page', 'action': 'admin;read', 'usergroups': '8', 'sequence': '10'},
+        {'rowindex': 2, 'c_abbrev': 'cur', 'page': 'page_grade', 'role': 'read_note', 'action': 'admin;anlz;auth1;auth2;auth3;edit;read', 'usergroups': '8', 'sequence': '60'}]}
+    """
+
+# - get info from data_dict
+    row_index = data_dict.get('rowindex')
+    c_abbrev = data_dict.get('c_abbrev')
+
+# - create update_dict
+    update_dict = {'table': 'permit', 'rowindex': row_index}
+
+# - get country based on c_abbrev 'Cur' in excel file, not requsr_country
+    country = sch_mod.get_country(c_abbrev)
+    if country is None:
+        msg_err = ' '.join((str(_('Country')), "'" + c_abbrev + "'", str(_('is not found'))))
+        update_dict['row_error'] = msg_err
+        logfile.append(c.STRING_INDENT_5 + msg_err)
+    else:
+
+# get required fields
+        page = data_dict.get('page')
+        role = data_dict.get('role')
+        action = data_dict.get('action')
+
+
+# - check of required fields have value
+        if not c_abbrev or not page or not role or not action:
+            missing_str = ''
+            if not page:
+                missing_str += str(_('Page')).lower()
+            if not role:
+                if missing_str:
+                    missing_str += ', '
+                missing_str += str(_('Organization')).lower()
+            if not action:
+                if missing_str:
+                    missing_str += ', '
+                missing_str += str(_('Action')).lower()
+            if missing_str:
+                msg_err = ' '.join((str(_('Row')), str(row_index), str(_('is missing required field:')), missing_str))
+                update_dict['row_error'] = msg_err
+                logfile.append(c.STRING_INDENT_5 + msg_err)
+        else:
+
+# get non-required fields
+            usergroups = data_dict.get('usergroups')
+            sequence = data_dict.get('sequence')
+
+# - check if there is already a permit with this  page, role and action
+            try:
+                permit = acc_mod.Permit.objects.filter(
+                    country=country,
+                    role=role,
+                    page__iexact=page,
+                    action__iexact=action
+                ).order_by('-pk').first()
+                if permit is None:
+                    permit = acc_mod.Permit(
+                        country=country,
+                        role=role,
+                        page__iexact=page,
+                        action__iexact=action
+                    )
+                setattr(permit, 'usergroups', usergroups)
+                setattr(permit, 'sequence', sequence)
+
+# - dont save data when it is a test run
+                if not is_test:
+                    permit.save(request=request)
+
+                msg_err = ' '.join((str(_('Row')), str(row_index), str(_('is ok.'))))
+                logfile.append(c.STRING_INDENT_5 + msg_err)
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                msg_err = ' '.join((str(_('Error in row')), str(row_index), ":" , str(e)))
+                update_dict['row_error'] = msg_err
+                logfile.append(c.STRING_INDENT_5 + msg_err)
+
+    return update_dict
+# --- end of upload_permit
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 """
 def StudentImportUploadDataViewXXX(upload_dict):  # PR2018-12-04 PR2020-12-06

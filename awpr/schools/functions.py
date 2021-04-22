@@ -6,6 +6,7 @@ from datetime import datetime
 
 from awpr import constants as c
 from awpr import functions as af
+from awpr import settings as s
 
 from schools import models as sch_mod
 from subjects import models as subj_mod
@@ -417,29 +418,29 @@ def get_department(old_examyear, new_examyear):
         prev_examyear = sch_mod.Department.objects.filter(country=new_examyear.country, examyear=prev_examyear_int).first()
     return prev_examyear
 
-
 # ===============================
 def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_depbase):  # PR2020-04-17 PR2020-12-28  PR2021-01-12
-    logging_on = False
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------- get_schoolsetting ---------------- ')
-        logger.debug('request_item_setting: ' + str(request_item_setting) + ' ' + str(type(request_item_setting)))
+        logger.debug('request_item_setting: ' + str(request_item_setting))
         logger.debug('sel_examyear: ' + str(sel_examyear))
         logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
-        logger.debug('sel_depbase: ' + str(sel_depbase) + ' ' + str(type(sel_depbase)))
+        logger.debug('sel_depbase: ' + str(sel_depbase))
+
     # only called by DatalistDownloadView
     # setting_keys are: {setting_key: "import_student"}, {setting_key: "import_subject"},, {setting_key: "import_grade"}
     setting_key = request_item_setting.get('setting_key')
-
-    sel_examyear_pk = sel_examyear.pk if sel_examyear else None
-    sel_schoolbase_pk = sel_schoolbase.pk if sel_schoolbase else None
-    sel_depbase_pk = sel_depbase.pk if sel_depbase else None
-    schoolsetting_dict = {'sel_examyear_pk': sel_examyear_pk,
-                          'sel_schoolbase_pk': sel_schoolbase_pk,
-                          'sel_depbase_pk': sel_depbase_pk}
-
+    schoolsetting_dict = {}
     if setting_key:
-        if setting_key in (c.KEY_IMPORT_STUDENT, c.KEY_IMPORT_STUDENTSUBJECT, c.KEY_IMPORT_SUBJECT, c.KEY_IMPORT_GRADE):
+
+        if setting_key in (c.KEY_IMPORT_STUDENT, c.KEY_IMPORT_STUDENTSUBJECT, c.KEY_IMPORT_SUBJECT, c.KEY_IMPORT_GRADE, c.KEY_IMPORT_PERMITS):
+            sel_examyear_pk = sel_examyear.pk if sel_examyear else None
+            sel_schoolbase_pk = sel_schoolbase.pk if sel_schoolbase else None
+            sel_depbase_pk = sel_depbase.pk if sel_depbase else None
+            schoolsetting_dict = {'sel_examyear_pk': sel_examyear_pk,
+                                  'sel_schoolbase_pk': sel_schoolbase_pk,
+                                  'sel_depbase_pk': sel_depbase_pk}
             schoolsetting_dict[setting_key] = get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase, logging_on)
         else:
             schoolsetting_dict[setting_key] = sel_schoolbase.get_setting(setting_key)
@@ -484,6 +485,7 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
             logger.debug('sel_school.depbases: ' + str(sel_school.depbases))
             logger.debug('depbases_str_list: ' + str(depbases_str_list))
             logger.debug('sel_school_depbases_list: ' + str(sel_school_depbases_list))
+
         if sel_depbase and sel_school_depbases_list and sel_depbase.pk in sel_school_depbases_list:
             sel_department = sch_mod.Department.objects.get_or_none(base=sel_depbase, examyear=sel_examyear)
             if sel_department:
@@ -504,8 +506,18 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
     worksheetname = ''
     coldef_list = []
     stored_coldef = {}
+    one_unique_identifier = c.IMPORT_ONE_UNIQUE_IDENTIFIER.get(setting_key, False)
 
-    if setting_key and sel_school and sel_department:
+# - get list of tables needed for uploading
+    table_list = None
+    if setting_key == c.KEY_IMPORT_STUDENT:
+        table_list = ("coldef", "department", "level", "sector", "profiel")
+    elif setting_key == c.KEY_IMPORT_STUDENTSUBJECT:
+        table_list = ("coldef", "subject", "subjecttype")
+    else:
+        table_list = ("coldef",)
+
+    if setting_key and sel_school:
         if stored_settings_dict:
             noheader = stored_settings_dict.get('noheader', False)
             worksheetname = stored_settings_dict.get('worksheetname')
@@ -548,90 +560,95 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
     setting_dict = {
         'worksheetname': worksheetname,
         'noheader': noheader,
-        'coldefs': coldef_list
+        'coldefs': coldef_list,
+        'tablelist': table_list,
+        'one_unique_identifier': one_unique_identifier
         }
 
 # create list of required levels and sectors with excColdef when linked
     # 'profiel' also stored in table 'sector', but is separate item in import
-    for tblName in ('department', 'level', 'sector', 'profiel', 'subject', 'subjecttype'):
-# - only add list of level / sector when _req is True in sel_department
-        is_req = False
-        if tblName == 'level':
-            is_req = is_level_req
-        elif tblName in ('sector', 'profiel'):
-            is_req = is_sector_req
-        else:
-            #TODO set isreq for dep, subj, subjtype
-            is_req = True
 
-        if is_req:
-            tbl_list = []
-            instances = None
+    if table_list:
+        for tblName in table_list:
+            if tblName in ('department', 'level', 'sector', 'profiel', 'subject', 'subjecttype'):
+    # - only add list of level / sector when _req is True in sel_department
+                is_req = False
+                if tblName == 'level':
+                    is_req = is_level_req
+                elif tblName in ('sector', 'profiel'):
+                    is_req = is_sector_req
+                else:
+                    #TODO set isreq for dep, subj, subjtype
+                    is_req = True
 
-# - reverse the  stored_dict : convert {'ned': 4} to {4: 'ned'} to speed up search
-            reversed_dict = {}
-            stored_dict = stored_settings_dict.get(tblName) if stored_settings_dict else None
-            if logging_on:
-                logger.debug('tblName: ' + str(tblName))
-                logger.debug('stored_dict: ' + str(stored_dict))
+                if is_req:
+                    tbl_instances = []
+                    instances = None
 
-            if stored_dict:
-                for excValue, awpBasePk in stored_dict.items():
-                    reversed_dict[awpBasePk] = excValue
+        # - reverse the  stored_dict : convert {'ned': 4} to {4: 'ned'} to speed up search
+                    reversed_dict = {}
+                    stored_dict = stored_settings_dict.get(tblName) if stored_settings_dict else None
+                    if logging_on:
+                        logger.debug('tblName: ' + str(tblName))
+                        logger.debug('stored_dict: ' + str(stored_dict))
 
-# - get all instances of tblNmae of sel_examyear
-            if tblName == 'department':
-                instances = sch_mod.Department.objects.filter(examyear=sel_examyear)
-            elif tblName == 'level':
-                instances = subj_mod.Level.objects.filter(examyear=sel_examyear)
-            elif tblName in ('sector', 'profiel'):
-                instances = subj_mod.Sector.objects.filter(examyear=sel_examyear)
-            elif tblName == 'subject':
-                instances = subj_mod.Subject.objects.filter(examyear=sel_examyear)
-            elif tblName == 'subjecttype':
-                instances = subj_mod.Subjecttype.objects.filter(examyear=sel_examyear)
+                    if stored_dict:
+                        for excValue, awpBasePk in stored_dict.items():
+                            reversed_dict[awpBasePk] = excValue
 
-# - loop through instances of this examyear
-            for instance in instances:
-                if logging_on:
-                    logger.debug('instances: ' + str(instances) + ' ' + str(type(instances)))
-    # - check if one of the depbases of the instance is in the list of depbases of the school
-                add_to_list = False
-                if sel_department:
+        # - get all instances of tblNmae of sel_examyear
                     if tblName == 'department':
-            # if department: check if depbasePk is in school_depbasePk_list
-                        if instance == sel_department:
-                            add_to_list = True
-                    elif instance.depbases:
-            # in other tables: only add if sel_depbase.pk is in depbases
-                        depbases_str_list = instance.depbases.split(';') if instance.depbases else None
-                        depbases_list = list(map(int, depbases_str_list)) if depbases_str_list else None
+                        instances = sch_mod.Department.objects.filter(examyear=sel_examyear)
+                    elif tblName == 'level':
+                        instances = subj_mod.Level.objects.filter(examyear=sel_examyear)
+                    elif tblName in ('sector', 'profiel'):
+                        instances = subj_mod.Sector.objects.filter(examyear=sel_examyear)
+                    elif tblName == 'subject':
+                        instances = subj_mod.Subject.objects.filter(examyear=sel_examyear)
+                    elif tblName == 'subjecttype':
+                        instances = subj_mod.Subjecttype.objects.filter(examyear=sel_examyear)
 
-                        if sel_depbase.pk in depbases_list:
-                            if tblName == 'sector':
-                                add_to_list = not has_profiel
-                            elif tblName == 'profiel':
-                                add_to_list = has_profiel
-                            else:
-                                add_to_list = True
+        # - loop through instances of this examyear
+                    for instance in instances:
+                        if logging_on:
+                            logger.debug('instance ' + str(instance) + ' ' + str(type(instance)))
+            # - check if one of the depbases of the instance is in the list of depbases of the school
+                        add_to_list = False
+                        if sel_department:
+                            if tblName == 'department':
+                    # if department: check if depbasePk is in school_depbasePk_list
+                                if instance == sel_department:
+                                    add_to_list = True
+                            elif instance.depbases:
+                    # in other tables: only add if sel_depbase.pk is in depbases
+                                depbases_str_list = instance.depbases.split(';') if instance.depbases else None
+                                depbases_list = list(map(int, depbases_str_list)) if depbases_str_list else None
 
-                if add_to_list:
-                    instance_basePk = instance.base.pk
-                    instance_value = None
-                    if tblName in ('department', 'subject'):
-                        instance_value = instance.base.code if instance.base.code else None
-                    elif tblName in ('level', 'sector', 'profiel', 'subjecttype'):
-                        instance_value = instance.abbrev if instance.abbrev else None
+                                if sel_depbase.pk in depbases_list:
+                                    if tblName == 'sector':
+                                        add_to_list = not has_profiel
+                                    elif tblName == 'profiel':
+                                        add_to_list = has_profiel
+                                    else:
+                                        add_to_list = True
 
-                    dict = {'awpBasePk': instance_basePk, 'awpValue': instance_value}
-                    if reversed_dict:
-                        #  reversed_dict =  {3: 'EM', 4: 'CM', 7: 'NT'}
-                        # - add excValue when this subject is linked
-                        if reversed_dict and instance_basePk in reversed_dict:
-                            dict['excValue'] = reversed_dict[instance_basePk]
-                    tbl_list.append(dict)
-            if tbl_list:
-                setting_dict[tblName] = tbl_list
+                        if add_to_list:
+                            instance_basePk = instance.base.pk
+                            instance_value = None
+                            if tblName in ('department', 'subject'):
+                                instance_value = instance.base.code if instance.base.code else None
+                            elif tblName in ('level', 'sector', 'profiel', 'subjecttype'):
+                                instance_value = instance.abbrev if instance.abbrev else None
+
+                            dict = {'awpBasePk': instance_basePk, 'awpValue': instance_value}
+                            if reversed_dict:
+                                #  reversed_dict =  {3: 'EM', 4: 'CM', 7: 'NT'}
+                                # - add excValue when this subject is linked
+                                if reversed_dict and instance_basePk in reversed_dict:
+                                    dict['excValue'] = reversed_dict[instance_basePk]
+                            tbl_instances.append(dict)
+                    if tbl_instances:
+                        setting_dict[tblName] = tbl_instances
 
     if logging_on:
         logger.debug('setting_dict: ' + str(setting_dict))

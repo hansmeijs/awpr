@@ -1,0 +1,76 @@
+{% load i18n %}
+{% load static %}
+
+{% block stylesheet %}
+    <link rel="stylesheet" href="{% static 'css/awpr_import201020.css' %}">
+{% endblock %}
+<!-- =================== MODAL UPLOAD PERMITS  =================== -->
+    <div class="modal" id="id_mod_upload_permits" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 id="id_MIMP_header" class="modal-title mx-2" >{% trans 'Upload permissions' %}</h4>
+                    <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div id="id_MUP_body" class="modal-body modal_container pt-0 ">
+
+                        <div class="modal_body_right m-2">
+                            <div class="ta_c">
+                                <img id="id_MIMP_loader" src="{% static 'img/loader.gif' %}" height="24" width="24" class="display_hide" >
+                            </div>
+
+                            <div class="ta_l mx-4 btn_show btn_step1">
+                                <label id="id_MIMP_filedialog_label" class="m-2"></label>
+                                <div class="content_subheader_left mx-4">
+                                    <input id="id_MIMP_filedialog" type="file" name="file" class="mb-0" accept=".xlsx, .xls, csv">
+                                </div>
+                                <div class="mx-2 my-0"><small id="id_MIMP_msg_filedialog" class="text-danger display_hide"></small></div>
+
+                                <div id="id_msg_novalidfile" class="m-0 px-4 py-0" >
+                                    <small class="text-danger">
+                                        {% trans "You must select a valid Excel file before you can proceed." %}
+                                    </small>
+                                </div>
+
+                                <label class="mx-2 mt-4 mb-2">B. {% trans 'Select a worksheet' %}:</label>
+                                <div class="content_header">
+                                    <div class="content_subheader_left mx-4">
+                                        <select id="id_MIMP_worksheetlist" class="form-control mb-0"
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;"></select>
+                                    </div>
+                                    <div class="content_subheader_left mx-2 my-0"></div>
+                                </div>
+
+                                <div class="content_header">
+                                    <div class="content_subheader_left mx-4 my-0">
+                                        <small id="id_msg_worksheet" class="text-danger display_hide"></small>
+                                    </div>
+                                </div>
+
+                                <label class="mx-2 mt-4 mb-2">C. {% trans 'Select if the worksheet has a header row:' %}</label>
+                                <div class="content_subheader_left mx-4">
+                                    <span>
+                                        <input id="id_MIMP_hasheader" type="checkbox" value="true" class="tw_032">
+                                        <label for="id_MIMP_hasheader" class="mx-2 my-1">{% trans 'Worksheet has a header row' %}</label>
+                                    </span>
+                                 </div>
+                            </div>
+                        </div>
+                </div>
+                <div class="modal-footer pr-4">
+                     <div class="content_subheader_right">
+                        <div id="id_btn_container2" class="sidebar_btngroup btn-group btn-block" role="group" aria-label="Choose option" >
+                        <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                                    <button id="id_MIMP_btn_upload" type="button" class="btn btn-secondary">{% trans 'Upload' %}</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="id_MIMP_data" data-importsettings_upload_url="{% url 'importsettings_upload_url' %}"
+                     data-importdata_upload_url="{% url 'importdata_upload_url' %}"></div>
+            </div>
+        </div>
+    </div>
+

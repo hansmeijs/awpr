@@ -790,20 +790,19 @@ class User_log(Model):
         return mode_str
 
 
-class Permit(sch_mod.AwpBaseModel):  # PR2021-03-18
+class Permit(sch_mod.AwpBaseModel):  # PR2021-03-18 PR2021-04-20
     # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
     # AwpModelManager already is in AwpBaseModel
-    #objects = sch_mod.AwpModelManager()
+    # was: objects = sch_mod.AwpModelManager()
 
+    country = ForeignKey(Country, related_name='+', on_delete=CASCADE)
     role = PositiveSmallIntegerField(default=0)
     page = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
     action = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
-    groups = PositiveSmallIntegerField(default=0)
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
-
     usergroups = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
-
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
+
 
 # PR2018-05-06
 class Usersetting(Model):

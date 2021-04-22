@@ -80,7 +80,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     awp_messages.append(awp_message)
                     datalists['awp_messages'] = awp_messages
 
-# ----- get school settings
+# ----- get school settings (includes import settings)
                 request_item_setting = datalist_request.get('schoolsetting')
                 if request_item_setting:
                     datalists['schoolsetting_dict'] = sch_fnc.get_schoolsetting(

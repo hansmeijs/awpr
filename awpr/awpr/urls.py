@@ -111,6 +111,8 @@ urlpatterns = [
         path('user_upload', account_views.UserUploadView.as_view(), name='user_upload_url'),
         path('group_upload', account_views.UserGroupPermitUploadView.as_view(), name='group_permit_upload_url'),
         path('settings_upload', account_views.UserSettingsUploadView.as_view(), name='settings_upload_url'),
+        path('permits_download', account_views.UserDownloadPermitsView.as_view(), name='user_download_permits_url'),
+
 
         #url(r'^users/(?P<pk>\d+)/log$', account_views.UserLogView.as_view(), name='user_log_url'),
     ])),

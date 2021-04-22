@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const el_filedialog = document.getElementById("id_MIMP_filedialog");
         el_filedialog.addEventListener("change", function() {HandleFiledialog(el_filedialog, loc)}, false )
 
-    const el_select_unique = document.getElementById("id_select_unique");
+    const el_select_unique = document.getElementById("id_MIMP_select_unique");
         el_select_unique.addEventListener("change", function() {MIMP_SelectUniqueChanged(el_select_unique)}, false )
     const el_MIMP_tabular = document.getElementById("id_MIMP_tabular");
         el_MIMP_tabular.addEventListener("change", function() {MIMP_CheckboxCrosstabTabularChanged(el_MIMP_tabular)}, false )

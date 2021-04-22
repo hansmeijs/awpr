@@ -112,7 +112,7 @@ def get_locale_dict(table_dict, user_lang):
     dict['err_msg_is_invalid_number'] = _(' is an invalid number.')
     dict['err_msg_must_be_integer'] = _(' must be an integer.')
     dict['err_msg_must_be_number_between'] =  _(' must be a number between ')
-    dict['err_msg_and'] = TXT__and
+    dict['err_msg_and'] = TXT__and_
     dict['err_msg_must_be_number_less_than_or_equal_to'] = _(' must be a number less than or equal to ')
     dict['err_msg_must_be_number_greater_than_or_equal_to'] = _(' must be a number greater than or equal to ')
 
@@ -134,18 +134,26 @@ def get_locale_dict(table_dict, user_lang):
         dict['Select_Excelfile_with_students'] = _('Select an Excel file with students:')
         dict['Select_Excelfile_with_subjects'] = _('Select an Excel file with subjects:')
         dict['Select_Excelfile_with_grades'] = _('Select an Excel file with grades:')
+        dict['Select_Excelfile_with_pemits'] = _('Select an Excel file with permissions:')
         dict['Select_valid_Excelfile'] = _('Please select a valid Excel file.')
         dict['Not_valid_Excelfile'] = _('This is not a valid Excel file.')
         dict['Only'] = _('Only ')
-        dict['and'] = TXT__and
+        dict['_and_'] = TXT__and_
         dict['are_supported'] = _(' are supported.')
         dict['No_worksheets'] = _('There are no worksheets.')
         dict['No_worksheets_with_data'] = _('There are no worksheets with data.')
 
-        dict['link_The_field'] = _("The field ")
-        dict['link_One_ofthe_fields'] = _("One of the fields ")
+        dict['First_select_valid_excelfile'] = _('You must select a valid Excel file before you can proceed.')
+
+        dict['link_The_column'] = _("The column ")
+        dict['link_The_columns'] = _("The columns ")
+        dict['link_One_ofthe_columns'] = _("One of the columns ")
         dict['_or_'] = _(" or ")
-        dict['link_mustbelinked'] = _(" must be linked.")
+        dict['link_mustbelinked_single'] =  pgettext_lazy('single', ' must be linked.')
+        dict['link_mustbelinked_plural'] =  pgettext_lazy('plural', ' must be linked.')
+
+        dict['Select_column'] = _("Select a column")
+        dict['No_column_found'] = _("No column found")
 
         dict['Link_sectors'] = _('Link sectors')
         dict['Link_profielen'] = _('Link profielen')
@@ -199,6 +207,8 @@ def get_locale_dict(table_dict, user_lang):
         dict['Sequence_2lines'] =  pgettext_lazy('2 lines', 'Sequence')
 
         dict['Add_permission'] = _('Add permission')
+        dict['Upload_permissions'] = _('Upload permissions')
+        dict['Download_permissions'] = _('Download permissions')
 
         dict['No_user_selected']  = _('There is no user selected.')
         dict['Make_user_inactive'] = _('Make user inactive')
@@ -537,7 +547,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Approved_by'] = TXT_Approved_by
         dict['Submitted_by'] = TXT_Submitted_by
 
-        dict['and'] = TXT__and
+        dict['and'] = TXT__and_
 
         dict['grade_err_list'] = {
             'examyear_locked': _('The exam year is locked.'),
@@ -602,7 +612,7 @@ TXT_Submit = _('Submit')
 TXT_Approved_by = _('Approved by')
 TXT_Submitted_by = _('Submitted by')
 
-TXT__and = _(' and ')
+TXT__and_ = _(' and ')
 
 # get weekdays translated
 TXT_weekdays_abbrev = ('', _('Mon'), _('Tue'), _('Wed'), _('Thu'), _('Fri'), _('Sat'), _('Sun'))

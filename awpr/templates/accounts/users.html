@@ -5,6 +5,7 @@
 {% block title %}{% trans 'Users' %}{% endblock %}
 
 {% block script %}
+    <script src="{% static 'js/import210127.js' %}"></script>
     <script src="{% static 'js/users210127.js' %}"></script>
 {% endblock %}
 
@@ -32,6 +33,8 @@
             {% include 'accounts/moduser.html' %}
     <!-- =================== MODAL GROUP PERMIT  =================== -->
             {% include 'accounts/modgrouppermit.html' %}
+    <!-- =================== MODAL IMPORT  =================== -->
+            {% include 'includes/modimport.html' %}
 
             <div class="content_margin_top78">
 
@@ -48,7 +51,7 @@
                     </div>
             <!-- loader -->
                     <div class="flex_1 py-2">
-                            {% include 'includes/loader.html' %}
+                        {% include 'includes/loader.html' %}
                     </div>
             <!-- right header_text -->
                     <div class="flex_4 py-2">
@@ -81,6 +84,7 @@
 
                 data-user_upload_url="{% url 'user_upload_url' %}"
                 data-group_permit_upload_url="{% url 'group_permit_upload_url' %}"
+                data-user_download_permits_url="{% url 'user_download_permits_url' %}"
             >
         </div>
 

@@ -852,7 +852,6 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 //========= t_FillOptionsFromList  =======  PR2020-12-17
     function t_FillOptionsFromList(el_select, data_list, value_field, caption_field,
                                     select_text, select_text_none, selected_value, filter_field, filter_value) {
-
 /*
         console.log( "=== t_FillOptionsFromList ");
         console.log( "data_list", data_list);
@@ -872,12 +871,24 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         if(data_list){
             for (let i = 0, len = data_list.length; i < len; i++) {
                 const item_dict = data_list[i];
-                const item_filter = item_dict[filter_field];
-                const item_value = item_dict[value_field];
-                const item_caption = item_dict[caption_field];
-                const show_row = (item_filter && filter_value) ? (item_filter === filter_value) : true;
+
+                const item_value = (item_dict[value_field]) ? item_dict[value_field] : null;
+                const item_caption = (item_dict[caption_field]) ? item_dict[caption_field] : "---";
+                // if filter_field has no value: all items are shown,
+                // otherwise only items with matching filter_value are shown PR2021-04-21
+                let show_row = false;
+                if(!filter_field) {
+                    show_row = true;
+                } else {
+                    const item_filter = item_dict[filter_field];
+                    if (item_filter && filter_value && item_filter === filter_value) {
+                        show_row = true;
+                    }
+                }
 /*
-console.log( "item_filter", item_filter);
+console.log( "..........");
+console.log( "item_dict", item_dict);
+console.log( "item_filter", item_dict[filter_field]);
 console.log( "item_value", item_value);
 console.log( "item_caption", item_caption);
 console.log( "show_row", show_row);

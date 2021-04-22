@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let company_dict = {};
     let user_list = [];
     let school_rows = [];
+
+    let school_map = new Map();
     let user_map = new Map();
     let permit_map = new Map();
 
@@ -42,6 +44,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const url_settings_upload = get_attr_from_el(el_data, "data-settings_upload_url");
     const url_user_upload = get_attr_from_el(el_data, "data-user_upload_url");
     const url_group_permit_upload = get_attr_from_el(el_data, "data-group_permit_upload_url");
+    const url_download_permits = get_attr_from_el(el_data, "data-user_download_permits_url");
+
 
 // --- get field_settings
     const field_settings = {
@@ -145,6 +149,33 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MGP_btn_submit.addEventListener("click", function() {MGP_Save("save")}, false);
         };
 
+
+// ---  MODAL UPLOAD PERMITS
+// --- create EventListener for buttons in btn_container
+    const el_MIMP_btn_container = document.getElementById("id_MIMP_btn_container");
+    if(el_MIMP_btn_container){
+        const btns = el_MIMP_btn_container.children;
+        for (let i = 0, btn; btn = btns[i]; i++) {
+            const data_btn = get_attr_from_el(btn,"data-btn")
+            btn.addEventListener("click", function() {MIMP_btnSelectClicked(data_btn)}, false )
+        }
+    }
+    const el_filedialog = document.getElementById("id_MIMP_filedialog");
+        el_filedialog.addEventListener("change", function() {HandleFiledialog(el_filedialog, loc)}, false )
+    const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
+        el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false);
+    const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
+        el_MIMP_checkboxhasheader.addEventListener("change", MIMP_CheckboxHasheaderChanged) //, false);
+   const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
+        el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false )
+   const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
+        el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false )
+   const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
+        el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test")}, false )
+   const el_MUP_btn_upload = document.getElementById("id_MIMP_btn_upload");
+        el_MUP_btn_upload.addEventListener("click", function() {MIMP_Save("save")}, false )
+
+
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_confirm_header");
         let el_confirm_loader = document.getElementById("id_confirm_loader");
@@ -166,7 +197,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const datalist_request = {
                 permit_list: "page_user",
                 setting: {page_user: {mode: "get"}},
-                locale: {page: ["page_user"]},
+                schoolsetting: {setting_key: "import_permits"},
+                locale: {page: ["page_user", 'upload']},
                 user_rows: {get: true},
                 school_rows: {get: true}
             };
@@ -204,6 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if ("locale_dict" in response) {
                     loc = response.locale_dict;
+                    mimp_loc = loc;
                     must_create_submenu = true;
                 };
 
@@ -213,6 +246,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
+                if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
 
                 // get_permits uses setting_dict. Must come after setting_dict and before CreateSubmenu and FiLLTbl
                 if ("permit_list" in response) {get_permits(response.permit_list)};
@@ -222,7 +256,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if ("user_rows" in response) { refresh_user_map(response.user_rows)};
                 if ("permit_rows" in response) { refresh_permit_map(response.permit_rows) };
-                if ("school_rows" in response) { school_rows = response.school_rows};
+                // PR2021-04-21 was: if ("school_rows" in response) { school_rows = response.school_rows};
+                if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows)};
+
+
+
                 HandleBtnSelect(selected_btn, true);  // true = skip_upload
 
             },
@@ -239,23 +277,20 @@ document.addEventListener('DOMContentLoaded', function() {
     function CreateSubmenu() {
         console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
-        console.log("permit", permit);
-        console.log("permit.crud_user", permit.crud_user);
-        console.log("permit.crud_permit", permit.crud_permit);
-        console.log("setting_dict.requsr_role_system", setting_dict.requsr_role_system);
-        console.log("usergroups", usergroups);
-        console.log("usergroups.includes(admin)", usergroups.includes("admin"));
-            // hardcode access of system admin
-            if (permit.crud_user || (setting_dict.requsr_role_system && usergroups.includes("admin"))){
-                AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")});
-                AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("delete")}, ["ml-2"]);
-            }
-            // hardcode access of system admin
-            if (permit.crud_permit || (setting_dict.requsr_role_system && usergroups.includes("admin"))){
-                AddSubmenuButton(el_submenu, loc.Add_permission, function() {MGP_Open("addnew")}, ["ml-2"]);
-                AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MGP_Open("addnew")}, ["ml-2"]);
-                AddSubmenuButton(el_submenu, loc.Download_permissions, function() {MGP_Open("addnew")}, ["ml-2"]);
-            };
+
+        // hardcode access of system admin
+        if (permit.crud_user || (setting_dict.requsr_role_system && usergroups.includes("admin"))){
+            AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")});
+            AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("delete")}, ["ml-2"]);
+        }
+        // hardcode access of system admin
+        //if (permit.crud_permit || (setting_dict.requsr_role_system && usergroups.includes("admin"))){
+        if (permit.crud_permit || (setting_dict.requsr_role_system)){
+            AddSubmenuButton(el_submenu, loc.Add_permission, function() {MGP_Open("addnew")}, ["ml-2"]);
+            //AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MUP_Open("addnew")}, ["ml-2"]);
+            AddSubmenuButton(el_submenu, loc.Download_permissions, null, ["ml-2"], "id_submenu_download_perm", url_download_permits, false);  // true = download
+            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open("import_permits")}, ["ml-2"], "id_submenu_import");
+        };
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
 
@@ -1239,6 +1274,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++ END MOD USER ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+// +++++++++ MOD UPLOAD PERMITS ++++++++++++++++ PR2021-04-20
+    function MUP_Open(){
+        console.log(" -----  MUP_Open   ----")
+
+    // ---  show modal
+        $("#id_mod_upload_permits").modal({backdrop: true});
+   } //  MUP_Open
+// +++++++++ END MOD UPLOAD PERMITS ++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 // +++++++++ MOD GROUP PERMIT ++++++++++++++++ PR2021-03-19
     function MGP_Open(mode, el_input){
         console.log(" -----  MGP_Open   ---- mode: ", mode)  // modes are: addnew, update
@@ -1879,6 +1923,41 @@ document.addEventListener('DOMContentLoaded', function() {
        };
         FillTblRows();
     }  // function ResetFilterRows
+
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// +++++++++++++++++ MODAL SELECT EXAMYEAR SCHOOL DEPARTMENT  ++++++++++++++++++++
+// functions are in table.js, except for MSESD_Response
+
+//=========  MSESD_Response  ================ PR2020-12-18
+    function MSESD_Response(tblName, pk_int) {
+        console.log( "===== MSESD_Response ========= ");
+        console.log( "tblName", tblName);
+        console.log( "pk_int", pk_int);
+
+// ---  upload new setting
+        const selected_pk_dict = {}
+        if (tblName === "examyear") {
+            selected_pk_dict.sel_examyear_pk = pk_int;
+        } else if (tblName === "school") {
+            selected_pk_dict.sel_schoolbase_pk = pk_int;
+            selected_pk_dict.sel_depbase_pk = null;
+        } else if (tblName === "department") {
+            selected_pk_dict.sel_depbase_pk = pk_int;
+        }
+        const new_setting = {page_studsubj: {mode: "get"}, selected_pk: selected_pk_dict};
+        const datalist_request = {setting: new_setting};
+
+// also retrieve the tables that have been changed because of the change in school / dep
+        // TODO
+        //datalist_request.student_rows = {get: true};
+        //datalist_request.studentsubject_rows = {get: true};
+        //datalist_request.grade_rows = {get: true};
+        //datalist_request.schemeitem_rows = {get: true};
+
+        DatalistDownload(datalist_request);
+
+    }  // MSESD_Response
+//###########################################################################
 
 //###########################################################################
 //========= get_permits  ========

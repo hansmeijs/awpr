@@ -305,8 +305,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Add_candidate, function() {MSTUD_Open()});
-            AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete")}, ["mx-2"]);
-            AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open("import_student")}, ["mx-2"], "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete")}, ["ml-2"]);
+            AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open("import_student")}, ["ml-2"], "id_submenu_import");
 
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu

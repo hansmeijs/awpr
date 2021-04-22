@@ -451,7 +451,7 @@ def ImportData(ws_name, row_data, excel_data, mapped, sel_examyear, request):  #
             logger.debug ('school_code: ' + str(school_code))
 
     # - get country based on code 'Cur' in excel file, not requsr_country with this code already exists in this country. If not: create
-            exc_country = get_country(country_code)
+            exc_country = sch_mod.get_country(country_code)
 
     # skip if exc_country is different from requsr_country
             if exc_country and requsr_country and exc_country.pk == requsr_country.pk:
@@ -672,16 +672,6 @@ def create_scheme_name(depbase_code, level_abbrev, sector_abbrev ):
     if sector_abbrev:
         scheme_name = scheme_name + " - " + sector_abbrev
     return scheme_name
-
-
-def get_country(country_abbrev):
-    # get existing country PR2020-12-14
-    country = None
-    if country_abbrev:
-        country = sch_mod.Country.objects.filter(
-            abbrev__iexact=country_abbrev
-        ).order_by('-pk').first()
-    return country
 
 
 def get_examyear(country, examyear_int):

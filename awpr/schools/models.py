@@ -132,6 +132,7 @@ class Country(AwpBaseModel):
         # TODO add other dependencies: Subject, Schoolcode etc
         return not bool(linked_users_count)
 
+
 # PR2018-05-05
 class Country_log(AwpBaseModel):
     objects = AwpModelManager()
@@ -776,4 +777,16 @@ def save_to_log(instance, req_mode, request):
 
 
 #######################################
+
+def get_country(country_abbrev):
+    # get existing country PR2020-12-14
+    # don't use get_or_none, it will return None when there are multiple countries with the same name
+    # get the latest one instead (with highest pk)
+    country = None
+    if country_abbrev:
+        country = Country.objects.filter(
+            abbrev__iexact=country_abbrev
+        ).order_by('-pk').first()
+    return country
+
 

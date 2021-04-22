@@ -268,20 +268,6 @@ def get_mode_str(self):  # PR2018-11-28
     return mode_str
 
 
-# PR2018-07-23
-def get_country_choices_all():
-    # PR2018-07-20 function creates list of countries, used in SubjectdefaultAddForm and SubjectdefaultEditForm
-    # countries_choices: [(1, 'cur'), (2, 'sxm')]
-    # choises must be tuple or list, dictionary gives error: 'int' object is not iterable
-    choices = []
-    countries = sch_mod.Country.objects.all()
-    for country in countries:
-        if country:
-            item = (country.id, country.name)
-            choices.append(item)
-    return choices
-
-
 def get_sel_examyear_instance(request, request_item_setting=None):  # PR2020-12-25
     #logger.debug('  -----  get_sel_examyear_instance  -----')
     sel_examyear_instance = None

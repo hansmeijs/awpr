@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.core.mail import send_mail
 
 from django.db import connection
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpResponseNotFound, FileResponse
 
 from django.shortcuts import render, redirect
 from django.template.loader import render_to_string
@@ -23,6 +23,8 @@ from django.contrib.auth import (
     REDIRECT_FIELD_NAME, get_user_model, login as auth_login,
     logout as auth_logout, update_session_auth_hash,
 )
+
+import xlsxwriter
 
 from .forms import UserActivateForm
 from .tokens import account_activation_token
@@ -280,6 +282,129 @@ class UserUploadView(View):
         update_wrap_json = json.dumps(update_wrap, cls=af.LazyEncoder)
         return HttpResponse(update_wrap_json)
 # === end of UserUploadView =====================================
+
+########################################################################
+# === UserDownloadPermitsView ===================================== PR2021-04-20
+@method_decorator([login_required], name='dispatch')
+class UserDownloadPermitsView(View):
+    #  UserDownloadPermitsView is called from Users form
+    #  it returns a HttpResponse, with all permits
+    def get(self, request):
+        logging_on = True # s.LOGGING_ON
+        if logging_on:
+            logger.debug('  ')
+            logger.debug(' ========== UserDownloadPermitsView ===============')
+
+        if request.user is not None and request.user.country is not None:
+            req_user = request.user
+            permit_list, requsr_usergroups_list = get_userpermit_list('page_user', req_user)
+            has_permit = 'crud_permit' in permit_list
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
+            if has_permit:
+                # - reset language
+                # PR2019-03-15 Debug: language gets lost, get req_user.lang again
+                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+                permits_rows = create_permits_rows(request)
+                response = create_permits_xlsx(permits_rows, user_lang, request)
+
+                return response
+# - end of UserDownloadPermitsView
+
+
+def create_permits_rows(request):
+    # --- create list of permits_rows of this country PR2021-04-20
+
+    sql_keys = {'country_id': request.user.country.pk}
+    sql = ' '.join(("SELECT LOWER(c.abbrev) AS c_abbrev, p.page, p.action, p.role, p.usergroups, p.sequence",
+                    "FROM accounts_permit AS p",
+                    "INNER JOIN schools_country AS c ON (c.id = p.country_id)",
+                    "WHERE c.id = %(country_id)s::INT",
+                    'ORDER BY LOWER(c.abbrev), p.page, p.action, p.role'))
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        permits_rows = af.dictfetchall(cursor)
+
+    return permits_rows
+# --- end of create_permits_rows
+
+
+def create_permits_xlsx(permits_rows, user_lang, request):  # PR2021-04-20
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_permits_xlsx -----')
+
+    # from https://stackoverflow.com/questions/16393242/xlsxwriter-object-save-as-http-response-to-create-download-in-django
+    #logger.debug('period_dict: ' + str(period_dict))
+
+# ---  create file Name and worksheet Name
+    country_name = request.user.country.name
+    today_dte = af.get_today_dateobj()
+    today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
+
+    title = ' '.join((str(_('Permissions')), str(_(' of ')), country_name))
+    file_name = title + " " + today_dte.isoformat() + ".xlsx"
+    worksheet_name = str(_('Permissions'))
+
+# create the HttpResponse object ...
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = "attachment; filename=" + file_name
+
+    field_names = ('c_abbrev', 'page', 'action', 'usergroups', 'role', 'sequence')
+
+    field_width = (10, 20, 25, 40, 10, 10)
+
+# .. and pass it into the XLSXWriter
+    book = xlsxwriter.Workbook(response, {'in_memory': True})
+    sheet = book.add_worksheet(worksheet_name)
+
+    #cell_format = book.add_format({'bold': True, 'font_color': 'red'})
+    bold = book.add_format({'bold': True})
+
+    tblHead_format = book.add_format({'bold': True})
+    tblHead_format.set_bottom()
+    tblHead_format.set_bg_color('#d8d8d8') #   #d8d8d8;  /* light grey 218 218 218 100%
+
+    for i, width in enumerate(field_width):
+        sheet.set_column(i, i, width)
+
+# --- title row
+    # was: sheet.write(0, 0, str(_('Report')) + ':', bold)
+    sheet.write(0, 0, str(_('Report')) + ':')
+    sheet.write(0, 1, title)
+    sheet.write(1, 0, str(_('Country')) + ':')
+    sheet.write(1, 1, country_name)
+    sheet.write(2, 0, str(_('Created on ')) + ':')
+    sheet.write(2, 1, today_formatted)
+
+    row_index = 4
+
+    for i, caption in enumerate(field_names):
+        sheet.write(row_index, i, caption, tblHead_format)
+
+    rows_length = len(permits_rows)
+    if rows_length:
+        #first_detail_row = row_index + 1
+        #last_detail_row = row_index + rows_length
+        for row in permits_rows:
+            row_index +=1
+            for i, field_name in enumerate(field_names):
+                value = row.get(field_name)
+                if value is not None:
+                    sheet.write(row_index, i, value)
+
+    book.close()
+    return response
+
+# --- end of create_permits_xlsx
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 
 
 ########################################################################
@@ -798,7 +923,7 @@ def create_user_list(request, user_pk=None):
                     sql_keys['sb_id'] = schoolbase_pk
                     sql_list.append('AND u.schoolbase_id = %(sb_id)s::INT')
 
-                sql_list.append('ORDER BY  LOWER(sb.code), LOWER(u.username)')
+                sql_list.append('ORDER BY LOWER(sb.code), LOWER(u.username)')
                 sql = ' '.join(sql_list)
 
                 newcursor = connection.cursor()

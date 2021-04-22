@@ -38,7 +38,6 @@ GENDER_NONE = '-'  # PR2018-09-05
 GENDER_MALE = 'M'
 GENDER_FEMALE = 'V'
 
-
 # PR2018-09-05
 GENDER_CHOICES = (
     (GENDER_NONE, '-'),
@@ -277,6 +276,19 @@ KEY_IMPORT_SUBJECT = 'import_subject'
 KEY_IMPORT_STUDENT = 'import_student'
 KEY_IMPORT_STUDENTSUBJECT = 'import_studentsubject'
 KEY_IMPORT_GRADE = 'import_grade'
+KEY_IMPORT_PERMITS = 'import_permits'
+
+# PR2021-04-21
+# when one_unique_identifier =  True: only 1 of the linkfields can be the identifier (either exnr or idnr of the candidate)
+# when one_unique_identifier = False: all linkfields must be used to lookup recrds (permits: c_abbrev, page, role and action)
+
+IMPORT_ONE_UNIQUE_IDENTIFIER = {
+    KEY_IMPORT_SUBJECT: True,
+    KEY_IMPORT_STUDENT: True,
+    KEY_IMPORT_STUDENTSUBJECT: True,
+    KEY_IMPORT_GRADE: True,
+    KEY_IMPORT_PERMITS: False
+}
 
 KEY_COLDEF = {
     KEY_IMPORT_SUBJECT:
@@ -314,8 +326,18 @@ KEY_COLDEF = {
 
         {'awpColdef': 'level', 'caption': _('Level')},
         {'awpColdef': 'sector', 'caption': _('Sector')},
-        {'awpColdef': 'profiel', 'caption': _('Profiel')})
-    }
+        {'awpColdef': 'profiel', 'caption': _('Profiel')}
+         ),
+
+    KEY_IMPORT_PERMITS:
+        ({'awpColdef': 'c_abbrev', 'caption': _('Country'), 'linkfield': True},
+         {'awpColdef': 'page', 'caption': _('Page'), 'linkfield': True},
+         {'awpColdef': 'role', 'caption': _('Organization'), 'linkfield': True},
+         {'awpColdef': 'action', 'caption': _('Action'), 'linkfield': True},
+         {'awpColdef': 'usergroups', 'caption': _('User groups')},
+         {'awpColdef': 'sequence', 'caption': _('Sequence')}
+         ),
+}
 
 CAPTIONS = {'student': {'lastname': _('Last name'),
                         'firstname': _('First name'),
