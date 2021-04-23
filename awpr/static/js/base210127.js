@@ -95,9 +95,10 @@
     };  // UploadSettings
 
 //========= UpdateHeaderbar  ================== PR2020-11-14 PR2020-12-02
-    function b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school){
-        //console.log(" --- UpdateHeaderbar ---" )
-        //console.log("setting_dict", setting_dict )
+    function b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school){
+        console.log(" --- UpdateHeaderbar ---" )
+        console.log("setting_dict", setting_dict )
+        console.log("permit_dict", permit_dict )
 
 // --- EXAM YEAR
        //console.log("setting_dict.sel_examyear_pk", setting_dict.sel_examyear_pk )
@@ -111,13 +112,13 @@
             }
             el_hdrbar_examyear.innerText = examyer_txt;
 
-        //console.log("setting_dict.may_select_examyear", setting_dict.may_select_examyear )
-            add_or_remove_class(el_hdrbar_examyear, "awp_navbaritem_may_select", setting_dict.may_select_examyear, "awp_navbar_item" )
+        //console.log("permit_dict.may_select_examyear", permit_dict.may_select_examyear )
+            add_or_remove_class(el_hdrbar_examyear, "awp_navbaritem_may_select", permit_dict.may_select_examyear, "awp_navbar_item" )
 
         }
 // --- DEPARTMENT
         if(el_hdrbar_department) {
-            const allowed_depbases_count = (setting_dict.allowed_depbases) ? setting_dict.allowed_depbases.length : 0
+            const allowed_depbases_count = (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
             const may_select_department = (allowed_depbases_count > 1);
 
             add_or_remove_class(el_hdrbar_department, "awp_navbaritem_may_select", may_select_department, "awp_navbar_item" )
@@ -143,15 +144,15 @@
             }
             el_hdrbar_department.innerText = department_txt;
         }
+
 // --- SCHOOL
         if(el_hdrbar_school) {
             // set hover when user has permit to goto different school.
-            const permit_select_school = setting_dict.may_select_school;
-            add_or_remove_class(el_hdrbar_school, "awp_navbaritem_may_select", permit_select_school, "awp_navbar_item" )
+            add_or_remove_class(el_hdrbar_school, "awp_navbaritem_may_select", permit_dict.may_select_school, "awp_navbar_item" )
 
             let schoolname_txt = null;
             if (!setting_dict.sel_schoolbase_pk){
-                if (setting_dict.may_select_school) {
+                if (permit_dict.may_select_school) {
                     schoolname_txt = " <" + loc.Select_school + ">";
                 } else {
                     schoolname_txt = " <" + loc.No_school + ">";

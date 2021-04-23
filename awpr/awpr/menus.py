@@ -82,7 +82,6 @@ menus_dict = {
 # viewpermits: 'none', 'read', 'write', 'auth', 'admin', 'all'
 
 
-
 def get_headerbar_param(request, page, param=None):  # PR2021-03-25
     # PR2018-05-28 set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found

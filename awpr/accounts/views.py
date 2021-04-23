@@ -95,8 +95,10 @@ class UserUploadView(View):
     #  when ok: it also sends an email to the user
 
     def post(self, request):
-        #logger.debug('  ')
-        #logger.debug(' ========== UserUploadView ===============')
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('  ')
+            logger.debug(' ========== UserUploadView ===============')
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None and request.user.schoolbase is not None:
@@ -106,18 +108,26 @@ class UserUploadView(View):
             #  - only role_system and role_admin (ETE) can add users of other schools
             #  - role_system, role_admin, role_insp and role_school can add users of their own school
 
-            #has_permit_this_school, has_permit_all_schools = False, False
-            #if req_user.is_group_system:
-            #    has_permit_all_schools = req_user.is_role_admin or req_user.is_role_system
-            #    has_permit_this_school = req_user.is_role_insp or req_user.is_role_school
+            requsr_usergroupslist = req_user.usergroups.split(';') if req_user.usergroups else []
 
-            #if has_permit_this_school or has_permit_all_schools:
-            if True:
+            # requsr_permitlist: ['view_page', 'crud_user_otherschool', 'crud_permit', 'crud_user', 'href_userpage']
+            requsr_permitlist = req_user.permit_list('page_user')
+            if logging_on:
+                logger.debug('requsr_permitlist: ' + str(requsr_permitlist))
+
+            has_permit_this_school, has_permit_all_schools = False, False
+            if requsr_permitlist:
+                has_permit_all_schools = 'crud_user_otherschool' in requsr_permitlist
+                has_permit_this_school = 'crud_user' in requsr_permitlist
+
+            if has_permit_this_school or has_permit_all_schools:
 # - get upload_dict from request.POST
                 upload_json = request.POST.get("upload")
                 if upload_json:
                     upload_dict = json.loads(upload_json)
-                    logger.debug('upload_dict: ' + str(upload_dict))
+
+                    if logging_on:
+                        logger.debug('upload_dict: ' + str(upload_dict))
 
                     # upload_dict: {'mode': 'validate', 'company_pk': 3, 'pk_int': 114, 'user_ppk': 3,
                     #               'employee_pk': None, 'employee_code': None, 'username': 'Giterson_Lisette',
@@ -138,10 +148,11 @@ class UserUploadView(View):
                     is_validate_only = (mode == 'validate')
                     update_wrap['mode'] = mode
 
-                    logger.debug('user_pk: ' + str(user_pk))
-                    logger.debug('user_schoolbase_pk: ' + str(user_schoolbase_pk))
-                    logger.debug('map_id: ' + str(map_id))
-                    logger.debug('mode: ' + str(mode))
+                    if logging_on:
+                        logger.debug('user_pk: ' + str(user_pk))
+                        logger.debug('user_schoolbase_pk: ' + str(user_schoolbase_pk))
+                        logger.debug('map_id: ' + str(map_id))
+                        logger.debug('mode: ' + str(mode))
 
     # - check if the user schoolbase exists
                     user_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
@@ -149,21 +160,28 @@ class UserUploadView(View):
                         country=req_user.country
                     )
                     is_same_schoolbase = (user_schoolbase and user_schoolbase == req_user.schoolbase)
-                    #logger.debug('user_schoolbase: ' + str(user_schoolbase))
-                    #logger.debug('is_same_schoolbase: ' + str(is_same_schoolbase))
 
-                    # <PERMIT> PR220-09-24
-                    # user may edit users from their own school
+                    if logging_on:
+                        logger.debug('user_schoolbase: ' + str(user_schoolbase))
+                        logger.debug('is_same_schoolbase: ' + str(is_same_schoolbase))
+
+                    # <PERMIT> PR2021-04-23
+                    # user role can never be higher dan requser role
 
                     err_dict = {}
                     has_permit = False
-                    #if user_schoolbase:
-                    #    if has_permit_all_schools:
-                   #         has_permit = True
-                   #     elif has_permit_this_school:
-                    #        has_permit = is_same_schoolbase
-                    # TODO
-                    has_permit = True
+                    if user_schoolbase:
+                    # <PERMIT> PR2021-04-23
+                    # user role can never be higher dan requser role
+                        user_schoolbase_defaultrole = getattr(user_schoolbase, 'defaultrole')
+                        if user_schoolbase_defaultrole is None:
+                            user_schoolbase_defaultrole = 0
+                        if user_schoolbase_defaultrole <= req_user.role:
+                            if has_permit_all_schools:
+                                has_permit = True
+                            elif has_permit_this_school:
+                                has_permit = is_same_schoolbase
+
                     if not has_permit:
                         err_dict['msg01'] = _("You don't have permission to perform this action.")
                     else:
@@ -177,7 +195,7 @@ class UserUploadView(View):
                         elif mode == 'delete':
                             if user_pk:
                                 instance = None
-                                if True: # if has_permit_all_schools:
+                                if has_permit_all_schools:
                                     instance = acc_mod.User.objects.get_or_none(
                                         id=user_pk,
                                         country=req_user.country
@@ -188,32 +206,42 @@ class UserUploadView(View):
                                         country=req_user.country,
                                         schoolbase=req_user.schoolbase
                                     )
-                                #logger.debug('instance: ' + str(instance))
+
+                                if logging_on:
+                                    logger.debug('instance: ' + str(instance))
 
                                 if instance:
                                     deleted_instance_list = create_user_list(request, instance.pk)
-                                    #logger.debug('deleted_instance_list: ' + str(deleted_instance_list))
+
+                                    if logging_on:
+                                        logger.debug('deleted_instance_list: ' + str(deleted_instance_list))
+
                                     if deleted_instance_list:
                                         updated_dict = deleted_instance_list[0]
                                         updated_dict['mapid'] = map_id
 
-                                    if (req_user.is_group_system) \
-                                            and (instance == req_user):
+                                    if c.USERGROUP_ADMIN in requsr_usergroupslist and instance == req_user:
                                         err_dict['msg01'] = _("System administrators cannot delete their own account.")
                                     else:
                                         try:
                                             # PR2021-02-05 debug: CASCADE delete usersetting not working. Delete manually
                                             usersettings = Usersetting.objects.filter(user=instance)
                                             for usersetting in usersettings:
-                                                #logger.debug('usersetting delete: ' + str(usersetting))
+
+                                                if logging_on:
+                                                    logger.debug('usersetting delete: ' + str(usersetting))
                                                 usersetting.delete()
                                             instance.delete()
                                             updated_dict['deleted'] = True
-                                            #logger.debug('deleted: ' + str(True))
+
+                                            if logging_on:
+                                                logger.debug('deleted: ' + str(True))
                                         except:
                                             err_dict['msg01'] = _("User '%(val)s' can not be deleted.\nInstead, you can make the user inactive.") \
                                                                 % {'val': instance.username_sliced}
-                                            #logger.debug('err_dict msg01: ' + str(err_dict['msg01']))
+
+                                            if logging_on:
+                                                logger.debug('err_dict msg01: ' + str(err_dict['msg01']))
 
     # ++++  create or validate new user ++++++++++++
                         elif mode in ('create', 'validate'):
@@ -224,15 +252,15 @@ class UserUploadView(View):
                             is_existing_user = True if user_pk else False
 
                             if is_same_schoolbase:
-                                new_permits = c.GROUP_002_EDIT
+                                new_usergroups = c.USERGROUP_EDIT
                             else:
-                                new_permits = (c.GROUP_002_EDIT + c.GROUP_064_ADMIN)
+                                new_usergroups = ';'.join((c.USERGROUP_EDIT, c.USERGROUP_ADMIN))
                             # - new user gets role from defaultrole of user_schoolbase
                             #   PR2021-02-06 debug: don't forget to set values of defaultrole in schoolbase!
                             new_role = user_schoolbase.defaultrole
 
                             new_user_pk, err_dict, ok_dict = create_or_validate_user_instance(
-                                user_schoolbase, upload_dict, user_pk, new_permits, new_role, is_validate_only, user_lang, request)
+                                user_schoolbase, upload_dict, user_pk, new_usergroups, is_validate_only, user_lang, request)
                             if err_dict:
                                 update_wrap['msg_err'] = err_dict
                             if ok_dict:
@@ -896,15 +924,7 @@ def create_user_list(request, user_pk=None):
                 sql_list = ["SELECT u.id, u.schoolbase_id,",
                     "CONCAT('user_', u.id) AS mapid, 'user' AS table,",
                     "SUBSTRING(u.username, 7) AS username,",
-                    "u.last_name, u.email, u.role, u.permits, u.usergroups,",
-                    "(TRUNC(u.permits / 128) = 1) AS perm_system,",
-                    "(TRUNC( MOD(u.permits, 128) / 64) = 1) AS perm_admin,",
-                    "(TRUNC( MOD(u.permits, 64) / 32) = 1) AS perm_anlz,",
-                    "(TRUNC( MOD(u.permits, 32) / 16) = 1) AS perm_auth3,",
-                    "(TRUNC( MOD(u.permits, 16) / 8) = 1) AS perm_auth2,",
-                    "(TRUNC( MOD(u.permits, 8) / 4) = 1) AS perm_auth1,",
-                    "(TRUNC( MOD(u.permits, 4) / 2) = 1) AS perm_edit,",
-                    "(MOD(u.permits, 2) = 1) AS perm_read,",
+                    "u.last_name, u.email, u.role, u.usergroups,",
 
                     "u.activated, u.activated_at, u.is_active, u.last_login, u.date_joined,",
                     "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
@@ -983,45 +1003,21 @@ def get_userpermit_list(page, req_user):
                         sql_filter
                         ]
             sql = ' '.join(sql_list)
-            #logger.debug('sql: ' + str(sql))
+
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)
                 for row in cursor.fetchall():
                     if row[0] not in permit_list:
                         permit_list.append(row[0])
 
-    logger.debug('permit_list: ' + str(permit_list))
-    logger.debug('requsr_usergroups_list: ' + str(requsr_usergroups_list))
-
-    get_full_permit_list()
-
     return permit_list, requsr_usergroups_list
 # - end of get_userpermit_list
-
-
-def get_full_permit_list():
-    # --- create list of all permits  PR2021-03-26, to be imported on server
-    #logger.debug(' =============== get_full_permit_list ============= ')
-
-    sql_list = ["SELECT p.role, p.page, p.sequence, p.action, p.usergroups",
-                "FROM accounts_permit AS p",
-                "ORDER BY p.role, LOWER(p.page), p.sequence"]
-    sql = ' '.join(sql_list)
-    with connection.cursor() as cursor:
-        cursor.execute(sql)
-        rows = af.dictfetchall(cursor)
-
-        #logger.debug(' ')
-        #logger.debug(str(rows))
-        #logger.debug(' ')
-# - end of get_userpermit_list
-
 
 ########################################################################
 
 
 # === create_or_validate_user_instance ========= PR2020-08-16 PR2021-01-01
-def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, permits, role, is_validate_only, user_lang, request):
+def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, usergroups, is_validate_only, user_lang, request):
     #logger.debug('-----  create_or_validate_user_instance  -----')
     #logger.debug('upload_dict: ' + str(upload_dict))
     #logger.debug('user_pk: ' + str(user_pk))
@@ -1085,6 +1081,8 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, perm
         # datetime.now() is timezone naive. PR2018-06-07
         now_utc = timezone.now()
 
+    # - new user gets role from defaultrole of user_schoolbase
+    #   PR2021-02-06 debug: don't forget to set values of defaultrole in schoolbase!
         role = user_schoolbase.defaultrole
 
     # - create new user
@@ -1096,7 +1094,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, perm
             last_name=last_name,
             email=email,
             role=role,
-            permits=permits,
+            usergroups=usergroups,
             is_active=True,
             activated=False,
             lang=user_lang,
@@ -1427,12 +1425,12 @@ def get_permit_sum_from_tuple(permits_tuple):
 
 def remove_other_auth_permits(permit_field, permit_list):
     # PR2021-01-19 remove value of other auth permits when auth permit is set
-    if permit_field != "perm_auth1" and c.GROUP_004_AUTH1 in permit_list:
-        permit_list.remove(c.GROUP_004_AUTH1)
-    if permit_field != "perm_auth2" and c.GROUP_008_AUTH2 in permit_list:
-        permit_list.remove(c.GROUP_008_AUTH2)
-    if permit_field != "perm_auth3" and c.GROUP_016_AUTH3 in permit_list:
-        permit_list.remove(c.GROUP_016_AUTH3)
+    if permit_field != "perm_auth1" and c.USERGROUP_AUTH1_PRES in permit_list:
+        permit_list.remove(c.USERGROUP_AUTH1_PRES)
+    if permit_field != "perm_auth2" and c.USERGROUP_AUTH2_SECR in permit_list:
+        permit_list.remove(c.USERGROUP_AUTH2_SECR)
+    if permit_field != "perm_auth3" and c.USERGROUP_AUTH3_COM in permit_list:
+        permit_list.remove(c.USERGROUP_AUTH3_COM)
 
 
 

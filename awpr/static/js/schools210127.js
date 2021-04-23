@@ -74,11 +74,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (permit.view_page){
             el_hdrbar_examyear.addEventListener("click", function() {
-                t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, MSESD_Response)}, false );
+                t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false );
             el_hdrbar_school.addEventListener("click", function() {
-                t_MSESD_Open(loc, "school", school_map, setting_dict, MSESD_Response)}, false );
+                t_MSESD_Open(loc, "school", school_map, setting_dict, permit_dict, MSESD_Response)}, false );
             el_hdrbar_department.addEventListener("click", function() {
-                t_MSESD_Open(loc, "department", department_map, setting_dict, MSESD_Response)}, false );
+                t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false );
         }
 
 // ---  MOD SELECT EXAM YEAR ------------------------------------
@@ -128,8 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(permit.view_page){
         // period also returns emplhour_list
         const datalist_request = {
-                permit_list: "page_school",
-                setting: {page_school: {mode: "get"}},
+                setting: {page: "page_school"},
                 locale: {page: ["page_school"]},
                 examyear_rows: {get: true},
                 department_rows: {get: true},
@@ -175,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("setting_dict: ", setting_dict);
                     selected_btn = (setting_dict.sel_btn)
 
-                    b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
 
                 // get_permits uses setting_dict. Must come after setting_dict and before CreateSubmenu and FiLLTbl
@@ -1625,7 +1624,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (tblName === "department") {
             selected_pk_dict.sel_depbase_pk = pk_int;
         }
-        const new_setting = {page_studsubj: {mode: "get"}, selected_pk: selected_pk_dict};
+        const new_setting = {page: "page_studsubj", selected_pk: selected_pk_dict};
         const datalist_request = {setting: new_setting};
 
 // also retrieve the tables that have been changed because of the change in school / dep

@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(has_view_permit){
         // period also returns emplhour_list
         const datalist_request = {
-                setting: {page_examyear: {mode: "get"}, },
+                setting: {page: "page_examyear"},
                 locale: {page: ["page_examyear"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 setting_dict.requsr_role_system);
                     selected_btn = (setting_dict.sel_btn)
 
-                    b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
 
                     UpdateSidebarExamyear(response.awp_messages);
                 };
@@ -1237,7 +1237,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  upload new setting
         const datalist_request = {
-            setting: {page_examyear: {mode: "get"}, sel_examyear_pk: mod_dict.examyear_pk},
+            setting: {page: "page_examyear", sel_examyear_pk: mod_dict.examyear_pk},
             examyear_rows: {get: true}
         };
         DatalistDownload(datalist_request);

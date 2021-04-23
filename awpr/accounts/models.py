@@ -1,4 +1,5 @@
 # PR2018-04-22 PR2020-09-14
+from django.db import connection
 from django.db.models import Model, ForeignKey, PROTECT, CASCADE, SET_NULL
 from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, EmailField
 from django.contrib.auth.models import AbstractUser, UserManager
@@ -64,8 +65,6 @@ class User(AbstractUser):
     email = EmailField( _('email address'),)
     # PR2018-08-01 role choices cannot be set in Model, because allowed values depend on request_user. Use role_list in Form instead
     role = PositiveSmallIntegerField(default=0)
-    # TODO replcae permit by usergroups
-    permits = PositiveSmallIntegerField(default=0)
 
     usergroups = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
     allowed_depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
@@ -138,57 +137,39 @@ class User(AbstractUser):
         return self.username[6:]
 
 
-    @property
-    def permits_str(self):
-        # PR2018-05-26 permits_str displays list of permits un UserListForm, e.g.: 'Schooladmin, Authorize, Write'
-        permits_all_dict = c.GROUP_CAPTION
-        permits_str = ''
-        if self.permits_tuple is not None:
-            #logger.debug('class User(AbstractUser): permits_tuple: ' + str(self.permits_tuple))
-            for permit_int in self.permits_tuple:
-                #logger.debug('class User(AbstractUser): permit_int: ' + str(permit_int))
-                list_item = permits_all_dict.get(permit_int)
-                #logger.debug('class User(AbstractUser): permits_str list_item: ' + str(list_item))
+    def permit_list(self, page):
+        # --- create list of all permits  of this user PR2021-04-22
+        # logger.debug(' =============== permit_list ============= ')
+        # logger.debug('page: ' + str(page) + ' ' + str(type(page)))
 
-                if list_item is not None:
-                    # PR2018-06-01 debug: ... + (list_item) gives error: must be str, not __proxy__
-                    # solved bij wrapping with str(): + str(list_item)
-                    permits_str = permits_str + ', ' + str(list_item)
-                    # stop when write permission is found . 'Read' will then not be displayed
-                    # PR2018-07-26 debug: doesn't work, because tuple is not in reverse order
-                    # if permit_int == c.GROUP_002_EDIT:
-                    #    break
-        if not permits_str: # means: if permits_str == '':
-            permits_str = ', None'
-        # slice off first 2 characters: ', '
-        permits_str = permits_str[2:]
-        #logger.debug('class User(AbstractUser): permits_str: ' + str(permits_str))
-        return permits_str
+        _role = getattr(self, 'role')
+        _usergroups = getattr(self, 'usergroups')
 
-    @property
-    def permits_tuple(self):
-        # PR2018-05-27 permits_tuple converts self.permits string into tuple, e.g.: permits=15 will be converted to permits_tuple=(1,2,4,8)
-        permits_int = self.permits
-        permits_list = []
-        if permits_int is not None:
-            if permits_int != 0:
-                for i in range(7, -1, -1): # range(start_value, end_value, step), end_value is not included!
-                    power = 2 ** i
-                    if permits_int >= power:
-                        permits_int = permits_int - power
-                        permits_list.insert(0, power) # list.insert(0,value) adds at the beginning of the list
-        if not permits_list:
-            permits_list = [0]
-        return tuple(permits_list)
+        permit_list = []
+        if page and _role and _usergroups:
+            requsr_usergroups_list = _usergroups.split(';')
+            sql_filter = ""
+            for usergroup in requsr_usergroups_list:
+                sql_filter += " OR (POSITION('" + usergroup + "' IN p.usergroups) > 0)"
 
-    @property
-    def permits_str_tuple(self): # 2018-12-23
-        permits_list = []
-        for permit_int in self.permits_tuple:
-            permit_str = c.GROUP_DICT.get(permit_int)
-            if permit_str:
-                permits_list.append(permit_str)
-        return tuple(permits_list)
+            if sql_filter:
+                sql_filter = "AND (" + sql_filter[4:] + ")"
+
+                sql_keys = {'page': page, 'role': _role}
+                sql_list = ["SELECT p.action FROM accounts_permit AS p",
+                            "WHERE (p.page = %(page)s OR p.page = 'page_all') AND p.role = %(role)s::INT",
+                            sql_filter
+                            ]
+                sql = ' '.join(sql_list)
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql, sql_keys)
+                    for row in cursor.fetchall():
+                        if row[0] not in permit_list:
+                            permit_list.append(row[0])
+
+        return permit_list
+
 
     # PR2018-05-30 list of permits that user can be assigned to:
     # - System users can only have permits: 'Admin' and 'Read'
@@ -209,10 +190,10 @@ class User(AbstractUser):
     @property
     def is_role_system_group_system(self):
         _has_permit = False
-        if self.is_authenticated:
-            if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_128_SYSTEM:
-                    _has_permit = (c.GROUP_128_SYSTEM in self.permits_tuple)
+        #if self.is_authenticated:
+        #    if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
+        #        if self.role == c.ROLE_128_SYSTEM:
+        #            _has_permit = (c.GROUP_128_SYSTEM in self.permits_tuple)
         return _has_permit
 
     @property
@@ -250,73 +231,25 @@ class User(AbstractUser):
     @property
     def is_role_insp_or_system_and_group_admin(self):
         _has_permit = False
-        if self.is_authenticated:
-            if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_128_SYSTEM or self.role == c.ROLE_032_INSP:
-                    if self.is_group_system:
-                        _has_permit = True
+        #if self.is_authenticated:
+        #    if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
+        #        if self.role == c.ROLE_128_SYSTEM or self.role == c.ROLE_032_INSP:
+       #             if self.is_group_system:
+        #                _has_permit = True
         return _has_permit
 
     @property
     def is_role_adm_or_sys_and_group_system(self):
         _has_permit = False
-        if self.is_authenticated:
-            if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_064_ADMIN or self.role == c.ROLE_128_SYSTEM:
-                    if self.is_group_system:
-                        _has_permit = True
+        #if self.is_authenticated:
+       #     if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
+        #        if self.role == c.ROLE_064_ADMIN or self.role == c.ROLE_128_SYSTEM:
+        #            if self.is_group_system:
+        #                _has_permit = True
         return _has_permit
 
-    @property
-    def is_group_admin(self):
-        return self.is_authenticated and self.permits_tuple and c.GROUP_064_ADMIN in self.permits_tuple
-
-    @property
-    def is_group_anlz(self):
-        return self.is_authenticated and self.permits_tuple and c.GROUP_032_ANALYZE in self.permits_tuple
-
-    @property
-    def is_group_auth3(self):
-        return self.is_authenticated and self.permits_tuple and c.GROUP_016_AUTH3 in self.permits_tuple
-
-    @property
-    def is_group_auth2(self):
-        return self.is_authenticated and self.permits_tuple and c.GROUP_008_AUTH2 in self.permits_tuple
-
-    @property
-    def is_group_auth1(self):
-        return self.is_authenticated and self.permits_tuple and c.GROUP_004_AUTH1 in self.permits_tuple
-
-    @property
-    def is_group_edit(self):
-        return self.is_authenticated and self.permits_tuple and c.GROUP_002_EDIT in self.permits_tuple
-
-    @property
-    def is_group_read(self):
-        return self.is_authenticated and self.permits_tuple and c.GROUP_001_READ in self.permits_tuple
-
-    @property
-    def may_add_or_edit_users(self):
-        # PR2018-05-30  user may add user if:
-        # role system: if perm admin
-        # role insp:   if perm_admin and country not None
-        # role school: if perm_admin and country not None and schooldefault not None
-        _has_permit = False
-        if self.is_group_system:
-            if self.is_role_system:
-                _has_permit = True
-            elif self.is_role_insp:
-                if self.country is not None:
-                    _has_permit = True
-            elif self.is_role_school:
-                if self.country is not None:
-                    if self.schoolbase is not None:
-                        _has_permit = True
-        return _has_permit
 
 # +++++++++++++++++++  get and set setting +++++++++++++++++++++++
-
-
     def get_usersetting_dict(cls, key_str): # PR2019-03-09 PR2021-01-25
         # function retrieves the string value of the setting row that match the filter and converts it to a dict
         #logger.debug(' ---  get_usersetting_dict  ------- ')

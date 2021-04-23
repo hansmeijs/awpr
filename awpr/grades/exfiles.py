@@ -18,6 +18,7 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Frame, Spacer, Image
 
 from awpr import constants as c
+from awpr import settings as s
 from awpr import downloads as dl
 from awpr import settings as awpr_settings
 
@@ -204,7 +205,9 @@ class DownloadPublishedFile(View):  # PR2021-02-07
 class GradeDownloadEx2aView(View):  # PR2021-01-24
 
     def get(self, request):
-        logger.debug(' ============= GradeDownloadEx2aView ============= ')
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= GradeDownloadEx2aView ============= ')
         # function creates, Ex2A pdf file based on settings in usersetting
 
         response = None
@@ -224,13 +227,15 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
         # - get selected examperiod, examtype, subject_pk from usersettings
                 sel_examperiod, sel_examtype, sel_subject_pk = dl.get_selected_examperiod_examtype_from_usersetting(request)
 
-                logger.debug('sel_examperiod: ' + str(sel_examperiod))
-                logger.debug('sel_school: ' + str(sel_school))
-                logger.debug('sel_department: ' + str(sel_department))
+                if logging_on:
+                    logger.debug('sel_examperiod: ' + str(sel_examperiod))
+                    logger.debug('sel_school: ' + str(sel_school))
+                    logger.debug('sel_department: ' + str(sel_department))
 
                 if sel_examperiod and sel_school and sel_department and sel_subject_pk:
                     sel_subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk, examyear=sel_examyear)
-                    logger.debug('sel_subject: ' + str(sel_subject))
+                    if logging_on:
+                        logger.debug('sel_subject: ' + str(sel_subject))
 
     # +++ get selected grade_rows
                     grade_rows = gr_vw.create_grade_rows(
@@ -249,7 +254,8 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
                     #test_pdf(canvas)
                     # testParagraph_pdf(canvas)
 
-                    logger.debug('end of draw_Ex2A')
+                    if logging_on:
+                        logger.debug('end of draw_Ex2A')
 
                     canvas.showPage()
                     canvas.save()

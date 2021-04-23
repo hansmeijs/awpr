@@ -446,61 +446,25 @@ ROLE_CAPTION = {
     ROLE_128_SYSTEM: _('System manager')
     }
 
+# PR2018-05-21 PR2021-04-23
+USERGROUP_READ = 'read'
+USERGROUP_EDIT = 'edit'
+USERGROUP_AUTH1_PRES = 'auth1'
+USERGROUP_AUTH2_SECR = 'auth2'
+USERGROUP_AUTH3_COM = 'auth3'
+USERGROUP_ANALYZE = 'anlz'
+USERGROUP_ADMIN = 'admin'
 
-# PR2018-05-21
-GROUP_000_NONE = 0
-GROUP_001_READ = 1
-GROUP_002_EDIT = 2
-GROUP_004_AUTH1 = 4
-GROUP_008_AUTH2 = 8
-GROUP_016_AUTH3 = 16
-GROUP_032_ANALYZE = 32
-GROUP_064_ADMIN = 64
-
-# PR2018-12-23 used in set_menu_items
-
-GROUP_DICT = {
-    GROUP_000_NONE: 'none',
-    GROUP_001_READ: 'read',
-    GROUP_002_EDIT: 'edit',
-    GROUP_004_AUTH1: 'auth1',
-    GROUP_008_AUTH2: 'auth2',
-    GROUP_016_AUTH3: 'auth3',
-    GROUP_032_ANALYZE: 'anlz',
-    GROUP_064_ADMIN: 'admin'
-}
-GROUP_CAPTION = {
-    GROUP_001_READ: _('Read'),
-    GROUP_002_EDIT: _('Edit'),
-    GROUP_004_AUTH1: _('President'),
-    GROUP_008_AUTH2: _('Secretary'),
-    GROUP_016_AUTH3: _('Commissioner'),
-    GROUP_032_ANALYZE: _('Analyze'),
-    GROUP_064_ADMIN: _('Administrator')
+USERGROUP_CAPTION = {
+    USERGROUP_READ: _('Read'),
+    USERGROUP_EDIT: _('Edit'),
+    USERGROUP_AUTH1_PRES: _('President'),
+    USERGROUP_AUTH2_SECR: _('Secretary'),
+    USERGROUP_AUTH3_COM: _('Commissioner'),
+    USERGROUP_ANALYZE: _('Analyze'),
+    USERGROUP_ADMIN: _('Administrator')
 }
 
-GROUP_LOOKUP = {
-    'perm_none': GROUP_000_NONE,
-    'perm_read': GROUP_001_READ,
-    'perm_edit': GROUP_002_EDIT,
-    'perm_auth1': GROUP_004_AUTH1,
-    'perm_auth2': GROUP_008_AUTH2,
-    'perm_auth3': GROUP_016_AUTH3,
-    'perm_anlz': GROUP_032_ANALYZE,
-    'perm_admin': GROUP_064_ADMIN
-
-}
-
-GROUP_INDEX_LOOKUP = {
-    'perm_read': 0,
-    'perm_edit': 1,
-    'perm_auth1': 2,
-    'perm_auth2': 3,
-    'perm_auth3': 4,
-    'perm_anlz': 5,
-    #'perm_admin': 6,
-    'perm_system': 7
-}
 
 PAGE_LIST = {
     'users': _('Users'),

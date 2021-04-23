@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let selected_user_pk = null;
     let selected_period = {};
     let setting_dict = {};
+    let permit_dict = {};
 
     let loc = {};  // locale_dict
     let mod_dict = {};
@@ -31,7 +32,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let user_list = [];
     let school_rows = [];
 
+    let examyear_map = new Map();
     let school_map = new Map();
+    let department_map = new Map();
+
     let user_map = new Map();
     let permit_map = new Map();
 
@@ -100,6 +104,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- BUTTON CONTAINER ------------------------------------
         const el_btn_container = document.getElementById("id_btn_container");
+
+        // Note: permit.view_page is the only permit that gets its value on DOMContentLoaded,
+        // all other permits get their value in function get_permits, after downloading permit_list
+
         if (permit.view_page){
             const btns = document.getElementById("id_btn_container").children;
             for (let i = 0, btn; btn = btns[i]; i++) {
@@ -114,11 +122,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
         if (permit.view_page){
             el_hdrbar_examyear.addEventListener("click",
-                function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, MSESD_Response)}, false );
+                function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false );
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSESD_Open(loc, "school", school_map, setting_dict, MSESD_Response)}, false );
+                function() {t_MSESD_Open(loc, "school", school_map, setting_dict, permit_dict, MSESD_Response)}, false );
             el_hdrbar_department.addEventListener("click",
-                function() {t_MSESD_Open(loc, "department", department_map, setting_dict, MSESD_Response)}, false );
+                function() {t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false );
         }
 
 // ---  MODAL USER
@@ -148,7 +156,6 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MGP_btn_delete.addEventListener("click", function() {MGP_Save("delete")}, false);
             el_MGP_btn_submit.addEventListener("click", function() {MGP_Save("save")}, false);
         };
-
 
 // ---  MODAL UPLOAD PERMITS
 // --- create EventListener for buttons in btn_container
@@ -195,8 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // period also returns emplhour_list
         const datalist_request = {
-                permit_list: "page_user",
-                setting: {page_user: {mode: "get"}},
+                setting: {page: "page_user"},
                 schoolsetting: {setting_key: "import_permits"},
                 locale: {page: ["page_user", 'upload']},
                 user_rows: {get: true},
@@ -233,33 +239,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_loader.classList.add(cls_visible_hide)
                 let check_status = false;
                 let must_create_submenu = false;
+                let must_update_headerbar = false;
 
                 if ("locale_dict" in response) {
                     loc = response.locale_dict;
                     mimp_loc = loc;
                     must_create_submenu = true;
                 };
-
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict;
-                    selected_btn = (setting_dict.sel_btn);
-
-                    b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                    selected_btn = setting_dict.sel_btn;
+                    must_update_headerbar = true;
                 };
-                if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
-
-                // get_permits uses setting_dict. Must come after setting_dict and before CreateSubmenu and FiLLTbl
-                if ("permit_list" in response) {get_permits(response.permit_list)};
-                if ("usergroup_list" in response) {usergroups = response.usergroup_list};
+                if ("permit_dict" in response) {
+                    permit_dict = response.permit_dict;
+                    // get_permits must come before CreateSubmenu and FiLLTbl
+                    get_permits(permit_dict.permit_list);
+                    usergroups = permit_dict.usergroup_list;
+                    must_update_headerbar = true;
+                }
 
                 if(must_create_submenu){CreateSubmenu()};
+                if(must_update_headerbar){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
+
+                if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
 
                 if ("user_rows" in response) { refresh_user_map(response.user_rows)};
                 if ("permit_rows" in response) { refresh_permit_map(response.permit_rows) };
-                // PR2021-04-21 was: if ("school_rows" in response) { school_rows = response.school_rows};
-                if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows)};
 
-
+                if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
+                if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows) };
+                if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows) };
 
                 HandleBtnSelect(selected_btn, true);  // true = skip_upload
 
@@ -753,6 +763,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function MUA_Open(mode, el_input){
         console.log(" -----  MUA_Open   ---- mode: ", mode)  // modes are: addnew, update
         console.log("setting_dict: ", setting_dict)
+        console.log("permit.crud_user_otherschool: ", permit.crud_user_otherschool)
         // mode = 'addnew' when called by SubmenuButton
         // mode = 'update' when called by tblRow event
 
@@ -773,27 +784,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     user_schoolbase_pk = user_dict.schoolbase_id;
                     user_schoolbase_code = user_dict.sb_code;
                 }
+        // when el_input is not defined: function is mode 'addnew'
             } else if (!permit.crud_user_otherschool){
                 // when new user and not role_admin or role_system: : get user_schoolbase_pk from request_user
                 user_schoolbase_pk = setting_dict.requsr_schoolbase_pk;
                 user_schoolbase_code = setting_dict.requsr_schoolbase_code;
             }
 
-        console.log("user_schoolbase_code: ", user_schoolbase_code)
             selected_user_pk = user_pk
 
             let user_schoolname = null;
             if(user_schoolbase_pk){
                 user_schoolname = user_schoolbase_code
+                // TODO cahnge to school_map
                 for(let i = 0, tblRow, dict; dict = school_rows[i]; i++){
                     if (!isEmpty(dict)) {
                         if(user_schoolbase_pk === dict.base_id ) {
                             if (dict.abbrev) {user_schoolname += " - " + dict.abbrev};
                             break;
-            }}}};
+            }
+            }
+            }
+            };
 
-        console.log("user_schoolbase_pk: ", user_schoolbase_pk)
-        console.log("user_schoolname: ", user_schoolname)
             mod_MUA_dict = {
                 mode: mode, // modes are: addnew, update
                 //skip_validate_username: is_addnew,
@@ -808,6 +821,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 last_name: get_dict_value(user_dict, ["last_name"]),
                 email: get_dict_value(user_dict, ["email"])
                 };
+            console.log("mod_MUA_dict: ", mod_MUA_dict)
 
     // ---  show only the elements that are used in this tab
             const container_element = document.getElementById("id_mod_user");
@@ -859,7 +873,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---  show modal
             $("#id_mod_user").modal({backdrop: true});
-        }
+
+        }  //  if(permit.crud_user)
     };  // MUA_Open
 
 
@@ -977,56 +992,62 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MUA_FillSelectTableSchool  ============= PR2020--09-17
     function MUA_FillSelectTableSchool() {
-        //console.log("===== MUA_FillSelectTableSchool ===== ");
+        console.log("===== MUA_FillSelectTableSchool ===== ");
 
-        const dictlist = school_rows;
+        const data_map = school_map;
         const tblBody_select = document.getElementById("id_MUA_tbody_select");
         tblBody_select.innerText = null;
 
 // ---  loop through dictlist
         //[ {pk: 2608, code: "Colpa de, William"} ]
         let row_count = 0
-        for(let i = 0, tblRow, dict; dict = dictlist[i]; i++){
-            if (!isEmpty(dict)) {
-// ---  get info from item_dict
-                const base_id = dict.base_id;
-                const country_id = dict.country_id;
-                const code = (dict.sb_code) ? dict.sb_code : "";
-                const abbrev = (dict.abbrev) ? dict.abbrev : "";
-                const map_id = "sel_schoolbase_" + base_id
 
-                tblRow = tblBody_select.insertRow(-1);
-                row_count += 1;
+        if(data_map){
+            for (const [map_id, map_dict] of data_map.entries()) {
+                if (!isEmpty(map_dict)) {
+                    console.log("map_dict", map_dict);
+                    const defaultrole = (map_dict.defaultrole) ? map_dict.defaultrole : 0;
+    // only add schools to list whith sme or lower role
+                    if (defaultrole <= setting_dict.requsr_role){
+        // ---  get info from map_dict
+                        const base_id = map_dict.base_id;
+                        const country_id = map_dict.country_id;
+                        const code = (map_dict.sb_code) ? map_dict.sb_code : "";
+                        const abbrev = (map_dict.abbrev) ? map_dict.abbrev : "";
 
-                tblRow.id = map_id;
-                tblRow.setAttribute("data-pk", base_id);
-                tblRow.setAttribute("data-ppk", country_id);
-                tblRow.setAttribute("data-value", code + " - " + abbrev);
+                        const tblRow = tblBody_select.insertRow(-1);
+                        row_count += 1;
 
-// ---  add hover to select row
-                add_hover(tblRow)
+                        tblRow.id = map_id;
+                        tblRow.setAttribute("data-pk", base_id);
+                        tblRow.setAttribute("data-ppk", country_id);
+                        tblRow.setAttribute("data-value", code + " - " + abbrev);
 
-// ---  add first td to tblRow.
-                let td = tblRow.insertCell(-1);
-                let el_div = document.createElement("div");
-                    el_div.classList.add("tw_075")
-                    el_div.innerText = code;
-                    td.appendChild(el_div);
+        // ---  add hover to select row
+                        add_hover(tblRow)
 
-// ---  add second td to tblRow.
-                td = tblRow.insertCell(-1);
-                el_div = document.createElement("div");
-                    el_div.classList.add("tw_150")
-                    el_div.innerText = abbrev;
-                    td.appendChild(el_div);
+        // ---  add first td to tblRow.
+                        let td = tblRow.insertCell(-1);
+                        let el_div = document.createElement("div");
+                            el_div.classList.add("tw_075")
+                            el_div.innerText = code;
+                            td.appendChild(el_div);
 
-                //td.classList.add("tw_200", "px-2", "pointer_show", "tsa_bc_transparent")
+        // ---  add second td to tblRow.
+                        td = tblRow.insertCell(-1);
+                        el_div = document.createElement("div");
+                            el_div.classList.add("tw_150")
+                            el_div.innerText = abbrev;
+                            td.appendChild(el_div);
 
-// ---  add addEventListener
-                tblRow.addEventListener("click", function() {MUA_SelectSchool(tblRow, event.target)}, false);
+                        //td.classList.add("tw_200", "px-2", "pointer_show", "tsa_bc_transparent")
 
-            }  //  if (!isEmpty(item_dict))
-        }  // for (let cust_key in data_map)
+        // ---  add addEventListener
+                        tblRow.addEventListener("click", function() {MUA_SelectSchool(tblRow, event.target)}, false);
+                    } //  if (defaultrole < setting_dict.requsr_role)
+                }  //  if (!isEmpty(item_dict))
+            }  // for (const [map_id, map_dict] of data_map.entries())
+        }  // if(data_map)
 
     } // MUA_FillSelectTableSchool
 
@@ -1643,6 +1664,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function refresh_usermap_item(data_map, update_dict) {
         //console.log(" --- refresh_usermap_item  ---");
         //console.log("update_dict", update_dict);
+
         if(!isEmpty(update_dict)){
 // ---  update or add update_dict in user_map
             let updated_columns = [];
@@ -1658,6 +1680,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const field_setting = field_settings[tblName_settings];
             const field_names = field_setting.field_names;
 
+        //console.log("tblRow", tblRow);
+        //console.log("is_deleted", is_deleted);
 // ++++ created ++++
             if(is_created){
     // ---  insert new item
@@ -1678,7 +1702,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if(is_deleted){
                 data_map.delete(map_id);
     //--- delete tblRow
-                if (tblRow){tblRow.parentNode.removeChild(tblRow)};
+                if (tblRow){
+                    tblRow.parentNode.removeChild(tblRow)
+               };
             } else {
 // ++++ updated > fill updated_columns ++++
                 const old_map_dict = (map_id) ? data_map.get(map_id) : null;
@@ -1944,7 +1970,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (tblName === "department") {
             selected_pk_dict.sel_depbase_pk = pk_int;
         }
-        const new_setting = {page_studsubj: {mode: "get"}, selected_pk: selected_pk_dict};
+        const new_setting = {page: "page_studsubj", selected_pk: selected_pk_dict};
         const datalist_request = {setting: new_setting};
 
 // also retrieve the tables that have been changed because of the change in school / dep

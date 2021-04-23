@@ -46,6 +46,7 @@ class GradeListView(View):  # PR2020-12-03 PR2021-03-25
         page = 'page_grade'
         params = awpr_menu.get_headerbar_param(request, page)
 
+        #logger.debug('params: ' + str(params))
 # - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request.user:
             request.user.set_usersetting_dict('sel_page', {'page': page})

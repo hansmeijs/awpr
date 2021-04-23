@@ -480,7 +480,7 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
 
         #<PERMIT>
         # - only ROLE_064_ADMIN and ROLE_128_SYSTEM can change school.
-        # - only GROUP_002_EDIT can ange schools
+        # - only USERGROUP_EDIT can ange schools
 
         if request.user and request.user.country and request.user.schoolbase:
             req_user = request.user
@@ -749,52 +749,6 @@ class SchoolImportUploadData(View):  # PR2018-12-04 PR2019-08-05 PR2020-06-04
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-def create_school_rows(examyear, append_dict, school_pk):
-    # --- create rows of all subjects of this examyear / school PR2020-10-22
-    #logger.debug(' =============== create_school_rows ============= ')
-
-    sql_keys = {'ey_id': examyear.pk}
-    sql_list = ["""SELECT sch.id, sch.base_id, sch.examyear_id,
-        CONCAT('school_', sch.id::TEXT) AS mapid, 'school' AS table,
-        sb.code AS sb_code, sch.name, sch.abbrev, sch.article, sch.depbases, sch.activated, sch.locked, 
-        sch.modifiedby_id, sch.modifiedat,
-        SUBSTRING(au.username, 7) AS modby_username
-
-        FROM schools_school AS sch 
-        INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id) 
-        LEFT JOIN accounts_user AS au ON (au.id = sch.modifiedby_id) 
-
-        WHERE sch.examyear_id = %(ey_id)s::INT
-        """]
-
-    if school_pk:
-        # when school_pk has value: skip other filters
-        sql_list.append('AND sch.id = %(sch_id)s::INT')
-        sql_keys['sch_id'] = school_pk
-    else:
-        sql_list.append('ORDER BY sb.code')
-
-    sql = ' '.join(sql_list)
-
-    newcursor = connection.cursor()
-    newcursor.execute(sql, sql_keys)
-    school_rows = af.dictfetchall(newcursor)
-
-    #logger.debug('school_rows' + str(school_rows))
-    # - add messages to subject_row
-    if school_pk and school_rows:
-        # when school_pk has value there is only 1 row
-        row = school_rows[0]
-        if row:
-            for key, value in append_dict.items():
-                row[key] = value
-
-    return school_rows
-
-
-# --- end of create_school_rows
 
 
 def create_school(examyear, upload_dict, request):

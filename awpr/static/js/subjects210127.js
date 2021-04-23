@@ -120,13 +120,13 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- header bar elements
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
             el_hdrbar_examyear.addEventListener("click", function() {
-                t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, MSESD_Response)}, false )
+                t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false )
         const el_hdrbar_school = document.getElementById("id_hdrbar_school")
             el_hdrbar_school.addEventListener("click", function() {
-                t_MSESD_Open(loc, "school", school_map, setting_dict, MSESD_Response)}, false )
+                t_MSESD_Open(loc, "school", school_map, setting_dict, permit_dict, MSESD_Response)}, false )
         const el_hdrbar_department = document.getElementById("id_hdrbar_department")
             el_hdrbar_department.addEventListener("click", function() {
-                t_MSESD_Open(loc, "department", department_map, setting_dict, MSESD_Response)}, false )
+                t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false )
 
 // ---  MOD SELECT EXAM YEAR ------------------------------------
         let el_MSEY_tblBody_select = document.getElementById("id_MSEY_tblBody_select");
@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(has_view_permit){
         // period also returns emplhour_list
         const datalist_request = {
-                setting: {page_subject: {mode: "get"}},
+                setting: {page: "page_subject"},
                 locale: {page: ["subjects"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     selected_btn = (setting_dict.sel_btn)
 
-                    b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school );
+                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school );
 
                 };
                 if(must_create_submenu){CreateSubmenu()};
@@ -624,7 +624,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "pk_int", pk_int);
 
 // ---  upload new setting
-        let new_setting = {page_grade: {mode: "get"}};
+        let new_setting = {page: "page_grade"};
         if (tblName === "school") {
             new_setting.selected_pk = {sel_schoolbase_pk: pk_int, sel_depbase_pk: null}
         } else {

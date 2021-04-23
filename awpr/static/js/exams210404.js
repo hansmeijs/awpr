@@ -96,13 +96,13 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
         if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click",
-                function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, MSESD_Response)}, false )};
+                function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false )};
         if (el_hdrbar_department){
             el_hdrbar_department.addEventListener("click",
-                function() {t_MSESD_Open(loc, "department", department_map, setting_dict, MSESD_Response)}, false )};
+                function() {t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false )};
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSESD_Open(loc, "school", school_map, setting_dict, MSESD_Response)}, false )};
+                function() {t_MSESD_Open(loc, "school", school_map, setting_dict, permit_dict, MSESD_Response)}, false )};
 
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_examperiod = document.getElementById("id_SBR_select_period");
@@ -216,8 +216,7 @@ document.addEventListener("DOMContentLoaded", function() {
         SetMenubuttonActive(document.getElementById("id_hdr_users"));
 
         const datalist_request = {
-                permit_list: "page_exam",
-                setting: {page_exam: {mode: "get"}},
+                setting: {page: "page_exam"},
                 locale: {page: ["page_exam"]},
                 examyear_rows: {get: true},
                 exam_rows: {get: true},
@@ -275,7 +274,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     // if sel_subject_pk has value, set sel_student_pk null
                     if (setting_dict.sel_subject_pk) {setting_dict.sel_student_pk = null;}
 
-                    b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school );
+                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school );
 
                     FillOptionsExamperiodExamtype();
                 };
@@ -2926,7 +2925,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         console.log( "pk_int", pk_int);
 
 // ---  upload new setting
-        let new_setting = {page_exam: {mode: "get"}};
+        let new_setting = {page: "page_exam"};
         if (tblName === "school") {
             new_setting.selected_pk = {sel_schoolbase_pk: pk_int, sel_depbase_pk: null}
         } else {

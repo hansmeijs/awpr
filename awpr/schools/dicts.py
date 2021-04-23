@@ -140,20 +140,31 @@ def create_sector_rows(examyear, depbase):
     return rows
 # --- end of create_sector_rows
 
-def create_school_rows(examyear, setting_dict):
+def create_school_rows(examyear, permit_dict, append_dict, school_pk):
     # --- create rows of all schools of this examyear / country PR2020-09-18
-    #     add messages to employee_row
-    #logger.debug(' =============== create_employee_rows ============= ')
+    logger.debug(' =============== create_school_rows ============= ')
+    logger.debug('permit_dict: ' + str(permit_dict))
+    """
+     permit_dict: {'requsr_pk': 1, 'requsr_name': 'Hans Meijs', 
+     'requsr_role': 128, 'requsr_role_system': True, 
+     'requsr_group_admin': True, 'requsr_group_auth2': True, 'requsr_group_edit': True, 
+     'may_select_school': True, 
+     'may_select_comm': True, 
+     'permit_list': ['href_userpage', 'approve_grade', 'edit_grade', 'read_note', 'submit_grade', 'view_page', 'write_note_extern', 'write_note_intern'], 
+     'usergroup_list': ['admin', 'auth2', 'edit'], 
+     'requsr_country_pk': 1, 'requsr_country': 'Curacao', 
+     'requsr_schoolbase_pk': 1, 'requsr_schoolbase_code': 'CURSYS', 'may_select_examyear': False, 'allowed_depbases': [1, 2, 3], 'may_select_department': True}
 
+    """
     #<PERMIT> PR2021-01-01  PR2021-01-26
     # - when role_school: show only the requsr_school
     # - else: show only schools with defaultrole <= requsr_role
-    requsr_role_system = setting_dict.get('requsr_role_system', False)
-    requsr_role_admin = setting_dict.get('requsr_role_admin', False)
+    requsr_role_system = permit_dict.get('requsr_role_system', False)
+    requsr_role_admin = permit_dict.get('requsr_role_admin', False)
 
-    requsr_schoolbase_pk =  setting_dict.get('requsr_schoolbase_pk')
+    requsr_schoolbase_pk =  permit_dict.get('requsr_schoolbase_pk')
 
-    requsr_role = setting_dict.get('requsr_role', 0)
+    requsr_role = permit_dict.get('requsr_role', 0)
 
     sql_keys = {'ey_id': examyear.pk, 'max_role': requsr_role}
 
@@ -171,16 +182,32 @@ def create_school_rows(examyear, setting_dict):
         "WHERE ey.id = %(ey_id)s::INT",
         "AND sb.defaultrole <= %(max_role)s::INT"]
 
-    if requsr_role >= ac.ROLE_032_INSP :
+    if school_pk:
+        # when school_pk has value: skip other filters
+        sql_list.append('AND sch.id = %(sch_id)s::INT')
+        sql_keys['sch_id'] = school_pk
+
+    if requsr_role < ac.ROLE_032_INSP :
         sql_list.append("ORDER BY LOWER(sb.code)")
     else:
         sql_keys['sb_id'] = requsr_schoolbase_pk
         sql_list.append("AND sb.id = %(sb_id)s::INT")
 
+    sql_list.append('ORDER BY sb.code')
     sql = ' '.join(sql_list)
-    newcursor = connection.cursor()
-    newcursor.execute(sql, sql_keys)
-    school_rows = af.dictfetchall(newcursor)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        school_rows = af.dictfetchall(cursor)
+
+    #logger.debug('school_rows' + str(school_rows))
+    # - add messages to school_row
+    if school_pk and school_rows and append_dict:
+        # when school_pk has value there is only 1 row
+        row = school_rows[0]
+        if row:
+            for key, value in append_dict.items():
+                row[key] = value
 
     return school_rows
 # --- end of create_school_rows

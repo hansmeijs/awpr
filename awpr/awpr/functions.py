@@ -488,10 +488,10 @@ def get_depbase_list_field_sorted_zerostripped(depbase_list):  # PR2018-08-23
 def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
-
-    update_examyearsetting(examyear, request)
+    pass
+    #update_examyearsetting(examyear, request)
     # PR2021-03-26
-    load_default_permits(request)
+    #load_default_permits(request)
 
     #transfer_depbases_from_array_to_string()
 # - end of system_updates

@@ -1389,7 +1389,6 @@ def upload_permit(data_dict, is_test, logfile, logging_on, request):   # PR2021-
         role = data_dict.get('role')
         action = data_dict.get('action')
 
-
 # - check of required fields have value
         if not c_abbrev or not page or not role or not action:
             missing_str = ''
@@ -1415,6 +1414,7 @@ def upload_permit(data_dict, is_test, logfile, logging_on, request):   # PR2021-
 
 # - check if there is already a permit with this  page, role and action
             try:
+                is_created = False
                 permit = acc_mod.Permit.objects.filter(
                     country=country,
                     role=role,
@@ -1425,17 +1425,18 @@ def upload_permit(data_dict, is_test, logfile, logging_on, request):   # PR2021-
                     permit = acc_mod.Permit(
                         country=country,
                         role=role,
-                        page__iexact=page,
-                        action__iexact=action
+                        page=page,
+                        action=action
                     )
+                    is_created = True
                 setattr(permit, 'usergroups', usergroups)
                 setattr(permit, 'sequence', sequence)
 
 # - dont save data when it is a test run
                 if not is_test:
                     permit.save(request=request)
-
-                msg_err = ' '.join((str(_('Row')), str(row_index), str(_('is ok.'))))
+                is_updated_str = _('is created.') if is_created else _('is updated.')
+                msg_err = ' '.join((str(_('Row')), str(row_index), country.abbrev, page, str(role), action, str(is_updated_str)))
                 logfile.append(c.STRING_INDENT_5 + msg_err)
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))

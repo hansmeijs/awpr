@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  id of selected customer and selected order
     let selected_btn = null;
     let setting_dict = {};
+    let permit_dict = {};
 
     let loc = {};  // locale_dict
     let mod_dict = {};
@@ -31,14 +32,18 @@ document.addEventListener("DOMContentLoaded", function() {
     let time_stamp = null; // used in mod add user
 
     let user_list = [];
+
     let examyear_map = new Map();
     let school_map = new Map();
     let department_map = new Map();
+
     let level_map = new Map();
     let sector_map = new Map();
+
     let student_map = new Map();
     let subject_map = new Map();
     let grade_map = new Map();
+
     let published_map = new Map();
     let studentsubject_map = new Map();
     let studentsubjectnote_map = new Map();
@@ -137,11 +142,11 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
         if (permit.view_page){
             el_hdrbar_examyear.addEventListener("click",
-                function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, MSESD_Response)}, false );
+                function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false );
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSESD_Open(loc, "school", school_map, setting_dict, MSESD_Response)}, false );
+                function() {t_MSESD_Open(loc, "school", school_map, setting_dict, permit_dict, MSESD_Response)}, false );
             el_hdrbar_department.addEventListener("click",
-                function() {t_MSESD_Open(loc, "department", department_map, setting_dict, MSESD_Response)}, false );
+                function() {t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false );
         }
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_examperiod = document.getElementById("id_SBR_select_period");
@@ -244,8 +249,7 @@ document.addEventListener("DOMContentLoaded", function() {
         SetMenubuttonActive(document.getElementById("id_hdr_users"));
 
         const datalist_request = {
-                permit_list: "page_grade",
-                setting: {page_grade: {mode: "get"}},
+                setting: {page: "page_grade"},
                 locale: {page: ["page_grade"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
@@ -289,36 +293,49 @@ document.addEventListener("DOMContentLoaded", function() {
                 el_loader.classList.add(cls_visible_hide);
                 let check_status = false;
                 let must_create_submenu = false;
+                let must_update_headerbar = false;
 
                 if ("locale_dict" in response) {
                     loc = response.locale_dict;
                     must_create_submenu = true;
+                    mimp_loc = loc;
                 };
 
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict;
-                    selected_btn = (setting_dict.sel_btn)
+                    selected_btn = setting_dict.sel_btn;
+                    must_update_headerbar = true;
 
                     // if sel_subject_pk has value, set sel_student_pk null
                     if (setting_dict.sel_subject_pk) {setting_dict.sel_student_pk = null;}
 
-                    b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school );
-
                     FillOptionsExamperiodExamtype();
                 };
-
-                // get_permits uses setting_dict. Must come after setting_dict and before CreateSubmenu and FiLLTbl
-                if ("permit_list" in response) {get_permits(response.permit_list)};
-                if ("usergroup_list" in response) {usergroups = response.usergroup_list};
+                if ("permit_dict" in response) {
+                    permit_dict = response.permit_dict;
+                    // get_permits must come before CreateSubmenu and FiLLTbl
+                    get_permits(permit_dict.permit_list);
+                    usergroups = permit_dict.usergroup_list;
+                    must_update_headerbar = true;
+                }
 
                 if(must_create_submenu){CreateSubmenu()};
+                if(must_update_headerbar){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
 
                 // call render_messages also when there are no messages, to remove existing messages
                 const awp_messages = (response.awp_messages) ? response.awp_messages : {};
                 render_messages(response.awp_messages);
 
+                if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
+
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
-                if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows) };
+                if ("school_rows" in response)  {
+
+                    b_fill_datamap(school_map, response.school_rows)
+
+                console.log("response.school_rows", response.school_rows);
+                console.log("school_map", school_map);
+                };
                 if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows) };
 
                 if ("level_rows" in response) {
@@ -2555,7 +2572,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         console.log( "pk_int", pk_int);
 
 // ---  upload new setting
-        let new_setting = {page_grade: {mode: "get"}};
+        let new_setting = {page: "page_grade"};
         if (tblName === "school") {
             new_setting.selected_pk = {sel_schoolbase_pk: pk_int, sel_depbase_pk: null}
         } else {

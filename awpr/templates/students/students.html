@@ -42,17 +42,12 @@
                 <div class="alert alert-danger">{{ no_access_message }}</div>
             </div>
         {% else %}
-    <!-- =================== MODAL SELECT EXAM YEAR =================== -->
+
             {% include 'schools/modselectexamyear.html' %}
-    <!-- =================== MODAL SELECT SCHOOL OR DEPARTMENT=================== -->
             {% include 'schools/modselectschoolordep.html' %}
-    <!-- =================== MODAL CONFIRM  =================== -->
             {% include 'includes/modconfirm.html' %}
-    <!-- =================== MODAL STUDENT =================== -->
             {% include 'students/modstudent.html' %}
-    <!-- =================== MODAL STUDENT SUBJECT =================== -->
             {% include 'students/modstudentsubject.html' %}
-    <!-- =================== MODAL IMPORT  =================== -->
             {% include 'includes/modimport.html' %}
 
             <div class="content_margin_top78">

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-04-22 16:29-0400\n"
+"POT-Creation-Date: 2021-04-22 19:26-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -899,17 +899,17 @@ msgstr ""
 msgid "Profiel"
 msgstr ""
 
-#: .\awpr\constants.py:334 .\awpr\locale.py:180 .\schools\imports.py:1397
+#: .\awpr\constants.py:334 .\awpr\locale.py:180 .\schools\imports.py:1396
 #: .\templates\accounts\modgrouppermit.html:31
 msgid "Page"
 msgstr "Pagina"
 
-#: .\awpr\constants.py:335 .\awpr\locale.py:178 .\schools\imports.py:1401
+#: .\awpr\constants.py:335 .\awpr\locale.py:178 .\schools\imports.py:1400
 #: .\templates\accounts\modgrouppermit.html:19
 msgid "Organization"
 msgstr "Organisatie"
 
-#: .\awpr\constants.py:336 .\awpr\locale.py:179 .\schools\imports.py:1405
+#: .\awpr\constants.py:336 .\awpr\locale.py:179 .\schools\imports.py:1404
 #: .\templates\accounts\modgrouppermit.html:54
 #: .\templates\schools\country_log.html:26
 #: .\templates\schools\department_log.html:35
@@ -3289,19 +3289,23 @@ msgstr "De permissie gegevens zijn opgeslagen."
 msgid "is not found"
 msgstr "is niet gevonden."
 
-#: .\schools\imports.py:1407 .\schools\imports.py:1438
+#: .\schools\imports.py:1406 .\schools\imports.py:1439
 msgid "Row"
 msgstr "Regel"
 
-#: .\schools\imports.py:1407
+#: .\schools\imports.py:1406
 msgid "is missing required field:"
 msgstr "mist het verplichte veld:"
 
 #: .\schools\imports.py:1438
-msgid "is ok."
-msgstr ""
+msgid "is created."
+msgstr "is aangemaakt."
 
-#: .\schools\imports.py:1442
+#: .\schools\imports.py:1438
+msgid "is updated."
+msgstr "is bijgewerkt."
+
+#: .\schools\imports.py:1443
 msgid "Error in row"
 msgstr "Fout in regel"
 
@@ -4472,4 +4476,3 @@ msgid ""
 msgstr ""
 "'Test upload' controleert de nieuwe gegevens en vergelijkt ze met de "
 "opgeslagen gegevens. De nieuwe gegevens worden niet opgeslagen"
-

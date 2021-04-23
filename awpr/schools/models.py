@@ -334,7 +334,7 @@ class Schoolbase(Model):  # PR2018-05-27 PR2018-11-11
     country = ForeignKey(Country, related_name='+', on_delete=PROTECT)
     code = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
     # the role of new users is set to defaultrole of their schoolbase PR2021-01-25
-    # defaultroles are: school = 8, insp = 16, admin = 32, system = 128
+    # defaultroles are: school = 8, comm = 16, insp = 32, admin = 64, system = 128
     defaultrole = PositiveSmallIntegerField(default=0)
 
     def __str__(self):

@@ -1,11 +1,7 @@
 # PR2020-09-17 PR2021-01-27
 from django.contrib.auth.decorators import login_required
-from django.db import connection
-from django.db.models import Q, Value
-from django.db.models.functions import Lower, Coalesce
 from django.http import HttpResponse
-from django.shortcuts import render, redirect #, get_object_or_404
-from django.utils.translation import activate, ugettext_lazy as _
+from django.utils.translation import activate
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
@@ -61,21 +57,16 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 datalist_request = json.loads(request.POST['download'])
                 #logger.debug('datalist_request: ' + str(datalist_request) + ' ' + str(type(datalist_request)))
 
-# ----- get permit_list
-                page = datalist_request.get('permit_list')
-                permit_list, usergroup_list = acc_view.get_userpermit_list(page, request.user)
-                if permit_list:
-                    datalists['permit_list'] = permit_list
-                    datalists['usergroup_list'] = usergroup_list
-
 # ----- get user settings -- first get settings, these are used in other downloads
                 # download_setting will update usersetting with items in request_item_setting, and retrieve saved settings
                 request_item_setting = datalist_request.get('setting')
-                new_setting_dict, awp_message, sel_examyear, sel_schoolbase, sel_depbase = \
+                new_setting_dict, permit_dict, awp_message, sel_examyear, sel_schoolbase, sel_depbase = \
                     download_setting(request_item_setting, user_lang, request)
+
                 # only add setting_dict to  datalists when called by request_item_setting 'setting'
                 if request_item_setting and new_setting_dict:
                     datalists['setting_dict'] = new_setting_dict
+                    datalists['permit_dict'] = permit_dict
                 if awp_message:
                     awp_messages.append(awp_message)
                     datalists['awp_messages'] = awp_messages
@@ -92,7 +83,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- locale
                 request_item_setting = datalist_request.get('locale')
                 if request_item_setting:
-                    # request_item_setting: {page: "employee"}
                     datalists['locale_dict'] = loc.get_locale_dict(request_item_setting, user_lang)
 
                 # 9. return datalists
@@ -109,7 +99,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['examyear_rows'] = school_dicts.create_examyear_rows(request.user.country, {}, None)
 # ----- schools
                 if datalist_request.get('school_rows'):
-                    datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear, new_setting_dict)
+                    datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear, permit_dict, {}, None)
 # ----- departments
                 if datalist_request.get('department_rows'):
                     datalists['department_rows'] = school_dicts.create_department_rows(sel_examyear)
@@ -168,28 +158,38 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 
 def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 PR2020-1-14
-    #logger.debug(' ----- download_setting ----- ' )
-    #logger.debug('request_item_setting: ' + str(request_item_setting) )
+    logger.debug(' ----- download_setting ----- ' )
+    logger.debug('request_item_setting: ' + str(request_item_setting) )
     # this function get settingss from request_item_setting.
     # if not in request_item_setting, it takes the saved settings.
 
     req_user = request.user
+
+# ----- get page
+    page = request_item_setting.get('page')
+
+# - setting_dict contains all info to be sent to client, permit_dict contains permit related info
+    setting_dict = {'user_lang': user_lang, 'sel_page': page}
+
+# - get permit_list
+    permit_dict = create_permit_dict(req_user)
+    permit_list, usergroup_list = acc_view.get_userpermit_list(page, request.user)
+    if permit_list:
+        permit_dict['permit_list'] = permit_list
+        permit_dict['usergroup_list'] = usergroup_list
 
 # - selected_dict contains saved selected_pk's from Usersetting, key: selected_pk
     # changes are stored in this dict, saved at the end when
     selected_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
     selected_dict_has_changed = False
 
-# - setting_dict contains all info to be sent to client
-    setting_dict = create_settingdict_with_role_and_permits(req_user, user_lang)
-
 # ==== COUNTRY ========================
 # - get country from req_user
     requsr_country = req_user.country
-    setting_dict['requsr_country_pk'] = requsr_country.pk  if requsr_country else None
-    setting_dict['requsr_country'] = requsr_country.name if requsr_country else None
+    permit_dict['requsr_country_pk'] = requsr_country.pk  if requsr_country else None
+    permit_dict['requsr_country'] = requsr_country.name if requsr_country else None
     if requsr_country.locked:
-        setting_dict['requsr_country_locked'] = True
+        permit_dict['requsr_country_locked'] = True
 
 # ===== SCHOOLBASE ======================= PR2020-12-18
 # - get schoolbase from settings / request when role is insp, admin or system, from req_user otherwise
@@ -197,8 +197,8 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
     # Selected schoolbase is stored in {selected_pk: {sel_schoolbase_pk: val}}
 
     requsr_schoolbase = req_user.schoolbase
-    setting_dict['requsr_schoolbase_pk'] = requsr_schoolbase.pk if requsr_schoolbase else None
-    setting_dict['requsr_schoolbase_code'] = requsr_schoolbase.code if requsr_schoolbase else None
+    permit_dict['requsr_schoolbase_pk'] = requsr_schoolbase.pk if requsr_schoolbase else None
+    permit_dict['requsr_schoolbase_code'] = requsr_schoolbase.code if requsr_schoolbase else None
 
     sel_schoolbase_instance, sel_schoolbase_save = af.get_sel_schoolbase_instance(request, request_item_setting)
     #logger.debug('sel_schoolbase_instance: ' + str(sel_schoolbase_instance) + ' pk: ' + str(sel_schoolbase_instance.pk))
@@ -217,7 +217,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
 # - get selected examyear from request_item_setting, Usersetting or first in list
     sel_examyear_instance, sel_examyear_save, may_select_examyear = af.get_sel_examyear_instance(request, request_item_setting)
 
-    setting_dict['may_select_examyear'] = may_select_examyear
+    permit_dict['may_select_examyear'] = may_select_examyear
 
     #logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
 # - update selected_dict when selected_dict_has_changed, will be saved at end of def
@@ -243,7 +243,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
 # ===== SCHOOL =======================
 # - only roles insp, admin and system may select other schools
     may_select_school = req_user.is_role_insp or req_user.is_role_admin or req_user.is_role_system
-    setting_dict['may_select_school'] = may_select_school
+    permit_dict['may_select_school'] = may_select_school
 
 # get school from sel_schoolbase and sel_examyear_instance
     sel_school = sch_mod.School.objects.get_or_none(
@@ -271,10 +271,10 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
     sel_depbase_instance, sel_depbase_save, allowed_depbases = \
         af.get_sel_depbase_instance(sel_school, request, request_item_setting)
 
-    setting_dict['allowed_depbases'] = allowed_depbases
+    permit_dict['allowed_depbases'] = allowed_depbases
     allowed_depbases_len = len(allowed_depbases)
     may_select_department = (allowed_depbases_len > 1)
-    setting_dict['may_select_department'] = may_select_department
+    permit_dict['may_select_department'] = may_select_department
 
     # - update selected_dict when selected_dict_has_changed, will be saved at end of def
     if sel_depbase_save:
@@ -439,9 +439,8 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
 
 ################################
 # get page settings - keys starting with 'page_'
-                if key[:5] == 'page_':
+                if page:
                     # if 'page_' in request: and saved_btn == 'planning': also retrieve period
-                    setting_dict['sel_page'] = key
                     #logger.debug('setting_dict: ' + str(setting_dict))
                     sel_keys = ('sel_btn', 'period_start', 'period_end', 'grid_range')
                     for sel_key in sel_keys:
@@ -466,10 +465,11 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
     if selected_dict_has_changed:
         req_user.set_usersetting_dict(c.KEY_SELECTED_PK, selected_dict)
 
-    return setting_dict, awp_message, sel_examyear_instance, sel_schoolbase_instance, sel_depbase_instance
+    return setting_dict, permit_dict, awp_message, sel_examyear_instance, sel_schoolbase_instance, sel_depbase_instance
 # - end of download_setting
 
 
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def get_selected_examperiod_examtype_from_usersetting(request):  # PR2021-01-20
 # - get selected examperiod and examtype from usersettings
     sel_examperiod, sel_examtype, sel_subject_pk = None, None, None
@@ -483,7 +483,6 @@ def get_selected_examperiod_examtype_from_usersetting(request):  # PR2021-01-20
     return sel_examperiod, sel_examtype, sel_subject_pk
 
 
-# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def get_selected_examyear_school_dep_from_usersetting(request):  # PR2021-1-13
     #logger.debug(' ----- get_selected_examyear_school_dep_from_usersetting ----- ' )
     #logger.debug('request_item_setting: ' + str(request_item_setting) )
@@ -537,37 +536,47 @@ def get_selected_examyear_school_dep_from_usersetting(request):  # PR2021-1-13
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-def create_settingdict_with_role_and_permits(req_user, user_lang):
-# - get role from req_user, put them in setting_dict PR2020-12-14  PR2021-01-26
-    setting_dict = {'user_lang': user_lang,
-                    'requsr_pk': req_user.pk,
+def create_permit_dict(req_user):
+# - get role from req_user, put them in setting_dict PR2020-12-14  PR2021-01-26 PR2021-04-22
+    permit_dict = {'requsr_pk': req_user.pk,
                     'requsr_name': req_user.last_name,
                     'requsr_role': req_user.role}
-    if req_user.is_role_school:
-        setting_dict['requsr_role_school'] = req_user.is_role_school
-    if req_user.is_role_insp:
-        setting_dict['requsr_role_insp'] = req_user.is_role_insp
-    if req_user.is_role_admin:
-        setting_dict['requsr_role_admin'] = req_user.is_role_admin
-    if req_user.is_role_system:
-        setting_dict['requsr_role_system'] = req_user.is_role_system
 
-# - get permissions from req_user, put them in setting_dict
-    if req_user.is_group_read:
-        setting_dict['requsr_group_read'] = req_user.is_group_read
-    if req_user.is_group_edit:
-        setting_dict['requsr_group_edit'] = req_user.is_group_edit
-    if req_user.is_group_auth1:
-        setting_dict['requsr_group_auth1'] = req_user.is_group_auth1
-    if req_user.is_group_auth2:
-        setting_dict['requsr_group_auth2'] = req_user.is_group_auth2
-    if req_user.is_group_auth3:
-        setting_dict['requsr_group_auth3'] = req_user.is_group_auth3
-    if req_user.is_group_anlz:
-        setting_dict['requsr_group_anlz'] = req_user.is_group_anlz
-    if req_user.is_group_admin:
-        setting_dict['requsr_group_admin'] = req_user.is_group_admin
-    #if req_user.is_group_system:
-    #    setting_dict['requsr_group_system'] = req_user.is_group_system
+    if req_user.is_authenticated and req_user.role is not None:
+        if req_user.role == c.ROLE_008_SCHOOL:
+            permit_dict['requsr_role_school'] = True
+        elif req_user.role == c.ROLE_016_COMM:
+            permit_dict['requsr_role_comm'] = True
+        elif req_user.role == c.ROLE_032_INSP:
+            permit_dict['requsr_role_insp'] = True
+        elif req_user.role == c.ROLE_064_ADMIN:
+            permit_dict['requsr_role_admin'] = True
+        elif req_user.role == c.ROLE_128_SYSTEM:
+            permit_dict['requsr_role_system'] = True
 
-    return setting_dict
+# - get usergroups from req_user, put them in setting_dict
+        user_groups = getattr(req_user, 'usergroups')
+        if user_groups:
+            requsr_usergroups_list = user_groups.split(';')
+            for usergroup in requsr_usergroups_list:
+                if usergroup == c.USERGROUP_READ:
+                    permit_dict['requsr_group_read'] = True
+                if usergroup == c.USERGROUP_EDIT:
+                    permit_dict['requsr_group_edit'] = True
+                if usergroup == c.USERGROUP_AUTH1_PRES:
+                    permit_dict['requsr_group_auth1'] = True
+                if usergroup == c.USERGROUP_AUTH2_SECR:
+                    permit_dict['requsr_group_auth2'] = True
+                if usergroup == c.USERGROUP_AUTH3_COM:
+                    permit_dict['requsr_group_auth3'] = True
+                if usergroup == c.USERGROUP_ANALYZE:
+                    permit_dict['requsr_group_anlz'] = True
+                if usergroup == c.USERGROUP_ADMIN:
+                    permit_dict['requsr_group_admin'] = True
+
+# ===== SCHOOL =======================
+# - roles higher than school may select other schools PR2021-04-23
+        permit_dict['may_select_school'] = (req_user.role > c.ROLE_008_SCHOOL)
+# - roles admin and system may select role 'Commissioner'other schools PR2021-04-23'
+        permit_dict['may_select_comm'] = (req_user.role in (c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM))
+    return permit_dict

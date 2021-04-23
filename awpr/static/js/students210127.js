@@ -96,13 +96,13 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- header bar elements
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
             el_hdrbar_examyear.addEventListener("click", function() {
-                t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, MSESD_Response)}, false )
+                t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false )
         const el_hdrbar_school = document.getElementById("id_hdrbar_school")
             el_hdrbar_school.addEventListener("click", function() {
-                t_MSESD_Open(loc, "school", school_map, setting_dict, MSESD_Response)}, false )
+                t_MSESD_Open(loc, "school", school_map, setting_dict, permit_dict, MSESD_Response)}, false )
         const el_hdrbar_department = document.getElementById("id_hdrbar_department")
             el_hdrbar_department.addEventListener("click", function() {
-                t_MSESD_Open(loc, "department", department_map, setting_dict, MSESD_Response)}, false )
+                t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false )
 
 // ---  MODAL SIDEBAR FILTER ------------------------------------
 
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(has_view_permit){
         // period also returns emplhour_list
         const datalist_request = {
-                setting: {page_student: {mode: "get"}},
+                setting: {page: "page_student"},
                 schoolsetting: {setting_key: "import_student"},
                 locale: {page: ["students", "upload"]},
                 examyear_rows: {get: true},
@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     selected_btn = (setting_dict.sel_btn)
 
-                    b_UpdateHeaderbar(loc, setting_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
 
                 if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
@@ -2198,7 +2198,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (tblName === "department") {
             selected_pk_dict.sel_depbase_pk = pk_int;
         }
-        const new_setting = {page_student: {mode: "get"},
+        const new_setting = {page: "page_student",
                              selected_pk: selected_pk_dict};
         const datalist_request = {setting: new_setting};
 

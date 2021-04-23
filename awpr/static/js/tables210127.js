@@ -8,43 +8,43 @@
 
 // ++++++++++++  MODAL SELECT EXAMYEAR SCHOOL OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
 
-//=========  t_MSESD_Open  ================ PR2020-10-27 PR2020-12-25
-    function t_MSESD_Open(loc, tblName, data_map, setting_dict, MSESD_Response) {
+//=========  t_MSESD_Open  ================ PR2020-10-27 PR2020-12-25 PR2021-04-23
+    function t_MSESD_Open(loc, tblName, data_map, setting_dict, permit_dict, MSESD_Response) {
         console.log( "===== t_MSESD_Open ========= ", tblName);
         console.log( "setting_dict", setting_dict);
+        console.log( "permit_dict", permit_dict);
 
         if (!isEmpty(loc)) {
             let may_open_modal = false, selected_pk = null;
             if (tblName === "examyear") {
-                may_open_modal = setting_dict.may_select_examyear
+                may_open_modal = permit_dict.may_select_examyear
                 selected_pk = setting_dict.sel_examyear_pk;
             } else if (tblName === "school") {
                 //<PERMIT>
-                may_open_modal = setting_dict.may_select_school;
+                may_open_modal = permit_dict.may_select_school;
                 selected_pk = setting_dict.sel_schoolbase_pk;
             } else  if (tblName === "department") {
-                const allowed_depbases_count = (setting_dict.allowed_depbases) ? setting_dict.allowed_depbases.length : 0
+                const allowed_depbases_count = (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
                 may_open_modal = (allowed_depbases_count > 1);
-                may_open_modal = setting_dict.may_select_department;
+                may_open_modal = permit_dict.may_select_department;
                 selected_pk = setting_dict.sel_depbase_pk;
              }
             //console.log( "selected_pk", selected_pk);
             //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
             if (may_open_modal) {
-            //mod_dict = {base_id: setting_dict.requsr_schoolbase_pk, table: tblName};
 
 // ---  fill select table
                 //const data_map = (tblName === "school") ? school_map : department_map ;
-                t_MSSD_FillSelectTable(loc, tblName, data_map, setting_dict, MSESD_Response, selected_pk);
+                t_MSESD_FillSelectTable(loc, tblName, data_map, permit_dict, MSESD_Response, selected_pk);
 // ---  show modal
                 $("#id_mod_select_school_or_dep").modal({backdrop: true});
             }
         }
     }  // t_MSESD_Open
 
-//=========  t_MSSD_FillSelectTable  ================ PR2020-08-21 PR2020-12-18
-    function t_MSSD_FillSelectTable(loc, tblName, data_map, setting_dict, MSESD_Response, selected_pk) {
-        //console.log( "===== t_MSSD_FillSelectTable ========= ");
+//=========  t_MSESD_FillSelectTable  ================ PR2020-08-21 PR2020-12-18
+    function t_MSESD_FillSelectTable(loc, tblName, data_map, permit_dict, MSESD_Response, selected_pk) {
+        console.log( "===== t_MSESD_FillSelectTable ========= ");
 
 // set header text
         const header_text = (tblName === "examyear") ? loc.Select_examyear :
@@ -56,6 +56,7 @@
         tblBody_select.innerText = null;
 
 // --- loop through data_map
+        console.log( "data_map", data_map);
         if(data_map){
             for (const [map_id, map_dict] of data_map.entries()) {
                 const pk_int = (tblName === "examyear") ? map_dict.examyear_id :
@@ -65,25 +66,23 @@
                 let code_value = "---";
                 const locked = (map_dict.locked) ? map_dict.locked : false;
                 const activated = (map_dict.activated) ? map_dict.activated : false;
-        //console.log( "map_dict", map_dict);
-        //console.log( "activated", activated);
+        console.log( "map_dict", map_dict);
+        console.log( "activated", activated);
                 if(tblName === "examyear") {
                     code_value = (map_dict.examyear_code) ? map_dict.examyear_code : "---";
                 } else if(tblName === "school") {
                     const code = (map_dict.sb_code) ? map_dict.sb_code : "---";
                     const name = (map_dict.abbrev) ? map_dict.abbrev : "---";
                     code_value = code + " - " + name;
-
-
                 } else if(tblName === "department") {
                     code_value = (map_dict.base_code) ? map_dict.base_code : "---"
                 }
                 let skip_row = false;
                 if(tblName === "department"){
-        //console.log( "setting_dict", setting_dict);
-        //console.log( "setting_dict.allowed_depbases", setting_dict.allowed_depbases);
-                    if (setting_dict.allowed_depbases){
-                        skip_row = !setting_dict.allowed_depbases.includes(pk_int);
+        //console.log( "permit_dict", permit_dict);
+        //console.log( "permit_dict.allowed_depbases", permit_dict.allowed_depbases);
+                    if (permit_dict.allowed_depbases){
+                        skip_row = !permit_dict.allowed_depbases.includes(pk_int);
                     } else {
                         skip_row = true;
                     }
@@ -98,7 +97,7 @@
             const caption_none = (tblName === "school") ? loc.No_schools : loc.No_departments ;
             t_MSESD_CreateSelectRow(tblName, tblBody_select, null, caption_none, false, false, MSESD_Response, selected_pk);
         }
-    }  // t_MSSD_FillSelectTable
+    }  // t_MSESD_FillSelectTable
 
 //=========  t_MSESD_CreateSelectRow  ================ PR2020-10-27 PR2020-12-18
     function t_MSESD_CreateSelectRow(tblName, tblBody_select, pk_int, code_value, activated, locked, MSESD_Response, selected_pk) {
@@ -154,14 +153,14 @@
 // +++++++++++++++++ MODAL SELECT SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSS_Open ====================================  PR2020-12-17 PR2021-01-23
     function t_MSSS_Open (loc, tblName, data_map, setting_dict, MSSS_Response) {
-        console.log(" ===  t_MSSS_Open  =====", tblName) ;
-        console.log( "setting_dict", setting_dict);
+        //console.log(" ===  t_MSSS_Open  =====", tblName) ;
+        //console.log( "setting_dict", setting_dict);
         // tblNames are: page grades: "subject", "student"
         const selected_pk = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_pk : null;
 
         const el_MSSS_input = document.getElementById("id_MSSS_input")
         el_MSSS_input.dataset.table = tblName;
-        console.log( "el_MSSS_input", el_MSSS_input);
+        //console.log( "el_MSSS_input", el_MSSS_input);
 // --- fill select table
         t_MSSS_Fill_SelectTable(loc, tblName, data_map, setting_dict, el_MSSS_input, MSSS_Response, selected_pk)
         el_MSSS_input.value = null;
@@ -188,8 +187,8 @@
 
 //========= t_MSSS_Fill_SelectTable  ============= PR2021-01-23
     function t_MSSS_Fill_SelectTable(loc, tblName, data_map, setting_dict, el_input, MSSS_Response, selected_pk) {
-        console.log("===== t_MSSS_Fill_SelectTable ===== ", tblName);
-        console.log("data_map", data_map);
+        //console.log("===== t_MSSS_Fill_SelectTable ===== ", tblName);
+        //console.log("data_map", data_map);
 
 // set header text
         const label_text = loc.Select + ( (tblName === "student") ?  loc.Candidate.toLowerCase() : loc.Subject.toLowerCase() );
@@ -1027,7 +1026,7 @@ console.log( "show_row", show_row);
 
 //========= t_Filter_TableRows  ==================================== PR2020-01-17// PR2019-06-24
     function t_Filter_TableRows(tblBody, tblName, filter_dict, filter_show_inactive, has_ppk_filter, selected_ppk) {
-        console.log( "===== t_Filter_TableRows  ========= ", tblName);
+        //console.log( "===== t_Filter_TableRows  ========= ", tblName);
         //console.log( "filter_dict", filter_dict);
         // filter_dict = ["text", "z", ""]
         //console.log( "filter_show_inactive", filter_show_inactive);
@@ -1051,9 +1050,9 @@ console.log( "show_row", show_row);
 
 //========= t_ShowTableRow  ==================================== PR2020-01-17
     function t_ShowTableRow(tblRow, tblName, filter_dict, filter_show_inactive, has_ppk_filter, selected_ppk) {  // PR2019-09-15
-        console.log( "===== t_ShowTableRow  ========= ", tblName);
+        //console.log( "===== t_ShowTableRow  ========= ", tblName);
         //console.log("filter_show_inactive", filter_show_inactive);
-        console.log("tblRow", tblRow);
+        //console.log("tblRow", tblRow);
 
         // function filters by inactive and substring of fields
         // also filters selected customer pk in table order
@@ -1086,7 +1085,7 @@ console.log( "show_row", show_row);
                         hide_row = true;
                     } else {
                         const ppk_str = get_attr_from_el(tblRow, "data-ppk")
-        console.log("ppk_str", ppk_str);
+        //console.log("ppk_str", ppk_str);
                         if(!ppk_str){
                             hide_row = true;
                         } else if (ppk_str !== selected_ppk.toString()) {
@@ -1094,13 +1093,13 @@ console.log( "show_row", show_row);
                         }
                     }
                 }
-        console.log( "hide_row after selected_ppk: ", has_ppk_filter, selected_ppk,  hide_row);
+        //console.log( "hide_row after selected_ppk: ", has_ppk_filter, selected_ppk,  hide_row);
 
 // hide inactive rows if filter_show_inactive
-        console.log("filter_show_inactive", filter_show_inactive);
+        //console.log("filter_show_inactive", filter_show_inactive);
                 if(!hide_row && !filter_show_inactive){
                     const inactive_str = get_attr_from_el(tblRow, "data-inactive")
-        console.log("inactive_str", inactive_str);
+        //console.log("inactive_str", inactive_str);
                     if (inactive_str && (inactive_str.toLowerCase() === "true")) {
                         hide_row = true;
                     }
@@ -1108,7 +1107,7 @@ console.log( "show_row", show_row);
         //console.log( "hide_row after filter_show_inactive: ", hide_row);
 
 // show all rows if filter_name = ""
-        console.log("filter_dict", filter_dict);
+        //console.log("filter_dict", filter_dict);
                 if (!hide_row && !isEmpty(filter_dict)){
                     //Object.keys(filter_dict).forEach(function(key) {
                     for (const [key, value] of Object.entries(filter_dict)) {
@@ -1118,8 +1117,8 @@ console.log( "show_row", show_row);
                         // otherwise filter_dict is a dict of strings
                         const filter_text = (Array.isArray(value)) ? value[1] : value;
 
-        console.log("key", key);
-        console.log("filter_text", filter_text);
+        //console.log("key", key);
+        //console.log("filter_text", filter_text);
                         const filter_blank = (filter_text === "#")
                         const filter_non_blank = (filter_text === "@")
                         let tbl_cell = tblRow.cells[key];
@@ -1130,7 +1129,7 @@ console.log( "show_row", show_row);
                                 if(filter_text){
                         // get value from el.value, innerText or data-value
                                     const el_tagName = el.tagName.toLowerCase()
-        console.log("el_tagName", el_tagName);
+        //console.log("el_tagName", el_tagName);
                                     let el_value = null;
                                     if (el_tagName === "select"){
                                         el_value = el.options[el.selectedIndex].text;
@@ -1142,7 +1141,7 @@ console.log( "show_row", show_row);
                                         el_value = el.innerText;
                                     }
                                     if (!el_value){el_value = get_attr_from_el(el, "data-value")}
-        console.log("el_value",  el_value);
+        //console.log("el_value",  el_value);
 
                                     // PR2020-06-13 debug: don't use: "hide_row = (!el_value)", once hide_row = true it must stay like that
                                     if (filter_blank){
@@ -1153,7 +1152,7 @@ console.log( "show_row", show_row);
                                         hide_row = true;
                                     } else {
                                         const el_value_lc = el_value.toLowerCase() ;
-        console.log("el_value_lc",  el_value_lc);
+        //console.log("el_value_lc",  el_value_lc);
                                         // hide row if filter_text not found
                                         if (!el_value_lc.includes(filter_text)) {hide_row = true};
                                     }
@@ -1162,7 +1161,7 @@ console.log( "show_row", show_row);
                         }  //  if (!!tbl_cell){
                     };  // Object.keys(filter_dict).forEach(function(key) {
                 }  // if (!hide_row)
-        console.log( "hide_row after filter_dict: ", hide_row);
+        //console.log( "hide_row after filter_dict: ", hide_row);
             } //  if(!is_addnew_row){
         }  // if (!!tblRow)
         return !hide_row
@@ -1173,8 +1172,8 @@ console.log( "show_row", show_row);
 // ++++++++++++  FILTER PAYROLL TABLES +++++++++++++++++++++++++++++++++++++++
 //========= t_SetExtendedFilterDict  ======================== PR2020-07-12 PR2020-08-29
     function t_SetExtendedFilterDict(el, col_index, filter_dict, event_key) {
-       console.log( "===== t_SetExtendedFilterDict  ========= ");
-       console.log( "col_index ", col_index, "event_key ", event_key);
+       //console.log( "===== t_SetExtendedFilterDict  ========= ");
+       //console.log( "col_index ", col_index, "event_key ", event_key);
         // filter_dict = [ ["text", "m", ""], ["number", 180, "gt"] ]
 
         //  filter_dict[col_index] = [filter_tag, filter_value, mode]
@@ -1183,7 +1182,7 @@ console.log( "show_row", show_row);
 // --- get filter tblRow and tblBody
         let tblRow = get_tablerow_selected(el);
         const filter_tag = get_attr_from_el(el, "data-filtertag")
-        console.log( "filter_tag ", filter_tag);
+        //console.log( "filter_tag ", filter_tag);
 
         const col_count = tblRow.cells.length
         //console.log( "col_count ", col_count);
@@ -1270,9 +1269,9 @@ console.log( "show_row", show_row);
                         const value_number = Number(filter_str.replace(/\,/g,"."));
                         filter_value = (value_number) ? value_number : null;
 
-                        console.log( "filter_tag ", filter_tag);
-                        console.log( "filter_str ", filter_str);
-                        console.log( "value_number ", value_number);
+                        //console.log( "filter_tag ", filter_tag);
+                        //console.log( "filter_str ", filter_str);
+                        //console.log( "value_number ", value_number);
 
                     }
                 }; // other
@@ -1288,7 +1287,7 @@ console.log( "show_row", show_row);
 //========= t_ShowTableRowExtended  ==================================== PR2020-07-12 PR2020-09-12 PR2021-03-23
     function t_ShowTableRowExtended(filter_dict, tblRow) {
         // only called by FillPayrollRows,
-        console.log( "===== t_ShowTableRowExtended  ========= ");
+        //console.log( "===== t_ShowTableRowExtended  ========= ");
         //console.log( "filter_dict", filter_dict);
         // filter_dict = {2: ["text", "r", ""], 4: ["text", "y", ""] }
         //  filter_row = [empty × 2, "acu - rif", empty, "agata mm"]
@@ -1316,14 +1315,14 @@ console.log( "show_row", show_row);
                     const filter_value = filter_arr[1];
                     const filter_mode = filter_arr[2];
 
-       console.log( "filter_arr", filter_arr);;
-       console.log( "filter_value", filter_value, typeof filter_value);
+       //console.log( "filter_arr", filter_arr);;
+       //console.log( "filter_value", filter_value, typeof filter_value);
                     const cell = tblRow.cells[col_index];
                     if(cell){
                         const el = cell.children[0];
                         if (el){
                             const cell_value = get_attr_from_el(el, "data-filter")
-       console.log( "cell_value", cell_value, typeof cell_value);
+       //console.log( "cell_value", cell_value, typeof cell_value);
                             if (filter_tag === "triple"){
                                 // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
                                 if (filter_value === "2"){
@@ -1353,7 +1352,7 @@ console.log( "show_row", show_row);
                                 } else {
                                     const filter_number = Number(filter_value);
                                     const cell_number = (Number(cell_value)) ? Number(cell_value) : 0;
-       console.log( "cell_number", cell_number, typeof cell_number);
+       //console.log( "cell_number", cell_number, typeof cell_number);
                                     if ( filter_mode === "lte") {
                                         if (cell_number > filter_number) {hide_row = true};
                                     } else if ( filter_mode === "lt") {
@@ -1378,7 +1377,7 @@ console.log( "show_row", show_row);
                                     }
                                 }
                             }
-       console.log( "hide_row", hide_row);
+       //console.log( "hide_row", hide_row);
                         }
                     };  // if(cell)
                 };  //  if(filter_arr)

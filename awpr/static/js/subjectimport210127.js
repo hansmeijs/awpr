@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  download settings and datalists
     const datalist_request = {
-        setting: {page_employeeupload: {mode: "get"}},
+        setting: {page: "page_employeeupload"},
         schoolsetting: {coldefs: "subject"},
         locale: {page: ["upload"]}
     };
