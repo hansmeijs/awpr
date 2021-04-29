@@ -106,16 +106,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.addEventListener("click", function() {HandleBtnSelect(data_btn)}, false )
             };
         }
+
 // ---  HEADER BAR ------------------------------------
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
-            el_hdrbar_examyear.addEventListener("click", function() {
-                t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false )
-        const el_hdrbar_school = document.getElementById("id_hdrbar_school")
-            el_hdrbar_school.addEventListener("click", function() {
-                t_MSESD_Open(loc, "school", school_map, setting_dict, permit_dict, MSESD_Response)}, false )
-        const el_hdrbar_department = document.getElementById("id_hdrbar_department")
-            el_hdrbar_department.addEventListener("click", function() {
-                t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false )
+        const el_hdrbar_school = document.getElementById("id_hdrbar_school");
+        const el_hdrbar_department = document.getElementById("id_hdrbar_department");
+
+        if (el_hdrbar_examyear){
+            el_hdrbar_examyear.addEventListener("click",
+                function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false );
+        }
+        if (el_hdrbar_department){
+            el_hdrbar_department.addEventListener("click",
+                function() {t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false );
+        }
+        if (el_hdrbar_school){
+            el_hdrbar_school.addEventListener("click",
+                function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+        }
+
+// ---  MSESD MOD SELECT EXAMYEAR SCHOOL DEPARTMENT ------------------------------
+        const el_MSESD_input = document.getElementById("id_MSESD_input");
+        //const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tbody_select");
+        //const el_MSESD_btn_save = document.getElementById("id_MSSSS_btn_save");
+        if (el_MSESD_input){
+            el_MSESD_input.addEventListener("keyup", function(event){
+                setTimeout(function() {t_MSESD_InputName(el_MSESD_input)}, 50)});
+        }
+       // if (el_MSESD_btn_save){
+       //     el_MSESD_btn_save.addEventListener("click", function() {t_MSSSS_Save(el_MSESD_btn_save, MSSSS_Response)}, false );
+       // }
+
+
 
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");

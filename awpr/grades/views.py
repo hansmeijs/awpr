@@ -398,7 +398,7 @@ def create_published_instance(sel_school, sel_department, sel_examtype, sel_exam
         examperiod=sel_examperiod,
         name=file_name,
         datepublished=today_date)
-
+    # Note: filefield 'file' gets value on creating Ex form
     if not is_test:
         published_instance.filename = file_name + '.pdf'
         published_instance.save(request=request)
@@ -728,7 +728,8 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
                             sel_depbase_pk=sel_department.base_id,
                             sel_examperiod=grade.examperiod,
                             append_dict=append_dict,
-                            grade_pk=grade.pk)
+                            grade_pk=grade.pk,
+                            add_auth_list=False)
                         if rows:
                             row = rows[0]
                             if row:
@@ -809,10 +810,13 @@ def update_grade(instance, upload_dict, err_dict, logging_on, request):
 
 
 def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, append_dict=None,
-                       sel_subject_pk=None, grade_pk=None):
+                       sel_subject_pk=None, grade_pk=None, auth_dict=None):
     # --- create rows of all students of this examyear / school PR2020-12-14
     # note: don't forget to filter deleted = false!! PR2021-03-15
     #logger.debug(' ----- create_grade_rows -----')
+
+    #  add_auth_list is used in Ex form to add name of auth
+    add_auth_list = True if auth_dict is not None else False
 
     sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
     #logger.debug('sql_keys: ' + str(sql_keys))
@@ -884,11 +888,28 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
         cursor.execute(sql, sql_keys)
         grade_rows = af.dictfetchall(cursor)
 
-# - add full name to rows
+# - add full name to rows, and array of id's of auth
     if grade_rows:
+        # create auth_dict, with lists of each auth
+        auth_fields = ('se_auth1by_id', 'se_auth2by_id', 'se_auth3by_id',
+                          'pe_auth1by_id', 'pe_auth2by_id', 'pe_auth3by_id',
+                          'ce_auth1by_id', 'ce_auth2by_id', 'ce_auth3by_id')
+
         for row in grade_rows:
             first_name = row.get('firstname')
             last_name = row.get('lastname')
+            # if auth_id: add to list
+            if add_auth_list:
+                for field in auth_fields:
+                    auth_id = row.get(field)
+                    if auth_id:
+                        if field not in auth_dict:
+                            auth_dict[field] = [auth_id]
+                        else:
+                            auth_arr = auth_dict.get(field)
+                            if auth_id not in auth_arr:
+                                auth_arr.append(auth_id)
+
             prefix = row.get('prefix')
             full_name = stud_view.lastname_firstname_initials(last_name, first_name, prefix)
             row['fullname'] = full_name if full_name else None
@@ -900,7 +921,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
             if row:
                 for key, value in append_dict.items():
                     row[key] = value
-
+        logger.debug('auth_dict: ' + str(auth_dict))
     return grade_rows
 # --- end of create_grade_rows
 
@@ -947,6 +968,11 @@ def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk):
     ).order_by('datepublished')
     published_rows = []
     for row in rows:
+        file_name = None
+        file_url = None
+        if row.file:
+            file_name = str(row.file)
+            file_url = row.file.url
         published_rows.append(
             {
             'id': row.pk,
@@ -961,8 +987,8 @@ def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk):
             'school_name': row.school.name,
             'db_code': row.department.base.code,
             'ey_code': row.school.examyear.code,
-            'file_name': str(row.file),
-            'url': row.file.url
+            'file_name': file_name,
+            'url': file_url
             }
         )
 
@@ -979,17 +1005,18 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
 
 # maybe this one gives an answer how to save and retrieve pdf from spaces PR2021-03-28
 # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
-
-    #try:
-    if True:
+    file_path = None
+    try:
         # create PDF
         # PR2021-03-17 was:
         #if s.AWS_LOCATION:
             #file_dir = ''.join((s.AWS_LOCATION, '/published/'))
+        # this one gave path:awpmedia/awpmedia/media/private/media/private/published
         if s.AWS_PRIVATE_MEDIA_LOCATION:
             file_dir = ''.join((s.AWS_PRIVATE_MEDIA_LOCATION, '/published/'))
         else:
             file_dir = s.STATICFILES_MEDIA_DIR
+
         file_path = ''.join((file_dir, published_instance.filename))
         file_name = published_instance.name
 
@@ -1008,143 +1035,41 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
         canvas.save()
 
         logger.debug('canvas: ' + str(canvas))
-    #except Exception as e:
-   #     logger.error(getattr(e, 'message', str(e)))
+    except Exception as e:
+       logger.error(getattr(e, 'message', str(e)))
 
-        # PR2021-04-28 from: https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
-        # PR2021-04-28 debug decoding error. See https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
-        # error: Unicode-objects must be encoded before hashing
-        #local_file = open(file_path, encoding="Latin-1", errors="ignore")
-
-        # finally, this one works:   local_file = open(file_path, 'rb')
-        # thanks to https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
-
-        local_file = open(file_path, 'rb')
-        pdf_file = File(local_file)
-
-        #io_file = io.open(filename, encoding="utf-8")
-        #io_file = codecs.open(filepath, "r", encoding='utf-8', errors='ignore')
-        #logger.debug('io_file: ' + str(io_file) + ' ' + str(type(io_file)))
-        #f_file = File(io_file)
-
-        logger.debug('pdf_file: ' + str(pdf_file) + ' ' + str(type(pdf_file)))
-
-        published_instance.file.save(file_path, pdf_file)
-
-        # save form
-        published_instance.save(request=request)
-
-    """
-    default fonts in reportlab:
-        Courier Courier-Bold Courier-BoldOblique Courier-Oblique 
-        Helvetica Helvetica-Bold Helvetica-BoldOblique Helvetica-Oblique 
-        Symbol 
-        Times-Bold Times-BoldItalic Times-Italic Times-Roman 
-        ZapfDingbats 
-    """
-"""
-Django: how save bytes object to models.FileField?
-You can try: 
-    from django.core.files.base import ContentFile 
-    file_data = ContentFile(base64.b64decode(fileData)) 
-    object.file.save(file_name,  
-    
-    from django.core.files.base import ContentFile 
-    file_data = ContentFile(base64.b64decode(fileData)) 
-    object.file.save(file_name, file_data) 
-    
-    You can use your file_name with an.m3u extension, and you shall have it. 
-"""
-
-#/////////////////////////////////////////////////////////////////
-"""
-def create_grade_rowsXXX(setting_dict, append_dict, student_pk):
-    # --- create rows of all students of this examyear / school PR2020-10-27
-    # logger.debug(' =============== create_grade_rows ============= ')
-
-    sel_examyear_pk = setting_dict.get('sel_examyear_pk')
-    sel_schoolbase_pk = setting_dict.get('sel_schoolbase_pk')
-    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk}
-
-    sql_list = ["SELECT st.id, st.base_id, st.school_id AS s_id,",
-        "st.department_id AS dep_id, st.level_id AS lvl_id, st.sector_id AS sct_id, st.scheme_id,",
-        "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
-        "CONCAT('student_', st.id::TEXT) AS mapid,",
-        "st.lastname, st.firstname, st.prefix, st.gender,",
-        "st.idnumber, st.birthdate, st.birthcountry, st.birthcity,",
-        "st.classname, st.examnumber, st.regnumber, st.diplomanumber, st.gradelistnumber,",
-        "st.iseveningstudent, st.locked, st.has_reex, st.bis_exam, st.withdrawn,",
-        "st.modifiedby_id, st.modifiedat,",
-        "SUBSTRING(au.username, 7) AS modby_username",
-        "FROM students_student AS st",
-        "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
-        "LEFT JOIN schools_department AS dep ON (dep.id = st.department_id)",
-        "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
-        "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
-        "LEFT JOIN accounts_user AS au ON (au.id = st.modifiedby_id)",
-        "WHERE sch.base_id = %(sb_id)s::INT AND sch.examyear_id = %(ey_id)s::INT "]
-
-    if student_pk:
-        # when student_pk has value: skip other filters
-        sql_list.append('AND st.id = %(st_id)s::INT')
-        sql_keys['st_id'] = student_pk
-    else:
-        sql_list.append('ORDER BY LOWER(st.lastname), LOWER(st.firstname)')
-    sql = ' '.join(sql_list)
-
-    newcursor = connection.cursor()
-    newcursor.execute(sql, sql_keys)
-    student_rows = af.dictfetchall(newcursor)
-
-# - add lastname_firstname_initials to rows
-    if student_rows:
-        for row in student_rows:
-            first_name = row.get('firstname')
-            last_name = row.get('lastname')
-            prefix = row.get('prefix')
-            full_name = stud_view.lastname_firstname_initials(last_name, first_name, prefix)
-            row['fullname'] = full_name if full_name else None
-
-    # - add messages to student_row
-    if student_pk and student_rows:
-        # when student_pk has value there is only 1 row
-        row = student_rows[0]
-        if row:
-            for key, value in append_dict.items():
-                row[key] = value
-
-    return student_rows
-
-# --- end of create_grade_rows
-"""
-
-"""
-PR2021-03-26 change owner of file not necessary to retrieve files from spaces
-tried: 
-
-    cur_platform = platform.system()
-    logger.debug('cur_platform: ' + str(cur_platform))
-    if cur_platform != 'Windows':
+    if file_path:
         try:
-            # change owner to uaw, see if this works
-            # PR2021-02-07 fro m https://www.tutorialspoint.com/How-to-change-the-owner-of-a-file-using-Python
-            # https://stackoverflow.com/questions/5994840/how-to-change-the-user-and-group-permissions-for-a-directory-by-name
-            # module pwd only available on Unix
-            import pwd
-            import grp
-            import os
+            # PR2021-04-28 from: https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
+            # PR2021-04-28 debug decoding error. See https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
+            # error: Unicode-objects must be encoded before hashing
+            #io_file = codecs.open(filepath, "r", encoding='utf-8', errors='ignore')
+            #local_file = open(file_path, encoding="Latin-1", errors="ignore")
 
+            # finally, this one works:   local_file = open(file_path, 'rb')
+            # thanks to https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
 
-            uid = pwd.getpwnam('uaw').pw_uid
-            logger.debug('uid: ' + str(uid))
+            local_file = open(file_path, 'rb')
+            pdf_file = File(local_file)
 
-            gid = grp.getgrnam('uaw').gr_gid
-            logger.debug('gid: ' + str(gid))
+            published_instance.file.save(file_path, pdf_file)
 
-            logger.debug('filepath: ' + str(filepath))
-            os.chown(filepath, uid, gid)
+            logger.debug('file_path: ' + str(file_path))
+            # file_path: media/private/published/Ex2A CUR13 ATC Vsbo SE-tv1 cav 2021-04-29 10u11.pdf
+            # stored in dir:
+            logger.debug('published_instance.file: ' + str(published_instance.file))
+
+# - save form
+            published_instance.save(request=request)
 
         except Exception as e:
-            logger.error(getattr(e, 'message', str(e)))
-"""
+           logger.error(getattr(e, 'message', str(e)))
+        """
+        default fonts in reportlab:
+            Courier Courier-Bold Courier-BoldOblique Courier-Oblique 
+            Helvetica Helvetica-Bold Helvetica-BoldOblique Helvetica-Oblique 
+            Symbol 
+            Times-Bold Times-BoldItalic Times-Italic Times-Roman 
+            ZapfDingbats 
+        """
 

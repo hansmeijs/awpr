@@ -512,8 +512,8 @@ class Published(AwpBaseModel): # PR2020-12-02
     examperiod = PositiveSmallIntegerField(db_index=True) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
 
     name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
-
     filename = CharField(max_length=255, null=True)
+
     file = FileField(storage=PrivateMediaStorage(), null=True)
 
     datepublished = DateField()

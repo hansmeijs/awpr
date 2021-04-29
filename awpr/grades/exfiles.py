@@ -250,6 +250,7 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
                     sel_depbase_pk=sel_department.base_id,
                     sel_examperiod=sel_examperiod,
                     sel_subject_pk=sel_subject_pk,
+                    add_auth_list=True
                     )
 
                 # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3

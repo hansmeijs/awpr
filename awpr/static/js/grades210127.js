@@ -756,7 +756,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  CreateTblHeader  === PR2020-12-03 PR2020-12-18 PR2021-01-022
     function CreateTblHeader(field_setting) {
-        console.log("===  CreateTblHeader ===== ");
+        //console.log("===  CreateTblHeader ===== ");
 
         const column_count = field_setting.field_names.length;
         //console.log("field_setting", field_setting);
@@ -766,9 +766,6 @@ document.addEventListener("DOMContentLoaded", function() {
     // --- loop through columns
         for (let j = 0; j < column_count; j++) {
             const field_name = field_setting.field_names[j];
-
-        console.log("field_name", field_name);
-
             const key = field_setting.field_caption[j];
             /*
              "segrade",
@@ -862,7 +859,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  CreateTblRow  ================ PR2020-06-09
     function CreateTblRow(tblName, field_setting, map_id, map_dict, row_index) {
-        console.log("=========  CreateTblRow =========");
+        //console.log("=========  CreateTblRow =========");
         //console.log("map_dict", map_dict);
 
         const field_names = field_setting.field_names;
@@ -896,7 +893,6 @@ document.addEventListener("DOMContentLoaded", function() {
             const class_width = "tw_" + field_width[j];
             const class_align = "ta_" + field_align[j];
 
-        console.log("field_name", field_name, "field_tag", field_tag);
 // skip columns if not in columns_shown
             if (columns_shown[field_name]){
 
@@ -1003,13 +999,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  UpdateField  ================ PR2020-12-18
     function UpdateField(el, map_dict) {
-        console.log("=========  UpdateField =========");
+        //console.log("=========  UpdateField =========");
         //console.log("map_dict", map_dict);
         if(el){
             const field_name = get_attr_from_el(el, "data-field");
             const fld_value = map_dict[field_name];
-        console.log("field_name", field_name);
-        console.log("fld_value", fld_value);
             if (el.nodeName === "INPUT"){
                  el.value = (fld_value) ? fld_value : null;
             } else if (field_name ==="se_status"){
