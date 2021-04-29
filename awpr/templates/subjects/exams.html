@@ -75,11 +75,8 @@
 {% block content %}
     <div id="id_content">
         {% if no_access %}
-            <div class="mx-4 mt-5 pt-5">
-                <div class="alert alert-danger">{{ no_access_message }}</div>
-            </div>
+            {% include 'includes/message_noaccess.html' %}
         {% else %}
-
             {% include 'subjects/modexam.html' %}
             {% include 'students/modapprovegrade.html' %}
             {% include 'schools/modselectexamyear.html' %}

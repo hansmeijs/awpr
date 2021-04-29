@@ -72,27 +72,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
 
-        if (permit.view_page){
+        if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click", function() {
                 t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false );
+        }
+        if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click", function() {
                 t_MSESD_Open(loc, "school", school_map, setting_dict, permit_dict, MSESD_Response)}, false );
+        }
+        if (el_hdrbar_department){
             el_hdrbar_department.addEventListener("click", function() {
                 t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false );
         }
 
 // ---  MOD SELECT EXAM YEAR ------------------------------------
         const el_SBR_school = document.getElementById("id_SBR_school")
+        const el_SBR_department = document.getElementById("id_SBR_department")
+        if (el_SBR_school){
             el_SBR_school.addEventListener("click", function() {ModSelSchOrDep_Open()}, false )
             add_hover(el_SBR_school);
-        const el_SBR_department = document.getElementById("id_SBR_department")
+        }
+        if (el_SBR_department){
             el_SBR_department.addEventListener("click", function() {ModSelect_Open("department")}, false )
-
+        }
 // ---  MOD SELECT SCHOOL ------------------------------------
         let el_ModSelSch_tblBody_select = document.getElementById("id_MSESD_tblBody_select");
 
 // ---  MODAL SCHOOL
-        const el_MSCH_div_form_controls = document.getElementById("id_div_form_controls")
         const el_MSCH_code = document.getElementById("id_MSCH_code")
         const el_MSCH_abbrev = document.getElementById("id_MSCH_abbrev")
         const el_MSCH_article = document.getElementById("id_MSCH_article")
@@ -100,7 +106,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MSCH_tbody_select = document.getElementById("id_MSCH_tbody_select")
         const el_MSCH_btn_delete = document.getElementById("id_MSCH_btn_delete");
         const el_MSCH_btn_save = document.getElementById("id_MSCH_btn_save");
-        if(permit.view_page){
+        const el_MSCH_div_form_controls = document.getElementById("id_div_form_controls")
+        if(el_MSCH_div_form_controls){
             let form_elements = el_MSCH_div_form_controls.querySelectorAll(".awp_input_text")
             for (let i = 0, el, len = form_elements.length; i < len; i++) {
                 el = form_elements[i];
@@ -120,7 +127,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let el_confirm_btn_cancel = document.getElementById("id_confirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_confirm_btn_save");
-        if(permit.view_page){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
+        if(permit.el_confirm_btn_save){
+            el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) ;
+        };
 
 // ---  set selected menu button active
 // TODO
@@ -225,8 +234,8 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Add_school, function() {MSCH_Open()});
-            AddSubmenuButton(el_submenu, loc.Delete_school, function() {ModConfirmOpen("delete")}, ["ml-2"]);
-            AddSubmenuButton(el_submenu, loc.Upload_awpdata, function() {UploadAwpData()}, ["ml-2"]);
+            AddSubmenuButton(el_submenu, loc.Delete_school, function() {ModConfirmOpen("delete")});
+            AddSubmenuButton(el_submenu, loc.Upload_awpdata, function() {UploadAwpData()});
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
 

@@ -268,7 +268,7 @@ def get_mode_str(self):  # PR2018-11-28
     return mode_str
 
 
-def get_sel_examyear_instance(request, request_item_setting=None):  # PR2020-12-25
+def get_sel_examyear_instance(request, request_setting=None):  # PR2020-12-25
     #logger.debug('  -----  get_sel_examyear_instance  -----')
     sel_examyear_instance = None
     sel_examyear_save = False
@@ -278,9 +278,9 @@ def get_sel_examyear_instance(request, request_item_setting=None):  # PR2020-12-
         req_user= request.user
         requsr_country = request.user.country
 
-# - check if there is a new examyear_pk in request_item_setting, check if request_examyear exists
-        if request_item_setting is not None:
-            selected_pk_dict = request_item_setting.get(c.KEY_SELECTED_PK)
+# - check if there is a new examyear_pk in request_setting, check if request_examyear exists
+        if request_setting is not None:
+            selected_pk_dict = request_setting.get(c.KEY_SELECTED_PK)
             #logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
             if selected_pk_dict:
                 r_eyr_pk = selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK)
@@ -309,9 +309,10 @@ def get_sel_examyear_instance(request, request_item_setting=None):  # PR2020-12-
 # --- end of get_sel_examyear_instance
 
 
-def get_sel_schoolbase_instance(request, request_item_setting=None):  # PR2020-12-25 PR2021-03-25
+def get_sel_schoolbase_instance(request, request_setting=None):  # PR2020-12-25 PR2021-04-23
     #logger.debug('  -----  get_sel_schoolbase_instance  -----')
-    #logger.debug('request_item_setting: ' + str(request_item_setting))
+
+    # request_setting: {'page': 'page_user', 'sel_schoolbase_pk': 13}
 
     # - get schoolbase from settings / request when role is comm, insp, admin or system, from req_user otherwise
     # req_user.schoolbase cannot be changed
@@ -324,18 +325,23 @@ def get_sel_schoolbase_instance(request, request_item_setting=None):  # PR2020-1
         requsr_country = req_user.country
 
         #<PERMIT>
+        # get req_user.schoolbase if not allowed to select other schools
         may_select_schoolbase = req_user.is_role_comm or req_user.is_role_insp or req_user.is_role_admin or req_user.is_role_system
-        if may_select_schoolbase:
 
-    # - check if there is a new schoolbase_pk in request_item_setting, check if request_schoolbase exists
-            if request_item_setting is not None:
-                r_sb_pk = get_dict_value(request_item_setting, (c.KEY_SELECTED_PK, c.KEY_SEL_SCHOOLBASE_PK))
-                sel_schoolbase_instance = sch_mod.Schoolbase.objects.get_or_none(pk=r_sb_pk, country=requsr_country)
-                if sel_schoolbase_instance is not None:
-                    save_sel_schoolbase = True
+        if not may_select_schoolbase:
+            sel_schoolbase_instance = req_user.schoolbase
+        else:
 
+    # - check if there is a new schoolbase_pk in request_setting, check if request_schoolbase exists
+            if request_setting is not None:
+                r_sb_pk = request_setting.get(c.KEY_SEL_SCHOOLBASE_PK)
+                if r_sb_pk:
+                    sel_schoolbase_instance = sch_mod.Schoolbase.objects.get_or_none(pk=r_sb_pk, country=requsr_country)
+                    if sel_schoolbase_instance is not None:
+                        save_sel_schoolbase = True
+
+    # - if not: get saved_schoolbase_pk from Usersetting, check if saved_schoolbase exists
             if sel_schoolbase_instance is None:
-    # - get saved_schoolbase_pk from Usersetting, check if saved_schoolbase exists
                 selected_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
                 s_sb_pk = selected_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
                 sel_schoolbase_instance = sch_mod.Schoolbase.objects.get_or_none(pk=s_sb_pk, country=requsr_country)
@@ -345,14 +351,12 @@ def get_sel_schoolbase_instance(request, request_item_setting=None):  # PR2020-1
                 sel_schoolbase_instance = req_user.schoolbase
                 if sel_schoolbase_instance is not None:
                     save_sel_schoolbase = True
-        else:
-            sel_schoolbase_instance = req_user.schoolbase
 
     return sel_schoolbase_instance, save_sel_schoolbase
 # --- end of get_sel_schoolbase_instance
 
 
-def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  # PR2020-12-26
+def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR2020-12-26
     #logger.debug('  -----  get_sel_depbase_instance  -----')
     #logger.debug('sel_school: ' + str(sel_school))
     sel_depbase_instance = None
@@ -376,9 +380,9 @@ def get_sel_depbase_instance(sel_school, request, request_item_setting=None):  #
                 if not skip:
                     allowed_depbases.append(depbase_pk)
 
-# - check if there is a new depbase_pk in request_item_setting,
-        if request_item_setting is not None:
-            r_depbase_pk = get_dict_value(request_item_setting, (c.KEY_SELECTED_PK, c.KEY_SEL_DEPBASE_PK))
+# - check if there is a new depbase_pk in request_setting,
+        if request_setting is not None:
+            r_depbase_pk = get_dict_value(request_setting, (c.KEY_SELECTED_PK, c.KEY_SEL_DEPBASE_PK))
             # check if it is in allowed_depbases,
             if r_depbase_pk in allowed_depbases:
                 # check if request_depbase exists

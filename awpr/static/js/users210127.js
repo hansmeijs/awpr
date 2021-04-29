@@ -7,8 +7,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  get permits
     // permit dict gets value after downloading permit_list PR2021-03-27
     //  if user has no permit to view this page ( {% if no_access %} ): el_loader does not exist PR2020-10-02
-    const permit = {view_page: (!!el_loader)}
-    let usergroups = [];
+
+        // Note: may_view_page is the only permit that gets its value on DOMContentLoaded,
+        // all other permits get their value in function get_permits, after downloading permit_list
+    const may_view_page = (!!el_loader)
 
     const cls_hide = "display_hide";
     const cls_hover = "tr_hover";
@@ -50,6 +52,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const url_group_permit_upload = get_attr_from_el(el_data, "data-group_permit_upload_url");
     const url_download_permits = get_attr_from_el(el_data, "data-user_download_permits_url");
 
+    // importdata_upload_url is stored in id_MIMP_data of modimport.html
+    let columns_hidden = [];
 
 // --- get field_settings
     const field_settings = {
@@ -88,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     "div", "div", "div", "div", "div"],
                     filter_tags: ["select", "text", "text", "text", "number", "triple", "triple",
                                     "triple", "triple", "triple", "triple", "triple"],
-                    field_width:  ["020", "090", "090","150", "075", "075", "075",
+                    field_width:  ["020", "090", "120","150", "075", "075", "075",
                                     "090", "090", "090", "090", "090"],
                     field_align: ["c", "l", "l", "l", "c", "c", "c", "c", "c", "c", "c", "c"]}
         };
@@ -104,12 +108,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- BUTTON CONTAINER ------------------------------------
         const el_btn_container = document.getElementById("id_btn_container");
-
-        // Note: permit.view_page is the only permit that gets its value on DOMContentLoaded,
-        // all other permits get their value in function get_permits, after downloading permit_list
-
-        if (permit.view_page){
-            const btns = document.getElementById("id_btn_container").children;
+        if (el_btn_container){
+            const btns = el_btn_container.children;
             for (let i = 0, btn; btn = btns[i]; i++) {
                 const data_btn = get_attr_from_el(btn,"data-btn")
                 btn.addEventListener("click", function() {HandleBtnSelect(data_btn)}, false )
@@ -120,13 +120,31 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
-        if (permit.view_page){
+        //const elMSESD_input = document.getElementById("id_MSESD_input");
+
+        if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click",
                 function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false );
-            el_hdrbar_school.addEventListener("click",
-                function() {t_MSESD_Open(loc, "school", school_map, setting_dict, permit_dict, MSESD_Response)}, false );
+        }
+        if (el_hdrbar_department){
             el_hdrbar_department.addEventListener("click",
                 function() {t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false );
+        }
+        if (el_hdrbar_school){
+            el_hdrbar_school.addEventListener("click",
+                function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+        }
+
+// ---  MSSS MOD SELECT SCHOOL SUBJECT STUDENT ------------------------------
+        const el_MSSSS_input = document.getElementById("id_MSSSS_input");
+        const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tbody_select");
+        const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save");
+        if (el_MSSSS_input){
+            el_MSSSS_input.addEventListener("keyup", function(event){
+                setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});
+        }
+        if (el_MSSSS_input){
+            el_MSSSS_input.addEventListener("click", function() {t_MSSSS_Save(el_MSSSS_input, MSSSS_Response)}, false );
         }
 
 // ---  MODAL USER
@@ -140,20 +158,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MUA_footer01 = document.getElementById("id_MUA_footer01");
         const el_MUA_footer02 = document.getElementById("id_MUA_footer02");
         const el_MUA_loader = document.getElementById("id_MUA_loader");
-        if (permit.view_page){
+        if (el_MUA_schoolname){
             el_MUA_schoolname.addEventListener("keyup", function() {MUA_InputSchoolname(el_MUA_schoolname, event.key)}, false);
+        }
+        if (el_MUA_username){
             el_MUA_username.addEventListener("keyup", function() {MUA_InputKeyup(el_MUA_username, event.key)}, false);
+        }
+        if (el_MUA_last_name){
             el_MUA_last_name.addEventListener("keyup", function() {MUA_InputKeyup(el_MUA_last_name, event.key)}, false);
+        }
+        if (el_MUA_email){
             el_MUA_email.addEventListener("keyup", function() {MUA_InputKeyup(el_MUA_email, event.key)}, false);
+        }
+        if (el_MUA_btn_delete){
             el_MUA_btn_delete.addEventListener("click", function() {ModConfirmOpen("delete")}, false);
+        }
+        if (el_MUA_btn_submit){
             el_MUA_btn_submit.addEventListener("click", function() {MUA_Save("save")}, false);
         };
 
 // ---  MODAL GROUP PERMISSION
         const el_MGP_btn_delete = document.getElementById("id_MGP_btn_delete");
         const el_MGP_btn_submit = document.getElementById("id_MGP_btn_submit");
-        if (permit.view_page){
+        if (el_MGP_btn_delete){
             el_MGP_btn_delete.addEventListener("click", function() {MGP_Save("delete")}, false);
+        }
+        if (el_MGP_btn_submit){
             el_MGP_btn_submit.addEventListener("click", function() {MGP_Save("save")}, false);
         };
 
@@ -168,19 +198,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     const el_filedialog = document.getElementById("id_MIMP_filedialog");
-        el_filedialog.addEventListener("change", function() {HandleFiledialog(el_filedialog, loc)}, false )
+    if (el_filedialog){el_filedialog.addEventListener("change", function() {HandleFiledialog(el_filedialog, loc)}, false)};
     const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
-        el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false);
+    if (el_worksheet_list){el_worksheet_list.addEventListener("change", function() {MIMP_SelectWorksheet()}, false)};
     const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
-        el_MIMP_checkboxhasheader.addEventListener("change", MIMP_CheckboxHasheaderChanged) //, false);
-   const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
-        el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false )
-   const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
-        el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false )
-   const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
-        el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test")}, false )
-   const el_MUP_btn_upload = document.getElementById("id_MIMP_btn_upload");
-        el_MUP_btn_upload.addEventListener("click", function() {MIMP_Save("save")}, false )
+    if (el_MIMP_checkboxhasheader){el_MIMP_checkboxhasheader.addEventListener("change", function() {MIMP_CheckboxHasheaderChanged()}, false)};
+    const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
+    if (el_MIMP_btn_prev){el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false)};
+    const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
+    if (el_MIMP_btn_next){el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false)};
+    const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
+    if (el_MIMP_btn_test){el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test")}, false)};
+    const el_MUP_btn_upload = document.getElementById("id_MIMP_btn_upload");
+    if (el_MUP_btn_upload){el_MUP_btn_upload.addEventListener("click", function() {MIMP_Save("save")}, false)};
 
 
 // ---  MOD CONFIRM ------------------------------------
@@ -192,11 +222,9 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_confirm_msg03 = document.getElementById("id_confirm_msg03")
         let el_confirm_btn_cancel = document.getElementById("id_confirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_confirm_btn_save");
-        if (permit.view_page){
-            el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()});
-        };
+        if (el_confirm_btn_save){el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}, false)};
 
-    if(permit.view_page){
+    if(may_view_page){
 // ---  set selected menu button active
         SetMenubuttonActive(document.getElementById("id_hdr_users"));
 
@@ -254,8 +282,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
                     // get_permits must come before CreateSubmenu and FiLLTbl
-                    get_permits(permit_dict.permit_list);
-                    usergroups = permit_dict.usergroup_list;
+                    get_permits_from_permit_list(permit_dict);
+
+                    set_columns_hidden();
+
                     must_update_headerbar = true;
                 }
 
@@ -289,17 +319,17 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_submenu = document.getElementById("id_submenu")
 
         // hardcode access of system admin
-        if (permit.crud_user || (setting_dict.requsr_role_system && usergroups.includes("admin"))){
+        if (permit_dict.crud_user || (permit_dict.requsr_role_system && usergroups.includes("admin"))){
             AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")});
-            AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("delete")}, ["ml-2"]);
+            AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("delete")});
         }
         // hardcode access of system admin
-        //if (permit.crud_permit || (setting_dict.requsr_role_system && usergroups.includes("admin"))){
-        if (permit.crud_permit || (setting_dict.requsr_role_system)){
-            AddSubmenuButton(el_submenu, loc.Add_permission, function() {MGP_Open("addnew")}, ["ml-2"]);
-            //AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MUP_Open("addnew")}, ["ml-2"]);
-            AddSubmenuButton(el_submenu, loc.Download_permissions, null, ["ml-2"], "id_submenu_download_perm", url_download_permits, false);  // true = download
-            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open("import_permits")}, ["ml-2"], "id_submenu_import");
+        //if (permit_dict.crud_permit || (permit_dict.requsr_role_system && usergroups.includes("admin"))){
+        if (permit_dict.crud_permit || (permit_dict.requsr_role_system)){
+            AddSubmenuButton(el_submenu, loc.Add_permission, function() {MGP_Open("addnew")});
+            //AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MUP_Open("addnew")});
+            AddSubmenuButton(el_submenu, loc.Download_permissions, null, "id_submenu_download_perm", url_download_permits, false);  // true = download
+            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open("import_permits")}, "id_submenu_import");
         };
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
@@ -328,6 +358,7 @@ document.addEventListener('DOMContentLoaded', function() {
         FillTblRows();
 
     }  // HandleBtnSelect
+
 //=========  HandleTableRowClicked  ================ PR2020-08-03
     function HandleTableRowClicked(tr_clicked) {
         //console.log("=== HandleTableRowClicked");
@@ -403,64 +434,69 @@ document.addEventListener('DOMContentLoaded', function() {
 // - insert th's into header row
         const column_count = field_setting.field_names.length;
         for (let j = 0; j < column_count; j++) {
-            const field_caption = loc[field_setting.field_caption[j]]
             const field_name = field_setting.field_names[j];
-            const field_tag = field_setting.field_tags[j];
-            const filter_tag = field_setting.filter_tags[j];
-            const class_width = "tw_" + field_setting.field_width[j] ;
-            const class_align = "ta_" + field_setting.field_align[j];
 
-        //console.log("field_setting.field_caption[j]", field_setting.field_caption[j]);
-        //console.log("field_caption", field_caption);
-// ++++++++++ create header row +++++++++++++++
-    // --- add th to tblRow.
-            let th_header = document.createElement("th");
-    // --- add div to th, margin not working with th
-                const el_header = document.createElement("div");
-                    el_header.innerText = (field_caption) ? field_caption : null;
+// skip columns if in columns_hidden
+            if (!columns_hidden.includes(field_name)){
+                const field_caption = loc[field_setting.field_caption[j]]
+                const field_tag = field_setting.field_tags[j];
+                const filter_tag = field_setting.filter_tags[j];
+                const class_width = "tw_" + field_setting.field_width[j] ;
+                const class_align = "ta_" + field_setting.field_align[j];
+
+            //console.log("field_setting.field_caption[j]", field_setting.field_caption[j]);
+            //console.log("field_caption", field_caption);
+    // ++++++++++ create header row +++++++++++++++
+        // --- add th to tblRow.
+                let th_header = document.createElement("th");
+        // --- add div to th, margin not working with th
+                    const el_header = document.createElement("div");
+                        el_header.innerText = (field_caption) ? field_caption : null;
+        // --- add width, text_align
+                        el_header.classList.add(class_width, class_align);
+                    th_header.appendChild(el_header)
+                tblRow_header.appendChild(th_header);
+
+    // ++++++++++ create filter row +++++++++++++++
+        // --- add th to tblRow_filter.
+                const th_filter = document.createElement("th");
+        // --- create element with tag from field_tags
+                const filter_field_tag = (["text", "number"].includes(filter_tag)) ? "input" : "div";
+                const el_filter = document.createElement(filter_field_tag);
+        // --- add data-field Attribute.
+                    el_filter.setAttribute("data-field", field_name);
+                    el_filter.setAttribute("data-filtertag", filter_tag);
+                    el_filter.setAttribute("data-colindex", j);
+        // --- add EventListener to th_filter, not el_filter
+                    if (["text", "number"].includes(filter_tag)) {
+                        el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
+                        add_hover(th_filter);
+                    } else if (filter_tag === "triple") {
+                        // add EventListener for icon to th_filter, not el_filter
+                        th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
+                        th_filter.classList.add("pointer_show");
+                        add_hover(th_filter);
+                    }
+        // --- add other attributes
+                    if (filter_tag === "text") {
+                        el_filter.setAttribute("type", "text")
+                        el_filter.classList.add("input_text");
+
+                        el_filter.setAttribute("autocomplete", "off");
+                        el_filter.setAttribute("ondragstart", "return false;");
+                        el_filter.setAttribute("ondrop", "return false;");
+
+                    } else if (["toggle", "triple", "activated"].includes(filter_tag)) {
+                        // default empty icon necessary to set pointer_show
+                        el_filter.classList.add("tickmark_0_0");
+                    }
+
     // --- add width, text_align
-                    el_header.classList.add(class_width, class_align);
-                th_header.appendChild(el_header)
-            tblRow_header.appendChild(th_header);
+                    el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
+                th_filter.appendChild(el_filter)
+                tblRow_filter.appendChild(th_filter);
 
-// ++++++++++ create filter row +++++++++++++++
-    // --- add th to tblRow_filter.
-            const th_filter = document.createElement("th");
-    // --- create element with tag from field_tags
-            const filter_field_tag = (["text", "number"].includes(filter_tag)) ? "input" : "div";
-            const el_filter = document.createElement(filter_field_tag);
-    // --- add data-field Attribute.
-                el_filter.setAttribute("data-field", field_name);
-                el_filter.setAttribute("data-filtertag", filter_tag);
-                el_filter.setAttribute("data-colindex", j);
-    // --- add EventListener to th_filter, not el_filter
-                if (["text", "number"].includes(filter_tag)) {
-                    el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
-                    add_hover(th_filter);
-                } else if (filter_tag === "triple") {
-                    // add EventListener for icon to th_filter, not el_filter
-                    th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
-                    th_filter.classList.add("pointer_show");
-                    add_hover(th_filter);
-                }
-    // --- add other attributes
-                if (filter_tag === "text") {
-                    el_filter.setAttribute("type", "text")
-                    el_filter.classList.add("input_text");
-
-                    el_filter.setAttribute("autocomplete", "off");
-                    el_filter.setAttribute("ondragstart", "return false;");
-                    el_filter.setAttribute("ondrop", "return false;");
-
-                } else if (["toggle", "triple", "activated"].includes(filter_tag)) {
-                    // default empty icon necessary to set pointer_show
-                    el_filter.classList.add("tickmark_0_0");
-                }
-
-// --- add width, text_align
-                el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
-            th_filter.appendChild(el_filter)
-            tblRow_filter.appendChild(th_filter);
+            }  // if (!columns_hidden.includes(field_name))
         }  // for (let j = 0; j < column_count; j++)
 
     };  //  CreateTblHeader
@@ -496,67 +532,73 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++  insert td's into tblRow
             for (let j = 0; j < column_count; j++) {
                 const field_name = field_names[j];
-                const field_tag = field_tags[j];
-                const class_width = "tw_" + field_width[j];
-                const class_align = "ta_" + field_align[j];
 
-        // --- insert td element,
-                let td = tblRow.insertCell(-1);
 
-        // --- create element with tag from field_tags
-                let el = document.createElement(field_tag);
+// skip columns if in columns_hidden
+                if (!columns_hidden.includes(field_name)){
+                    const field_tag = field_tags[j];
+                    const class_width = "tw_" + field_width[j];
+                    const class_align = "ta_" + field_align[j];
 
-        // --- add data-field attribute
-                    el.setAttribute("data-field", field_name);
+            // --- insert td element,
+                    let td = tblRow.insertCell(-1);
 
-        // --- add data-field Attribute when input element
-                    if (field_tag === "input") {
-                        el.setAttribute("type", "text")
-                        el.setAttribute("autocomplete", "off");
-                        el.setAttribute("ondragstart", "return false;");
-                        el.setAttribute("ondrop", "return false;");
-                // --- add class 'input_text' and text_align
-                    // class 'input_text' contains 'width: 100%', necessary to keep input field within td width
-                        el.classList.add("input_text");
-                    }
-                    if (field_name === "select") {
-                        // TODO add select multiple users option PR2020-08-18
-                    } else if (["sb_code", "username", "last_name", "email", "employee_code"].includes(field_name)){
-                        el.addEventListener("click", function() {MUA_Open("update", el)}, false)
-                        el.classList.add("pointer_show");
-                        add_hover(el);
-                    } else if (["role", "page"].includes(field_name)){
-                        el.addEventListener("click", function() {MGP_Open("update", el)}, false)
-                        el.classList.add("pointer_show");
-                        add_hover(el);
-                    } else if (["role", "page", "action", "sequence"].includes(field_name)){
-                        el.addEventListener("change", function(){HandleInputChange(el)});
+            // --- create element with tag from field_tags
+                    let el = document.createElement(field_tag);
 
-                    } else if (field_name.slice(0, 5) === "group") {
-                        // attach eventlisterener and hover to td, not to el. No need to add icon_class here
-                        td.addEventListener("click", function() {UploadToggle(el)}, false)
-                        add_hover(td);
-                    } else if ( field_name === "activated") {
-                        el.addEventListener("click", function() {ModConfirmOpen("resend_activation_email", el)}, false )
-                    } else if (field_name === "is_active") {
-                        el.addEventListener("click", function() {ModConfirmOpen("is_active", el)}, false )
-                        el.classList.add("inactive_0_2")
-                        add_hover(el);
-                    } else if ( field_name === "last_login") {
-                        // pass
-                    }
+            // --- add data-field attribute
+                        el.setAttribute("data-field", field_name);
 
-        // --- add width, text_align
-                    td.classList.add(class_width, class_align);
-                    if (field_tag === "input") {
-                        // dont set width in input field , to adjust width to length
-                        el.classList.add(class_align);
-                    } else {
-                        el.classList.add(class_width, class_align);
-                    }
-                td.appendChild(el);
-// --- put value in field
-                UpdateField(el, map_dict)
+            // --- add data-field Attribute when input element
+                        if (field_tag === "input") {
+                            el.setAttribute("type", "text")
+                            el.setAttribute("autocomplete", "off");
+                            el.setAttribute("ondragstart", "return false;");
+                            el.setAttribute("ondrop", "return false;");
+                    // --- add class 'input_text' and text_align
+                        // class 'input_text' contains 'width: 100%', necessary to keep input field within td width
+                            el.classList.add("input_text");
+                        }
+                        if (field_name === "select") {
+                            // TODO add select multiple users option PR2020-08-18
+                        } else if (["sb_code", "username", "last_name", "email", "employee_code"].includes(field_name)){
+                            el.addEventListener("click", function() {MUA_Open("update", el)}, false)
+                            el.classList.add("pointer_show");
+                            add_hover(el);
+                        } else if (["role", "page"].includes(field_name)){
+                            el.addEventListener("click", function() {MGP_Open("update", el)}, false)
+                            el.classList.add("pointer_show");
+                            add_hover(el);
+                        } else if (["role", "page", "action", "sequence"].includes(field_name)){
+                            el.addEventListener("change", function(){HandleInputChange(el)});
+
+                        } else if (field_name.slice(0, 5) === "group") {
+                            // attach eventlisterener and hover to td, not to el. No need to add icon_class here
+                            td.addEventListener("click", function() {UploadToggle(el)}, false)
+                            add_hover(td);
+                        } else if ( field_name === "activated") {
+                            el.addEventListener("click", function() {ModConfirmOpen("resend_activation_email", el)}, false )
+                        } else if (field_name === "is_active") {
+                            el.addEventListener("click", function() {ModConfirmOpen("is_active", el)}, false )
+                            el.classList.add("inactive_0_2")
+                            add_hover(el);
+                        } else if ( field_name === "last_login") {
+                            // pass
+                        }
+
+            // --- add width, text_align
+                        td.classList.add(class_width, class_align);
+                        if (field_tag === "input") {
+                            // dont set width in input field , to adjust width to length
+                            el.classList.add(class_align);
+                        } else {
+                            el.classList.add(class_width, class_align);
+                        }
+                    td.appendChild(el);
+    // --- put value in field
+                    UpdateField(el, map_dict)
+
+                }  // if (!columns_hidden.includes(field_name))
             }  // for (let j = 0; j < 8; j++)
         }  // if(field_settings_table)
         return tblRow
@@ -664,12 +706,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function UploadToggle(el_input) {
         console.log( " ==== UploadToggle ====");
         console.log( "el_input", el_input);
+        console.log( "permit_dict", permit_dict);
 
         mod_dict = {};
-        // <PERMIT> PR2020-10-12
-        // - only perm_system can change users
-        // TODO change
-        if(setting_dict.requsr_group_system || !setting_dict.requsr_group_system){
+
+        if(permit_dict.crud_user){
             const tblRow = get_tablerow_selected(el_input);
             if(tblRow){
                 const tblName = get_attr_from_el(tblRow, "data-table")
@@ -684,9 +725,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     let permit_bool = (get_attr_from_el(el_input, "data-filter") === "1");
 
     // show message when sysadmin tries to delete sysadmin permit
-                    const is_request_user = (setting_dict.requsr_pk && setting_dict.requsr_pk === map_dict.id);
+                    const is_request_user = (permit_dict.requsr_pk && permit_dict.requsr_pk === map_dict.id);
                     if(fldName === "group_admin" && is_request_user && permit_bool ){
-                        ModConfirmOpen("permission_sysadm", el_input)
+                        ModConfirmOpen("permission_admin", el_input)
                     } else {
 
             // ---  toggle permission el_input
@@ -713,7 +754,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }  // if(fldName === "group_admin" && is_request_user && permit_bool ){
                 }  //  if(!isEmpty(map_dict)){
             }  //   if(!!tblRow)
-        }  // if(setting_dict.requsr_group_system)
+        }  // if(permit_dict.requsr_group_system)
     }  // UploadToggle
 
 //========= UploadChanges  ============= PR2020-08-03
@@ -762,12 +803,12 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++ MOD ADD USER ++++++++++++++++ PR2020-09-18
     function MUA_Open(mode, el_input){
         console.log(" -----  MUA_Open   ---- mode: ", mode)  // modes are: addnew, update
-        console.log("setting_dict: ", setting_dict)
-        console.log("permit.crud_user_otherschool: ", permit.crud_user_otherschool)
+        console.log("permit_dict: ", permit_dict)
+        console.log("permit_dict.crud_user_otherschool: ", permit_dict.crud_user_otherschool)
         // mode = 'addnew' when called by SubmenuButton
         // mode = 'update' when called by tblRow event
 
-        if(permit.crud_user){
+        if(permit_dict.crud_user){
             let user_dict = {}, user_pk = null;
             let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null;
             const fldName = get_attr_from_el(el_input, "data-field");
@@ -785,10 +826,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     user_schoolbase_code = user_dict.sb_code;
                 }
         // when el_input is not defined: function is mode 'addnew'
-            } else if (!permit.crud_user_otherschool){
+            } else if (!permit_dict.crud_user_otherschool){
                 // when new user and not role_admin or role_system: : get user_schoolbase_pk from request_user
-                user_schoolbase_pk = setting_dict.requsr_schoolbase_pk;
-                user_schoolbase_code = setting_dict.requsr_schoolbase_code;
+                user_schoolbase_pk = permit_dict.requsr_schoolbase_pk;
+                user_schoolbase_code = permit_dict.requsr_schoolbase_code;
             }
 
             selected_user_pk = user_pk
@@ -825,7 +866,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---  show only the elements that are used in this tab
             const container_element = document.getElementById("id_mod_user");
-            let tab_str = (is_addnew) ? (permit.crud_user_otherschool) ? "tab_addnew_may_select_school" : "tab_addnew_noschool" : "tab_update";
+            let tab_str = (is_addnew) ? (permit_dict.crud_user_otherschool) ? "tab_addnew_may_select_school" : "tab_addnew_noschool" : "tab_update";
             show_hide_selected_elements_byClass("tab_show", tab_str, container_element)
 
     // ---  set header text
@@ -834,7 +875,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUA_header.innerText = header_text;
 
     // ---  fill selecttable
-            if(permit.crud_user_otherschool){
+            if(permit_dict.crud_user_otherschool){
                 MUA_FillSelectTableSchool();
             }
 
@@ -849,8 +890,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_MUA_email.value = mod_MUA_dict.email;
             }
     // ---  set focus to next el
-            const el_focus = (is_addnew && permit.crud_user_otherschool) ? el_MUA_schoolname :
-                             ( (is_addnew && !permit.crud_user_otherschool) || (fldName === "username") ) ? el_MUA_username :
+            const el_focus = (is_addnew && permit_dict.crud_user_otherschool) ? el_MUA_schoolname :
+                             ( (is_addnew && !permit_dict.crud_user_otherschool) || (fldName === "username") ) ? el_MUA_username :
                              (fldName === "last_name") ? el_MUA_last_name :
                              (fldName === "email") ? el_MUA_email : null;
             if(el_focus){setTimeout(function (){el_focus.focus()}, 50)};
@@ -874,9 +915,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  show modal
             $("#id_mod_user").modal({backdrop: true});
 
-        }  //  if(permit.crud_user)
+        }  //  if(permit_dict.crud_user)
     };  // MUA_Open
-
 
 //========= MUA_Save  ============= PR2020-08-02 PR2020-08-15
    function MUA_Save(args) {
@@ -987,9 +1027,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };  // MUA_Save
 
-
-
-
 //========= MUA_FillSelectTableSchool  ============= PR2020--09-17
     function MUA_FillSelectTableSchool() {
         console.log("===== MUA_FillSelectTableSchool ===== ");
@@ -1005,10 +1042,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if(data_map){
             for (const [map_id, map_dict] of data_map.entries()) {
                 if (!isEmpty(map_dict)) {
-                    console.log("map_dict", map_dict);
                     const defaultrole = (map_dict.defaultrole) ? map_dict.defaultrole : 0;
     // only add schools to list whith sme or lower role
-                    if (defaultrole <= setting_dict.requsr_role){
+                    if (defaultrole <= permit_dict.requsr_role){
         // ---  get info from map_dict
                         const base_id = map_dict.base_id;
                         const country_id = map_dict.country_id;
@@ -1044,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // ---  add addEventListener
                         tblRow.addEventListener("click", function() {MUA_SelectSchool(tblRow, event.target)}, false);
-                    } //  if (defaultrole < setting_dict.requsr_role)
+                    } //  if (defaultrole < permit_dict.requsr_role)
                 }  //  if (!isEmpty(item_dict))
             }  // for (const [map_id, map_dict] of data_map.entries())
         }  // if(data_map)
@@ -1064,7 +1100,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let is_enabled = false;
                 if  (field === "schoolname") {
                 // disable field 'schoolname' when is_update or when not requsr_role_admin and not requsr_role_system
-                    if (setting_dict.requsr_role_admin || setting_dict.requsr_role_system) {
+                    if (permit_dict.requsr_role_admin || permit_dict.requsr_role_system) {
                         is_enabled = (mod_MUA_dict.mode === "addnew");
                     }
                 } else {
@@ -1419,12 +1455,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };  // HandleInputChange
 
-
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03
     function ModConfirmOpen(mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
-        // values of mode are : "delete", "is_active" or "resend_activation_email", "permission_sysadm"
+        // values of mode are : "delete", "is_active" or "resend_activation_email", "permission_admin"
 
 // ---  get selected_pk
         let selected_pk = null;
@@ -1440,7 +1475,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  get info from user_map
         const map_id = "user_" + selected_pk;
         const map_dict = get_mapdict_from_datamap_by_id(user_map, map_id)
-        const is_request_user = (setting_dict.requsr_pk && setting_dict.requsr_pk === map_dict.id)
+        const is_request_user = (permit_dict.requsr_pk && permit_dict.requsr_pk === map_dict.id)
 
         //console.log("map_dict", map_dict)
 // ---  create mod_dict
@@ -1457,14 +1492,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  put text in modal form
         let dont_show_modal = false;
-        const is_mode_permission_sysadm = (mode === "permission_sysadm");
+        const is_mode_permission_admin = (mode === "permission_admin");
         const is_mode_resend_activation_email = (mode === "resend_activation_email");
         //console.log("mode", mode)
         const inactive_txt = (mod_dict.current_isactive) ? loc.Make_user_inactive : loc.Make_user_active;
         const header_text = (mode === "delete") ? loc.Delete_user :
                             (mode === "is_active") ? inactive_txt :
                             (is_mode_resend_activation_email) ? loc.Resend_activation_email :
-                            (is_mode_permission_sysadm) ? loc.Set_permissions : "";
+                            (is_mode_permission_admin) ? loc.Set_permissions : "";
         let msg_01_txt = null, msg_02_txt = null, msg_03_txt = null;
         let hide_save_btn = false;
         if(!has_selected_item){
@@ -1489,7 +1524,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     msg_01_txt = loc.User + " '" + username + "'" + inactive_txt
                     msg_02_txt = loc.Do_you_want_to_continue;
                 }
-            } else if(is_mode_permission_sysadm){
+            } else if(is_mode_permission_admin){
                 hide_save_btn = true;
                 const fldName = get_attr_from_el(el_input, "data-field")
                 if (fldName === "group_admin") {
@@ -1530,7 +1565,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const caption_cancel = (mode === "delete") ? loc.No_cancel :
                             (mode === "is_active") ? loc.No_cancel :
                             (is_mode_resend_activation_email) ? loc.No_cancel : loc.Cancel;
-            el_confirm_btn_cancel.innerText = (has_selected_item && !is_mode_permission_sysadm) ? caption_cancel : loc.Close;
+            el_confirm_btn_cancel.innerText = (has_selected_item && !is_mode_permission_admin) ? caption_cancel : loc.Close;
 
     // set focus to cancel button
             setTimeout(function (){
@@ -1682,6 +1717,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         //console.log("tblRow", tblRow);
         //console.log("is_deleted", is_deleted);
+        //console.log("is_created", is_created);
 // ++++ created ++++
             if(is_created){
     // ---  insert new item
@@ -1724,6 +1760,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             field_in_old_map = (col_field in old_map_dict);
                             field_in_update = (col_field in update_dict);
                         }  // if (field_name.slice(0, 5) === "group")
+
+        //console.log("col_field", col_field, "field_in_old_map", field_in_old_map,  "field_in_update", field_in_update);
+
                         if (field_in_old_map !== field_in_update ) {
                             updated_columns.push(col_field)
                         }
@@ -1732,6 +1771,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  update item
                 data_map.set(map_id, update_dict)
             }
+
+        //console.log("updated_columns", updated_columns);
     // ---  make update
             // note: when updated_columns is empty, then updated_columns is still true.
             // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
@@ -1739,16 +1780,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  make entire row green when row is created
                 if(updated_columns.includes("created")){
                     ShowOkElement(tblRow);
+        //console.log("ShowOkElement tblRow");
                 } else {
     // loop through cells of row
                     for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
                         const el = td.children[0];
                         if (el){
                             UpdateField(el, update_dict);
-    // make gield green when field name is in updated_columns
+    // make field green when field name is in updated_columns
                             el_fldName = get_attr_from_el(el, "data-field")
                             if(updated_columns.includes(el_fldName)){
                                 ShowOkElement(el);
+        //console.log("ShowOkElement", el_fldName);
            }}}}}
         }
     }  // refresh_usermap_item
@@ -1984,15 +2027,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // MSESD_Response
 //###########################################################################
+//=========  MSSSS_Response  ================ PR2021-04-23
+    function MSSSS_Response(tblName, selected_pk, selected_code, selected_name) {
+        console.log( "===== MSSSS_Response ========= ");
+
+        // Note: when tblName = school: pk_int = schoolbase_pk
+        if(selected_pk === -1) { selected_pk = null};
+
+// ---  put new selected_pk in setting_dict
+        setting_dict.sel_schoolbase_pk = selected_pk;
+
+// ---  upload new setting and refresh page
+        let datalist_request = {setting: {page: "page_user", sel_schoolbase_pk: selected_pk}};
+        DatalistDownload(datalist_request);
+
+    }  // MSSSS_Response
 
 //###########################################################################
-//========= get_permits  ========
-    function get_permits(permit_list) {
-        // <PERMIT> PPR2021-03-27
-        // permit.view_page: (!!el_loader), got value at start of script
-        permit.crud_permit = (permit_list.includes("crud_permit"));
-        permit.crud_user = (permit_list.includes("crud_user"));
-        permit.crud_user_otherschool = (permit_list.includes("crud_user_otherschool"));
-    }  // get_permits
+//========= set_columns_hidden  ====== PR2021-04-26
+    function set_columns_hidden() {
+        console.log( "===== set_columns_hidden  === ");
+        console.log( "permit_dict", permit_dict);
+
+        if (permit_dict.requsr_role_system) {
+            columns_hidden =  [];
+        } else if (permit_dict.requsr_role_admin) {
+            columns_hidden = ["group_auth1", "group_auth2", "group_auth3"];
+        } else if (permit_dict.requsr_role_insp) {
+            columns_hidden =  ["group_auth3"];
+        } else if (permit_dict.requsr_role_comm) {
+            columns_hidden =  ["group_edit", "group_auth1", "group_auth2", "group_anlz"];
+        } else if (permit_dict.requsr_role_school) {
+            columns_hidden = ["group_auth3", "group_anlz"];
+        }
+
+    };  // set_columns_hidden
+
 
 })  // document.addEventListener('DOMContentLoaded', function()

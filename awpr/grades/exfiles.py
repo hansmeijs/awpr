@@ -1,5 +1,6 @@
 # PR2021-11-24
 from django.contrib.auth.decorators import login_required
+from django.core.files import File
 
 from django.core.files.storage import default_storage, FileSystemStorage
 
@@ -7,6 +8,7 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpRespons
 from django.utils.decorators import method_decorator
 from django.utils.translation import activate, ugettext_lazy as _
 from django.views.generic import View
+
 
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase import pdfmetrics
@@ -31,6 +33,9 @@ from grades import views as gr_vw
 
 from os import path
 import io
+
+import tempfile
+
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -211,66 +216,93 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
         # function creates, Ex2A pdf file based on settings in usersetting
 
         response = None
-        try:
-            if request.user and request.user.country and request.user.schoolbase:
-                req_user = request.user
+        #try:
 
-    # - reset language
-                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
-                activate(user_lang)
+        if request.user and request.user.country and request.user.schoolbase:
+            req_user = request.user
 
-    # - get selected examyear, school and department from usersettings
-                sel_examyear, sel_school, sel_department, is_locked, \
-                    examyear_published, school_activated, is_requsr_school = \
-                        dl.get_selected_examyear_school_dep_from_usersetting(request)
+# - reset language
+            user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+            activate(user_lang)
 
-        # - get selected examperiod, examtype, subject_pk from usersettings
-                sel_examperiod, sel_examtype, sel_subject_pk = dl.get_selected_examperiod_examtype_from_usersetting(request)
+# - get selected examyear, school and department from usersettings
+            sel_examyear, sel_school, sel_department, is_locked, \
+                examyear_published, school_activated, is_requsr_school = \
+                    dl.get_selected_examyear_school_dep_from_usersetting(request)
+
+# - get selected examperiod, examtype, subject_pk from usersettings
+            sel_examperiod, sel_examtype, sel_subject_pk = dl.get_selected_examperiod_examtype_from_usersetting(request)
+
+            if logging_on:
+                logger.debug('sel_examperiod: ' + str(sel_examperiod))
+                logger.debug('sel_school: ' + str(sel_school))
+                logger.debug('sel_department: ' + str(sel_department))
+
+            if sel_examperiod and sel_school and sel_department and sel_subject_pk:
+                sel_subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk, examyear=sel_examyear)
+                if logging_on:
+                    logger.debug('sel_subject: ' + str(sel_subject))
+
+# +++ get selected grade_rows
+                grade_rows = gr_vw.create_grade_rows(
+                    sel_examyear_pk=sel_examyear.pk,
+                    sel_schoolbase_pk=sel_school.base_id,
+                    sel_depbase_pk=sel_department.base_id,
+                    sel_examperiod=sel_examperiod,
+                    sel_subject_pk=sel_subject_pk,
+                    )
+
+                # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
+
+                # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
+                #temp_file = tempfile.TemporaryFile()
+                # canvas = Canvas(temp_file)
+
+
+                buffer = io.BytesIO()
+                canvas = Canvas(buffer)
+
+                # Start writing the PDF here
+                draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel_examperiod, sel_examtype, grade_rows)
+                #test_pdf(canvas)
+                # testParagraph_pdf(canvas)
 
                 if logging_on:
-                    logger.debug('sel_examperiod: ' + str(sel_examperiod))
-                    logger.debug('sel_school: ' + str(sel_school))
-                    logger.debug('sel_department: ' + str(sel_department))
+                    logger.debug('end of draw_Ex2A')
 
-                if sel_examperiod and sel_school and sel_department and sel_subject_pk:
-                    sel_subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk, examyear=sel_examyear)
-                    if logging_on:
-                        logger.debug('sel_subject: ' + str(sel_subject))
+                canvas.showPage()
+                canvas.save()
 
-    # +++ get selected grade_rows
-                    grade_rows = gr_vw.create_grade_rows(
-                        sel_examyear_pk=sel_examyear.pk,
-                        sel_schoolbase_pk=sel_school.base_id,
-                        sel_depbase_pk=sel_department.base_id,
-                        sel_examperiod=sel_examperiod,
-                        sel_subject_pk=sel_subject_pk,
-                        )
+                pdf = buffer.getvalue()
+                # pdf_file = File(temp_file)
 
-                    buffer = io.BytesIO()
-                    canvas = Canvas(buffer)
+                # was: buffer.close()
 
-                    # Start writing the PDF here
-                    draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel_examperiod, sel_examtype, grade_rows)
-                    #test_pdf(canvas)
-                    # testParagraph_pdf(canvas)
+                """
+                # TODO as test try to save file in
+                studsubjnote = stud_mod.Studentsubjectnote.objects.get_or_none(pk=47)
+                content_type='application/pdf'
+                file_name = 'test_try.pdf'
+                if studsubjnote and pdf_file:
+                    instance = stud_mod.Noteattachment(
+                        studentsubjectnote=studsubjnote,
+                        contenttype=content_type,
+                        filename=file_name,
+                        file=pdf_file)
+                    instance.save()
+                    logger.debug('instance.saved: ' + str(instance))
+                # gives error: 'bytes' object has no attribute '_committed'
+                """
 
-                    if logging_on:
-                        logger.debug('end of draw_Ex2A')
+                response = HttpResponse(content_type='application/pdf')
+                response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                #response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
 
-                    canvas.showPage()
-                    canvas.save()
+                response.write(pdf)
 
-                    pdf = buffer.getvalue()
-                    buffer.close()
-
-                    response = HttpResponse(content_type='application/pdf')
-                    response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
-                    #response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
-
-                    response.write(pdf)
-
-        except:
-            raise Http404("Error creating Ex2A file")
+        #except Exception as e:
+       #     logger.error(getattr(e, 'message', str(e)))
+       #     raise Http404("Error creating Ex2A file")
 
         if response:
             return response
@@ -350,7 +382,7 @@ def test_pdf(canvas):
 
 
 def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel_examperiod, sel_examtype, grade_rows):
-    logger.debug('----- draw_Ex2A -----')
+    #logger.debug('----- draw_Ex2A -----')
     # pagesize A4  = (595.27, 841.89) points, 1 point = 1/72 inch
     # move the origin up and to the left
     # c.translate(inch,inch)
@@ -426,11 +458,11 @@ def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel
     examtype_caption = c.get_examtype_caption(sel_examtype)
 
     filepath = awpr_settings.STATICFILES_FONTS_DIR + 'arial.ttf'
-    logger.debug('filepath: ' + str(filepath))
+    #logger.debug('filepath: ' + str(filepath))
 
     try:
         ttfFile = TTFont('Arial', filepath)
-        logger.debug('ttfFile: ' + str(ttfFile))
+        #logger.debug('ttfFile: ' + str(ttfFile))
         pdfmetrics.registerFont(ttfFile)
     except Exception as e:
         logger.error('filepath: ' + str(filepath))

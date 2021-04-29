@@ -303,7 +303,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 if ("subject_rows" in response) { b_fill_datamap(subject_map, response.subject_rows) };
 
                 HandleBtnSelect(null, true)  // true = skip_upload
-                // also calls: FillTblRows(), MSSS_display_in_sbr(), UpdateHeader()ect
+                // also calls: FillTblRows(), MSSSS_display_in_sbr(), UpdateHeader()ect
             },
             error: function (xhr, msg) {
 // ---  hide loader
@@ -320,14 +320,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let el_submenu = document.getElementById("id_submenu")
         AddSubmenuButton(el_submenu, loc.Add_exam, function() {MEX_Open()});
-        AddSubmenuButton(el_submenu, loc.Delete_exam, function() {ModConfirmOpen("delete")}, ["ml-2"]);
-        AddSubmenuButton(el_submenu, loc.Publish_exam, function() {ModConfirmOpen("deleteXX")}, ["ml-2"]);
-        //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A_form, null, [], "id_submenu_download_ex2a", url_grade_download_ex2a, true);  // true = download
+        AddSubmenuButton(el_submenu, loc.Delete_exam, function() {ModConfirmOpen("delete")});
+        AddSubmenuButton(el_submenu, loc.Publish_exam, function() {ModConfirmOpen("deleteXX")});
+        //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A_form, null, "id_submenu_download_ex2a", url_grade_download_ex2a, true);  // true = download
         //if (permit.approve_grade){
-        //    AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MAG_Open("approve")}, ["mx-2"]);
+        //    AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MAG_Open("approve")});
         //}
         //if (permit.submit_grade){
-        //    AddSubmenuButton(el_submenu, loc.Submit_Ex2A_form, function() {MAG_Open("submit")}, ["mx-2"]);
+        //    AddSubmenuButton(el_submenu, loc.Submit_Ex2A_form, function() {MAG_Open("submit")});
         //};
         el_submenu.classList.remove(cls_hide);
 
@@ -337,7 +337,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14  PR2021-03-15
     function HandleBtnSelect(data_btn, skip_upload) {
         console.log( "===== HandleBtnSelect ========= ", data_btn);
-        // function is called by HandleShowAll, MSSS_Response, select_btn.click, DatalistDownload after response.setting_dict
+        // function is called by HandleShowAll, MSSSS_Response, select_btn.click, DatalistDownload after response.setting_dict
 
         if(data_btn){
             selected_btn = data_btn;
@@ -372,9 +372,9 @@ document.addEventListener("DOMContentLoaded", function() {
         //show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
 // --- update header text
-        //MSSS_display_in_sbr();
+        //MSSSS_display_in_sbr();
 
-// --- update header text - comes after MSSS_display_in_sbr
+// --- update header text - comes after MSSSS_display_in_sbr
         UpdateHeaderLeft();
         UpdateHeaderRight();
 
@@ -599,7 +599,7 @@ document.addEventListener("DOMContentLoaded", function() {
         UploadSettings (upload_dict, url_settings_upload);
 
         HandleBtnSelect("grade_by_all", true) // true = skip_upload
-        // also calls: FillTblRows(), MSSS_display_in_sbr(), UpdateHeader()
+        // also calls: FillTblRows(), MSSSS_display_in_sbr(), UpdateHeader()
 
     }  // HandleShowAll
 
@@ -607,7 +607,7 @@ document.addEventListener("DOMContentLoaded", function() {
     function UpdateHeaderLeft(){
         //console.log(" --- UpdateHeaderLeft ---" )
         //console.log("setting_dict", setting_dict)
-        // sel_subject_txt gets value in MSSS_display_in_sbr, therefore UpdateHeader comes after MSSS_display_in_sbr
+        // sel_subject_txt gets value in MSSSS_display_in_sbr, therefore UpdateHeader comes after MSSSS_display_in_sbr
         const header_left = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_txt :
                             (setting_dict.sel_student_pk) ? setting_dict.sel_student_name : loc.All_subjects_and_candidates;
         document.getElementById("id_hdr_left").innerText = header_left
@@ -2944,9 +2944,9 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
     }  // MSESD_Response
 
-//=========  MSSS_Response  ================ PR2021-01-23 PR2021-02-05
-    function MSSS_Response(tblName, selected_pk, selected_code, selected_name) {
-        console.log( "===== MSSS_Response ========= ");
+//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05
+    function MSSSS_Response(tblName, selected_pk, selected_code, selected_name) {
+        console.log( "===== MSSSS_Response ========= ");
         console.log( "selected_pk", selected_pk);
         //console.log( "selected_code", selected_code);
         console.log( "selected_name", selected_name);
@@ -2982,16 +2982,16 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         if (new_selected_btn) {
     // change selected_button
             HandleBtnSelect(new_selected_btn, true)  // true = skip_upload
-            // also calls: FillTblRows(), MSSS_display_in_sbr(), UpdateHeader()
+            // also calls: FillTblRows(), MSSSS_display_in_sbr(), UpdateHeader()
         }  else {
     // fill datatable
             FillTblRows();
 
-    // --- update header text - comes after MSSS_display_in_sbr
+    // --- update header text - comes after MSSSS_display_in_sbr
             UpdateHeaderLeft();
         }
 
-    }  // MSSS_Response
+    }  // MSSSS_Response
 
 
 

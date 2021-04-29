@@ -175,11 +175,12 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
     published = BooleanField(default=False)
     locked = BooleanField(default=False)
 
-    no_practexam = BooleanField(default=False)
-    no_centralexam = BooleanField(default=False)
-    combi_reex_allowed = BooleanField(default=False)
-    no_exemption_ce = BooleanField(default=False)
-    no_thirdperiod = BooleanField(default=False)
+    # TODO move to schemitems PR2021-04-24
+    # no_practexam = BooleanField(default=False)
+    # no_centralexam = BooleanField(default=False)
+    # combi_reex_allowed = BooleanField(default=False)
+    # no_exemption_ce = BooleanField(default=False)
+    # no_thirdperiod = BooleanField(default=False)
 
     createdat = DateTimeField(null=True)
     publishedat = DateTimeField(null=True)
@@ -206,17 +207,19 @@ class Examyear_log(AwpBaseModel):
 
     examyear_id = IntegerField(db_index=True)
 
-    country_log = ForeignKey(Country_log, related_name='+', on_delete=PROTECT)
+    # link on country, not on country_log PR2021-04-24
+    country = ForeignKey(Country, related_name='+', on_delete=PROTECT)
 
     code = PositiveSmallIntegerField(null=True)
     published = BooleanField(default=False)
     locked = BooleanField(default=False)
 
-    no_practexam = BooleanField(default=False)
-    no_centralexam = BooleanField(default=False)
-    combi_reex_allowed = BooleanField(default=False)
-    no_exemption_ce = BooleanField(default=False)
-    no_thirdperiod = BooleanField(default=False)
+    # TODO move to schemitems PR2021-04-24
+    # no_practexam = BooleanField(default=False)
+    # no_centralexam = BooleanField(default=False)
+    # combi_reex_allowed = BooleanField(default=False)
+    # no_exemption_ce = BooleanField(default=False)
+    # no_thirdperiod = BooleanField(default=False)
 
     createdat = DateTimeField(null=True)
     publishedat = DateTimeField(null=True)
@@ -225,7 +228,7 @@ class Examyear_log(AwpBaseModel):
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
-class ExfilesText(Model):  # PR2021-01-
+class ExfilesText(AwpBaseModel):  # PR2021-01-
     # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
     objects = AwpModelManager()
 
@@ -264,6 +267,21 @@ class ExfilesText(Model):  # PR2021-01-
             logger.debug('row.setting: ' + str(row.setting))
 
 
+# PR2021-04-25
+class ExfilesText_log(AwpBaseModel):
+    objects = AwpModelManager()
+
+    exfilestext_id = IntegerField(db_index=True)
+
+    examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=CASCADE)
+
+    key = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
+    subkey = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
+    setting = CharField(max_length=2048, null=True, blank=True)
+
+    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+
+
 # === Department Model =====================================
 # PR2018-09-15 moved from Subjects to School because of circulair refrence when trying to import subjects.Department
 class Departmentbase(Model):# PR2018-10-17
@@ -286,12 +304,10 @@ class Department(AwpBaseModel):# PR2018-08-10
     name = CharField(max_length=c.MAX_LENGTH_NAME, # PR2018-08-06 set Unique per Country True. Was: unique=True,
         help_text=_('Required. {} characters or fewer.'.format('50')),)
     abbrev = CharField(max_length=c.MAX_LENGTH_10)
-    sequence = PositiveSmallIntegerField(db_index=True, default=1)
+    sequence = PositiveSmallIntegerField(default=1)
     level_req = BooleanField(default=True)
     sector_req = BooleanField(default=True)
     has_profiel = BooleanField(default=False)
-    #level_caption = CharField(max_length=c.MAX_LENGTH_20, null=True, blank=True)  # PR2019-01-17
-    #sector_caption = CharField(max_length=c.MAX_LENGTH_20, null=True, blank=True)  # PR2019-01-17
 
     class Meta:
         ordering = ['sequence',]
@@ -310,17 +326,13 @@ class Department_log(AwpBaseModel):
     department_id = IntegerField(db_index=True)
 
     base = ForeignKey(Departmentbase, related_name='+', on_delete=PROTECT)
-
     examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=CASCADE)
-
     name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
-    abbrev = CharField(max_length=c.MAX_LENGTH_04, null=True)
-    sequence = PositiveSmallIntegerField()
+    abbrev = CharField(max_length=c.MAX_LENGTH_10, null=True)
+    sequence = PositiveSmallIntegerField(null=True)
     level_req = BooleanField(default=True)
     sector_req = BooleanField(default=True)
     has_profiel = BooleanField(default=False)
-    #level_caption = CharField(max_length=c.MAX_LENGTH_20, null=True)
-    #sector_caption = CharField(max_length=c.MAX_LENGTH_20, null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -502,12 +514,14 @@ class Published(AwpBaseModel): # PR2020-12-02
     name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
 
     filename = CharField(max_length=255, null=True)
+    file = FileField(storage=PrivateMediaStorage(), null=True)
 
     datepublished = DateField()
 
     def __str__(self):
         return self.name
     # published has no published_log because its data don't change
+
 
 # PR2021-03-08 from https://simpleisbetterthancomplex.com/tutorial/2017/08/01/how-to-setup-amazon-s3-in-a-django-project.html
 # PR2021-03-13 test
@@ -525,7 +539,6 @@ class PrivateDocument(AwpBaseModel):
     document = FileField(storage=PrivateMediaStorage())
 
     datepublished = DateField()
-
 
 
 # PR2018-06-07
@@ -624,7 +637,7 @@ def dep_initials(dep_name):
     return initials
 
 
-def delete_instance(instance, msg_dict, request, this_text=None):
+def delete_instance(instance, error_list, request, this_text=None):
     #logger.debug(' ----- delete_instance  -----')
     #logger.debug('instance: ' + str(instance))
 
@@ -632,12 +645,14 @@ def delete_instance(instance, msg_dict, request, this_text=None):
     deleted_ok = False
 
     if instance:
+        instance.delete(request=request)
         try:
             instance.delete(request=request)
-        except:
-            err_text = _('An error occurred.')
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            error_list.append(str( _('An error occurred.')))
             tbl = this_text if this_text else _('This item')
-            msg_dict['err_delete'] = str(err_text + ' ' + _('%(tbl)s could not be deleted.') % {'tbl': tbl})
+            error_list.append(str(_('%(tbl)s could not be deleted.') % {'tbl': tbl}))
         else:
             deleted_ok = True
 
@@ -645,136 +660,138 @@ def delete_instance(instance, msg_dict, request, this_text=None):
 
 
 def save_to_log(instance, req_mode, request):
-    #logger.debug(' ----- save_to_log  ----- mode: ' + str(req_mode) )  # PR2019-02-23 PR2020-10-23 PR2020-12-15
+    logger.debug(' ----- save_to_log  ----- mode: ' + str(req_mode) )  # PR2019-02-23 PR2020-10-23 PR2020-12-15
 
     if instance:
         model_name = str(instance.get_model_name())
-        #logger.debug('model_name: ' + str(model_name))
+        logger.debug('model_name: ' + str(model_name))
         mode = req_mode[0:1] if req_mode else '-'
 
-        modby_id = 'NULL'
-        mod_at = 'NULL'
-        if mode == 'd':
-            # when log delete: add req_user and now
+        modby_id = None
+        mod_at = None
+
+        if mode in ('c', 'd'):
+            # when log create or delete: add req_user and now
             if request and request.user:
-                modby_id = str(request.user.pk)
-            mod_at = timezone.now().isoformat()
+                modby_id = request.user.pk
+            mod_at = timezone.now()
         else:
-            # when log save: add user and moodat of saved record
+            # when log save: add user and modat of saved record
             if instance.modifiedby_id:
-                modby_id = str(instance.modifiedby_id)
+                modby_id = instance.modifiedby_id
             if instance.modifiedat:
-                mod_at = instance.modifiedat.isoformat()
+                mod_at = instance.modifiedat
         pk_int = instance.pk
-        #logger.debug('model_name: ' + str(model_name))
-        #logger.debug('mode: <' + str(mode) + '>')
-        #logger.debug('modby_id: ' + str(modby_id))
-        #logger.debug('mod_at: ' + str(mod_at))
-        #logger.debug('model_name == Examyear')
-
-        if model_name == 'Studentsubject':
-            pass
-        elif model_name == 'Grade':
-            # this one not working, cannot get filter pc.id with LIMIT 1 in query, get info from pricecodelist instead
-            sub_ssl_list = ["SELECT id, studentsubject_id AS studsubj_id,",
-                            "FROM studentsubject_log",
-                            "ORDER BY id DESC NULLS LAST LIMIT 1"]
-            sub_ssl = ' '.join(sub_ssl_list)
-            # note: multiple WITH clause syntax:WITH cte1 AS (SELECT...), cte2 AS (SELECT...) SELECT * FROM ...
-            sql_keys = {'grade_id': pk_int,  'mode': mode, 'modby_id': modby_id, 'mod_at': mod_at}
-            sql_list = ["WITH sub_ssl AS (" + sub_ssl + ")",
-                        "INSERT INTO students_grade_log (id,",
-                            "grade_id, studentsubject_log_id, examperiod,",
-                            "pescore, cescore, segrade, pegrade, cegrade, pecegrade, finalgrade,",
-                            "sepublished, pepublished, cepublished,",
-                            "mode, modifiedby_id, modifiedat)",
-                        "SELECT nextval('students_grade_log_id_seq'),",
-                            "grade_id, sub_ssl.id, examperiod,",
-                            "pescore, cescore, segrade, pegrade, cegrade, pecegrade, finalgrade,",
-                            "sepublished, pepublished, cepublished,",
-                            "%(mode)s::TEXT, %(modby_id)s::INT, %(mod_at)s::DATE",
-                        "FROM students_grade AS grade",
-                        "INNER JOIN sub_ssl ON (sub_ssl.studsubj_id = grade.studentsubject_id)",
-                        "WHERE (grade.id = %(grade_id)s::INT"]
-
-            sql_list = ["SELECT nextval('students_grade_log_id_seq') AS sgl_id,",
-                            "grade.id, grade.examperiod,",
-                            "%(mode)s::TEXT AS mode, %(modby_id)s::INT AS modby_id, %(mod_at)s::DATE AS mod_at",
-                        "FROM students_grade AS grade",
-                        "WHERE id = %(grade_id)s::INT"]
-            sql = ' '.join(sql_list)
-            #logger.debug('sql_keys: ' + str(sql_keys))
-            #logger.debug('sql: ' + str(sql))
-
-            #logger.debug('---------------------- ')
-            with connection.cursor() as cursor:
-                #logger.debug('================= ')
-                cursor.execute(sql, sql_keys)
-                #for qr in connection.queries:
-                    #logger.debug('-----------------------------------------------------------------------------')
-                    #logger.debug(str(qr))
-
-                #logger.debug('---------------------- ')
-                #rows = dictfetchall(cursor)
-                #logger.debug('---------------------- ')
-                #for row in rows:
-                    #logger.debug('row: ' + str(row))
-
 
         if model_name == 'Examyear':
+            copy_examyear_to_log(mode, instance, modby_id, mod_at)
+        elif model_name == 'ExfilesText':
+            pass
+        elif model_name == 'Department':
+            copy_department_to_log(mode, instance, modby_id, mod_at)
 
-            """
-            INSERT INTO schools_school (examyear_id, schoolbase_id, name, code, abbrev, article, dep_list, locked, modifiedby_id, modifiedat) ' + \
-                    'SELECT %s AS examyear_id, sb.id, sb.name, sb.code, sb.abbrev, sb.article, sb.dep_list, False AS locked, %s AS modifiedby_id, %s AS modifiedat  ' + \
-                    'FROM schools_school AS sb WHERE sb.examyear_id = %s;',
-                    [self.new_examyear_id, self.modifiedby_id, self.modifiedat, self.prev_examyear_id])
-                connection.commit()
-            """
+        elif model_name == 'School':
+            pass
+        elif model_name == 'School_message':
+            pass
+        elif model_name == 'Published':
+            # no log yet
+            pass
+
+        elif model_name == 'Level':
+            pass
+        elif model_name == 'Sector':
+            pass
+        elif model_name == 'Subjecttype':
+            pass
+        elif model_name == 'Norm':
+            pass
+        elif model_name == 'Scheme':
+            pass
+        elif model_name == 'Subject':
+            pass
+        elif model_name == 'Schemeitem':
+            pass
+        elif model_name == 'Exam':
+            pass
+        elif model_name == 'Package':
+            pass
+        elif model_name == 'Packageitem':
+            pass
+        elif model_name == 'Cluster':
+            pass
+
+        elif model_name == 'Student':
+            pass
+        elif model_name == 'Result':
+            pass
+        elif model_name == 'Resultnote':
+            pass
+        elif model_name == 'Studentsubject':
+            pass
+        elif model_name == 'Studentsubjectnote':
+            pass
+        elif model_name == 'Noteattachment':
+            pass
+        elif model_name == 'Grade':
+            pass
+
+# - end of save_to_log
+
+def copy_examyear_to_log(mode, instance, modby_id, mod_at):
+    try:
+        examyear_log = Examyear_log(
+            examyear_id=instance.id,
+            country_id=instance.country_id,
+            code=instance.code,
+            published=instance.published,
+            locked=instance.locked,
+            createdat=instance.createdat,
+            publishedat=instance.publishedat,
+            modifiedby_id=modby_id,
+            modifiedat=mod_at,
+            mode=mode
+        )
+        examyear_log.save()
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
 
 
-            # PR2019-02-24 This works, but is rather complicated
-            insert_other_fields = 'examyear, published, locked, modifiedby_id, createdat, publishedat, lockedat,'
+def copy_department_to_log(mode, instance, modby_id, mod_at):
+    logger.debug(' ----- copy_department_to_log  -----')  # PR2021-04-25
+    logger.debug('mode: ' + str(mode) )
+    logger.debug('instance: ' + str(instance) + ' ' + str(type(instance)) )
+    logger.debug('modby_id: ' + str(modby_id) + ' ' + str(type(modby_id)) )
+    logger.debug('mod_at: ' + str(mod_at) + ' ' + str(type(mod_at)) )
 
-            insert_from_table = 'schools_examyear'
-            insert_into = 'mode, examyear_id, country_log_id, examyear, published, locked, modifiedby_id, createdat, publishedat, lockedat,'
-            insert_from = '%(mode)s::TEXT, id, ' \
-                          '(SELECT id FROM schools_country_log WHERE country_id=exy.country_id ORDER BY id DESC LIMIT 1),'
+    try:
+        # get most recent examyear_log (with highest id)
+        examyear_log = Examyear_log.objects.filter(
+            examyear_id=instance.examyear_id
+        ).order_by('-pk').first()
+        logger.debug('examyear_log: ' + str(examyear_log) + ' ' + str(type(examyear_log)) )
 
-            if mode == 'd':
-                # when delete: enter req_user and now in modified_by / modifiedat
-                select_modified = "%(mod_by_id)s::INT, %(mod_at)s::TIMESTAMPTZ"
+        if examyear_log:
+            department_log = Department_log(
+                department_id=instance.id,
+                base_id=instance.base_id,
+                examyear_log_id=examyear_log.id,
 
-            else:
-                # in other modes: copy modifiedby_id, modifiedat from instance
-                select_modified = "modifiedby_id, modifiedat"
-            #                     "SELECT (nextval('" + insert_from_table + "_log_id_seq'), id) FROM",
-            sql_list = ['INSERT INTO schools_examyear_log',
-                        '(examyear_id, country_log_id, examyear, published, locked, createdat, publishedat, lockedat, mode, modifiedby_id, modifiedat)',
-                        "SELECT id, ",
-                        "(SELECT id FROM schools_country_log WHERE country_id=schools_examyear.country_id ORDER BY id DESC LIMIT 1)"
-                        ", examyear, published, locked, createdat, publishedat, lockedat, %(mode)s::TEXT,",
-                        select_modified,
-                        "FROM schools_examyear",
-                        'WHERE id=%(instance_pk)s::INT',
-                        'RETURNING id, examyear'
-                        ]
-            sql = ' '.join(sql_list)
+                name=instance.name,
+                abbrev=instance.abbrev,
+                sequence=instance.sequence,
+                level_req=instance.level_req,
+                sector_req=instance.sector_req,
+                has_profiel=instance.has_profiel,
 
-            #logger.debug('sql: ' + str(sql))
-            sql_keys = {
-                'mode': mode,
-                'mod_by_id': modby_id,
-                'mod_at': mod_at,
-                'instance_pk': instance.pk}
-            #logger.debug('sql_keys: ' + str(sql_keys))
+                modifiedby_id=modby_id,
+                modifiedat=mod_at,
+                mode=mode
+            )
+            department_log.save()
 
-            newcursor = connection.cursor()
-            newcursor.execute(sql, sql_keys)
-            #rows = dictfetchall(newcursor)
-            #for row in rows:
-                #logger.debug('row: ' + str(row))
-
-
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
 
 #######################################
 
@@ -789,4 +806,55 @@ def get_country(country_abbrev):
         ).order_by('-pk').first()
     return country
 
+"""
+Old save_to_log with SQL, not in use PR2021-04-25
+
+elif model_name == 'Grade':
+    # this one not working, cannot get filter pc.id with LIMIT 1 in query, get info from pricecodelist instead
+    sub_ssl_list = ["SELECT id, studentsubject_id AS studsubj_id,",
+                    "FROM studentsubject_log",
+                    "ORDER BY id DESC NULLS LAST LIMIT 1"]
+    sub_ssl = ' '.join(sub_ssl_list)
+    # note: multiple WITH clause syntax:WITH cte1 AS (SELECT...), cte2 AS (SELECT...) SELECT * FROM ...
+    sql_keys = {'grade_id': pk_int,  'mode': mode, 'modby_id': modby_id, 'mod_at': mod_at}
+    sql_list = ["WITH sub_ssl AS (" + sub_ssl + ")",
+                "INSERT INTO students_grade_log (id,",
+                    "grade_id, studentsubject_log_id, examperiod,",
+                    "pescore, cescore, segrade, pegrade, cegrade, pecegrade, finalgrade,",
+                    "sepublished, pepublished, cepublished,",
+                    "mode, modifiedby_id, modifiedat)",
+                "SELECT nextval('students_grade_log_id_seq'),",
+                    "grade_id, sub_ssl.id, examperiod,",
+                    "pescore, cescore, segrade, pegrade, cegrade, pecegrade, finalgrade,",
+                    "sepublished, pepublished, cepublished,",
+                    "%(mode)s::TEXT, %(modby_id)s::INT, %(mod_at)s::DATE",
+                "FROM students_grade AS grade",
+                "INNER JOIN sub_ssl ON (sub_ssl.studsubj_id = grade.studentsubject_id)",
+                "WHERE (grade.id = %(grade_id)s::INT"]
+
+    sql_list = ["SELECT nextval('students_grade_log_id_seq') AS sgl_id,",
+                    "grade.id, grade.examperiod,",
+                    "%(mode)s::TEXT AS mode, %(modby_id)s::INT AS modby_id, %(mod_at)s::DATE AS mod_at",
+                "FROM students_grade AS grade",
+                "WHERE id = %(grade_id)s::INT"]
+    sql = ' '.join(sql_list)
+    #logger.debug('sql_keys: ' + str(sql_keys))
+    #logger.debug('sql: ' + str(sql))
+
+    #logger.debug('---------------------- ')
+    with connection.cursor() as cursor:
+        #logger.debug('================= ')
+        cursor.execute(sql, sql_keys)
+        #for qr in connection.queries:
+            #logger.debug('-----------------------------------------------------------------------------')
+            #logger.debug(str(qr))
+
+        #logger.debug('---------------------- ')
+        #rows = dictfetchall(cursor)
+        #logger.debug('---------------------- ')
+        #for row in rows:
+            #logger.debug('row: ' + str(row))
+    
+
+"""
 

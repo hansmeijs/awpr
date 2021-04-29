@@ -174,9 +174,10 @@ def message_diff_exyr(examyear):  #PR2020-10-30
         if examyear_int != this_examyear:
             # PR2018-08-24 debug: in base.html  href="#" is needed,
             # because bootstrap line 233: a:not([href]):not([tabindex]) overrides navbar-item-warning
-            awp_message = {'info': _("Please note: the selected exam year is different from the current exam year."),
-                           'class': 'alert-warning',
-                           'id': 'id_diff_exyr'}
+            msg = str(_(
+                'Please note: the selected exam year %(exyr)s is different from the current exam year.') % {
+                          'exyr': str(examyear.code)})
+            awp_message = {'msg_list': [msg], 'class': 'alert-warning'}
     return awp_message
 
 

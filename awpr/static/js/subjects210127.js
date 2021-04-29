@@ -306,8 +306,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Add_subject, function() {MSJ_Open()});
-            AddSubmenuButton(el_submenu, loc.Delete_subject, function() {ModConfirmOpen("delete")}, ["mx-2"]);
-            AddSubmenuButton(el_submenu, loc.Upload_subjects, null, ["mx-2"], "id_submenu_subjectimport", url_subject_import);
+            AddSubmenuButton(el_submenu, loc.Delete_subject, function() {ModConfirmOpen("delete")});
+            AddSubmenuButton(el_submenu, loc.Upload_subjects, null, "id_submenu_subjectimport", url_subject_import);
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
 
@@ -666,7 +666,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const item = (tblName === "examyear") ? loc.an_examyear :
                          (tblName === "school") ? loc.a_school :
                          (tblName === "department") ? loc.a_department : "";
-            const placeholder = loc.Type_few_letters_and_select + item + loc.in_the_list;
+            const placeholder = loc.Type_few_letters_and_select + item + loc.in_the_list + "..";
             el_ModSelect_input.setAttribute("placeholder", placeholder)
 
             console.log( "mod_dict ", mod_dict);

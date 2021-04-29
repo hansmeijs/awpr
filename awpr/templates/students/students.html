@@ -15,21 +15,18 @@
         <div class="content_subheader_left tab_show tab_init mx-2 my-4">
             <h5>{% trans 'Students' %}</h5>
         </div>
-        {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
+        {% if not no_access %}
             <div class="tw_200 mx-2 mt-2 mb-4">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Filter' %}:</h6>
                 <input id="id_SBR_filter"
                     type="text"
                     class="tw_200 border_none px-2">
             </div>
-
             <div class="tbl_div_520_200 mx-2 my-2">
                 <table>
                     <tbody id="id_SBR_tblbody_select"></tbody>
                 </table>
             </div>
-
-
         {% endif %}
     </nav>
 {% endblock %}
@@ -38,11 +35,8 @@
 {% block content %}
     <div id="id_content">
         {% if no_access %}
-            <div class="mx-4 mt-5 pt-5">
-                <div class="alert alert-danger">{{ no_access_message }}</div>
-            </div>
+            {% include 'includes/message_noaccess.html' %}
         {% else %}
-
             {% include 'schools/modselectexamyear.html' %}
             {% include 'schools/modselectschoolordep.html' %}
             {% include 'includes/modconfirm.html' %}

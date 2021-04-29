@@ -14,395 +14,478 @@ from subjects import models as subj_mod
 import logging
 logger = logging.getLogger(__name__)
 
-def copy_deps_from_prev_examyear(request_user, prev_examyear_pk, new_examyear_pk):
-    # copy departments from previous examyear if it exists # PR2019-02-23
 
-    if prev_examyear_pk and new_examyear_pk:
-        modifiedby_id = request_user.id
-        modifiedat = timezone.now()
+def copy_exfilestext_from_prev_examyear(request, prev_examyear, new_examyear):
+    # copy exfilestext from previous examyear PR2021-04-25
 
-        cursor = connection.cursor()
+    modifiedby_id = request.user.id
+    modifiedat = timezone.now()
 
-# - copy departments from previous examyear
-        field_list = 'name, abbrev, sequence, level_req, sector_req, has_profiel,'
-        sql_list =['INSERT INTO schools_department',
-                   '(base_id, examyear_id,',
-                   field_list,
-                   'modifiedby_id, modifiedat)',
-                   'SELECT base_id, %(new_ey_pk)s AS new_examyear_id,',
-                   field_list,
-                   '%(mod_by)s AS modifiedby_id, %(mod_at)s AS modifiedat',
-                   'FROM schools_department WHERE examyear_id = %(prev_ey_pk)s;']
-        sql = ' '.join(sql_list)
-        sql_keys = {'prev_ey_pk': prev_examyear_pk,
-                    'new_ey_pk': new_examyear_pk,
-                    'mod_by': modifiedby_id,
-                    'mod_at': modifiedat}
-        cursor.execute(sql, sql_keys)
-        connection.commit()
+# - loop through exfilestext of prev examyear
+    prev_exfilestext = sch_mod.ExfilesText.objects.filter(
+        examyear=prev_examyear
+    )
+    for prev_eft in prev_exfilestext:
+        try:
+# - create new exfilestext
+            new_eft = sch_mod.ExfilesText(
+                examyear=new_examyear,
 
-# - get latest Examyear_log row that corresponds with new_examyear.
-        # The Examyear_log row is created at self.new_examyear.save in Schools.Model
-        new_examyear_log = sch_mod.Examyear_log.objects.filter(examyear_id=new_examyear_pk).order_by('-id').first()
-        new_examyear_log_id = new_examyear_log.id
+                key=prev_eft.key,
+                subkey=prev_eft.subkey,
+                setting=prev_eft.setting,
 
-# - copy new departments to department_log
-        # PR2019-02-23 debug: add False AS name_mod etc in sql, they don't get default value at commit
-        sql_list =['INSERT INTO schools_department_log',
-                    '(department_id, base_id, examyear_log_id,',
-                    field_list,
-                    'mode, modifiedby_id, modifiedat)',
-                    'SELECT id, base_id, %(new_ey_log_pk)s AS examyear_log_id,',
-                    field_list,
-                    '%(mode)s AS mode, %(mod_by)s AS modifiedby_id, %(mod_at)s AS modifiedat',
-                    'FROM schools_department WHERE examyear_id = %(new_ey_log_pk)s;']
-        sql = ' '.join(sql_list)
-        sql_log_keys = {'new_ey_log_pk': new_examyear_log_id,
-                    'mode':  c.MODE_C_CREATED,
-                    'mod_by': modifiedby_id,
-                    'mod_at': modifiedat}
-        cursor.execute(sql,sql_log_keys)
-        connection.commit()
-
-def copy_levels_from_prev_examyear(request_user, prev_examyear_pk, new_examyear_pk):
-    # copy levels from previous examyear if it exists # PR2019-02-23 PR2020-10-06
-
-    if prev_examyear_pk and new_examyear_pk:
-        modifiedby_id = request_user.id
-        modifiedat = timezone.now()
-
-        cursor = connection.cursor()
-
-# - copy levels from previous examyear
-        field_list = 'name, abbrev, sequence, depbases,'
-        sql_list = ['INSERT INTO subjects_level',
-                    '(base_id, examyear_id,',
-                    field_list,
-                    'modifiedby_id, modifiedat)',
-                    'SELECT base_id, %(new_ey_pk)s AS new_examyear_id,',
-                    field_list,
-                    '%(mod_by)s AS modifiedby_id, %(mod_at)s AS modifiedat',
-                    'FROM subjects_level WHERE examyear_id = %(prev_ey_pk)s;']
-        sql = ' '.join(sql_list)
-        sql_keys = {'prev_ey_pk': prev_examyear_pk,
-                    'new_ey_pk': new_examyear_pk,
-                    'mod_by': modifiedby_id,
-                    'mod_at': modifiedat}
-        cursor.execute(sql, sql_keys)
-        connection.commit()
-
-        # - get latest Examyear_log row that corresponds with new_examyear.
-        # The Examyear_log row is created at self.new_examyear.save in Schools.Model
-        new_examyear_log = sch_mod.Examyear_log.objects.filter(examyear_id=new_examyear_pk).order_by(
-            '-id').first()
-        new_examyear_log_id = new_examyear_log.id
-
-        # - copy new levels to level_log
-        # PR2019-02-23 debug: add False AS name_mod etc in sql, they don't get default value at commit
-        sql_list = ['INSERT INTO subjects_level_log',
-                    '(level_id, base_id, examyear_log_id,',
-                    field_list,
-                    'mode, modifiedby_id, modifiedat)',
-                    'SELECT id, base_id, %(new_ey_log_pk)s AS examyear_log_id,',
-                    field_list,
-                    '%(mode)s AS mode, %(mod_by)s AS modifiedby_id, %(mod_at)s AS modifiedat',
-                    'FROM subjects_level WHERE examyear_id = %(new_ey_log_pk)s;']
-        sql = ' '.join(sql_list)
-        sql_log_keys = {'new_ey_log_pk': new_examyear_log_id,
-                    'mode':   c.MODE_C_CREATED,
-                    'mod_by': modifiedby_id,
-                    'mod_at': modifiedat}
-        cursor.execute(sql, sql_log_keys)
-        connection.commit()
-
-def copy_sectors_from_prev_examyear(request_user, prev_examyear_pk, new_examyear_pk):
-    # copy sectors from previous examyear if it exists # PR2019-02-23
-
-    if prev_examyear_pk and new_examyear_pk:
-        modifiedby_id = request_user.id
-        modifiedat = timezone.now()
-
-        cursor = connection.cursor()
-
-        # - copy sectors from previous examyear
-        field_list = 'name, abbrev, sequence, depbases,'
-        sql_list = ['INSERT INTO subjects_sector',
-                    '(base_id, examyear_id,',
-                    field_list,
-                    'modifiedby_id, modifiedat)',
-                    'SELECT base_id, %(new_ey_pk)s AS new_examyear_id,',
-                    field_list,
-                    '%(mod_by)s AS modifiedby_id, %(mod_at)s AS modifiedat',
-                    'FROM subjects_sector WHERE examyear_id = %(prev_ey_pk)s;']
-        sql = ' '.join(sql_list)
-        sql_keys = {'prev_ey_pk': prev_examyear_pk,
-                    'new_ey_pk': new_examyear_pk,
-                    'mod_by': modifiedby_id,
-                    'mod_at': modifiedat}
-        cursor.execute(sql,sql_keys)
-        connection.commit()
-
-        # - get latest Examyear_log row that corresponds with new_examyear.
-        # The Examyear_log row is created at self.new_examyear.save in Schools.Model
-        new_examyear_log = sch_mod.Examyear_log.objects.filter(examyear_id=new_examyear_pk).order_by(
-            '-id').first()
-        new_examyear_log_id = new_examyear_log.id
-
-        # - copy new sectors to sector_log
-        # PR2019-02-23 debug: add False AS name_mod etc in sql, they don't get default value at commit
-        sql_list = ['INSERT INTO subjects_sector_log',
-                    '(sector_id, base_id, examyear_log_id,',
-                    field_list,
-                    'mode, modifiedby_id, modifiedat)',
-                    'SELECT id, base_id, %(new_ey_log_pk)s AS examyear_log_id,',
-                    field_list,
-                    '%(mode)s AS mode, %(mod_by)s AS modifiedby_id, %(mod_at)s AS modifiedat',
-                    'FROM subjects_sector WHERE examyear_id = %(new_ey_log_pk)s;']
-        sql = ' '.join(sql_list)
-        sql_log_keys = {'new_ey_log_pk': new_examyear_log_id,
-                    'mode':   c.MODE_C_CREATED,
-                    'mod_by': modifiedby_id,
-                    'mod_at': modifiedat}
-        cursor.execute(sql, sql_log_keys)
-        connection.commit()
+                modifiedby_id=modifiedby_id,
+                modifiedat=modifiedat
+            )
+# - copy new new_subject to log happens in save(request=request)
+            new_eft.save(request=request)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+# - end of copy_exfilestext_from_prev_examyear
 
 
-def copy_schools_from_prev_examyear(request_user, prev_examyear_pk, new_examyear_pk):
-    # copy schools from previous examyear if it exists # PR2019-02-23 PR2020-10-07
+def copy_deps_from_prev_examyear(request, prev_examyear, new_examyear):
+    # copy departments from previous examyear if it exists # PR2021-04-25
 
-    if prev_examyear_pk and new_examyear_pk:
-        modifiedby_id = request_user.id
-        modifiedat = timezone.now()
+    mapped_deps = {}
 
-        cursor = connection.cursor()
-        # - copy schools from previous examyear to new_examyear
-        field_list = 'code, name, abbrev, article, depbases, activated, locked, activatedat, lockedat,'
-        sql_list = ['INSERT INTO schools_school (',
-                        'base_id, examyear_id,',
-                        field_list,
-                        'modifiedby_id, modifiedat',
-                    ') SELECT base_id, %(new_ey_pk)s AS examyear_id,',
-                        field_list,
-                        '%(mod_by)s AS modifiedby_id, %(mod_at)s AS modifiedat',
-                    'FROM schools_school WHERE examyear_id = %(prev_ey_pk)s;']
-        sql = ' '.join(sql_list)
-        sql_keys = {'prev_ey_pk': prev_examyear_pk,
-                    'new_ey_pk': new_examyear_pk,
-                    'mod_by': modifiedby_id,
-                    'mod_at': modifiedat}
-        cursor.execute(sql, sql_keys)
-        connection.commit()
+    modifiedby_id = request.user.id
+    modifiedat = timezone.now()
 
-        # - get latest Examyear_log row that corresponds with new_examyear.
-        # The Examyear_log row is created at self.new_examyear.save in Schools.Model
-        new_examyear_log = sch_mod.Examyear_log.objects.filter(examyear_id=new_examyear_pk).order_by(
-            '-id').first()
-        new_examyear_log_id = new_examyear_log.id
+# - loop through deps of prev examyear
+    prev_deps = sch_mod.Department.objects.filter(
+        examyear=prev_examyear
+    )
+    for prev_dep in prev_deps:
+        try:
+# - create new_dep
+            new_dep = sch_mod.Department(
+                base=prev_dep.base,
+                examyear=new_examyear,
+                name=prev_dep.name,
+                abbrev=prev_dep.abbrev,
+                sequence=prev_dep.sequence,
+                level_req=prev_dep.level_req,
+                sector_req=prev_dep.sector_req,
+                has_profiel=prev_dep.has_profiel,
+                modifiedby_id=modifiedby_id,
+                modifiedat=modifiedat
+            )
+# - copy new department to department_log happens in save(request=request)
+            new_dep.save(request=request)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+        else:
+            if new_dep:
+                mapped_deps[prev_dep.pk] = new_dep.pk
 
-        # - copy new subjects to subject_log
-        # PR2019-02-23 debug: add False AS name_mod etc in sql, they don't get default value at commit
-        sql_list = ['INSERT INTO schools_school_log (',
-                        'school_id, base_id, examyear_log_id,',
-                        field_list,
-                        'mode, modifiedby_id, modifiedat',
-                    ') SELECT id, base_id,'
-                        '%(new_ey_log_pk)s AS examyear_log_id,',
-                        field_list,
-                        '%(mode)s AS mode, %(mod_by)s AS modifiedby_id, %(mod_at)s AS modifiedat',
-                    'FROM schools_school WHERE examyear_id = %(new_ey_log_pk)s;']
-        sql = ' '.join(sql_list)
-        sql_log_keys = {'new_ey_log_pk': new_examyear_log_id,
-                    'mode':   c.MODE_C_CREATED,
-                    'mod_by': modifiedby_id,
-                    'mod_at': modifiedat}
-        cursor.execute(sql, sql_log_keys)
-        connection.commit()
+    return mapped_deps
 
 
-def copy_subjecttypes_from_prev_examyear(request_user, prev_examyear_pk, new_examyear_pk):
-    # copy subjecttypes from previous examyear if it exists # PR2019-02-23
+def copy_levels_from_prev_examyear(request, prev_examyear, new_examyear):
+    # copy levels from previous examyear PR2021-04-25
 
-    if prev_examyear_pk and new_examyear_pk:
-        modifiedby_id = request_user.id
-        modifiedat = timezone.now()
+    mapped_levels = {}
 
-        cursor = connection.cursor()
+    modifiedby_id = request.user.id
+    modifiedat = timezone.now()
 
-        # - copy subjecttypes from previous examyear
-        field_list = 'name, abbrev, code, sequence, depbases, has_prac, has_pws, one_allowed,'
+# - loop through levels of prev examyear
+    prev_levels = subj_mod.Level.objects.filter(
+        examyear=prev_examyear
+    )
+    for prev_lvl in prev_levels:
+        try:
+# - create new level
+            new_lvl = subj_mod.Level(
+                base=prev_lvl.base,
+                examyear=new_examyear,
+                name=prev_lvl.name,
+                abbrev=prev_lvl.abbrev,
+                sequence=prev_lvl.sequence,
+                depbases=prev_lvl.depbases,
+                modifiedby_id=modifiedby_id,
+                modifiedat=modifiedat
+            )
+# - copy new level to log happens in save(request=request)
+            new_lvl.save(request=request)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+        else:
+            if new_lvl:
+                mapped_levels[prev_lvl.pk] = new_lvl.pk
 
-        sql_list = ['INSERT INTO subjects_subjecttype',
-                    '(base_id, examyear_id,',
-                    field_list,
-                    'modifiedby_id, modifiedat)',
-                    'SELECT base_id, %(new_ey_pk)s AS new_examyear_id,',
-                    field_list,
-                    '%(mod_by)s AS modifiedby_id, %(mod_at)s AS modifiedat',
-                    'FROM subjects_subjecttype WHERE examyear_id = %(prev_ey_pk)s;']
-        sql = ' '.join(sql_list)
-        sql_keys = {'prev_ey_pk': prev_examyear_pk,
-                    'new_ey_pk': new_examyear_pk,
-                    'mod_by': modifiedby_id,
-                    'mod_at': modifiedat}
-        cursor.execute(sql, sql_keys)
-        connection.commit()
-
-        # - get latest Examyear_log row that corresponds with new_examyear.
-        # The Examyear_log row is created at self.new_examyear.save in Schools.Model
-        new_examyear_log = sch_mod.Examyear_log.objects.filter(examyear_id=new_examyear_pk).order_by(
-            '-id').first()
-        new_examyear_log_id = new_examyear_log.id
-
-        # - copy new subjecttypes to subjecttype_log
-        # PR2019-02-23 debug: add False AS name_mod etc in sql, they don't get default value at commit
-        sql_list = ['INSERT INTO subjects_subjecttype_log',
-                    '(subjecttype_id, base_id, examyear_log_id,',
-                    field_list,
-                    'mode, modifiedby_id, modifiedat)',
-                    'SELECT id, base_id, %(new_ey_log_pk)s AS examyear_log_id,',
-                    field_list,
-                    '%(mode)s AS mode, %(mod_by)s AS modifiedby_id, %(mod_at)s AS modifiedat',
-                    'FROM subjects_subjecttype WHERE examyear_id = %(new_ey_log_pk)s;']
-        sql = ' '.join(sql_list)
-        sql_log_keys = {'new_ey_log_pk': new_examyear_log_id,
-                    'mode':   c.MODE_C_CREATED,
-                    'mod_by': modifiedby_id,
-                    'mod_at': modifiedat}
-        cursor.execute(sql, sql_log_keys)
-        connection.commit()
+    return mapped_levels
+# - end of copy_levels_from_prev_examyear
 
 
-def copy_subjects_from_prev_examyear(request_user, prev_examyear_pk, new_examyear_pk):
-    # copy subjects from previous examyear if it exists # PR2019-02-23
+def copy_sectors_from_prev_examyear(request, prev_examyear, new_examyear):
+    # copy sectors from previous examyear PR2021-04-25
 
-    if prev_examyear_pk and new_examyear_pk:
-        modifiedby_id = request_user.id
-        modifiedat = timezone.now()
+    mapped_sectors = {}
 
-        cursor = connection.cursor()
+    modifiedby_id = request.user.id
+    modifiedat = timezone.now()
 
-        # - copy subjects from previous examyear to new_examyear
-        field_list = 'name, abbrev, sequence, depbases,'
-        sql_list = ['INSERT INTO subjects_subject (',
-                        'base_id, examyear_id,',
-                        field_list,
-                        'modifiedby_id, modifiedat',
-                    ') SELECT base_id, %(new_ey_pk)s AS examyear_id,',
-                        field_list,
-                        '%(mod_by)s AS modifiedby_id, %(mod_at)s AS modifiedat',
-                    'FROM subjects_subject WHERE examyear_id = %(prev_ey_pk)s;']
-        sql = ' '.join(sql_list)
-        sql_keys = {'prev_ey_pk': prev_examyear_pk,
-                    'new_ey_pk': new_examyear_pk,
-                    'mod_by': modifiedby_id,
-                    'mod_at': modifiedat}
-        cursor.execute(sql, sql_keys)
-        connection.commit()
+# - loop through sectors of prev examyear
+    prev_sectors = subj_mod.Sector.objects.filter(
+        examyear=prev_examyear
+    )
+    for prev_sct in prev_sectors:
+        try:
+# - create new sector
+            new_sector = subj_mod.Sector(
+                base=prev_sct.base,
+                examyear=new_examyear,
+                name=prev_sct.name,
+                abbrev=prev_sct.abbrev,
+                sequence=prev_sct.sequence,
+                depbases=prev_sct.depbases,
+                modifiedby_id=modifiedby_id,
+                modifiedat=modifiedat
+            )
+# - copy new sector to log happens in save(request=request)
+            new_sector.save(request=request)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+        else:
+            if new_sector:
+                mapped_sectors[prev_sct.pk] = new_sector.pk
 
-        # - get latest Examyear_log row that corresponds with new_examyear.
-        # The Examyear_log row is created at self.new_examyear.save in Schools.Model
-        new_examyear_log = sch_mod.Examyear_log.objects.filter(examyear_id=new_examyear_pk).order_by(
-            '-id').first()
-        new_examyear_log_id = new_examyear_log.id
-
-        # - copy new subjects to subject_log
-        # PR2019-02-23 debug: add False AS name_mod etc in sql, they don't get default value at commit
-        sql_list = ['INSERT INTO subjects_subject_log (',
-                        'subject_id, base_id, examyear_log_id,',
-                        field_list,
-                        'mode, modifiedby_id, modifiedat',
-                    ') SELECT id, base_id,'
-                        '%(new_ey_log_pk)s AS examyear_log_id,',
-                        field_list,
-                        '%(mode)s AS mode, %(mod_by)s AS modifiedby_id, %(mod_at)s AS modifiedat',
-                    'FROM subjects_subject WHERE examyear_id = %(new_ey_log_pk)s;']
-        sql = ' '.join(sql_list)
-        sql_log_keys = {'new_ey_log_pk': new_examyear_log_id,
-                    'mode':   c.MODE_C_CREATED,
-                    'mod_by': modifiedby_id,
-                    'mod_at': modifiedat}
-        cursor.execute(sql, sql_log_keys)
-        connection.commit()
+    return mapped_sectors
+# - end of copy_sectors_from_prev_examyear
 
 
-def copy_schemes_from_prev_examyear(request_user, prev_examyear_pk, new_examyear_pk):
-    # copy schemes from previous examyear if it exists # PR2019-02-23
+def copy_schools_from_prev_examyear(request, prev_examyear, new_examyear):
+    # copy schools from previous examyear PR2021-04-25
 
-    if prev_examyear_pk and new_examyear_pk:
-        modifiedby_id = request_user.id
-        modifiedat = timezone.now()
+    mapped_schools = {}
 
-        cursor = connection.cursor()
+    modifiedby_id = request.user.id
+    modifiedat = timezone.now()
 
-# - copy schemes from previous examyear
-        # get department_id of new_examyear, using subquery with filter base_id and examyear_id = new_examyear_pk
-        # als with level_id andsector_id
-        sql_list = ['INSERT INTO subjects_scheme',
-                    '(department_id, level_id, sector_id, name, fields, modifiedby_id, modifiedat)',
-                    'SELECT',
-                    '(SELECT id FROM schools_department AS d WHERE d.base_id = dep.base_id AND d.examyear_id = %(new_ey_pk)s),',
-                    '(SELECT id FROM subjects_level AS l WHERE l.base_id = lvl.base_id AND l.examyear_id = %(new_ey_pk)s),',
-                    '(SELECT id FROM subjects_sector AS s WHERE s.base_id = sct.base_id AND s.examyear_id = %(new_ey_pk)s),',
-                    'sch.name, sch.fields,',
-                    '%(mod_by)s AS modifiedby_id, %(mod_at)s AS modifiedat',
-                    'FROM subjects_scheme AS sch',
-                    'INNER JOIN schools_department AS dep ON dep.id = sch.department_id',
-                    'INNER JOIN subjects_level AS lvl ON lvl.id = sch.level_id',
-                    'INNER JOIN subjects_sector AS sct ON sct.id = sch.sector_id',
-                    'WHERE dep.examyear_id=%(prev_ey_pk)s;']
-        sql = ' '.join(sql_list)
-        sql_keys = {'prev_ey_pk': prev_examyear_pk,
-                    'new_ey_pk': new_examyear_pk,
-                    'mod_by': modifiedby_id,
-                    'mod_at': modifiedat}
-        cursor.execute(sql, sql_keys)
-        connection.commit()
+# - loop through schools of prev examyear
+    prev_schools = sch_mod.School.objects.filter(
+        examyear=prev_examyear
+    )
+    for prev_school in prev_schools:
+        try:
+# - create new school
+            new_school = sch_mod.School(
+                base=prev_school.base,
+                examyear=new_examyear,
+                name=prev_school.name,
+                abbrev=prev_school.abbrev,
+                article=prev_school.article,
+                depbases=prev_school.depbases,
 
-        # Fields from  subjects_scheme_log are:
-            # id, scheme_id, dep_log_id, level_log_id, sector_log_id, '
-            # name, fields, dep_mod, level_mod, sector_mod, name_mod, fields_mod'
-            # 'mode, modifiedby_id, modifiedat'
+                isdayschool=prev_school.isdayschool,
+                iseveningschool=prev_school.iseveningschool,
+                islexschool=prev_school.islexschool,
 
-        # PR2019-02-24
-        sql_list = ['INSERT INTO Scheme_log (',
-                        'scheme_id, department_log_id, level_log_id, sector_log_id,',
-                        'name, fields, mode, department_mod, level_mod, sector_mod, name_mod, fields_mod,',
-                        'modifiedby_id, modifiedat',
-                    ') SELECT sch.id,',
-                        '(SELECT id FROM Department_log WHERE base_id=dep.base_id AND examyear_id=dep.examyear_id ORDER BY id DESC LIMIT 1) AS dep_log_id,',
-                        '(SELECT id FROM Level_log WHERE base_id=lvl.base_id AND examyear_id=dep.examyear_id ORDER BY id DESC LIMIT 1) AS level_log_id,',
-                        '(SELECT id FROM Sector_log WHERE base_id=sct.base_id AND examyear_id=dep.examyear_id ORDER BY id DESC LIMIT 1) AS sector_log_id,',
-                        'sch.name, sch.fields,',
-                        '%(mode)s as mode, False AS department_mod, False AS level_mod, False AS sector_mod, False AS name_mod, False AS fields_mod,',
-                        'sch.modifiedby_id, sch.modifiedat',
-                    'FROM [Level] AS lvl INNER JOIN (',
-                            'Sector AS sct INNER JOIN (',
-                                'Department AS dep INNER JOIN Scheme AS sch',
-                                'ON dep.id = sch.department_id)',
-                            'ON sct.id = sch.sector_id)',
-                        'ON lvl.id = sch.level_id',
-                    'WHERE dep.examyear_id=%(new_ey_pk)s;']
-        sql = ' '.join(sql_list)
-        sql_log_keys = {'new_ey_pk': new_examyear_pk,
-                    'mode':   c.MODE_C_CREATED}
-        cursor.execute(sql, sql_log_keys)
-        connection.commit()
+                #activated=False,
+                #locked=False,
+                #activatedat=None,
+                #lockedat=None,
+
+                modifiedby_id=modifiedby_id,
+                modifiedat=modifiedat
+            )
+# - copy new school to log happens in save(request=request)
+            new_school.save(request=request)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+        else:
+            if new_school:
+                mapped_schools[prev_school.pk] = new_school.pk
+
+    return mapped_schools
+
+
+# - end of copy_sectors_from_prev_examyear
+
+def copy_subjecttypes_from_prev_examyear(request, prev_examyear, new_examyear):
+    # copy subjecttypes from previous examyear PR2021-04-25
+
+    mapped_subjecttypes = {}
+
+    modifiedby_id = request.user.id
+    modifiedat = timezone.now()
+
+# - loop through subjecttypes of prev examyear
+    prev_subjecttypes = subj_mod.Subjecttype.objects.filter(
+        examyear=prev_examyear
+    )
+    for prev_sjt in prev_subjecttypes:
+        try:
+# - create new subjecttype
+            new_subjecttype = subj_mod.Subjecttype(
+                base=prev_sjt.base,
+                examyear=new_examyear,
+
+                name=prev_sjt.name,
+                abbrev=prev_sjt.abbrev,
+                code=prev_sjt.code,
+                sequence=prev_sjt.sequence,
+                depbases=prev_sjt.depbases,
+
+                has_prac=prev_sjt.has_prac,
+                has_pws=prev_sjt.has_pws,
+                one_allowed=prev_sjt.one_allowed,
+
+                modifiedby_id=modifiedby_id,
+                modifiedat=modifiedat
+            )
+# - copy new subjecttype to log happens in save(request=request)
+            new_subjecttype.save(request=request)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+        else:
+            if new_subjecttype:
+                mapped_subjecttypes[prev_sjt.pk] = new_subjecttype.pk
+
+    return mapped_subjecttypes
+# - end of copy_subjecttypes_from_prev_examyear
+
+
+def copy_subjects_from_prev_examyear(request, prev_examyear, new_examyear):
+    # copy subjects from previous examyear PR2021-04-25
+
+    mapped_subjects = {}
+
+    modifiedby_id = request.user.id
+    modifiedat = timezone.now()
+
+# - loop through subjects of prev examyear
+    prev_subjects = subj_mod.Subject.objects.filter(
+        examyear=prev_examyear
+    )
+    for prev_subject in prev_subjects:
+        try:
+# - create new new_subject
+            new_subject = subj_mod.Subject(
+                base=prev_subject.base,
+                examyear=new_examyear,
+
+                name=prev_subject.name,
+                sequence=prev_subject.sequence,
+                depbases=prev_subject.depbases,
+
+                modifiedby_id=modifiedby_id,
+                modifiedat=modifiedat
+            )
+# - copy new new_subject to log happens in save(request=request)
+            new_subject.save(request=request)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+        else:
+            if new_subject:
+                mapped_subjects[prev_subject.pk] = new_subject.pk
+
+    return mapped_subjects
+# - end of copy_subjects_from_prev_examyear
+
+
+def copy_schemes_from_prev_examyear(request, prev_examyear,
+                                    mapped_deps, mapped_levels, mapped_sectors):
+    # copy schemes from previous examyear PR2021-04-25
+
+    mapped_schemes = {}
+
+    modifiedby_id = request.user.id
+    modifiedat = timezone.now()
+
+# - loop through schemes of prev examyear
+    prev_schemes = subj_mod.Scheme.objects.filter(
+        department__examyear=prev_examyear
+    )
+    for prev_scheme in prev_schemes:
+        try:
+# get mapped values of dep. lvl and sct
+            new_dep_pk = mapped_deps.get(prev_scheme.department_id)
+            new_lvl_pk = mapped_levels.get(prev_scheme.level_id)
+            new_sct_pk = mapped_sectors.get(prev_scheme.sector_id)
+# - create new scheme
+            new_scheme = subj_mod.Scheme(
+                department_id=new_dep_pk,
+                level_id=new_lvl_pk,
+                sector_id=new_sct_pk,
+
+                name=prev_scheme.name,
+                fields=prev_scheme.fields,
+
+                modifiedby_id=modifiedby_id,
+                modifiedat=modifiedat
+            )
+# - copy new scheme to log happens in save(request=request)
+            new_scheme.save(request=request)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+        else:
+            if new_scheme:
+                mapped_schemes[prev_scheme.pk] = new_scheme.pk
+
+    return mapped_schemes
+# - end of copy_schemes_from_prev_examyear
+
+
+def copy_schemeitems_from_prev_examyear(request, prev_examyear, mapped_schemes, mapped_subjects, mapped_subjecttypes):
+    # copy schemeitems from previous examyear PR2021-04-25
+
+    mapped_schemeitems = {}
+
+    modifiedby_id = request.user.id
+    modifiedat = timezone.now()
+
+# - loop through schemeitems of prev examyear
+    prev_schemeitems = subj_mod.Schemeitem.objects.filter(
+        scheme__department__examyear=prev_examyear
+    )
+    for prev_si in prev_schemeitems:
+        try:
+# get mapped values of dep. lvl and sct
+            new_scheme_pk = mapped_schemes.get(prev_si.scheme_id)
+            new_subject_pk = mapped_subjects.get(prev_si.subject_id)
+            new_subjecttype_pk = mapped_subjecttypes.get(prev_si.subjecttype_id)
+# - create new schemeitem
+            new_si = subj_mod.Schemeitem(
+                scheme_id=new_scheme_pk,
+                subject_id=new_subject_pk,
+                subjecttype_id=new_subjecttype_pk,
+
+                norm=None,
+                gradetype=prev_si.gradetype,
+                weight_se=prev_si.weight_se,
+                weight_ce=prev_si.weight_ce,
+
+                is_mandatory=prev_si.is_mandatory,
+                is_combi=prev_si.is_combi,
+                extra_count_allowed=prev_si.extra_count_allowed,
+                extra_nocount_allowed=prev_si.extra_nocount_allowed,
+                elective_combi_allowed=prev_si.elective_combi_allowed,
+                has_practexam=prev_si.has_practexam,
+                has_pws=prev_si.has_pws,
+
+                reex_se_allowed=prev_si.reex_se_allowed,
+                reex_combi_allowed=prev_si.reex_combi_allowed,
+                no_centralexam=prev_si.no_centralexam,
+                no_reex=prev_si.no_reex,
+                no_thirdperiod=prev_si.no_thirdperiod,
+                no_exemption_ce=prev_si.no_exemption_ce,
+
+                modifiedby_id=modifiedby_id,
+                modifiedat=modifiedat
+            )
+    # - copy new schemeitem to log happens in save(request=request)
+            new_si.save(request=request)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+        else:
+            if new_si:
+                mapped_schemeitems[prev_si.pk] = new_si.pk
+
+    return mapped_schemeitems
+# - end of copy_schemeitems_from_prev_examyear
+
+
+def copy_packages_from_prev_examyear(request, prev_examyear, mapped_schools, mapped_schemes):
+    # copy packages from previous examyear PR2021-04-25
+
+    mapped_packages = {}
+
+    modifiedby_id = request.user.id
+    modifiedat = timezone.now()
+
+# - loop through packages of prev examyear
+    prev_packages = subj_mod.Package.objects.filter(
+        scheme__department__examyear=prev_examyear
+    )
+    for prev_package in prev_packages:
+        try:
+# get mapped values of school and scheme
+            new_school_pk = mapped_schools.get(prev_package.school_id)
+            new_scheme_pk = mapped_schemes.get(prev_package.scheme_id)
+# - create new package
+            new_package = subj_mod.Package(
+                school_id=new_school_pk,
+                scheme_id=new_scheme_pk,
+
+                name=prev_package.name,
+
+                modifiedby_id=modifiedby_id,
+                modifiedat=modifiedat
+            )
+# - copy new package to log happens in save(request=request)
+            new_package.save(request=request)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+        else:
+            if new_package:
+                mapped_packages[prev_package.pk] = new_package.pk
+
+    return mapped_packages
+# - end of copy_packages_from_prev_examyear
+
+
+def copy_packageitems_from_prev_examyear(request, prev_examyear, mapped_packages, mapped_schemeitems):
+    # copy packageitems from previous examyear PR2021-04-25
+
+    modifiedby_id = request.user.id
+    modifiedat = timezone.now()
+
+# - loop through packageitems of prev examyear
+    prev_packageitems = subj_mod.Packageitem.objects.filter(
+        package__scheme__department__examyear=prev_examyear
+    )
+    for prev_pi in prev_packageitems:
+        try:
+# get mapped values of packages and schemeitems
+            new_package_pk = mapped_packages.get(prev_pi.package_id)
+            new_schemeitem_pk = mapped_schemeitems.get(prev_pi.schemeitem_id)
+# - create new packageitems
+            new_pi = subj_mod.Packageitem(
+                package_id=new_package_pk,
+                schemeitem_id=new_schemeitem_pk,
+
+                modifiedby_id=modifiedby_id,
+                modifiedat=modifiedat
+            )
+    # - copy new packageitems to log happens in save(request=request)
+            new_pi.save(request=request)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+    return mapped_schemeitems
+# - end of copy_packageitems_from_prev_examyear
+
 
 
 def get_previous_examyear_instance(new_examyear_instance):
     # get previous examyear of this country from new_examyear, check if it exists # PR2019-02-23 PR2020-10-06
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- get_previous_examyear_instance -------')
+        logger.debug('new_examyear_instance: ' + str(new_examyear_instance) + ' ' + str(type(new_examyear_instance)))
+
     prev_examyear_instance = None
     msg_err = None
     if new_examyear_instance is not None:
-        new_examyear_int = new_examyear_instance.examyear
-        prev_examyear_int = int(new_examyear_int) - 1
+        new_examyear_code_int = new_examyear_instance.code
+        prev_examyear_int = int(new_examyear_code_int) - 1
         prev_examyear_instance = sch_mod.Examyear.objects.get_or_none(
             country=new_examyear_instance.country,
             code=prev_examyear_int)
+        if logging_on:
+            logger.debug('prev_examyear_int: ' + str(prev_examyear_int) + ' ' + str(type(prev_examyear_int)))
+            logger.debug('prev_examyear_instance: ' + str(prev_examyear_instance) + ' ' + str(type(prev_examyear_instance)))
         if prev_examyear_instance is None:
             prev_examyear_count = sch_mod.Examyear.objects.filter(
                 country=new_examyear_instance.country,
                 code=prev_examyear_int).count()
+            # TOD for testing
+            prev_examyear_count = 2
             if prev_examyear_count:
                 msg_err = _("Multiple instances of previous exam year %(ey_yr) were found. Please delete duplicates first.")
             else:

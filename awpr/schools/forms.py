@@ -30,21 +30,6 @@ logger = logging.getLogger(__name__)
 
 # +++++++++++++++++++++  VALIDATORS  ++++++++++++++++++++++++++++++
 
-# ===  Examyear  =====================================
-class validate_unique_examyear(object):  # PR2018-07-25:
-    def __init__(self, country):
-        self.country = country
-        logger.debug('validate_unique_examyear __init__ self.country: ' + str(self.country))
-
-    def __call__(self, value):
-        logger.debug('validate_unique_examyear __call__ value: ' + str(value))
-        if Examyear.objects.filter(code=value, country=self.country).exists():
-            logger.debug('validate_unique_examyear ValidationError: Examyear already exists')
-            # raise ValidationError({'examyear':[_('Examyear already exists.'),]})
-            raise ValidationError(_('Examyear already exists.'))
-
-        return value
-
 
 # ===  Department  =====================================
 class validate_unique_department_name(object):  # PR2018-08-15 PR2018-10-20

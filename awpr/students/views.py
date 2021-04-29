@@ -307,7 +307,7 @@ class NoteAttachmentDownloadView(View): # PR2021-03-17
     def get(self, request, pk_int):
         logger.debug(' ============= NoteAttachmentDownloadView ============= ')
         logger.debug('pk_int: ' + str(pk_int))
-        # download pdf file from server
+        # download  file from server
         response = None
 
         if pk_int:

@@ -40,8 +40,8 @@
         }; //if(!!e.target)
     }; //function SetMenubuttonActive()
 
-//=========  AddSubmenuButton  === PR2020-01-26
-    function AddSubmenuButton(el_div, a_innerText, a_function, classnames_list, a_id, a_href, a_download) {
+//=========  AddSubmenuButton  === PR2020-01-26 PR2021-04-26
+    function AddSubmenuButton(el_div, a_innerText, a_function, a_id, a_href, a_download) {
         //console.log(" ---  AddSubmenuButton --- ");
         let el_a = document.createElement("a");
             if(!!a_id){el_a.setAttribute("id", a_id)};
@@ -56,15 +56,8 @@
             if(!!a_function){el_a.addEventListener("click", a_function, false)};
             // set background color of btn
             el_a.classList.add("tsa_tr_selected");
-            el_a.classList.add("px-2");
-            if (!!classnames_list) {
-                for (let i = 0, len = classnames_list.length; i < len; i++) {
-                    const classname = classnames_list[i];
-                    if(!!classname){
-                        el_a.classList.add(classname);
-                    }
-                }
-            }
+            el_a.classList.add("px-2", "mr-2");
+
             el_div.classList.add("pointer_show")
         el_div.appendChild(el_a);
     };//function AddSubmenuButton
@@ -96,9 +89,11 @@
 
 //========= UpdateHeaderbar  ================== PR2020-11-14 PR2020-12-02
     function b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school){
-        console.log(" --- UpdateHeaderbar ---" )
-        console.log("setting_dict", setting_dict )
-        console.log("permit_dict", permit_dict )
+        //console.log(" --- UpdateHeaderbar ---" )
+        //console.log("setting_dict", setting_dict )
+        //console.log("permit_dict", permit_dict )
+
+        const cls_hide = "display_hide";
 
 // --- EXAM YEAR
        //console.log("setting_dict.sel_examyear_pk", setting_dict.sel_examyear_pk )
@@ -118,35 +113,52 @@
         }
 // --- DEPARTMENT
         if(el_hdrbar_department) {
-            const allowed_depbases_count = (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
-            const may_select_department = (allowed_depbases_count > 1);
+            const display_department = (!!permit_dict.display_department);
 
+            const allowed_depbases_count = (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
+            const may_select_department = (display_department && allowed_depbases_count > 1);
+
+            add_or_remove_class(el_hdrbar_department, cls_hide, !display_department)
             add_or_remove_class(el_hdrbar_department, "awp_navbaritem_may_select", may_select_department, "awp_navbar_item" )
+
+console.log("permit_dict", permit_dict)
+console.log("permit_dict.display_department", permit_dict.display_department)
+console.log("display_department", display_department)
+console.log("may_select_department", may_select_department)
+console.log(el_hdrbar_department)
+
             let department_txt = null;
-            if (!setting_dict.sel_depbase_pk){
-                if (may_select_department) {
-                    department_txt = " <" + loc.Select_department + ">";
-                } else if (allowed_depbases_count === 0) {
-                    department_txt = " <" + loc.School_has_no_departments + ">";
-                } else {
-                    department_txt = " <" + loc.No_department_selected + ">"
-                }
-            } else {
-                if (!setting_dict.sel_examyear_pk) {
-                    department_txt = " <" + loc.No_examyear_selected + ">"
-                } else {
-                    if (!setting_dict.sel_department_pk){
-                        department_txt = " <" + loc.department_notfound_thisexamyear + ">"
+            if (display_department) {
+                if (!setting_dict.sel_depbase_pk){
+                    if (may_select_department) {
+                        department_txt = " <" + loc.Select_department + ">";
+                    } else if (allowed_depbases_count === 0) {
+                        department_txt = " <" + loc.School_has_no_departments + ">";
                     } else {
-                        department_txt = " " + setting_dict.sel_depbase_code
+                        department_txt = " <" + loc.No_department_selected + ">"
+                    }
+                } else {
+                    if (!setting_dict.sel_examyear_pk) {
+                        department_txt = " <" + loc.No_examyear_selected + ">"
+                    } else {
+                        if (!setting_dict.sel_department_pk){
+                            department_txt = " <" + loc.department_notfound_thisexamyear + ">"
+                        } else {
+                            department_txt = " " + setting_dict.sel_depbase_code
+                        }
                     }
                 }
             }
             el_hdrbar_department.innerText = department_txt;
-        }
 
+        }
 // --- SCHOOL
         if(el_hdrbar_school) {
+
+            const display_school = (!!permit_dict.display_school);
+            const may_select_school = (display_school && permit_dict.may_select_school);
+
+            add_or_remove_class(el_hdrbar_school, cls_hide, !display_school)
             // set hover when user has permit to goto different school.
             add_or_remove_class(el_hdrbar_school, "awp_navbaritem_may_select", permit_dict.may_select_school, "awp_navbar_item" )
 
@@ -170,10 +182,27 @@
                 }
             }
             el_hdrbar_school.innerText = schoolname_txt;
+
+//console.log("display_school", display_school)
+//console.log("may_select_school", may_select_school)
+
         }
+//console.log(el_hdrbar_school)
+
+
+
     }  // UpdateHeaderbar
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+//========= get_permits_from_permit_list  ============= PPR2021-04-26
+    function get_permits_from_permit_list(permit_dict) {
+        // function puts permits from permit_list as key in permit_dict, for ease of use
+        if(permit_dict.permit_list){
+            for (let i = 0, action; action = permit_dict.permit_list[i]; i++) {
+                permit_dict[action] = true;
+            }
+        }
+    }  // get_permits_from_permit_list
 
 //========= isEmpty  ============= PR2019-05-11
     //PR2019-05-05 from https://coderwall.com/p/_g3x9q/how-to-check-if-javascript-object-is-empty'
@@ -795,6 +824,34 @@
         return  date_JS;
     }  // parse_dateJS_from_dateISO
 
+//========= get_now_arr ========== PR2020-07-08 tsa
+    function get_now_arr() {
+        // send 'now' as array to server, so 'now' of local computer will be used
+        const now = new Date();
+        const now_arr = [now.getFullYear(), now.getMonth() + 1, now.getDate(), now.getHours(), now.getMinutes()];
+        return now_arr;
+    }
+
+//=========  get_now_formatted ================ PR2021-04-28 from tsa format_time_from_offset_JSvanilla PR2020-04-10
+    function get_now_formatted() {
+        //console.log( "===== get_now_formatted  ========= ");
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month_int = now.getMonth() + 1;
+        const date_int = now.getDate();
+        const hours_int = now.getHours();
+        const minutes_int = now.getMinutes();
+
+        const month_str = ("00" + month_int).slice(-2);
+        const date_str = ("00" + date_int).slice(-2);
+        const hour_str = ("00" + hours_int).slice(-2);
+        const minute_str = ("00" + minutes_int).slice(-2);
+
+        return [year, "-", month_str, "-", date_str, " ", hour_str, ".", minute_str, "u"].join('');
+
+    }  // format_time_from_offset_JSvanilla
+
 
 //#########################################################################
 // +++++++++++++++++ VALIDATORS +++++++++++++++++++++++++++++++++++++++++++
@@ -948,50 +1005,42 @@
     function render_messages(awp_messages) {
         //console.log( "=== render_messages ")
         //console.log( "awp_messages", awp_messages)
-        // PR202020-10-30 renders messages
-        /*
-            {% for message in awp_messages %}
-              <div id="{{ message.id }}" class="alert {{ message.class }} alert-dismissible mx-2" role="alert">
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
-                {{ message.info }}
-              </div>
-            {% endfor %}
-        */
+        // PR202020-10-30 renders messages PR2021-04-27
 
-        const el_msg_container = document.getElementById("id_awpmsg_container")
-        //console.log( "el_msg_container", el_msg_container)
-        if (el_msg_container){
-            el_msg_container.innerText = null;
-            if (!isEmpty(awp_messages)) {
-                for (let i = 0 ; i <awp_messages.length; i++) {
-                    const awp_message = awp_messages[i];
-                    if (awp_message){
-
-// --- insert td element,
+        const el_mod_awpmessages = document.getElementById("id_awpmessage_container")
+        if (el_mod_awpmessages){
+            el_mod_awpmessages.innerHTML = null;
+            if (awp_messages && awp_messages.length) {
+                for (let i = 0, msg_dict ; msg_dict = awp_messages[i]; i++) {
+                    if (msg_dict){
+                        const msg_list = msg_dict.msg_list
+                        const msg_class = msg_dict.class
+// --- insert el_div
                         let el_div = document.createElement("div");
-                            if(awp_message.id){
-                                el_div.id = awp_message.id
+                        el_div.classList.add("m-2", "p-2")
+                        if(msg_class){
+                            el_div.classList.add(msg_class)
+                        }
+                        if(msg_list && msg_list.length){
+                            for (let j = 0, msg, el_p; msg = msg_list[j]; j++) {
+                                if(msg){
+                                    el_p = document.createElement("p");
+                                     el_p.innerHTML = msg
+                                    el_div.appendChild(el_p);
+                                }
                             }
-                            el_div.classList.add("alert", "alert-dismissible", "mx-2" )
-                            if(awp_message.class){
-                                el_div.classList.add(awp_message.class)
-                            }
-                            el_div.setAttribute("role", "alert")
-                            el_div.innerText = (awp_message.info) ? awp_message.info : null;
-
-                            //  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            let el_btn = document.createElement("button");
-                                el_btn.classList.add("close" )
-                                el_btn.setAttribute("data-dismiss", "alert")
-                                el_btn.setAttribute("aria-label", "Close")
-                                el_btn.innerHTML = "<span aria-hidden=\"true\">&times;</span>";
-                            el_div.appendChild(el_btn);
-                        el_msg_container.appendChild(el_div);
+                        }
+                        el_mod_awpmessages.appendChild(el_div);
                     }
                 }
             }
+
+// ---  set focus to close button - not working
+            // const el_modmessage_btn_cancel = document.getElementById("id_modmessage_btn_cancel");
+            // set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 250);
+
+// ---  show modal
+            $("#id_mod_awpmessages").modal({backdrop: true});
         }
     }  // render_messages
 

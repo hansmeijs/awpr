@@ -67,7 +67,6 @@
             <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
                 <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all from this period' %}</h6>
             </div>
-
         {% endif %}
     </nav>
 {% endblock %}
@@ -76,11 +75,8 @@
 {% block content %}
     <div id="id_content">
         {% if no_access %}
-            <div class="mx-4 mt-5 pt-5">
-                <div class="alert alert-danger">{{ no_access_message }}</div>
-            </div>
+            {% include 'includes/message_noaccess.html' %}
         {% else %}
-
             {% include 'schools/modselectexamyear.html' %}
             {% include 'schools/modselectschoolordep.html' %}
             {% include 'students/modapprovegrade.html' %}
@@ -90,10 +86,10 @@
             {% include 'includes/modnote.html' %}
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modimport.html' %}
-            {% include 'includes/messages.html' %}
 
             <div class="content_margin_top78">
 
+                {% include 'includes/messages.html' %}
     <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="grade_by_subject" class="btn btn-secondary ">{% trans 'Grades by subject' %}</button>

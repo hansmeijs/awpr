@@ -8,15 +8,13 @@
     <script src="{% static 'js/examyears210127.js' %}"></script>
 {% endblock %}
 
-
-
 <!-- SIDE BAR -->
 {% block sidebar %}
     <nav id="id_sidebar" class="awp_sidebar">
         <div class="content_subheader_left tab_show tab_init mx-2 my-4">
             <h5>{% trans 'Exam years' %}</h5>
         </div>
-        {% if user.is_authenticated %}
+        {% if not no_access %}
             <div class="tw_200 mx-2 mt-2 mb-4 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Select exam year' %}:</h6>
                 <input id="id_SBR_examyear"
@@ -34,13 +32,12 @@
 
 {% block content %}
     <div id="id_content">
-        {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
-    <!-- =================== MODAL SELECT EXAM YEAR =================== -->
+        {% if no_access %}
+            {% include 'includes/message_noaccess.html' %}
+        {% else %}
             {% include 'schools/modselectexamyear.html' %}
             {% include 'schools/modselectschoolordep.html' %}
-    <!-- =================== MODAL CONFIRM  =================== -->
             {% include 'includes/modconfirm.html' %}
-    <!-- =================== MODAL EXAMYEAR =================== -->
             {% include 'schools/modexamyear.html' %}
 
             <div class="content_margin_top78">
@@ -64,9 +61,6 @@
     <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block mx-2 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="examyear" class="btn btn-secondary ">{% trans 'Exam years' %}</button>
-                    <button data-btn="scheme" class="btn btn-secondary ">{% trans 'Subject schemes' %}</button>
-                    <button data-btn="level" class="btn btn-secondary ">{% trans 'Levels' %}</button>
-                    <button data-btn="sector" class="btn btn-secondary ">{% trans 'Sectors' %}</button>
                 </div>
     <!-- end BUTTON GROUP -->
     <!-- END OF CONTENT HEADER -->
@@ -85,12 +79,8 @@
                 data-datalist_download_url="{% url 'datalist_download_url' %}"
                 data-settings_upload_url="{% url 'settings_upload_url' %}"
                 data-examyear_upload_url="{% url 'examyear_upload_url' %}"
+                data-school_upload_url="{% url 'school_upload_url' %}"
             >
-            </div>
-
-        {% else %}
-            <div class="mx-4 mt-5 pt-5">
-                <div class="alert alert-danger">{% trans "You don't have permission to view this page." %}</div>
             </div>
         {% endif %}
     </div>

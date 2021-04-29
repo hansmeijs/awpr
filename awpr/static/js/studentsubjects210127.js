@@ -124,10 +124,10 @@ document.addEventListener('DOMContentLoaded', function() {
             el_SBR_select_sector.addEventListener("change", function() {HandleSbrLevelSector("sector", el_SBR_select_sector)}, false )
         const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
             el_SBR_select_subject.addEventListener("click",
-                function() {t_MSSS_Open(loc, "subject", subject_map, setting_dict, MSSS_Response)}, false )
+                function() {t_MSSSS_Open(loc, "subject", subject_map, true, setting_dict, permit_dict, MSSSS_Response)}, false )
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
             el_SBR_select_student.addEventListener("click",
-                function() {t_MSSS_Open(loc, "student", student_map, setting_dict, MSSS_Response)}, false )
+                function() {t_MSSSS_Open(loc, "student", student_map, true, setting_dict, permit_dict, MSSSS_Response)}, false )
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
             el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false )
 
@@ -337,9 +337,9 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Add_subject, function() {MSTUD_Open()});
-            AddSubmenuButton(el_submenu, loc.Delete_subject, function() {ModConfirmOpen("delete")}, ["mx-2"]);
-            AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, null, ["mx-2"], "id_submenu_download_ex1", url_grade_download_ex1, false);  // true = download
-            AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open("import_studentsubject")}, ["mx-2"], "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Delete_subject, function() {ModConfirmOpen("delete")});
+            AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, null, "id_submenu_download_ex1", url_grade_download_ex1, false);  // true = download
+            AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open("import_studentsubject")}, "id_submenu_import");
 
          el_submenu.classList.remove(cls_hide);
 

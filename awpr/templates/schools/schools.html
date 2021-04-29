@@ -14,7 +14,7 @@
         <div class="content_subheader_left tab_show tab_init mx-2 my-4">
             <h5>{% trans 'Schools' %}</h5>
         </div>
-        {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
+        {% if not no_access %}
             <div class="tw_200 mx-2 mt-2 mb-4">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Select department' %}:</h6>
                 <input id="id_SBR_department"
@@ -37,18 +37,11 @@
 {% block content %}
     <div id="id_content">
         {% if no_access %}
-            <div class="mx-4 mt-5 pt-5">
-                <div class="alert alert-danger">{{ no_access_message }}</div>
-            </div>
+            {% include 'includes/message_noaccess.html' %}
         {% else %}
-
-    <!-- =================== MODAL SELECT EXAM YEAR =================== -->
             {% include 'schools/modselectexamyear.html' %}
-    <!-- =================== MODAL SELECT SCHOOL OR DEPARTMENT=================== -->
             {% include 'schools/modselectschoolordep.html' %}
-    <!-- =================== MODAL CONFIRM  =================== -->
             {% include 'includes/modconfirm.html' %}
-    <!-- =================== MODAL SCHOOL =================== -->
             {% include 'schools/modschool.html' %}
 
             <div class="content_margin_top78">
@@ -98,5 +91,4 @@
             </div>
         {% endif %}
     </div>
-
 {% endblock %}

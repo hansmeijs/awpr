@@ -1,24 +1,41 @@
 from django.db import connection
 
-from awpr import constants as ac
+from awpr import constants as c
 from awpr import functions as af
+from awpr import settings as s
 from schools import models as sch_mod
 
 import logging
 logger = logging.getLogger(__name__)
 
 
-def create_examyear_rows(country, append_dict, examyear_pk):
+def create_examyear_rows(req_usr, append_dict, examyear_pk):
     # --- create rows of all examyears of this country PR2020-10-04
     #logger.debug(' =============== create_examyear_rows ============= ')
 
-    sql_keys = {'cntr_id': country.pk}
-    sql_list = ["SELECT ey.id AS examyear_id, ey.country_id,  CONCAT('examyear_', ey.id::TEXT) AS mapid,",
-        "ey.code AS examyear_code,  ey.published, ey.locked, ey.createdat, ey.publishedat, ey.lockedat,",
-        "ey.modifiedby_id, ey.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
-        "FROM schools_examyear AS ey",
-        "LEFT JOIN accounts_user AS au ON (au.id = ey.modifiedby_id)",
-        "WHERE ey.country_id = %(cntr_id)s::INT"]
+    # when role = school: show examyear plus school.isactivated
+
+    sql_keys = {}
+    if req_usr.role <= c.ROLE_008_SCHOOL:
+        sql_keys['sb_id'] = req_usr.schoolbase.pk
+        sql_list = ["SELECT sch.id AS school_id, ey.country_id, sch.examyear_id, CONCAT('examyear_', ey.id::TEXT) AS mapid,",
+            "ey.code AS examyear_code, sch.name, sch.activated, sch.activatedat, sch.locked, sch.lockedat,",
+            "sch.modifiedby_id, sch.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+            "FROM schools_school AS sch",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+            "LEFT JOIN accounts_user AS au ON (au.id = sch.modifiedby_id)",
+            "WHERE sch.base_id = %(sb_id)s::INT"]
+    else:
+        sql_keys['cntr_id'] = req_usr.country.pk
+        sql_list = ["SELECT ey.id AS examyear_id, ey.country_id, CONCAT('examyear_', ey.id::TEXT) AS mapid,",
+            "ey.code AS examyear_code,  ey.published, ey.locked, ey.createdat, ey.publishedat, ey.lockedat,",
+            "ey.modifiedby_id, ey.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+            "FROM schools_examyear AS ey",
+            "LEFT JOIN accounts_user AS au ON (au.id = ey.modifiedby_id)",
+            "WHERE ey.country_id = %(cntr_id)s::INT"]
+
+    if req_usr.role < c.ROLE_032_INSP:
+        sql_list.append('AND ey.published')
 
     if examyear_pk:
         # when employee_pk has value: skip other filters
@@ -141,67 +158,51 @@ def create_sector_rows(examyear, depbase):
 # --- end of create_sector_rows
 
 def create_school_rows(examyear, permit_dict, append_dict, school_pk):
-    # --- create rows of all schools of this examyear / country PR2020-09-18
-    logger.debug(' =============== create_school_rows ============= ')
-    logger.debug('permit_dict: ' + str(permit_dict))
-    """
-     permit_dict: {'requsr_pk': 1, 'requsr_name': 'Hans Meijs', 
-     'requsr_role': 128, 'requsr_role_system': True, 
-     'requsr_group_admin': True, 'requsr_group_auth2': True, 'requsr_group_edit': True, 
-     'may_select_school': True, 
-     'may_select_comm': True, 
-     'permit_list': ['href_userpage', 'approve_grade', 'edit_grade', 'read_note', 'submit_grade', 'view_page', 'write_note_extern', 'write_note_intern'], 
-     'usergroup_list': ['admin', 'auth2', 'edit'], 
-     'requsr_country_pk': 1, 'requsr_country': 'Curacao', 
-     'requsr_schoolbase_pk': 1, 'requsr_schoolbase_code': 'CURSYS', 'may_select_examyear': False, 'allowed_depbases': [1, 2, 3], 'may_select_department': True}
-
-    """
-    #<PERMIT> PR2021-01-01  PR2021-01-26
-    # - when role_school: show only the requsr_school
-    # - else: show only schools with defaultrole <= requsr_role
-    requsr_role_system = permit_dict.get('requsr_role_system', False)
-    requsr_role_admin = permit_dict.get('requsr_role_admin', False)
-
-    requsr_schoolbase_pk =  permit_dict.get('requsr_schoolbase_pk')
+    # --- create rows of all schools of this examyear / country PR2020-09-18 PR2021-04-23
+    logging_on = False  #s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_school_rows ============= ')
+        logger.debug('permit_dict: ' + str(permit_dict))
 
     requsr_role = permit_dict.get('requsr_role', 0)
+    requsr_schoolbase_pk =  permit_dict.get('requsr_schoolbase_pk')
 
     sql_keys = {'ey_id': examyear.pk, 'max_role': requsr_role}
 
-    sql_list = ["SELECT s.id, s.base_id, s.examyear_id, ey.code AS examyear_code, ey.country_id, c.name AS country,",
-        "CONCAT('school_', s.id::TEXT) AS mapid, sb.defaultrole,",
-        "s.name, s.abbrev, s.article, sb.code AS sb_code, s.activated, s.locked, s.depbases,",
-        "s.modifiedby_id, s.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+    sql_list = ["SELECT sch.id, sch.base_id, sch.examyear_id, ey.code AS examyear_code, ey.country_id, c.name AS country,",
+        "CONCAT('school_', sch.id::TEXT) AS mapid, sb.defaultrole,",
+        "sch.name, sch.abbrev, sch.article, sb.code AS sb_code, sch.activated, sch.locked, sch.depbases,",
+        "sch.modifiedby_id, sch.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
 
-        "FROM schools_school AS s",
-        "INNER JOIN schools_schoolbase AS sb ON (sb.id = s.base_id)",
-        "INNER JOIN schools_examyear AS ey ON (ey.id = s.examyear_id)",
+        "FROM schools_school AS sch",
+        "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
         "INNER JOIN schools_country AS c ON (c.id = ey.country_id)",
-        "LEFT JOIN accounts_user AS au ON (au.id = s.modifiedby_id)",
+        "LEFT JOIN accounts_user AS au ON (au.id = sch.modifiedby_id)",
 
         "WHERE ey.id = %(ey_id)s::INT",
         "AND sb.defaultrole <= %(max_role)s::INT"]
 
     if school_pk:
-        # when school_pk has value: skip other filters
+        # school_pk has only a value after update
+        # then one row is retrieved,  to put new values on page
         sql_list.append('AND sch.id = %(sch_id)s::INT')
         sql_keys['sch_id'] = school_pk
-
-    if requsr_role < ac.ROLE_032_INSP :
-        sql_list.append("ORDER BY LOWER(sb.code)")
-    else:
+    elif requsr_role <= c.ROLE_008_SCHOOL:
+        # schools can olny view their own school
         sql_keys['sb_id'] = requsr_schoolbase_pk
         sql_list.append("AND sb.id = %(sb_id)s::INT")
 
     sql_list.append('ORDER BY sb.code')
     sql = ' '.join(sql_list)
+    if logging_on:
+        logger.debug('sql_keys' + str(sql_keys))
 
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
         school_rows = af.dictfetchall(cursor)
 
-    #logger.debug('school_rows' + str(school_rows))
-    # - add messages to school_row
+    # - add messages to school_row, only after update
     if school_pk and school_rows and append_dict:
         # when school_pk has value there is only 1 row
         row = school_rows[0]

@@ -372,7 +372,7 @@ class Scheme_log(sch_mod.AwpBaseModel):
 
     scheme_id = IntegerField(db_index=True)
 
-    dep_log = ForeignKey(sch_mod.Department_log, related_name='+', on_delete=CASCADE)
+    department_log = ForeignKey(sch_mod.Department_log, related_name='+', on_delete=CASCADE)
     level_log = ForeignKey(Level_log, null=True, related_name='+', on_delete=CASCADE)
     sector_log = ForeignKey(Sector_log, null=True, related_name='+', on_delete=CASCADE)
 
@@ -478,10 +478,26 @@ class Schemeitem(sch_mod.AwpBaseModel):
     has_practexam = BooleanField(default=False)
     has_pws = BooleanField(default=False)
 
+    reex_se_allowed = BooleanField(default=False)
+    reex_combi_allowed = BooleanField(default=False)
+    no_centralexam = BooleanField(default=False)
+    no_reex = BooleanField(default=False)
+    no_thirdperiod = BooleanField(default=False)
+    no_exemption_ce = BooleanField(default=False)
+
     #   extra_count_allowed: only at Havo Vwo) 'PR2017-01-28
     #   extra_nocount_allowed: at Vsbo TKL and Havo Vwo)) 'PR2017-01-28
     #   elective_combi_allowed: only at Vwo and subject du fr sp 'PR2017-01-28
     #   has_practexam: only at Vsbo PBL and PKL, all sectorprogramma's except uv 'PR2017-01-28
+
+    # Corona issues PR2021-04-25
+    # reex_se_allowed = BooleanField(default=False)
+    # reex_combi_allowed = BooleanField(default=False)
+    # no_centralexam = BooleanField(default=False)
+    # no_reex = BooleanField(default=False)
+    # no_thirdperiod = BooleanField(default=False)
+    # no_exemption_ce = BooleanField(default=False)
+
 
 
 #  ++++++++++  Class methods  +++++++++++++++++++++++++++
@@ -593,6 +609,7 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     locked = BooleanField(default=False)
+
 
 class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     # PR2021-03-04 contains exam possible ansewers per exam question

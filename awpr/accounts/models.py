@@ -218,7 +218,6 @@ class User(AbstractUser):
         # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
         return self.is_authenticated and self.role is not None and self.role == c.ROLE_008_SCHOOL
 
-
     @property
     def is_role_insp_or_admin_or_system(self):
         _has_permit = False
@@ -231,22 +230,13 @@ class User(AbstractUser):
     @property
     def is_role_insp_or_system_and_group_admin(self):
         _has_permit = False
-        #if self.is_authenticated:
-        #    if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-        #        if self.role == c.ROLE_128_SYSTEM or self.role == c.ROLE_032_INSP:
-       #             if self.is_group_system:
-        #                _has_permit = True
+        if self.is_authenticated:
+            if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
+                if self.role == c.ROLE_128_SYSTEM or self.role == c.ROLE_032_INSP:
+                    if self.is_group_admin:
+                        _has_permit = True
         return _has_permit
 
-    @property
-    def is_role_adm_or_sys_and_group_system(self):
-        _has_permit = False
-        #if self.is_authenticated:
-       #     if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-        #        if self.role == c.ROLE_064_ADMIN or self.role == c.ROLE_128_SYSTEM:
-        #            if self.is_group_system:
-        #                _has_permit = True
-        return _has_permit
 
 
 # +++++++++++++++++++  get and set setting +++++++++++++++++++++++

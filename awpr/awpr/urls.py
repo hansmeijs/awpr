@@ -136,16 +136,7 @@ urlpatterns = [
 # PR2018-03-14
     # PR2018-04-17 debug: don't forget the brackets at the end of as_view() !!\
 
-# department PR2018-08-11 PR2019-02-27
-    path('department/', include([
-        path('', school_views.DepartmentListView.as_view(), name='department_list_url'),
-        path('<int:pk>/', include([
-            path('select', school_views.DepartmentSelectView.as_view(), name='department_select_url'),
-            path('log', school_views.DepartmentLogView.as_view(), name='department_log_url'),
-        ])),
-    ])),
-
-# school  PR2018-08-25 PR2018-12-20
+# ===== SCHOOLS ==========================  PR2018-08-23 PR2020-10-20 PR2021-04-26
     path('schools/', include([
         path('examyears', school_views.ExamyearListView.as_view(), name='examyears_url'),
         path('examyear_upload', school_views.ExamyearUploadView.as_view(), name='examyear_upload_url'),
@@ -153,21 +144,17 @@ urlpatterns = [
         path('school', school_views.SchoolListView.as_view(), name='school_list_url'),
         path('school_upload', school_views.SchoolUploadView.as_view(), name='school_upload_url'),
         path('school_import', school_views.SchoolImportView.as_view(), name='school_import_url'),
+
         path('uploadsetting', school_views.SchoolImportUploadSetting.as_view(), name='school_uploadsetting_url'),
-        path('uploaddata', school_views.SchoolImportUploadData.as_view(), name='school_uploaddata_url'),
-
-        path('<int:pk>/', include([
-            path('select/', school_views.SchoolSelectView.as_view(), name='school_selected_url'),
-            path('log', school_views.SchoolLogView.as_view(), name='school_log_url'),
-        ])),
+        path('uploaddata', school_views.SchoolImportUploadData.as_view(), name='school_uploaddata_url')
     ])),
-
 
 # ===== SUBJECTS ==========================  PR2018-08-23 PR2020-10-20
     path('subjects/', include([
         path('subject', subject_views.SubjectListView.as_view(), name='subjects_url'),
         path('subject_upload', subject_views.SubjectUploadView.as_view(), name='subject_upload_url'),
         path('subject_import', subject_views.SubjectImportView.as_view(), name='subject_import_url'),
+
         path('uploadsetting', subject_views.SubjectImportUploadSetting.as_view(), name='subject_uploadsetting_url'),
         path('uploaddata', subject_views.SubjectImportUploadData.as_view(), name='subject_uploaddata_url'),
     ])),

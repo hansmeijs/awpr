@@ -1009,6 +1009,13 @@ aXX:hover{
     width: 320px;
 }
 
+.tbl_MSESD_h390_w360 {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 390px;
+    width: 360px;
+}
+
 .tbl_MUA_h390_w280 {
     overflow-x: hidden;
     overflow-y: auto;
@@ -1102,9 +1109,6 @@ aXX:hover{
 .color_orange {
     color: orange;
 }
-
-
-  color: orange;
 
 .border_bg_invalid {
     border: 1px solid #dc3545;    /*  red like in django is-invalid */

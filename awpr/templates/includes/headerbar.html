@@ -25,9 +25,11 @@
                 <li id="id_hdrbar_examyear_locked" class="nav-item awp_navbar ml-0 mt-1">
                     <div class="stat_0_0"></div>
                 </li>
-                <li id="id_hdrbar_department" class="nav-item awp_navbar_item">
-                    {{department}}
-                </li>
+                {% if display_department %}
+                    <li id="id_hdrbar_department" class="nav-item awp_navbar_item">
+                        {{department}}
+                    </li>
+                {% endif %}
                 {% if display_school %}
                     <li id="id_hdrbar_school" class="nav-item awp_navbar_item">
                         {{school}}

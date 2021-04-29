@@ -15,8 +15,7 @@
         <div class="content_subheader_left tab_show tab_init mx-2 my-4">
             <h5>{% trans 'Subjects of candidates' %}</h5>
         </div>
-
-        {% if user.is_role_school or user.is_role_insp or user.is_role_admin or user.is_role_system %}
+        {% if not no_access %}
             <div id="id_SBR_container_level" class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Leerweg' %}:</h6>
                 <select id="id_SBR_select_level" class="tw_200 border_none px-1"
@@ -52,8 +51,6 @@
             <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
                 <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all from this period' %}</h6>
             </div>
-
-
         {% endif %}
     </nav>
 {% endblock %}
@@ -62,23 +59,13 @@
 {% block content %}
     <div id="id_content">
         {% if no_access %}
-            <div class="mx-4 mt-5 pt-5">
-                <div class="alert alert-danger">{{ no_access_message }}</div>
-                {{ permit_list }}
-            </div>
+            {% include 'includes/message_noaccess.html' %}
         {% else %}
-
-    <!-- =================== MODAL SELECT EXAM YEAR =================== -->
             {% include 'schools/modselectexamyear.html' %}
-    <!-- =================== MODAL SELECT SCHOOL OR DEPARTMENT=================== -->
             {% include 'schools/modselectschoolordep.html' %}
-    <!-- =================== MODAL CONFIRM  =================== -->
             {% include 'includes/modconfirm.html' %}
-    <!-- =================== MODAL STUDENT =================== -->
             {% include 'students/modstudent.html' %}
-    <!-- =================== MODAL STUDENT SUBJECT =================== -->
             {% include 'students/modstudentsubject.html' %}
-    <!-- =================== MODAL IMPORT  =================== -->
             {% include 'includes/modimport.html' %}
 
             <div class="content_margin_top78">

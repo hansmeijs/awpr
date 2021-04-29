@@ -201,7 +201,7 @@ class Student_log(sch_mod.AwpBaseModel):
     base = ForeignKey(Studentbase, related_name='+', on_delete=PROTECT)
 
     school_log = ForeignKey(sch_mod.School_log, related_name='+', on_delete=CASCADE)
-    dep_log = ForeignKey(sch_mod.Department_log, related_name='+', on_delete=CASCADE)
+    department_log = ForeignKey(sch_mod.Department_log, related_name='+', on_delete=CASCADE)
     level_log = ForeignKey(subj_mod.Level_log, null=True, related_name='+', on_delete=SET_NULL)
     sector_log = ForeignKey(subj_mod.Sector_log, null=True, related_name='+', on_delete=SET_NULL)
     scheme_log = ForeignKey(subj_mod.Scheme_log, null=True, related_name='+', on_delete=SET_NULL)

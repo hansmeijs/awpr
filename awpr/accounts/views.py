@@ -50,36 +50,27 @@ logger = logging.getLogger(__name__)
 class UserListView(ListView):
 
     def get(self, request, *args, **kwargs):
-        User = get_user_model()
-        #logger.debug(" =====  UserListView  =====")
-        #PR2018-04-24 get all user of the country of the current user (for inspection users)
-        #users = User.objects.filter(id__schoolcode_id__country=request_country)
+
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(" =====  UserListView  =====")
 
         # PR2018-05-27 list of users in UserListView:
-        # - when role is system: show all users
+        # - when role is system / admin: show all users
         # - when role is inspection: all users with role 'inspection' and country == request_user.country
         # - else (role is school): all users with role 'school' and schoolcode == request_user.schooldefault
 
-        #logger.debug('UserListView get self: ' + str(self))
-        #logger.debug('UserListView get request.user: ' + str(request.user))
+        show_btn_grouppermits = False
 
-        users = None  # User.objects.filter(False) gives error: 'bool' object is not iterable
         if request.user.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
             if request.user.is_role_system:
-                users = User.objects.order_by('username').all()
-            elif request.user.is_role_insp:
-                if request.user.country is not None:
-                    # filter only users from this country, with role == insp
-                    users = User.objects.filter(country=request.user.country, role__lte=c.ROLE_032_INSP).order_by('username')
-            else:
-                if request.user.schoolbase is not None:
-                    # filter only users from this school, with role == school
-                    users = User.objects.filter(schoolbase=request.user.schoolbase, role=c.ROLE_008_SCHOOL).order_by('username')
-        else:
-            messages.error(request, _("User has no role."))
+                show_btn_grouppermits = True
 
-        headerbar_param = awpr_menu.get_headerbar_param(request, 'users', {'users': users} )
-
+        # get_headerbar_param(request, page, param=None):  # PR2021-03-25
+        headerbar_param = awpr_menu.get_headerbar_param(request, 'page_user', {'show_btn_grouppermits': show_btn_grouppermits} )
+        if logging_on:
+            logger.debug("show_btn_grouppermits: " + str(show_btn_grouppermits))
+            logger.debug("headerbar_param: " + str(headerbar_param))
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'users.html', headerbar_param)
 
@@ -101,7 +92,7 @@ class UserUploadView(View):
             logger.debug(' ========== UserUploadView ===============')
 
         update_wrap = {}
-        if request.user is not None and request.user.country is not None and request.user.schoolbase is not None:
+        if request.user and request.user.country and request.user.schoolbase:
             req_user = request.user
             # <PERMIT> PR2020-09-24
             #  - only perm_admin and perm_system can add / edit / delete users
@@ -276,14 +267,14 @@ class UserUploadView(View):
                         else:
     # - +++++++++ update ++++++++++++
                             instance = None
-                            if True: # if has_permit_all_schools:
+                            if has_permit_all_schools:
                                 instance = acc_mod.User.objects.get_or_none(id=user_pk, country=req_user.country)
-                            #elif has_permit_this_school:
-                            #    instance = acc_mod.User.objects.get_or_none(
-                            #        id=user_pk,
-                            #        country=req_user.country,
-                            #        schoolbase=req_user.schoolbase
-                            #    )
+                            elif has_permit_this_school:
+                                instance = acc_mod.User.objects.get_or_none(
+                                    id=user_pk,
+                                    country=req_user.country,
+                                    schoolbase=req_user.schoolbase
+                                )
                             if instance:
                                 err_dict, ok_dict = update_user_instance(instance, user_pk, upload_dict, is_validate_only, request)
                                 if err_dict:
@@ -449,13 +440,13 @@ class UserGroupPermitUploadView(View):
             logger.debug(' ========== UserGroupPermitUploadView ===============')
 
         update_wrap = {}
-        if request.user is not None and request.user.country is not None and request.user.schoolbase is not None:
+        if request.user is not None and request.user.country is not None:
             req_user = request.user
             permit_list, requsr_usergroups_list = get_userpermit_list('page_user', req_user)
             has_permit = 'crud_permit' in permit_list
             if logging_on:
                 logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('has_permit: ' + str(has_permit))
+                logger.debug('has_permit:  ' + str(has_permit))
 
             if has_permit:
 # -  get user_lang
@@ -476,9 +467,9 @@ class UserGroupPermitUploadView(View):
                     sequence = upload_dict.get('sequence', 1)
 
                     if logging_on:
-                        logger.debug('mode:   ' + str(mode))
-                        logger.debug('page:   ' + str(page))
-                        logger.debug('action: ' + str(action))
+                        logger.debug('mode:     ' + str(mode))
+                        logger.debug('page:     ' + str(page))
+                        logger.debug('action:   ' + str(action))
 
                     append_dict = {}
                     error_dict = {}
@@ -510,21 +501,19 @@ class UserGroupPermitUploadView(View):
 # ++++  create new permit ++++++++++++
                     elif mode == 'create':
                         if page and action:
-                            logger.debug('page: ' + str(page))
-                            logger.debug('action: ' + str(action))
                             try:
                                 role_list = (c.ROLE_008_SCHOOL, c.ROLE_016_COMM, c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM)
                                 for role in role_list:
                                     instance = acc_mod.Permit(
+                                        country=request.user.country,
                                         role=role,
                                         page=page,
                                         action=action,
                                         sequence=sequence
                                     )
                                     instance.save()
-                                    logger.debug('instance: ' + str(instance))
                             except Exception as e:
-                                logger.debug('e: ' + str(e))
+                                logger.error('e: ' + str(e))
                                 append_dict['err_create'] = getattr(e, 'message', str(e))
                             finally:
                                 append_dict['created'] = True
@@ -532,14 +521,14 @@ class UserGroupPermitUploadView(View):
 # +++ update existing studsubj - also when studsubj is created - studsubj is None when deleted
                     if instance and mode in ('create', 'update'):
                         update_grouppermit(instance, upload_dict, error_dict, request)
-                    logger.debug('error_dict' + str(error_dict))
+                    if logging_on and error_dict:
+                        logger.debug('error_dict: ' + str(error_dict))
 
 # - add update_dict to update_wrap
                     if instance:
                         if error_dict:
                             append_dict['error'] = error_dict
 
-                        logger.debug('append_dict' + str(append_dict))
                # - add update_dict to update_wrap
                         permit_row = create_permit_list(instance.pk)
                         if permit_row:
@@ -560,20 +549,19 @@ def update_grouppermit(instance, upload_dict, msg_dict, request):
     for field, new_value in upload_dict.items():
         if field in ['role', 'page', 'action', 'sequence']:
             saved_value = getattr(instance, field)
-            logger.debug('field' + str(field))
-            logger.debug('saved_value' + str(saved_value) + str(type(saved_value)))
-            logger.debug('new_value' + str(new_value) + str(type(new_value)))
+            logger.debug('field:       ' + str(field))
+            logger.debug('saved_value: ' + str(saved_value) + str(type(saved_value)))
+            logger.debug('new_value:   ' + str(new_value) + str(type(new_value)))
 
             if new_value and new_value != saved_value:
                 setattr(instance, field, new_value)
                 save_changes = True
 
-        elif field =='usergroups':
+        elif field == 'usergroups':
             # 'permits': {'group_read': True}}
-            usergroups_haschanged = update_usergroups(instance, new_value)
+            usergroups_haschanged = update_usergroups(instance, new_value, False, request)  # False = don't validate
             if usergroups_haschanged:
                 save_changes = True
-
 
     # - save changes`
     logger.debug('save_changes' + str(save_changes) + str(type(save_changes)))
@@ -872,25 +860,6 @@ def UserActivate(request, uidb64, token):
         return render(request, 'account_activation_invalid.html')
 
 
-# PR2018-05-05
-@method_decorator([login_required], name='dispatch')
-class UserActivatedSuccessXXX(View):
-
-    def get(self, request):
-        def get(self, request):
-            #logger.debug('UserActivatedSuccess get request: ' + str(request))
-            return self.render(request)
-
-        def render(self, request):
-            usr = request.user
-            # TODO I don't think schoolbase is correct PR2018-10-19
-            schoolbase = usr.schoolbase
-
-            #logger.debug('UserActivatedSuccess render usr: ' + str(usr))
-
-            return render(request, 'country_list.html', {'user': usr, 'schoolbase': schoolbase})
-
-
 @method_decorator([login_required], name='dispatch')
 class UserDeleteView(DeleteView):
     model = User
@@ -980,13 +949,17 @@ def create_permit_list(permit_pk=None):
 
 def get_userpermit_list(page, req_user):
     # --- create list of all permits and usergroups of req_usr PR2021-03-19
-    #logger.debug(' =============== get_userpermit_list ============= ')
-    #logger.debug('page: ' + str(page) + ' ' + str(type(page)))
+    logging_on = s.LOGGING_ON
+
     role = req_user.role
 
     requsr_usergroups_list = []
     if req_user.usergroups:
         requsr_usergroups_list = req_user.usergroups.split(';')
+    if logging_on:
+        logger.debug(' =============== get_userpermit_list ============= ')
+        logger.debug('page:                   ' + str(page) + ' ' + str(type(page)))
+        logger.debug('requsr_usergroups_list: ' + str(requsr_usergroups_list) + ' ' + str(type(requsr_usergroups_list)))
 
     permit_list = []
     if role and page:
@@ -1009,6 +982,9 @@ def get_userpermit_list(page, req_user):
                 for row in cursor.fetchall():
                     if row[0] not in permit_list:
                         permit_list.append(row[0])
+
+    if logging_on:
+        logger.debug('permit_list: ' + str(permit_list) + ' ' + str(type(permit_list)))
 
     return permit_list, requsr_usergroups_list
 # - end of get_userpermit_list
@@ -1176,15 +1152,14 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
     err_dict = {}
     ok_dict = {}
     field_changed_list = []
+
     if instance:
         country = request.user.country
         schoolbase = request.user.schoolbase
         data_has_changed = False
-        fields = ('username', 'last_name', 'email', 'usergroups', 'is_active')
-        for field in fields:
-            # --- get field_dict from  item_dict  if it exists
-            field_dict = upload_dict[field] if field in upload_dict else {}
-            if field_dict: # and 'update' in field_dict:
+
+        for field, field_dict in upload_dict.items():
+            if field in ('username', 'last_name', 'email', 'usergroups', 'is_active'):
 # - check if this username already exists
                 if field == 'username':
                     new_username = field_dict.get('value')
@@ -1224,7 +1199,7 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
                         instance.email = new_email
                         data_has_changed = True
                 elif field == 'usergroups':
-                    usergroups_haschanged = update_usergroups(instance, field_dict)
+                    usergroups_haschanged = update_usergroups(instance, field_dict, True, request) # True = validate
                     if usergroups_haschanged:
                         data_has_changed = True
 
@@ -1292,38 +1267,72 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
 # - +++++++++ end of update_user_instance ++++++++++++
 
 # === update_usergroups ===================================== PR2021-03-24
-def update_usergroups(instance, field_dict):
-    # called by update user and update permit
+def update_usergroups(instance, field_dict, validate, request):
+    # called by UserUploadView.update_user_instance and UserGroupPermitUploadView.update_grouppermit
+    # validate only when called by update_user_instance
     # usergroups: {auth2: false}
-    logger.debug('-----  update_usergroups  -----')
-    logger.debug('field_dict: ' + str(field_dict))
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('-----  update_usergroups  -----')
+        logger.debug('field_dict: ' + str(field_dict))
+        logger.debug('validate: ' + str(validate))
+
     saved_usergroups_str = instance.usergroups
     saved_usergroups_list = []
     data_has_changed = False
     if instance.usergroups:
         saved_usergroups_list = instance.usergroups.split(';')
-    logger.debug('saved_usergroups_str:  ' + str(saved_usergroups_str))
-    logger.debug('saved_usergroups_list: ' + str(saved_usergroups_list))
+
+    if logging_on:
+        logger.debug('saved_usergroups_str:  ' + str(saved_usergroups_str))
+        logger.debug('saved_usergroups_list: ' + str(saved_usergroups_list))
 
     if field_dict:
         for usergroup, new_value in field_dict.items():
-            logger.debug('usergroup: ' + str(usergroup))
-            logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
-            if new_value:
-                saved_usergroups_list.append(usergroup)
-            else:
-                logger.debug('new_value: ' + str(new_value) + '' + str(type(new_value)))
-                if usergroup in saved_usergroups_list:
-                    saved_usergroups_list.remove(usergroup)
+            new_value = False if new_value is None else new_value
+            if logging_on:
+                logger.debug('usergroup: ' + str(usergroup))
+                logger.debug('new_value: ' + str(new_value))
 
-    logger.debug('saved_usergroups_list: ' + str(saved_usergroups_list))
+            if new_value:
+        # - remove other 'auth' usergroups when usergroup = 'auth123' is set to True
+        #   only when called by update_user_instance
+                if validate:
+                    auth_list = (c.USERGROUP_AUTH1_PRES, c.USERGROUP_AUTH2_SECR, c.USERGROUP_AUTH3_COM)
+                    if usergroup in auth_list:
+                        for auth in auth_list:
+                            if auth != usergroup:
+                                if auth in saved_usergroups_list:
+                                    saved_usergroups_list.remove(auth)
+                if usergroup not in saved_usergroups_list:
+                    saved_usergroups_list.append(usergroup)
+            else:
+                if usergroup in saved_usergroups_list:
+        # - admin cannot remove his own admin usergroup
+        #   only when called by update_user_instance
+                    if validate and \
+                            instance.pk == request.user.pk and \
+                            usergroup == c.USERGROUP_ADMIN and \
+                            request.user.usergroups and c.USERGROUP_ADMIN in request.user.usergroups:
+                        if logging_on:
+                            logger.debug('pass: request.user.usergroups: ' + str(request.user.usergroups))
+                        pass
+                    else:
+                        saved_usergroups_list.remove(usergroup)
+
     # sort the list before saving, to be able to compare new and saved usergroups
     saved_usergroups_list.sort()
+
+    if logging_on:
+        logger.debug('saved_usergroups_list: ' + str(saved_usergroups_list))
+
     new_usergroups_str = ';'.join(saved_usergroups_list)
-    logger.debug('new_usergroups_str: ' + str(new_usergroups_str))
+    if logging_on:
+        logger.debug('new_usergroups_str: ' + str(new_usergroups_str))
     if new_usergroups_str != saved_usergroups_list:
         setattr(instance, 'usergroups', new_usergroups_str)
         data_has_changed = True
+
     return data_has_changed
 
 # === resend_activation_email ===================================== PR2020-08-15

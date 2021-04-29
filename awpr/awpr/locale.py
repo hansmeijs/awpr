@@ -27,7 +27,8 @@ def get_locale_dict(table_dict, user_lang):
     dict['an_examyear'] = _('an exam year')
     dict['a_school'] = _('a school')
     dict['a_department'] = _('a department')
-    dict['in_the_list'] = _(' in the list ...')
+    dict['a_subject'] = _('a subject')
+    dict['in_the_list'] = _(' in the list.')
 
     dict['No__'] = pgettext_lazy('No ... selected', 'No ')
     dict['__selected'] = pgettext_lazy('No ... selected.', ' selected.')
@@ -47,6 +48,9 @@ def get_locale_dict(table_dict, user_lang):
     dict['School_notfound_thisexamyear'] = _('School not found in this exam year')
     dict['Department_notfound_thisexamyear'] = _('Department not found in this exam year')
 
+    dict['This_school_is_locked'] = _('This school is locked.')
+    dict['This_school_is_activated'] = _('This school is activated.')
+
     # mod confirm
     dict['will_be_deleted'] = _(' will be deleted.')
     dict['will_be_made_inactive'] = _(' will be made inactive.')
@@ -61,8 +65,13 @@ def get_locale_dict(table_dict, user_lang):
     dict['OK'] = _('OK')
 
     dict['Examyear'] = _('Exam year')
+
+    dict['School'] = _('School')
+    dict['Schools'] = _('Schools')
+
     dict['Subject'] = _('Subject')
     dict['Subjects'] = _('Subjects')
+
     dict['Subject_schemes'] = _('Subject schemes')
     dict['Level'] = _('Level')
     dict['Levels'] = _('Levels')
@@ -76,6 +85,9 @@ def get_locale_dict(table_dict, user_lang):
     dict['Abbreviation'] = _('Abbreviation')
     dict['Candidate'] = _('Candidate')
     dict['Candidates'] = _('Candidates')
+    dict['a_candidate'] = _('a candidate')
+
+
     dict['Name'] = _('Name')
     dict['Department'] = _('Department')
     dict['Departments'] = _('Departments')
@@ -120,9 +132,6 @@ def get_locale_dict(table_dict, user_lang):
 
     dict['No_item_selected'] = _('No item selected')
 
-    # mod select subject student
-    dict['Type_afew_letters_candidate'] = _('Type a few letters of the name or exam number and select a candidate in the list.')
-    dict['Type_afew_letters_subject'] = _('Type a few letters of the name or abbreviation and select a subject in the list.')
     dict['All'] = _('All ')
 
 # ====== PAGE UPLOAD =========================
@@ -161,7 +170,6 @@ def get_locale_dict(table_dict, user_lang):
 # ====== PAGE USER ========================= PR2019-11-19
     if 'page_user' in page_list:
 
-        dict['School'] = TXT_School
         dict['User_list'] = _('User list')
         dict['Permissions'] = _('Permissions')
         dict['Set_permissions'] = _('Set permissions')
@@ -193,7 +201,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Name'] = _('Name')
         dict['Email_address'] = TXT_Email_address
         dict['Linked_to_employee'] = _('Linked to employee')
-        dict['Activated_at'] = _('Activated at')
+        dict['Activated_on'] = _('Activated on')
         dict['Last_loggedin'] = _('Last logged in')
         dict['Add_user'] = _('Add user')
         dict['Add_user_to'] = _('Add user to ')
@@ -243,6 +251,9 @@ def get_locale_dict(table_dict, user_lang):
         dict['Not_published'] = _('Not published')
         dict['Published_on'] = _('Published on ')
 
+        dict['Activated'] = _('Activated')
+        dict['Activated_on'] = _('Activated on')
+
         dict['Locked'] = _('Locked')
         dict['Not_locked'] = _('Not locked')
         dict['Locked_on'] = _('Locked on ')
@@ -253,24 +264,45 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['Examyear_successfully_created'] = _('The exam year is successfully created.')
 
-        dict['Create_examyear'] = _('Create exam year')
+        dict['Create_new_examyear'] = _('Create new exam year')
         dict['Publish_examyear'] = _('Publish exam year')
+        dict['Activate_examyear'] = _('Activate exam year')
         dict['Close_examyear'] = _('Close exam year')
         dict['Delete_examyear'] = _('Delete exam year')
+
+        dict['Create_examyear_part1'] = pgettext_lazy('NL_Examenjaar', 'Create exam year ')
+        dict['Create_examyear_part2'] = pgettext_lazy('NL_aanmaken', ' ')
+
+        dict['Publish_examyear_part1'] = pgettext_lazy('NL_Examenjaar', 'Publish exam year ')
+        dict['Publish_examyear_part2'] = pgettext_lazy('NL_publiceren', ' ')
+
+        dict['Activate_examyear_part1'] = pgettext_lazy('NL_Examenjaar', 'Activate exam year ')
+        dict['Activate_examyear_part2'] = pgettext_lazy('NL_activeren', ' ')
+
+        dict['Close_examyear_part1'] = pgettext_lazy('NL_Examenjaar', 'Close exam year ')
+        dict['Close_examyear_part2'] = pgettext_lazy('NL_afsluiten', ' ')
+
+        dict['Delete_examyear_part1'] = pgettext_lazy('NL_Examenjaar', 'Delete exam year ')
+        dict['Delete_examyear_part2'] = pgettext_lazy('NL_wissen', ' ')
+
         dict['Undo_publish_examyear'] = _('Undo publish exam year')
         dict['Undo_closure_examyear'] = _('Undo closure exam year')
 
         dict['msg_info'] = {
         'create': [
                 str(_("The new exam year will be created now. The data of the schools and subjects will be copied from the previous exam year.")),
-                str(_("Go to the pages 'Schools' and 'Subjects' to update the data if necessary.")),
-                str(_("Then you can publish the new exam year.")),
+                str(_("First go to the pages 'Schools' and 'Subjects' to update the data if necessary.")),
+                str(_("Then you can publish the new exam year by clicking the 'Publish' button.")),
                 str(_("Schools will not be able to view the new exam year until you have published it."))
         ],
         'publish': [
             str(_("The exam year will be published now.")),
             str(_("When you have published the examyear, schools will be able to activate the new exam year and enter data.")),
             str(_("After a school has activated the new exam year, you can no longer undo the publication."))
+        ],
+        'activate': [
+            str(_("The exam year will be activated now.")),
+            str(_("After you have activated the examyear, you will be able to enter data."))
         ],
         'close': [
             str(_("The exam year will be closed now.")),
@@ -331,7 +363,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Short_name'] = _('Short name')
         dict['Activated'] = _('Activated')
         dict['Locked'] = _('Locked')
-        dict['School'] = TXT_School
+
         dict['Add_school'] = _('Add school')
         dict['Delete_school'] = _('Delete school')
         dict['No_schools'] = _('No schools')
@@ -598,7 +630,6 @@ def get_locale_dict(table_dict, user_lang):
     return dict
 
 
-TXT_School = _('School')
 TXT_Email_address = _('Email address')
 
 TXT_Inactive = _("Inactive")

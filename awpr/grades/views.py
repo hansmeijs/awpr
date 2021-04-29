@@ -1,10 +1,12 @@
 # PR2020-12-03
 from django.contrib.auth.decorators import login_required
+from django.core.files import File
 
 from django.db.models import Q
 from django.db import connection
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.translation import activate, ugettext_lazy as _
 from django.views.generic import View
@@ -44,14 +46,14 @@ class GradeListView(View):  # PR2020-12-03 PR2021-03-25
 
 # - set headerbar parameters PR2018-08-06
         page = 'page_grade'
-        params = awpr_menu.get_headerbar_param(request, page)
+        headerbar_param = awpr_menu.get_headerbar_param(request, page)
 
         #logger.debug('params: ' + str(params))
 # - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request.user:
             request.user.set_usersetting_dict('sel_page', {'page': page})
 
-        return render(request, 'grades.html', params)
+        return render(request, 'grades.html', headerbar_param)
 
 
 @method_decorator([login_required], name='dispatch')
@@ -214,7 +216,8 @@ class GradeApproveView(View):  # PR2021-01-19
        # create new published_instance. Only save it when it is not a test
                             published_instance = None
                             if is_submit and not is_test:
-                                published_instance = create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, request)
+                                now_arr = upload_dict.get('now_arr')
+                                published_instance = create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, now_arr, request)
 
         # +++++ loop through  grades
                             grade_rows = []
@@ -339,7 +342,7 @@ class GradeApproveView(View):  # PR2021-01-19
 # --- end of GradeUploadView
 
 
-def create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, request):  # PR2021-01-21
+def create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, now_arr, request):  # PR2021-01-21
     #logger.debug('----- create_published_instance -----')
     # create new published_instance and save it when it is not a test
     depbase_code = sel_department.base.code if sel_department.base.code else '-'
@@ -364,33 +367,43 @@ def create_published_instance(sel_school, sel_department, sel_examtype, sel_exam
         if subject:
             subject_code = subject.base.code
 
-    today_date = af.get_today_dateobj()
-    today_iso = today_date.isoformat()
+    # PR2021-04-28 get now_formatted from client
+    # was:
+    #today_iso = today_date.isoformat()
+    #now = timezone.now()
+    #now_iso = now.isoformat()
+
+    today_date = af.get_date_from_arr(now_arr)
+
+    year_str = str(now_arr[0])
+    month_str = ("00" + str(now_arr[1]))[-2:]
+    date_str = ("00" + str(now_arr[2]))[-2:]
+    hour_str = ("00" + str(now_arr[3]))[-2:]
+    minute_str = ("00" +str( now_arr[4]))[-2:]
+    now_formatted = ''.join([year_str, "-", month_str, "-", date_str, " ", hour_str, "u", minute_str])
 
     # TODO add level if it is filtered on those fields
-    name = ' '.join(('Ex2A', school_code, depbase_code, school_abbrev, examtype_caption, subject_code, today_iso))
-    # skip schoolname if total name is too long
-    if len(name) > c.MAX_LENGTH_FIRSTLASTNAME:
-        name = ' '.join(('Ex2A', school_code, depbase_code, today_iso))
+    file_name = ' '.join(('Ex2A', school_code, school_abbrev, depbase_code, examtype_caption, subject_code, now_formatted))
+    # skip school_abbrev if total file_name is too long
+    if len(file_name) > c.MAX_LENGTH_FIRSTLASTNAME:
+        file_name = ' '.join(('Ex2A', school_code, depbase_code, examtype_caption, subject_code, now_formatted))
+    # if total file_name is still too long: cut off
+    if len(file_name) > c.MAX_LENGTH_FIRSTLASTNAME:
+        file_name = file_name[0:c.MAX_LENGTH_FIRSTLASTNAME]
 
     published_instance = sch_mod.Published(
         school=sel_school,
         department=sel_department,
         examtype=sel_examtype,
         examperiod=sel_examperiod,
-        name=name,
+        name=file_name,
         datepublished=today_date)
 
     if not is_test:
+        published_instance.filename = file_name + '.pdf'
         published_instance.save(request=request)
         logger.debug('published_instance.saved: ' + str(published_instance))
 
-        #file_name = ( ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(24)) ) + '.pdf'
-
-        file_name = 'published' + str(published_instance.pk) + '.pdf'
-        published_instance.filename = file_name
-
-        published_instance.save(request=request)
     return published_instance
 # - end of create_published_instance
 
@@ -595,7 +608,7 @@ def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, req
                             msg_dict['saved'] += 1
                             setattr(grade, sel_examtype + '_published', published_instance)
 
-                            status_index = 4 # c.STATUS_04_SUBMITTED # STATUS_04_SUBMITTED = 16
+                            status_index = 4  # c.STATUS_04_SUBMITTED # STATUS_04_SUBMITTED = 16
                             saved_status_sum = getattr(grade, sel_examtype + '_status')
                             new_value_bool = True
                             new_status_sum = af.set_status_sum_by_index(saved_status_sum, status_index, new_value_bool)
@@ -804,50 +817,53 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
     sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
     #logger.debug('sql_keys: ' + str(sql_keys))
 
-    sql_list = ["SELECT grade.id,  studsubj.id AS studsubj_id, studsubj.schemeitem_id, studsubj.cluster_id,",
-        "CONCAT('grade_', grade.id::TEXT) AS mapid, 'grade' AS table,",
+    sql_list = ["SELECT grade.id, studsubj.id AS studsubj_id, studsubj.schemeitem_id, studsubj.cluster_id,",
+                "CONCAT('grade_', grade.id::TEXT) AS mapid, 'grade' AS table,",
 
-        "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
-        "stud.level_id AS lvl_id, lvl.abbrev AS lvl_abbrev, stud.sector_id AS sct_id, sct.abbrev AS sct_abbrev,",
-        "stud.iseveningstudent, ey.locked AS ey_locked, school.locked AS school_locked, stud.locked AS stud_locked,",
-        "school.islexschool,",
-        "ey.no_practexam, ey.no_centralexam, ey.combi_reex_allowed, ey.no_exemption_ce, ey.no_thirdperiod,",
-        "grade.examperiod, grade.pescore, grade.cescore, grade.segrade, grade.pegrade, grade.cegrade,",
-        "grade.pecegrade, grade.finalgrade,",
+                "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
+                "stud.level_id AS lvl_id, lvl.abbrev AS lvl_abbrev, stud.sector_id AS sct_id, sct.abbrev AS sct_abbrev,",
+                "stud.iseveningstudent, ey.locked AS ey_locked, school.locked AS school_locked, stud.locked AS stud_locked,",
+                "school.islexschool,",
+                "grade.examperiod, grade.pescore, grade.cescore, grade.segrade, grade.pegrade, grade.cegrade,",
+                "grade.pecegrade, grade.finalgrade,",
 
-        "se_status, se_auth1by_id, grade.se_auth2by_id, grade.se_auth3by_id, grade.se_published_id, grade.se_locked,",
-        "pe_status, pe_auth1by_id, grade.pe_auth2by_id, grade.pe_auth3by_id, grade.pe_published_id, grade.pe_locked,",
-        "ce_status, ce_auth1by_id, grade.ce_auth2by_id, grade.ce_auth3by_id, grade.ce_published_id, grade.ce_locked,",
+                "se_status, se_auth1by_id, grade.se_auth2by_id, grade.se_auth3by_id, grade.se_published_id, grade.se_locked,",
+                "pe_status, pe_auth1by_id, grade.pe_auth2by_id, grade.pe_auth3by_id, grade.pe_published_id, grade.pe_locked,",
+                "ce_status, ce_auth1by_id, grade.ce_auth2by_id, grade.ce_auth3by_id, grade.ce_published_id, grade.ce_locked,",
 
-        "norm.scalelength_ce, norm.scalelength_reex, norm.scalelength_pe,",
-        "si.subject_id, si.subjecttype_id, si.gradetype,",
-        "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_combi, si.extra_count_allowed,",
-        "si.extra_nocount_allowed, si.elective_combi_allowed, si.has_practexam,",
-        "subj.name AS subj_name, subjbase.code AS subj_code,",
-        "studsubj.note_status",
+                "norm.scalelength_ce, norm.scalelength_reex, norm.scalelength_pe,",
 
-        "FROM students_grade AS grade",
-        "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grade.studentsubject_id)",
+                "si.subject_id, si.subjecttype_id, si.norm_id,",
+                "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_combi, si.extra_count_allowed,",
+                "si.extra_nocount_allowed, si.elective_combi_allowed, si.has_practexam, si.has_pws,",
 
-        "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
-        "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
-        "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
+                "si.reex_se_allowed, si.reex_combi_allowed, si.no_centralexam,",
+                "si.no_reex, si.no_thirdperiod, si.no_exemption_ce,",
 
+                "subj.name AS subj_name, subjbase.code AS subj_code,",
+                "studsubj.note_status",
 
-        "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
-        "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
-        "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+                "FROM students_grade AS grade",
+                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grade.studentsubject_id)",
 
-        "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-        "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-        "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-        "LEFT JOIN subjects_norm AS norm ON (norm.id = si.norm_id)",
-        "WHERE ey.id = %(ey_id)s::INT",
-        "AND school.base_id = %(sb_id)s::INT",
-        "AND dep.base_id = %(depbase_id)s::INT",
-        "AND NOT grade.deleted",
-        "AND grade.examperiod = %(experiod)s::INT"
-        ]
+                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
+
+                "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+
+                "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+                "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+                "LEFT JOIN subjects_norm AS norm ON (norm.id = si.norm_id)",
+                "WHERE ey.id = %(ey_id)s::INT",
+                "AND school.base_id = %(sb_id)s::INT",
+                "AND dep.base_id = %(depbase_id)s::INT",
+                "AND NOT grade.deleted",
+                "AND grade.examperiod = %(experiod)s::INT"
+                ]
 
     #logger.debug('grade_pk: ' + str(grade_pk))
     #logger.debug('student_pk: ' + str(student_pk))
@@ -894,6 +910,7 @@ def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk):
     # --- create rows of published records PR2021-01-21
     #logger.debug(' ----- create_grade_rows -----')
 
+    """
     sql_keys = {'ey_id': sel_examyear_pk,
                 'sb_id': sel_schoolbase_pk,
                 'depbase_id': sel_depbase_pk,
@@ -914,7 +931,6 @@ def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk):
         "WHERE ey.id = %(ey_id)s::INT",
         "AND school.base_id = %(sb_id)s::INT",
         "AND dep.base_id = %(depbase_id)s::INT",
-        "AND dep.base_id = %(depbase_id)s::INT",
         "ORDER BY publ.datepublished"
         ]
     sql = ' '.join(sql_list)
@@ -922,6 +938,33 @@ def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk):
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
         published_rows = af.dictfetchall(cursor)
+    """
+    # can't use sql because of file field
+    rows = sch_mod.Published.objects.filter(
+        school__base_id=sel_schoolbase_pk,
+        school__examyear_id=sel_examyear_pk,
+        department__base_id=sel_depbase_pk
+    ).order_by('datepublished')
+    published_rows = []
+    for row in rows:
+        published_rows.append(
+            {
+            'id': row.pk,
+            'mapid': 'published_' + str(row.pk),
+            'table': 'published',
+            'name': row.name,
+            'examtype': row.examtype,
+            'examperiod': row.examperiod,
+            'datepublished': row.datepublished,
+            'filename': row.filename,
+            'sb_code': row.school.base.code,
+            'school_name': row.school.name,
+            'db_code': row.department.base.code,
+            'ey_code': row.school.examyear.code,
+            'file_name': str(row.file),
+            'url': row.file.url
+            }
+        )
 
     return published_rows
 # --- end of create_grade_rows
@@ -968,18 +1011,28 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
     #except Exception as e:
    #     logger.error(getattr(e, 'message', str(e)))
 
+        # PR2021-04-28 from: https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
+        # PR2021-04-28 debug decoding error. See https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
+        # error: Unicode-objects must be encoded before hashing
+        #local_file = open(file_path, encoding="Latin-1", errors="ignore")
 
-    #io_file = io.open(filename, encoding="utf-8")
+        # finally, this one works:   local_file = open(file_path, 'rb')
+        # thanks to https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
 
-    #io_file = codecs.open(filepath, "r", encoding='utf-8', errors='ignore')
-    #logger.debug('io_file: ' + str(io_file) + ' ' + str(type(io_file)))
-    #f_file = File(io_file)
+        local_file = open(file_path, 'rb')
+        pdf_file = File(local_file)
 
-    #logger.debug('f_file: ' + str(f_file) + ' ' + str(type(f_file)))
-    # published_instance.file.save(filepath, f_file)
+        #io_file = io.open(filename, encoding="utf-8")
+        #io_file = codecs.open(filepath, "r", encoding='utf-8', errors='ignore')
+        #logger.debug('io_file: ' + str(io_file) + ' ' + str(type(io_file)))
+        #f_file = File(io_file)
 
-    # save form
-    # published_instance.save(request=request)
+        logger.debug('pdf_file: ' + str(pdf_file) + ' ' + str(type(pdf_file)))
+
+        published_instance.file.save(file_path, pdf_file)
+
+        # save form
+        published_instance.save(request=request)
 
     """
     default fonts in reportlab:

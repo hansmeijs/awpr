@@ -40,11 +40,13 @@ def validate_input_grade(grade, field, input_value, logging_on):  # PR2021-01-18
     department = scheme.department
 
     examyear = department.examyear
-    no_practexam = examyear.no_practexam
-    no_centralexam = examyear.no_centralexam
-    combi_reex_allowed = examyear.combi_reex_allowed
-    no_exemption_ce =examyear.no_exemption_ce
-    no_thirdperiod = examyear.no_thirdperiod
+
+    # TODO move to schemitems PR2021-04-24
+    no_practexam = False  # was: examyear.no_practexam
+    no_centralexam = False  # was: examyear.no_centralexam
+    combi_reex_allowed = False  # was: examyear.combi_reex_allowed
+    no_exemption_ce = False  # was: examyear.no_exemption_ce
+    no_thirdperiod = False  # was: examyear.no_thirdperiod
 
     student = studsubj.student
     is_eveningstudent  = student.iseveningstudent

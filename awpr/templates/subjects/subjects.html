@@ -14,7 +14,8 @@
         <div class="content_subheader_left tab_show tab_init mx-2 my-4">
             <h5>{% trans 'Subjects' %}</h5>
         </div>
-
+        {% if not no_access %}
+        {% endif %}
     </nav>
 {% endblock %}
 <!-- END SIDE BAR -->
@@ -22,17 +23,11 @@
 {% block content %}
     <div id="id_content">
         {% if no_access %}
-            <div class="mx-4 mt-5 pt-5">
-                <div class="alert alert-danger">{{ no_access_message }}</div>
-            </div>
+            {% include 'includes/message_noaccess.html' %}
         {% else %}
-    <!-- =================== MODAL SELECT EXAM YEAR =================== -->
             {% include 'schools/modselectexamyear.html' %}
-    <!-- =================== MODAL SELECT  =================== -->
             {% include 'schools/modselectschoolordep.html' %}
-    <!-- =================== MODAL CONFIRM  =================== -->
             {% include 'includes/modconfirm.html' %}
-    <!-- =================== MODAL SUBJECT =================== -->
             {% include 'subjects/modsubject.html' %}
 
             <div class="content_margin_top78">

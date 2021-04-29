@@ -15,6 +15,8 @@
         <div class="content_subheader_left tab_show tab_init mx-2 my-4">
             <h5>{% trans 'Users' %}</h5>
         </div>
+        {% if not no_access %}
+        {% endif %}
     </nav>
 {% endblock %}
 <!-- END SIDE BAR -->
@@ -22,18 +24,15 @@
 
 {% block content %}
     <div id="id_content">
-        {% if user.is_group_system or not user.is_group_system %}
-    <!-- =================== MODAL SELECT EXAM YEAR =================== -->
+         {% if no_access %}
+            {% include 'includes/message_noaccess.html' %}
+        {% else %}
             {% include 'schools/modselectexamyear.html' %}
-    <!-- =================== MODAL SELECT SCHOOL OR DEPARTMENT=================== -->
             {% include 'schools/modselectschoolordep.html' %}
-    <!-- =================== MODAL CONFIRM  =================== -->
+            {% include 'includes/modselectsubjectstudent.html' %}
             {% include 'includes/modconfirm.html' %}
-    <!-- =================== MODAL USER  =================== -->
             {% include 'accounts/moduser.html' %}
-    <!-- =================== MODAL GROUP PERMIT  =================== -->
             {% include 'accounts/modgrouppermit.html' %}
-    <!-- =================== MODAL IMPORT  =================== -->
             {% include 'includes/modimport.html' %}
 
             <div class="content_margin_top78">
@@ -63,7 +62,9 @@
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="btn_user_list" class="btn btn-secondary ">{% trans 'User list' %}</button>
                     <button data-btn="btn_usergroups" class="btn btn-secondary ">{% trans 'User groups' %}</button>
-                    <button data-btn="btn_grouppermits" class="btn btn-secondary ">{% trans 'Group permissions' %}</button>
+                    {% if show_btn_grouppermits %}
+                        <button data-btn="btn_grouppermits" class="btn btn-secondary ">{% trans 'Group permissions' %}</button>
+                    {% endif %}
                 </div>
 <!-- end BUTTON GROUP -->
 
@@ -87,12 +88,6 @@
                 data-user_download_permits_url="{% url 'user_download_permits_url' %}"
             >
         </div>
-
-    {% else %}
-        <div class="mx-4">
-            <div class="alert alert-danger">{% trans "You don't have permission to view this page." %}</div>
-        </div>
     {% endif %}
     </div>
-
 {% endblock %}

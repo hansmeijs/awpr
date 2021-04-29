@@ -11,7 +11,8 @@ import json #PR2018-12-21
 from accounts import views as acc_view
 from awpr import constants as c
 from awpr import functions as af
-from awpr import settings as awpr_settings
+from awpr import settings as s
+
 from schools import models as sch_mod
 from schools import dicts as sch_dicts
 
@@ -86,13 +87,13 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
     # PR2018-05-28 set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
-    logging_on = True
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('===== get_headerbar_param ===== ' + str(page))
 
     param = param if param else {}
+    headerbar_param = {}
 
-    headerbar = param if param else {}
     req_user = request.user
     if req_user.is_authenticated and req_user.country and req_user.schoolbase:
         awp_messages = []
@@ -123,8 +124,8 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
 
 # +++ display examyear -------- PR2020-11-17 PR2020-12-24
     # - get selected examyear from Usersetting
-        no_access, no_examyears, examyear_not_published = False, False, False
-        no_access_message = None
+        no_examyears, examyear_not_published = False, False
+
         sel_country_abbrev, sel_country_name, country_locked = None, None, False
         sel_examyear_code = None
         sel_examyear, sel_examyear_save, may_select_examyear = af.get_sel_examyear_instance(request)
@@ -147,6 +148,7 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
             # niu, I think class_examyear_warning = ''
             if todays_examyear_instance:
                 if sel_examyear.pk != todays_examyear_instance.pk:
+                    # TODO remove, is moved to downloadsettings
                     # class_examyear_warning = 'navbar-item-warning'
                     # PR2018-08-24 debug: in base.html  href="#" is needed,
                     # because bootstrap line 233: a:not([href]):not([tabindex]) overrides navbar-item-warning
@@ -164,7 +166,7 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
         #   - otherwise sel_schoolbase_pk is equal to _requsr_schoolbase_pk
         # note: may_select_school only sets hover of school. Permissions are set in JS HandleHdrbarSelect
 
-        # hide school in page_exam when role is insp, admin, system
+        # hide school in page_examyear
         display_school = param.get('display_school', True)
         sel_school = None
         sel_school_activated = False
@@ -188,10 +190,8 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
 # +++ display department -------- PR2029-10-27 PR2020-11-17
         depname = ''
 
-# PR2018-08-24 select department PR2020-10-13
-        # TODO hide department if necessary
-        # <PERMIT>
-        display_dep = True
+# PR2018-08-24 select department PR2020-10-13 PR2021-04-25
+        display_dep = param.get('display_dep', True)
         if display_dep:
             sel_depbase, sel_depbase_save, allowed_depbases = af.get_sel_depbase_instance(sel_school, request)
 
@@ -209,32 +209,40 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
         selected_menu_key = page if page else 'page_examyear'  # default is 'page_examyear'
         menu_items = set_menu_items(selected_menu_key, request)
 
+# ------- set no_access -------- PR2021-04-27
+        no_access = ('view_page' not in permit_list)
 
-# ------- set no_access message -------- PR2021-03-25
-        if 'view_page' not in permit_list:
-            no_access = True
-            no_access_message = _("You don't have permission to view this page.")
-        elif no_examyears:
-            no_access = True
+# ------- set message -------- PR2021-03-25
+        no_access_message = None
+        if no_examyears:
             no_access_message = _("There are no exam years yet.")
         elif country_locked:
-            no_access = True
             no_access_message = _("%(country)s has no license to use AWP-online.") % \
                                                  {'country': sel_country_name}
         elif examyear_not_published:
-            no_access = True
-            admin = _('The Division of Examinations') if sel_country_abbrev.lower() == "sxm" else _('The ETE')
+            # get latest name of ETE / Div of Exam from schools, if not found: default = MinOnd
+            school_admin = sch_mod.School.objects.filter(
+                base__country=req_user.country,
+                base__defaultrole=c.ROLE_064_ADMIN
+            ).order_by('-examyear', '-pk').first()
+
+            admin_name = None
+            if school_admin:
+                admin_name = school_admin.name
+                if admin_name and school_admin.article:
+                    admin_name = ' '.join((school_admin.article.capitalize(), admin_name))
+            if not admin_name:
+                admin_name = _('The Ministry of Education')
             no_access_message = _("%(admin)s has not yet published examyear %(exyr)s. You cannot enter data yet.") % \
-                                                 {'admin': admin, 'exyr': str(sel_examyear_code)}
+                                                 {'admin': admin_name, 'exyr': str(sel_examyear_code)}
 
         elif not sel_school_activated:
             # block certain pages when not sel_school_activated
             if page in ('page_student', 'page_studsubj', 'page_grade'):
-                no_access = True
                 no_access_message = _("You must first activate the examyear before you can enter data. Go to the page 'School' and activate the examyear.")
 
-        headerbar = {
-            'request': request,
+        headerbar_param = {
+            'no_access': no_access,
             'examyear_code': sel_examyear_str,
             'display_school': display_school, 'school': schoolname,
             'display_dep': display_dep, 'department': depname,
@@ -246,14 +254,15 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
             'awp_messages': awp_messages,
             'permit_list': permit_list
         }
-        if no_access:
-            headerbar['no_access'] = no_access
-            headerbar['no_access_message'] = no_access_message
+        if param:
+            headerbar_param.update(param)
 
         if logging_on:
-            logger.debug('no_access:           ' + str(no_access))
-            logger.debug('no_access_message:  ' + str(no_access_message))
-    return headerbar
+            logger.debug('no_access:         ' + str(no_access))
+
+            logger.debug('headerbar_param: ' + str(headerbar_param))
+
+    return headerbar_param
 
 def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-12-23
     #logger.debug('------------ get_saved_page_url ----------------')
