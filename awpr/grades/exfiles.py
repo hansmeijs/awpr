@@ -244,13 +244,14 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
                     logger.debug('sel_subject: ' + str(sel_subject))
 
 # +++ get selected grade_rows
+                auth_dict = {}
                 grade_rows = gr_vw.create_grade_rows(
                     sel_examyear_pk=sel_examyear.pk,
                     sel_schoolbase_pk=sel_school.base_id,
                     sel_depbase_pk=sel_department.base_id,
                     sel_examperiod=sel_examperiod,
                     sel_subject_pk=sel_subject_pk,
-                    add_auth_list=True
+                    auth_dict=auth_dict
                     )
 
                 # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
@@ -258,7 +259,6 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
                 # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
                 #temp_file = tempfile.TemporaryFile()
                 # canvas = Canvas(temp_file)
-
 
                 buffer = io.BytesIO()
                 canvas = Canvas(buffer)

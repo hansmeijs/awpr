@@ -1,4 +1,6 @@
 # PR2020-12-03
+import tempfile
+
 from django.contrib.auth.decorators import login_required
 from django.core.files import File
 
@@ -728,8 +730,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
                             sel_depbase_pk=sel_department.base_id,
                             sel_examperiod=grade.examperiod,
                             append_dict=append_dict,
-                            grade_pk=grade.pk,
-                            add_auth_list=False)
+                            grade_pk=grade.pk)
                         if rows:
                             row = rows[0]
                             if row:
@@ -921,7 +922,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
             if row:
                 for key, value in append_dict.items():
                     row[key] = value
-        logger.debug('auth_dict: ' + str(auth_dict))
+
     return grade_rows
 # --- end of create_grade_rows
 
@@ -1024,8 +1025,11 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
         logger.debug('file_name: ' + str(file_name))
         logger.debug('filepath: ' + str(file_path))
 
-        canvas = Canvas(file_path)
+        # from https://docs.python.org/3/library/tempfile.html
+        temp_file = tempfile.TemporaryFile()
 
+        # was: canvas = Canvas(file_path)
+        canvas = Canvas(temp_file)
         canvas.setTitle(file_name)
 
         grade_exfiles.draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel_examperiod, sel_examtype,
@@ -1035,11 +1039,9 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
         canvas.save()
 
         logger.debug('canvas: ' + str(canvas))
-    except Exception as e:
-       logger.error(getattr(e, 'message', str(e)))
+        logger.debug('temp_file: ' + str(temp_file))
 
-    if file_path:
-        try:
+        if file_path:
             # PR2021-04-28 from: https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
             # PR2021-04-28 debug decoding error. See https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
             # error: Unicode-objects must be encoded before hashing
@@ -1049,8 +1051,10 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
             # finally, this one works:   local_file = open(file_path, 'rb')
             # thanks to https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
 
-            local_file = open(file_path, 'rb')
-            pdf_file = File(local_file)
+            # was: local_file = open(file_path, 'rb')
+            # was: pdf_file = File(local_file)
+            # this works! PR2021-04-29
+            pdf_file = File(temp_file)
 
             published_instance.file.save(file_path, pdf_file)
 
@@ -1062,14 +1066,14 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
 # - save form
             published_instance.save(request=request)
 
-        except Exception as e:
-           logger.error(getattr(e, 'message', str(e)))
-        """
-        default fonts in reportlab:
-            Courier Courier-Bold Courier-BoldOblique Courier-Oblique 
-            Helvetica Helvetica-Bold Helvetica-BoldOblique Helvetica-Oblique 
-            Symbol 
-            Times-Bold Times-BoldItalic Times-Italic Times-Roman 
-            ZapfDingbats 
-        """
+    except Exception as e:
+       logger.error(getattr(e, 'message', str(e)))
+    """
+    default fonts in reportlab:
+        Courier Courier-Bold Courier-BoldOblique Courier-Oblique 
+        Helvetica Helvetica-Bold Helvetica-BoldOblique Helvetica-Oblique 
+        Symbol 
+        Times-Bold Times-BoldItalic Times-Italic Times-Roman 
+        ZapfDingbats 
+    """
 
