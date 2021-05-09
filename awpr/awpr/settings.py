@@ -286,13 +286,6 @@ LOGGING = {
             'filename': config('LOGGER_BASEDIR') + 'awpr.log',
             'formatter': 'verbose'
         },
-        'importing_log': {
-            'level': 'DEBUG',
-            'filters': ['require_debug_true'],
-            'class': 'logging.FileHandler',
-            'filename': config('LOGGER_BASEDIR') + 'importing.log',
-            'formatter': 'verbose'
-        },
         'schools_log': {
             'level': 'DEBUG',
             'filters': ['require_debug_true'],
@@ -342,12 +335,12 @@ LOGGING = {
         'django.security': {'handlers': ['mail_admins'], 'level': 'ERROR', 'propagate': False,},
         'py.warnings': {'handlers': ['console'],},
         'accounts': {'handlers': ['accounts_log'], 'level': 'DEBUG', 'propagate': True,},
-        'importing': {'handlers': ['importing_log'], 'level': 'DEBUG', 'propagate': True,},
-        'schools': {'handlers': ['schools_log'], 'level': 'DEBUG', 'propagate': True,},
         'awpr': {'handlers': ['awpr_log'], 'level': 'DEBUG', 'propagate': True,},
+        'importing': {'handlers': ['awpr_log'], 'level': 'DEBUG', 'propagate': True,},
+        'schools': {'handlers': ['schools_log'], 'level': 'DEBUG', 'propagate': True,},
         'students': {'handlers': ['students_log'], 'level': 'DEBUG', 'propagate': True,},
-        'grades': {'handlers': ['grades_log'], 'level': 'DEBUG', 'propagate': True,},
         'subjects': {'handlers': ['subjects_log'], 'level': 'DEBUG', 'propagate': True,},
+        'grades': {'handlers': ['grades_log'], 'level': 'DEBUG', 'propagate': True,},
     }
 }
 

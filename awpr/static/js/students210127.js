@@ -21,12 +21,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  id of selected customer and selected order
     let selected_btn = "btn_user_list";
-    let selected_period = {};
     let setting_dict = {};
+    let permit_dict = {};
+    let loc = {};  // locale_dict
+    let selected_period = {};
 
     let selected_student_pk = null;
 
-    let loc = {};  // locale_dict
     let mod_dict = {};
     let mod_MSTUD_dict = {};
 
@@ -93,16 +94,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.addEventListener("click", function() {HandleBtnSelect(data_btn)}, false )
             };
         }
-// --- header bar elements
+
+// ---  HEADER BAR ------------------------------------
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
-            el_hdrbar_examyear.addEventListener("click", function() {
-                t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false )
-        const el_hdrbar_school = document.getElementById("id_hdrbar_school")
-            el_hdrbar_school.addEventListener("click", function() {
-                t_MSESD_Open(loc, "school", school_map, setting_dict, permit_dict, MSESD_Response)}, false )
-        const el_hdrbar_department = document.getElementById("id_hdrbar_department")
-            el_hdrbar_department.addEventListener("click", function() {
-                t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false )
+        const el_hdrbar_school = document.getElementById("id_hdrbar_school");
+        const el_hdrbar_department = document.getElementById("id_hdrbar_department");
+
+        if (el_hdrbar_examyear){
+            el_hdrbar_examyear.addEventListener("click",
+                function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false );
+        }
+        if (el_hdrbar_department){
+            el_hdrbar_department.addEventListener("click",
+                function() {t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false );
+        }
+        if (el_hdrbar_school){
+            el_hdrbar_school.addEventListener("click",
+                function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+        }
+
+// ---  MSESD MOD SELECT EXAMYEAR SCHOOL DEPARTMENT ------------------------------
+        const el_MSESD_input = document.getElementById("id_MSESD_input");
+        //const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tbody_select");
+        //const el_MSESD_btn_save = document.getElementById("id_MSSSS_btn_save");
+        if (el_MSESD_input){
+            el_MSESD_input.addEventListener("keyup", function(event){
+                setTimeout(function() {t_MSESD_InputName(el_MSESD_input)}, 50)});
+        }
+       // if (el_MSESD_btn_save){
+       //     el_MSESD_btn_save.addEventListener("click", function() {t_MSSSS_Save(el_MSESD_btn_save, MSSSS_Response)}, false );
+       // }
 
 // ---  MODAL SIDEBAR FILTER ------------------------------------
 
@@ -163,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     const el_filedialog = document.getElementById("id_MIMP_filedialog");
-        el_filedialog.addEventListener("change", function() {HandleFiledialog(el_filedialog, loc)}, false )
+        el_filedialog.addEventListener("change", function() {MIMP_HandleFiledialog(el_filedialog, loc)}, false )
     const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
         el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false);
     const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
@@ -239,28 +260,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 // hide loader
                 el_loader.classList.add(cls_visible_hide)
                 let check_status = false;
-                let call_DisplayCustomerOrderEmployee = true;
+                let isloaded_loc = false, isloaded_settings = false, isloaded_permits = false;
 
-                if ("locale_dict" in response) { refresh_locale(response.locale_dict)};
-                if ("setting_dict" in response) {
-                    setting_dict = response.setting_dict
-                    // NIU mimp_setting_dict = setting_dict;
-                    // <PERMIT> PR220-10-02
-                    //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-                    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
-                    has_permit_edit = (setting_dict.requsr_role_admin && setting_dict.requsr_group_edit) ||
-                                      (setting_dict.requsr_role_system && setting_dict.requsr_group_edit);
-
-                    selected_btn = (setting_dict.sel_btn)
-
-                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                if ("locale_dict" in response) {
+                    loc = response.locale_dict;
+                    mimp_loc = loc;
+                    isloaded_loc = true;
                 };
 
-                if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
+                if ("setting_dict" in response) {
+                    setting_dict = response.setting_dict
+                    selected_btn = (setting_dict.sel_btn)
+                    isloaded_settings = true;
+                };
+
+                if ("permit_dict" in response) {
+                    permit_dict = response.permit_dict;
+                    // get_permits must come before CreateSubmenu and FiLLTbl
+                    //get_permits(permit_dict.permit_list);
+                    //usergroups = permit_dict.usergroup_list;
+                    isloaded_permits = true;
+                }
+                if ("schoolsetting_dict" in response) {
+                    i_UpdateSchoolsettingsImport(response.schoolsetting_dict)
+                };
+                // both 'loc' and 'setting_dict' are needed for CreateSubmenu
+                if (isloaded_loc && isloaded_settings) {CreateSubmenu()};
+                if(isloaded_settings || isloaded_permits){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school)};
 
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows)};
                 if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows)};
                 if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows)};
+
                 if ("level_rows" in response)  {
                     b_fill_datamap(level_map, response.level_rows);
                 };
@@ -273,9 +304,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
                     RefreshDataMap(tblName, field_names, response.student_rows, student_map, false)  // false = no update
                 }
-                if ("studentsubject_rows" in response)  { b_fill_datamap(studentsubject_map, response.studentsubject_rows) };
-                if ("scheme_rows" in response)  { b_fill_datamap(scheme_map, response.scheme_rows) };
-                if ("schemeitem_rows" in response)  { b_fill_datamap(schemeitem_map, response.schemeitem_rows) };
+                //if ("studentsubject_rows" in response)  { b_fill_datamap(studentsubject_map, response.studentsubject_rows) };
+                //if ("scheme_rows" in response)  { b_fill_datamap(scheme_map, response.scheme_rows) };
+                //if ("schemeitem_rows" in response)  { b_fill_datamap(schemeitem_map, response.schemeitem_rows) };
 
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
 
@@ -288,14 +319,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }  // function DatalistDownload
-
-//=========  refresh_locale  ================  PR2020-07-31
-    function refresh_locale(locale_dict) {
-        //console.log ("===== refresh_locale ==== ")
-        loc = locale_dict;
-        mimp_loc = locale_dict;
-        CreateSubmenu()
-    }  // refresh_locale
 
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {

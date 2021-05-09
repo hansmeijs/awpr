@@ -78,9 +78,9 @@
             {% include 'includes/message_noaccess.html' %}
         {% else %}
             {% include 'schools/modselectexamyear.html' %}
+            {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'schools/modselectschoolordep.html' %}
             {% include 'students/modapprovegrade.html' %}
-            {% include 'includes/modselectsubjectstudent.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'includes/modstatus.html' %}
             {% include 'includes/modnote.html' %}
@@ -100,7 +100,6 @@
     <!-- end BUTTON GROUP -->
 
 <!-- CONTENT HEADER - LOADER -->
-
         <!-- submenu -->
                 <div class="content_header flex_container">
                     <div id="id_submenu" class="awp_navbar_submenuXX mt-5">
@@ -123,7 +122,7 @@
 
     <!-- CONTENT BODY -->
     <!-- =================== DATA TABLE  =================== -->
-            <div class="content_header ml-2 mr-0">
+                <div class="content_header ml-2 mr-0">
                 <table class="table tsa_tbl">
                     <thead id="id_tblHead_datatable"></thead>
                     <tbody id="id_tblBody_datatable"></tbody>
@@ -131,22 +130,22 @@
             </div>
     <!-- END OF CONTENT BODY -->
 
-            <div id="id_data"
-                data-datalist_download_url="{% url 'datalist_download_url' %}"
-                data-settings_upload_url="{% url 'settings_upload_url' %}"
-                data-student_upload_url="{% url 'student_upload_url' %}"
-                data-studsubj_upload_url="{% url 'studsubj_upload_url' %}"
-                data-grade_upload_url="{% url 'grade_upload_url' %}"
-                data-grade_approve_url="{% url 'grade_approve_url' %}"
-                data-download_published_url="{% url 'grades_download_published_url' %}"
-                data-grade_download_ex2a_url="{% url 'grade_download_ex2a_url' %}"
-                data-studentsubjectnote_upload_url="{% url 'studentsubjectnote_upload_url' %}"
-                data-studentsubjectnote_download_url="{% url 'studentsubjectnote_download_url' %}"
-                data-noteattachment_download_url="{% url 'noteattachment_download_url' pk_int=0 %}"
-
-            >
+                <div id="id_data"
+                    data-datalist_download_url="{% url 'datalist_download_url' %}"
+                    data-settings_upload_url="{% url 'settings_upload_url' %}"
+                    data-student_upload_url="{% url 'student_upload_url' %}"
+                    data-studsubj_upload_url="{% url 'studsubj_upload_url' %}"
+                    data-grade_upload_url="{% url 'grade_upload_url' %}"
+                    data-grade_approve_url="{% url 'grade_approve_url' %}"
+                    data-download_grade_icons_url="{% url 'download_grade_icons_url' %}"
+                    data-download_published_url="{% url 'grades_download_published_url' %}"
+                    data-grade_download_ex2a_url="{% url 'grade_download_ex2a_url' %}"
+                    data-studentsubjectnote_upload_url="{% url 'studentsubjectnote_upload_url' %}"
+                    data-studentsubjectnote_download_url="{% url 'studentsubjectnote_download_url' %}"
+                    data-noteattachment_download_url="{% url 'noteattachment_download_url' pk_int=0 %}"
+                >
+                </div>
             </div>
         {% endif %}
     </div>
-
 {% endblock %}

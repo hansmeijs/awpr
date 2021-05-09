@@ -3,15 +3,16 @@ from django.contrib import messages
 from django.db import connection
 from django.utils.translation import activate, ugettext_lazy as _
 from django.utils import timezone
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from awpr import constants as c
+from awpr import settings as s
 
 from accounts import models as acc_mod
 from students import models as stud_mod
 from schools import models as sch_mod
 from subjects import models as subj_mod
-
+import pytz
 import logging
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,7 @@ def set_status_sum_by_index(status_sum, index, new_value_bool):  # PR2021-01-15
 
 
 # ---------- Date functions ---------------
+
 def get_today_dateobj():  # PR2020-10-20
     # function gets today in '2019-12-05' format
     now = datetime.now()
@@ -121,7 +123,6 @@ def get_date_from_arr(arr_int):  # PR2019-11-17  # PR2020-10-20
     if arr_int:
         date_obj = date(arr_int[0], arr_int[1], arr_int[2])
     return date_obj
-
 
 
 # ################### DATE STRING  FUNCTIONS ###################
@@ -183,6 +184,7 @@ def get_dateISO_from_string(date_string, format=None):  # PR2019-08-06
             logger.error('ERROR: get_dateISO_from_string: ' + str(date_string) + ' new_dat_str: ' + str(new_dat_str))
     return new_dat_str
 
+
 # >>>>>> This is the right way, I think >>>>>>>>>>>>>
 def get_date_from_ISO(date_iso):  # PR2019-09-18 PR2020-03-20
     # this is the simple way, it works though
@@ -197,6 +199,49 @@ def get_date_from_ISO(date_iso):  # PR2019-09-18 PR2020-03-20
         except:
             pass
     return dte
+
+
+def get_datetime_naive_from_dateobject(datetime_obj):
+    # function removes the timezone from a datetime object PR2021-05-09
+    # https://stackoverflow.com/questions/10944047/how-can-i-remove-a-pytz-timezone-from-a-datetime-object
+
+    datetime_naive = None
+    if datetime_obj:
+        try:
+            logger.debug('datetime_obj: ' + str(datetime_obj) + ' type: ' + str(type(datetime_obj)))
+            logger.debug('datetime_obj.tzinfo: ' + str(datetime_obj.tzinfo) + ' type: ' + str(type(datetime_obj.tzinfo)))
+            # dt.tzinfo: None <class 'NoneType'>
+            datetime_naive = datetime_obj.replace(tzinfo=None)
+            # datetime_obj: 2021-05-09 01:27:57.041618+00:00 type: <class 'datetime.datetime'>
+            logger.debug('datetime_naive: ' + str(datetime_naive) + ' type: ' + str(type(datetime_naive)))
+            logger.debug('datetime_naive.tzinfo: ' + str(datetime_naive.tzinfo) + ' type: ' + str(type(datetime_naive.tzinfo)))
+            # datetime_naive: 2021-05-09 01:27:57.041618 type: <class 'datetime.datetime'>
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            logger.error('datetime_obj: ' + str(datetime_obj) + ' ' + str(type(datetime_obj)))
+    return datetime_obj
+
+
+def get_datetimelocal_from_datetime_utc(datetime_utc):
+    # based on tsa function get_datetimelocal_from_offset PR2021-05-09
+    # from https://stackoverflow.com/questions/4563272/convert-a-python-utc-datetime-to-a-local-datetime-using-only-python-standard-lib
+    #logger.debug(' +++ get_datetimelocal_from_datetime_naive +++')
+
+    datetime_local = None
+    if datetime_utc is not None:
+        local_timezone = pytz.timezone('America/Curacao')
+        datetime_local = datetime_utc.astimezone(local_timezone)
+
+        #logger.debug('datetime_utc: ' + str(datetime_utc) + ' ' + str(type(datetime_utc)))
+        # datetime_utc: 2021-05-08 21:32:57.189035+00:00 <class 'datetime.datetime'>
+        #logger.debug('datetime_utc.tzinfo: ' + str(datetime_utc.tzinfo) + ' ' + str(type(datetime_utc.tzinfo)))
+        # datetime_utc.tzinfo: UTC <class 'pytz.UTC'>
+        #logger.debug('datetime_local: ' + str(datetime_local) + ' ' + str(type(datetime_local)))
+        # datetime_local: 2021-05-08 17:32:57.189035-04:00 <class 'datetime.datetime'>
+        #logger.debug('datetime_local.tzinfo: ' + str(datetime_local.tzinfo) + ' ' + str(type(datetime_local.tzinfo)))
+        # datetime_local.tzinfo: America/Curacao <class 'pytz.tzfile.America/Curacao'>
+
+    return datetime_local
 
 
 def format_WDMY_from_dte(dte, user_lang):  # PR2020-10-20
@@ -238,6 +283,68 @@ def format_DMY_from_dte(dte, lang):  # PR2019-06-09  # PR2020-10-20
             pass
     #logger.debug('... date_DMY: ' + str(date_DMY) + ' type:: ' + str(type(dte)) + ' lang: ' + str(lang))
     return date_DMY
+
+
+def format_HM_from_dt_local(datetime_local, use24insteadof00, use_suffix, timeformat, user_lang):
+    # PR2020-01-26
+    # Function returns time : "18.15 u." or "6:15 p.m."
+    # 12.00 a.m is midnight, 12.00 p.m. is noon
+
+    display_txt = ''
+    is24insteadof00 = False
+    if datetime_local:
+        # from https://howchoo.com/g/ywi5m2vkodk/working-with-datetime-objects-and-timezones-in-python
+        # entered date is dattime-naive, make it datetime aware with  pytz.timezone
+
+        # .strftime("%H") returns zero-padded 24 hour based string '03' or '22'
+        hours_int = datetime_local.hour
+        minutes_int = datetime_local.minute
+
+        suffix = None
+        if use_suffix and user_lang == 'nl':
+            suffix = 'u'
+
+        if timeformat.lower() == 'ampm':
+            suffix = 'p.m.' if hours_int >= 12 else 'a.m.'
+            if hours_int > 12:
+                hours_int -= 12
+        elif use24insteadof00 and hours_int == 0 and minutes_int == 0:
+            hours_int = 24
+            is24insteadof00 = True
+
+        hour_str = ''.join(['00', str(hours_int)])[-2:]
+        minutes_str = ''.join(['00', str(minutes_int)])[-2:]
+
+        separator = '.' if user_lang == 'nl' else ':'
+        display_txt = separator.join([hour_str, minutes_str])
+
+        if suffix:
+            display_txt = ' '.join([display_txt, suffix])
+
+    return display_txt
+
+
+def get_modifiedby_formatted(instance, user_lang):
+    # Function returns 'Laatst gewijzigd door Hans Meijs op 6 mei 2021, 15.55 u'  PR2021-05-09
+    last_modified_text, date_formatted, time_formatted = '', '', ''
+    if instance:
+        user_name = '-'
+        user = instance.modifiedby
+        if user:
+            user_name = user.last_name
+        datetime_formatted = ''
+        if instance.modifiedat:
+            # local timezone is set to 'America/Curacao' by default
+            datetime_local = get_datetimelocal_from_datetime_utc(instance.modifiedat)
+            last_modified_date =  datetime_local.date()
+            date_formatted = format_DMY_from_dte(last_modified_date, user_lang)
+
+            time_formatted = format_HM_from_dt_local(datetime_local, True, True, '24h', user_lang)
+            datetime_formatted = date_formatted + ', ' + time_formatted
+
+        last_modified_text = ' '.join(( str(_('Last modified by')), user_name, str(_('at')), datetime_formatted))
+
+    return last_modified_text
 
 # ----------  end of Date functions ---------------
 
@@ -356,9 +463,13 @@ def get_sel_schoolbase_instance(request, request_setting=None):  # PR2020-12-25 
 # --- end of get_sel_schoolbase_instance
 
 
-def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR2020-12-26
-    #logger.debug('  -----  get_sel_depbase_instance  -----')
-    #logger.debug('sel_school: ' + str(sel_school))
+def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR2020-12-26 PR2021-05-07
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('  -----  get_sel_depbase_instance  -----')
+        logger.debug('sel_school: ' + str(sel_school))
+        logger.debug('request_setting: ' + str(request_setting))
+
     sel_depbase_instance = None
     save_sel_depbase = False
     allowed_depbases = []
@@ -367,11 +478,15 @@ def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR20
         req_user = request.user
         requsr_country = req_user.country
 
-# - get allowed depbases from school and user
+# - get allowed depbases from user
+        # if req_user.allowed_depbases is empty, all depbases of the school are allowed
         if sel_school and sel_school.depbases:
             allowed_depbases_arr = req_user.allowed_depbases.split(';') if req_user.allowed_depbases else []
+            # PR2021-05-04 warning. if depbases contains ';2;3;',
+            # it will give error:  invalid literal for int() with base 10: ''
             allowed_depbases_list = list(map(int, allowed_depbases_arr))
 
+# - get allowed depbases from school
             school_depbase_list = list(map(int, sel_school.depbases.split(';')))
             for depbase_pk in school_depbase_list:
                 # skip if depbase not in list of req_user.allowed_depbases
@@ -383,25 +498,27 @@ def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR20
 # - check if there is a new depbase_pk in request_setting,
         if request_setting is not None:
             r_depbase_pk = get_dict_value(request_setting, (c.KEY_SELECTED_PK, c.KEY_SEL_DEPBASE_PK))
-            # check if it is in allowed_depbases,
+    # check if it is in allowed_depbases,
             if r_depbase_pk in allowed_depbases:
-                # check if request_depbase exists
+    # check if request_depbase exists
                 sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=r_depbase_pk, country=requsr_country)
                 if sel_depbase_instance is not None:
                     save_sel_depbase = True
 
-        #logger.debug('request_depbase instance: ' + str(sel_depbase_instance))
-        #logger.debug('save_sel_depbase: ' + str(save_sel_depbase))
+        if logging_on:
+            logger.debug('request_depbase instance: ' + str(sel_depbase_instance))
+            logger.debug('save_sel_depbase: ' + str(save_sel_depbase))
 
+# - get depbase_pk from Usersetting when tehre is no request_depbase_pk; check if request_depbase exists
         if sel_depbase_instance is None:
-# - get depbase_pk from Usersetting, check if request_depbase exists
             selected_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
             s_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
-        # check if it is in allowed_depbases,
+    # check if saved_depbase is in allowed_depbases,
             if s_depbase_pk in allowed_depbases:
-        # check if saved_depbase exists
+    # check if saved_depbase exists
                 sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=s_depbase_pk, country=requsr_country)
-        #logger.debug('saved_depbase instance: ' + str(sel_depbase_instance))
+        if logging_on:
+            logger.debug('saved_depbase instance: ' + str(sel_depbase_instance))
 
 # - if there is no saved nor request depbase: get first allowed depbase_pk
         if sel_depbase_instance is None:
@@ -411,12 +528,16 @@ def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR20
                 if sel_depbase_instance is not None:
                     save_sel_depbase = True
 
-        #logger.debug('sel_depbase_instance instance: ' + str(sel_depbase_instance))
+    if logging_on:
+        logger.debug('sel_depbase_instance: ' + str(sel_depbase_instance))
+        logger.debug('save_sel_depbase: ' + str(save_sel_depbase))
+        logger.debug('allowed_depbases: ' + str(allowed_depbases))
     return sel_depbase_instance, save_sel_depbase, allowed_depbases
 # --- end of get_sel_depbase_instance
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 def get_this_examyear_int():
     # get this year in Jan thru July, get next year in Aug thru Dec PR2020-09-29 PR2020-12-24
     now = timezone.now()
@@ -559,6 +680,7 @@ def load_default_permits(request):
             )
             permit.save()
             logger.debug('permit: ' + str(permit))
+
 
 def update_examyearsetting(examyear, request):
     # Once-only function to add sysadmin permit to admin users PR2020-07-30

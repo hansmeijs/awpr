@@ -342,9 +342,11 @@ class Studentsubject(sch_mod.AwpBaseModel):
     pws_subjects = CharField(max_length=80, null=True, blank = True)
 
     has_exemption = BooleanField(default=False)
+    has_sr = BooleanField(default=False)  # has se_reex (herkansing)
     has_reex = BooleanField(default=False)
     has_reex03 = BooleanField(default=False)
-    has_pok = BooleanField(default=False)  # proof of knowledge
+    has_pok = BooleanField(default=False)  # proof of knowledge  (for day school)
+    has_pex = BooleanField(default=False)  # proof of exemption (for evening school, lex school)
 
     subj_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -382,12 +384,7 @@ class Studentsubject(sch_mod.AwpBaseModel):
     gradelist_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
-    has_schoolnotes = BooleanField(default=False)
-    has_inspnotes = BooleanField(default=False)
-    note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-
     deleted = BooleanField(default=False)
-
 
 # PR2018-06-06
 class Studentsubject_log(sch_mod.AwpBaseModel):
@@ -407,9 +404,11 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     pws_subjects = CharField(max_length=80, null=True, blank = True)
 
     has_exemption = BooleanField(default=False)
+    has_sr = BooleanField(default=False)  # has se_reex (herkansing)
     has_reex = BooleanField(default=False)
     has_reex03 = BooleanField(default=False)
-    has_pok = BooleanField(default=False)
+    has_pok = BooleanField(default=False) # proof of knowledge  (for day school)
+    has_pex = BooleanField(default=False)  # proof of exemption (for evening school, lex school)
 
     subj_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -446,10 +445,6 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     gradelist_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-
-    has_schoolnotes = BooleanField(default=False)
-    has_inspnotes = BooleanField(default=False)
-    note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
     deleted = BooleanField(default=False)
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
@@ -508,6 +503,8 @@ class Grade(sch_mod.AwpBaseModel):
     cescore = PositiveSmallIntegerField(null=True)
 
     segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    srgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    sesrgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     pegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     cegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
@@ -519,6 +516,14 @@ class Grade(sch_mod.AwpBaseModel):
     se_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     se_locked = BooleanField(default=False)
+
+    # sr = se_reex = herkansing schoolexamen PR2021-05-01
+    sr_status = PositiveSmallIntegerField(default=0)
+    sr_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    sr_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    sr_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    sr_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    sr_locked = BooleanField(default=False)
 
     pe_status = PositiveSmallIntegerField(default=0)
     pe_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -566,6 +571,8 @@ class Grade_log(sch_mod.AwpBaseModel):
     cescore = PositiveSmallIntegerField(null=True)
 
     segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    srgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    sesrgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     pegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     cegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
@@ -577,6 +584,14 @@ class Grade_log(sch_mod.AwpBaseModel):
     se_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     se_locked = BooleanField(default=False)
+
+    # sr = se_reex = herkansing schoolexamen PR2021-05-01
+    sr_status = PositiveSmallIntegerField(default=0)
+    sr_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    sr_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    sr_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    sr_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    sr_locked = BooleanField(default=False)
 
     pe_status = PositiveSmallIntegerField(default=0)
     pe_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)

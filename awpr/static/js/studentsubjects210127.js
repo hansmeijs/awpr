@@ -10,10 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  check if user has permit to view this page. If not: el_loader does not exist PR2020-10-02
     let el_loader = document.getElementById("id_loader");
-    const has_view_permit = (!!el_loader);
-    // has_permit_edit gets value after downloading settings
-    let has_permit_edit = false;
-    let has_permit_select_school = false;
+    const may_view_page = (!!el_loader)
 
     const cls_hide = "display_hide";
     const cls_hover = "tr_hover";
@@ -22,10 +19,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  id of selected customer and selected order
     let selected_btn = "btn_user_list";
-    let selected_period = {};
-    let setting_dict = {};
-
     let selected_student_pk = null;
+    let setting_dict = {};
+    let permit_dict = {};
 
     let loc = {};  // locale_dict
     let mod_dict = {};
@@ -99,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- buttons in btn_container
         const el_btn_container = document.getElementById("id_btn_container")
-        if (has_view_permit){
+        if (el_btn_container){
             const btns = el_btn_container.children;
             for (let i = 0, btn; btn = btns[i]; i++) {
                 const data_btn = get_attr_from_el(btn,"data-btn")
@@ -171,9 +167,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_MSTUD_tbody_select = document.getElementById("id_MSTUD_tblBody_department")
         const el_MSTUD_btn_delete = document.getElementById("id_MSTUD_btn_delete");
-        if(has_view_permit){el_MSTUD_btn_delete.addEventListener("click", function() {MSTUD_Save("delete")}, false)}
+        if(el_MSTUD_btn_delete){el_MSTUD_btn_delete.addEventListener("click", function() {MSTUD_Save("delete")}, false)}
         const el_MSTUD_btn_save = document.getElementById("id_MSTUD_btn_save");
-        if(has_view_permit){ el_MSTUD_btn_save.addEventListener("click", function() {MSTUD_Save("save")}, false)}
+        if(el_MSTUD_btn_save){ el_MSTUD_btn_save.addEventListener("click", function() {MSTUD_Save("save")}, false)}
 
 // ---  MODAL STUDENT SUBJECTS
         const el_MSTUDSUBJ_hdr = document.getElementById("id_MSTUDSUBJ_hdr")
@@ -208,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     const el_filedialog = document.getElementById("id_MIMP_filedialog");
-        el_filedialog.addEventListener("change", function() {HandleFiledialog(el_filedialog, loc)}, false )
+        el_filedialog.addEventListener("change", function() {MIMP_HandleFiledialog(el_filedialog, loc)}, false )
 
     const el_select_unique = document.getElementById("id_MIMP_select_unique");
         el_select_unique.addEventListener("change", function() {MIMP_SelectUniqueChanged(el_select_unique)}, false )
@@ -244,11 +240,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let el_confirm_btn_cancel = document.getElementById("id_confirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_confirm_btn_save");
-        if(has_view_permit){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
+        if(el_confirm_btn_save){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
 
 // ---  set selected menu button active
-    // SetMenubuttonActive(document.getElementById("id_hdr_users"));
-    if(has_view_permit){
+        //SetMenubuttonActive(document.getElementById("id_hdr_users"));
+    if(may_view_page){
         // period also returns emplhour_list
         const datalist_request = {
                 setting: {page: "page_studsubj"},
@@ -289,35 +285,53 @@ document.addEventListener('DOMContentLoaded', function() {
             success: function (response) {
                 console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
                 console.log(response)
+
                 // hide loader
                 el_loader.classList.add(cls_visible_hide)
-                let check_status = false;
-                let call_DisplayCustomerOrderEmployee = true;
 
-                if ("locale_dict" in response) { refresh_locale(response.locale_dict)};
+                let must_create_submenu = false, must_update_headerbar = false;
+
+                if ("locale_dict" in response) {
+                    loc = response.locale_dict;
+                    mimp_loc = loc;
+                    must_create_submenu = true;
+                };
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict
+                    selected_btn = (setting_dict.sel_btn)
+                    must_update_headerbar = true;
+
+
+
                     // <PERMIT> PR2021-10-20
                     // TODO
                     //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
                     //  - can add/delete/edit only 'role_school' + same_school plus 'perm_edit'
                     //  - cannot edit when country, examyear or schoolis locked
                     //  - can only edit when school is published
-                    has_permit_edit = (setting_dict.requsr_role_admin && setting_dict.requsr_group_edit) ||
-                                      (setting_dict.requsr_role_system && setting_dict.requsr_group_edit);
+                   // has_permit_edit = (setting_dict.requsr_role_admin && setting_dict.requsr_group_edit) ||
+                    //                  (setting_dict.requsr_role_system && setting_dict.requsr_group_edit);
                     // <PERMIT> PR2020-10-27
                     // - every user may change examyear and department
                     // -- only insp, admin and system may change school
-                    has_permit_select_school = (setting_dict.requsr_role_insp ||
-                                                setting_dict.requsr_role_admin ||
-                                                setting_dict.requsr_role_system);
-                    selected_btn = (setting_dict.sel_btn)
-
-                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
-
+                   // has_permit_select_school = (setting_dict.requsr_role_insp ||
+                   //                             setting_dict.requsr_role_admin ||
+                   //                             setting_dict.requsr_role_system);
                 };
+                if ("permit_dict" in response) {
+                    permit_dict = response.permit_dict;
+                    // get_permits must come before CreateSubmenu and FiLLTbl
+                    b_get_permits_from_permitlist(permit_dict);
+                    must_update_headerbar = true;
+                }
+                //if ("usergroup_list" in response) {
+                //    usergroups = response.usergroup_list;
+                //};
+                if(must_create_submenu){CreateSubmenu()};
+                if(must_update_headerbar){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
 
                 if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
+
 
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
                 if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows) };
@@ -335,7 +349,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("schemeitem_rows" in response)  { b_fill_datamap(schemeitem_map, response.schemeitem_rows) };
 
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
-
             },
             error: function (xhr, msg) {
 // ---  hide loader
@@ -345,14 +358,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }  // function DatalistDownload
-
-//=========  refresh_locale  ================  PR2020-07-31
-    function refresh_locale(locale_dict) {
-        //console.log ("===== refresh_locale ==== ")
-        loc = locale_dict;
-        mimp_loc = locale_dict;
-        CreateSubmenu()
-    }  // refresh_locale
 
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {

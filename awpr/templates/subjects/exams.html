@@ -38,31 +38,6 @@
                ></select>
             </div>
 
-            <div id="id_SBR_container_sector" class="tw_200 m-2 display_hide">
-                <h6 id="id_SBR_select_sector_label" class="tw_200 line_height_normal px-2"></h6>
-                <select id="id_SBR_select_sector" class="tw_200 border_none px-1"
-                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
-               ></select>
-            </div>
-
-            <div id="id_SBR_container_subject" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Subject' %}:</h6>
-                <input id="id_SBR_select_subject" type="text"
-                    class="tw_200 border_none pointer_show px-2" readonly>
-            </div>
-
-            <div id="id_SBR_container_cluster" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
-               <input id="id_SBR_select_cluster" type="text"
-                    class="tw_200 border_none pointer_show px-2" readonly>
-            </div>
-
-            <div id="id_SBR_container_student" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Candidate' %}:</h6>
-                <input id="id_SBR_select_student" type="text"
-                    class="tw_200 border_none pointer_show px-1" readonly>
-            </div>
-
             <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
                 <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all from this period' %}</h6>
             </div>
@@ -81,7 +56,7 @@
             {% include 'students/modapprovegrade.html' %}
             {% include 'schools/modselectexamyear.html' %}
             {% include 'schools/modselectschoolordep.html' %}
-            {% include 'includes/modselectsubjectstudent.html' %}
+            {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'includes/modstatus.html' %}
             {% include 'includes/modnote.html' %}
@@ -113,7 +88,7 @@
                     </div>
 
         <!-- right header_text -->
-                    <div class="text_align_right flex_4 pr-4 py-2">
+                    <div class="text_align_right flex_4 pr-4 py-2 mr-2">
                         <h5 id="id_hdr_textright1"></h5>
                     </div>
                 </div>
@@ -121,7 +96,7 @@
 
     <!-- CONTENT BODY -->
     <!-- =================== DATA TABLE  =================== -->
-            <div class="content_header ml-2 mr-0">
+            <div class="content_header ml-2 mr-4">
                 <table class="table tsa_tbl">
                     <thead id="id_tblHead_datatable"></thead>
                     <tbody id="id_tblBody_datatable"></tbody>
@@ -137,7 +112,9 @@
                 data-exam_upload_url="{% url 'exam_upload_url' %}"
                 data-grade_approve_url="{% url 'grade_approve_url' %}"
                 data-download_published_url="{% url 'grades_download_published_url' %}"
-                data-grade_download_ex2a_url="{% url 'grade_download_ex2a_url' %}"
+                data-exam_download_exam_pdf_url="{% url 'exam_download_exam_pdf_url' '-' %}"
+                data-exam_download_exam_json_url="{% url 'exam_download_exam_json_url' '-' %}"
+
                 data-studentsubjectnote_upload_url="{% url 'studentsubjectnote_upload_url' %}"
                 data-studentsubjectnote_download_url="{% url 'studentsubjectnote_download_url' %}"
                 data-noteattachment_download_url="{% url 'noteattachment_download_url' pk_int=0 %}"

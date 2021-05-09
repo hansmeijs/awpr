@@ -53,7 +53,7 @@ menus_dict = {
                  'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
                  'submenu': ('subjlst', 'subjtyplst', 'schemlst', 'schemitemlst')
                  },
-'page_exam': {'index': 4, 'href_tuple': ('exams_url',),
+'page_exams': {'index': 4, 'href_tuple': ('exams_url',),
                'caption': str(_('Exams')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
                  'indent_left': indent_10, 'indent_right': indent_10,
                  'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
@@ -170,37 +170,44 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
         display_school = param.get('display_school', True)
         sel_school = None
         sel_school_activated = False
-        schoolname = ''
-        if sel_examyear and display_school:
+        school_name = ''
+        # if sel_examyear and display_school:
+        if sel_examyear:
             sel_schoolbase, save_sel_schoolbase_NIU = af.get_sel_schoolbase_instance(request)
-            schoolname = sel_schoolbase.code if sel_schoolbase.code else ''
+            school_name = sel_schoolbase.code if sel_schoolbase.code else ''
     # - get school from sel_schoolbase and sel_examyear
             sel_school = sch_mod.School.objects.get_or_none(
                 base=sel_schoolbase,
                 examyear=sel_examyear)
 
             if sel_school:
-                schoolname += ' ' + sel_school.name
+                school_name += ' ' + sel_school.name
                 sel_school_activated = sel_school.activated
             else:
-                schoolname += ' <' + str(_('School not found in this exam year')) + '>'
+                school_name += ' <' + str(_('School not found in this exam year')) + '>'
+
+        if logging_on:
             logger.debug('sel_school: ' + str(sel_school))
             logger.debug('sel_school_activated: ' + str(sel_school_activated))
 
 # +++ display department -------- PR2029-10-27 PR2020-11-17
-        depname = ''
+        department_name = ''
 
 # PR2018-08-24 select department PR2020-10-13 PR2021-04-25
-        display_dep = param.get('display_dep', True)
-        if display_dep:
+        display_department = param.get('display_department', True)
+       #  if display_department:
+        if True:
             sel_depbase, sel_depbase_save, allowed_depbases = af.get_sel_depbase_instance(sel_school, request)
 
             sel_department = sch_mod.Department.objects.get_or_none(base=sel_depbase, examyear=sel_examyear)
             if sel_department is None:
-                depname = '<' + str(_('No department')) + '>'
+                department_name = '<' + str(_('No department')) + '>'
             else:
-                depname = sel_depbase.code
+                department_name = sel_depbase.code
 
+        if logging_on:
+            logger.debug('department_name: ' + str(department_name))
+            logger.debug('display_department: ' + str(display_department))
 # ------- set menu_items -------- PR2018-12-21
         # get selected menu_key and selected_button_key from request.GET, settings or default, check viewpermit
         #XXX return_dict = lookup_button_key_with_viewpermit(request)
@@ -244,8 +251,8 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
         headerbar_param = {
             'no_access': no_access,
             'examyear_code': sel_examyear_str,
-            'display_school': display_school, 'school': schoolname,
-            'display_dep': display_dep, 'department': depname,
+            'display_school': display_school, 'school': school_name,
+            'display_department': display_department, 'department': department_name,
             'class_flag': _class_flag,
             'class_flag0_hidden': _class_flag0_hidden,
             'class_flag1_hidden': _class_flag1_hidden,
@@ -259,8 +266,7 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
 
         if logging_on:
             logger.debug('no_access:         ' + str(no_access))
-
-            logger.debug('headerbar_param: ' + str(headerbar_param))
+            #logger.debug('headerbar_param: ' + str(headerbar_param))
 
     return headerbar_param
 

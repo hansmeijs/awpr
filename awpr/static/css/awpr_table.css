@@ -1037,6 +1037,14 @@ aXX:hover{
     width: 220px;
     padding: 4px;
 }
+
+.tbl_h120_w220 {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 120px;
+    width: 220px;
+    padding: 4px;
+}
 .input_text, .tsa_transparent {
     background: transparent;
     border: none;

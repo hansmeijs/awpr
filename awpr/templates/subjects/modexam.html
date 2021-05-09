@@ -37,6 +37,17 @@
                                         <small id="id_MEX_err_subject" class="text-danger"></small>
                                     </div>
                                 </div>
+                                <div id="id_MEX_level_container" class="flex_1 mx-2">
+                                    <div class="mx-2">{% trans 'Levels' %}:</div>
+                                    <div class="tbl_h120_w220 form-control">
+                                        <table class="table tsa_tbl m-0">
+                                            <tbody id="id_MEX_tblBody_level">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+
                                 <div class="m-2">
                                     <label class="mx-2 my-1">{% trans 'Number of questions' %}:</label>
                                     <input id="id_MEX_input_amount" type="text" class="form-control"
@@ -47,9 +58,9 @@
                                 </div>
                                 <div class="m-2">
                                     <label class="mx-2 my-1">{% trans 'Maximum score' %}:</label>
+                                    <input id="id_MEX_input_max_score" type="text" class="form-control" readonly
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
 
-                                        <div id="id_MEX_input_max_score" class="form-control" >
-                                    </div>
                                     <div class="mx-2">
                                         <small id="id_MEX_err_max" class="text-danger"></small>
                                     </div>

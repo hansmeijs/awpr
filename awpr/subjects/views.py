@@ -1,4 +1,6 @@
 # PR2018-07-20
+import io
+
 from django.contrib.auth.decorators import login_required # PR2018-04-01
 
 from django.utils.functional import Promise
@@ -7,12 +9,14 @@ from django.core.serializers.json import DjangoJSONEncoder
 
 from django.db import connection
 from django.db.models.functions import Lower
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+
 from django.shortcuts import render
 
 from django.utils.decorators import method_decorator
 from django.utils.translation import activate, ugettext_lazy as _
 from django.views.generic import View
+from reportlab.pdfgen.canvas import Canvas
 
 from awpr import settings as s
 from awpr import menus as awpr_menu
@@ -22,6 +26,8 @@ from subjects import models as subj_mod
 from awpr import constants as c
 from awpr import functions as af
 from awpr import validators as av
+from awpr import downloads as dl
+from awpr import printpdf
 
 from schools import models as sch_mod
 from subjects import models as sbj_mod
@@ -466,8 +472,8 @@ class ExamListView(View):  # PR2021-04-04
         logging_on = False  # s.LOGGING_ON
 
 # - set headerbar parameters PR2018-08-06
-        page = 'page_exam'
-        param = {'display_school': False}
+        page = 'page_exams'
+        param = {'display_school': False, 'display_department': True}
         params = awpr_menu.get_headerbar_param(request, page, param)
 
         if logging_on:
@@ -481,22 +487,27 @@ class ExamListView(View):  # PR2021-04-04
         return render(request, 'exams.html', params)
 # - end of ExamListView
 
-
+# ============= ExamUploadView ============= PR2021-04-04
 @method_decorator([login_required], name='dispatch')
-class ExamUploadView(View): # PR2021-04-04
+class ExamUploadView(View):
 
     def post(self, request):
-        logging_on = True
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= ExamUploadView ============= ')
-        # function creates, deletes and updates grade records of current studentsubject PR2020-11-21
+
         update_wrap = {}
 
-# set permit TODO
+# add edit permit TODO
         has_permit = False
         if request.user and request.user.country:
-            has_permit = True # (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
+            permit_list =  request.user.permit_list('page_exams')
+            if permit_list:
+                has_permit =  'crud_exam' in permit_list
+            if logging_on:
+                logger.debug('permit_list ' + str(permit_list))
+                logger.debug('has_permit ' + str(has_permit))
 
         if has_permit:
             req_user = request.user
@@ -521,10 +532,10 @@ class ExamUploadView(View): # PR2021-04-04
 
                 if logging_on:
                     logger.debug('upload_dict:    ' + str(upload_dict))
-                    logger.debug('mode:    ' + str(upload_dict))
-                    logger.debug('examyear_pk:    ' + str(upload_dict))
-                    logger.debug('exam_pk:    ' + str(upload_dict))
-                    logger.debug('subject_pk:    ' + str(upload_dict))
+                    logger.debug('mode:    ' + str(mode))
+                    logger.debug('examyear_pk:    ' + str(examyear_pk))
+                    logger.debug('exam_pk:    ' + str(exam_pk))
+                    logger.debug('subject_pk:    ' + str(subject_pk))
 
 # - get examyear
                 examyear = sch_mod.Examyear.objects.get_or_none(
@@ -561,7 +572,7 @@ class ExamUploadView(View): # PR2021-04-04
                     else:
 
 # +++++ Update instance, also when it is created, not when is_delete
-                        update_exam_instance(exam, upload_dict, error_list, request)
+                        update_exam_instance(exam, upload_dict, error_list, examyear, request)
 
 # 6. create list of updated exam_rows
                 filter_dict = {'sel_examyear_pk': examyear.pk}
@@ -601,6 +612,9 @@ def create_exam_instance(subject, upload_dict, error_list, request):
     try:
         examperiod_int = upload_dict.get('examperiod')
         examtype = upload_dict.get('examtype')
+        if logging_on:
+            logger.debug('examperiod_int: ' + str(examperiod_int))
+            logger.debug('examtype: ' + str(examtype))
 
         exam = subj_mod.Exam(
             subject=subject,
@@ -608,6 +622,9 @@ def create_exam_instance(subject, upload_dict, error_list, request):
             examtype=examtype
         )
         exam.save(request=request)
+        if logging_on:
+            logger.debug('exam: ' + str(exam))
+
     except Exception as e:
 # - create error when exam is  not created
         logger.error(getattr(e, 'message', str(e)))
@@ -634,7 +651,7 @@ def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05
     return deleted_row
 # - end of delete_exam_instance
 
-def update_exam_instance(instance, upload_dict, error_list, request):
+def update_exam_instance(instance, upload_dict, error_list, examyear, request):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' --------- update_exam_instance -------------')
@@ -653,9 +670,38 @@ def update_exam_instance(instance, upload_dict, error_list, request):
 # --- get field_dict from  upload_dict  if it exists
             if field in ('mode', 'examyear_pk', 'subject_pk', 'exam_pk', 'examperiod_int', 'examtype'):
                 pass
-# ---   save changes in field 'rosterdate'
+# ---   save changes in field 'depbases', 'levelbases', 'sectorbases'
             elif field in ('depbases', 'levelbases', 'sectorbases'):
-                pass
+                old_value = getattr(instance, field)
+                uploaded_field_arr = []
+                if field == 'depbases':
+                    uploaded_field_arr = new_value.split(';') if new_value else []
+                elif field == 'levelbases':
+                    uploaded_field_arr = new_value.split(';') if new_value else []
+                elif field == 'sectorbases':
+                    uploaded_field_arr = new_value.split(';') if new_value else []
+
+                checked_field_arr = []
+                checked_field_str = None
+                if uploaded_field_arr:
+                    for base_pk_str in uploaded_field_arr:
+                        base_pk_int = int(base_pk_str)
+                        base_instance = None
+                        if field == 'depbases':
+                            base_instance = sch_mod.Department.objects.get_or_none(base=base_pk_int,examyear=examyear)
+                        elif field == 'levelbases':
+                            base_instance = subj_mod.Level.objects.get_or_none(base=base_pk_int,examyear=examyear)
+                        elif field == 'sectorbases':
+                            base_instance = subj_mod.Sector.objects.get_or_none(base=base_pk_int,examyear=examyear)
+                        if base_instance:
+                            checked_field_arr.append(base_pk_str)
+                    if checked_field_arr:
+                        checked_field_arr.sort()
+                        checked_field_str = ';'.join(checked_field_arr)
+                if checked_field_str != old_value:
+                    setattr(instance, field, new_value)
+                    save_changes = True
+
             elif field in ('assignment', 'amount', 'maxscore'):
                 old_value = getattr(instance, field)
                 if new_value != old_value:
@@ -682,15 +728,20 @@ def update_exam_instance(instance, upload_dict, error_list, request):
 
 # - end of update_exam_instance
 
+
 def create_exam_rows(setting_dict, append_dict, exam_pk):
     # --- create rows of all exams of this examyear  PR2021-04-05
-    # logger.debug(' =============== create_exam_rows ============= ')
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_exam_rows ============= ')
 
-    sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
+    sel_examyear_pk = setting_dict.get('sel_examyear_pk')
+    sel_examperiod = setting_dict.get('sel_examperiod')
+    sel_depbase_pk = setting_dict.get('sel_depbase_pk')
 
     exam_rows = []
     if sel_examyear_pk:
-        sql_keys = {'ey_id': sel_examyear_pk}
+        sql_keys = {'ey_id': sel_examyear_pk, 'ex_per': sel_examperiod}
         sql_list = [
             "SELECT ex.id, ex.subject_id, subj.base_id AS subj_base_id, subj.examyear_id AS subj_examyear_id,",
             "CONCAT('exam_', ex.id::TEXT) AS mapid,",
@@ -708,7 +759,7 @@ def create_exam_rows(setting_dict, append_dict, exam_pk):
             "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
             "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
 
-            "WHERE ey.id = %(ey_id)s::INT"
+            "WHERE ey.id = %(ey_id)s::INT AND ex.examperiod = %(ex_per)s::INT "
         ]
         if exam_pk:
             sql_keys['ex_id'] = exam_pk
@@ -718,9 +769,32 @@ def create_exam_rows(setting_dict, append_dict, exam_pk):
 
         sql = ' '.join(sql_list)
 
-        newcursor = connection.cursor()
-        newcursor.execute(sql, sql_keys)
-        exam_rows = af.dictfetchall(newcursor)
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+
+            # filtering depbases in sql is too complicated. Filter out when creating dict PR2021-05-07
+            columns = [col[0] for col in cursor.description]
+
+            if logging_on:
+                logger.debug('columns: ' + str(columns))
+
+            for row in cursor.fetchall():
+                row_dict = dict(zip(columns, row))
+
+                depbases = row_dict.get('depbases')
+                if logging_on:
+                    logger.debug('----------- ' + str(row_dict.get('subj_base_code')))
+                    logger.debug('depbases: ' + str(depbases))
+                    logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
+
+                if depbases and sel_depbase_pk:
+                    depbases_arr = depbases.split(';')
+                    if logging_on:
+                        logger.debug('depbases_arr: ' + str(depbases_arr))
+                    if depbases_arr and str(sel_depbase_pk) in depbases_arr:
+                        if logging_on:
+                            logger.debug('===> append row_dict')
+                        exam_rows.append(row_dict)
 
         # - add messages to exam_row
         if exam_pk and exam_rows:
@@ -729,6 +803,9 @@ def create_exam_rows(setting_dict, append_dict, exam_pk):
             if row:
                 for key, value in append_dict.items():
                     row[key] = value
+
+    if logging_on:
+        logger.debug('exam_rows: ' + str(exam_rows))
 
     return exam_rows
 # --- end of create_exam_rows
@@ -1164,23 +1241,23 @@ def upload_subject(subject_list, subject_dict, lookup_field, awpKey_list,
                         update_dict[field] = field_dict
 
                # dont save data when it is a test run
-                if not is_test and save_instance:
-                    employee.save(request=request)
-                    update_dict['id']['pk'] = employee.pk
-                    update_dict['id']['ppk'] = employee.company.pk
+               # if not is_test and save_instance:
+                    #employee.save(request=request)
+                    #update_dict['id']['pk'] = employee.pk
+                    #update_dict['id']['ppk'] = employee.company.pk
                     # wagerate wagecode
                     # priceratejson additionjson
-                    try:
-                        employee.save(request=request)
+                   # try:
+                        #employee.save(request=request)
 
 
-                        update_dict['id']['pk'] = employee.pk
-                        update_dict['id']['ppk'] = employee.company.pk
-                    except:
+                        #update_dict['id']['pk'] = employee.pk
+                        #update_dict['id']['ppk'] = employee.company.pk
+                   # except:
         # - give error msg when creating employee failed
-                        error_str = str(_("An error occurred. The subject data is not saved."))
-                        logfile.append(" ".join((code_text, error_str)))
-                        update_dict['row_error'] = error_str
+                   #     error_str = str(_("An error occurred. The subject data is not saved."))
+                   #     logfile.append(" ".join((code_text, error_str)))
+                  #      update_dict['row_error'] = error_str
 
     return update_dict
 # --- end of upload_subject
@@ -1514,3 +1591,277 @@ def create_schemeitem_rows(setting_dict, append_dict, scheme_pk):
 
     return schemeitem_rows
 # --- end of create_schemeitem_rows
+
+
+@method_decorator([login_required], name='dispatch')
+class ExamDownloadExamView(View):  # PR2021-05-06
+
+    def get(self, request, list):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('===== ExamDownloadExamView ===== ')
+            logger.debug('list: ' + str(list) + ' ' + str(type(list)))
+
+        # function creates, Exam pdf file
+
+        response = None
+        exam_pk = None
+        #try:
+
+        if request.user and request.user.country and request.user.schoolbase:
+            req_user = request.user
+
+# - reset language
+            # PR2021-05-08 debug: without activate text will not be translated
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+            # - get order_pk_list from parameter 'list
+            if list:
+                # list: 10 <class 'str'>
+                exam_pk = int(list)
+
+                #list_dict = json.loads(list)
+                #logger.debug('list_dict: ' + str(list_dict))
+
+# - get selected examyear, school and department from usersettings
+            sel_examyear, sel_school, sel_department, is_locked, \
+                examyear_published, school_activated, is_requsr_school = \
+                    dl.get_selected_examyear_school_dep_from_usersetting(request)
+
+            if logging_on:
+                logger.debug('sel_school: ' + str(sel_school))
+                logger.debug('sel_department: ' + str(sel_department))
+                logger.debug('exam_pk: ' + str(exam_pk))
+
+            if sel_examyear and exam_pk:
+                sel_exam_instance = subj_mod.Exam.objects.get_or_none(
+                    pk=exam_pk,
+                    subject__examyear=sel_examyear)
+                if logging_on:
+                    logger.debug('sel_exam_instance: ' + str(sel_exam_instance))
+
+
+                # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
+
+                # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
+                #temp_file = tempfile.TemporaryFile()
+                # canvas = Canvas(temp_file)
+
+                buffer = io.BytesIO()
+                canvas = Canvas(buffer)
+
+                # Start writing the PDF here
+                printpdf.draw_exam(canvas, sel_exam_instance, user_lang)
+                #test_pdf(canvas)
+                # testParagraph_pdf(canvas)
+
+                if logging_on:
+                    logger.debug('end of draw_exam')
+
+                canvas.showPage()
+                canvas.save()
+
+                pdf = buffer.getvalue()
+                # pdf_file = File(temp_file)
+
+                # was: buffer.close()
+
+                response = HttpResponse(content_type='application/pdf')
+                response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                #response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
+
+                response.write(pdf)
+
+        #except Exception as e:
+       #     logger.error(getattr(e, 'message', str(e)))
+       #     raise Http404("Error creating Ex2A file")
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+# - end of ExamDownloadExamView
+
+
+
+@method_decorator([login_required], name='dispatch')
+class ExamDownloadExamJsonView(View):  # PR2021-05-06
+
+    def get(self, request, list):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('===== ExamDownloadExamJsonView ===== ')
+            logger.debug('list: ' + str(list) + ' ' + str(type(list)))
+
+        # function creates, Exam pdf file
+
+        exam_pk = None
+
+        exam_dict = {}
+        #try:
+
+        if request.user and request.user.country and request.user.schoolbase:
+            req_user = request.user
+
+            # - get order_pk_list from parameter 'list
+            if list:
+                # list: 10 <class 'str'>
+                exam_pk = int(list)
+
+                #list_dict = json.loads(list)
+                #logger.debug('list_dict: ' + str(list_dict))
+
+# - reset language
+            user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get selected examyear, school and department from usersettings
+            sel_examyear, sel_school, sel_department, is_locked, \
+                examyear_published, school_activated, is_requsr_school = \
+                    dl.get_selected_examyear_school_dep_from_usersetting(request)
+
+# - get selected examperiod, examtype, subject_pk from usersettings
+            sel_examperiod, sel_examtype, sel_subject_pkNIU = dl.get_selected_examperiod_examtype_from_usersetting(request)
+
+            if logging_on:
+                logger.debug('sel_examperiod: ' + str(sel_examperiod))
+                logger.debug('sel_school: ' + str(sel_school))
+                logger.debug('sel_department: ' + str(sel_department))
+                logger.debug('exam_pk: ' + str(exam_pk))
+
+            if sel_examperiod and sel_school and sel_department and exam_pk:
+                sel_exam_instance = subj_mod.Exam.objects.get_or_none(
+                    pk=exam_pk,
+                    subject__examyear=sel_examyear)
+
+                if sel_exam_instance:
+                    subject = sel_exam_instance.subject
+                    examyear = subject.examyear
+                    exam_dict['examyear'] = examyear.code
+                    # - create string with department abbrevs
+                    exam_dict['departments'] = get_department_codes(sel_exam_instance, examyear)
+
+                    # - create string with level abbrevs
+                    level_abbrevs = get_level_abbrevs(sel_exam_instance, examyear)
+                    if level_abbrevs:
+                        exam_dict['levels'] = level_abbrevs
+
+                    examperiod = sel_exam_instance.examperiod
+                    exam_dict['examperiod'] = str(examperiod) if examperiod else '---'
+                    exam_dict['examperiod_caption'] = c.get_examperiod_caption(examperiod)
+
+                    examtype = sel_exam_instance.examtype
+                    exam_dict['examtype'] = str(examtype) if examtype else '---'
+                    exam_dict['examtype_caption'] = c.get_examtype_caption(examtype)
+
+                    amount = sel_exam_instance.amount
+                    exam_dict['number_of_questions'] = amount if amount else 0
+
+                    exam_dict['maximum_score'] = sel_exam_instance.maxscore if sel_exam_instance.maxscore else 0
+
+                    exam_dict['subject_code'] = subject.base.code
+                    exam_dict['subject_name'] = subject.name
+
+                    # create list of questions
+                    exam_dict['assignment'] = get_assignment_dict(amount, sel_exam_instance.assignment)
+
+
+        response = HttpResponse(json.dumps(exam_dict), content_type="application/json")
+        #response['Content-Disposition'] = 'exam_dict; filename="testjson.json"'
+        response['Content-Disposition'] = 'inline; filename="testjson.pdf"'
+
+        # except Exception as e:
+        #     logger.error(getattr(e, 'message', str(e)))
+        #     raise Http404("Error creating Ex2A file")
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+        #return JsonResponse({'test': 'json'})
+
+
+
+# - end of ExamDownloadExamJsonView
+
+
+def get_assignment_dict(amount, assignment):
+    # - create dict with assignments PR2021-05-08
+    assignment_dict = {}
+    if amount and assignment:
+        # assignment: 1:4|2:5|3:6|4:M
+        assignment_list = assignment.split('|')
+        for qa in assignment_list:
+            qa_arr = qa.split(':')
+            if len(qa_arr) > 0:
+                q_index = int(qa_arr[0])
+                assignment_dict[q_index] = qa_arr[1]
+    return assignment_dict
+
+
+def get_department_codes(sel_exam_instance, examyear):
+    # - create string with depbase codes PR2021-05-09
+    dep_codes = ''
+    depbases = sel_exam_instance.depbases
+    if depbases:
+        arr = depbases.split(';')
+        if arr:
+            for pk_str in arr:
+                if pk_str:
+                    pk_int = int(pk_str)
+                    department = sch_mod.Department.objects.get_or_none(
+                        base_id=pk_int,
+                        examyear=examyear
+                    )
+                    if department:
+                        if dep_codes:
+                            dep_codes += ', '
+                        dep_codes += department.base.code
+    return dep_codes
+
+
+def get_department_abbrevs(sel_exam_instance, examyear):
+    # - create string with depbase abbrevs PR2021-05-08
+    dep_abbrevs = ''
+    depbases = sel_exam_instance.depbases
+    if depbases:
+        arr = depbases.split(';')
+        if arr:
+            for pk_str in arr:
+                if pk_str:
+                    pk_int = int(pk_str)
+                    department = sch_mod.Department.objects.get_or_none(
+                        base_id=pk_int,
+                        examyear=examyear
+                    )
+                    if department:
+                        if dep_abbrevs:
+                            dep_abbrevs += ', '
+                        dep_abbrevs += department.abbrev
+    return dep_abbrevs
+
+
+def get_level_abbrevs(exam_instance, examyear):
+    # - create string with level abbrevs PR2021-05-08
+    level_names = ''
+    levelbases = exam_instance.levelbases
+    if levelbases:
+        arr = levelbases.split(';')
+        if arr:
+            for pk_str in arr:
+                if pk_str:
+                    pk_int = int(pk_str)
+                    level = subj_mod.Level.objects.get_or_none(
+                        base_id=pk_int,
+                        examyear=examyear
+                    )
+                    if level:
+                        if level_names:
+                            level_names += ', '
+                        level_names += level.abbrev
+    return level_names

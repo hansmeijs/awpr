@@ -135,8 +135,20 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_schoolbase_pk=sel_schoolbase.pk,
                             sel_depbase_pk=sel_depbase.pk,
                             sel_examperiod=new_setting_dict.get('sel_examperiod'),
+                            request=request
                         )
-# ----- published
+# ----- grade_note_icons
+                if datalist_request.get('grade_note_icons'):
+                    if sel_examyear and sel_schoolbase and sel_depbase:
+                        datalists['grade_note_icons'] = gr_vw.create_grade_note_icon_rows(
+                            sel_examyear_pk=sel_examyear.pk,
+                            sel_schoolbase_pk=sel_schoolbase.pk,
+                            sel_depbase_pk=sel_depbase.pk,
+                            sel_examperiod=new_setting_dict.get('sel_examperiod'),
+                            request=request
+                        )
+
+        # ----- published
                 if datalist_request.get('published_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
                         datalists['published_rows'] = gr_vw.create_published_rows(
@@ -160,8 +172,14 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 
 def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR2020-1-14
-    logger.debug(' ----- download_setting ----- ' )
-    logger.debug('request_setting: ' + str(request_setting) )
+
+    if request_setting is None:
+        request_setting = {}
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- download_setting ----- ')
+        logger.debug('request_setting: ' + str(request_setting) )
     # this function get settingss from request_setting.
     # if not in request_setting, it takes the saved settings.
 
@@ -225,6 +243,9 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
         setting_dict['sel_schoolbase_code'] = sel_schoolbase_instance.code
         setting_dict['sel_schoolbase_equals_requsr_sb'] = (sel_schoolbase_instance.pk == requsr_schoolbase.pk)
 
+    # only role_school and same_school can view grades that are not published, PR2021-04-29
+    permit_dict['requsr_same_school'] = (req_user.role == c.ROLE_008_SCHOOL and requsr_schoolbase.pk == sel_schoolbase_instance.pk)
+
 # ===== EXAMYEAR =======================
     # every user can change examyear, is stored in Usersetting.
     # request_setting: {'page_school': {'mode': 'get'}, 'sel_examyear_pk': 6}
@@ -253,8 +274,6 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     awp_message = val.message_diff_exyr(sel_examyear_instance)  # PR2020-10-30
     if awp_message:
         awp_messages.append(awp_message)
-
-
     #logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
 
 # ===== SCHOOL =======================
@@ -271,10 +290,6 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
         base=sel_schoolbase_instance,
         examyear=sel_examyear_instance)
     #logger.debug('get_or_none sel_school: ' + str(sel_school) )
-    #sel_school2 = sch_mod.School.objects.filter(
-    #    base=sel_schoolbase_instance,
-    #    examyear=sel_examyear_instance).first()
-    #logger.debug('first sel_school: ' + str(sel_school))
 
     if sel_school:
         # is_requsr_school = True when selected school is same as requsr_school PR2021-04-27
@@ -292,6 +307,12 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
 # ===== DEPBASE =======================
     # every user can change depbase, if in .sel_school_depbases and in user allowed_depbases
 
+    # - get saved_examperiod_int
+    saved_depbase_pk_int = selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK)
+
+    # - check if there is a new examperiod_pk in request_setting
+    request_depbase_pk_int = af.get_dict_value(request_setting,(c.KEY_SELECTED_PK, c.KEY_SEL_DEPBASE_PK))
+
     sel_depbase_instance, sel_depbase_save, allowed_depbases = \
         af.get_sel_depbase_instance(sel_school, request, request_setting)
 
@@ -301,6 +322,11 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     may_select_department = (page not in ('page_examyear',) and allowed_depbases_len > 1)
     permit_dict['may_select_department'] = may_select_department
     permit_dict['display_department'] = (page not in ('page_examyear',))
+
+    if logging_on:
+        logger.debug('allowed_depbases: ' + str(allowed_depbases) )
+        logger.debug('may_select_department: ' + str(may_select_department) )
+        logger.debug('permit_dict[display_department]: ' + str(permit_dict['display_department']) )
 
     # - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
     if sel_depbase_save:
@@ -361,47 +387,56 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     request_examtype = af.get_dict_value(request_setting,
                                               (c.KEY_SELECTED_PK, c.KEY_SEL_EXAMTYPE))
 
-    #logger.debug('saved_examtype: ' + str(saved_examtype) + ' request_examtype: ' + str(request_examtype))
-    if saved_examtype is None and request_examtype is None:
-        request_examtype = 'se'
+    if logging_on:
+        logger.debug('saved_examtype: ' + str(saved_examtype))
+        logger.debug('request_examtype: ' + str(request_examtype))
 
 # - check if examtype is allowed in this saved_examperiod_int
-        """
-        EXAMTYPE_OPTIONS = [
-            {'value': 'se', 'filter': EXAMPERIOD_FIRST, 'caption': _('School exam')},
-            {'value': 'pe', 'filter': EXAMPERIOD_FIRST, 'caption': _('Practical exam')},
-            {'value': 'ce', 'filter': EXAMPERIOD_FIRST, 'caption': _('Central exam')},
-            {'value': 're2', 'filter': EXAMPERIOD_SECOND, 'caption': _('Re-examination')},
-            {'value': 're3', 'filter': EXAMPERIOD_THIRD, 'caption': _('Re-examination 3rd period')},
-            {'value': 'exm', 'filter': EXAMPERIOD_EXEMPTION, 'caption': _('School- / Central exam')}
-            ]
-        """
-    allowed = False
-    default_examtype = None
-    for dict in c.EXAMTYPE_OPTIONS:
-        #logger.debug('dict: ' + str(dict))
-        # filter this examperiod
-        if dict.get('filter', -1) == saved_examperiod_int:
-            value = dict.get('value')
 
-            # make first examtype the default_examtype
+# make list of examtypes that are allowed in this examperiod
+# - also get the default_examtype of this examperiod
+    allowed_examtype_list = []
+    default_examtype = None
+    for examtype_dict in c.EXAMTYPE_OPTIONS:
+        # filter examtypes of this examperiod
+        if examtype_dict.get('filter', -1) == saved_examperiod_int:
+            value = examtype_dict.get('value')
+            if value:
+                allowed_examtype_list.append(value)
+
+        # make first examtype the default_examtype
             if default_examtype is None:
                 default_examtype = value
+    if logging_on:
+        logger.debug('allowed_examtype_list: ' + str(allowed_examtype_list))
 
-            # if examtype is found: it is allowed
-            if request_examtype == value:
-                allowed = True
+# - check if saved examtype is allowed in this examperiod, set to default if not, make selected_pk_dict_has_changed = True
+    if saved_examtype not in allowed_examtype_list:
+        if logging_on:
+            logger.debug('saved_examtype: ' + str(saved_examtype) + ' is not allowed in this examperiod, replace by: ' + str(default_examtype))
+        saved_examtype = default_examtype
+        # - update selected_pk_dict, may be replaced by request_examtype
+        selected_pk_dict[c.KEY_SEL_EXAMTYPE] = saved_examtype
+        selected_pk_dict_has_changed = True
 
-                break
-    if not allowed:
-        request_examtype = default_examtype
+# - check if saved request_examtype is allowed in this examperiod, set to None if not
+    if request_examtype and request_examtype not in allowed_examtype_list:
+        if logging_on:
+            logger.debug('request_examtype: ' + str(request_examtype) + ' is not allowed in this examperiod, set to: None')
+        request_examtype = None
 
-    # - use request_examtype when it has value and is different from the saved one
+# - use request_examtype when it has value and is different from the saved one
     if request_examtype and request_examtype != saved_examtype:
+        if logging_on:
+            logger.debug('Replace saved_examtype: ' + str(saved_examtype) + ' by request_examtype: ' + str(request_examtype))
+
         saved_examtype = request_examtype
         # - update selected_pk_dict, will be saved at end of def
-        selected_pk_dict_has_changed = True
         selected_pk_dict[c.KEY_SEL_EXAMTYPE] = saved_examtype
+        selected_pk_dict_has_changed = True
+
+        if logging_on:
+            logger.debug(' update saved_examtype: ' + str(saved_examtype))
 
     # - add info to setting_dict, will be sent back to client
     setting_dict[c.KEY_SEL_EXAMTYPE] = saved_examtype
@@ -409,7 +444,10 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     if saved_examtype:
         setting_dict['sel_examtype_caption'] = c.EXAMTYPE_CAPTION.get(saved_examtype)
 
-# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+    if logging_on:
+        logger.debug('setting_dict[c.KEY_SEL_EXAMTYPE]: ' + str(setting_dict[c.KEY_SEL_EXAMTYPE]))
+        logger.debug('setting_dict[c.sel_examtype_caption]: ' + str(setting_dict['sel_examtype_caption']))
+
 # ===== SUBJECT, STUDENT, LEVEL,SECTOR ======================= PR2021-01-23 PR2021-03-14
     for key_str in (c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK, c.KEY_SEL_LEVEL_PK, c.KEY_SEL_SECTOR_PK):
     # - get saved_pk_str
@@ -598,6 +636,5 @@ def create_permit_dict(req_user):
 # ===== SCHOOL =======================
 # - roles higher than school may select other schools PR2021-04-23
         permit_dict['may_select_school'] = (req_user.role > c.ROLE_008_SCHOOL)
-# - roles admin and system may select role 'Commissioner'other schools PR2021-04-23'
-        permit_dict['may_select_comm'] = (req_user.role in (c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM))
+
     return permit_dict

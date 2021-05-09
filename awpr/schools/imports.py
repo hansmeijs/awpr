@@ -1298,7 +1298,7 @@ def import_permits(upload_dict, user_lang, logging_on, request):  # PR2021-04-20
     upload_dict: {'importtable': 'import_permits', 
         'awpColdef_list': ['c_abbrev', 'page', 'role', 'action', 'usergroups', 'sequence'], 
         'data_list': [{'rowindex': 0, 'c_abbrev': 'cur', 'page': 'page_all', 'role': 'href_userpage', 'action': 'admin', 'usergroups': '128', 'sequence': '10'},
-            {'rowindex': 1, 'c_abbrev': 'cur', 'page': 'page_exam', 'role': 'view_page', 'action': 'admin;read', 'usergroups': '8', 'sequence': '10'},
+            {'rowindex': 1, 'c_abbrev': 'cur', 'page': 'page_exams', 'role': 'view_page', 'action': 'admin;read', 'usergroups': '8', 'sequence': '10'},
             {'rowindex': 2, 'c_abbrev': 'cur', 'page': 'page_grade', 'role': 'read_note', 'action': 'admin;anlz;auth1;auth2;auth3;edit;read', 'usergroups': '8', 'sequence': '60'}]}
     """
 # - get info from upload_dict
@@ -1365,7 +1365,7 @@ def upload_permit(data_dict, is_test, logfile, logging_on, request):   # PR2021-
 
     """
     'data_list': [{'rowindex': 0, 'c_abbrev': 'cur', 'page': 'page_all', 'role': 'href_userpage', 'action': 'admin', 'usergroups': '128', 'sequence': '10'},
-        {'rowindex': 1, 'c_abbrev': 'cur', 'page': 'page_exam', 'role': 'view_page', 'action': 'admin;read', 'usergroups': '8', 'sequence': '10'},
+        {'rowindex': 1, 'c_abbrev': 'cur', 'page': 'page_exams', 'role': 'view_page', 'action': 'admin;read', 'usergroups': '8', 'sequence': '10'},
         {'rowindex': 2, 'c_abbrev': 'cur', 'page': 'page_grade', 'role': 'read_note', 'action': 'admin;anlz;auth1;auth2;auth3;edit;read', 'usergroups': '8', 'sequence': '60'}]}
     """
 

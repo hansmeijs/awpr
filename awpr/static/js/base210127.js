@@ -115,17 +115,12 @@
         if(el_hdrbar_department) {
             const display_department = (!!permit_dict.display_department);
 
+        //console.log("display_department", display_department )
             const allowed_depbases_count = (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
             const may_select_department = (display_department && allowed_depbases_count > 1);
 
             add_or_remove_class(el_hdrbar_department, cls_hide, !display_department)
             add_or_remove_class(el_hdrbar_department, "awp_navbaritem_may_select", may_select_department, "awp_navbar_item" )
-
-console.log("permit_dict", permit_dict)
-console.log("permit_dict.display_department", permit_dict.display_department)
-console.log("display_department", display_department)
-console.log("may_select_department", may_select_department)
-console.log(el_hdrbar_department)
 
             let department_txt = null;
             if (display_department) {
@@ -193,16 +188,36 @@ console.log(el_hdrbar_department)
 
     }  // UpdateHeaderbar
 
+//========= b_get_depbases_display  ============= PPR2021-05-06
+    function b_get_depbases_display(department_map, fld_value) {
+        // function converts "1;2;3" into "Vsbo, Havo, Vwo"
+        let depbase_codes = ""
+        if(fld_value){
+            const arr = fld_value.split(";");
+// --- loop through department_map, because base_id must be looked up, not department_id PR2021-05-06
+            if (arr && arr.length){
+                for (const [map_id, map_dict] of department_map.entries()) {
+                    const depbase_id = map_dict.base_id;
+                    if(depbase_id){
+                        if (arr.includes(depbase_id.toString())){
+                            if(depbase_codes) { depbase_codes += ", "}
+                            depbase_codes += map_dict.base_code;
+            }}}};
+        }
+        return depbase_codes;
+    }  // b_get_depbases_display
+
+
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-//========= get_permits_from_permit_list  ============= PPR2021-04-26
-    function get_permits_from_permit_list(permit_dict) {
+//========= b_get_permits_from_permitlist  ============= PPR2021-04-26
+    function b_get_permits_from_permitlist(permit_dict) {
         // function puts permits from permit_list as key in permit_dict, for ease of use
         if(permit_dict.permit_list){
             for (let i = 0, action; action = permit_dict.permit_list[i]; i++) {
                 permit_dict[action] = true;
             }
         }
-    }  // get_permits_from_permit_list
+    }  // b_get_permits_from_permitlist
 
 //========= isEmpty  ============= PR2019-05-11
     //PR2019-05-05 from https://coderwall.com/p/_g3x9q/how-to-check-if-javascript-object-is-empty'
@@ -681,7 +696,6 @@ console.log(el_hdrbar_department)
         return img_class
     }
 
-
     function get_status_class(status_sum) { // PR2021-01-15
         //console.log( " ==== get_status_class ====");
         //console.log( "status_sum", status_sum);
@@ -689,12 +703,12 @@ console.log(el_hdrbar_department)
 
         if (status_sum < 32) {
             const status_array = b_get_status_array(status_sum);
+       // console.log( "status_array", status_array);
             const created = b_get_status_bool_at_arrayindex(status_array, 0)  // STATUS_00_CREATED
             const auth1 = b_get_status_bool_at_arrayindex(status_array, 1)  // STATUS_01_AUTH1 = 2
             const auth2 = b_get_status_bool_at_arrayindex(status_array, 2) // STATUS_02_AUTH2 = 4
             const auth3 = b_get_status_bool_at_arrayindex(status_array, 3) // STATUS_03_AUTH3 = 8
             const submitted = b_get_status_bool_at_arrayindex(status_array, 4) // STATUS_04_SUBMITTED = 16
-
 
             img_class = (submitted) ? "appr_1_5" :
                         (auth1 && auth2 && auth3) ? "appr_1_4" :
@@ -705,15 +719,7 @@ console.log(el_hdrbar_department)
                         (auth2) ? "appr_0_3" :
                         (auth1) ? "appr_0_2" :
                         (created) ? "stat_0_1" : "stat_0_0"
-    if(status_sum){
-        //console.log( "status_array", status_array);
-        //console.log( "created", created);
-        //console.log( "auth1", auth1);
-        //console.log( "auth2", auth2);
-        //console.log( "auth3", auth3);
-        //console.log( "submitted", submitted);
-        //console.log( "img_class", img_class);
-    }
+
         } else if (status_sum < 64) {img_class = "note_1_2" // STATUS_05_REQUEST = 32
         } else if (status_sum < 128) {img_class = "note_1_3"// STATUS_06_WARNING = 64
         } else if (status_sum < 256) {img_class = "note_1_4"// STATUS_07_REJECTED = 128
@@ -728,9 +734,6 @@ console.log(el_hdrbar_department)
         //console.log("img_class", img_class);
         return img_class;
     }  // get_status_class
-
-
-
 
 
 //#########################################################################
@@ -1001,9 +1004,9 @@ console.log(el_hdrbar_department)
     }  // show_mod_message
 
 
-//========= render_messages  =================
-    function render_messages(awp_messages) {
-        //console.log( "=== render_messages ")
+//========= b_render_awp_messages  =================
+    function b_render_awp_messages(awp_messages) {
+        //console.log( "===== b_render_awp_messages -----")
         //console.log( "awp_messages", awp_messages)
         // PR202020-10-30 renders messages PR2021-04-27
 
@@ -1033,14 +1036,14 @@ console.log(el_hdrbar_department)
                         el_mod_awpmessages.appendChild(el_div);
                     }
                 }
-            }
 
 // ---  set focus to close button - not working
-            // const el_modmessage_btn_cancel = document.getElementById("id_modmessage_btn_cancel");
-            // set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 250);
+                // const el_modmessage_btn_cancel = document.getElementById("id_modmessage_btn_cancel");
+                // set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 250);
 
 // ---  show modal
-            $("#id_mod_awpmessages").modal({backdrop: true});
+                $("#id_mod_awpmessages").modal({backdrop: true});
+            }
         }
-    }  // render_messages
+    }  // b_render_awp_messages
 

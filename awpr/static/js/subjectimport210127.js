@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 // --- create EventListener for select dateformat element
     const el_filedialog = document.getElementById("id_filedialog");
-        el_filedialog.addEventListener("change", HandleFiledialog, false);
+        el_filedialog.addEventListener("change", MIMP_HandleFiledialog, false);
     const el_worksheet_list = document.getElementById("id_worksheet_list");
         el_worksheet_list.addEventListener("change", HandleWorksheetList, false);
     const checkbox_hasheader = document.getElementById("checkBoxID");
@@ -157,9 +157,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });  // $.ajax({
     }
 
-//=========   HandleFiledialog   ======================
-    function HandleFiledialog() { // functie wordt alleen doorlopen als file is geselecteerd
-        //console.log(" ========== HandleFiledialog ===========");
+//=========   MIMP_HandleFiledialog   ======================
+    function MIMP_HandleFiledialog() { // functie wordt alleen doorlopen als file is geselecteerd
+        //console.log(" ========== MIMP_HandleFiledialog ===========");
 
 // ---  get curfiles from filedialog
         // curfiles is list of files: PR2020-04-16
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
         show_hide_element(el_msg_err, (!!msg_err));
 
         GetWorkbook();
-    }  // HandleFiledialog
+    }  // MIMP_HandleFiledialog
 
 //=========  GetWorkbook  ====================================
     function GetWorkbook() {
@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_msg_err.innerText = msg_err;
                     show_hide_element(el_msg_err, (!!msg_err));
                 }  // if (!!workbook){
-                // PR2020-04-16 debug: must be in reader.onload, will not be reachted when ik HandleFiledialog
+                // PR2020-04-16 debug: must be in reader.onload, will not be reachted when ik MIMP_HandleFiledialog
                 HighlightAndDisableSelectedButton("GetWorkbook");
             }; // reader.onload = function(event) {
         }; // if(!!selected_file){

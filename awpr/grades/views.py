@@ -44,18 +44,72 @@ logger = logging.getLogger(__name__)
 class GradeListView(View):  # PR2020-12-03 PR2021-03-25
 
     def get(self, request):
-        #logger.debug('  =====  GradeListView ===== ')
 
 # - set headerbar parameters PR2018-08-06
         page = 'page_grade'
         headerbar_param = awpr_menu.get_headerbar_param(request, page)
 
-        #logger.debug('params: ' + str(params))
 # - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request.user:
             request.user.set_usersetting_dict('sel_page', {'page': page})
 
         return render(request, 'grades.html', headerbar_param)
+
+
+@method_decorator([login_required], name='dispatch')
+class GradeDownloadGradeIconsView(View):  # PR2021-04-30
+
+    def post(self, request):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= GradeDownloadGradeIconsView ============= ')
+
+        download_wrap = {}
+        if request.user and request.user.country and request.user.schoolbase:
+            req_user = request.user
+
+# - get selected examyear, school and department from usersettings
+            sel_examyear, sel_school, sel_department, is_locked, \
+                examyear_published, school_activated, is_requsr_school = \
+                    dl.get_selected_examyear_school_dep_from_usersetting(request)
+
+# - get selected examperiod, examtype, subject_pk from usersettings
+            sel_examperiod, sel_examtype, sel_subject_pk = dl.get_selected_examperiod_examtype_from_usersetting(request)
+
+            if logging_on:
+                logger.debug('sel_examperiod: ' + str(sel_examperiod))
+                logger.debug('sel_school: ' + str(sel_school))
+                logger.debug('sel_department: ' + str(sel_department))
+
+            grade_note_icon_rows = create_grade_note_icon_rows(
+                sel_examyear_pk=sel_examyear.pk,
+                sel_schoolbase_pk=sel_school.base_id,
+                sel_depbase_pk=sel_department.base_id,
+                sel_examperiod=sel_examperiod,
+                request=request)
+            if grade_note_icon_rows:
+                download_wrap['grade_note_icon_rows'] = grade_note_icon_rows
+                
+            #grade_stat_icon_rows = create_grade_stat_icon_rows(
+            #    sel_examyear_pk=sel_examyear.pk,
+            #    sel_schoolbase_pk=sel_school.base_id,
+           #     sel_depbase_pk=sel_department.base_id,
+            #    sel_examperiod=sel_examperiod,
+           #     request=request)
+
+            #if grade_stat_icon_rows:
+            #    download_wrap['grade_stat_icon_rows'] = grade_stat_icon_rows
+        # - return update_wrap
+        return HttpResponse(json.dumps(download_wrap, cls=af.LazyEncoder))
+
+# - end of GradeDownloadGradeIconsView
+
+
+########################################
+
+
+
+
 
 
 @method_decorator([login_required], name='dispatch')
@@ -240,8 +294,9 @@ class GradeApproveView(View):  # PR2021-01-19
                                         sel_examyear_pk=sel_examyear.pk,
                                         sel_schoolbase_pk=sel_school.base_id,
                                         sel_depbase_pk=sel_department.base_id,
-                                        append_dict=append_dict,
                                         sel_examperiod=sel_examperiod,
+                                        request=request,
+                                        append_dict=append_dict,
                                         grade_pk=grade.pk)
                                     if rows:
                                         grade_rows.append(rows[0])
@@ -554,7 +609,7 @@ def approve_grade(grade, sel_examtype, requsr_auth, status_index, is_test, is_re
 # - end of approve_grade
 
 def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, request):  # PR2021-01-21
-    logging_on = False
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- submit_grade -----')
 
@@ -673,11 +728,9 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                 student = None
-                # TODO may_edit is not activated for testing:
-                #  may_edit = examyear_published and school_activated and not is_locked and is_requsr_school and sel_department
+                # is_locked: either country, examyear or school is locked
                 # sel_department only has value when sel_examyear and sel_school have value
-                may_edit = sel_department and not is_locked
-                #logger.debug('may_edit: ' + str(may_edit))
+                may_edit = examyear_published and school_activated and not is_locked and is_requsr_school and sel_department
                 if may_edit:
                     student_pk = upload_dict.get('student_pk')
                     student = stud_mod.Student.objects.get_or_none(
@@ -686,7 +739,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
                         department=sel_department,
                         locked=False
                     )
-
+                # TODO msgerr when student is locked
 # - get current studentsubject
                 studentsubject = None
                 if student:
@@ -729,6 +782,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
                             sel_schoolbase_pk=sel_school.base_id,
                             sel_depbase_pk=sel_department.base_id,
                             sel_examperiod=grade.examperiod,
+                            request=request,
                             append_dict=append_dict,
                             grade_pk=grade.pk)
                         if rows:
@@ -810,35 +864,210 @@ def update_grade(instance, upload_dict, err_dict, logging_on, request):
 # --- end of update_grade
 
 
-def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, append_dict=None,
+def create_grade_note_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, request):
+
+    # --- calculate the note- and status icons to be show in the grade rows  PR2021-04-20
+    logger.debug(' ----- create_grade_note_icon_rows -----')
+
+    grade_note_icon_rows = []
+
+    if sel_examyear_pk and sel_schoolbase_pk and sel_depbase_pk and request.user and request.user.schoolbase_id:
+        # req_user can only view nots of his wwn organization
+
+        # only role_school and same_school can view grades that are not published, PR2021-04-29
+        # by filtering subquery : (intern_schoolbase_id = requsr_sb_id) OR ssn.intern_schoolbase_id IS NULL)
+        # filter on exyr, schoolbase, depbase, examperiod is in main query
+        requsr_same_school = (request.user.schoolbase_id == sel_schoolbase_pk)
+
+        sql_keys = {
+            'ey_id': sel_examyear_pk,
+            'sb_id': sel_schoolbase_pk,
+            'db_id': sel_depbase_pk,
+            'ex_per': sel_examperiod,
+            'requsr_sb_id': request.user.schoolbase_id}
+
+        logger.debug('sql_keys: ' + str(sql_keys))
+        logger.debug('requsr_same_school: ' + str(requsr_same_school))
+
+        sql_ssn_list = ["SELECT ssn.studentsubject_id AS studsubj_id, MAX(ssn.note_status) AS max_note_status",
+                    "FROM students_studentsubjectnote AS ssn",
+                    "WHERE (ssn.intern_schoolbase_id = %(requsr_sb_id)s::INT OR ssn.intern_schoolbase_id IS NULL)",
+                    "GROUP BY ssn.studentsubject_id"]
+        sql_ssn = ' '.join(sql_ssn_list)
+
+        sql_list = ["SELECT studsubj.id AS studsubj_id,",
+                    "CONCAT('grade_', grd.id::TEXT) AS mapid,",
+                    "ssn.max_note_status AS note_status",
+                    "FROM students_grade AS grd",
+                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                    "INNER JOIN (", sql_ssn, ") AS ssn ON (ssn.studsubj_id = studsubj.id)",
+                    "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+                    "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+                    "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
+                    "WHERE sch.examyear_id = %(ey_id)s::INT",
+                    "AND sch.base_id = %(sb_id)s::INT",
+                    "AND dep.base_id = %(db_id)s::INT",
+                    "AND grd.examperiod = %(ex_per)s::INT"
+                    ]
+
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            grade_note_icon_rows = af.dictfetchall(cursor)
+
+    return grade_note_icon_rows
+# --- end of create_grade_note_icon_rows
+
+def create_grade_stat_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, request):
+    # --- calculate the note- and status icons to be show in the grade rows  PR2021-05-01
+    #logger.debug(' ----- create_grade_stat_icon_rows -----')
+
+    grade_stat_icon_rows = []
+
+    if sel_examyear_pk and sel_schoolbase_pk and sel_depbase_pk and request.user and request.user.schoolbase_id:
+        # req_user can only view nots of his wwn organization
+
+        # only role_school and same_school can view grades that are not published, PR2021-04-29
+        requsr_same_school = (request.user.schoolbase_id == sel_schoolbase_pk)
+
+        sql_keys = {
+            'ey_id': sel_examyear_pk,
+            'sb_id': sel_schoolbase_pk,
+            'db_id': sel_depbase_pk,
+            'ex_per': sel_examperiod,
+            'requsr_sb_id': request.user.schoolbase_id}
+
+        #logger.debug('sql_keys: ' + str(sql_keys))
+        #logger.debug('requsr_same_school: ' + str(requsr_same_school))
+
+        if requsr_same_school:
+            grades = "segrade, srgrade, sesrgrade, cescore, cegrade, pescore, pegrade, pecegrade,"
+            final_grade = "grd.finalgrade AS finalgrade,"
+            status = "se_status, sr_status, pe_status, ce_status,"
+        else:
+            grades = ' '.join([
+                "CASE WHEN grd.se_published_id IS NOT NULL THEN grd.segrade ELSE NULL END AS segrade,",
+                "CASE WHEN grd.sr_published_id IS NOT NULL THEN grd.srgrade ELSE NULL END AS srgrade,",
+                "CASE WHEN grd.sr_published_id IS NOT NULL THEN grd.sesrgrade ELSE NULL END AS sesrgrade,",
+
+                "CASE WHEN grd.ce_published_id IS NOT NULL THEN grd.cescore ELSE NULL END AS cescore,",
+                "CASE WHEN grd.ce_published_id IS NOT NULL THEN grd.cegrade ELSE NULL END AS cegrade,",
+
+                "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pescore ELSE NULL END AS pescore,",
+                "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pegrade ELSE NULL END AS pegrade,",
+                "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pecegrade ELSE NULL END AS pecegrade,"
+            ])
+
+            # check is to determine if final_grade must be shown. Check is True when weight = 0 or not has_practexam
+            final_check_se = '(CASE WHEN si.weight_se > 0 THEN (CASE WHEN grd.se_published_id IS NOT NULL THEN TRUE ELSE FALSE END) ELSE TRUE END)'
+            final_check_ce = '(CASE WHEN si.weight_ce > 0 THEN (CASE WHEN grd.ce_published_id IS NOT NULL THEN TRUE ELSE FALSE END) ELSE TRUE END)'
+            final_check_pe = '(CASE WHEN si.has_practexam THEN (CASE WHEN grd.pe_published_id IS NOT NULL THEN TRUE ELSE FALSE END) ELSE TRUE END)'
+
+            final_grade = "CASE WHEN " + final_check_se +  " AND " + final_check_ce + "  AND " + final_check_pe + " THEN grd.finalgrade ELSE NULL END AS finalgrade,"
+
+            status = ' '.join([
+                "CASE WHEN grd.se_published_id IS NOT NULL THEN grd.se_status ELSE NULL END AS se_status,",
+                "CASE WHEN grd.sr_published_id IS NOT NULL THEN grd.sr_status ELSE NULL END AS sr_status,",
+                "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pe_status ELSE NULL END AS pe_status,",
+                "CASE WHEN grd.ce_published_id IS NOT NULL THEN grd.ce_status ELSE NULL END AS ce_status,"
+            ])
+
+        sql_list = [
+            "SELECT grd.id, grd.studentsubject_id AS studsubj_id, grd.examperiod,",
+            grades, final_grade, status,
+            "grd.se_locked, grd.sr_locked, grd.pe_locked, grd.ce_locked,",
+            "si.weight_se, si.weight_ce",
+            "FROM students_grade AS grd",
+            "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+            "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+            "WHERE grd.examperiod = %(ex_per)s::INT",
+        ]
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            grade_stat_icon_rows = af.dictfetchall(cursor)
+
+    return grade_stat_icon_rows
+# --- end of create_grade_stat_icon_rows
+
+
+def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, request, append_dict=None,
                        sel_subject_pk=None, grade_pk=None, auth_dict=None):
-    # --- create rows of all students of this examyear / school PR2020-12-14
+    # --- create grade rows of all students of this examyear / school PR2020-12-14
+
     # note: don't forget to filter deleted = false!! PR2021-03-15
-    #logger.debug(' ----- create_grade_rows -----')
+    # grades that are not published are only visible when 'same_school'
+    # note_icon is downloaded in separate call
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_grade_rows -----')
+
+    # - only requsr of the same school  can view grades that are not published, PR2021-04-29
+    # - also commissioner .TODO: add school to commissioner permit
+    requsr_same_school = (request.user.schoolbase_id == sel_schoolbase_pk)
+    requsr_commissioner = (request.user.role == c.ROLE_016_COMM)
 
     #  add_auth_list is used in Ex form to add name of auth
     add_auth_list = True if auth_dict is not None else False
 
-    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
-    #logger.debug('sql_keys: ' + str(sql_keys))
+    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk,
+                'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
 
-    sql_list = ["SELECT grade.id, studsubj.id AS studsubj_id, studsubj.schemeitem_id, studsubj.cluster_id,",
-                "CONCAT('grade_', grade.id::TEXT) AS mapid, 'grade' AS table,",
+    # - only when requsr_same_school the not-published grades are visible
+    # - also the commissioner
+    if requsr_same_school or requsr_commissioner:
+        grades = "segrade, srgrade, sesrgrade, cescore, cegrade, pescore, pegrade, pecegrade,"
+        final_grade = "grd.finalgrade AS finalgrade,"
+        status = "se_status, sr_status, pe_status, ce_status,"
+    else:
+        grades = ' '.join([
+            "CASE WHEN grd.se_published_id IS NOT NULL THEN grd.segrade ELSE NULL END AS segrade,",
+            "CASE WHEN grd.sr_published_id IS NOT NULL THEN grd.srgrade ELSE NULL END AS srgrade,",
+            "CASE WHEN grd.sr_published_id IS NOT NULL THEN grd.sesrgrade ELSE NULL END AS sesrgrade,",
 
+            "CASE WHEN grd.ce_published_id IS NOT NULL THEN grd.cescore ELSE NULL END AS cescore,",
+            "CASE WHEN grd.ce_published_id IS NOT NULL THEN grd.cegrade ELSE NULL END AS cegrade,",
+
+            "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pescore ELSE NULL END AS pescore,",
+            "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pegrade ELSE NULL END AS pegrade,",
+            "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pecegrade ELSE NULL END AS pecegrade,"
+        ])
+
+        # check is to determine if final_grade must be shown. Check is True when weight = 0 or not has_practexam
+        final_check_se = '(CASE WHEN si.weight_se > 0 THEN (CASE WHEN grd.se_published_id IS NOT NULL THEN TRUE ELSE FALSE END) ELSE TRUE END)'
+        final_check_ce = '(CASE WHEN si.weight_ce > 0 THEN (CASE WHEN grd.ce_published_id IS NOT NULL THEN TRUE ELSE FALSE END) ELSE TRUE END)'
+        final_check_pe = '(CASE WHEN si.has_practexam THEN (CASE WHEN grd.pe_published_id IS NOT NULL THEN TRUE ELSE FALSE END) ELSE TRUE END)'
+
+        final_grade = "CASE WHEN " + final_check_se + " AND " + final_check_ce + "  AND " + final_check_pe + " THEN grd.finalgrade ELSE NULL END AS finalgrade,"
+
+        status = ' '.join([
+            "CASE WHEN grd.se_published_id IS NOT NULL THEN grd.se_status ELSE NULL END AS se_status,",
+            "CASE WHEN grd.sr_published_id IS NOT NULL THEN grd.sr_status ELSE NULL END AS sr_status,",
+            "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pe_status ELSE NULL END AS pe_status,",
+            "CASE WHEN grd.ce_published_id IS NOT NULL THEN grd.ce_status ELSE NULL END AS ce_status,"
+        ])
+
+    if logging_on:
+        logger.debug('sql_keys: ' + str(sql_keys))
+
+    sql_list = ["SELECT grd.id, studsubj.id AS studsubj_id, studsubj.schemeitem_id, studsubj.cluster_id,",
+                "CONCAT('grade_', grd.id::TEXT) AS mapid,",
                 "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
                 "stud.level_id AS lvl_id, lvl.abbrev AS lvl_abbrev, stud.sector_id AS sct_id, sct.abbrev AS sct_abbrev,",
                 "stud.iseveningstudent, ey.locked AS ey_locked, school.locked AS school_locked, stud.locked AS stud_locked,",
                 "school.islexschool,",
-                "grade.examperiod, grade.pescore, grade.cescore, grade.segrade, grade.pegrade, grade.cegrade,",
-                "grade.pecegrade, grade.finalgrade,",
 
-                "se_status, se_auth1by_id, grade.se_auth2by_id, grade.se_auth3by_id, grade.se_published_id, grade.se_locked,",
-                "pe_status, pe_auth1by_id, grade.pe_auth2by_id, grade.pe_auth3by_id, grade.pe_published_id, grade.pe_locked,",
-                "ce_status, ce_auth1by_id, grade.ce_auth2by_id, grade.ce_auth3by_id, grade.ce_published_id, grade.ce_locked,",
+                grades, final_grade, status,
+                "grd.examperiod,",
+                "grd.se_auth1by_id, grd.se_auth2by_id, grd.se_auth3by_id, grd.se_published_id, grd.se_locked,",
+                "grd.sr_auth1by_id, grd.sr_auth2by_id, grd.sr_auth3by_id, grd.sr_published_id, grd.sr_locked,",
+                "grd.pe_auth1by_id, grd.pe_auth2by_id, grd.pe_auth3by_id, grd.pe_published_id, grd.pe_locked,",
+                "grd.ce_auth1by_id, grd.ce_auth2by_id, grd.ce_auth3by_id, grd.ce_published_id, grd.ce_locked,",
 
-                "norm.scalelength_ce, norm.scalelength_reex, norm.scalelength_pe,",
-
-                "si.subject_id, si.subjecttype_id, si.norm_id,",
+                "si.subject_id, si.subjecttype_id,",
                 "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_combi, si.extra_count_allowed,",
                 "si.extra_nocount_allowed, si.elective_combi_allowed, si.has_practexam, si.has_pws,",
 
@@ -846,10 +1075,10 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                 "si.no_reex, si.no_thirdperiod, si.no_exemption_ce,",
 
                 "subj.name AS subj_name, subjbase.code AS subj_code,",
-                "studsubj.note_status",
+                "NULL AS note_status", # will be filled in after downloading note_status
 
-                "FROM students_grade AS grade",
-                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grade.studentsubject_id)",
+                "FROM students_grade AS grd",
+                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
 
                 "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
                 "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
@@ -862,21 +1091,24 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                 "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
                 "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
                 "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-                "LEFT JOIN subjects_norm AS norm ON (norm.id = si.norm_id)",
+
                 "WHERE ey.id = %(ey_id)s::INT",
                 "AND school.base_id = %(sb_id)s::INT",
                 "AND dep.base_id = %(depbase_id)s::INT",
-                "AND NOT grade.deleted",
-                "AND grade.examperiod = %(experiod)s::INT"
+                "AND NOT grd.deleted AND NOT studsubj.deleted",
+                "AND NOT studsubj.deleted AND NOT studsubj.deleted",
+
+                "AND grd.examperiod = %(experiod)s::INT"
                 ]
 
-    #logger.debug('grade_pk: ' + str(grade_pk))
-    #logger.debug('student_pk: ' + str(student_pk))
-    #logger.debug('subject_pk: ' + str(subject_pk))
+    if logging_on:
+        logger.debug('grade_pk: ' + str(grade_pk))
+
+    # show grades that are not published only when requsr_same_school PR2021-04-29
     if grade_pk:
         # when grade_pk has value: skip other filters
         sql_keys['grade_id'] = grade_pk
-        sql_list.append('AND grade.id = %(grade_id)s::INT')
+        sql_list.append('AND grd.id = %(grade_id)s::INT')
     elif sel_subject_pk:
         sql_keys['subj_id'] = sel_subject_pk
         sql_list.append('AND si.subject_id = %(subj_id)s::INT')
@@ -889,10 +1121,14 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
         cursor.execute(sql, sql_keys)
         grade_rows = af.dictfetchall(cursor)
 
+    if logging_on:
+        logger.debug('sql_keys: ' + str(grade_rows))
+
 # - add full name to rows, and array of id's of auth
     if grade_rows:
         # create auth_dict, with lists of each auth
         auth_fields = ('se_auth1by_id', 'se_auth2by_id', 'se_auth3by_id',
+                          'sr_auth1by_id', 'sr_auth2by_id', 'sr_auth3by_id',
                           'pe_auth1by_id', 'pe_auth2by_id', 'pe_auth3by_id',
                           'ce_auth1by_id', 'ce_auth2by_id', 'ce_auth3by_id')
 

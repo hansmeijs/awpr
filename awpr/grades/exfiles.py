@@ -106,18 +106,6 @@ class GradeDownloadPdfViewNIU(View):  # PR2021-02-0
             raise Http404("Error creating Ex2A file")
 
 
-
-@method_decorator([login_required], name='dispatch')
-class DownloadPublishedFile_with_filename(View):  # PR2021-02-07
-
-    def post(self, request, filename):
-        logger.debug(' ============= DownloadPublishedFile ============= ')
-        logger.debug('filename: ' + str(filename))
-        # download published pdf file from server
-
-        response = None
-
-
 @method_decorator([login_required], name='dispatch')
 class DownloadPublishedFile(View):  # PR2021-02-07
 
@@ -250,6 +238,7 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
                     sel_schoolbase_pk=sel_school.base_id,
                     sel_depbase_pk=sel_department.base_id,
                     sel_examperiod=sel_examperiod,
+                    request=request,
                     sel_subject_pk=sel_subject_pk,
                     auth_dict=auth_dict
                     )
@@ -613,6 +602,7 @@ def add_frame_header(canvas, border, text_list, school_name, subject_name):
     f2 = Frame(left, bottom, width, height, showBoundary=0)
     f2.addFromList(story2, canvas)
     #logger.debug('addFromList: ' + str(f2) + ' ' + str(type(f2)))
+
 
 def testing():
     response = HttpResponse(content_type='application/pdf')

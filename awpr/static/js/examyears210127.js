@@ -187,8 +187,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
-                    // get_permits must come before CreateSubmenu and FiLLTbl
-                    get_permits(permit_dict.permit_list);
+                    // b_get_permits_from_permitlist must come before CreateSubmenu and FiLLTbl
+                    b_get_permits_from_permitlist(permit_dict.permit_list);
                     usergroups = permit_dict.usergroup_list;
                     isloaded_permits = true;
                 }
@@ -199,9 +199,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
 
-        // call render_messages also when there are no messages, to remove existing messages
+        // call b_render_awp_messages also when there are no messages, to remove existing messages
                 const awp_messages = (response.awp_messages) ? response.awp_messages : {};
-                render_messages(response.awp_messages);
+                b_render_awp_messages(response.awp_messages);
 
                 if ("examyear_rows" in response) {
                     const tblName = "examyear";
@@ -242,6 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Close_examyear, function() {MEY_Open("close_admin")});
                 AddSubmenuButton(el_submenu, loc.Delete_examyear, function() {ModConfirmOpen()});
             }
+
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
 
@@ -340,7 +341,7 @@ document.addEventListener('DOMContentLoaded', function() {
            examyer_txt = loc.Examyear + " " + permit_dict.requsr_examyear_text
         } else {
             const examyear_str = (loc.Examyear) ? loc.Examyear.toLowerCase() : "-";
-            examyer_txt = "<" + loc.No__ + examyear_str +  loc.__selected + ">"
+            examyer_txt = "<" + loc.There_is_no__ + examyear_str +  loc.__selected + ">"
         }
         //if(el_SBR_examyear) { el_SBR_examyear.value = examyer_txt};
         //if(el_hdrbar_examyear) { el_hdrbar_examyear.innerText = examyer_txt};
@@ -563,14 +564,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  UpdateField  ================ PR2020-08-16
     function UpdateField(el_div, map_dict) {
-        console.log("=========  UpdateField =========");
-        console.log("map_dict", map_dict);
+        //console.log("=========  UpdateField =========");
+        //console.log("map_dict", map_dict);
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
             const fld_value = map_dict[field_name];
-        console.log("el_div", el_div);
-        console.log("field_name", field_name);
-        console.log("fld_value", fld_value);
+
             if(field_name){
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18

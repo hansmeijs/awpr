@@ -8,8 +8,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // permit dict gets value after downloading permit_list PR2021-03-27
     //  if user has no permit to view this page ( {% if no_access %} ): el_loader does not exist PR2020-10-02
 
-        // Note: may_view_page is the only permit that gets its value on DOMContentLoaded,
-        // all other permits get their value in function get_permits, after downloading permit_list
+    // Note: may_view_page is the only permit that gets its value on DOMContentLoaded,
+    // all other permits get their value in function get_permits, after downloading permit_list
     const may_view_page = (!!el_loader)
 
     const cls_hide = "display_hide";
@@ -30,7 +30,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let mod_MGP_dict = {};
     let time_stamp = null; // used in mod add user
 
-    let company_dict = {};
     let user_list = [];
     let school_rows = [];
 
@@ -121,7 +120,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
         //const elMSESD_input = document.getElementById("id_MSESD_input");
-
         if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click",
                 function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false );
@@ -188,29 +186,29 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
 // ---  MODAL UPLOAD PERMITS
-// --- create EventListener for buttons in btn_container
-    const el_MIMP_btn_container = document.getElementById("id_MIMP_btn_container");
-    if(el_MIMP_btn_container){
-        const btns = el_MIMP_btn_container.children;
-        for (let i = 0, btn; btn = btns[i]; i++) {
-            const data_btn = get_attr_from_el(btn,"data-btn")
-            btn.addEventListener("click", function() {MIMP_btnSelectClicked(data_btn)}, false )
+    // --- create EventListener for buttons in btn_container
+        const el_MIMP_btn_container = document.getElementById("id_MIMP_btn_container");
+        if(el_MIMP_btn_container){
+            const btns = el_MIMP_btn_container.children;
+            for (let i = 0, btn; btn = btns[i]; i++) {
+                const data_btn = get_attr_from_el(btn,"data-btn")
+                btn.addEventListener("click", function() {MIMP_btnSelectClicked(data_btn)}, false )
+            }
         }
-    }
-    const el_filedialog = document.getElementById("id_MIMP_filedialog");
-    if (el_filedialog){el_filedialog.addEventListener("change", function() {HandleFiledialog(el_filedialog, loc)}, false)};
-    const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
-    if (el_worksheet_list){el_worksheet_list.addEventListener("change", function() {MIMP_SelectWorksheet()}, false)};
-    const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
-    if (el_MIMP_checkboxhasheader){el_MIMP_checkboxhasheader.addEventListener("change", function() {MIMP_CheckboxHasheaderChanged()}, false)};
-    const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
-    if (el_MIMP_btn_prev){el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false)};
-    const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
-    if (el_MIMP_btn_next){el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false)};
-    const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
-    if (el_MIMP_btn_test){el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test")}, false)};
-    const el_MUP_btn_upload = document.getElementById("id_MIMP_btn_upload");
-    if (el_MUP_btn_upload){el_MUP_btn_upload.addEventListener("click", function() {MIMP_Save("save")}, false)};
+        const el_filedialog = document.getElementById("id_MIMP_filedialog");
+        if (el_filedialog){el_filedialog.addEventListener("change", function() {MIMP_HandleFiledialog(el_filedialog, loc)}, false)};
+        const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
+        if (el_worksheet_list){el_worksheet_list.addEventListener("change", function() {MIMP_SelectWorksheet()}, false)};
+        const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
+        if (el_MIMP_checkboxhasheader){el_MIMP_checkboxhasheader.addEventListener("change", function() {MIMP_CheckboxHasheaderChanged()}, false)};
+        const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
+        if (el_MIMP_btn_prev){el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false)};
+        const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
+        if (el_MIMP_btn_next){el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false)};
+        const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
+        if (el_MIMP_btn_test){el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test")}, false)};
+        const el_MUP_btn_upload = document.getElementById("id_MIMP_btn_upload");
+        if (el_MUP_btn_upload){el_MUP_btn_upload.addEventListener("click", function() {MIMP_Save("save")}, false)};
 
 
 // ---  MOD CONFIRM ------------------------------------
@@ -228,7 +226,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  set selected menu button active
         SetMenubuttonActive(document.getElementById("id_hdr_users"));
 
-        // period also returns emplhour_list
         const datalist_request = {
                 setting: {page: "page_user"},
                 schoolsetting: {setting_key: "import_permits"},
@@ -266,32 +263,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 // hide loader
                 el_loader.classList.add(cls_visible_hide)
                 let check_status = false;
-                let must_create_submenu = false;
-                let must_update_headerbar = false;
-
+                let isloaded_loc = false, isloaded_settings = false, isloaded_permits = false;
                 if ("locale_dict" in response) {
                     loc = response.locale_dict;
                     mimp_loc = loc;
-                    must_create_submenu = true;
+                    isloaded_loc = true;
                 };
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict;
                     selected_btn = setting_dict.sel_btn;
-                    must_update_headerbar = true;
+                    isloaded_settings = true;
                 };
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
+                    isloaded_permits = true;
                     // get_permits must come before CreateSubmenu and FiLLTbl
-                    get_permits_from_permit_list(permit_dict);
-
+                    b_get_permits_from_permitlist(permit_dict);
                     set_columns_hidden();
-
-                    must_update_headerbar = true;
                 }
 
-                if(must_create_submenu){CreateSubmenu()};
-                if(must_update_headerbar){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
-
+                if(isloaded_loc && isloaded_permits){CreateSubmenu()};
+                if(isloaded_settings || isloaded_permits){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
                 if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
 
                 if ("user_rows" in response) { refresh_user_map(response.user_rows)};
@@ -444,8 +436,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const class_width = "tw_" + field_setting.field_width[j] ;
                 const class_align = "ta_" + field_setting.field_align[j];
 
-            //console.log("field_setting.field_caption[j]", field_setting.field_caption[j]);
-            //console.log("field_caption", field_caption);
     // ++++++++++ create header row +++++++++++++++
         // --- add th to tblRow.
                 let th_header = document.createElement("th");
@@ -495,10 +485,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
                 th_filter.appendChild(el_filter)
                 tblRow_filter.appendChild(th_filter);
-
             }  // if (!columns_hidden.includes(field_name))
         }  // for (let j = 0; j < column_count; j++)
-
     };  //  CreateTblHeader
 
 //=========  CreateTblRow  ================ PR2020-06-09
@@ -532,7 +520,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++  insert td's into tblRow
             for (let j = 0; j < column_count; j++) {
                 const field_name = field_names[j];
-
 
 // skip columns if in columns_hidden
                 if (!columns_hidden.includes(field_name)){

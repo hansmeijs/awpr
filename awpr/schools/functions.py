@@ -460,7 +460,6 @@ def copy_packageitems_from_prev_examyear(request, prev_examyear, mapped_packages
 # - end of copy_packageitems_from_prev_examyear
 
 
-
 def get_previous_examyear_instance(new_examyear_instance):
     # get previous examyear of this country from new_examyear, check if it exists # PR2019-02-23 PR2020-10-06
 
@@ -500,6 +499,7 @@ def get_department(old_examyear, new_examyear):
         prev_examyear_int = int(new_examyear.code) - 1
         prev_examyear = sch_mod.Department.objects.filter(country=new_examyear.country, examyear=prev_examyear_int).first()
     return prev_examyear
+
 
 # ===============================
 def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_depbase):  # PR2020-04-17 PR2020-12-28  PR2021-01-12
@@ -704,8 +704,16 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
                                     add_to_list = True
                             elif instance.depbases:
                     # in other tables: only add if sel_depbase.pk is in depbases
-                                depbases_str_list = instance.depbases.split(';') if instance.depbases else None
-                                depbases_list = list(map(int, depbases_str_list)) if depbases_str_list else None
+                                # PR20210-05-04 debug . imported depbases may contain ';2;3;',
+                                # which give error:  invalid literal for int() with base 10: ''
+                                # was: depbases_str_list = instance.depbases.split(';') if instance.depbases else None
+                                #       depbases_list = list(map(int, depbases_str_list)) if depbases_str_list else None
+                                depbases_list = []
+                                if instance.depbases:
+                                    depbases_str_list = instance.depbases.split(';')
+                                    for depbase_pk_str in depbases_str_list:
+                                        if depbase_pk_str:
+                                            depbases_list.append(int(depbase_pk_str))
 
                                 if sel_depbase.pk in depbases_list:
                                     if tblName == 'sector':

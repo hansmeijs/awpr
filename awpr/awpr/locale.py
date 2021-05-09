@@ -30,8 +30,9 @@ def get_locale_dict(table_dict, user_lang):
     dict['a_subject'] = _('a subject')
     dict['in_the_list'] = _(' in the list.')
 
-    dict['No__'] = pgettext_lazy('No ... selected', 'No ')
-    dict['__selected'] = pgettext_lazy('No ... selected.', ' selected.')
+    dict['Please_select__'] = pgettext_lazy('Please select ... first', 'Please select ')
+    dict['__first'] = pgettext_lazy('Please select ... first.', ' first.')
+    dict['an_item'] = _('an item')
 
     dict['Select_examyear'] = _('Select an exam year')
     dict['Select_school'] = _('Select a school')
@@ -55,6 +56,7 @@ def get_locale_dict(table_dict, user_lang):
     dict['will_be_deleted'] = _(' will be deleted.')
     dict['will_be_made_inactive'] = _(' will be made inactive.')
     dict['will_be_made_active'] = _(' will be made active.')
+    dict['will_be_printed'] = _(' will be printed.')
     dict['Do_you_want_to_continue'] = _('Do you want to continue?')
     dict['Yes_delete'] = _('Yes, delete')
     dict['Yes_make_inactive'] = _('Yes, make inactive')
@@ -80,13 +82,13 @@ def get_locale_dict(table_dict, user_lang):
     dict['SectorenProfielen'] = _('Sectoren / Profielen')
     dict['SectorProfiel_twolines'] = _('Sector /\nProfiel')
     dict['Leerweg'] = _('Leerweg')
+    dict['Leerwegen'] = _('Leerwegen')
     dict['Leerweg_twolines'] = _('Leer-\nweg')
     dict['Sectors'] = _('Sectors')
     dict['Abbreviation'] = _('Abbreviation')
     dict['Candidate'] = _('Candidate')
     dict['Candidates'] = _('Candidates')
     dict['a_candidate'] = _('a candidate')
-
 
     dict['Name'] = _('Name')
     dict['Department'] = _('Department')
@@ -440,20 +442,26 @@ def get_locale_dict(table_dict, user_lang):
         }
 
 # ====== PAGE EXAM ========================= PR2021-04-04
-    if 'page_exam' in page_list:
+    if 'page_exams' in page_list:
 
-        dict['Select_examperiod'] = _('Select exam period')
-        dict['No_examperiods_found'] = _('No exam periods found')
-        dict['Select_examtype'] = _('Select exam type')
-        dict['No_examtypes_found'] = _('No exam types found')
+
+        dict['Exam_period'] = TXT_Exam_period
+        dict['Select_examperiod'] = TXT_Select_examperiod
+        dict['No_examperiods_found'] = TXT_No_examperiods_found
+
+        dict['Exam_type'] = TXT_Exam_type
+        dict['Select_examtype'] = TXT_Select_examtype
+        dict['No_examtypes_found'] = TXT_No_examtypes_found
+
+        dict['Select_subject'] = _('Select subject')
         dict['All_levels'] = _("All 'leerwegen'")
         dict['All_sectors'] = _("All sectors")
         dict['All_profielen'] = _("All 'profielen'")
         dict['Profiel'] = _('Profiel')
 
-        dict['options_examperiod'] = c.EXAMPERIOD_OPTIONS_123ONLY
+        dict['options_examperiod'] = c.EXAMPERIOD_OPTIONS_12ONLY
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
-        dict['options_examtype'] = c.EXAMTYPE_OPTIONS
+        dict['options_examtype'] = c.EXAMTYPE_OPTIONS_EXAM
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
 
         dict['All_leerwegen'] = _("All 'leerwegen'")
@@ -462,12 +470,19 @@ def get_locale_dict(table_dict, user_lang):
         dict['Add_exam'] = _("Add exam")
         dict['Delete_exam'] = _("Delete exam")
         dict['Publish_exam'] = _("Publish exam")
+        dict['Print_exam'] = _("Print exam")
+        dict['Download_PDF'] = _("Download PDF")
+        dict['Download_JSON'] = _("Download JSON")
 
         dict['Quest'] = _('Quest.')
         dict['Number_of_questions'] = _('Number of questions')
 
         dict['Maximum_score'] = _('Maximum score')
+        dict['Maximum_score_2lines'] = pgettext_lazy('2 lines', 'Maximum\nscore')
         dict['Sequence_2lines'] = pgettext_lazy('2 lines', 'Sequence')
+
+
+
 
         dict['err_list'] = {
             'Amount': _("Amount"),
@@ -503,8 +518,6 @@ def get_locale_dict(table_dict, user_lang):
         dict['_of_'] = TXT__of_
 
         dict['Name_ex_form'] = _('Name Ex form')
-        dict['Exam_period'] = _('Exam period')
-        dict['Exam_type'] = _('Exam type')
         dict['Date_submitted'] = _('Date submitted')
         dict['Download_Exform'] = _('Download Ex form')
 
@@ -559,10 +572,13 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['No_subject_selected'] = _('No subject selected.')
 
-        dict['Select_examperiod'] = _('Select exam period')
-        dict['No_examperiods_found'] = _('No exam periods found')
-        dict['Select_examtype'] = _('Select exam type')
-        dict['No_examtypes_found'] = _('No exam types found')
+        dict['Exam_period'] = TXT_Exam_period
+        dict['Select_examperiod'] = TXT_Select_examperiod
+        dict['No_examperiods_found'] = TXT_No_examperiods_found
+
+        dict['Exam_type'] = TXT_Exam_type
+        dict['Select_examtype'] = TXT_Select_examtype
+        dict['No_examtypes_found'] = TXT_No_examtypes_found
         dict['All_levels'] = _("All 'leerwegen'")
         dict['All_sectors'] = _("All sectors")
         dict['All_profielen'] = _("All 'profielen'")
@@ -585,6 +601,7 @@ def get_locale_dict(table_dict, user_lang):
             'examyear_locked': _('The exam year is locked.'),
             'school_locked': _('The school data is locked.'),
             'candidate_locked': _('The candidate data is locked.'),
+            'grade_locked': _('This grade is locked.'),
             'no_ce_this_ey': _('There are no central exams this exam year.'),
             'no_3rd_period': _('There is this exam year no third exam period.'),
             'reex_combi_notallowed': _('Combination subject has no re-examination.'),
@@ -593,14 +610,15 @@ def get_locale_dict(table_dict, user_lang):
             'subject_no_pe': _('This subject has no practical exam.'),
             'notallowed_in_combi': _(' not allowed in combination subject.'),
             'reex_notallowed_in_combi': _('Re-examination grade not allowed in combination subject.'),
-            'weightse_is_0': _('The SE weighing of this subject is zero.\nYou cannot enter a grade.'),
-            'weightce_0_noscore': _('The CE weighing of this subject is zero.\nYou cannot enter a score.'),
-            'weightce_0_nograde': _('The CE weighing of this subject is zero.\nYou cannot enter a grade.'),
+            'weightse_is_zero': _('The SE weighing of this subject is zero.'),
+            'weightce_is_zero': _('The CE weighing of this subject is zero.'),
+            'cannot_enter_score': _('You cannot enter a score.'),
+            'cannot_enter_grade': _('You cannot enter a grade.'),
             'score_mustbe_number': _('The score must be a number.'),
             'score_mustbe_gt0': _('The score must be a number greater than zero.'),
             'score_mustbe_wholenumber': _('The score must be a whole number.'),
             #  strMsgText = "Cijfertype 'Geen cijfer'. Er kan geen cijfer ingevuld worden." 'PR2016-02-14
-            'gradetype_none': _("Grade type has no value.\nGrades cannot be entered."),
+            'gradetype_no_value': _('The grade type has no value.'),
             # //"Het cijfer kan alleen g, v of o zijn."
             'gradetype_ovg': _("Grade can only be 'g', 'v' or 'o'."),
 
@@ -610,8 +628,11 @@ def get_locale_dict(table_dict, user_lang):
             'Score_mustbe_between_0_and': _('The score must be a number between 0 and '),
 
             'no_permission': _("You don't have permission to enter grades."),
-            'grade_approved': _("This grade has already been approved. You can only change it after the approvals are removed."),
-            'grade_submitted': _("This grade has already been submitted. You can only change it with permission of the Inspection.")
+            'grade_approved': _('This grade has already been approved.'),
+            'needs_approvals_removed': _('You have to remove the approvals first.'),
+            'Then_you_can_change_it': _('Then you can change it.'),
+            'grade_submitted': _('This grade has already been submitted.'),
+            'need_permission_inspection': _('You can only change it with permission of the Inspection.')
         }
 
     dict['approve_err_list'] = {'You_have_functions': _('You have the functions of '),
@@ -628,6 +649,15 @@ def get_locale_dict(table_dict, user_lang):
 
                                 }
     return dict
+
+
+TXT_Exam_period = _('Exam period')
+TXT_Select_examperiod = _('Select exam period')
+TXT_No_examperiods_found = _('No exam periods found')
+
+TXT_Exam_type = _('Exam type')
+TXT_Select_examtype = _('Select exam type')
+TXT_No_examtypes_found = _('No exam types found')
 
 
 TXT_Email_address = _('Email address')

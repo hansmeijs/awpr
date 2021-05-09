@@ -52,7 +52,7 @@
         if(el_input){
 // ---  filter rows in table select_school
             const filter_dict = t_MSESD_Filter_SelectRows(el_input.value);
-            //console.log( "filter_dict", filter_dict);
+            console.log( "filter_dict", filter_dict);
 // ---  if filter results have only one school: put selected school in el_MUA_schoolname
             const selected_pk = Number(filter_dict.selected_pk);
             if (selected_pk) {
@@ -71,7 +71,7 @@
 
 //=========  t_MSESD_FillSelectTable  ================ PR2020-08-21 PR2020-12-18
     function t_MSESD_FillSelectTable(loc, tblName, data_map, permit_dict, MSESD_Response, selected_pk) {
-        //console.log( "===== t_MSESD_FillSelectTable ========= ");
+        console.log( "===== t_MSESD_FillSelectTable ========= ");
 
 // set header text
         const header_text = (tblName === "examyear") ? loc.Select_examyear :
@@ -83,7 +83,7 @@
         tblBody_select.innerText = null;
 
 // --- loop through data_map
-        //console.log( "data_map", data_map);
+        console.log( "data_map", data_map);
         if(data_map){
             for (const [map_id, map_dict] of data_map.entries()) {
                 const pk_int = (tblName === "examyear") ? map_dict.examyear_id :
@@ -126,7 +126,7 @@
 
 //=========  t_MSESD_CreateSelectRow  ================ PR2020-10-27 PR2020-12-18
     function t_MSESD_CreateSelectRow(loc, tblName, tblBody_select, pk_int, code_value, activated, locked, MSESD_Response, selected_pk) {
-        //console.log( "===== t_MSESD_CreateSelectRow ========= ");
+        console.log( "===== t_MSESD_CreateSelectRow ========= ");
 
         const is_selected_pk = (selected_pk != null && pk_int === selected_pk)
 // ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
@@ -176,12 +176,13 @@
 
 //========= t_MSESD_Filter_SelectRows  ======== PR2021-04-27
     function t_MSESD_Filter_SelectRows(filter_text) {
-        //console.log( "===== t_MSESD_Filter_SelectRows  ========= ");
-        //console.log( "filter_text: <" + filter_text + ">");
+        console.log( "===== t_MSESD_Filter_SelectRows  ========= ");
+        console.log( "filter_text: <" + filter_text + ">");
         const filter_text_lower = (filter_text) ? filter_text.toLowerCase() : "";
         let has_selection = false, has_multiple = false;
         let sel_value = null, sel_pk = null, sel_mapid = null;
         let row_count = 0;
+        console.log( "filter_text_lower: <" + filter_text_lower + ">");
 
         let tblBody_select = document.getElementById("id_MSESD_tblBody_select");
         for (let i = 0, tblRow; tblRow = tblBody_select.rows[i]; i++) {
@@ -190,8 +191,10 @@
 // ---  show all rows if filter_text = ""
                 if (filter_text_lower){
                     const data_value = get_attr_from_el(tblRow, "data-value")
+        console.log( "data_value: <" + data_value + ">");
 // ---  show row if filter_text_lower is found in data_value, hide when data_value is blank
                     hide_row = (data_value) ? hide_row = (!data_value.toLowerCase().includes(filter_text_lower)) : true;
+        console.log( "hide_row: <" + hide_row + ">");
                 };
                 if (hide_row) {
                     tblRow.classList.add(cls_hide)
@@ -236,8 +239,8 @@
                 const selected_pk = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_pk : null;
 
                 const el_MSSSS_input = document.getElementById("id_MSSSS_input")
-                el_MSSSS_input.dataset.table = tblName;
-                //console.log( "el_MSSSS_input", el_MSSSS_input);
+                el_MSSSS_input.setAttribute("data-table", tblName);
+                console.log( "el_MSSSS_input", el_MSSSS_input);
         // --- fill select table
                 t_MSSSS_Fill_SelectTable(loc, tblName, data_map, setting_dict, el_MSSSS_input, MSSSS_Response, selected_pk, add_all)
                 el_MSSSS_input.value = null;
@@ -255,12 +258,12 @@
         //console.log("el_input.dataset", el_input.dataset);
     // --- put tblName, sel_pk and value in MSSSS_Response, MSSSS_Response handles uploading
 
-        const tblName = el_input.dataset.table;
+        const tblName = get_attr_from_el(el_input, "data-table");
 
         // Note: when tblName = school: pk_int = schoolbase_pk
-        const selected_pk_int = (Number(el_input.dataset.pk)) ? Number(el_input.dataset.pk) : null;
-        const selected_code = el_input.dataset.code;
-        const selected_name = el_input.dataset.name;
+        const selected_pk_int = get_attr_from_el_int(el_input, "data-pk");
+        const selected_code = get_attr_from_el(el_input, "data-code");
+        const selected_name = get_attr_from_el(el_input, "data-name");
 
         MSSSS_Response(tblName, selected_pk_int, selected_code, selected_name)
 // hide modal
@@ -395,9 +398,14 @@
 // ---  highlight clicked row
             tblRow.classList.add(cls_selected)
 // ---  get pk code and value from tblRow, put values in input box
-            el_input.dataset.pk = tblRow.dataset.pk
-            el_input.dataset.code = tblRow.dataset.code
-            el_input.dataset.name = tblRow.dataset.name
+            const data_pk = get_attr_from_el_int(tblRow, "data-pk")
+            const data_code = get_attr_from_el(tblRow, "data-code")
+            const data_name = get_attr_from_el(tblRow, "data-name")
+
+            el_input.setAttribute("data-pk", data_pk);
+            el_input.setAttribute("data-code", data_code);
+            el_input.setAttribute("data-name", data_name);
+
 // ---  save and close
             t_MSSSS_Save(el_input, MSSSS_Response)
         }
@@ -420,11 +428,15 @@
 // ---  if filter results have only one item: put selected item in el_input
             const selected_pk = (filter_dict.selected_pk) ? filter_dict.selected_pk : null;
             if (selected_pk) {
-                el_input.value = (filter_dict.selected_name) ? filter_dict.selected_name : null;;
 // ---  get pk code and value from filter_dict, put values in input box
-                el_input.dataset.pk = selected_pk
-                el_input.dataset.code = (filter_dict.selected_code) ? filter_dict.selected_code : null;
-                el_input.dataset.name = el_input.value;
+                const data_code = (filter_dict.selected_code) ? filter_dict.selected_code : null;
+                const data_name = (filter_dict.selected_name) ? filter_dict.selected_name : null;
+
+                el_input.value = data_name;
+                el_input.setAttribute("data-pk", selected_pk);
+                el_input.setAttribute("data-code", data_code);
+                el_input.setAttribute("data-name", data_name);
+
 // ---  Set focus to btn_save
                 const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save")
                 set_focus_on_el_with_timeout(el_MSSSS_btn_save, 50);

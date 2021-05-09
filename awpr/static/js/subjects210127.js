@@ -117,16 +117,22 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
 
-// --- header bar elements
+// ---  HEADER BAR ------------------------------------
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
-            el_hdrbar_examyear.addEventListener("click", function() {
-                t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false )
-        const el_hdrbar_school = document.getElementById("id_hdrbar_school")
-            el_hdrbar_school.addEventListener("click", function() {
-                t_MSESD_Open(loc, "school", school_map, setting_dict, permit_dict, MSESD_Response)}, false )
-        const el_hdrbar_department = document.getElementById("id_hdrbar_department")
-            el_hdrbar_department.addEventListener("click", function() {
-                t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false )
+        const el_hdrbar_school = document.getElementById("id_hdrbar_school");
+        const el_hdrbar_department = document.getElementById("id_hdrbar_department");
+        if (el_hdrbar_examyear){
+            el_hdrbar_examyear.addEventListener("click",
+                function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false );
+        }
+        if (el_hdrbar_department){
+            el_hdrbar_department.addEventListener("click",
+                function() {t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false );
+        }
+        if (el_hdrbar_school){
+            el_hdrbar_school.addEventListener("click",
+                function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+        }
 
 // ---  MOD SELECT EXAM YEAR ------------------------------------
         let el_MSEY_tblBody_select = document.getElementById("id_MSEY_tblBody_select");
@@ -259,9 +265,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 if(must_create_submenu){CreateSubmenu()};
 
-                // call render_messages also when there are no messages, to remove existing messages
+                // call b_render_awp_messages also when there are no messages, to remove existing messages
                 const awp_messages = (response.awp_messages) ? response.awp_messages : {};
-                render_messages(response.awp_messages);
+                b_render_awp_messages(response.awp_messages);
 
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
                 if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows) };
@@ -1701,7 +1707,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let msg_01_txt = null, msg_02_txt = null, msg_03_txt = null;
             let hide_save_btn = false;
             if(!has_selected_item){
-                msg_01_txt = loc.No__ + item.toLowerCase() + loc.__selected;
+                msg_01_txt = loc.There_is_no__ + item.toLowerCase() + loc.__selected;
                 hide_save_btn = true;
             } else if(mode === "delete"){
                 let item_name = (tblName === "subject") ? mod_dict.name :

@@ -5,6 +5,11 @@ ul::after {
   display: table;
   clear: both;
 }
+/* PR2021-05-07 to remove blue from links in table exam etc. */
+a {
+    color: inherit;
+    text-decoration: none;
+}
 
 a:hover {
   color: #a8c1e0;

@@ -69,6 +69,7 @@ class User(AbstractUser):
     usergroups = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
     allowed_depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     allowed_levelbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    allowed_schoolbases = CharField(max_length=2048, null=True)
     allowed_subjectbases = CharField(max_length=2048, null=True)
     allowed_clusterbases = CharField(max_length=2048, null=True)
 
@@ -139,12 +140,13 @@ class User(AbstractUser):
 
     def permit_list(self, page):
         # --- create list of all permits  of this user PR2021-04-22
-        # logger.debug(' =============== permit_list ============= ')
-        # logger.debug('page: ' + str(page) + ' ' + str(type(page)))
+        logger.debug(' =============== permit_list ============= ')
+        logger.debug('page: ' + str(page) + ' ' + str(type(page)))
 
         _role = getattr(self, 'role')
         _usergroups = getattr(self, 'usergroups')
-
+        logger.debug('_usergroups: ' + str(_usergroups) + ' ' + str(type(_usergroups)))
+        # requsr_usergroups_list: ['admin', 'auth2', 'edit'] <class 'list'>
         permit_list = []
         if page and _role and _usergroups:
             requsr_usergroups_list = _usergroups.split(';')

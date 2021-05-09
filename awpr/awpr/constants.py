@@ -140,7 +140,7 @@ SCHEMEFIELD_PRACTEXAM = 'prac'
 SCHEMEFIELD_CHOICES = (
     (SCHEMEFIELD_MANDATORY, _('Mandatory')),
     (SCHEMEFIELD_COMBI, _('Combination subject')),
-    (SCHEMEFIELD_CHOICECOMBI_ALLOWED, _('Choice combi allowed')),
+    (SCHEMEFIELD_CHOICECOMBI_ALLOWED, _('Elective combi allowed')),
     (SCHEMEFIELD_PRACTEXAM, _('Practical exam')),
 )
 
@@ -178,9 +178,8 @@ EXAMPERIOD_OPTIONS = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam perio
                         {'value': EXAMPERIOD_THIRD, 'caption': _('Third exam period')},
                         {'value': EXAMPERIOD_EXEMPTION, 'caption': _('Exemption')}]
 
-EXAMPERIOD_OPTIONS_123ONLY = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam period')},
-                        {'value': EXAMPERIOD_SECOND, 'caption': _('Second exam period')},
-                        {'value': EXAMPERIOD_THIRD, 'caption': _('Third exam period')}]
+EXAMPERIOD_OPTIONS_12ONLY = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam period')},
+                        {'value': EXAMPERIOD_SECOND, 'caption': _('Second exam period')}]
 
 
 def get_examperiod_caption(examperiod_int):
@@ -190,15 +189,27 @@ def get_examperiod_caption(examperiod_int):
 # options_examtype value = ecamtype, filter = examperiod PR2020-12-17
 EXAMTYPE_OPTIONS = [
     {'value': 'se', 'filter': EXAMPERIOD_FIRST, 'caption': _('School exam')},
+    {'value': 'sere', 'filter': EXAMPERIOD_FIRST, 'caption': _('Re-examination school exam')},
     {'value': 'pe', 'filter': EXAMPERIOD_FIRST, 'caption': _('Practical exam')},
     {'value': 'ce', 'filter': EXAMPERIOD_FIRST, 'caption': _('Central exam')},
     {'value': 're2', 'filter': EXAMPERIOD_SECOND, 'caption': _('Re-examination')},
-        {'value': 're3', 'filter': EXAMPERIOD_THIRD, 'caption': _('Re-examination 3rd period')},
+    {'value': 're3', 'filter': EXAMPERIOD_THIRD, 'caption': _('Re-examination 3rd period')},
     {'value': 'exm', 'filter': EXAMPERIOD_EXEMPTION, 'caption': _('School- / Central exam')}
     ]
-
+# options_examtype value = ecamtype, filter = examperiod PR2021-05-07
+# used in page exam, without SE and EXEMPTION
+EXAMTYPE_OPTIONS_EXAM = [
+    #{'value': 'se', 'filter': EXAMPERIOD_FIRST, 'caption': _('School exam')},
+    #{'value': 'sere', 'filter': EXAMPERIOD_FIRST, 'caption': _('Re-examination school exam')},
+    {'value': 'pe', 'filter': EXAMPERIOD_FIRST, 'caption': _('Practical exam')},
+    {'value': 'ce', 'filter': EXAMPERIOD_FIRST, 'caption': _('Central exam')},
+    {'value': 're2', 'filter': EXAMPERIOD_SECOND, 'caption': _('Re-examination')},
+    #{'value': 're3', 'filter': EXAMPERIOD_THIRD, 'caption': _('Re-examination 3rd period')},
+    #{'value': 'exm', 'filter': EXAMPERIOD_EXEMPTION, 'caption': _('School- / Central exam')}
+    ]
 EXAMTYPE_CAPTION = {
     'se': _('School exam'),
+    'sere': _('Re-examination school exam'),
     'pe': _('Practical exam'),
     'ce': _('Central exam'),
     're2': _('Re-examination'),

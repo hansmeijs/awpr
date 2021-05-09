@@ -13,7 +13,7 @@ from django.views.generic import UpdateView, DeleteView, View, ListView, CreateV
 
 from awpr import menus as awpr_menu
 from awpr import constants as c
-from awpr import settings
+from awpr import settings as s
 from students import validators as v
 from awpr import functions as af
 from awpr import downloads as dl
@@ -290,10 +290,6 @@ class StudentsubjectnoteDownloadView(View):  # PR2021-03-15
             if 'upload' in request.POST and request.POST['upload']:
                 upload_dict = json.loads(request.POST['upload'])
                 datalists = {'studentsubjectnote_rows': create_studentsubjectnote_rows(upload_dict, request) }
-
-
-# get list of downloaded files
-
 
                 datalists_json = json.dumps(datalists, cls=af.LazyEncoder)
 
@@ -672,7 +668,7 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
 class StudentsubjectnoteUploadView(View):  # PR2021-01-16
 
     def post(self, request):
-        logging_on = True
+        logging_on = s.LOGGING_ON
 
         files = request.FILES
         file = files.get('file')
@@ -707,7 +703,7 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                 # - get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, is_locked, \
                 examyear_published, school_activated, is_requsr_school = \
-                dl.get_selected_examyear_school_dep_from_usersetting(request)
+                    dl.get_selected_examyear_school_dep_from_usersetting(request)
 
 # - get current grade - when mode is 'create': studsubj is None. It will be created at "elif mode == 'create'"
                 examperiod_int = upload_dict.get('examperiod_int')
@@ -730,14 +726,21 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                 # studsubjnote is also called when studsubjnote is_created, save_to_log is called in update_studsubjnote
                 if studsubj and (note or file):
                     note_status = upload_dict.get('note_status')
-                    intern_schoolbase_pk = upload_dict.get('intern_schoolbase_pk')
-                    schoolbase = sch_mod.Schoolbase.objects.get_or_none(pk=intern_schoolbase_pk)
+
+        # if is_internal_note: get schoolbase of request_user, to be put in  intern_schoolbase
+                    is_internal_note = upload_dict.get('is_internal_note', False)
+
+                    logger.debug('is_internal_note: ' + str(is_internal_note))
+                    intern_schoolbase = None
+                    if is_internal_note:
+                        intern_schoolbase = request.user.schoolbase
+                    logger.debug('is_internal_note: ' + str(is_internal_note))
 
                     studsubjnote = stud_mod.Studentsubjectnote(
                         studentsubject=studsubj,
-                        intern_schoolbase=schoolbase,
                         note=note,
-                        note_status=note_status
+                        note_status=note_status,
+                        intern_schoolbase=intern_schoolbase
                     )
                     logger.debug('studsubjnote.note: ' + str(studsubjnote.note))
                     studsubjnote.save(request=request)
@@ -745,11 +748,6 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                     logger.debug('file_type: ' + str(file_type))
                     logger.debug('file_name: ' + str(file_name))
                     logger.debug('file: ' + str(file))
-
-                    # put note_status also in studentsubject
-                    studsubj = studsubjnote.studentsubject
-                    studsubj.note_status = note_status
-                    studsubj.save()
 
                     if studsubjnote and file:
                         instance = stud_mod.Noteattachment(
@@ -783,12 +781,6 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                 """
 # 9. return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=LazyEncoder))
-
-
-
-
-
-
 
 
 @method_decorator([login_required], name='dispatch')
@@ -1366,8 +1358,6 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
         "studsubj.pok_auth2by_id AS pok_auth2_id, SUBSTRING(pok_auth2.username, 7) AS pok_auth2_usr, pok_auth2.modified_at AS pok_auth2_modat,",
         "studsubj.pok_published_id AS pok_publ_id, pok_published.modifiedat AS pok_publ_modat,",
 
-        "studsubj.has_schoolnotes AS note_has_schoolnotes, studsubj.has_inspnotes AS note_has_inspnotes , studsubj.note_status,",
-
         "studsubj.deleted, studsubj.modifiedby_id, studsubj.modifiedat,",
         "SUBSTRING(au.username, 7) AS modby_username",
 
@@ -1438,8 +1428,6 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
         "studsubj.pok_auth2_id, studsubj.pok_auth2_usr, studsubj.pok_auth2_modat,",
         "studsubj.pok_publ_id, studsubj.pok_publ_modat,",
 
-        "studsubj.note_has_schoolnotes, studsubj.note_has_inspnotes, studsubj.note_status,",
-
         "studsubj.deleted, studsubj.modifiedat, studsubj.modby_username",
         "FROM students_student AS st",
         "LEFT JOIN (" + sql_studsubjects + ") AS studsubj ON (studsubj.student_id = st.id)",
@@ -1496,7 +1484,7 @@ def create_studentsubjectnote_rows(upload_dict, request):  # PR2021-03-16
     # to show intern note only to user of the same school/insp: filter intern_schoolbase = requsr.schoolbase or null
     note_rows = []
     if upload_dict:
-        studsubj_pk =  upload_dict.get('studsubj_pk')
+        studsubj_pk = upload_dict.get('studsubj_pk')
         if studsubj_pk:
             requsr_intern_schoolbase_pk = request.user.schoolbase_id
             logger.debug('studsubj_pk: ' + str(studsubj_pk))
@@ -1552,6 +1540,7 @@ def create_studentsubjectnote_rows(upload_dict, request):  # PR2021-03-16
 
     return note_rows
 # - end of create_studentsubjectnote_rows
+
 
 def create_ssnote_attachment_rows(upload_dict, request):  # PR2021-03-17
     # --- create rows of notes of this studentsubject

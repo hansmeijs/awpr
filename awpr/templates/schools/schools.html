@@ -5,6 +5,7 @@
 {% block title %}{% trans 'Schools' %}{% endblock %}
 
 {% block script %}
+    <script src="{% static 'js/import210127.js' %}"></script>
     <script src="{% static 'js/schools210127.js' %}"></script>
 {% endblock %}
 
@@ -40,9 +41,11 @@
             {% include 'includes/message_noaccess.html' %}
         {% else %}
             {% include 'schools/modselectexamyear.html' %}
+            {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'schools/modselectschoolordep.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'schools/modschool.html' %}
+            {% include 'includes/moduploadawp.html' %}
 
             <div class="content_margin_top78">
     <!-- CONTENT HEADER - LOADER -->
@@ -87,6 +90,7 @@
                 data-settings_upload_url="{% url 'settings_upload_url' %}"
                 data-school_upload_url="{% url 'school_upload_url' %}"
                 data-school_import_url="{% url 'school_import_url' %}"
+                data-school_awpupload_url="{% url 'school_awpupload_url' %}"
             >
             </div>
         {% endif %}

@@ -27,6 +27,7 @@ from awpr import functions as af
 from awpr import constants as c
 from awpr import validators as av
 from awpr import menus as awpr_menu
+from awpr import downloads as dl
 
 from schools import functions as sf
 from schools import dicts as sd
@@ -60,14 +61,14 @@ def home(request):
     #logger.debug('  ==========  home ==========')
 
     # set headerbar parameters PR2018-08-06
-    _display_school = False
-    _display_dep = False
+    display_school = False
+    display_department = False
     if request.user:
-        _display_school = True
-        _display_dep = True
+        display_school = True
+        display_department = True
     _param = awpr_menu.get_headerbar_param(request, 'home', {
-        'display_school': _display_school,
-        'display_dep': _display_dep
+        'display_school': display_school,
+        'display_department': display_department
     })
     # PR2019-02-15 go to login form if user is not authenticated
     # PR2019-02-15 temporary disabled
@@ -117,15 +118,15 @@ class ExamyearListView(View):
         # don't show dep and school on page examyear
         # Note: set display_school / display_dep also in download_setting
         display_school = (request and request.user and request.user.role <= c.ROLE_008_SCHOOL)
-        display_dep = False
-        param = {'display_school': display_school, 'display_dep': display_dep}
+        display_department = False
+        param = {'display_school': display_school, 'display_dep': display_department}
         headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
 
 # - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         if request and request.user:
             request.user.set_usersetting_dict('sel_page', {'page': page})
 
-        logger.debug("???? headerbar_param: " + str(headerbar_param))
+        logger.debug("headerbar_param: " + str(headerbar_param))
 
         return render(request, 'examyears.html', headerbar_param)
 
@@ -695,6 +696,58 @@ class SchoolImportUploadData(View):  # PR2018-12-04 PR2019-08-05 PR2020-06-04
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+
+@method_decorator([login_required], name='dispatch')
+class SchoolAwpUploadView(View):  # PR2021-05-03
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+
+        files = request.FILES
+        file = files.get('file')
+        if logging_on:
+            logger.debug(' ============= SchoolAwpUploadView ============= ')
+            logger.debug('files: ' + str(files) + ' ' + str(type(files)))
+            logger.debug('file: ' + str(file) + ' ' + str(type(file)))
+
+        # function creates, deletes and updates studentsubject records of current student PR2020-11-21
+        update_wrap = {}
+
+        #<PERMIT>
+        # only users with role > student and perm_edit can change student data
+        # only school that is requsr_school can be changed
+        #   current schoolbase can be different from request.user.schoolbase (when role is insp, admin, system)
+        # only if country/examyear/school/student not locked, examyear is published and school is activated
+        has_permit = False
+        if request.user and request.user.country and request.user.schoolbase:
+            has_permit = True # (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
+        if has_permit:
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                logger.debug('upload_dict: ' + str(upload_dict))
+
+                # - get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, is_locked, \
+                examyear_published, school_activated, is_requsr_school = \
+                    dl.get_selected_examyear_school_dep_from_usersetting(request)
+
+                file_type = upload_dict.get('file_type')
+                file_name = upload_dict.get('file_name')
+                file_size = upload_dict.get('file_size')
+
+
+# 9. return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=LazyEncoder))
+# - end of SchoolAwpUploadView
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 def create_school(examyear, upload_dict, request):
     # --- create school # PR2019-07-30 PR2020-10-22

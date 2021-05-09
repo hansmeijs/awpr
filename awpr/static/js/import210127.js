@@ -43,7 +43,9 @@
 //=========  MIMP_Open  ================ PR2020-12-03 PR2021-01-12
     function MIMP_Open(import_table) {
         console.log( "===== MIMP_Open ========= ");
-        console.log( "import_table", import_table);
+        console.log( "import_table: ", import_table);
+        console.log( "mimp_loc: ", mimp_loc);
+
 
          // mimp_stored.coldefs gets value from schoolsetting_dict in i_UpdateSchoolsettingsImport(schoolsetting_dict)
 // reset all values of mimp to null, keep the keys.
@@ -357,9 +359,9 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //####################################################################
 
-//=========   HandleFiledialog   ======================
-    function HandleFiledialog(el_filedialog) { // functie wordt alleen doorlopen als file is geselecteerd
-        console.log(" ========== HandleFiledialog ===========");
+//=========   MIMP_HandleFiledialog   ======================
+    function MIMP_HandleFiledialog(el_filedialog) { // functie wordt alleen doorlopen als file is geselecteerd
+        console.log(" ========== MIMP_HandleFiledialog ===========");
 
         mimp.excel_coldefs = [];
         mimp.excel_dateformat = null;
@@ -399,24 +401,23 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 // ---  display error message when error
         let el_msg_err = document.getElementById("id_MIMP_msg_filedialog")
-    console.log("msg_err", msg_err);
-    console.log("el_msg_err", el_msg_err);
 
         el_msg_err.innerText = msg_err;
         show_hide_element(el_msg_err, (!!msg_err));
 
-        GetWorkbook(curFile);
-    }  // HandleFiledialog
+        MIMP_GetWorkbook(curFile);
+    }  // MIMP_HandleFiledialog
 
-//=========  GetWorkbook  ====================================
-    function GetWorkbook(curFile) {
-        console.log("======  GetWorkbook  =====");
+//=========  MIMP_GetWorkbook  ====================================
+    function MIMP_GetWorkbook(curFile) {
+        console.log("======  MIMP_GetWorkbook  =====");
         // curWorkbook.SheetNames = ["Sheet2", "Compleetlijst", "Sheet1"]
         // curWorkbook.Sheets = { Sheet1: {!margins: {left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0.3, …},
         //                                 !ref: "A1"
         //                                 A1: {t: "s", v: "test", r: "<t>test</t>", h: "test", w: "test"}, ... }
 
         mimp.sel_file = curFile;
+        console.log("curFile: ", curFile);
         if(curFile){
             let reader = new FileReader();
             mimp.curWorkbook = null;
@@ -441,9 +442,13 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 } else {
                     mimp.curWorkbook = XLSX.read(data, {type: rABS ? "binary" : "array"});
                 }
+
+        console.log("mimp.curWorkbook: ", mimp.curWorkbook);
     // ---  make list of worksheets in workbook
                 if (mimp.curWorkbook){
                     mimp.curWorkSheets = mimp.curWorkbook.Sheets;
+
+        console.log("mimp.curWorkSheets: ", mimp.curWorkSheets);
                     let msg_err = null
     // ---  reset el_worksheet_list.options
                     const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
@@ -512,11 +517,11 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                     el_msg_err.innerText = msg_err;
                     show_hide_element(el_msg_err, (!!msg_err));
                 }  // if (!!workbook){
-                // PR2020-04-16 debug: must be in reader.onload, will not be reached when ik HandleFiledialog
+                // PR2020-04-16 debug: must be in reader.onload, will not be reached when ik MIMP_HandleFiledialog
                 MIMP_HighlightAndDisableButtons();
             }; // reader.onload = function(event) {
         }; // if(!!mimp.selected_file){
-    }  // function GetWorkbook())
+    }  // function MIMP_GetWorkbook())
 
 //=========  MIMP_SelectWorksheet   ======================
     function MIMP_SelectWorksheet() {
@@ -626,7 +631,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         // stored_coldef: [ {awpColdef: "idnumber", caption: "ID nummer", excColdef: "ID"}, 1: ...]
         // excel_coldefs: [ {index: 10, excColdef: "ID", awpColdef: "idnumber", awpCaption: "ID nummer"}} ]
 
-        // function is called by GetWorkbook, MIMP_SelectWorksheet, MIMP_CheckboxHasheaderChanged
+        // function is called by MIMP_GetWorkbook, MIMP_SelectWorksheet, MIMP_CheckboxHasheaderChanged
         let itemlist = [];
         mimp.excel_coldefs = [];
         mimp.excel_dateformat = null;
@@ -1292,7 +1297,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         //console.log("mimp.import_table", mimp.import_table);
         //console.log("mimp.is_crosstab", mimp.is_crosstab);
 
-        // function is called by GetWorkbook, MIMP_SelectWorksheet, MIMP_CheckboxHasheaderChanged, LinkColumns, UnlinkColumns
+        // function is called by MIMP_GetWorkbook, MIMP_SelectWorksheet, MIMP_CheckboxHasheaderChanged, LinkColumns, UnlinkColumns
         // function fills mimp.linked_exc_values with excel_values of department, level, sector, subject, subjecttype
         // links same names, not after LinkColumns / UnlinkColumns
         // mimp_stored contains saved links
@@ -1304,13 +1309,14 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         const awp_colNames_dict = {import_student: ["department", "level", "sector", "profiel"],
                                    import_studentsubject: ["subject", "subjecttype"],
                                    import_permits: ["permits"],
+                                   import_awp: ["awpdata"],
                                 // TODO
                                import_subject: [],
                                import_grade: []}
         const awp_colNames_list = awp_colNames_dict[mimp.import_table];
 // skip when import_table = import_studentsubject and is_crosstab, fill lists by .... instead
 
-        if(awp_colNames_list.length){
+        if(awp_colNames_list && awp_colNames_list.length){
             for (let x = 0, awpColdef; awpColdef = awp_colNames_list[x]; x++) {
 
 // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1696,7 +1702,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         //console.log("mimp_stored.coldefs ", mimp_stored.coldefs);
         //console.log("mimp_stored.tablelist ", mimp_stored.tablelist);
         //console.log("mimp.excel_coldefs ", mimp.excel_coldefs);
-        // called by GetWorkbook, MIMP_SelectWorksheet, MIMP_CheckboxHasheaderChanged, LinkColumns, UnlinkColumns
+        // called by MIMP_GetWorkbook, MIMP_SelectWorksheet, MIMP_CheckboxHasheaderChanged, LinkColumns, UnlinkColumns
 
         // only fill tables that are in mimp_stored.tablelist
         if(mimp_stored.tablelist){
