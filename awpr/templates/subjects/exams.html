@@ -52,11 +52,10 @@
         {% if no_access %}
             {% include 'includes/message_noaccess.html' %}
         {% else %}
+            {% include 'includes/modselectexamyearordepbase.html' %}
+            {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'subjects/modexam.html' %}
             {% include 'students/modapprovegrade.html' %}
-            {% include 'schools/modselectexamyear.html' %}
-            {% include 'schools/modselectschoolordep.html' %}
-            {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'includes/modstatus.html' %}
             {% include 'includes/modnote.html' %}

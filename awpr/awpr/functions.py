@@ -464,7 +464,7 @@ def get_sel_schoolbase_instance(request, request_setting=None):  # PR2020-12-25 
 
 
 def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR2020-12-26 PR2021-05-07
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_sel_depbase_instance  -----')
         logger.debug('sel_school: ' + str(sel_school))
@@ -504,12 +504,11 @@ def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR20
                 sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=r_depbase_pk, country=requsr_country)
                 if sel_depbase_instance is not None:
                     save_sel_depbase = True
-
         if logging_on:
             logger.debug('request_depbase instance: ' + str(sel_depbase_instance))
             logger.debug('save_sel_depbase: ' + str(save_sel_depbase))
 
-# - get depbase_pk from Usersetting when tehre is no request_depbase_pk; check if request_depbase exists
+# - get depbase_pk from Usersetting when there is no request_depbase_pk; check if request_depbase exists
         if sel_depbase_instance is None:
             selected_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
             s_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
@@ -527,11 +526,11 @@ def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR20
                 sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=a_depbase_pk, country=requsr_country)
                 if sel_depbase_instance is not None:
                     save_sel_depbase = True
-
     if logging_on:
         logger.debug('sel_depbase_instance: ' + str(sel_depbase_instance))
         logger.debug('save_sel_depbase: ' + str(save_sel_depbase))
         logger.debug('allowed_depbases: ' + str(allowed_depbases))
+
     return sel_depbase_instance, save_sel_depbase, allowed_depbases
 # --- end of get_sel_depbase_instance
 

@@ -147,29 +147,28 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
         if (el_hdrbar_examyear){
-            el_hdrbar_examyear.addEventListener("click",
-                function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false );
+            el_hdrbar_examyear.addEventListener("click", function() {
+                t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response)}, false );
         }
         if (el_hdrbar_department){
-            el_hdrbar_department.addEventListener("click",
-                function() {t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false );
+            el_hdrbar_department.addEventListener("click", function() {
+                t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
         }
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
                 function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         }
 
-// ---  MSESD MOD SELECT EXAMYEAR SCHOOL DEPARTMENT ------------------------------
-        const el_MSESD_input = document.getElementById("id_MSESD_input");
-        //const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tbody_select");
-        //const el_MSESD_btn_save = document.getElementById("id_MSSSS_btn_save");
-        if (el_MSESD_input){
-            el_MSESD_input.addEventListener("keyup", function(event){
-                setTimeout(function() {t_MSESD_InputName(el_MSESD_input)}, 50)});
+// ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
+        const el_MSED_input = document.getElementById("id_MSED_input");
+        const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
+        if (el_MSED_input){
+            el_MSED_input.addEventListener("keyup", function(event){
+                setTimeout(function() {t_MSED_InputName(el_MSED_input)}, 50)});
         }
-       // if (el_MSESD_btn_save){
-       //     el_MSESD_btn_save.addEventListener("click", function() {t_MSSSS_Save(el_MSESD_btn_save, MSSSS_Response)}, false );
-       // }
+        if (el_MSED_btn_save){
+            el_MSED_btn_save.addEventListener("click", function() {t_MSED_Save(MSED_Response)}, false);
+        }
 
 // ---  MSSS MOD SELECT SCHOOL / SUBJECT / STUDENT ------------------------------
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
@@ -2659,37 +2658,26 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
     }  // function ResetFilterRows
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-// +++++++++++++++++ MODAL SELECT EXAMYEAR, SCHOOL OR DEPARTMENT ++++++++++++++++++++
-// functions are in table.js, except for MSESD_Response
+// +++++++++++++++++ MODAL SELECT EXAMYEAR OR DEPARTMENT ++++++++++++++++++++
+// functions are in table.js, except for MSED_Response
 
-//=========  MSESD_Response  ================ PR2020-12-18 PR2021-04-25
-    function MSESD_Response(tblName, pk_int) {
-        console.log( "===== MSESD_Response ========= ");
-        console.log( "tblName", tblName);
-        console.log( "pk_int", pk_int);
+//=========  MSED_Response  ================ PR2020-12-18  PR2021-05-10
+    function MSED_Response(new_setting) {
+        //console.log( "===== MSED_Response ========= ");
 
-// ---  upload new setting
-        let new_setting = {page: "page_grade"};
-        if (tblName === "school") {
-            new_setting.selected_pk = {sel_schoolbase_pk: pk_int, sel_depbase_pk: null}
-        } else if (tblName === "examyear") {
-            new_setting.selected_pk = {sel_examyear_pk: pk_int}
-        } else {
-
-            new_setting.selected_pk = {sel_depbase_pk: pk_int}
-        }
-        const datalist_request = {setting: new_setting};
-
-// also retrieve the tables that have been changed because of the change in school / dep
-        datalist_request.level_rows = {get: true};
-        datalist_request.sector_rows = {get: true};
-        datalist_request.student_rows = {get: true};
-        datalist_request.studentsubject_rows = {get: true};
-        datalist_request.grade_rows = {get: true};
-
+// ---  upload new selected_pk
+// also retrieve the tables that have been changed because of the change in examyear / dep
+        const datalist_request = {
+                setting: new_setting,
+                level_rows: {get: true},
+                sector_rows: {get: true},
+                student_rows: {get: true},
+                studentsubject_rows: {get: true},
+                grade_rows: {get: true}
+            };
         DatalistDownload(datalist_request);
 
-    }  // MSESD_Response
+    }  // MSED_Response
 
 //=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05
     function MSSSS_Response(tblName, selected_pk, selected_code, selected_name) {

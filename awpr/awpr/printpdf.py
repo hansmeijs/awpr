@@ -53,7 +53,7 @@ def draw_exam(canvas, sel_exam_instance, user_lang):  # PR2021-05-07
     examperiod = sel_exam_instance.examperiod
     examtype = sel_exam_instance.examtype
 
-    amount = sel_exam_instance.amount
+    amount = sel_exam_instance.amount if sel_exam_instance.amount else 0
     amount_str = str(amount) if amount else '---'
 
     maxscore_str = str(sel_exam_instance.maxscore) if sel_exam_instance.maxscore else '---'
@@ -110,8 +110,9 @@ def draw_exam(canvas, sel_exam_instance, user_lang):  # PR2021-05-07
 
 # create 2 frames per column: 1 for label and 1 for values
         first_q_number_on_page = (page_number -1) * max_questions_per_page
-        logger.error('first_q_number_on_page: ' + str(first_q_number_on_page))
-        logger.error('amount: ' + str(amount))
+        if logging_on:
+            logger.debug('first_q_number_on_page: ' + str(first_q_number_on_page))
+            logger.debug('amount: ' + str(amount))
         if first_q_number_on_page < amount:
             # go to new page
             if page_number > 1:
@@ -123,8 +124,11 @@ def draw_exam(canvas, sel_exam_instance, user_lang):  # PR2021-05-07
 
 
 def write_page(canvas, header_list, data_list, question_list, assignment_dict, amount, page_number, page_count, max_rows_per_page, last_modified_text):
+    # PR2021-05-10
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- write_page -----')
 
-    #logger.debug('----- write_page -----')
 # +++ write header block
     canvas.setLineWidth(.5)
     # corners of the rectangle

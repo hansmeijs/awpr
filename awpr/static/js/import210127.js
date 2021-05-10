@@ -1260,7 +1260,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             }
             msg_text = (list_length > 1) ? mimp_loc.link_The_columns : mimp_loc.link_The_column;
             msg_text += field_names;
-            msg_text += (list_length > 1) ? mimp_loc.link_mustbelinked_plural : mimp_loc.mimp_loc.link_mustbelinked_single;
+            msg_text += (list_length > 1) ? mimp_loc.link_mustbelinked_plural : mimp_loc.link_mustbelinked_single;
         }
         document.getElementById("id_MIMP_msg_selectunique").innerText = msg_text;
 

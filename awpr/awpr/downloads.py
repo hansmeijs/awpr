@@ -116,6 +116,11 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['subject_rows'] = sj_vw.create_subject_rows(new_setting_dict, {}, None)
 # ----- exams
                 if datalist_request.get('exam_rows'):
+
+                    if logging_on:
+                        logger.debug(' ----- got osj_vw.create_exam_rows ----- ')
+                        logger.debug('new_setting_dict: ' + str(new_setting_dict))
+
                     datalists['exam_rows'] = sj_vw.create_exam_rows(new_setting_dict, {}, None)
 # ----- students
                 if datalist_request.get('student_rows'):
@@ -176,7 +181,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     if request_setting is None:
         request_setting = {}
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- download_setting ----- ')
         logger.debug('request_setting: ' + str(request_setting) )
@@ -307,14 +312,13 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
 # ===== DEPBASE =======================
     # every user can change depbase, if in .sel_school_depbases and in user allowed_depbases
 
-    # - get saved_examperiod_int
-    saved_depbase_pk_int = selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK)
-
-    # - check if there is a new examperiod_pk in request_setting
-    request_depbase_pk_int = af.get_dict_value(request_setting,(c.KEY_SELECTED_PK, c.KEY_SEL_DEPBASE_PK))
-
+# - get sel_depbase_instance from saved_setting or request_setting or first allowed, check if allowed
     sel_depbase_instance, sel_depbase_save, allowed_depbases = \
         af.get_sel_depbase_instance(sel_school, request, request_setting)
+
+    if logging_on:
+        logger.debug('sel_depbase_instance: ' + str(sel_depbase_instance))
+        logger.debug('sel_depbase_instance.pk: ' + str(sel_depbase_instance.pk))
 
     permit_dict['allowed_depbases'] = allowed_depbases
     allowed_depbases_len = len(allowed_depbases)
@@ -334,7 +338,8 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
         selected_pk_dict[c.KEY_SEL_DEPBASE_PK] = sel_depbase_instance.pk
         selected_pk_dict_has_changed = True
         #logger.debug('selected_pk_dict_has_changed: ' + str(selected_pk_dict[c.KEY_SEL_DEPBASE_PK]))
-    # - add info to setting_dict, will be sent back to client
+
+# - add info to setting_dict, will be sent back to client
     if sel_depbase_instance:
         setting_dict[c.KEY_SEL_DEPBASE_PK] = sel_depbase_instance.pk
         setting_dict['sel_depbase_code'] = sel_depbase_instance.code if sel_depbase_instance.code else None
@@ -347,8 +352,6 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
             setting_dict['sel_dep_level_req'] = sel_department_instance.level_req
             setting_dict['sel_dep_has_profiel'] = sel_department_instance.has_profiel
             # setting_dict['sel_dep_sector_req'] = sel_department_instance.sector_req
-
-        #logger.debug('>>>>>>>>>> setting_dict[sel_department_abbrev]: ' + str(setting_dict['sel_department_abbrev']))
 
 # ===== EXAM PERIOD =======================
 # every user can change exam period
@@ -524,6 +527,9 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     # logger.debug('setting_dict: ' + str(setting_dict))
     """
 
+    if logging_on:
+        logger.debug('setting_dict: ' + str(setting_dict))
+        logger.debug('......................... ')
     return setting_dict, permit_dict, awp_messages, sel_examyear_instance, sel_schoolbase_instance, sel_depbase_instance
 # - end of download_setting
 

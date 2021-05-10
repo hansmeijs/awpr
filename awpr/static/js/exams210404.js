@@ -94,22 +94,34 @@ document.addEventListener("DOMContentLoaded", function() {
                 btn.addEventListener("click", function() {HandleBtnSelect(data_btn)}, false );
             };
         };
+
 // ---  HEADER BAR ------------------------------------
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
         if (el_hdrbar_examyear){
-            el_hdrbar_examyear.addEventListener("click",
-                function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false )
-        };
+            el_hdrbar_examyear.addEventListener("click", function() {
+                t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response)}, false );
+        }
         if (el_hdrbar_department){
-            el_hdrbar_department.addEventListener("click",
-                function() {t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false )
-        };
+            el_hdrbar_department.addEventListener("click", function() {
+                t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
+        }
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSESD_Open(loc, "school", school_map, setting_dict, permit_dict, MSESD_Response)}, false )
-        };
+                function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+        }
+
+// ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
+        const el_MSED_input = document.getElementById("id_MSED_input");
+        const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
+        if (el_MSED_input){
+            el_MSED_input.addEventListener("keyup", function(event){
+                setTimeout(function() {t_MSED_InputName(el_MSED_input)}, 50)});
+        }
+        if (el_MSED_btn_save){
+            el_MSED_btn_save.addEventListener("click", function() {t_MSED_Save(MSED_Response)}, false);
+        }
 
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_examperiod = document.getElementById("id_SBR_select_period");
@@ -335,8 +347,6 @@ document.addEventListener("DOMContentLoaded", function() {
         let el_submenu = document.getElementById("id_submenu")
         AddSubmenuButton(el_submenu, loc.Add_exam, function() {MEX_Open()});
         AddSubmenuButton(el_submenu, loc.Delete_exam, function() {ModConfirmOpen("delete")});
-        AddSubmenuButton(el_submenu, "loc.Print_exam", function() {ModConfirmOpen("print_exam")});
-        AddSubmenuButton(el_submenu, "loc.Download_json", function() {ModConfirmOpen("deleteXX")});
         AddSubmenuButton(el_submenu, loc.Publish_exam, function() {ModConfirmOpen("deleteXX")});
         //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A_form, null, "id_submenu_download_ex2a", url_grade_download_ex2a, true);  // true = download
         //if (permit.approve_grade){
@@ -1223,9 +1233,9 @@ document.addEventListener("DOMContentLoaded", function() {
         mod_MEX_dict = {
             sel_btn: "tab_0",
             examyear_pk: setting_dict.sel_examyear_pk,
+            depbase_pk: setting_dict.sel_depbase_pk,
             examperiod: setting_dict.sel_examperiod,
             examtype: setting_dict.sel_examtype,
-            depbase_pk: setting_dict.sel_depbase_pk,
             amount : 0,
             maxscore: 0,
             assignment: {}
@@ -1328,11 +1338,12 @@ document.addEventListener("DOMContentLoaded", function() {
             const upload_dict = {
                 table: 'exam',
                 mode: ((mod_MEX_dict.is_addnew) ? "create" : "update"),
+                depbase_pk: mod_MEX_dict.depbase_pk,
                 examyear_pk: mod_MEX_dict.examyear_pk,
                 examperiod: mod_MEX_dict.examperiod,
-                examtype: mod_MEX_dict.examtype,
                 // only 1 depbase, get it from setting_dict
                 depbases: mod_MEX_dict.depbase_pk.toString(),
+                examtype: mod_MEX_dict.examtype,
                 exam_pk: mod_MEX_dict.exam_pk,
                 subject_pk: mod_MEX_dict.subject_pk,
                 subject_code: mod_MEX_dict.subject_code
@@ -1904,7 +1915,7 @@ document.addEventListener("DOMContentLoaded", function() {
     function ModConfirmOpen(mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "print_exam", "delete"
-
+        // TODO print_exam not in use: remove, add 'publish'
         if(permit_dict.crud_exam){
 
     // ---  get selected_pk
@@ -2983,34 +2994,23 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
     }  // function ResetFilterRows
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-// +++++++++++++++++ MODAL SELECT EXAMYEAR, SCHOOL OR DEPARTMENT ++++++++++++++++++++
-// functions are in table.js, except for MSESD_Response
+// +++++++++++++++++ MODAL SELECT EXAMYEAR OR DEPARTMENT ++++++++++++++++++++
+// functions are in table.js, except for MSED_Response
 
-//=========  MSESD_Response  ================ PR2020-12-18
-    function MSESD_Response(tblName, pk_int) {
-        console.log( "===== MSESD_Response ========= ");
-        console.log( "tblName", tblName);
-        console.log( "pk_int", pk_int);
+//=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10
+    function MSED_Response(new_setting) {
+        //console.log( "===== MSED_Response ========= ");
 
-// ---  upload new setting
-        let new_setting = {page: "page_exams"};
-        if (tblName === "school") {
-            new_setting.selected_pk = {sel_schoolbase_pk: pk_int, sel_depbase_pk: null}
-        } else {
-            new_setting.selected_pk = {sel_depbase_pk: pk_int}
-        }
-        const datalist_request = {setting: new_setting};
-
-// also retrieve the tables that have been changed because of the change in school / dep
-        datalist_request.level_rows = {get: true};
-        datalist_request.sector_rows = {get: true};
-        datalist_request.student_rows = {get: true};
-        datalist_request.studentsubject_rows = {get: true};
-        datalist_request.grade_rows = {get: true};
-
+// ---  upload new selected_pk
+// also retrieve the tables that have been changed because of the change in examyear / dep
+        const datalist_request = {
+                setting: new_setting,
+                exam_rows: {get: true},
+                subject_rows: {get: true}
+            };
         DatalistDownload(datalist_request);
 
-    }  // MSESD_Response
+    }  // MSED_Response
 
 //=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05
     function MSSSS_Response(tblName, selected_pk, selected_code, selected_name) {
@@ -3025,6 +3025,25 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         const selected_pk_dict = {sel_student_pk: selected_pk};
         selected_pk_dict["sel_" + tblName + "_pk"] = selected_pk;
         let new_selected_btn = null;
+
+        if (tblName === "school") {
+            // not enabled on this page
+        } else {
+            UploadSettings ({selected_pk: selected_pk_dict}, url_settings_upload);
+            if (new_selected_btn) {
+        // change selected_button
+                HandleBtnSelect(new_selected_btn, true)  // true = skip_upload
+                // also calls: FillTblRows(), MSSSS_display_in_sbr(), UpdateHeader()
+            }  else {
+        // fill datatable
+                FillTblRows();
+                MSSSS_display_in_sbr()
+        // --- update header text - comes after MSSSS_display_in_sbr
+                UpdateHeaderLeft();
+            }
+        }
+
+
         if (tblName === "subject") {
             setting_dict.sel_subject_pk = selected_pk;
     // reset selected student when subject is selected, in setting_dict and upload_dict

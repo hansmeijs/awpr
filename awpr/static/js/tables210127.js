@@ -7,24 +7,21 @@
     const cls_selected = "tsa_tr_selected";
     const cls_bc_transparent = "tsa_bc_transparent";
 
-// ++++++++++++  MODAL SELECT EXAMYEAR SCHOOL OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
+// ++++++++++++  MODAL SELECT EXAMYEAR OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
 
-//=========  t_MSESD_Open  ================ PR2020-10-27 PR2020-12-25 PR2021-04-23
-    function t_MSESD_Open(loc, tblName, data_map, setting_dict, permit_dict, MSESD_Response) {
-        console.log( "===== t_MSESD_Open ========= ", tblName);
-        //console.log( "setting_dict", setting_dict);
-        //console.log( "permit_dict", permit_dict);
+//=========  t_MSED_Open  ================ PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10
+    function t_MSED_Open(loc, tblName, data_map, setting_dict, permit_dict, MSED_Response) {
+        console.log( "===== t_MSED_Open ========= ", tblName);
+        console.log( "setting_dict", setting_dict);
+        console.log( "permit_dict", permit_dict);
 
         if (!isEmpty(loc)) {
             let may_open_modal = false, selected_pk = null;
             if (tblName === "examyear") {
                 may_open_modal = permit_dict.may_select_examyear;
                 selected_pk = setting_dict.sel_examyear_pk;
-            } else if (tblName === "school") {
-                //<PERMIT>
-                may_open_modal = permit_dict.may_select_school;
-                selected_pk = setting_dict.sel_schoolbase_pk;
-            } else  if (tblName === "department") {
+
+            } else if (tblName === "department") {
                 const allowed_depbases_count = (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
                 may_open_modal = (allowed_depbases_count > 1);
                 may_open_modal = permit_dict.may_select_department;
@@ -34,61 +31,95 @@
             //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
             if (may_open_modal) {
 // ---  fill select table
-                //const data_map = (tblName === "school") ? school_map : department_map ;
-                t_MSESD_FillSelectTable(loc, tblName, data_map, permit_dict, MSESD_Response, selected_pk);
+                t_MSED_FillSelectTable(loc, tblName, data_map, permit_dict, MSED_Response, selected_pk);
+// - reset input box
+                const el_MSED_input = document.getElementById("id_MSED_input");
+                el_MSED_input.value = null;
+// store tblName and selected page in el_MSED_input
+                el_MSED_input.setAttribute("data-table", tblName)
+                el_MSED_input.setAttribute("data-page", setting_dict.sel_page)
+
 // ---  set focus to input element
-                const elMSESD_input = document.getElementById("id_MSESD_input");
-                set_focus_on_el_with_timeout(elMSESD_input, 50);
+                set_focus_on_el_with_timeout(el_MSED_input, 50);
 // ---  show modal
-                $("#id_mod_select_school_or_dep").modal({backdrop: true});
+                $("#id_mod_select_examyear_or_depbase").modal({backdrop: true});
             }
         }
-    }  // t_MSESD_Open
+    }  // t_MSED_Open
 
-//=========  t_MSESD_InputName  ================ PR2021-04-27
-    function t_MSESD_InputName(el_input) {
-        console.log( "===== t_MSESD_InputName  ========= ");
+    //=========  t_MSED_Save  ================ PR2021-05-10
+    function t_MSED_Save(MSED_Response, tblRow) {
+        console.log("===  t_MSED_Save =========");
+    // --- put tblName, sel_pk and value in MSED_Response, MSED_Response handles uploading
+
+        const el_MSED_input = document.getElementById("id_MSED_input");
+        const tblName = get_attr_from_el(el_MSED_input, "data-table");
+        const sel_page = get_attr_from_el(el_MSED_input, "data-page");
+
+        // if tblRow exists: fucntion is called by selected tblRow, otherwise by save button
+        let selected_pk_int = null;
+        if(tblRow){
+            selected_pk_int = get_attr_from_el_int(tblRow, "data-pk")
+        } else if(el_MSED_input){
+            selected_pk_int = get_attr_from_el_int(el_MSED_input, "data-pk");
+        }
+// ---  upload new selected_pk
+        const selected_pk_dict = {}
+        if (tblName === "examyear") {
+            selected_pk_dict.sel_examyear_pk = selected_pk_int;
+        } else if (tblName === "department") {
+            selected_pk_dict.sel_depbase_pk = selected_pk_int;
+        }
+        const new_setting = {page: sel_page, selected_pk: selected_pk_dict};
+        MSED_Response(new_setting)
+
+// hide modal
+        $("#id_mod_select_examyear_or_depbase").modal("hide");
+
+    }  // t_MMSED_Save
+
+//=========  t_MSED_InputName  ================ PR2021-04-27 PR2021-05-10
+    function t_MSED_InputName(el_input) {
+        //console.log( "===== t_MSED_InputName  ========= ");
 
         if(el_input){
 // ---  filter rows in table select_school
-            const filter_dict = t_MSESD_Filter_SelectRows(el_input.value);
-            console.log( "filter_dict", filter_dict);
-// ---  if filter results have only one school: put selected school in el_MUA_schoolname
+            const filter_dict = t_MSED_Filter_SelectRows(el_input.value);
+            //console.log( "filter_dict", filter_dict);
+// ---  if filter results have only one item: make it selected_pk
             const selected_pk = Number(filter_dict.selected_pk);
             if (selected_pk) {
                 el_input.value = filter_dict.selected_value
-    // ---  put pk of selected school in mod_MUA_dict
-                //mod_MUA_dict.user_schoolbase_pk = selected_pk;
-                //mod_MUA_dict.user_schoolname = filter_dict.selected_value;
 
-                //MUA_headertext();
-                //MUA_ResetElements();
-    // ---  Set focus to flied 'username'
-                //el_MUA_username.focus()
-            }  // if (!!selected_pk)
+// --- store selected_pk in el_MSED_input
+                const el_MSED_input = document.getElementById("id_MSED_input");
+                el_MSED_input.setAttribute("data-pk", selected_pk)
+// ---  set focus to OK button
+                const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
+                //set_focus_on_el_with_timeout(el_MSED_btn_save, 50);
+                el_MSED_btn_save.focus()
+            };
         }
-    }; // t_MSESD_InputName
+    }; // t_MSED_InputName
 
-//=========  t_MSESD_FillSelectTable  ================ PR2020-08-21 PR2020-12-18
-    function t_MSESD_FillSelectTable(loc, tblName, data_map, permit_dict, MSESD_Response, selected_pk) {
-        console.log( "===== t_MSESD_FillSelectTable ========= ");
+
+//=========  t_MSED_FillSelectTable  ================ PR2020-08-21 PR2020-12-18 PR2021-05-10
+    function t_MSED_FillSelectTable(loc, tblName, data_map, permit_dict, MSED_Response, selected_pk) {
+        //console.log( "===== t_MSED_FillSelectTable ========= ");
 
 // set header text
         const header_text = (tblName === "examyear") ? loc.Select_examyear :
-                            (tblName === "school") ? loc.Select_school :
                             (tblName === "department") ? loc.Select_department : null;
-        document.getElementById("id_MSESD_header_text").innerText = header_text;
+        document.getElementById("id_MSED_header_text").innerText = header_text;
 
-        const tblBody_select = document.getElementById("id_MSESD_tblBody_select");
+        const tblBody_select = document.getElementById("id_MSED_tblBody_select");
         tblBody_select.innerText = null;
 
 // --- loop through data_map
-        console.log( "data_map", data_map);
         if(data_map){
             for (const [map_id, map_dict] of data_map.entries()) {
                 const pk_int = (tblName === "examyear") ? map_dict.examyear_id :
-                                    (tblName === "school") ? map_dict.base_id :
-                                    (tblName === "department") ? map_dict.base_id : null;
+                               (tblName === "department") ? map_dict.base_id : null;
 
                 let code_value = "---";
                 const locked = (map_dict.locked) ? map_dict.locked : false;
@@ -96,10 +127,6 @@
 
                 if(tblName === "examyear") {
                     code_value = (map_dict.examyear_code) ? map_dict.examyear_code : "---";
-                } else if(tblName === "school") {
-                    const code = (map_dict.sb_code) ? map_dict.sb_code : "---";
-                    const name = (map_dict.abbrev) ? map_dict.abbrev : "---";
-                    code_value = code + " - " + name;
                 } else if(tblName === "department") {
                     code_value = (map_dict.base_code) ? map_dict.base_code : "---"
                 }
@@ -113,29 +140,32 @@
                     }
                 }
                 if(!skip_row){
-                    t_MSESD_CreateSelectRow(loc, tblName, tblBody_select, pk_int, code_value, activated, locked, MSESD_Response, selected_pk);
+                    t_MSED_CreateSelectRow(loc, tblName, tblBody_select, pk_int, code_value, activated, locked, MSED_Response, selected_pk);
                 }
             };
         }  // if(!!data_map)
         const row_count = (tblBody_select.rows) ? tblBody_select.rows.length : 0;
         if(!row_count){
-            const caption_none = (tblName === "school") ? loc.No_schools : loc.No_departments ;
-            t_MSESD_CreateSelectRow(loc, tblName, tblBody_select, null, caption_none, false, false, MSESD_Response, selected_pk);
+            const caption_none = (tblName === "examyear") ? loc.No_examyears :
+                                 (tblName === "department") ? loc.No_departments : null;
+            t_MSED_CreateSelectRow(loc, tblName, tblBody_select, null, caption_none, false, false, MSED_Response, selected_pk);
         }
-    }  // t_MSESD_FillSelectTable
+    }  // t_MSED_FillSelectTable
 
-//=========  t_MSESD_CreateSelectRow  ================ PR2020-10-27 PR2020-12-18
-    function t_MSESD_CreateSelectRow(loc, tblName, tblBody_select, pk_int, code_value, activated, locked, MSESD_Response, selected_pk) {
-        console.log( "===== t_MSESD_CreateSelectRow ========= ");
+//=========  t_MSED_CreateSelectRow  ================ PR2020-10-27 PR2020-12-18 PR2021-05-10
+    function t_MSED_CreateSelectRow(loc, tblName, tblBody_select, pk_int, code_value, activated, locked, MSED_Response, selected_pk) {
+        //console.log( "===== t_MSED_CreateSelectRow ========= ");
 
         const is_selected_pk = (selected_pk != null && pk_int === selected_pk)
+
 // ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
         let tblRow = tblBody_select.insertRow(-1);
         tblRow.setAttribute("data-pk", pk_int);
-        //tblRow.setAttribute("data-value", code_value);
+        tblRow.setAttribute("data-value", code_value);  // used for filtering
+
 // ---  add EventListener to tblRow
         if(pk_int){
-            tblRow.addEventListener("click", function() {t_MSSD_SelectItem(tblName, tblRow, MSESD_Response)}, false )
+            tblRow.addEventListener("click", function() { t_MSED_Save(MSED_Response, tblRow) }, false )
 // ---  add hover to tblRow
             add_hover(tblRow);
 // ---  highlight clicked row
@@ -143,58 +173,48 @@
         }
 // ---  add first td to tblRow.
         let td = tblRow.insertCell(-1);
+
 // --- add a element to td., necessary to get same structure as item_table, used for filtering
         const col_width = (tblName === "examyear") ? "tw_240" :
-                            (tblName === "school") ? "tw_280" :
-                            (tblName === "department") ? "tw_280" : null;
+                          (tblName === "department") ? "tw_280" : null;
         let el_div = document.createElement("div");
             el_div.innerText = code_value;
             el_div.classList.add(col_width, "px-2")
         td.appendChild(el_div);
 
 // --- add second td to tblRow with icon locked, published or activated.
-        td = tblRow.insertCell(-1);
-        el_div = document.createElement("div");
-            const class_locked = (locked) ? "appr_2_6" : (activated) ? "appr_0_1" : "appr_0_0";
-            el_div.classList.add("tw_032", class_locked)
-            el_div.title = (locked) ? loc.This_school_is_locked : (activated) ? loc.This_school_is_activated : "";
-        td.appendChild(el_div);
-
-    }  // t_MSESD_CreateSelectRow
-
-//=========  t_MSSD_SelectItem  ================ PR2020-12-18
-    function t_MSSD_SelectItem(tblName, tblRow, MSESD_Response) {
-        //console.log( "===== t_MSSD_SelectItem ========= ");
-        if(tblRow) {
-// ---  get pk from id of select_tblRow
-            let pk_int = get_attr_from_el_int(tblRow, "data-pk")
-            MSESD_Response(tblName, pk_int)
-            $("#id_mod_select_school_or_dep").modal("hide");
+        if  (tblName === "examyear") {
+            td = tblRow.insertCell(-1);
+            el_div = document.createElement("div");
+                const class_locked = (locked) ? "appr_2_6" : (activated) ? "appr_0_1" : "appr_0_0";
+                el_div.classList.add("tw_032", class_locked)
+                el_div.title = (locked) ? loc.This_school_is_locked : (activated) ? loc.This_school_is_activated : "";
+            td.appendChild(el_div);
         }
-    }  // t_MSSD_SelectItem
+    }  // t_MSED_CreateSelectRow
 
 
-//========= t_MSESD_Filter_SelectRows  ======== PR2021-04-27
-    function t_MSESD_Filter_SelectRows(filter_text) {
-        console.log( "===== t_MSESD_Filter_SelectRows  ========= ");
-        console.log( "filter_text: <" + filter_text + ">");
+//========= t_MSED_Filter_SelectRows  ======== PR2021-04-27
+    function t_MSED_Filter_SelectRows(filter_text) {
+        //console.log( "===== t_MSED_Filter_SelectRows  ========= ");
+        //console.log( "filter_text: <" + filter_text + ">");
         const filter_text_lower = (filter_text) ? filter_text.toLowerCase() : "";
         let has_selection = false, has_multiple = false;
         let sel_value = null, sel_pk = null, sel_mapid = null;
         let row_count = 0;
-        console.log( "filter_text_lower: <" + filter_text_lower + ">");
+        //console.log( "filter_text_lower: <" + filter_text_lower + ">");
 
-        let tblBody_select = document.getElementById("id_MSESD_tblBody_select");
+        let tblBody_select = document.getElementById("id_MSED_tblBody_select");
         for (let i = 0, tblRow; tblRow = tblBody_select.rows[i]; i++) {
             if (tblRow){
                 let hide_row = false
 // ---  show all rows if filter_text = ""
                 if (filter_text_lower){
                     const data_value = get_attr_from_el(tblRow, "data-value")
-        console.log( "data_value: <" + data_value + ">");
+        //console.log( "data_value: <" + data_value + ">");
 // ---  show row if filter_text_lower is found in data_value, hide when data_value is blank
                     hide_row = (data_value) ? hide_row = (!data_value.toLowerCase().includes(filter_text_lower)) : true;
-        console.log( "hide_row: <" + hide_row + ">");
+        //console.log( "hide_row: <" + hide_row + ">");
                 };
                 if (hide_row) {
                     tblRow.classList.add(cls_hide)
@@ -218,7 +238,7 @@
             sel_mapid = null;
         }
         return {selected_pk: sel_pk, selected_value: sel_value, selected_mapid: sel_mapid};
-    }; // t_MSESD_Filter_SelectRows
+    }; // t_MSED_Filter_SelectRows
 
 // ++++++++++++  END OF MODAL SELECT SCHOOL OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
 

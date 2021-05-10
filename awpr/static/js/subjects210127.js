@@ -123,11 +123,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
         if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click",
-                function() {t_MSESD_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSESD_Response)}, false );
+                function() {t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response)}, false );
         }
         if (el_hdrbar_department){
             el_hdrbar_department.addEventListener("click",
-                function() {t_MSESD_Open(loc, "department", department_map, setting_dict, permit_dict, MSESD_Response)}, false );
+                function() {t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
         }
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MOD SELECT EXAM YEAR ------------------------------------
         let el_MSEY_tblBody_select = document.getElementById("id_MSEY_tblBody_select");
 // ---  MOD SELECT SCHOOL OR DEPARTMENT ------------------------------------
-        let el_ModSelSchOrDep_tblBody_select = document.getElementById("id_MSESD_tblBody_select");
+        let el_ModSelSchOrDep_tblBody_select = document.getElementById("id_MSED_tblBody_select");
 
 // ---  MOD SELECT SCHOOL ------------------------------------
         let el_ModSelect_header = document.getElementById("id_ModSelect_header");
@@ -620,32 +620,24 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // UpdateField
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-// +++++++++++++++++ MODAL SELECT EXAMYEAR, SCHOOL OR DEPARTMENT ++++++++++++++++++++
-// functions are in table.js, except for MSESD_Response
+// +++++++++++++++++ MODAL SELECT EXAMYEAR OR OR DEPARTMENT ++++++++++++++++++++
+// functions are in table.js, except for MSED_Response
 
-//=========  MSESD_Response  ================ PR2020-12-18
-    function MSESD_Response(tblName, pk_int) {
-        console.log( "===== MSESD_Response ========= ");
-        console.log( "tblName", tblName);
-        console.log( "pk_int", pk_int);
+//=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10
+    function MSED_Response(new_setting) {
+        //console.log( "===== MSED_Response ========= ");
 
-// ---  upload new setting
-        let new_setting = {page: "page_grade"};
-        if (tblName === "school") {
-            new_setting.selected_pk = {sel_schoolbase_pk: pk_int, sel_depbase_pk: null}
-        } else {
-            new_setting.selected_pk = {sel_depbase_pk: pk_int}
-        }
-        const datalist_request = {setting: new_setting};
-
-// also retrieve the tables that have been changed because of the change in school / dep
-        datalist_request.student_rows = {get: true};
-        datalist_request.studentsubject_rows = {get: true};
-        datalist_request.grade_rows = {get: true};
-
+// ---  upload new selected_pk
+// also retrieve the tables that have been changed because of the change in examyear / dep
+        const datalist_request = {
+                setting: new_setting,
+                student_rows: {get: true},
+                studentsubject_rows: {get: true},
+                grade_rows: {get: true}
+            };
         DatalistDownload(datalist_request);
 
-    }  // MSESD_Response
+    }  // MSED_Response
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // +++++++++++++++++ MODAL SELECT  ++++++++++++++++++++++++++++
@@ -2143,7 +2135,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  fill select table
             ModSelSchOrDep_FillSelectTable(tblName, 0);  // 0 = selected_pk
 // ---  show modal
-            $("#id_mod_select_school_or_dep").modal({backdrop: true});
+            $("#id_mod_select_examyear_or_depbase").modal({backdrop: true});
             }
     }  // ModSelSchOrDep_Open
 
@@ -2163,7 +2155,7 @@ document.addEventListener('DOMContentLoaded', function() {
         DatalistDownload(datalist_request);
 
 // hide modal
-        $("#id_mod_select_school_or_dep").modal("hide");
+        $("#id_mod_select_examyear_or_depbase").modal("hide");
 
     }  // ModSelSchOrDep_Save
 
@@ -2194,7 +2186,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "===== ModSelSchOrDep_FillSelectTable ========= ");
 
         const header_text = (tblName === "school") ? loc.Select_school :  loc.Select_department ;
-        document.getElementById("id_MSESD_header_text").innerText = header_text;
+        document.getElementById("id_MSED_header_text").innerText = header_text;
 
         const caption_none = (tblName === "school") ? loc.No_schools :  loc.No_departments ;
         const tblBody_select = el_ModSelSchOrDep_tblBody_select;

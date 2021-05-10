@@ -502,12 +502,12 @@ class ExamUploadView(View):
 # add edit permit TODO
         has_permit = False
         if request.user and request.user.country:
-            permit_list =  request.user.permit_list('page_exams')
+            permit_list = request.user.permit_list('page_exams')
             if permit_list:
-                has_permit =  'crud_exam' in permit_list
+                has_permit = 'crud_exam' in permit_list
             if logging_on:
-                logger.debug('permit_list ' + str(permit_list))
-                logger.debug('has_permit ' + str(has_permit))
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
 
         if has_permit:
             req_user = request.user
@@ -527,15 +527,13 @@ class ExamUploadView(View):
                 # don't get it from usersettings, get it from upload_dict instead
                 mode = upload_dict.get('mode')
                 examyear_pk = upload_dict.get('examyear_pk')
+                depbase_pk = upload_dict.get('depbase_pk')
+                examperiod = upload_dict.get('examperiod')
                 exam_pk = upload_dict.get('exam_pk')
                 subject_pk = upload_dict.get('subject_pk')
 
                 if logging_on:
-                    logger.debug('upload_dict:    ' + str(upload_dict))
-                    logger.debug('mode:    ' + str(mode))
-                    logger.debug('examyear_pk:    ' + str(examyear_pk))
-                    logger.debug('exam_pk:    ' + str(exam_pk))
-                    logger.debug('subject_pk:    ' + str(subject_pk))
+                    logger.debug('upload_dict: ' + str(upload_dict))
 
 # - get examyear
                 examyear = sch_mod.Examyear.objects.get_or_none(
@@ -549,7 +547,7 @@ class ExamUploadView(View):
                 )
 
                 if logging_on:
-                    logger.debug('subject: ' + str(subject))
+                    logger.debug('subject:     ' + str(subject))
 
 # +++++ Create new instance if is_create:
                 if mode == 'create':
@@ -574,9 +572,16 @@ class ExamUploadView(View):
 # +++++ Update instance, also when it is created, not when is_delete
                         update_exam_instance(exam, upload_dict, error_list, examyear, request)
 
-# 6. create list of updated exam_rows
-                filter_dict = {'sel_examyear_pk': examyear.pk}
-                exam_rows = create_exam_rows(filter_dict, append_dict, exam_pk)
+# 6. create list of updated exam
+                selected_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
+                s_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
+
+                setting_dict = {'sel_examyear_pk': examyear.pk,
+                                'sel_examperiod': examperiod,
+                                'sel_depbase_pk': depbase_pk
+                                }
+
+                exam_rows = create_exam_rows(setting_dict, append_dict, exam_pk)
                 if deleted_list:
                     exam_rows.extend(deleted_list)
                 if exam_rows:
@@ -657,10 +662,10 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request):
         logger.debug(' --------- update_exam_instance -------------')
         logger.debug('upload_dict: ' + str(upload_dict))
 
-    has_changed = False
+
     if instance:
         mode = upload_dict.get('mode')
-        is_create = (mode == "create")
+
         save_changes = False
         for field, new_value in upload_dict.items():
             if logging_on:
@@ -717,6 +722,8 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request):
         if save_changes:
             try:
                 instance.save(request=request)
+                if logging_on:
+                    logger.debug('instance saved: ' + str(instance))
 
 # - save to log after saving emplhour and orderhour, also when emplhour is_created
                 #m.save_to_emplhourlog(emplhour.pk, request, False) # is_deleted=False
@@ -734,10 +741,16 @@ def create_exam_rows(setting_dict, append_dict, exam_pk):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_exam_rows ============= ')
+        logger.debug('setting_dict: ' + str(setting_dict))
 
     sel_examyear_pk = setting_dict.get('sel_examyear_pk')
     sel_examperiod = setting_dict.get('sel_examperiod')
     sel_depbase_pk = setting_dict.get('sel_depbase_pk')
+    if logging_on:
+        logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
+        logger.debug('sel_examperiod:  ' + str(sel_examperiod))
+        logger.debug('sel_depbase_pk:  ' + str(sel_depbase_pk))
+        logger.debug('exam_pk:         ' + str(exam_pk))
 
     exam_rows = []
     if sel_examyear_pk:
@@ -759,7 +772,8 @@ def create_exam_rows(setting_dict, append_dict, exam_pk):
             "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
             "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
 
-            "WHERE ey.id = %(ey_id)s::INT AND ex.examperiod = %(ex_per)s::INT "
+            #"WHERE ey.id = %(ey_id)s::INT"
+            "WHERE ey.id = %(ey_id)s::INT AND ex.examperiod = %(ex_per)s::INT"
         ]
         if exam_pk:
             sql_keys['ex_id'] = exam_pk
@@ -772,14 +786,16 @@ def create_exam_rows(setting_dict, append_dict, exam_pk):
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
 
-            # filtering depbases in sql is too complicated. Filter out when creating dict PR2021-05-07
+    # filtering depbases in sql is too complicated. Filter out when creating dict PR2021-05-07
             columns = [col[0] for col in cursor.description]
 
             if logging_on:
                 logger.debug('columns: ' + str(columns))
 
             for row in cursor.fetchall():
+                logger.debug('row: ' + str(row))
                 row_dict = dict(zip(columns, row))
+                logger.debug('row_dict: ' + str(row_dict))
 
                 depbases = row_dict.get('depbases')
                 if logging_on:
@@ -789,6 +805,7 @@ def create_exam_rows(setting_dict, append_dict, exam_pk):
 
                 if depbases and sel_depbase_pk:
                     depbases_arr = depbases.split(';')
+                    logger.debug('depbases_arr: ' + str(depbases_arr))
                     if logging_on:
                         logger.debug('depbases_arr: ' + str(depbases_arr))
                     if depbases_arr and str(sel_depbase_pk) in depbases_arr:
