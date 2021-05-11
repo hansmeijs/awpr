@@ -446,6 +446,7 @@ class School(AwpBaseModel):  # PR2018-08-20 PR2018-11-11
     def get_by_user_schoolbase_examyear(cls, request_user):
         school = None
         if request_user:
+            # TODO change request.user.examyear to sel_examyear
             if request_user.schoolbase and request_user.examyear:
                 school = cls.objects.get_or_none(base=request_user.schoolbase, examyear=request_user.examyear)
         return school

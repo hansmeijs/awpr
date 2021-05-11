@@ -30,50 +30,50 @@ fill_sel = '#EDF2F8'
 fill_unsel = '#212529'
 
 menus_dict = {
-'page_examyear': {'index': 0, 'href_tuple': ('examyears_url',),
+'page_examyear': {'index': 0, 'href_string': 'examyears_url',
                'caption': str(_('Exam year')), 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
                'indent_left': indent_none, 'indent_right': indent_10,
                'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
                'submenu': ('cntrlst', 'exyrlst', 'schllst', 'deplst','levllst', 'sectlst')
                 },
-'page_school': {'index': 1, 'href_tuple': ('school_list_url',),
+'page_school': {'index': 1, 'href_string': 'schools_url',
                'caption': str(_('School')), 'width': 90, 'height': height, 'pos_x': 45, 'pos_y': pos_y,
                'indent_left': indent_10, 'indent_right': indent_10,
                'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
                'submenu': ('cntrlst', 'exyrlst', 'schllst', 'deplst','levllst', 'sectlst')
                },
-'page_student': {'index': 2, 'href_tuple': ('students_url',),
+'page_student': {'index': 2, 'href_string': 'students_url',
                'caption': str(_('Students')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
                  'indent_left': indent_10, 'indent_right': indent_10,
                  'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                  },
-'page_subject': {'index': 3, 'href_tuple': ('studentsubjects_url','subjects_url'),
+'page_subject': {'index': 3, 'href_string': 'subjects_url',
                'caption': str(_('Subjects')), 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
                  'indent_left': indent_10, 'indent_right': indent_10,
                  'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
                  'submenu': ('subjlst', 'subjtyplst', 'schemlst', 'schemitemlst')
                  },
-'page_exams': {'index': 4, 'href_tuple': ('exams_url',),
+'page_exams': {'index': 4, 'href_string': 'exams_url',
                'caption': str(_('Exams')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
                  'indent_left': indent_10, 'indent_right': indent_10,
                  'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                  },
-'page_grade': {'index': 5, 'href_tuple': ('grades_url',),
+'page_grade': {'index': 5, 'href_string': 'grades_url',
                'caption': str(_('Grades')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
                  'indent_left': indent_10, 'indent_right': indent_10,
                  'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                  },
-'page_result': {'index': 6, 'href_tuple': ('subjects_url',),
+'page_result': {'index': 6, 'href_string': 'subjects_url',
                'caption': str(_('Results')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
                 'indent_left': indent_10, 'indent_right': indent_10,
                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                 },
-'page_report': {'index': 7, 'href_tuple': ('subjects_url',),
+'page_report': {'index': 7, 'href_string': 'subjects_url',
                'caption': str(_('Reports')), 'width': 120, 'height': height,  'pos_x': 60,  'pos_y': pos_y,
                'indent_left': indent_10, 'indent_right': indent_10,
                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                 },
-'page_analysis': {'index': 8, 'href_tuple': ('subjects_url',),
+'page_analysis': {'index': 8, 'href_string': 'subjects_url',
                'caption':  str(_('Analysis')), 'width': 90, 'height': height,  'pos_x': 45,  'pos_y': pos_y,
                'indent_left': indent_10, 'indent_right': indent_none,
                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
@@ -277,13 +277,12 @@ def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-
     # retrieves submenu_href for: return HttpResponseRedirect(reverse_lazy(saved_href))
     lookup_page = sel_page if sel_page else 'page_examyear'
     #logger.debug('lookup_page: ' + str(lookup_page))
-    page_href = ''
+
+    page_href = None
     menu = menus_dict.get(lookup_page)
-    #logger.debug('menu: ' + str(menu))
     if menu:
-        # function gets first href in href_tuple, when insp or admin it gets the second item
-        page_href = get_href_from_href_tuple(menu, request)
-    if not page_href:
+        page_href = menu.get('href_string')
+    if page_href is None:
         page_href = 'home_url'
 
     #logger.debug('page_href: ' + str(page_href))
@@ -305,7 +304,7 @@ def set_menu_items(selected_menu_key, request):
     for key, menu in menus_dict.items():
         #logger.debug('-----------------------------')
         #logger.debug('key: ' + str(key) + ' menu: ' + str(menu))
-        # menu = {'subjects': {'index': 3, 'href_tuple': ('studentsubjects_url','subjects_url'),
+        # menu = {'subjects': {'index': 3, 'href_string': ('studentsubjects_url','subjects_url'),
         #                'caption': str(_('Subjects')), 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
         #                  'indent_left': indent_10, 'indent_right': indent_10,
         #                  'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
@@ -313,8 +312,8 @@ def set_menu_items(selected_menu_key, request):
         #                  },
 
         # lookup the href that belongs to this index in submenus_tuple
-        # function gets first href in href_tuple, when insp or admin it gets the second item
-        menu_href = get_href_from_href_tuple(menu, request)
+        # function gets first href in href_string, when insp or admin it gets the second item
+        menu_href = menu.get('href_string')
 
     # ------------ get menu ------------
         menu_index = menu.get('index', 0)
@@ -359,12 +358,12 @@ def set_menu_items(selected_menu_key, request):
 
     return menu_item_tags
 
-def get_href_from_href_tuple(menu, request): # PR2020-12-23 PR2021-03-18
-    #logger.debug('------------ get_href_from_href_tuple ----------------')
-    # function gets first href in menu_href_tuple, when role is insp or admin: it gets the second item
+def get_href_from_href_string(menu, request): # PR2020-12-23 PR2021-03-18
+    #logger.debug('------------ get_href_from_href_string ----------------')
+    # function gets first href in menu_href_string, when role is insp or admin: it gets the second item
     menu_href = None
-    menu_href_tuple = menu.get('href_tuple', ('',))
-    if menu_href_tuple:
+    menu_href_string = menu.get('href_string', ('',))
+    if menu_href_string:
         # PR2021-03-18 debug: page that must be shown depends on selected_school, not on requsr_role
         # only role_admin, role_insp, role_insp, role_system can view pages that are meant for them
         href_index = 0
@@ -381,13 +380,13 @@ def get_href_from_href_tuple(menu, request): # PR2020-12-23 PR2021-03-18
                     if sb and sb.defaultrole in (c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM):
                         href_index = 1
 
-        # reset href_index when menu_href_tuple has no or empty index '1'
+        # reset href_index when menu_href_string has no or empty index '1'
         # don't. Make separate btn and hide it
         #logger.debug('href_index: ' + str(href_index) + ' ' + str(type(href_index)))
-        if href_index == 1 and (len(menu_href_tuple) < 2 or not menu_href_tuple[href_index]):
+        if href_index == 1 and (len(menu_href_string) < 2 or not menu_href_string[href_index]):
             href_index = 0
         href_index = 0
-        menu_href = menu_href_tuple[href_index]
+        menu_href = menu_href_string[href_index]
         #logger.debug('href_index: ' + str(href_index) + ' ' + str(type(href_index)))
         #logger.debug('menu_href: ' + str(menu_href) + ' ' + str(type(menu_href)))
 

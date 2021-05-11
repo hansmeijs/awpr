@@ -85,8 +85,7 @@ class StudentsubjectListView(View): # PR2020-09-29 PR2021-03-25
         params = awpr_menu.get_headerbar_param(request, page)
 
 # - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
-        if request.user:
-            request.user.set_usersetting_dict('sel_page', {'page': page})
+        request.user.set_usersetting_dict('sel_page', {'page': page})
 
         return render(request, 'studentsubjects.html', params)
 #/////////////////////////////////////////////////////////////////
@@ -862,7 +861,7 @@ class StudentImportUploadSetting(View):  # PR2019-03-10
         # logger.debug('request.POST' + str(request.POST) )
         schoolsetting_dict = {}
         has_permit = False
-        if request.user is not None and request.user.examyear is not None and request.user.schoolbase is not None:
+        if request.user is not None and request.user.schoolbase is not None:
             has_permit = (request.user.is_role_adm_or_sys_and_group_system)
         if has_permit:
             if request.POST['upload']:
@@ -920,8 +919,9 @@ class StudentImportUploadData(View):  # PR2018-12-04 PR2019-08-05 PR2020-06-04
         params = {}
         has_permit = False
         is_not_locked = False
-        if request.user is not None and request.user.examyear is not None and request.user.schoolbase is not None:
+        if request.user is not None and request.user.schoolbase is not None:
             has_permit = (request.user.is_role_adm_or_sys_and_group_system)
+            # TODO change request.user.examyear to sel_examyear
             is_not_locked = not request.user.examyear.locked
 
         if is_not_locked and has_permit:
@@ -1010,14 +1010,16 @@ def lookup_student(studentbase, request):  # PR2019-12-17 PR2020-10-20
     student = None
     multiple_students_found = False
 
-# - search student by studentbase and request.user.examyear
+# - search student by studentbase and request.user.examyear  # TODO change request.user.examyear to sel_examyear
     if studentbase:
         # check if student exists multiple times
+        # TODO change request.user.examyear to sel_examyear
         row_count = stud_mod.Student.objects.filter(base=studentbase, examyear=request.user.examyear).count()
         if row_count > 1:
             multiple_students_found = True
         elif row_count == 1:
             # get student when only one found
+            # TODO change request.user.examyear to sel_examyear
             student = stud_mod.Student.objects.get_or_none(base=studentbase, examyear=request.user.examyear)
 
     return student, multiple_students_found
@@ -1708,6 +1710,7 @@ def upload_student(student_list, student_dict, lookup_field, awpKey_list,
 
             if student is None:
                 try:
+                    # TODO change request.user.examyear to sel_examyear
                     student = stud_mod.Student(
                         base=studentbase,
                         examyear=request.user.examyear,

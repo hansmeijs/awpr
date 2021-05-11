@@ -619,7 +619,7 @@ class SchoolImportUploadSetting(View):   # PR2019-03-10
         #logger.debug('request.POST' + str(request.POST) )
         schoolsetting_dict = {}
         has_permit = False
-        if request.user is not None and request.user.examyear is not None and request.user.schoolbase is not None:
+        if request.user is not None and request.user.schoolbase is not None:
             has_permit = (request.user.is_role_adm_or_sys_and_group_system)
         if has_permit:
             if request.POST['upload']:
@@ -674,8 +674,9 @@ class SchoolImportUploadData(View):  # PR2018-12-04 PR2019-08-05 PR2020-06-04
         params = {}
         has_permit = False
         is_not_locked = False
-        if request.user is not None and request.user.examyear is not None and request.user.schoolbase is not None:
+        if request.user is not None and request.user.schoolbase is not None:
             has_permit = (request.user.is_role_adm_or_sys_and_group_system)
+            # TODO change request.user.examyear to sel_examyear
             is_not_locked = not request.user.examyear.locked
 
         if is_not_locked and has_permit:
@@ -1108,7 +1109,7 @@ def upload_school(school_list, school_dict, lookup_field, awpKey_list,
             save_instance = False
 
             if school is None:
-                try:
+                try: # TODO change request.user.examyear to sel_examyear
                     school = sch_mod.School(
                         base=schoolbase,
                         examyear=request.user.examyear,
@@ -1231,6 +1232,7 @@ def lookup_schoolbase(lookup_value, request, this_pk=None):  # PR2020-10-22
             schoolbase = sch_mod.Schoolbase.objects.filter(crit).first()
             if schoolbase:
     # --- if 1 found: check if it has school this examyear
+                # TODO change request.user.examyear to sel_examyear
                 crit = Q(base=schoolbase) & Q(examyear=request.user.examyear)
                 school_count = sch_mod.School.objects.filter(crit).count()
                 if school_count > 1:
@@ -1249,6 +1251,7 @@ def lookup_school(schoolbase, request):  # PR2019-12-17 PR2020-10-20
     multiple_schools_found = False
 
 # - search school by schoolbase and request.user.examyear
+    # TODO change request.user.examyear to sel_examyear
     if schoolbase:
         # check if school exists multiple times
         row_count = sch_mod.School.objects.filter(base=schoolbase, examyear=request.user.examyear).count()

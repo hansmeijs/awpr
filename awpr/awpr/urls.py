@@ -140,7 +140,7 @@ urlpatterns = [
         path('examyears', school_views.ExamyearListView.as_view(), name='examyears_url'),
         path('examyear_upload', school_views.ExamyearUploadView.as_view(), name='examyear_upload_url'),
 
-        path('school', school_views.SchoolListView.as_view(), name='school_list_url'),
+        path('school', school_views.SchoolListView.as_view(), name='schools_url'),
         path('school_upload', school_views.SchoolUploadView.as_view(), name='school_upload_url'),
         path('school_import', school_views.SchoolImportView.as_view(), name='school_import_url'),
 

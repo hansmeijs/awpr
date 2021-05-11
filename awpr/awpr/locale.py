@@ -213,8 +213,8 @@ def get_locale_dict(table_dict, user_lang):
         dict['Submit'] = TXT_Submit
         dict['Inactive'] = TXT_Inactive
 
-        dict['Sequence'] = _('Sequence')
-        dict['Sequence_2lines'] =  pgettext_lazy('2 lines', 'Sequence')
+        dict['Sequence'] = TXT_Sequence
+        dict['Sequence_2lines'] = TXT_Sequence_2lines
 
         dict['Add_permission'] = _('Add permission')
         dict['Upload_permissions'] = _('Upload permissions')
@@ -344,6 +344,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Package'] = _('Package')
         dict['Package_item'] = _('Package item')
 
+        dict['Sequence'] = TXT_Sequence
         dict['Upload_subjects'] = _('Upload subjects')
 
         dict['this_subject'] = _('this subject')
@@ -479,10 +480,7 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['Maximum_score'] = _('Maximum score')
         dict['Maximum_score_2lines'] = pgettext_lazy('2 lines', 'Maximum\nscore')
-        dict['Sequence_2lines'] = pgettext_lazy('2 lines', 'Sequence')
-
-
-
+        dict['Sequence_2lines'] = TXT_Sequence_2lines
 
         dict['err_list'] = {
             'Amount': _("Amount"),
@@ -674,6 +672,10 @@ TXT_Approved_by = _('Approved by')
 TXT_Submitted_by = _('Submitted by')
 
 TXT__and_ = _(' and ')
+
+TXT_Sequence = _('Sequence')
+TXT_Sequence_2lines =  pgettext_lazy('2 lines', 'Sequence')
+
 
 # get weekdays translated
 TXT_weekdays_abbrev = ('', _('Mon'), _('Tue'), _('Wed'), _('Thu'), _('Fri'), _('Sat'), _('Sun'))

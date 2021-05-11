@@ -13,9 +13,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const cls_hover = "tr_hover";
     const cls_visible_hide = "visibility_hide";
     const cls_selected = "tsa_tr_selected";
-    //const cls_bc_transparent = "tsa_bc_transparent";
 
-// ---  id of selected customer and selected order
     let selected_btn = null;
     let setting_dict = {};
     let permit_dict = {};
@@ -30,9 +28,6 @@ document.addEventListener("DOMContentLoaded", function() {
     let mod_status_dict = {};
     let mod_note_dict = {};
 
-    let time_stamp = null; // used in mod add user
-
-    let user_list = [];
     let examyear_map = new Map();
     let department_map = new Map();
     let level_map = new Map();
@@ -41,7 +36,6 @@ document.addEventListener("DOMContentLoaded", function() {
     let exam_map = new Map();
 
     let filter_dict = {};
-    let filter_mod_employee = false;
 
     let el_focus = null; // stores id of element that must get the focus after cloosing mod message PR2020-12-20
 
@@ -288,11 +282,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     setting_dict = response.setting_dict;
                     selected_btn = (setting_dict.sel_btn)
                     must_update_headerbar = true;
-
-                    // if sel_subject_pk has value, set sel_student_pk null
-                    if (setting_dict.sel_subject_pk) {setting_dict.sel_student_pk = null;}
-
                 };
+
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
                     // get_permits must come before CreateSubmenu and FiLLTbl
@@ -300,10 +291,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     set_columns_hidden();
                     must_update_headerbar = true;
                 }
-
-                if ("usergroup_list" in response) {
-                    usergroups = response.usergroup_list;
-                };
 
                 if(must_create_submenu){CreateSubmenu()};
 
@@ -316,17 +303,25 @@ document.addEventListener("DOMContentLoaded", function() {
                 const awp_messages = (response.awp_messages) ? response.awp_messages : {};
                 b_render_awp_messages(response.awp_messages);
 
-                if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
-                if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows) };
+                if ("examyear_rows" in response) {
+                    b_fill_datamap(examyear_map, response.examyear_rows)
+                };
+                if ("department_rows" in response) {
+                    b_fill_datamap(department_map, response.department_rows)
+                };
                 if ("level_rows" in response) {
                     b_fill_datamap(level_map, response.level_rows)
-                    FillOptionsSelectLevel(response.level_rows)
+                    FillSBRoptionsSelectLevel(response.level_rows)
                 };
-                if ("sector_rows" in response) {
-                    b_fill_datamap(sector_map, response.level_rows)
+                //if ("sector_rows" in response) {
+                //    b_fill_datamap(sector_map, response.sector_rows)
+                //};
+                if ("exam_rows" in response) {
+                    b_fill_datamap(exam_map, response.exam_rows)
                 };
-                if ("exam_rows" in response) { b_fill_datamap(exam_map, response.exam_rows) };
-                if ("subject_rows" in response) { b_fill_datamap(subject_map, response.subject_rows) };
+                if ("subject_rows" in response) {
+                    b_fill_datamap(subject_map, response.subject_rows)
+                };
 
                 HandleBtnSelect(null, true)  // true = skip_upload
                 // also calls: FillTblRows(), MSSSS_display_in_sbr(), UpdateHeader()ect
@@ -520,9 +515,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
     }  // FillOptionsExamperiodExamtype
 
-//=========  FillOptionsSelectLevel  ================ PR2021-03-06 PR2021-05-07
-    function FillOptionsSelectLevel(rows) {
-        //console.log("=== FillOptionsSelectLevel");
+//=========  FillSBRoptionsSelectLevel  ================ PR2021-03-06 PR2021-05-07
+    function FillSBRoptionsSelectLevel(rows) {
+        console.log("=== FillSBRoptionsSelectLevel");
+        console.log("rows: ", rows)
 
         const display_rows = []
         const has_items = (!!rows && !!rows.length);
@@ -553,7 +549,7 @@ document.addEventListener("DOMContentLoaded", function() {
         // hide select level when department has no levels
         add_or_remove_class(document.getElementById("id_SBR_container_level"), cls_hide, !has_items);
 
-    }  // FillOptionsSelectLevel
+    }  // FillSBRoptionsSelectLevel
 
 //=========  HandleShowAll  ================ PR2020-12-17
     function HandleShowAll() {
@@ -622,8 +618,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const tblName = "exam"  // get_tblName_from_selectedBtn()
         const field_setting = field_settings[tblName];
-        const data_map = exam_map //  get_datamap_from_tblName(tblName);
-        //console.log( "data_map", data_map);
+
+// --- get data_map
+        const data_map = exam_map;
+
 
 // --- reset table
         tblHead_datatable.innerText = null;
@@ -632,7 +630,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // --- create table header
         CreateTblHeader(field_setting);
 
-// --- loop through grade_map
+// --- loop through data_map
         //console.log( "data_map", data_map);
         if(data_map){
             for (const [map_id, map_dict] of data_map.entries()) {
@@ -643,16 +641,16 @@ document.addEventListener("DOMContentLoaded", function() {
                                 (!setting_dict.sel_sector_pk || map_dict.sct_id === setting_dict.sel_sector_pk) &&
                                 (!setting_dict.sel_subject_pk || map_dict.subject_id === setting_dict.sel_subject_pk);
                 if(show_row){
+
           // --- insert row at row_index
                     //const schoolcode_lc_trail = ( (map_dict.sb_code) ? map_dict.sb_code.toLowerCase() : "" ) + " ".repeat(8) ;
                     //const schoolcode_sliced = schoolcode_lc_trail.slice(0, 8);
                     //const order_by = schoolcode_sliced +  ( (map_dict.username) ? map_dict.username.toLowerCase() : "");
                     const row_index = -1; // t_get_rowindex_by_sortby(tblBody_datatable, order_by)
                     let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict, row_index)
-                }
+                };
           };
-        }  // if(!!data_map)
-
+        };
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-12-03 PR2020-12-18 PR2021-01-022
@@ -1069,8 +1067,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //========= UploadToggle  ============= PR2020-07-31  PR2021-01-14
     function UploadToggle(el_input) {
         console.log( " ==== UploadToggle ====");
-        //console.log( "usergroups", usergroups);
-        // only called by field 'se_status', 'pe_status', 'ce_status'
+         // only called by field 'se_status', 'pe_status', 'ce_status'
         // mode = 'approve_submit' or ''approve_reset'
         mod_dict = {};
         const tblRow = get_tablerow_selected(el_input);
@@ -1445,8 +1442,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= MEX_FillSelectTableLevel  ============= PR2021-05-07
     function MEX_FillSelectTableLevel() {
-        console.log("===== MEX_FillSelectTableLevel ===== ");
-        console.log("level_map", level_map);
+        //console.log("===== MEX_FillSelectTableLevel ===== ");
+        //console.log("level_map", level_map);
 
         const level_container = document.getElementById("id_MEX_level_container");
         add_or_remove_class(level_container, cls_hide, columns_hidden.levelbases)
@@ -1458,47 +1455,58 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // ---  loop through data_map
             if (!columns_hidden.levelbases){
-                let row_count = 0
-                if(data_map.size > 1) {
-                    MEX_FillSelectRowLevel(tblBody_select, {}, "<" + loc.All_levels + ">");
-                }
+                const count_selected = {row_count: 0, selected_count: 0}
                 for (const [map_id, dict] of data_map.entries()) {
-                    MEX_FillSelectRowLevel(tblBody_select, dict);
+                    MEX_FillSelectRowLevel(tblBody_select, count_selected, dict);
                 }
+                if(data_map.size > 1) {
+                    MEX_FillSelectRowLevel(tblBody_select, count_selected, {}, "<" + loc.All_levels + ">");
+                }
+                console.log("count_selected", count_selected);
             }
         }
     } // MEX_FillSelectTableLevel
 
 //========= MEX_FillSelectRowLevel  ============= PR2021-05-07
-    function MEX_FillSelectRowLevel(tblBody_select, dict, select_all_text) {
+    function MEX_FillSelectRowLevel(tblBody_select, count_selected, dict, select_all_text) {
         //console.log("===== MEX_FillSelectRowLevel ===== ");
         //console.log("dict", dict);
-        // add_select_all when not isEmpty(dict)
-        let pk_int = null, map_id = null, abbrev = null
+
+// add_select_all when not isEmpty(dict)
+        let pk_int = null, map_id = null, abbrev = null;
+        let is_selected = false, row_index = -1;
         if (isEmpty(dict)){
             pk_int = 0;
             map_id = "sel_level_selectall";
-            abbrev = select_all_text
+            abbrev = select_all_text;
+            row_index = 0;
+
+// check 'selectall when all items are selected
+            is_selected = (count_selected.row_count && count_selected.row_count === count_selected.selected_count)
+
         } else {
             pk_int = dict.base_id;
             map_id = "sel_level_" + dict.base_id;
             abbrev = (dict.abbrev) ? dict.abbrev : "---";
-        };
+            count_selected.row_count += 1
+            row_index = -1;
 
 // check if this level is in mod_MEX_dict.levelbases. Set tickmark if yes
-        let selected_int = 0;
-        if(mod_MEX_dict.levelbases){
-            const arr = mod_MEX_dict.levelbases.split(";");
-            arr.forEach((obj, i) => {
-                 if (pk_int === Number(obj)) { selected_int = 1}
-            });
-        }
-        const tickmark_class = (selected_int === 1) ? "tickmark_2_2" : "tickmark_0_0";
+            if(mod_MEX_dict.levelbases){
+                const arr = mod_MEX_dict.levelbases.split(";");
+                arr.forEach((obj, i) => {
+                     if (pk_int === Number(obj)) {is_selected = true}
+                });
+            }
+        };
 
-        const tblRow = tblBody_select.insertRow(-1);
+        if (is_selected){ count_selected.selected_count += 1 };
+        const tickmark_class = (is_selected) ? "tickmark_2_2" : "tickmark_0_0";
+
+        const tblRow = tblBody_select.insertRow(row_index);
         tblRow.id = map_id;
         tblRow.setAttribute("data-pk", pk_int);
-        tblRow.setAttribute("data-selected", selected_int);
+        tblRow.setAttribute("data-selected", ((is_selected) ? 1 : 0) );
 
 //- add hover to select row
         add_hover(tblRow)
@@ -1525,12 +1533,12 @@ document.addEventListener("DOMContentLoaded", function() {
 //========= MEX_SelectLevel  ============= PR2021-05-07
     function MEX_SelectLevel(tblRow){
         console.log( "===== MEX_SelectLevel  ========= ");
-        //console.log( "event_key", event_key);
 
         if(tblRow){
             const old_is_selected = (!!get_attr_from_el_int(tblRow, "data-selected"));
             const pk_int = get_attr_from_el_int(tblRow, "data-pk");
             const is_select_all = (!pk_int);
+
 // ---  toggle is_selected
             const new_is_selected = !old_is_selected;
 
@@ -1575,7 +1583,6 @@ document.addEventListener("DOMContentLoaded", function() {
             tblRow.setAttribute("data-selected", ( (is_selected) ? 1 : 0) )
             const img_class = (is_selected) ? "tickmark_2_2" : "tickmark_0_0"
             const el = tblRow.cells[0].children[0];
-            //if (el){add_or_remove_class(el, "tickmark_2_2", is_selected , "tickmark_0_0")}
             if (el){el.className = img_class}
         }
     }  // MEX_SetLevelSelected
@@ -1598,7 +1605,7 @@ document.addEventListener("DOMContentLoaded", function() {
         return list_str;
     }  // MEX_GetLevelsSelected
 
-    //=========  MEX_SetBtn  ================ PR2021-04-04
+//=========  MEX_SetBtn  ================ PR2021-04-04
     function MEX_SetBtn() {
         //console.log( "===== MEX_SetBtn ========= ");
 
@@ -2100,7 +2107,6 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log("===  MAG_Open  =====") ;
         console.log("mode", mode) ;
         console.log("permit", permit) ;
-        console.log("usergroups", usergroups) ;
         // mode = 'approve' or 'submit
 
         const is_approve_mode = (mode === "approve");
@@ -2149,9 +2155,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
                 el_MAG_subject.innerText = subject_text;
 
-                const auth_by = (usergroups.includes("auth1")) ? loc.President :
-                             (usergroups.includes("auth2")) ? loc.Secretary :
-                             (usergroups.includes("auth3")) ? loc.Commissioner : null;
+                const auth_by = (permit_dict.usergroup_list.includes("auth1")) ? loc.President :
+                             (permit_dict.usergroup_list.includes("auth2")) ? loc.Secretary :
+                             (permit_dict.usergroup_list.includes("auth3")) ? loc.Commissioner : null;
 
                 const caption = (is_submit_mode) ? loc.Submitted_by : loc.Approved_by;
                 document.getElementById("id_MAG_approved_by_label").innerText = caption + ":";
@@ -2963,7 +2969,6 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
         selected_school_depbases = [];
         filter_dict = {};
-        filter_mod_employee = false;
 
         Filter_TableRows(tblBody_datatable);
 
@@ -3694,9 +3699,9 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         // STATUS_01_AUTH1 = 2,  STATUS_02_AUTH2 = 4, STATUS_03_AUTH3 = 8
         let status_index = 0;
         const usrgrp = {auth1: false, auth2: false, auth3: false};
-            const perm_auth1 = (usergroups.includes("auth1"));
-            const perm_auth2 = (usergroups.includes("auth2"));
-            const perm_auth3 = (usergroups.includes("auth3"));
+            const perm_auth1 = (permit_dict.usergroup_list.includes("auth1"));
+            const perm_auth2 = (permit_dict.usergroup_list.includes("auth2"));
+            const perm_auth3 = (permit_dict.usergroup_list.includes("auth3"));
 
             if(!perm_auth1 && !perm_auth2 && !perm_auth3){
                 // skip if user has no auth usergroup

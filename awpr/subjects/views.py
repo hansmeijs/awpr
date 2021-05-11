@@ -283,24 +283,34 @@ class SubjectListView(View):
         activate(user_lang)
 
 # - get headerbar parameters
-        page = 'page_subject'
-        params = awpr_menu.get_headerbar_param(request, page)
+        if request.user.is_role_school:
+            page = 'page_studsubj'
+            html_page = 'studentsubjects.html'
+            param = {'display_school': True, 'display_department': True}
+        else:
+            page = 'page_subject'
+            html_page = 'subjects.html'
+            param = {'display_school': False, 'display_department': True}
+
+        params = awpr_menu.get_headerbar_param(request, page, param)
 
 # - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
-        if request.user:
-            request.user.set_usersetting_dict('sel_page', {'page': page})
+        request.user.set_usersetting_dict('sel_page', {'page': page})
 
-        return render(request, 'subjects.html', params)
+        return render(request, html_page, params)
 
 
 def create_subject_rows(setting_dict, append_dict, subject_pk):
     # --- create rows of all subjects of this examyear  PR2020-09-29 PR2020-10-30 PR2020-12-02
-    #logger.debug(' =============== create_subject_rows ============= ')
 
+    logging_on = s.LOGGING_ON
 
     sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
-    # TODO filter sel_depbase_pk
     sel_depbase_pk = af.get_dict_value(setting_dict, ('sel_depbase_pk',))
+    if logging_on:
+        logger.debug(' =============== create_subject_rows ============= ')
+        logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk) + ' ' + str(type(sel_examyear_pk)))
+        logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk) + ' ' + str(type(sel_depbase_pk)))
 
     # lookup if sel_depbase_pk is in subject.depbases PR2020-12-19
     # use: AND %(depbase_pk)s::INT = ANY(sj.depbases)
@@ -358,113 +368,113 @@ def create_subject_rows(setting_dict, append_dict, subject_pk):
 @method_decorator([login_required], name='dispatch')
 class SubjectUploadView(View):  # PR2020-10-01
 
-    def post(self, request, *args, **kwargs):
-        logger.debug(' ============= SubjectUploadView ============= ')
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= SubjectUploadView ============= ')
 
+        req_usr = request.user
         update_wrap = {}
-        has_permit = False
-        if request.user is not None and request.user.country is not None and request.user.schoolbase is not None:
-            has_permit = True # (request.user.is_perm_planner or request.user.is_perm_hrman)
-        if has_permit:
 
-# - Reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+# - add edit permit
+        has_permit = False
+        if req_usr and req_usr.country:
+            permit_list = req_usr.permit_list('page_subject')
+            if permit_list:
+                has_permit = 'crud_subject' in permit_list
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
+        if has_permit:
+# - reset language
+            user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
             activate(user_lang)
 
 # - get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 upload_dict = json.loads(upload_json)
-                logger.debug('upload_dict' + str(upload_dict))
+                if logging_on:
+                    logger.debug('upload_dict' + str(upload_dict))
 
-# - get id  variables
-                subject_pk = af.get_dict_value(upload_dict, ('id', 'pk'))
-                examyear_pk = af.get_dict_value(upload_dict, ('id', 'ppk'))
-                mode = af.get_dict_value(upload_dict, ('id', 'mode'))
-
-                append_dict = {'mode': mode, 'table': 'subject'}
                 error_dict = {}
-                subject_rows = []
-# A. check if examyear exists  (examyear is parent of subject)
-                examyear = sch_mod.Examyear.objects.get_or_none(id=examyear_pk, country=request.user.country)
-                logger.debug('examyear: ' + str(examyear))
-                if examyear and examyear == request.user.examyear:
-# C. Delete subject
-                    # upload_dict = {'id': {'pk': 164, 'ppk': 37, 'table': 'subject', 'mode': 'delete', 'mapid': 'subject_164'}}
-                    if mode == 'delete':
-                        subject = sbj_mod.Subject.objects.get_or_none(id=subject_pk, examyear=examyear)
-                        logger.debug('subject: ' + str(subject))
+                append_dict = {}
+
+# - get  variables
+                mode = upload_dict.get('mode')
+                examyear_pk = upload_dict.get('examyear_pk')
+                subject_pk = upload_dict.get('subject_pk')
+
+                # append_dict = {'mode': mode, 'table': 'subject'}
+
+# - check if examyear exists and equals selected examyear from Usersetting
+                selected_dict = req_usr.get_usersetting_dict(c.KEY_SELECTED_PK)
+                selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+                examyear = None
+                if examyear_pk == selected_examyear_pk:
+                    examyear = sch_mod.Examyear.objects.get_or_none(id=examyear_pk, country=req_usr.country)
+                # note: subjects may be changed before publishing, threfore don't filter on examyear.published
+                if examyear and not examyear.locked:
+
+# ++++ Create new instance if is_create:
+                    if mode == 'create':
+                        subject, msg_err = create_subject(examyear, upload_dict, request)
                         if subject:
-                            this_text = _("Subject '%(tbl)s'") % {'tbl': subject.name}
-                    # a. check if employee has emplhours, put msg_err in update_dict when error
-                            examyear_is_locked, examyear_has_activated_schools = av.validate_locked_activated_examyear(examyear)
-                            msg_err = None #validate_employee_has_emplhours(employee)
-                            if examyear_is_locked:
-                                append_dict['err_delete'] = str(_('Exam year %(exyr)s is closed.') % {'exyr': examyear.code} +
-                                                                '\n' + _('%(item)s cannot be deleted.') % {'item': this_text})
-                            elif examyear_has_activated_schools:
-                                append_dict['err_delete'] = str(_('There are schools that have activated exam year %(exyr)s.') % {'exyr': examyear.code} +
-                                                                '\n' + _('%(item)s cannot be deleted.') % {'item': this_text})
-                            else:
-                    # b. check if there are teammembers with this employee: absence teammembers, remove employee from shift teammembers
-                                # delete_employee_from_teammember(employee, request)
-                    # c. delete subject
-                                deleted_ok = sch_mod.delete_instance(subject, append_dict, request, this_text)
-                                logger.debug('deleted_ok' + str(deleted_ok))
-                                if deleted_ok:
-                     # - add deleted_row to absence_rows
-                                    subject_rows.append({'pk': subject_pk,
-                                                         'mapid': 'subject_' + str(subject_pk),
-                                                         'deleted': True})
-                                    subject = None
-                                logger.debug('subject_rows' + str(subject_rows))
-                    else:
-# D. Create new subject
-                        # upload_dict = {'id': {'table': 'subject', 'ppk': 37, 'mode': 'create'},
-                        #               'abbrev': {'value': 'ab', 'update': True},
-                        #               'sequence': {'value': 15, 'update': True},
-                        #               'name': {'value': 'ab', 'update': True},
-                        #                depbases': {'value': [], 'update': True}}
-                        if mode == 'create':
-                            subject, msg_err = create_subject(examyear, upload_dict, request)
-                            if subject:
-                                append_dict['created'] = True
-                            elif msg_err:
-                                append_dict['err_create'] = msg_err
-
+                            append_dict['created'] = True
+                        elif msg_err:
+                            append_dict['err_create'] = msg_err
+                        if logging_on:
                             logger.debug('append_dict' + str(append_dict))
-# E. Get existing subject
-                        else:
-                            subject = sbj_mod.Subject.objects.get_or_none(id=subject_pk, examyear=examyear)
-
-# F. Update subject, also when it is created.
-                        #  Not necessary. Most fields are required. All fields are saved in create_subject
-                        #if subject:
-                            update_subject(subject, examyear, upload_dict, error_dict, request)
-
-# I. add update_dict to update_wrap
-                    logger.debug('subject' + str(subject))
-                    logger.debug('subject_rows' + str(subject_rows))
-                    if subject:
-                        if error_dict:
-                            append_dict['error'] = error_dict
-# def create_subject_rows(setting_dict, append_dict, subject_pk):
-                        setting_dict = {'sel_examyear_pk': examyear.pk}
-                        subject_rows = create_subject_rows(
-                            setting_dict=setting_dict,
-                            append_dict=append_dict,
-                            subject_pk=subject.pk
+                    else:
+# - else: get existing subject instance
+                        subject = sbj_mod.Subject.objects.get_or_none(
+                            id=subject_pk,
+                            examyear=examyear
                         )
-                    if subject_rows:
-                        update_wrap['updated_subject_rows'] = subject_rows
+                        if logging_on:
+                            logger.debug('subject: ' + str(subject))
+
+                    if subject:
+                        subject_rows = []
+# ++++ Delete subject if is_delete
+                        if mode == 'delete':
+                            this_text = _("Subject '%(tbl)s'") % {'tbl': subject.name}
+                            deleted_ok = sch_mod.delete_instance(subject, append_dict, request, this_text)
+                            if logging_on:
+                                logger.debug('deleted_ok' + str(deleted_ok))
+                            if deleted_ok:
+        # - add deleted_row to subject_rows
+                                subject_rows.append({'pk': subject_pk,
+                                                     'mapid': 'subject_' + str(subject_pk),
+                                                     'deleted': True})
+                                subject = None
+                            if logging_on:
+                                logger.debug('subject_rows' + str(subject_rows))
+                        else:
+
+# +++ Update subject, also when it is created.
+                            update_subject_instance(subject, examyear, upload_dict, error_dict, request)
+
+        # - add update_dict to update_wrap
+                            if error_dict:
+                                append_dict['error'] = error_dict
+        # - create subject_row
+                            setting_dict = {'sel_examyear_pk': examyear.pk}
+                            subject_rows = create_subject_rows(
+                                setting_dict=setting_dict,
+                                append_dict=append_dict,
+                                subject_pk=subject.pk
+                            )
+                        if subject_rows:
+                            update_wrap['updated_subject_rows'] = subject_rows
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 
 
-
 # ========  EXAMS  =====================================
-
 @method_decorator([login_required], name='dispatch')
 class ExamListView(View):  # PR2021-04-04
 
@@ -497,12 +507,13 @@ class ExamUploadView(View):
             logger.debug('')
             logger.debug(' ============= ExamUploadView ============= ')
 
+        req_usr = request.user
         update_wrap = {}
 
-# add edit permit TODO
+# - add edit permit
         has_permit = False
-        if request.user and request.user.country:
-            permit_list = request.user.permit_list('page_exams')
+        if req_usr and req_usr.country:
+            permit_list = req_usr.permit_list('page_exams')
             if permit_list:
                 has_permit = 'crud_exam' in permit_list
             if logging_on:
@@ -510,7 +521,6 @@ class ExamUploadView(View):
                 logger.debug('has_permit: ' + str(has_permit))
 
         if has_permit:
-            req_user = request.user
 # - reset language
             user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
             activate(user_lang)
@@ -519,6 +529,9 @@ class ExamUploadView(View):
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 upload_dict = json.loads(upload_json)
+                if logging_on:
+                    logger.debug('upload_dict' + str(upload_dict))
+
                 error_list = []
                 deleted_list = []
                 append_dict = {}
@@ -532,60 +545,60 @@ class ExamUploadView(View):
                 exam_pk = upload_dict.get('exam_pk')
                 subject_pk = upload_dict.get('subject_pk')
 
-                if logging_on:
-                    logger.debug('upload_dict: ' + str(upload_dict))
+# - check if examyear exists and equals selected examyear from Usersetting
+                selected_dict = req_usr.get_usersetting_dict(c.KEY_SELECTED_PK)
+                selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+                examyear = None
+                if examyear_pk == selected_examyear_pk:
+                    examyear = sch_mod.Examyear.objects.get_or_none(id=examyear_pk, country=req_usr.country)
 
-# - get examyear
-                examyear = sch_mod.Examyear.objects.get_or_none(
-                    pk=examyear_pk,
-                    country=req_user.country
-                )
+                # note: exams cannot be changed before publishing examyear, therefore filter on examyear.published
+                if examyear and examyear.published and not examyear.locked:
 # - get subject
-                subject = subj_mod.Subject.objects.get_or_none(
-                    pk=subject_pk,
-                    examyear=examyear
-                )
-
-                if logging_on:
-                    logger.debug('subject:     ' + str(subject))
+                    subject = subj_mod.Subject.objects.get_or_none(
+                        pk=subject_pk,
+                        examyear=examyear
+                    )
+                    if logging_on:
+                        logger.debug('subject:     ' + str(subject))
 
 # +++++ Create new instance if is_create:
-                if mode == 'create':
-                    exam = create_exam_instance(subject, upload_dict, error_list, request)
-                else:
-    # - else: get existing exam instance
-                    exam = subj_mod.Exam.objects.get_or_none(
-                        id=exam_pk,
-                        subject=subject
-                    )
-                if logging_on:
-                    logger.debug('exam: ' + str(exam))
-
-                if exam:
-# +++++ Delete instance if is_delete
-                    if mode == 'delete':
-                        deleted_row = delete_exam_instance(exam, error_list, request)
-                        if deleted_row:
-                            deleted_list.append(deleted_row)
+                    if mode == 'create':
+                        exam = create_exam_instance(subject, upload_dict, error_list, request)
                     else:
+        # - else: get existing exam instance
+                        exam = subj_mod.Exam.objects.get_or_none(
+                            id=exam_pk,
+                            subject=subject
+                        )
+                    if logging_on:
+                        logger.debug('exam: ' + str(exam))
 
-# +++++ Update instance, also when it is created, not when is_delete
-                        update_exam_instance(exam, upload_dict, error_list, examyear, request)
+                    if exam:
+    # +++++ Delete instance if is_delete
+                        if mode == 'delete':
+                            deleted_row = delete_exam_instance(exam, error_list, request)
+                            if deleted_row:
+                                deleted_list.append(deleted_row)
+                        else:
 
-# 6. create list of updated exam
-                selected_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
-                s_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
+    # +++++ Update instance, also when it is created, not when is_delete
+                            update_exam_instance(exam, upload_dict, error_list, examyear, request)
 
-                setting_dict = {'sel_examyear_pk': examyear.pk,
-                                'sel_examperiod': examperiod,
-                                'sel_depbase_pk': depbase_pk
-                                }
+    # 6. create list of updated exam
+                    selected_dict = req_usr.get_usersetting_dict(c.KEY_SELECTED_PK)
+                    s_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
 
-                exam_rows = create_exam_rows(setting_dict, append_dict, exam_pk)
-                if deleted_list:
-                    exam_rows.extend(deleted_list)
-                if exam_rows:
-                    update_wrap['updated_exam_rows'] = exam_rows
+                    setting_dict = {'sel_examyear_pk': examyear.pk,
+                                    'sel_examperiod': examperiod,
+                                    'sel_depbase_pk': depbase_pk
+                                    }
+
+                    exam_rows = create_exam_rows(setting_dict, append_dict, exam_pk)
+                    if deleted_list:
+                        exam_rows.extend(deleted_list)
+                    if exam_rows:
+                        update_wrap['updated_exam_rows'] = exam_rows
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of ExamUploadView
@@ -662,17 +675,14 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request):
         logger.debug(' --------- update_exam_instance -------------')
         logger.debug('upload_dict: ' + str(upload_dict))
 
-
     if instance:
-        mode = upload_dict.get('mode')
-
         save_changes = False
         for field, new_value in upload_dict.items():
             if logging_on:
                 logger.debug('field: ' + str(field))
                 logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
 
-# --- get field_dict from  upload_dict  if it exists
+# --- skip fields that don't contain new values
             if field in ('mode', 'examyear_pk', 'subject_pk', 'exam_pk', 'examperiod_int', 'examtype'):
                 pass
 # ---   save changes in field 'depbases', 'levelbases', 'sectorbases'
@@ -905,7 +915,7 @@ class SubjectImportUploadSetting(View):   # PR2019-03-10
         #logger.debug('request.POST' + str(request.POST) )
         schoolsetting_dict = {}
         has_permit = False
-        if request.user is not None and request.user.examyear is not None and request.user.schoolbase is not None:
+        if request.user is not None and request.user.schoolbase is not None:
             has_permit = (request.user.is_role_adm_or_sys_and_group_system)
         if has_permit:
             if request.POST['upload']:
@@ -971,8 +981,9 @@ class SubjectImportUploadData(View):  # PR2018-12-04 PR2019-08-05 PR2020-06-04
         params = {}
         has_permit = False
         is_not_locked = False
-        if request.user is not None and request.user.examyear is not None and request.user.schoolbase is not None:
+        if request.user is not None and request.user.schoolbase is not None:
             has_permit = (request.user.is_role_adm_or_sys_and_group_system)
+            # TODO change request.user.examyear to sel_examyear
             is_not_locked = not request.user.examyear.locked
 
         if is_not_locked and has_permit:
@@ -1178,7 +1189,7 @@ def upload_subject(subject_list, subject_dict, lookup_field, awpKey_list,
             save_instance = False
 
             if subject is None:
-                try:
+                try: # TODO change request.user.examyear to sel_examyear
                     subject = subj_mod.Subject(
                         base=subjectbase,
                         examyear=request.user.examyear,
@@ -1298,7 +1309,7 @@ def lookup_subjectbase(lookup_value, request):  # PR2020-10-20
     if row_count > 1:
         multiple_found = True
     elif row_count == 1:
-# get subjectbase when only one found
+# get subjectbase when only one found # TODO change request.user.examyear to sel_examyear
         subjectbase = subj_mod.Subject.objects.get_or_none(code__iexact=lookup_value, examyear=request.user.examyear)
     # TODO skip for now, remove this line
     multiple_found = False
@@ -1313,12 +1324,12 @@ def lookup_subject(subjectbase, request):  # PR2019-12-17 PR2020-10-20
 
 # - search subject by subjectbase and request.user.examyear
     if subjectbase:
-        # check if subject exists multiple times
+        # check if subject exists multiple times # TODO change request.user.examyear to sel_examyear
         row_count = subj_mod.Subject.objects.filter(base=subjectbase, examyear=request.user.examyear).count()
         if row_count > 1:
             multiple_subjects_found = True
         elif row_count == 1:
-            # get subject when only one found
+            # get subject when only one found # TODO change request.user.examyear to sel_examyear
             subject = subj_mod.Subject.objects.get_or_none(base=subjectbase, examyear=request.user.examyear)
 
     return subject, multiple_subjects_found
@@ -1396,102 +1407,77 @@ def create_subject(examyear, upload_dict, request):
 
 
 #######################################################
-def update_subject(instance, parent, upload_dict, msg_dict, request):
-    # --- update existing and new instance PR2019-06-06
-    # add new values to update_dict (don't reset update_dict, it has values)
-    #logger.debug(' ------- update_subject -------')
-    #logger.debug('upload_dict' + str(upload_dict))
+def update_subject_instance(instance, examyear, upload_dict, msg_dict, request):
+    # --- update existing and new instance PR2019-06-06 PR2021-05-10
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' --------- update_subject_instance -------------')
+        logger.debug('upload_dict: ' + str(upload_dict))
 
     if instance:
-        # FIELDS_SUBJECT = ('base', 'examyear', 'name', 'abbrev','sequence', 'depbases', 'modifiedby', 'modifiedat')
         save_changes = False
-        for field in c.FIELDS_SUBJECT:
+        for field, new_value in upload_dict.items():
+        # --- skip fields that don't contain new values
+            if field not in ('mode', 'table', 'examyear_pk', 'subject_pk'):
+                if logging_on:
+                    logger.debug('field: ' + str(field))
+                    logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
 
-# --- get field_dict from  upload_dict  if it exists
-            field_dict = upload_dict[field] if field in upload_dict else {}
-            if field_dict:
-                if 'update' in field_dict:
-# a. get new_value and saved_value
-                    new_value = field_dict.get('value')
-                    saved_value = getattr(instance, field)
+# a. get saved_value
 
 # 2. save changes in field 'name', 'abbrev'
-                    if field in ['name', 'abbrev']:
-                        if new_value != saved_value:
-            # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
-                            """
-                            msg_err = validate_code_name_identifier(
-                                table='subject',
-                                field=field,
-                                new_value=new_value, parent=parent,
-                                is_absence=False,
-                                update_dict={},
-                                msg_dict={},
-                                request=request,
-                                this_pk=instance.pk)
-                            """
-                            msg_err = None
-                            if not msg_err:
-                                # c. save field if changed and no_error
-                                setattr(instance, field, new_value)
-                                save_changes = True
-                            else:
-                                msg_dict['err_' + field] = msg_err
-
-    # 3. save changes in fields 'namefirst', 'namelast'
-                    elif field in ['namefirst', 'namelast']:
-                        if new_value != saved_value:
-                            name_first = None
-                            name_last = None
-                            if field == 'namefirst':
-                                name_first = new_value
-                                name_last = getattr(instance, 'namelast')
-                            elif field == 'namelast':
-                                name_first = getattr(instance, 'namefirst')
-                                name_last = new_value
-                            # check if subject namefirst / namelast combination already exists
-                            """
-                            has_error = validate_namelast_namefirst(
-                                namelast=name_last,
-                                namefirst=name_first,
-                                company=request.user.company,
-                                update_field=field,
-                                msg_dict=msg_dict,
-                                this_pk=instance.pk)
-                            """
-                            has_error = False
-                            if not has_error:
-                                setattr(instance, field, new_value)
-                                save_changes = True
-
-# 3. save changes in depbases
-                    elif field == 'depbases':
-                        # save new value when it has different length
-                        len_new = len(new_value) if new_value else 0
-                        len_saved = len(saved_value) if saved_value else 0
-                        if len_new != len_saved:
+                if field in ['name', 'abbrev']:
+                    saved_value = getattr(instance, field)
+                    if new_value != saved_value:
+        # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
+                        """
+                        msg_err = validate_code_name_identifier(
+                            table='subject',
+                            field=field,
+                            new_value=new_value, parent=parent,
+                            is_absence=False,
+                            update_dict={},
+                            msg_dict={},
+                            request=request,
+                            this_pk=instance.pk)
+                        """
+                        msg_err = None
+                        if not msg_err:
+                            # c. save field if changed and no_error
                             setattr(instance, field, new_value)
                             save_changes = True
-                        elif len_new:
-                        # compare items in sorted list when len>0 (givers error otherwise)
-                            new_value_sorted = sorted(new_value)
-                            saved_value_sorted = sorted(saved_value)
-                            if new_value_sorted != saved_value_sorted:
-                                setattr(instance, field, new_value_sorted)
-                                save_changes = True
+                        else:
+                            msg_dict['err_' + field] = msg_err
 
-# 4. save changes in field 'inactive'
-                    elif field == 'inactive':
-                        #logger.debug('inactive new_value]: ' + str(new_value) + ' ' + str(type(new_value)))
-                        saved_value = getattr(instance, field)
-                        #logger.debug('inactive saved_value]: ' + str(saved_value) + ' ' + str(type(saved_value)))
-                        if new_value != saved_value:
-                            setattr(instance, field, new_value)
-                            save_changes = True
-                    else:
-                        if new_value != saved_value:
-                            setattr(instance, field, new_value)
-                            save_changes = True
+    # 3. save changes in depbases
+                elif field == 'depbases':
+                    saved_value = getattr(instance, field)
+                    uploaded_field_arr = new_value.split(';') if new_value else []
+
+                    checked_field_arr = []
+                    checked_field_str = None
+                    if uploaded_field_arr:
+                        for base_pk_str in uploaded_field_arr:
+                            base_pk_int = int(base_pk_str)
+                            base_instance = sch_mod.Department.objects.get_or_none(
+                                base=base_pk_int,
+                                examyear=examyear
+                            )
+                            if base_instance:
+                                checked_field_arr.append(base_pk_str)
+
+                        if checked_field_arr:
+                            checked_field_arr.sort()
+                            checked_field_str = ';'.join(checked_field_arr)
+                    if checked_field_str != saved_value:
+                        setattr(instance, field, new_value)
+                        save_changes = True
+
+                elif field == 'sequence':
+                    saved_value = getattr(instance, field)
+                    if new_value != saved_value:
+                        setattr(instance, field, new_value)
+                        save_changes = True
 # --- end of for loop ---
 
 # 5. save changes

@@ -79,6 +79,7 @@ class validate_unique_department_abbrev(object):
 # ===  School  =====================================
 class validate_unique_school_field(object):  # PR2018-08-27:
     def __init__(self, request_user, fieldname, instance=None):
+        # TODO change request.user.examyear to sel_examyear
         self.examyear = request_user.examyear  # examyear has always value; None is blocked in accounts.FORM PERMITS
         self.fieldname = fieldname  # instance=None when adding new record
         self.instance = instance  # instance=None when adding new record

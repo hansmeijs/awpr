@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MSCH_tbody_select = document.getElementById("id_MSCH_tbody_select")
         const el_MSCH_btn_delete = document.getElementById("id_MSCH_btn_delete");
         const el_MSCH_btn_save = document.getElementById("id_MSCH_btn_save");
-        const el_MSCH_div_form_controls = document.getElementById("id_div_form_controls")
+        const el_MSCH_div_form_controls = document.getElementById("id_MSCH_form_controls")
         if(el_MSCH_div_form_controls){
             let form_elements = el_MSCH_div_form_controls.querySelectorAll(".awp_input_text")
             for (let i = 0, el, len = form_elements.length; i < len; i++) {
@@ -314,7 +314,6 @@ document.addEventListener('DOMContentLoaded', function() {
         //show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
 // ---  fill datatable
-        CreateTblHeader();
         FillTblRows();
 
     }  // HandleBtnSelect
@@ -341,19 +340,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }  // HandleTableRowClicked
 
+//========= FillTblRows  ====================================
+    function FillTblRows() {
+        //console.log( "===== FillTblRows  === ");
+        const tblName = get_tblName_from_selectedBtn()
+        const field_setting = field_settings[tblName]
 
-//=========  CreateTblHeader  === PR2020-07-31
-    function CreateTblHeader() {
-        //console.log("===========  CreateTblHeader ======== ");
-        const tblName = get_tblName_from_selectedBtn();
+// --- get data_map
+        const data_map = get_datamap_from_tblName(tblName);
+        //console.log( "data_map", data_map);
 
 // --- reset table
         tblHead_datatable.innerText = null;
         tblBody_datatable.innerText = null;
 
-        const field_setting = field_settings[tblName]
-        //console.log("tblName", tblName);
-        //console.log("field_setting", field_setting);
+// --- create table header
+        CreateTblHeader(field_setting);
+
+        if(data_map){
+// --- loop through data_map
+          for (const [map_id, map_dict] of data_map.entries()) {
+          // --- insert row at row_index
+                const order_by = (map_dict.sb_code) ? map_dict.sb_code.toLowerCase() : "";
+                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
+                let tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, map_dict, row_index)
+          };
+        }  // if(!!data_map)
+    }  // FillTblRows
+
+
+//=========  CreateTblHeader  === PR2020-07-31 PR2021-05-10
+    function CreateTblHeader(field_setting) {
+        //console.log("===========  CreateTblHeader ======== ");
+
+// --- reset table
+        tblHead_datatable.innerText = null;
+        tblBody_datatable.innerText = null;
 
         if(field_setting){
             const column_count = field_setting.field_names.length;
@@ -420,29 +442,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 th_filter.appendChild(el_filter)
                 tblRow_filter.appendChild(th_filter);
             }  // for (let j = 0; j < column_count; j++)
-
         }  // if(field_settings[tblName]){
     };  //  CreateTblHeader
 
-//========= FillTblRows  ====================================
-    function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
-        const tblName = get_tblName_from_selectedBtn()
-        const data_map = get_datamap_from_tblName(tblName);
-
-// --- reset table
-        tblBody_datatable.innerText = null
-        //console.log("data_map", data_map);
-        if(data_map){
-// --- loop through data_map
-          for (const [map_id, map_dict] of data_map.entries()) {
-          // --- insert row at row_index
-                const order_by = (map_dict.sb_code) ? map_dict.sb_code.toLowerCase() : "";
-                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
-                let tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, map_dict, row_index)
-          };
-        }  // if(!!data_map)
-    }  // FillTblRows
 
 //=========  CreateTblRow  ================ PR2020-06-09
     function CreateTblRow(tblBody, tblName, map_id, map_dict, row_index) {
@@ -803,7 +805,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(is_delete) {upload_dict.delete = true}
             }
     // ---  put changed values of input elements in upload_dict
-            let form_elements = document.getElementById("id_div_form_controls").querySelectorAll(".awp_input_text")
+            let form_elements = el_MSCH_div_form_controls.querySelectorAll(".awp_input_text")
             for (let i = 0, el_input; el_input = form_elements[i]; i++) {
                 const fldName = get_attr_from_el(el_input, "data-field");
                 let new_value = (el_input.value) ? el_input.value : null;

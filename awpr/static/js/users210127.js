@@ -56,8 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     const field_settings = {
-        users: { //PR2020-06-02 dont use loc.Employee here, has no value yet. Use "Employee" here and loc in  CreateTblHeader
-                    field_caption: ["", "School", "User", "Name", "Email_address",  "Activated", "Last_loggedin", "Inactive"],
+        users: { field_caption: ["", "School", "User", "Name", "Email_address",  "Activated", "Last_loggedin", "Inactive"],
                     field_names: ["select", "sb_code", "username", "last_name", "email",  "activated", "last_login", "is_active"],
                     field_tags: ["div", "div", "div", "div", "div",  "div", "div", "div"],
                     filter_tags: ["select", "text","text",  "text", "text",  "triple", "text", "triple"],
@@ -398,12 +397,11 @@ document.addEventListener('DOMContentLoaded', function() {
         tblBody_datatable.innerText = null
 
 // --- create table header and filter row
-        CreateTblHeader();
+        CreateTblHeader(field_setting);
 
         if(data_map){
 // --- loop through data_map
           for (const [map_id, map_dict] of data_map.entries()) {
-
             //console.log( "map_dict ", map_dict);
           // --- insert row at row_index
                 const schoolcode_lc_trail = ( (map_dict.sb_code) ? map_dict.sb_code.toLowerCase() : "" ) + " ".repeat(8) ;
@@ -421,11 +419,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-03-23
-    function CreateTblHeader() {
+    function CreateTblHeader(field_setting) {
         //console.log("===  CreateTblHeader ===== ");
-
-        const tblName = get_tblName_from_selectedBtn();
-        const field_setting = field_settings[tblName]
 
 // --- reset table
         tblHead_datatable.innerText = null;
@@ -520,7 +515,6 @@ document.addEventListener('DOMContentLoaded', function() {
             tblRow = tblBody.insertRow(row_index);
             tblRow.id = map_id
 
-        //console.log("map_id", map_id);
 // --- add data attributes to tblRow
             tblRow.setAttribute("data-pk", map_dict.id);
             tblRow.setAttribute("data-ppk", map_dict.company_id);
@@ -594,6 +588,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         } else {
                             el.classList.add(class_width, class_align);
                         }
+            // --- append element
                     td.appendChild(el);
     // --- put value in field
                     UpdateField(el, map_dict)

@@ -254,6 +254,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
 # ===== EXAMYEAR =======================
     # every user can change examyear, is stored in Usersetting.
     # request_setting: {'page_school': {'mode': 'get'}, 'sel_examyear_pk': 6}
+
 # - get selected examyear from request_setting, Usersetting or first in list
     sel_examyear_instance, sel_examyear_save, may_select_examyear = af.get_sel_examyear_instance(request, request_setting)
 

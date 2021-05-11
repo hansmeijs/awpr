@@ -44,7 +44,7 @@ class LevelAddForm(ModelForm):
         self.request = kwargs.pop('request', None)
         super(LevelAddForm, self).__init__(*args, **kwargs)
 
-        # ======= field 'name' ============
+        # ======= field 'name' ============ # TODO change request.user.examyear to sel_examyear
         self.fields['name'] = CharField(
             max_length = 50,
             required = True,
@@ -56,11 +56,13 @@ class LevelAddForm(ModelForm):
         self.fields['abbrev'] = CharField(
             max_length = 6,
             required = True,
+            # TODO change request.user.examyear to sel_examyear
             validators=[validate_unique_level_abbrev(self.request.user.examyear)]
         )
 
         # ======= field 'depbase_list' ============
         # in AddMode: get examyear from request.user
+        # TODO change request.user.examyear to sel_examyear
         dep_choices = Department.depbase_list_choices(examyear=self.request.user.examyear)
         self.fields['depbase_list_field'] = MultipleChoiceField(
             required=False,
@@ -87,12 +89,14 @@ class LevelEditForm(ModelForm):  # PR2018-08-11
 
         # ======= field 'name' ============
         self.fields['name'] = CharField(
+            # TODO change request.user.examyear to sel_examyear
             max_length = 50,
             required = True,
             validators=[validate_unique_level_name(self.request.user.examyear, self.this_instance)])
         self.fields['name'].widget.attrs.update({'autofocus': 'autofocus'})
 
         # ======= field 'abbrev' ============
+        # TODO change request.user.examyear to sel_examyear
         self.fields['abbrev'] = CharField(
             max_length = 8,
             required = True,
@@ -133,6 +137,7 @@ class SectorAddForm(ModelForm): # PR2018-08-24
         super(SectorAddForm, self).__init__(*args, **kwargs)
 
         # ======= field 'name' ============
+        # TODO change request.user.examyear to sel_examyear
         self.fields['name'] = CharField(
             max_length = 50,
             required = True,
@@ -141,6 +146,7 @@ class SectorAddForm(ModelForm): # PR2018-08-24
         self.fields['name'].widget.attrs.update({'autofocus': 'autofocus'}) # , 'placeholder': 'Default subject name'
 
         # ======= field 'abbrev' ============
+        # TODO change request.user.examyear to sel_examyear
         self.fields['abbrev'] = CharField(
             max_length = 6,
             required = True,
