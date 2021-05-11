@@ -553,7 +553,7 @@ class ExamUploadView(View):
                     examyear = sch_mod.Examyear.objects.get_or_none(id=examyear_pk, country=req_usr.country)
 
                 # note: exams cannot be changed before publishing examyear, therefore filter on examyear.published
-                if examyear and examyear.published and not examyear.locked:
+                if examyear and not examyear.locked:  # TODO add and examyear.published
 # - get subject
                     subject = subj_mod.Subject.objects.get_or_none(
                         pk=subject_pk,
@@ -564,9 +564,21 @@ class ExamUploadView(View):
 
 # +++++ Create new instance if is_create:
                     if mode == 'create':
-                        exam = create_exam_instance(subject, upload_dict, error_list, request)
+                        examperiod_int = upload_dict.get('examperiod')
+                        examtype = upload_dict.get('examtype')
+                        exam, msg_err = create_exam_instance(subject, examperiod_int, examtype, request)
+
+                        if exam:
+                            append_dict['created'] = True
+                        elif msg_err:
+                            append_dict['err_create'] = msg_err
+
+                        if logging_on:
+                            logger.debug('created exam: ' + str(exam))
+                            logger.debug('append_dict: ' + str(append_dict))
+
                     else:
-        # - else: get existing exam instance
+# - else: get existing exam instance
                         exam = subj_mod.Exam.objects.get_or_none(
                             id=exam_pk,
                             subject=subject
@@ -575,7 +587,7 @@ class ExamUploadView(View):
                         logger.debug('exam: ' + str(exam))
 
                     if exam:
-    # +++++ Delete instance if is_delete
+# +++++ Delete instance if is_delete
                         if mode == 'delete':
                             deleted_row = delete_exam_instance(exam, error_list, request)
                             if deleted_row:
@@ -590,11 +602,9 @@ class ExamUploadView(View):
                     s_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
 
                     setting_dict = {'sel_examyear_pk': examyear.pk,
-                                    'sel_examperiod': examperiod,
-                                    'sel_depbase_pk': depbase_pk
-                                    }
-
-                    exam_rows = create_exam_rows(setting_dict, append_dict, exam_pk)
+                                    'sel_depbase_pk': depbase_pk,
+                                    'exam_pk': exam.pk}
+                    exam_rows = create_exam_rows(setting_dict, append_dict)
                     if deleted_list:
                         exam_rows.extend(deleted_list)
                     if exam_rows:
@@ -620,20 +630,19 @@ class ExamApproveView(View):  # PR2021-04-04
 # --- end of ExamApproveView
 
 
-def create_exam_instance(subject, upload_dict, error_list, request):
+def create_exam_instance(subject, examperiod_int, examtype, request):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' --- create_exam_instance --- ')
+        logger.debug('subject: ' + str(subject))
+        logger.debug('examperiod_int: ' + str(examperiod_int))
+        logger.debug('examtype: ' + str(examtype))
 
     exam = None
+    msg_err = None
 # - create exam
     try:
-        examperiod_int = upload_dict.get('examperiod')
-        examtype = upload_dict.get('examtype')
-        if logging_on:
-            logger.debug('examperiod_int: ' + str(examperiod_int))
-            logger.debug('examtype: ' + str(examtype))
-
+        #a = 1 / 0 # to create error
         exam = subj_mod.Exam(
             subject=subject,
             examperiod=examperiod_int,
@@ -646,26 +655,38 @@ def create_exam_instance(subject, upload_dict, error_list, request):
     except Exception as e:
 # - create error when exam is  not created
         logger.error(getattr(e, 'message', str(e)))
-        error_list.append(_('This item could not be created.'))
+        msg_err = ("An error occurred. This exam could not be created.")
+        if logging_on:
+            logger.debug('msg_err: ' + str(msg_err))
 
-    return exam
+    return exam, msg_err
 # - end of create_exam_instance
 
-def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05
-    #logger.debug('-----  delete_emplhour  -----')
 
+def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' --- delete_exam_instance --- ')
+        logger.debug('instance: ' + str(instance))
 # - create deleted_row
     deleted_row = {'pk': instance.pk,
-                       'mapid': 'exam_' + str(instance.pk),
-                       'deleted': True}
+                    'mapid': 'exam_' + str(instance.pk),
+                    'deleted': True}
+    if logging_on:
+        logger.debug('deleted_row: ' + str(deleted_row))
 # - delete instance
-    try:
-        instance.delete()
-    except Exception as e:
-        deleted_row = None
-        logger.error(getattr(e, 'message', str(e)))
-        error_list.append(_('This item could not be created.'))
+    #try:
+    if True:
+        instance.delete(request=request)
+    #except Exception as e:
+    #    deleted_row = None
+   #     logger.error(getattr(e, 'message', str(e)))
+    #    error_list.append(_('This item could not be created.'))
 
+    if logging_on:
+        logger.debug('deleted_row: ' + str(deleted_row))
+        logger.debug('error_list: ' + str(error_list))
     return deleted_row
 # - end of delete_exam_instance
 
@@ -746,7 +767,7 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request):
 # - end of update_exam_instance
 
 
-def create_exam_rows(setting_dict, append_dict, exam_pk):
+def create_exam_rows(setting_dict, append_dict):
     # --- create rows of all exams of this examyear  PR2021-04-05
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -756,72 +777,49 @@ def create_exam_rows(setting_dict, append_dict, exam_pk):
     sel_examyear_pk = setting_dict.get('sel_examyear_pk')
     sel_examperiod = setting_dict.get('sel_examperiod')
     sel_depbase_pk = setting_dict.get('sel_depbase_pk')
+    depbase_lookup = ''.join( ('%;', str(sel_depbase_pk), ';%') )
+    exam_pk = setting_dict.get('exam_pk')
+
     if logging_on:
+        logger.debug('exam_pk: ' + str(exam_pk))
         logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
         logger.debug('sel_examperiod:  ' + str(sel_examperiod))
         logger.debug('sel_depbase_pk:  ' + str(sel_depbase_pk))
-        logger.debug('exam_pk:         ' + str(exam_pk))
 
     exam_rows = []
-    if sel_examyear_pk:
-        sql_keys = {'ey_id': sel_examyear_pk, 'ex_per': sel_examperiod}
-        sql_list = [
-            "SELECT ex.id, ex.subject_id, subj.base_id AS subj_base_id, subj.examyear_id AS subj_examyear_id,",
-            "CONCAT('exam_', ex.id::TEXT) AS mapid,",
-            "ex.examperiod, ex.examtype, ex.depbases, ex.levelbases, ex.sectorbases,",
-            "ex.assignment, ex.amount, ex.maxscore,",
-            "ex.status, ex.auth1by_id, ex.auth2by_id, ex.locked,",
-            "ex.modifiedby_id, ex.modifiedat,",
-            "sb.code AS subj_base_code, subj.name AS subj_name,",
-            "ey.code AS ey_code, ey.locked AS ey_locked,",
-            "SUBSTRING(au.username, 7) AS modby_username",
+    sql_keys = {'ey_id': sel_examyear_pk, 'depbase_lookup': depbase_lookup}
 
-            "FROM subjects_exam AS ex",
-            "INNER JOIN subjects_subject AS subj ON (subj.id = ex.subject_id)",
-            "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
-            "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
-            "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
+    sql_list = [
+        "SELECT ex.id, ex.subject_id, subj.base_id AS subj_base_id, subj.examyear_id AS subj_examyear_id,",
+        "CONCAT('exam_', ex.id::TEXT) AS mapid,",
+        "ex.examperiod, ex.examtype, ex.depbases, ex.levelbases, ex.sectorbases,",
+        "ex.assignment, ex.amount, ex.maxscore,",
+        "ex.status, ex.auth1by_id, ex.auth2by_id, ex.locked,",
+        "ex.modifiedby_id, ex.modifiedat,",
+        "sb.code AS subj_base_code, subj.name AS subj_name,",
+        "ey.code AS ey_code, ey.locked AS ey_locked,",
+        "SUBSTRING(au.username, 7) AS modby_username",
 
-            #"WHERE ey.id = %(ey_id)s::INT"
-            "WHERE ey.id = %(ey_id)s::INT AND ex.examperiod = %(ex_per)s::INT"
-        ]
-        if exam_pk:
-            sql_keys['ex_id'] = exam_pk
-            sql_list.append('AND ex.id = %(ex_id)s::INT')
-        else:
-            sql_list.append("ORDER BY LOWER(sb.code)")
+        "FROM subjects_exam AS ex",
+        "INNER JOIN subjects_subject AS subj ON (subj.id = ex.subject_id)",
+        "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
+        "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
+        "WHERE ey.id = %(ey_id)s::INT AND CONCAT(';', ex.depbases::TEXT, ';') LIKE %(depbase_lookup)s::TEXT"
+    ]
+    if exam_pk:
+        sql_keys ['ex_id'] = exam_pk
+        sql_list.append('AND ex.id = %(ex_id)s::INT')
+    elif sel_examperiod:
+        sql_keys ['ex_per'] = sel_examperiod
+        sql_list.append("AND ex.examperiod = %(ex_per)s::INT")
+        sql_list.append("ORDER BY LOWER(sb.code)")
 
-        sql = ' '.join(sql_list)
+    sql = ' '.join(sql_list)
 
-        with connection.cursor() as cursor:
-            cursor.execute(sql, sql_keys)
-
-    # filtering depbases in sql is too complicated. Filter out when creating dict PR2021-05-07
-            columns = [col[0] for col in cursor.description]
-
-            if logging_on:
-                logger.debug('columns: ' + str(columns))
-
-            for row in cursor.fetchall():
-                logger.debug('row: ' + str(row))
-                row_dict = dict(zip(columns, row))
-                logger.debug('row_dict: ' + str(row_dict))
-
-                depbases = row_dict.get('depbases')
-                if logging_on:
-                    logger.debug('----------- ' + str(row_dict.get('subj_base_code')))
-                    logger.debug('depbases: ' + str(depbases))
-                    logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
-
-                if depbases and sel_depbase_pk:
-                    depbases_arr = depbases.split(';')
-                    logger.debug('depbases_arr: ' + str(depbases_arr))
-                    if logging_on:
-                        logger.debug('depbases_arr: ' + str(depbases_arr))
-                    if depbases_arr and str(sel_depbase_pk) in depbases_arr:
-                        if logging_on:
-                            logger.debug('===> append row_dict')
-                        exam_rows.append(row_dict)
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        exam_rows = af.dictfetchall(cursor)
 
         # - add messages to exam_row
         if exam_pk and exam_rows:
@@ -831,8 +829,8 @@ def create_exam_rows(setting_dict, append_dict, exam_pk):
                 for key, value in append_dict.items():
                     row[key] = value
 
-    if logging_on:
-        logger.debug('exam_rows: ' + str(exam_rows))
+    #if logging_on:
+        #logger.debug('exam_rows: ' + str(exam_rows))
 
     return exam_rows
 # --- end of create_exam_rows

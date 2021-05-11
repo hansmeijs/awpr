@@ -325,11 +325,6 @@ class NoteAttachmentDownloadView(View): # PR2021-03-17
 
 #################################################################################
 
-
-
-
-
-
 @method_decorator([login_required], name='dispatch')
 class StudentsubjectUploadView(View):  # PR2020-11-20
 

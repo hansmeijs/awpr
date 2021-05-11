@@ -17,6 +17,7 @@ import json
 from awpr.settings import AUTH_USER_MODEL
 from django.utils.translation import ugettext_lazy as _
 from awpr import constants as c
+from awpr import settings as s
 from awpr.storage_backends import PrivateMediaStorage
 
 # PR2018-09-15 Departmnet moved from Subjects to Schools; because this doesn/'t work, circular reference: from subjects.models import Department
@@ -661,11 +662,16 @@ def delete_instance(instance, error_list, request, this_text=None):
 
 
 def save_to_log(instance, req_mode, request):
-    logger.debug(' ----- save_to_log  ----- mode: ' + str(req_mode) )  # PR2019-02-23 PR2020-10-23 PR2020-12-15
+    # PR2019-02-23 PR2020-10-23 PR2020-12-15 PR2021-05-11
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- save_to_log  ----- mode: ' + str(req_mode))
+        logger.debug('instance: ' + str(instance))
 
     if instance:
         model_name = str(instance.get_model_name())
-        logger.debug('model_name: ' + str(model_name))
+        if logging_on:
+            logger.debug('model_name: ' + str(model_name))
         mode = req_mode[0:1] if req_mode else '-'
 
         modby_id = None
@@ -690,7 +696,6 @@ def save_to_log(instance, req_mode, request):
             pass
         elif model_name == 'Department':
             copy_department_to_log(mode, instance, modby_id, mod_at)
-
         elif model_name == 'School':
             pass
         elif model_name == 'School_message':

@@ -87,7 +87,7 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
     # PR2018-05-28 set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('===== get_headerbar_param ===== ' + str(page))
 

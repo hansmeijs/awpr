@@ -189,7 +189,7 @@
     }  // UpdateHeaderbar
 
 //========= b_get_depbases_display  ============= PPR2021-05-06
-    function b_get_depbases_display(department_map, fld_value) {
+    function b_get_depbases_display(department_map, fldName, fld_value) {
         // function converts "1;2;3" into "Vsbo, Havo, Vwo"
         let depbase_codes = ""
         if(fld_value){
@@ -198,10 +198,11 @@
             if (arr && arr.length){
                 for (const [map_id, map_dict] of department_map.entries()) {
                     const depbase_id = map_dict.base_id;
+                    const code = (map_dict[fldName]) ? map_dict[fldName] : "-";
                     if(depbase_id){
                         if (arr.includes(depbase_id.toString())){
                             if(depbase_codes) { depbase_codes += ", "}
-                            depbase_codes += map_dict.base_code;
+                            depbase_codes += code;
             }}}};
         }
         return depbase_codes;

@@ -58,16 +58,16 @@ document.addEventListener("DOMContentLoaded", function() {
     const field_settings = {
         exam: { field_caption: ["", "Abbreviation", "Subject", "Exam_period", "Exam_type",
                                 "Leerwegen", "", "Download_PDF", "Download_JSON"],
-                    field_names: ["select", "subj_base_code", "subj_name", "examperiod", "examtype",
-                                "levelbases", "status", "printpdf", "printjson"],
-                    field_tags: ["div", "div", "div", "div", "div",
-                                "div", "div", "a", "a"],
-                    filter_tags: ["text",  "text", "text", "text", "text",
-                                  "text", "text", "text","text"],
-                    field_width: ["020", "100", "240", "120", "120",
-                                    "120", "020", "090", "090"],
-                    field_align: ["c",  "l", "l", "l", "l",
-                                 "l", "l", "c", "c", "c"]}
+                field_names: ["select", "subj_base_code", "subj_name", "examperiod", "examtype",
+                            "levelbases", "status", "printpdf", "printjson"],
+                field_tags: ["div", "div", "div", "div", "div",
+                            "div", "div", "a", "a"],
+                filter_tags: ["text",  "text", "text", "text", "text",
+                              "text", "text", "text","text"],
+                field_width: ["020", "100", "240", "120", "120",
+                                "120", "020", "090", "090"],
+                field_align: ["c",  "l", "l", "l", "l",
+                             "l", "l", "c", "c", "c"]}
         };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -341,7 +341,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let el_submenu = document.getElementById("id_submenu")
         AddSubmenuButton(el_submenu, loc.Add_exam, function() {MEX_Open()});
-        AddSubmenuButton(el_submenu, loc.Delete_exam, function() {ModConfirmOpen("delete")});
+        AddSubmenuButton(el_submenu, loc.Delete_exam, function() {ModConfirmOpen("exam", "delete")});
         AddSubmenuButton(el_submenu, loc.Publish_exam, function() {ModConfirmOpen("deleteXX")});
         //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A_form, null, "id_submenu_download_ex2a", url_grade_download_ex2a, true);  // true = download
         //if (permit.approve_grade){
@@ -387,8 +387,10 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  update setting_dict.sel_student_pk
         // only select employee from select table
         const row_id = tr_clicked.id
+        console.log( "row_id: ", row_id, typeof row_id);
         if(row_id){
             const map_dict = get_mapdict_from_datamap_by_id(exam_map, row_id)
+        console.log( "map_dict: ", map_dict, typeof map_dict);
             setting_dict.sel_exam_pk = map_dict.id;
         }
         console.log( "setting_dict: ", setting_dict);
@@ -517,8 +519,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  FillSBRoptionsSelectLevel  ================ PR2021-03-06 PR2021-05-07
     function FillSBRoptionsSelectLevel(rows) {
-        console.log("=== FillSBRoptionsSelectLevel");
-        console.log("rows: ", rows)
+        //console.log("=== FillSBRoptionsSelectLevel");
+        //console.log("rows: ", rows)
 
         const display_rows = []
         const has_items = (!!rows && !!rows.length);
@@ -614,10 +616,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= FillTblRows  ====================================
     function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
+        console.log( "===== FillTblRows  === ");
 
         const tblName = "exam"  // get_tblName_from_selectedBtn()
         const field_setting = field_settings[tblName];
+        console.log("field_setting", field_setting);
 
 // --- get data_map
         const data_map = exam_map;
@@ -723,7 +726,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     };  //  CreateTblHeader
 
-//=========  CreateTblRow  ================ PR2020-06-09
+//=========  CreateTblRow  ================ PR2020-06-09 PR2021-05-11
     function CreateTblRow(tblName, field_setting, map_id, map_dict, row_index) {
         //console.log("=========  CreateTblRow =========");
         //console.log("map_dict", map_dict);
@@ -736,7 +739,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // --- insert tblRow into tblBody at row_index
         let tblRow = tblBody_datatable.insertRow(row_index);
-        tblRow.id = map_id
+        tblRow.id = map_id;
 
 // --- add data attributes to tblRow
         const pk_int = map_dict.id
@@ -836,7 +839,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 el.innerText = loc.examperiod_caption[map_dict.examperiod];
             } else if (field_name === "examtype"){
                 el.innerText = loc.examtype_caption[map_dict.examtype];
-
+            } else if ( field_name === "levelbases") {
+                 el.innerText = b_get_depbases_display(level_map, "abbrev", fld_value);
             } else if (field_name === "printpdf"){
         // +++  create href and put it in button PR2021-05-07
                 const href_str = map_dict.id.toString()
@@ -871,10 +875,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= set_columns_hidden  ====== PR2021-05-07
     function set_columns_hidden() {
-        console.log( "===== set_columns_hidden  === ");
-        console.log("setting_dict.sel_dep_level_req", setting_dict.sel_dep_level_req);
+        //console.log( "===== set_columns_hidden  === ");
+        //console.log("setting_dict.sel_dep_level_req", setting_dict.sel_dep_level_req);
         columns_hidden.levelbases = (!setting_dict.sel_dep_level_req);
-        console.log("columns_hidden.levelbases", columns_hidden.levelbases);
+        //console.log("columns_hidden.levelbases", columns_hidden.levelbases);
     }  // set_columns_hidden
 
 
@@ -1175,11 +1179,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     if ("updated_exam_rows" in response) {
                         const el_MSTUD_loader = document.getElementById("id_MSTUD_loader");
                         if(el_MSTUD_loader){ el_MSTUD_loader.classList.add(cls_visible_hide)};
-                        const tblName = "exam";
-                        const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                        RefreshDataMap(tblName, field_names, response.updated_exam_rows, exam_map);
+                        RefreshDataMap("exam", response.updated_exam_rows, exam_map);
                     };
-                    $("#id_mod_student").modal("hide");
 
                     if ("err_html" in response) {
                         b_show_mod_message(response.err_html)
@@ -1189,21 +1190,9 @@ document.addEventListener("DOMContentLoaded", function() {
                             MAG_UpdateFromResponse (response.msg_dict);
                         //}
                     }
-                    if ("updated_grade_rows" in response) {
-                        const tblName = "grades";
-                        const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                        RefreshDataMap(tblName, field_names, response.updated_grade_rows, grade_map);
-                    }
                     if ("updated_published_rows" in response) {
-                        const tblName = "published";
-                        const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                        RefreshDataMap(tblName, field_names, response.updated_published_rows, published_map);
+                        RefreshDataMap("published", response.updated_published_rows, published_map);
                     }
-
-                    if ("studentsubjectnote_rows" in response) {
-                        b_fill_datamap(studentsubjectnote_map, response.studentsubjectnote_rows)
-                        ModNote_FillNotes(response.studentsubjectnote_rows);
-                    };
 
                 },  // success: function (response) {
                 error: function (xhr, msg) {
@@ -1919,23 +1908,28 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2021-05-06
-    function ModConfirmOpen(mode, el_input) {
+    function ModConfirmOpen(table, mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
-        // values of mode are : "print_exam", "delete"
+        console.log("mode", mode)
+        // values of mode are : "delete",
         // TODO print_exam not in use: remove, add 'publish'
         if(permit_dict.crud_exam){
+
+            const is_delete = (mode === "delete")
 
     // ---  get selected_pk
             let tblName = null, selected_pk = null;
             // tblRow is undefined when clicked on delete btn in submenu btn or form (no inactive btn)
             const tblRow = get_tablerow_selected(el_input);
+            console.log("tblRow", tblRow )
             if(tblRow){
                 tblName = get_attr_from_el(tblRow, "data-table")
                 selected_pk = get_attr_from_el(tblRow, "data-pk")
             } else {
-                tblName =  (mode === "print_exam") ? "exam" : null;
+                tblName = table;
                 selected_pk = (tblName === "exam") ? setting_dict.sel_exam_pk : null;
             }
+            console.log("tblName", tblName )
             console.log("selected_pk", selected_pk )
 
     // ---  get info from data_map
@@ -1949,27 +1943,19 @@ document.addEventListener("DOMContentLoaded", function() {
             console.log("map_dict", map_dict)
 
     // ---  create mod_dict
-            mod_dict = {mode: mode};
+            mod_dict = {mode: mode, table: tblName};
             const has_selected_item = (!isEmpty(map_dict));
             if(has_selected_item){
                 mod_dict.mapid = map_id;
-                mod_dict.exam_id = map_dict.id;
-                mod_dict.subj_base_id = map_dict.subj_base_id;
-                mod_dict.subject_id = map_dict.subject_id;
-                mod_dict.subj_base_code = map_dict.subj_base_code;
+                mod_dict.exam_pk = map_dict.id;
+                mod_dict.subject_pk = map_dict.subject_id;
                 mod_dict.subj_name = map_dict.subj_name;
-                mod_dict.examperiod = map_dict.examperiod;
-                mod_dict.examtype = map_dict.examtype;
-                mod_dict.depbases = map_dict.depbases;
-                mod_dict.levelbases = map_dict.levelbases;
-                mod_dict.sectorbases = map_dict.sectorbases;
-
-                href_str = map_dict.id.toString()
-
+                mod_dict.examyear_pk = setting_dict.sel_examyear_pk;
+                mod_dict.depbase_pk = setting_dict.sel_depbase_pk;
             };
 
     // ---  get header_text
-            let header_text = (tblName === "exam") ? loc.Print_exam : null;
+            let header_text = (is_delete) ? loc.Delete_exam : null;
 
     // ---  put text in modal form
             let msg_html = "", msg_list = [];
@@ -1979,7 +1965,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 hide_save_btn = true;
             } else {
 
-                msg_list.push(loc.Exam + " '" + mod_dict.subj_name + "'" + loc.will_be_printed);
+                msg_list.push(loc.Exam + " '" + mod_dict.subj_name + "'" + loc.will_be_deleted);
                 msg_list.push(loc.Do_you_want_to_continue);
 
             }
@@ -1992,12 +1978,11 @@ document.addEventListener("DOMContentLoaded", function() {
             el_confirm_header.innerText = header_text;
             el_confirm_loader.classList.add(cls_visible_hide)
             el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
+            el_confirm_btn_save.innerText = is_delete ? loc.Yes_delete : loc.OK;
+            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", is_delete, "btn-primary");
 
-            const caption_save = (mode === "delete") ? loc.Yes_delete :
-                            (mode === "inactive") ? ( (mod_dict.current_isactive) ? loc.Yes_make_inactive : loc.Yes_make_active ) : loc.OK;
-            el_confirm_btn_save.innerText = caption_save;
             add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
-
+            el_confirm_btn_cancel.innerText = (is_delete) ? loc.No_cancel : loc.Cancel;
 
 // +++  create href and put it in save button PR2021-05-06
             if (href_str){
@@ -2009,9 +1994,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 // target="_blank opens file in new tab
                 el_confirm_btn_save.setAttribute("target", "_blank")
             }
-
-            add_or_remove_class (el_confirm_btn_save, "btn-primary", (mode !== "delete"));
-            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete"));
 
     // set focus to cancel button
             setTimeout(function (){
@@ -2027,27 +2009,23 @@ document.addEventListener("DOMContentLoaded", function() {
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
-        let close_modal = !may_edit;
+        let close_modal = !permit_dict.crud_exam;
 
         if(permit_dict.crud_exam){
 
     // ---  Upload Changes
-            let upload_dict = { id: {pk: mod_dict.user_pk,
-                                     ppk: mod_dict.user_ppk,
-                                     table: "user",
-                                     mode: mod_dict.mode,
-                                     mapid: mod_dict.mapid}};
-            if (mod_dict.mode === "inactive") {
-                upload_dict.is_active = {value: mod_dict.new_isactive, update: true}
-            };
-
-            console.log("upload_dict: ", upload_dict);
-            UploadChanges(upload_dict, url_subject_upload);
+            let upload_dict = { mode: mod_dict.mode,
+                                exam_pk: mod_dict.exam_pk,
+                                examyear_pk: mod_dict.examyear_pk,
+                                depbase_pk: mod_dict.depbase_pk,
+                                subject_pk: mod_dict.subject_pk,
+                                };
+            UploadChanges(upload_dict, url_exam_upload);
         };
 // ---  hide modal
-        if(close_modal) {
+        //if(close_modal) {
             $("#id_mod_confirm").modal("hide");
-        }
+        //}
     }  // ModConfirmSave
 
 //=========  ModConfirmResponse  ================ PR2019-06-23
@@ -2701,23 +2679,25 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 //###########################################################################
 // +++++++++++++++++ REFRESH DATA MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
 
-//=========  RefreshDataMap  ================ PR2020-08-16 PR2020-09-30
-    function RefreshDataMap(tblName, field_names, data_rows, data_map) {
+//=========  RefreshDataMap  ================ PR2020-08-16 PR2020-09-30 PR2021-05-11
+    function RefreshDataMap(tblName, data_rows, data_map) {
         console.log(" --- RefreshDataMap  ---");
         console.log("data_rows", data_rows);
+
+        const field_setting = field_settings[tblName];
         if (data_rows) {
-            const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
             for (let i = 0, update_dict; update_dict = data_rows[i]; i++) {
-                RefreshDatamapItem(tblName, field_names, update_dict, data_map);
+                RefreshDatamapItem(tblName, field_setting, update_dict, data_map);
             }
         }
     }  //  RefreshDataMap
 
 //=========  RefreshDatamapItem  ================ PR2020-08-16 PR2020-09-30
-    function RefreshDatamapItem(tblName, field_names, update_dict, data_map) {
+    function RefreshDatamapItem(tblName, field_setting, update_dict, data_map) {
         console.log(" --- RefreshDatamapItem  ---");
         console.log("update_dict", update_dict);
         if(!isEmpty(update_dict)){
+            const field_names = field_setting.field_names;
 
 // ---  update or add update_dict in subject_map
             let updated_columns = [];
@@ -2726,10 +2706,11 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
             const map_id = update_dict.mapid;
             let tblRow = document.getElementById(map_id);
 
-            const is_deleted = get_dict_value(update_dict, ["deleted"], false)
-            const is_created = get_dict_value(update_dict, ["created"], false)
-            const err_dict = (update_dict.error) ? update_dict.error : null;
+            const is_deleted = get_dict_value(update_dict, ["deleted"], false);
+            const is_created = get_dict_value(update_dict, ["created"], false);
+            const err_dict = get_dict_value(update_dict, ["error"], {});
             console.log("err_dict", err_dict);
+            console.log("is_created", is_created);
 
 // ++++ created ++++
             if(is_created){
@@ -2738,8 +2719,8 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                 updated_columns.push("created")
     // ---  create row in table., insert in alphabetical order
                 let order_by = (update_dict.fullname) ? update_dict.fullname.toLowerCase() : ""
-                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
-                tblRow = CreateTblRow(map_id, update_dict, row_index)
+                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by);
+                tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict, row_index);
     // ---  scrollIntoView,
                 if(tblRow){
                     tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })

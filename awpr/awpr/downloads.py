@@ -37,7 +37,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
     logging.disable(logging.NOTSET)  # logging.NOTSET re-enables logging
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ++++++++++++++++++++ DatalistDownloadView ++++++++++++++++++++ ')
@@ -121,7 +121,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         logger.debug(' ----- got osj_vw.create_exam_rows ----- ')
                         logger.debug('new_setting_dict: ' + str(new_setting_dict))
 
-                    datalists['exam_rows'] = sj_vw.create_exam_rows(new_setting_dict, {}, None)
+                    datalists['exam_rows'] = sj_vw.create_exam_rows(new_setting_dict, {})
 # ----- students
                 if datalist_request.get('student_rows'):
                     datalists['student_rows'] = st_vw.create_student_rows(new_setting_dict, {}, None)

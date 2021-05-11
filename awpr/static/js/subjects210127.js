@@ -555,7 +555,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (["abbrev", "code", "name", "last_name", "sequence", "examyear"].indexOf(field_name) > -1){
                     el_div.innerText = map_dict[field_name];
                 } else if ( field_name === "depbases") {
-                    el_div.innerText = b_get_depbases_display(department_map, fld_value);
+                    el_div.innerText = b_get_depbases_display(department_map, "base_code", fld_value);
                 } else if (field_name.slice(0, 4) === "perm") {
                     const is_true = (map_dict[field_name]) ? map_dict[field_name] : false;
                     const value_str = field_name.slice(4, 6);
