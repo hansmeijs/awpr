@@ -1801,7 +1801,10 @@ def get_assignment_dict(amount, assignment):
             qa_arr = qa.split(':')
             if len(qa_arr) > 0:
                 q_index = int(qa_arr[0])
-                assignment_dict[q_index] = qa_arr[1]
+                value = ''
+                if qa_arr[1]:
+                    value = qa_arr[1].replace(';', ' ')
+                assignment_dict[q_index] = value
     return assignment_dict
 
 

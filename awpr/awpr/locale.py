@@ -488,7 +488,7 @@ def get_locale_dict(table_dict, user_lang):
             'Amount_cannot_be_blank': _("The amount cannot be blank."),
             'amount_mustbe_between': _('The amount must be a whole number between 1 and 250.'),
             'Character': pgettext_lazy('Teken', 'Character'),
-            'character_mustbe_between': _('The character must be between A and Z or between a and z.'),
+            'character_mustbe_between': _('The character must be between B and Z or between b and z.'),
             'maxscore_mustbe_between': _('The maximum score must be a whole number between 1 and 99.'),
         }
 

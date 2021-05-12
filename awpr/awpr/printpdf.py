@@ -144,6 +144,7 @@ def write_page(canvas, header_list, data_list, question_list, assignment_dict, a
 # - draw horizontal line at bottom of header section
     x1, x2, y = left, right, top - 45 * mm
     canvas.line(x1, y, x2, y)
+
 # - draw horizontal line at top of footer section
     y = bottom + 21*mm
     canvas.line(x1, y, x2, y)
@@ -292,17 +293,17 @@ def write_question(canvas, amount, assignment_dict, max_rows_per_page, page_numb
                 if question_number <= amount:
                     data_text = assignment_dict.get(question_number)
 
-                    label_text = ''.join((str(_('Question')), ' ', str(question_number), ':'))
+                    label_text = str(question_number) + ':'
                     label_list.append(Paragraph(label_text, styleLabel))
 
                     style = styleData if data_text else styleLabel
                     if data_text is None:
-                        data_text = '____'
+                        data_text = '________'
                     data_list.append(Paragraph(data_text, style))
 
 # - get coordinates of frames
             x_label = left + col_index * col_width
-            x_data = x_label + 22 * mm
+            x_data = x_label + 10 * mm
             bottom = 20*mm
             width = 38*mm
             height = 220*mm

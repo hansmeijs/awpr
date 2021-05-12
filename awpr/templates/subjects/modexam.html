@@ -3,7 +3,7 @@
 
  <!-- =================== MODAL EXAM  =================== -->
     <div class="modal" id="id_mod_exam" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
             <div class="modal-content">
                 <div class="mex_header1">
                     <h4 id="id_MEX_header1" class="modal-title mx-2" ></h4>
@@ -78,10 +78,13 @@
                             <div id="id_MEX_col_4" class="flex_1 p-2"></div>
                         </div>
                         <div class="mx-2">
-                            <small>{% trans 'Enter the maximum score of each question or - in case of multiple choice - enter the letter of the last option.' %}</small>
+                            <small>{% trans 'In the first field, you enter the maximum score, or - in case of multiple choice - the letter of the last option.' %}</small>
                         </div>
                         <div class="mx-2">
-                            <small>{% trans 'When the maximum score of a multiple choice question is greater than 1, you must add it after the letter (e.g.: d4).' %}</small>
+                            <small>{% trans 'When the maximum score of a multiple choice question is greater than 1, you must add it after the letter (e.g.: D4).' %}</small>
+                        </div>
+                        <div class="mx-2">
+                            <small>{% trans 'In the second field you enter the answers of a multiple choice question, optionally followed by the minimum score (e.g.: be2).' %}</small>
                         </div>
                         <div class="mx-2">
                             <small>{% trans 'Click ENTER, TAB or &#8595; to go to the next question or click SHIFT+TAB or &#8593; to go to the previous one.' %}</small>

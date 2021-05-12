@@ -1245,15 +1245,46 @@ document.addEventListener("DOMContentLoaded", function() {
                 // sectorbases not in use yet PR2021-05-07
                 mod_MEX_dict.sectorbases = (map_dict.sectorbases) ? map_dict.sectorbases : null;
 
+                // mod_MEX_dict assignment: {1: {max_char: "D", max_score: 3, min_score: 1, keys: "ba"], 2: ...}"
+                // upload assignment: 1:D;3;ba;1 | 2:C;3;cd;1 "
+                // 0: max character when multiple choice or @ for open question
+                // 1: max score
+                // 2: keys (answers)
+                // 3: min score
+
                 if(map_dict.assignment){
+
+        console.log( "map_dict.assignment", map_dict.assignment);
+                    // upload assignment: 1:D;3;ba;1 | 2:C;3;cd;1 "
                     const arr = map_dict.assignment.split("|");
+        console.log( "arr", arr);
+                    // arr: ["1:D;3;ba;1", "2:C;3;cd;1 "
                     for (let i = 0, q, q_arr; q = arr[i]; i++) {
+        console.log( "q", q);
                         q_arr = q.split(":");
-                        mod_MEX_dict.assignment[q_arr[0]] = q_arr[1];
+                        // q_arr = ["1", [D~3~1~ba]"
+                        const question_number = q_arr[0];
+                        const question_values = q_arr[1];
+
+        console.log( "q_arr", q_arr);
+        console.log( "question_number", question_number);
+        console.log( "question_values", question_values);
+                        const values_arr = question_values.split(";");
+                        // values_arr = ["D", "3", "ba", "1"]
+                        if (values_arr && values_arr.length){
+                            mod_MEX_dict.assignment[question_number] = {
+                                max_char: (values_arr[0]) ? values_arr[0] : "",
+                                max_score: (values_arr[1]) ? values_arr[1] : "",
+                                keys: (values_arr[2]) ? values_arr[2] : "",
+                                min_score: (values_arr[3]) ? values_arr[3] : ""
+                            }
+                        }
                     }
                 } else {
                     mod_MEX_dict.assignment = {};
                 }
+
+        console.log( "mod_MEX_dict.assignment", mod_MEX_dict.assignment);
             }
         }
 // ---  hide select subject when existing exam, set nut readonly
@@ -1310,8 +1341,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // ---  set buttons
         MEX_SetBtn();
-    // ---  show modal
-            $("#id_mod_exam").modal({backdrop: true});
+
+// ---  show modal
+        $("#id_mod_exam").modal({backdrop: true});
 
     };  // MEX_Open
 
@@ -1347,11 +1379,26 @@ document.addEventListener("DOMContentLoaded", function() {
             upload_dict['levelbases'] = MEX_GetLevelsSelected();
 
             if(mod_MEX_dict.amount){
+
+                // mod_MEX_dict assignment: {1: {max_char: "D", max_score: 3, min_score: 1, keys: "ba"], 2: ...}"
+                // upload assignment: 1:D;3;ba;1 | 2:C;3;cd;1 "
+                // 0: max character when multiple choice or @ for open question
+                // 1: max score
+                // 2: keys (answers)
+                // 3: min score
+
                 let assignments_str = ""
                 if (mod_MEX_dict.assignment && !isEmpty(mod_MEX_dict.assignment)){
                     for (let i = 1, dict; i <= mod_MEX_dict.amount; i++) {
                         if(i in mod_MEX_dict.assignment){
-                            assignments_str += "|" + i + ":" + mod_MEX_dict.assignment[i];
+                            const value_dict = mod_MEX_dict.assignment[i];
+                            if(!isEmpty(value_dict)){
+                                const max_char = get_dict_value(value_dict, ["max_char"], "")
+                                const max_score = get_dict_value(value_dict, ["max_score"], "")
+                                const min_score = get_dict_value(value_dict, ["min_score"], "")
+                                const keys = get_dict_value(value_dict, ["keys"], "")
+                                assignments_str += "|" + i + ":" + max_char + ";" + max_score + ";" + keys  + ";" + min_score;
+                            }
                 }}};
                 if(assignments_str) { assignments_str = assignments_str.slice(1)};
                 upload_dict.assignment = (assignments_str) ? assignments_str : null;;
@@ -1686,8 +1733,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= MEX_InputKeyDown  ================== PR2021-04-07
     function MEX_InputKeyDown(el_input, event){
-        console.log(" --- MEX_InputKeyDown ---")
-        console.log("event.key", event.key, "event.shiftKey", event.shiftKey)
+        //console.log(" --- MEX_InputKeyDown ---")
+        //console.log("event.key", event.key, "event.shiftKey", event.shiftKey)
         // This is not necessary: (event.key === "Tab" && event.shiftKey === true)
         // Tab and shift-tab move cursor already to next / prev element
         if (["Enter", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(event.key) > -1) {
@@ -1771,20 +1818,22 @@ document.addEventListener("DOMContentLoaded", function() {
         const tab_show = (mod_MEX_dict.btn_index) ? "tab_assign" : "tab_start";
         show_hide_selected_elements_byClass("tab_show", tab_show);
 
-        if (mod_MEX_dict.btn_index) { MEX_FillPage()};
+        if (mod_MEX_dict.btn_index) {
+            MEX_FillPage()
+        };
 
     }  // MEX_BtnClicked
 
 //=========  MEX_FillPage  ================ PR2021-04-04
     function MEX_FillPage() {
-        //console.log( "===== MEX_FillPage ========= ");
+        console.log( "===== MEX_FillPage ========= ");
 /*
         console.log( ".........total_rows", mod_MEX_dict.total_rows);
         console.log( ".........btns_visible", mod_MEX_dict.btns_visible);
         console.log( ".........max_rows_per_page", mod_MEX_dict.max_rows_per_page);
         console.log( ".........amount", mod_MEX_dict.amount);
-        console.log( ".........assignment", mod_MEX_dict.assignment);
 */
+        console.log( ".........assignment", mod_MEX_dict.assignment);
         //const len = mod_MEX_dict.max_rows_per_page
         let question_number = (mod_MEX_dict.btn_index - 1) * mod_MEX_dict.max_rows_per_page * 5;
         let first_blank_q = null;
@@ -1795,15 +1844,28 @@ document.addEventListener("DOMContentLoaded", function() {
                 for (let row_index = 0; row_index < mod_MEX_dict.max_rows_per_page; row_index++) {
                     question_number += 1;
                     if (question_number <= mod_MEX_dict.amount){
-                        const value = (mod_MEX_dict.assignment[question_number]) ? mod_MEX_dict.assignment[question_number] : null;
-                        if (!value && !first_blank_q ) { first_blank_q = question_number}
+                        const value_dict = (mod_MEX_dict.assignment[question_number]) ? mod_MEX_dict.assignment[question_number] : null;
+
+                // mod_MEX_dict assignment: {1: {max_char: "D", max_score: 3, min_score: 1, keys: "ba"], 2: ...}"
+                // upload assignment: 1:D;3;ba;1 | 2:C;3;cd;1 "
+                // 0: max character when multiple choice or @ for open question
+                // 1: max score
+                // 2: keys (answers)
+                // 3: min score
+
+                        const max_char = get_dict_value(value_dict, ["max_char"], "")
+                        const max_score = get_dict_value(value_dict, ["max_score"], "")
+                        const min_score = get_dict_value(value_dict, ["min_score"], "")
+                        const keys = get_dict_value(value_dict, ["keys"], "")
+
+                        //if (!value && !first_blank_q ) { first_blank_q = question_number}
                         const el_flex_container = document.createElement("div");
                         el_flex_container.classList.add("flex_container", "flex_1");
                             const el_flex_0 = document.createElement("div");
-                            el_flex_0.className = "flex_2";
+                            el_flex_0.className = "flex_1";
                                 const el_label = document.createElement("label");
                                 el_label.className = "mex_label";
-                                el_label.innerText = loc.Quest + " " + question_number;
+                                el_label.innerText = question_number + ":";
                             el_flex_0.appendChild(el_label);
                         el_flex_container.appendChild(el_flex_0);
 
@@ -1811,21 +1873,41 @@ document.addEventListener("DOMContentLoaded", function() {
                             el_flex_1.classList.add("flex_1", "mx-1");
                                 const el_input = document.createElement("input");
                                 el_input.id = "id_MEX_q_" + question_number;
-                                el_input.value = value;
+                                el_input.value = max_char + max_score;
                                 el_input.className = "form-control";
-                                if(!value) { el_input.classList.add("border_invalid")}
+                               // if(!value) { el_input.classList.add("border_invalid")}
                                 el_input.setAttribute("type", "text")
                                 el_input.setAttribute("autocomplete", "off");
                                 el_input.setAttribute("ondragstart", "return false;");
                                 el_input.setAttribute("ondrop", "return false;");
                                 // --- add EventListener
-                                el_input.addEventListener("change", function(){MEX_InputChange(el_input)});
+                                el_input.addEventListener("change", function(){MEX_InputChange("q", el_input)});
                                 el_input.addEventListener("keydown", function(event){MEX_InputKeyDown(el_input, event)});
-
                             el_flex_1.appendChild(el_input);
                         el_flex_container.appendChild(el_flex_1);
 
+                        const el_flex_2 = document.createElement("div");
+                            el_flex_2.classList.add("flex_1", "mx-1");
+                                const el_input2 = document.createElement("input");
+                                el_input2.id = "id_MEX_a_" + question_number;
+                                el_input2.value = keys + min_score;
+                                el_input2.className = "form-control";
+                                //if(!value) { el_input2.classList.add("border_invalid")}
+                                el_input2.setAttribute("type", "text")
+                                el_input2.setAttribute("autocomplete", "off");
+                                el_input2.setAttribute("ondragstart", "return false;");
+                                el_input2.setAttribute("ondrop", "return false;");
+                                // --- add EventListener
+                                el_input2.addEventListener("change", function(){MEX_InputChange("a", el_input2)});
+                                el_input2.addEventListener("keydown", function(event){MEX_InputKeyDown(el_input2, event)});
+                            el_flex_2.appendChild(el_input2);
+                        el_flex_container.appendChild(el_flex_2);
+
+                        // add_or_remove_class(el_input2,cls_hide, !max_char);
+
                         el_col_container.appendChild(el_flex_container);
+
+
                     }  // if (question_number <= mod_MEX_dict.amount){
                 }  //  for (let row_index = 0;
             }  // if (question_number < mod_MEX_dict.amount){
@@ -1838,7 +1920,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }  // MEX_FillPage
 
 //========= MEX_InputChange  ===============PR2020-08-16 PR2021-03-25
-    function MEX_InputChange(el_input){
+    function MEX_InputChange(q_or_a, el_input){
         //console.log(" --- MEX_InputChange ---")
         //console.log("el_input.id", el_input.id)
         // el_input.id = 'id_MEX_q_24'
@@ -1847,62 +1929,179 @@ document.addEventListener("DOMContentLoaded", function() {
         const q_number = (Number(q_number_str)) ? Number(q_number_str) : null;
 
         if (q_number){
+            const assignment_dict = get_dict_value(mod_MEX_dict, ["assignment", q_number])
+
+            // open question input has a number (8)
+            // multiple choice question has one letter, may be followed by a number as score (D3)
+            let max_char = "", max_score_str = "", max_score = "", msg_err = "";
             const input_value = el_input.value;
+// when input is question:
+            if (q_or_a === "q"){
+                let is_multiple_choice = false;
+                const el_answer = document.getElementById("id_MEX_a_" + q_number)
+                if (input_value){
 
+        // split input_value in first charactes and the rest
+                    const first_char = input_value.charAt(0);
+                    const remainder = input_value.slice(1);
 
-            if (input_value){
-                const first_part = input_value.charAt(0);
-                const last_part = input_value.slice(1);
-                let character = "", max_score_str = "", max_score = "", msg_err = "";
+        // check if first character is a letter or a number => is multiple choice when a letter
+                    // !!Number(0) = false, therefore "0" must be filtered out with Number(first_char) !== 0
+                    is_multiple_choice = (!Number(first_char) && Number(first_char) !== 0 )
+                    if(is_multiple_choice){
+                        max_char = first_char.toUpperCase();
+                        max_score_str = remainder;
+                    } else {
+                        max_score_str = input_value;
+                    }
+                    if (max_char){
+                        // Letter 'A' not allowed, only 1 choice doesn't make sense
+                        if(!"BCDEFGHIJKLMNOPQRSTUVWXYZ".includes(max_char)){
+                            msg_err = loc.err_list.Character + " '" + first_char  + "'" + loc.err_list.not_allowed +
+                                "<br>" + loc.err_list.character_mustbe_between;
+                        }
+                    }
+                    if (max_score_str){
+                        max_score = Number(max_score_str);
+                        // the remainder / modulus operator (%) returns the remainder after (integer) division.
+                        if (!max_score || max_score % 1 !== 0 || max_score < 1 || max_score > 99) {
+                            if (msg_err) {msg_err += "<br><br>"}
+                            msg_err += loc.Maximum_score + " '" + max_score_str  + "'" + loc.err_list.not_allowed +
+                                                "<br>" + loc.err_list.maxscore_mustbe_between;
+                        }
+                    }
 
-                if(!Number(first_part) && Number(first_part) !== 0 ){
-                    character = first_part.toUpperCase();
-                    max_score_str = last_part;
+                    if (msg_err) {
+                        el_input.value = null;
+                        el_answer.value = null;
+                         if (q_number in mod_MEX_dict.assignment){
+                            delete mod_MEX_dict.assignment[q_number];
+                        }
+
+                        el_mod_message_text.innerHTML = msg_err;
+                        $("#id_mod_message").modal({backdrop: false});
+                        set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
+
+                    } else {
+                        const new_value = max_char + ( (max_score) ? max_score : "" );
+                        if (new_value !== el_input.value){
+                            el_input.value = new_value
+                        }
+
+                // mod_MEX_dict assignment: {1: {max_char: "D", max_score: 3, min_score: 1, keys: "ba"], 2: ...}"
+                // upload assignment: 1:D;3;ba;1 | 2:C;3;cd;1 "
+                // 0: max character when multiple choice or @ for open question
+                // 1: max score
+                // 2: keys (answers)
+                // 3: min score
+
+                        if(assignment_dict){
+                            assignment_dict.max_char = (max_char) ? max_char : null;
+                            assignment_dict.max_score = (max_score) ? max_score : null;
+                        } else {
+                            mod_MEX_dict.assignment[q_number] = {
+                                max_char: (max_char) ? max_char : null,
+                                max_score:(max_score) ? max_score : null};
+                        }
+                    }
+
+                } else if (q_number in mod_MEX_dict.assignment){
+                    el_answer.value = null;
+                    delete mod_MEX_dict.assignment[q_number];
+                }  // if (input_value)
+
+                //add_or_remove_class(el_answer, cls_hide, !is_multiple_choice);
+
+// when input is answer:
+            } else if (q_or_a === "a"){
+            // answer only has value when multiple choice question. one or more letters, may be followed by a number as minimum score (ca3)
+                const max_char = (assignment_dict.max_char) ? assignment_dict.max_char : null;
+                const max_score_int = (assignment_dict.max_score) ? assignment_dict.max_score : 0;
+                const is_multiple_choice = (!!max_char);
+
+                if (input_value){
+                    let keys = "", min_score = null, pos = -1;
+                    for (let i = 0, len=input_value.length; i < len; i++) {
+                        const char = input_value[i];
+
+        console.log("......... char", char)
+                        // !!Number(0) = false, therefore "0" must be filtered out with Number(first_char) !== 0
+                        const is_char = (!Number(char) && Number(char) !== 0 )
+        console.log("......... is_char", is_char)
+                        if(is_char){
+                            const char_lc = char.toLowerCase();
+                            if (!is_multiple_choice){
+                                msg_err = "Dit is geen meerkeuzevraag."+ "<br>"
+                            } else {
+                                if(!"abcdefghijklmnopqrstuvwxyz".includes(char_lc)){
+                                    msg_err += " '" + max_score_str  + "'" + loc.err_list.not_allowed + "<br>"
+                                 //   "<br>" + loc.err_list.maxscore_mustbe_between;
+                                } else {
+                                    const max_char_lc = max_char.toLowerCase();
+                                    if (char_lc > max_char_lc ) {
+                                        msg_err += "'" + char_lc  + "'" + loc.err_list.not_allowed + "<br>"
+                                     //   "<br>" + loc.err_list.maxscore_mustbe_between;
+                                    }
+                                }
+                            }
+                            if (!msg_err) {
+                                keys += char_lc;
+                            }
+
+                        } else {
+                            pos = i;
+                            break;
+                        }
+                    }  // for (let i = 0, len=input_value.length; i < len; i++) {
+
+                    if (pos > -1){
+                        const remainder = input_value.slice(pos);
+                        min_score = Number(remainder);
+                        if (!min_score){
+                             msg_err += " '" + remainder  + "'" + loc.err_list.not_allowed + "<br>"
+                        } else {
+                            // TODO what is max_score_int of multiple choice??
+                            //if (min_score > max_score_int) {
+                            //    min_score = null
+                            //    msg_err += " '" + remainder  + "'" + loc.err_list.not_allowed + "<br>"
+                            //}
+                        }
+                    }
+
+                    if (msg_err){
+                        const keys = (assignment_dict.keys) ? assignment_dict.keys : "";
+                        const min_score_str = (assignment_dict.min_score) ? assignment_dict.min_score : "";
+                        el_input.value = keys + min_score_str;
+
+                        el_mod_message_text.innerHTML = msg_err;
+                        $("#id_mod_message").modal({backdrop: false});
+                        set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
+
+                    } else {
+        console.log("......... keys + (min_score) ? min_score : ", keys + (min_score) ? min_score : "")
+                        const min_score_str = (min_score) ? min_score : "";
+                        el_input.value = keys + min_score_str;
+
+                        if(assignment_dict){
+                            assignment_dict.keys = (keys) ? keys : null;
+                            assignment_dict.min_score = (min_score) ? min_score : null;
+                        }
+
+                    }
                 } else {
-                    max_score_str = input_value;
-                }
-                if (character){
-                    if(!"ABCDEFGHIJKLMNOPQRSTUVWXYZ".includes(character)){
-                        msg_err = loc.err_list.Character + " '" + first_part  + "'" + loc.err_list.not_allowed +
-                            "<br>" + loc.err_list.character_mustbe_between;
-                    }
-                }
-                if (max_score_str){
-                    max_score = Number(max_score_str);
-                    // the remainder / modulus operator (%) returns the remainder after (integer) division.
-                    if (!max_score || max_score % 1 !== 0 || max_score < 1 || max_score > 99) {
-                        if (msg_err) {msg_err += "<br><br>"}
-                        msg_err += loc.Maximum_score + " '" + max_score_str  + "'" + loc.err_list.not_allowed +
-                                            "<br>" + loc.err_list.maxscore_mustbe_between;
-                    }
-                }
-
-                if (msg_err) {
-                     el_input.value = null;
-                     if (q_number in mod_MEX_dict.assignment){
-                        delete mod_MEX_dict.assignment[q_number];
+        //  if input_value == null
+                        if(assignment_dict){
+                    assignment_dict.keys = null;
+                    assignment_dict.min_score = null;
                     }
 
-                    el_mod_message_text.innerHTML = msg_err;
-                    $("#id_mod_message").modal({backdrop: false});
-                    set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
-
-                } else {
-                    const new_value = character + ( (max_score) ? max_score : "" );
-                    if (new_value !== el_input.value){
-                        el_input.value = new_value
-                    }
-                    mod_MEX_dict.assignment[q_number] = new_value
                 }
-            } else if (q_number in mod_MEX_dict.assignment){
-                delete mod_MEX_dict.assignment[q_number];
             }
-        }
+        }  //  if (q_number){
 
-        //console.log("mod_MEX_dict.assignment", mod_MEX_dict.assignment)
+        console.log("mod_MEX_dict.assignment", mod_MEX_dict.assignment)
 
     };  // MEX_InputChange
-
 
 /////////////////////////////////////////
 
