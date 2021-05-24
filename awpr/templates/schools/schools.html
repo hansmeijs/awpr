@@ -50,10 +50,14 @@
     <!-- CONTENT HEADER - LOADER -->
             <!-- content_header -->
                 {% include 'includes/messages.html' %}
-        <!-- submenu -->
-                <div class="content_header flex_container">
-                    <div id="id_submenu" class="awp_navbar_submenuXX display_hide mt-5">
+
+    <!-- BUTTON GROUP -->
+                <div id="id_btn_container" class="btn-group btn-block ml-2 mr-4 my-2" role="group" aria-label="Choose option" >
+                    <button data-btn="btn_school" class="btn btn-secondary ">{% trans 'Schools' %}</button>
                 </div>
+
+    <!-- CONTENT HEADER - LOADER -->
+
         <!-- header_text -->
                     <div class="content_subheader_left mx-4 display_hide">
                         <h5 id="id_hdr_text">{{examyear}}  {{school}}</h5>
@@ -66,11 +70,7 @@
                     </div>
                 </div>
             <!-- end content_header -->
-    <!-- BUTTON GROUP -->
-                <div id="id_btn_container" class="btn-group btn-block ml-2 mr-4 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="btn_school" class="btn btn-secondary ">{% trans 'Schools' %}</button>
-                </div>
-    <!-- end BUTTON GROUP -->
+
     <!-- END OF CONTENT HEADER -->
 
     <!-- CONTENT BODY -->

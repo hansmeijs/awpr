@@ -51,7 +51,7 @@ class UserListView(ListView):
 
     def get(self, request, *args, **kwargs):
 
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(" =====  UserListView  =====")
 
@@ -440,13 +440,10 @@ class UserGroupPermitUploadView(View):
             logger.debug(' ========== UserGroupPermitUploadView ===============')
 
         update_wrap = {}
+# -  get permit -- don't use requsr_usergroups_list, you might lock yourself out PR2021-05-20
         if request.user is not None and request.user.country is not None:
             req_user = request.user
-            permit_list, requsr_usergroups_list = get_userpermit_list('page_user', req_user)
-            has_permit = 'crud_permit' in permit_list
-            if logging_on:
-                logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('has_permit:  ' + str(has_permit))
+            has_permit = (req_user.role == c.ROLE_128_SYSTEM)
 
             if has_permit:
 # -  get user_lang
@@ -949,7 +946,7 @@ def create_permit_list(permit_pk=None):
 
 def get_userpermit_list(page, req_user):
     # --- create list of all permits and usergroups of req_usr PR2021-03-19
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     role = req_user.role
 

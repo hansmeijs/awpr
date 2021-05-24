@@ -24,59 +24,48 @@ height = 32
 indent_none = 0
 indent_10 = 10
 pos_y = 18
-class_sel = 'fill:#2d4e77;stroke:#2d4e77;stroke-width:1'
-class_unsel = 'fill:#bacee6;stroke:#bacee6;stroke-width:1'
-fill_sel = '#EDF2F8'
-fill_unsel = '#212529'
+#class_sel = 'fill:#2d4e77;stroke:#2d4e77;stroke-width:1'
+#class_unsel = 'fill:#bacee6;stroke:#bacee6;stroke-width:1'
 
 menus_dict = {
 'page_examyear': {'index': 0, 'href_string': 'examyears_url',
                'caption': str(_('Exam year')), 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
                'indent_left': indent_none, 'indent_right': indent_10,
-               'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
                'submenu': ('cntrlst', 'exyrlst', 'schllst', 'deplst','levllst', 'sectlst')
                 },
 'page_school': {'index': 1, 'href_string': 'schools_url',
                'caption': str(_('School')), 'width': 90, 'height': height, 'pos_x': 45, 'pos_y': pos_y,
                'indent_left': indent_10, 'indent_right': indent_10,
-               'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
                'submenu': ('cntrlst', 'exyrlst', 'schllst', 'deplst','levllst', 'sectlst')
                },
 'page_student': {'index': 2, 'href_string': 'students_url',
                'caption': str(_('Students')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
                  'indent_left': indent_10, 'indent_right': indent_10,
-                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
                  },
 'page_subject': {'index': 3, 'href_string': 'subjects_url',
                'caption': str(_('Subjects')), 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
                  'indent_left': indent_10, 'indent_right': indent_10,
-                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
                  'submenu': ('subjlst', 'subjtyplst', 'schemlst', 'schemitemlst')
                  },
 'page_exams': {'index': 4, 'href_string': 'exams_url',
-               'caption': str(_('Exams')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
-                 'indent_left': indent_10, 'indent_right': indent_10,
-                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
+               'caption': str(_('Exam questions')), 'width': 130, 'height': height, 'pos_x': 65, 'pos_y': pos_y,
+                 'indent_left': indent_10, 'indent_right': indent_10
                  },
 'page_grade': {'index': 5, 'href_string': 'grades_url',
                'caption': str(_('Grades')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
-                 'indent_left': indent_10, 'indent_right': indent_10,
-                 'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
+                 'indent_left': indent_10, 'indent_right': indent_10
                  },
 'page_result': {'index': 6, 'href_string': 'subjects_url',
                'caption': str(_('Results')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
-                'indent_left': indent_10, 'indent_right': indent_10,
-                'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
+                'indent_left': indent_10, 'indent_right': indent_10
                 },
 'page_report': {'index': 7, 'href_string': 'subjects_url',
                'caption': str(_('Reports')), 'width': 120, 'height': height,  'pos_x': 60,  'pos_y': pos_y,
-               'indent_left': indent_10, 'indent_right': indent_10,
-                'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
+               'indent_left': indent_10, 'indent_right': indent_10
                 },
 'page_analysis': {'index': 8, 'href_string': 'subjects_url',
                'caption':  str(_('Analysis')), 'width': 90, 'height': height,  'pos_x': 45,  'pos_y': pos_y,
-               'indent_left': indent_10, 'indent_right': indent_none,
-                'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel
+               'indent_left': indent_10, 'indent_right': indent_none
                 }
 }
 
@@ -93,7 +82,7 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
 
     param = param if param else {}
     headerbar_param = {}
-
+    _class_bg_color = 'awp_bg_blue'
     req_user = request.user
     if req_user.is_authenticated and req_user.country and req_user.schoolbase:
         awp_messages = []
@@ -101,6 +90,14 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
 # -  get user_lang
         requsr_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
         activate(requsr_lang)
+
+# - set background color in headerbar to purple when role is not a school
+        if req_user.role in (c.ROLE_016_COMM, c.ROLE_032_INSP):
+            _class_bg_color = 'awp_bg_green'
+        elif req_user.role in (c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM):
+            _class_bg_color = 'awp_bg_purple'
+        else:
+            _class_bg_color = 'awp_bg_blue'
 
 # - set flag in headerbar to proper language
         _class_flag, _class_flag0_hidden, _class_flag1_hidden, _class_flag2_hidden = '', '', '', ''
@@ -144,18 +141,7 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
 # +++ do not display pages when examyear is not published yet,
             examyear_not_published = not sel_examyear.published
 # +++ give warning when examyear is different from current examyear,
-            todays_examyear_instance = af.get_todays_examyear_instance(req_user.country)
-            # niu, I think class_examyear_warning = ''
-            if todays_examyear_instance:
-                if sel_examyear.pk != todays_examyear_instance.pk:
-                    # TODO remove, is moved to downloadsettings
-                    # class_examyear_warning = 'navbar-item-warning'
-                    # PR2018-08-24 debug: in base.html  href="#" is needed,
-                    # because bootstrap line 233: a:not([href]):not([tabindex]) overrides navbar-item-warning
-                    awp_message = {'info': _("Please note: the selected exam year is different from the current exam year."),
-                                   'class': 'alert-warning',
-                                   'id': 'id_diff_exyr'}
-                    awp_messages.append(awp_message)
+            # is moved to downloadsettings
 
 # +++ display_school -------- PR2020-10-27
         # <PERMIT> PR2020-10-27
@@ -171,6 +157,11 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
         sel_school = None
         sel_school_activated = False
         school_name = ''
+
+        # used in page exams template to show school or admin mod exam form PR2021-05-22
+        is_requsr_same_school = False
+        is_requsr_admin_or_system = (req_user.role in (c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM))
+
         # if sel_examyear and display_school:
         if sel_examyear:
             sel_schoolbase, save_sel_schoolbase_NIU = af.get_sel_schoolbase_instance(request)
@@ -183,6 +174,8 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
             if sel_school:
                 school_name += ' ' + sel_school.name
                 sel_school_activated = sel_school.activated
+                is_requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and
+                                         req_user.schoolbase.pk == sel_schoolbase.pk)
             else:
                 school_name += ' <' + str(_('School not found in this exam year')) + '>'
 
@@ -214,7 +207,7 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
         #XXX setting = return_dict['setting']
         #XXX selected_menu_key = return_dict['menu_key']
         selected_menu_key = page if page else 'page_examyear'  # default is 'page_examyear'
-        menu_items = set_menu_items(selected_menu_key, request)
+        menu_items = set_menu_items(selected_menu_key, _class_bg_color, request)
 
 # ------- set no_access -------- PR2021-04-27
         no_access = ('view_page' not in permit_list)
@@ -250,6 +243,8 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
 
         headerbar_param = {
             'no_access': no_access,
+            'is_requsr_same_school': is_requsr_same_school,
+            'is_requsr_admin_or_system': is_requsr_admin_or_system,
             'examyear_code': sel_examyear_str,
             'display_school': display_school, 'school': school_name,
             'display_department': display_department, 'department': department_name,
@@ -263,10 +258,9 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
         }
         if param:
             headerbar_param.update(param)
-
-        if logging_on:
-            logger.debug('no_access:         ' + str(no_access))
-            #logger.debug('headerbar_param: ' + str(headerbar_param))
+    headerbar_param['class_bg_color'] = _class_bg_color
+    if logging_on:
+        logger.debug('headerbar_param: ' + str(headerbar_param))
 
     return headerbar_param
 
@@ -290,7 +284,7 @@ def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-def set_menu_items(selected_menu_key, request):
+def set_menu_items(selected_menu_key, _class_bg_color, request):
     # function is called by get_headerbar_param, creates template tags menu_items and submenus
     # setting: {'menu': 'mn_schl', 'mn_schl': 'schllst'}
 
@@ -335,11 +329,16 @@ def set_menu_items(selected_menu_key, request):
 
         # highlight selected menu
         if key == selected_menu_key:
-            polygon_class = menu.get('class_sel', '')
-            text_fill = menu.get('fill_sel', '')
+            if _class_bg_color == 'awp_bg_purple':
+                polygon_class = 'menu_polygon_selected_purple'
+            elif _class_bg_color == 'awp_bg_green':
+                polygon_class = 'menu_polygon_selected_green'
+            else:
+                polygon_class = 'menu_polygon_selected_blue'
+            text_fill = '#EDF2F8'
         else:
-            polygon_class = menu.get('class_unsel', '')
-            text_fill = menu.get('fill_unsel', '')
+            polygon_class = 'menu_polygon_unselected'
+            text_fill = '#212529'
         #logger.debug('polygon_class: ' + str(polygon_class))
         #logger.debug('caption: ' + str(caption))
 
@@ -353,7 +352,8 @@ def set_menu_items(selected_menu_key, request):
         pos_x = menu.get('pos_x', 0)
         menu_item_tag= {'svg_id': svg_id, 'caption': caption, 'href': h_ref_reverse, 'polygon_id': polygon_id,
                    'width': str(width), 'height':  str(height), 'points': points,
-                    'class': polygon_class, 'x': str(pos_x), 'y': pos_y, 'fill': text_fill}
+                    'class': polygon_class,
+                    'x': str(pos_x), 'y': pos_y, 'fill': text_fill}
         menu_item_tags.append(menu_item_tag)
 
     return menu_item_tags

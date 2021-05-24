@@ -360,7 +360,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
 
 # ----- get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, is_locked, \
-                    examyear_published, school_activated, is_requsr_school = \
+                    examyear_published, school_activated, requsr_same_school = \
                         dl.get_selected_examyear_school_dep_from_usersetting(request)
 
                 if logging_on:
@@ -372,7 +372,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                 student = None
-                # TODO : may_edit = examyear_published and school_activated and is_requsr_school and sel_department and not is_locked
+                # TODO : may_edit = examyear_published and school_activated and requsr_same_school and sel_department and not is_locked
                 may_edit = sel_department and not is_locked
                 if may_edit:
                     student_pk = upload_dict.get('student_pk')
@@ -452,8 +452,9 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                                             if logging_on:
                                                 logger.debug('grade.deleted: ' + str(grade.deleted))
                                 else:
-
-                                    deleted_ok = sch_mod.delete_instance(studsubj, error_dict, request, this_text)
+                                    #TODO implement error_list like in upload subject
+                                    error_list = []
+                                    deleted_ok = sch_mod.delete_instance(studsubj, error_list, request, this_text)
                                     if logging_on:
                                         logger.debug('deleted_ok: ' + str(deleted_ok))
                                     if deleted_ok:

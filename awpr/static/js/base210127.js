@@ -208,10 +208,11 @@
         return depbase_codes;
     }  // b_get_depbases_display
 
-
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //========= b_get_permits_from_permitlist  ============= PPR2021-04-26
     function b_get_permits_from_permitlist(permit_dict) {
+        //console.log("----- b_get_permits_from_permitlist -----");
+        //console.log("permit_dict", permit_dict);
         // function puts permits from permit_list as key in permit_dict, for ease of use
         if(permit_dict.permit_list){
             for (let i = 0, action; action = permit_dict.permit_list[i]; i++) {
@@ -683,8 +684,6 @@
         return status_array_reversed
     }  // b_get_status_array
 
-
-
     function b_get_status_iconclass(publ, auth1, auth2, auth3) {
         const img_class = (publ) ? "appr_1_5" :
                           (auth1 && auth2 && auth3) ? "appr_1_4" :
@@ -735,7 +734,6 @@
         //console.log("img_class", img_class);
         return img_class;
     }  // get_status_class
-
 
 //#########################################################################
 // +++++++++++++++++ DATAMAP +++++++++++++++++++++++++++++++++++++++
@@ -860,9 +858,9 @@
 //#########################################################################
 // +++++++++++++++++ VALIDATORS +++++++++++++++++++++++++++++++++++++++++++
 
-//========= get_number_from_input  ========== PR2020-06-10
-    function get_number_from_input(loc, fldName, input_value) {
-        //console.log("--------- get_number_from_input ---------")
+//========= b_get_number_from_input  ========== PR2020-06-10
+    function b_get_number_from_input(loc, fldName, input_value) {
+        //console.log("--------- b_get_number_from_input ---------")
         //console.log("fldName", fldName)
         //console.log("input_value", input_value)
         let caption_str = (loc.Number) ? loc.Number : null;
@@ -925,7 +923,7 @@
                 }
         }}}}};
         return [output_value, err_msg];
-    }  // get_number_from_input
+    }  // b_get_number_from_input
 
 //========= validate_blank_unique_text  ================= PR2020-06-10
     function validate_blank_unique_text(loc, data_map, mapName, fldName, input_value, cur_pk_int, no_blank) {
@@ -1009,42 +1007,72 @@
     function b_render_awp_messages(awp_messages) {
         //console.log( "===== b_render_awp_messages -----")
         //console.log( "awp_messages", awp_messages)
-        // PR202020-10-30 renders messages PR2021-04-27
+        // PR2020-10-30 renders messages PR2021-04-27
+        // PR2021-05-13 only messages with key 'class' must be shown, other messages have key 'field' and must be shown in modal 'subject' etc
 
-        const el_mod_awpmessages = document.getElementById("id_awpmessage_container")
-        if (el_mod_awpmessages){
-            el_mod_awpmessages.innerHTML = null;
-            if (awp_messages && awp_messages.length) {
+        if (awp_messages && awp_messages.length) {
+            const el_mod_awpmessages = document.getElementById("id_awpmessage_container")
+            if (el_mod_awpmessages){
+                el_mod_awpmessages.innerHTML = null;
+                let show_modal = false;
+
                 for (let i = 0, msg_dict ; msg_dict = awp_messages[i]; i++) {
-                    if (msg_dict){
-                        const msg_list = msg_dict.msg_list
-                        const msg_class = msg_dict.class
+                    if (msg_dict && msg_dict.class){
+                        const msg_class = msg_dict.class;
+                        const msg_list = msg_dict.msg_list;
+                        show_modal = true;
 // --- insert el_div
                         let el_div = document.createElement("div");
                         el_div.classList.add("m-2", "p-2")
-                        if(msg_class){
-                            el_div.classList.add(msg_class)
-                        }
+                        el_div.classList.add(msg_class)
+
                         if(msg_list && msg_list.length){
                             for (let j = 0, msg, el_p; msg = msg_list[j]; j++) {
                                 if(msg){
                                     el_p = document.createElement("p");
-                                     el_p.innerHTML = msg
+                                    el_p.innerHTML = msg
                                     el_div.appendChild(el_p);
                                 }
                             }
                         }
                         el_mod_awpmessages.appendChild(el_div);
-                    }
-                }
-
+                    }  // if (msg_dict && msg_dict.class)
+                }  // for (let i = 0, msg_dict ; msg_dict = awp_messages[i]; i++)
+                if (show_modal){
 // ---  set focus to close button - not working
-                // const el_modmessage_btn_cancel = document.getElementById("id_modmessage_btn_cancel");
-                // set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 250);
-
+                const el_modmessage_btn_cancel = document.getElementById("id_modmessage_btn_cancel");
+                set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 50);
 // ---  show modal
-                $("#id_mod_awpmessages").modal({backdrop: true});
+                    $("#id_mod_awpmessages").modal({backdrop: true});
+                }
             }
-        }
+        }  //   if (awp_messages && awp_messages.length)
     }  // b_render_awp_messages
+
+//========= b_render_msg_box  ================= PR2021-05-13
+    function b_render_msg_box(id_el_msg, msg_list) {
+        console.log( "===== b_render_msg_box -----")
+        console.log( "id_el_msg", id_el_msg)
+        console.log( "msg_list", msg_list)
+
+        const el_msg = document.getElementById(id_el_msg);
+        console.log("el_msg", el_msg)
+        if (el_msg){
+            const has_msg = (!!msg_list && !!msg_list.length)
+        console.log("has_msg", has_msg)
+    // put msg in el_msg
+            let msg_html = ""
+            if (has_msg){
+                for (let j = 0, msg, el_p; msg = msg_list[j]; j++) {
+                    if (j){msg_html += "<br>"};
+                    if(msg){msg_html +=msg};
+                }
+            }
+        console.log("msg_html", msg_html)
+            el_msg.innerHTML = msg_html;
+    // show el_msg when has_msg
+            add_or_remove_class(el_msg, cls_hide, !has_msg)
+        }
+    }  // b_render_msg_box
+
 

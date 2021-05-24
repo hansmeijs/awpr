@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let mod_MSJ_dict = {};
 
     let selected_subject_pk = null;
-    let selected_department_pk = null;
+    let selected_depbase_pk = null;
     let selected_level_pk = null;
     let selected_sector_pk = null;
     let selected_subjecttype_pk = null;
@@ -54,12 +54,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     const field_settings = {
-        subject: {  field_caption: ["", "Abbreviation", "Name", "Departments",  "Sequence"],
-                    field_names: ["select", "code", "name", "depbases", "sequence"],
-                    field_tags: ["div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text",  "text", "number",],
-                    field_width:  ["032", "120", "tw_280", "240", "120",  "120"],
-                    field_align: ["c", "l", "l", "l",  "r"]},
+        subject: {  field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence", "ETE_exam", "Added_by_school"],
+                    field_names: ["select", "code", "name", "depbases", "sequence", "etenorm", "addedbyschool"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["select", "text", "text",  "text", "number", "toggle",  "toggle"],
+                    field_width:  ["032", "120", "300", "150", "120",  "120", "120",  "120"],
+                    field_align: ["c", "l", "l", "l",  "r", "c", "c"]},
         scheme: {  field_caption: ["", "Abbreviation", "Name", "Departments",  "Sequence"],
                     field_names: ["select", "abbrev", "name", "depbases", "sequence"],
                     field_tags: ["div", "div", "div", "div",  "div"],
@@ -115,6 +115,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         }
 
+// ---  SIDE BAR ------------------------------------
+        const el_SBR_select_department = document.getElementById("id_SBR_select_department");
+        if (el_SBR_select_department){
+            el_SBR_select_department.addEventListener("click",
+                function() {SBR_SelectDepartment(el_SBR_select_department)}, false );
+        }
+
 // ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
         const el_MSED_input = document.getElementById("id_MSED_input");
         const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
@@ -127,18 +134,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
 // ---  MODAL SUBJECT
-        const el_MSJ_div_form_controls = document.getElementById("id_div_form_controls")
+        const el_MSJ_div_form_controls = document.getElementById("id_MSJ_form_controls")
         if(el_MSJ_div_form_controls){
-            let form_elements = el_MSJ_div_form_controls.querySelectorAll(".awp_input_text")
-            for (let i = 0, el, len = form_elements.length; i < len; i++) {
-                el = form_elements[i];
-                if(el){el.addEventListener("keyup", function() {MSJ_InputKeyup(el)}, false )};
+            const input_elements = el_MSJ_div_form_controls.querySelectorAll(".awp_input_text")
+            for (let i = 0, el; el=input_elements[i]; i++) {
+                el.addEventListener("keyup", function() {MSJ_InputKeyup(el)}, false );
             }
         }
         const el_MSJ_code = document.getElementById("id_MSJ_code");
         const el_MSJ_name = document.getElementById("id_MSJ_name");
         const el_MSJ_sequence = document.getElementById("id_MSJ_sequence");
+        const el_MSJ_etenorm = document.getElementById("id_MSJ_etenorm");
+        if(el_MSJ_etenorm){el_MSJ_etenorm.addEventListener("click", function() {MSJ_Toggle(el_MSJ_etenorm)}, false )}
 
+        const el_MSJ_message_container = document.getElementById("id_MSJ_message_container")
         const el_MSJ_btn_delete = document.getElementById("id_MSJ_btn_delete");
         if(el_MSJ_btn_delete){el_MSJ_btn_delete.addEventListener("click", function() {ModConfirmOpen("delete")}, false )}
         const el_MSJ_btn_log = document.getElementById("id_MSJ_btn_log");
@@ -220,7 +229,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     permit_dict = response.permit_dict;
                     // get_permits must come before CreateSubmenu and FiLLTbl
                     b_get_permits_from_permitlist(permit_dict);
-                    set_columns_hidden();
                     must_update_headerbar = true;
                 }
 
@@ -232,6 +240,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // call b_render_awp_messages also when there are no messages, to remove existing messages
                 const awp_messages = (response.awp_messages) ? response.awp_messages : {};
+
+                console.log("awp_messages: " , awp_messages)
                 b_render_awp_messages(response.awp_messages);
 
                 if ("examyear_rows" in response) {
@@ -239,6 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 if ("department_rows" in response) {
                     b_fill_datamap(department_map, response.department_rows)
+                    SBR_FillOptionsDepartment();
                 };
                 if ("level_rows" in response) {
                     b_fill_datamap(level_map, response.level_rows)
@@ -269,6 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Add_subject, function() {MSJ_Open()});
+            AddSubmenuButton(el_submenu, loc.Copy_from_previous_year, function() {MSJ_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_subject, function() {ModConfirmOpen("delete")});
             AddSubmenuButton(el_submenu, loc.Upload_subjects, null, "id_submenu_subjectimport", url_subject_import);
          el_submenu.classList.remove(cls_hide);
@@ -307,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
         selected_subject_pk = null;
-        selected_department_pk = null;
+
         selected_level_pk = null;
         selected_sector_pk = null;
         selected_subjecttype_pk = null;
@@ -326,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const tblName = arr[0];
             const map_dict = get_mapdict_from_datamap_by_id(subject_map, row_id)
             if (tblName === "subject") { selected_subject_pk = map_dict.id } else
-            if (tblName === "department") { selected_department_pk = map_dict.id } else
+
             if (tblName === "level") { selected_level_pk = map_dict.id } else
             if (tblName === "sector") { selected_sector_pk = map_dict.id } else
             if (tblName === "subjecttype") { selected_subjecttype_pk = map_dict.id } else
@@ -334,7 +346,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (tblName === "package") { selected_package_pk = map_dict.id };
         }
     }  // HandleTableRowClicked
-
 
 //========= UpdateHeaderText  ================== PR2020-07-31
     function UpdateHeaderText(){
@@ -345,18 +356,20 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             header_text = null;
         }
-        document.getElementById("id_hdr_text").innerText = header_text;
+        document.getElementById("id_hdr_left").innerText = header_text;
     }   //  UpdateHeaderText
 
+//###########################################################################
+// +++++++++++++++++ FILL TABLE ROWS ++++++++++++++++++++++++++++++++++++++++
 //========= FillTblRows  ====================================
     function FillTblRows() {
         //console.log( "===== FillTblRows  === ");
         const tblName = get_tblName_from_selectedBtn();
         const field_setting = field_settings[tblName];
-
-// --- get data_map
         const data_map = get_datamap_from_selBtn();
-        //console.log( "data_map", data_map);
+
+// --- set_columns_hidden
+        set_columns_hidden();
 
 // --- reset table
         tblHead_datatable.innerText = null;
@@ -368,19 +381,21 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- loop through data_map
         if(data_map){
           for (const [map_id, map_dict] of data_map.entries()) {
-        // only show rows of selected level / sector / subjecttype / subject
-                let show_row = (tblName === "subject") ? true :
-                                (!setting_dict.sel_level_pk || map_dict.lvl_id === setting_dict.sel_level_pk) &&
-                                (!setting_dict.sel_sector_pk || map_dict.sct_id === setting_dict.sel_sector_pk) &&
-                                (!setting_dict.sel_subjecttype_pk || map_dict.sel_subjecttype_pk === setting_dict.sel_subjecttype_pk) &&
-                                (!setting_dict.sel_subjecttype_pk || map_dict.subject_id === setting_dict.sel_subject_pk);
-
+        // only show rows of selected selected_depbase_pk
+                let show_row =  (!selected_depbase_pk || map_dict.base_id === selected_depbase_pk)
+                if (!selected_depbase_pk){
+                    show_row = true;
+                } else if (map_dict.depbases) {
+                    const lookup_depbase_pk = ";" + selected_depbase_pk + ";"
+                    const depbase_str = ";" + map_dict.depbases + ";"
+                    show_row = (depbase_str.includes(lookup_depbase_pk))
+                }
                 if(show_row){
 
           // --- insert row at row_index not necessary, map is ordered
                     const order_by = (map_dict.sequence) ? map_dict.sequence + 10000 : 90000;
                     const row_index = -1; // t_get_rowindex_by_sortby(tblBody_datatable, order_by)
-                    let tblRow = CreateTblRow(tblBody_datatable, tblName, field_setting, map_id, map_dict, order_by, row_index)
+                    let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict, order_by, row_index)
                 };
           };
         }  // if(!!data_map)
@@ -390,57 +405,66 @@ document.addEventListener('DOMContentLoaded', function() {
     function CreateTblHeader(field_setting) {
         //console.log("===  CreateTblHeader ===== ");
 
-// --- reset table
-        tblHead_datatable.innerText = null;
-        tblBody_datatable.innerText = null;
+        const column_count = field_setting.field_names.length;
 
-        if(field_setting){
-            const column_count = field_setting.field_names.length;
+// +++  insert header and filter row ++++++++++++++++++++++++++++++++
+        let tblRow_header = tblHead_datatable.insertRow (-1);
+        let tblRow_filter = tblHead_datatable.insertRow (-1);
 
-//--- insert table rows
-            let tblRow_header = tblHead_datatable.insertRow (-1);
-            let tblRow_filter = tblHead_datatable.insertRow (-1);
+    // --- loop through columns
+        for (let j = 0; j < column_count; j++) {
+            const field_name = field_setting.field_names[j];
+            const field_caption = loc[field_setting.field_caption[j]];
+            const field_tag = field_setting.field_tags[j];
+            const filter_tag = field_setting.filter_tags[j];
+            const class_width = "tw_" + field_setting.field_width[j] ;
+            const class_align = "ta_" + field_setting.field_align[j];
 
-//--- insert th's to tblHead_datatable
-            for (let j = 0; j < column_count; j++) {
-                const key = field_setting.field_caption[j];
-                const caption = (loc[key]) ? loc[key] : key;
-                const field_name = field_setting.field_names[j];
-                const filter_tag = field_setting.filter_tags[j];
-                const class_width = "tw_" + field_setting.field_width[j] ;
-                const class_align = "ta_" + field_setting.field_align[j];
+        // - skip columns if in columns_hidden
+            const column_hidden = (columns_hidden[field_name]) ? columns_hidden[field_name] : false;
+            if (!column_hidden){
 
-// ++++++++++ create header row +++++++++++++++
-// --- add th to tblRow.
+// ++++++++++ insert columns in header row +++++++++++++++
+        // --- add th to tblRow_header +++
                 let th_header = document.createElement("th");
-// --- add div to th, margin not working with th
+        // --- add div to th, margin not working with th
                     const el_header = document.createElement("div");
-                        if (j === 0 ){
-// --- add checked image to first column
-                           // TODO add multiple selection
-                            //AppendChildIcon(el_header, imgsrc_stat00);
-                        } else {
-// --- add innerText to el_div
-                            if(caption) {el_header.innerText = caption};
-                        };
-// --- add width, text_align
+                        el_header.innerText = (field_caption) ? field_caption : null;;
+        // --- add width, text_align
+                        // not necessary: th_header.classList.add(class_width, class_align);
                         el_header.classList.add(class_width, class_align);
+                        //if(["etenorm", "addedbyschool"].includes(field_name)){
+                       //     el_header.classList.add("tickmark_2_2")
+                        //}
                     th_header.appendChild(el_header)
                 tblRow_header.appendChild(th_header);
 
 // ++++++++++ create filter row +++++++++++++++
-// --- add th to tblRow_filter.
+        // --- add th to tblRow_filter.
                 const th_filter = document.createElement("th");
-// --- create element with tag from field_tags
-                const el_tag = (filter_tag === "text") ? "input" : "div";
-                const el_filter = document.createElement(el_tag);
-// --- add EventListener to el_filter
-                    const event_str = (filter_tag === "text") ? "keyup" : "click";
-                    el_filter.addEventListener(event_str, function(event){HandleFilterField(el_filter, j, event)});
-// --- add data-field Attribute.
+        // --- create element with tag based on filter_tag
+                    const filter_field_tag = (["text", "number"].includes(filter_tag)) ? "input" : "div";
+                    const el_filter = document.createElement(filter_field_tag);
+
+        // --- add data-field Attribute.
                     el_filter.setAttribute("data-field", field_name);
                     el_filter.setAttribute("data-filtertag", filter_tag);
-// --- add other attributes
+                    el_filter.setAttribute("data-colindex", j);
+
+        // --- add EventListener to el_filter
+                    if (["text", "number"].includes(filter_tag)) {
+                        el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
+                        add_hover(th_filter);
+                    } else if (filter_tag === "toggle") {
+                        // add EventListener for icon to th_filter, not el_filter
+                        th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
+                        th_filter.classList.add("pointer_show");
+
+                        el_filter.classList.add("tickmark_0_0");
+                        add_hover(th_filter);
+                    }
+
+        // --- add other attributes
                     if (filter_tag === "text") {
                         el_filter.setAttribute("type", "text")
                         el_filter.classList.add("input_text");
@@ -448,85 +472,82 @@ document.addEventListener('DOMContentLoaded', function() {
                         el_filter.setAttribute("autocomplete", "off");
                         el_filter.setAttribute("ondragstart", "return false;");
                         el_filter.setAttribute("ondrop", "return false;");
-                    } else if (["toggle", "activated", "inactive"].indexOf(filter_tag) > -1) {
-                        // default empty icon necessary to set pointer_show
-                        // default empty icon necessary to set pointer_show
-                        append_background_class(el_filter,"tickmark_0_0");
                     }
 
-// --- add width, text_align
+    // --- add width, text_align
+                    // not necessary: th_filter.classList.add(class_width, class_align);
                     el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
                 th_filter.appendChild(el_filter)
                 tblRow_filter.appendChild(th_filter);
-            }  // for (let j = 0; j < column_count; j++)
-        }  // if(field_settings[tblName]){
+            };
+        }  // for (let j = 0; j < column_count; j++)
+
     };  //  CreateTblHeader
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-05-10
-    function CreateTblRow(tblBody, tblName, field_setting, map_id, map_dict, order_by, row_index) {
+    function CreateTblRow(tblName, field_setting, map_id, map_dict, order_by, row_index) {
         //console.log("=========  CreateTblRow =========", tblName);
         //console.log("map_dict", map_dict);
-        let tblRow = null;
 
-        if(field_setting){
-            const field_names = field_setting.field_names;
-            const field_tags = field_setting.field_tags;
-            const field_align = field_setting.field_align;
-            const field_width = field_setting.field_width;
-            const column_count = field_names.length;
+        const field_names = field_setting.field_names;
+        const field_tags = field_setting.field_tags;
+        const field_align = field_setting.field_align;
+        const field_width = field_setting.field_width;
+        const column_count = field_names.length;
 
 // --- insert tblRow into tblBody at row_index
-            tblRow = tblBody.insertRow(row_index);
-            tblRow.id = map_id
+        let tblRow = tblBody_datatable.insertRow(row_index);
+        tblRow.id = map_id
 
 // --- add data attributes to tblRow
-            tblRow.setAttribute("data-pk", map_dict.id);
-            tblRow.setAttribute("data-ppk", map_dict.examyear_id);
-            tblRow.setAttribute("data-table", tblName);
-            tblRow.setAttribute("data-sortby", order_by);
+        tblRow.setAttribute("data-pk", map_dict.id);
+        tblRow.setAttribute("data-ppk", map_dict.examyear_id);
+        tblRow.setAttribute("data-table", tblName);
+        tblRow.setAttribute("data-sortby", order_by);
 
 // --- add EventListener to tblRow
-            tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
+        tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
 
 // +++  insert td's into tblRow
-            for (let j = 0; j < column_count; j++) {
-                const field_name = field_names[j];
+        for (let j = 0; j < column_count; j++) {
+            const field_name = field_names[j];
 
 // skip columns if in columns_hidden
-                const column_hidden = (columns_hidden[field_name]) ? columns_hidden[field_name] : false;
-                if (!column_hidden){
-                    const field_tag = field_tags[j];
-                    const class_width = "tw_" + field_width[j];
-                    const class_align = "ta_" + field_align[j];
+            if (!columns_hidden[field_name]){
+                const field_tag = field_tags[j];
+                const class_width = "tw_" + field_width[j];
+                const class_align = "ta_" + field_align[j];
 
-            // --- insert td element,
-                    let td = tblRow.insertCell(-1);
+        // --- insert td element,
+                let td = tblRow.insertCell(-1);
 
-            // --- create element with tag from field_tags
-                    let el = document.createElement(field_tag);
+        // --- create element with tag from field_tags
+                let el = document.createElement(field_tag);
 
-            // --- add data-field attribute
-                    el.setAttribute("data-field", field_name);
+        // --- add data-field attribute
+                el.setAttribute("data-field", field_name);
 
-                    if (field_name === "select") {
-                        // TODO add select multiple users option PR2020-08-18
-                    } else {
-                        el.addEventListener("click", function() {MSJ_Open(td)}, false)
-                        el.classList.add("pointer_show");
-                        add_hover(el);
-                    }
+                if (["code", "name", "depbases", "sequence"].includes(field_name)){
+                    el.addEventListener("click", function() {MSJ_Open(td)}, false)
+                    el.classList.add("pointer_show");
+                    add_hover(el)
+                } else if (field_name === "etenorm") {
+                    // attach eventlisterener and hover to td, not to el. No need to add icon_class here
+                    td.addEventListener("click", function() {UploadToggle(el)}, false)
+                    add_hover(td);
+                }
 
-            // --- add width, text_align
-                        td.classList.add(class_width, class_align);
-                        el.classList.add(class_width, class_align);
+        // --- add width, text_align
+                // not necessary: td.classList.add(class_width, class_align);
+                el.classList.add(class_width, class_align);
 
-            // --- append element
-                    td.appendChild(el);
-    // --- put value in field
-                   UpdateField(el, map_dict)
-               };
-            }  // for (let j = 0; j < 8; j++)
-        }  // if(field_settings_table)
+        // --- append element
+                td.appendChild(el);
+// --- put value in field
+               UpdateField(el, map_dict)
+           };
+        }  // for (let j = 0; j < 8; j++)
+
         return tblRow
     };  // CreateTblRow
 
@@ -550,54 +571,29 @@ document.addEventListener('DOMContentLoaded', function() {
             const fld_value = map_dict[field_name];
 
             if(field_name){
+                let inner_text = null, title_text = null, filter_value = null;
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
-                } else if (["abbrev", "code", "name", "last_name", "sequence", "examyear"].indexOf(field_name) > -1){
-                    el_div.innerText = map_dict[field_name];
+                } else if (["abbrev", "code", "name", "last_name"].includes(field_name)){
+                    inner_text = map_dict[field_name];
+                    filter_value = (inner_text) ? inner_text.toLowerCase() : null;
+                } else if (["sequence"].includes(field_name)){
+                    inner_text = map_dict[field_name];
+                    filter_value =(inner_text) ? inner_text : null;
                 } else if ( field_name === "depbases") {
-                    el_div.innerText = b_get_depbases_display(department_map, "base_code", fld_value);
-                } else if (field_name.slice(0, 4) === "perm") {
-                    const is_true = (map_dict[field_name]) ? map_dict[field_name] : false;
-                    const value_str = field_name.slice(4, 6);
-                    const permit_value = (!is_true) ? 0 : (!Number(value_str)) ? 0 : Number(value_str);
-                    el_div.setAttribute("data-value", permit_value);
-                    let el_icon = el_div.children[0];
-                    if(el_icon){add_or_remove_class (el_icon, "tickmark_0_2", is_true)};
-
-                } else if ( field_name === "activated") {
-                    const is_activated = (map_dict[field_name]) ? map_dict[field_name] : false;
-                    let is_expired = false;
-
-                    const data_value = (is_expired) ? "2" : (is_activated) ? "1" : "0"
-                    el_div.setAttribute("data-value", data_value);
-                    let el_icon = el_div.children[0];
-                    if(el_icon){
-                        add_or_remove_class (el_icon, "tickmark_0_2", is_activated);
-                        add_or_remove_class (el_icon, "exclamation_0_2", is_expired);
-                        add_or_remove_class (el_icon, "tickmark_0_0", !is_activated && !is_expired);
-                    }
-// ---  add EventListener
-                    if(!is_activated){
-                        el_div.addEventListener("click", function() {ModConfirmOpen("resend_activation_email", el_div)}, false )
-                    }
-// ---  add title
-                    const title = (is_expired) ? loc.Activationlink_expired + "\n" + loc.Resend_activationlink : null
-                    add_or_remove_attr (el_div, "title", title, title);
-
-                } else if (field_name === "is_active") {
-                    const is_inactive = !( (map_dict[field_name]) ? map_dict[field_name] : false );
-                    el_div.setAttribute("data-value", ((is_inactive) ? 1 : 0) );
-                    const img_class = (is_inactive) ? "inactive_1_3" : "inactive_0_2";
-                    b_refresh_icon_class(el_div, img_class)
-                    //let el_icon = el_div.children[0];
-                    //if(el_icon){add_or_remove_class (el_icon, "inactive_1_3", is_inactive, "inactive_0_2")};
-// ---  add title
-                    add_or_remove_attr (el_div, "title", is_inactive, loc.This_user_is_inactive);
-                } else if ( field_name === "last_login") {
-                    const datetimeUTCiso = map_dict[field_name]
-                    const datetimeLocalJS = (datetimeUTCiso) ? new Date(datetimeUTCiso) : null;
-                    el_div.innerText = format_datetime_from_datetimeJS(loc, datetimeLocalJS)
+                    inner_text = b_get_depbases_display(department_map, "base_code", fld_value);
+                    filter_value = (inner_text) ? inner_text.toLowerCase() : null;
+                } else if (["etenorm", "addedbyschool"].includes(field_name)) {
+                    const is_etenorm = map_dict[field_name];
+                    filter_value = (is_etenorm) ? "1" : "0";
+                    el_div.className = (is_etenorm) ? "tickmark_1_2" : "tickmark_0_0";
                 }
+// ---  put value in innerText and title
+                el_div.innerText = inner_text;
+                // NIU yet: add_or_remove_attr (el_div, "title", !!title_text, title_text);
+
+    // ---  add attribute filter_value
+                add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
             }  // if(field_name)
         }  // if(el_div)
     };  // UpdateField
@@ -610,6 +606,445 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("columns_hidden.levelbases", columns_hidden.levelbases);
     }  // set_columns_hidden
 
+//###########################################################################
+// +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++++++++++++++++++++++++++
+
+//========= UploadChanges  ============= PR2020-08-03 PR2021-05-12
+    function UploadChanges(upload_dict, url_str) {
+        console.log("=== UploadChanges");
+        console.log("url_str: ", url_str);
+        console.log("upload_dict: ", upload_dict);
+
+        if(!isEmpty(upload_dict)) {
+            const parameters = {"upload": JSON.stringify (upload_dict)}
+            let response = "";
+            $.ajax({
+                type: "POST",
+                url: url_str,
+                data: parameters,
+                dataType:'json',
+                success: function (response) {
+        // ---  hide loader
+                    el_loader.classList.add(cls_visible_hide)
+                    console.log( "response");
+                    console.log( response);
+
+                    if ("updated_subject_rows" in response) {
+                        const el__MSJ_loader = document.getElementById("id_MSJ_loader");
+                        if(el__MSJ_loader){ el__MSJ_loader.classList.add(cls_visible_hide)};
+
+                        RefreshDataMap("subject", response.updated_subject_rows, subject_map);
+
+                        //const updated_subject_row = response.updated_subject_rows[0]
+                        //ModConfirmResponse (updated_subject_row)
+                    };
+                    //$("#id_mod_subject").modal("hide");
+
+                },  // success: function (response) {
+                error: function (xhr, msg) {
+                    // ---  hide loader
+                    el_loader.classList.add(cls_visible_hide)
+                    console.log(msg + '\n' + xhr.responseText);
+                    alert(msg + '\n' + xhr.responseText);
+                }  // error: function (xhr, msg) {
+            });  // $.ajax({
+        }  //  if(!!row_upload)
+    };  // UploadChanges
+
+//========= UploadToggle  ============= PR2021-05-12
+    function UploadToggle(el_input) {
+        console.log( " ==== UploadToggle ====");
+        console.log("el_input: ", el_input);
+
+        mod_dict = {};
+        const tblRow = get_tablerow_selected(el_input);
+        if(tblRow){
+            const map_id = tblRow.id
+            const map_dict = get_mapdict_from_datamap_by_id(subject_map, map_id);
+
+            if(!isEmpty(map_dict)){
+                const fldName = get_attr_from_el(el_input, "data-field");
+                const old_value = (map_dict[fldName]) ? map_dict[fldName] : false;
+                const new_value = !old_value;
+
+// ---  change icon, before uploading
+                add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
+
+// ---  upload changes
+                const upload_dict = {
+                    mode: "update",
+                    mapid: map_id,
+                    table: "subject",
+                    examyear_pk: map_dict.examyear_id,
+                    subject_pk: map_dict.id
+                }
+                upload_dict[fldName] = new_value
+
+                UploadChanges(upload_dict, url_subject_upload);
+
+            }  //  if(!isEmpty(map_dict)){
+        }  //   if(!!tblRow)
+    }  // UploadToggle
+
+//###########################################################################
+// +++++++++++++++++ REFRESH DATA MAP +++++++++++++++++++++++++++++++++++++++
+
+//=========  RefreshDataMap  ================ PR2020-08-16 PR2020-09-30 PR2021-05-10
+    function RefreshDataMap(tblName, data_rows, data_map) {
+        //console.log(" --- RefreshDataMap  ---");
+        //console.log("data_rows", data_rows);
+
+        if (data_rows) {
+            const field_setting = field_settings[tblName];
+            for (let i = 0, update_dict; update_dict = data_rows[i]; i++) {
+                RefreshDatamapItem(tblName, field_setting, update_dict, data_map);
+            }
+        }
+    }  //  RefreshDataMap
+
+//=========  RefreshDatamapItem  ================ PR2020-08-16 PR2020-09-30 PR2021-05-14
+    function RefreshDatamapItem(tblName, field_setting, update_dict, data_map) {
+        console.log(" --- RefreshDatamapItem  ---");
+        console.log("tblName", tblName);
+        console.log("update_dict", update_dict);
+
+        if(!isEmpty(update_dict)){
+            const field_names = field_setting.field_names;
+
+// ---  update or add update_dict in subject_map
+            let updated_columns = [];
+
+    // get existing map_item
+            const map_id = update_dict.mapid;
+            let tblRow = document.getElementById(map_id);
+
+            const is_deleted = get_dict_value(update_dict, ["deleted"], false)
+            const is_created = get_dict_value(update_dict, ["created"], false)
+
+            const error_list = get_dict_value(update_dict, ["error"], []);
+            console.log("error_list", error_list);
+            console.log("is_created", is_created);
+
+            let field_error_list = [];
+            if(error_list && error_list.length){
+                let has_class_messages = false;
+                for (let i = 0, msg_dict ; msg_dict = error_list[i]; i++) {
+                    if (msg_dict){
+                        if ("class" in msg_dict) {has_class_messages = true};
+                        if ("field" in msg_dict) {field_error_list.push(msg_dict.field)};
+                    }
+                }
+                // errors with key 'class' will be shown in MSJ_message_container
+
+                if (has_class_messages){
+                    MSJ_render_messages(error_list)
+                    el_MSJ_btn_save.disabled = true;
+                }
+            } else {
+            // close modal MSJ when no error
+                $("#id_mod_subject").modal("hide");
+            }
+
+// ++++ created ++++
+            if(is_created){
+    // ---  insert new item
+                data_map.set(map_id, update_dict);
+                updated_columns.push("created")
+    // ---  create row in table., insert in alphabetical order
+                const order_by = (update_dict.name) ? update_dict.name.toLowerCase() : ""
+                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
+                tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict, order_by, row_index)
+    // ---  scrollIntoView,
+                if(tblRow){
+                    tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
+    // ---  make new row green for 2 seconds,
+                    ShowOkElement(tblRow);
+                }
+
+// ++++ deleted ++++
+            } else if(is_deleted){
+                data_map.delete(map_id);
+    //--- delete tblRow
+                if (tblRow){tblRow.parentNode.removeChild(tblRow)};
+            } else {
+                const old_map_dict = (map_id) ? data_map.get(map_id) : null;
+    // ---  check which fields are updated, add to list 'updated_columns'
+                if(!isEmpty(old_map_dict) && field_names){
+                    // skip first column (is margin)
+                    for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
+                        if (col_field in old_map_dict && col_field in update_dict){
+                            if (old_map_dict[col_field] !== update_dict[col_field] ) {
+                                updated_columns.push(col_field)
+                }}}}
+    // ---  update item
+                data_map.set(map_id, update_dict)
+            }
+
+            console.log(" updated_columns", updated_columns);
+    // ---  make update
+            // note: when updated_columns is empty, then updated_columns is still true.
+            // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
+             if(tblRow){
+    // ---  make entire row green when row is created
+                if(updated_columns.includes("created")){
+                    ShowOkElement(tblRow);
+                } else {
+    // loop through cells of row
+                    for (let i = 1, td, el, el_fldName; td = tblRow.cells[i]; i++) {
+                        if (td){
+                            el = td.children[0];
+                            if(el){
+                                el_fldName = get_attr_from_el(el, "data-field")
+
+                                // update all field, in this way field value will be reset when error has occurred
+                                UpdateField(el, update_dict);
+    // get list of error messages for this field
+                                let msg_list = null;
+                                if (field_error_list.includes(el_fldName)) {
+                                    for (let i = 0, msg_dict ; msg_dict = error_list[i]; i++) {
+                                        if (msg_dict && "field" in msg_dict) {
+                                            msg_list = msg_dict.msg_list;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if(el_fldName && msg_list && msg_list.length){
+                                // mage input box red
+                                    const el_MSJ_input = document.getElementById("id_MSJ_" + el_fldName);
+                                    if(el_MSJ_input){el_MSJ_input.classList.add("border_bg_invalid")};
+
+                                // put msgtext in msg box
+                                    b_render_msg_box("id_MSJ_msg_" + el_fldName, msg_list)
+                                }
+
+        // update field and make field green when field name is in updated_columns
+                                if(updated_columns.includes(el_fldName)){
+                                    ShowOkElement(el);
+                                }
+            }}}}}
+
+        };  //  if(!isEmpty(update_dict))
+    }  // RefreshDatamapItem
+
+//=========  fill_data_list  ================ PR2020-10-07
+// TODO deprecate
+    function fill_data_list(data_rows, key_field, value_field) {
+        console.log(" --- fill_data_list  ---");
+        // datalist maps row.id with row.abbrev
+        let data_list = {};
+        if (data_rows) {
+            for (let i = 0, row; row = data_rows[i]; i++) {
+                const key = row[key_field];
+                data_list[key] = row[value_field];
+            }
+        }
+       //console.log( "data_list", data_list);
+        return data_list
+    }  //  fill_data_list
+
+//###########################################################################
+// +++++++++++++++++ FILTER TABLE ROWS ++++++++++++++++++++++++++++++++++++++
+
+//========= HandleFilterKeyup  ================= PR2021-05-12
+    function HandleFilterKeyup(el, event) {
+        console.log( "===== HandleFilterKeyup  ========= ");
+        // skip filter if filter value has not changed, update variable filter_text
+        const col_index = get_attr_from_el(el, "data-colindex")
+        console.log( "col_index", col_index, "event.key", event.key);
+        const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
+        console.log( "filter_dict", filter_dict);
+
+        if (!skip_filter) {
+            Filter_TableRows(tblBody_datatable);
+        }
+    }; // function HandleFilterKeyup
+
+//========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23
+    function HandleFilterToggle(el_input) {
+        console.log( "===== HandleFilterToggle  ========= ");
+
+    // - get col_index and filter_tag from  el_input
+        const col_index = get_attr_from_el(el_input, "data-colindex")
+        const filter_tag = get_attr_from_el(el_input, "data-filtertag")
+        const field_name = get_attr_from_el(el_input, "data-field")
+        console.log( "col_index", col_index);
+        console.log( "filter_tag", filter_tag);
+        console.log( "field_name", field_name);
+
+    // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
+        const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
+        const filter_value = (filter_array[1]) ? filter_array[1] : "0";
+        console.log( "filter_array", filter_array);
+        console.log( "filter_value", field_name);
+        let new_value = "0", icon_class = "tickmark_0_0"
+        if(filter_tag === "toggle") {
+            // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+// - toggle filter value
+            new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
+// - get new icon_class
+            icon_class =  (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "tickmark_2_2" : "tickmark_0_0";
+        }
+
+    // - put new filter value in filter_dict
+        filter_dict[col_index] = [filter_tag, new_value]
+        console.log( "filter_dict", filter_dict);
+        el_input.className = icon_class;
+        Filter_TableRows(tblBody_datatable);
+
+    };  // HandleFilterToggle
+
+    function Filter_TableRows() {  // PR2019-06-09 PR2020-08-31
+        //console.log( "===== Filter_TableRows=== ");
+        //console.log( "filter_dict", filter_dict);
+                //console.log( "filter_array", filter_array);
+        // function filters by inactive and substring of fields
+        //  - iterates through cells of tblRow
+        //  - skips filter of new row (new row is always visible)
+        //  - if filter_name is not null:
+        //       - checks tblRow.cells[i].children[0], gets value, in case of select element: data-value
+        //       - returns show_row = true when filter_name found in value
+        //  - if col_inactive has value >= 0 and hide_inactive = true:
+        //       - checks data-value of column 'inactive'.
+        //       - hides row if inactive = true
+
+        for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
+            tblRow = tblBody_datatable.rows[i]
+            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
+            add_or_remove_class(tblRow, cls_hide, !show_row)
+        }
+    }; // Filter_TableRows
+
+//========= ShowTableRow  ==================================== PR2020-08-17
+    function ShowTableRow(tblRow, tblName_settings) {
+        // only called by Filter_TableRows
+        console.log( "===== ShowTableRow  ========= ");
+        console.log( "tblName_settings", tblName_settings);
+        let hide_row = false;
+        if (tblRow){
+// show all rows if filter_name = ""
+            if (!isEmpty(filter_dict)){
+                for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
+                    const filter_text = filter_dict[i];
+                    const filter_tag = field_settings[tblName_settings].filter_tags[i];
+                // skip if no filter on this colums
+                    if(filter_text){
+                        if(filter_tag === "text"){
+                            const blank_only = (filter_text === "#")
+                            const non_blank_only = (filter_text === "@" || filter_text === "!")
+                // get value from el.value, innerText or data-value
+                            // PR2020-06-13 debug: don't use: "hide_row = (!el_value)", once hide_row = true it must stay like that
+                            let el_value = el.innerText;
+                            if (blank_only){
+                                // empty value gets '\n', therefore filter asc code 10
+                                if(el_value && el_value !== "\n" ){
+                                    hide_row = true
+                                };
+                            } else if (non_blank_only){
+                                // empty value gets '\n', therefore filter asc code 10
+                                if(!el_value || el_value === "\n" ){
+                                    hide_row = true
+                                }
+                            } else {
+                                el_value = el_value.toLowerCase();
+                                // hide row if filter_text not found or el_value is empty
+                                // empty value gets '\n', therefore filter asc code 10
+                                if(!el_value || el_value === "\n" ){
+                                    hide_row = true;
+                                } else if(!el_value.includes(filter_text)){
+                                    hide_row = true;
+                                }
+                            }
+                        } else if(filter_tag === "toggle"){
+                            const el_value = get_attr_from_el_int(el, "data-value")
+                            if (filter_text === 1){
+                                if (!el_value ) {hide_row = true};
+                            } else  if (filter_text === -1){
+                                if (el_value) {hide_row = true};
+                            }
+                        } else if(filter_tag === "inactive"){
+                            const el_value = get_attr_from_el_int(el, "data-value")
+                            if (filter_text === 1){
+                                if (!el_value ) {hide_row = true};
+                            } else  if (filter_text === -1){
+                                if (el_value) {hide_row = true};
+                            }
+                        } else if(filter_tag === "activated"){
+                            const el_value = get_attr_from_el_int(el, "data-value")
+                            if (filter_text && el_value !== filter_text ) {hide_row = true};
+                        }
+                    }  //  if(!!filter_text)
+                }  // for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
+            }  // if if (!isEmpty(filter_dict))
+        }  // if (!!tblRow)
+        return !hide_row
+    }; // ShowTableRow
+
+//========= ResetFilterRows  ====================================
+    function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20
+       //console.log( "===== ResetFilterRows  ========= ");
+
+        selected_subject_pk = null;
+
+        filter_dict = {};
+
+        Filter_TableRows(tblBody_datatable);
+
+        let filterRow = tblHead_datatable.rows[1];
+        if(!!filterRow){
+            for (let j = 0, cell, el; cell = filterRow.cells[j]; j++) {
+                if(cell){
+                    el = cell.children[0];
+                    if(el){
+                        const filter_tag = get_attr_from_el(el, "data-filtertag")
+                        if(el.tag === "INPUT"){
+                            el.value = null
+                        } else {
+                            const el_icon = el.children[0];
+                            if(el_icon){
+                                let classList = el_icon.classList;
+                                while (classList.length > 0) {
+                                    classList.remove(classList.item(0));
+                                }
+                                el_icon.classList.add("tickmark_0_0")
+                            }
+                        }
+                    }
+                }
+            }
+       };
+        FillTblRows();
+    }  // function ResetFilterRows
+
+//###########################################################################
+// +++++++++++++++++ SIDE BAR +++++++++++++++++++++++++++++++++++++++++++++++
+
+//=========  SBR_FillOptionsDepartment  ================ PR2021-05-14
+    function SBR_FillOptionsDepartment() {
+        //console.log("=== SBR_FillOptionsDepartment");
+        //console.log("tblName", tblName);
+
+        const selectall_text = "&#60" + loc.All_departments + "&#62";
+        const select_text_none = loc.No_departments_found;
+        const select_text = loc.Select_department;
+        const id_field = "id", display_field = "base_code";
+        t_FillSelectOptions(el_SBR_select_department, department_map, id_field, display_field, false,
+                        null, selectall_text, select_text_none, select_text);
+
+    }  // SBR_FillOptionsDepartment
+
+//=========  SBR_FillOptionsDepartment  ================ PR2021-05-14
+    function SBR_SelectDepartment(el_select) {
+        console.log("=== SBR_SelectDepartment");
+        console.log( "el_select.value: ", el_select.value, typeof el_select.value)
+        selected_depbase_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
+
+        console.log( "selected_depbase_pk: ", selected_depbase_pk)
+
+        //UpdateHeaderRight();
+
+        FillTblRows();
+    }  // SBR_FillOptionsDepartment
+
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // +++++++++++++++++ MODAL SELECT EXAMYEAR OR OR DEPARTMENT ++++++++++++++++++++
@@ -617,7 +1052,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10
     function MSED_Response(new_setting) {
-        //console.log( "===== MSED_Response ========= ");
+        console.log( "===== MSED_Response ========= ");
 
 // ---  upload new selected_pk
 // also retrieve the tables that have been changed because of the change in examyear / dep
@@ -873,121 +1308,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return add_to_list;
     }  // ModSelect_FillSelectRow
 
-
-//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-// +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
-
-//========= UploadToggle  ============= PR2020-07-31
-    function UploadToggle(el_input) {
-        //console.log( " ==== UploadToggle ====");
-
-        mod_dict = {};
-        const tblRow = get_tablerow_selected(el_input);
-        if(tblRow){
-            const tblName = get_attr_from_el(tblRow, "data-table")
-            const map_id = tblRow.id
-            const map_dict = get_mapdict_from_datamap_by_id(subject_map, map_id);
-
-            if(!isEmpty(map_dict)){
-                const fldName = get_attr_from_el(el_input, "data-field");
-                let permit_value = get_attr_from_el_int(el_input, "data-value");
-                let has_permit = (!!permit_value);
-
-                const requsr_pk = get_dict_value(selected_period, ["requsr_pk"])
-                const is_request_user = (requsr_pk === map_dict.id)
-
-// show message when sysadmin tries to delete sysadmin permit or add readonly
-                if(fldName === "perm_system" && is_request_user && has_permit ){
-                    ModConfirmOpen("permission_sysadm", el_input)
-                } else if(fldName === "perm01_readonly" && is_request_user && !has_permit ){
-                    ModConfirmOpen("permission_sysadm", el_input)
-                } else {
-// loop through row cells to get value of permissions.
-                    // Don't get them from map_dict, might not be correct while changing permissions
-                    let new_permit_sum = 0, new_permit_value = 0
-                    for (let i = 0, cell, cell_name, cell_value; cell = tblRow.cells[i]; i++) {
-                        cell_name = get_attr_from_el(cell, "data-field");
-                        if (cell_name.slice(0, 4) === "perm") {
-                            cell_value = get_attr_from_el_int(cell, "data-value");
-                // toggle value of clicked field
-                            if (cell_name === fldName){
-                                if(cell_value){
-                                    cell_value = 0;
-                                } else {
-                                    const cell_permit = fldName.slice(4, 6);
-                                    cell_value = (Number(cell_permit)) ? Number(cell_permit) : 0;
-                                }
-                                new_permit_value = cell_value;
-                // put new value in cell attribute 'data-value'
-                                cell.setAttribute("data-value", new_permit_value)
-                            };
-                            new_permit_sum += cell_value              }
-                    }
-
-// ---  change icon, before uploading
-                    let el_icon = el_input.children[0];
-                    if(el_icon){add_or_remove_class (el_icon, "tickmark_0_2", new_permit_value)};
-
-// ---  upload changes
-                    const upload_dict = { id: {pk: map_dict.id,
-                                               ppk: map_dict.examyear_id,
-                                               table: "user",
-                                               mode: "update",
-                                               mapid: map_id},
-                                          permits: {value: new_permit_sum, update: true}};
-                    UploadChanges(upload_dict, url_subject_upload);
-                }
-            }  //  if(!isEmpty(map_dict)){
-        }  //   if(!!tblRow)
-    }  // UploadToggle
-
-//========= UploadChanges  ============= PR2020-08-03
-    function UploadChanges(upload_dict, url_str) {
-        console.log("=== UploadChanges");
-        console.log("url_str: ", url_str);
-        console.log("upload_dict: ", upload_dict);
-
-        if(!isEmpty(upload_dict)) {
-            const parameters = {"upload": JSON.stringify (upload_dict)}
-            let response = "";
-            $.ajax({
-                type: "POST",
-                url: url_str,
-                data: parameters,
-                dataType:'json',
-                success: function (response) {
-                    // ---  hide loader
-                    el_loader.classList.add(cls_visible_hide)
-                    console.log( "response");
-                    console.log( response);
-
-                    if ("updated_subject_rows" in response) {
-                        document.getElementById("id_MSJ_loader").classList.add(cls_visible_hide)
-                        const tblName = "subject";
-                        const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                        RefreshDataMap(tblName, response.updated_subject_rows, subject_map);
-                        const updated_subject_row = response.updated_subject_rows[0]
-                        ModConfirmResponse (updated_subject_row)
-
-                    };
-                    $("#id_mod_subject").modal("hide");
-
-
-
-                },  // success: function (response) {
-                error: function (xhr, msg) {
-                    // ---  hide loader
-                    el_loader.classList.add(cls_visible_hide)
-                    console.log(msg + '\n' + xhr.responseText);
-                    alert(msg + '\n' + xhr.responseText);
-                }  // error: function (xhr, msg) {
-            });  // $.ajax({
-        }  //  if(!!row_upload)
-    };  // UploadChanges
-
-// +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
-
+//###########################################################################
 // +++++++++ MOD SUBJECT ++++++++++++++++ PR2020-09-30
 // --- also used for level, sector,
     function MSJ_Open(el_input){
@@ -1003,8 +1324,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let tblName = null;
             if(is_addnew){
-                tblName = selected_btn;
+                tblName = get_tblName_from_selectedBtn();
                 mod_MSJ_dict.examyear_id = setting_dict.sel_examyear_pk;
+                const max_sequence = MSJ_get_max_sequence();
+                mod_MSJ_dict.sequence = (max_sequence >= 5000) ? max_sequence + 1 : 5000;
+                console.log("max_sequence", max_sequence)
 
             } else {
                 const tblRow = get_tablerow_selected(el_input);
@@ -1013,8 +1337,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data_map = get_datamap_from_selBtn();
                 const map_dict = get_mapdict_from_datamap_by_id(data_map, tblRow.id);
                 if(!isEmpty(map_dict)){
-
-        console.log( "map_dict: ", map_dict);
                     mod_MSJ_dict.id = map_dict.id
                     mod_MSJ_dict.mapid = map_dict.mapid
                     mod_MSJ_dict.base_id = map_dict.base_id
@@ -1024,6 +1346,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     mod_MSJ_dict.name = map_dict.name
                     mod_MSJ_dict.sequence = map_dict.sequence
                     mod_MSJ_dict.depbases = map_dict.depbases;
+                    mod_MSJ_dict.etenorm = map_dict.etenorm;
 
                     mod_MSJ_dict.modby_username = map_dict.modby_username
                     mod_MSJ_dict.modifiedat = map_dict.modifiedat
@@ -1032,20 +1355,30 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  set header text
             MSJ_headertext(is_addnew, tblName, mod_MSJ_dict.name);
 
-    // ---  remove value from el_mod_employee_input
+    // ---  remove value from input elements
             MSJ_ResetElements(true);  // true = also_remove_values
+
+    // - sequence has value 5000 or max_sequence + 1 when  is_addnew
+            console.log("is_addnew", is_addnew)
+            el_MSJ_sequence.value = (mod_MSJ_dict.sequence) ? mod_MSJ_dict.sequence : null;
 
             if (!is_addnew){
                 el_MSJ_code.value = (mod_MSJ_dict.code) ? mod_MSJ_dict.code : null;
                 el_MSJ_name.value = (mod_MSJ_dict.name) ? mod_MSJ_dict.name : null;
-                el_MSJ_sequence.value = (mod_MSJ_dict.sequence) ? mod_MSJ_dict.sequence : null;
-                el_MSJ_sequence.value = mod_MSJ_dict.sequence;
 
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSJ_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MSJ_dict.modby_username) ? mod_MSJ_dict.modby_username : "-";
 
                 document.getElementById("id_MSJ_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
+            }
+
+  // put value of etenorm  as "1" or "0" in data-value
+            const data_value = (!!mod_MSJ_dict.etenorm) ? 1 : 0;
+            el_MSJ_etenorm.setAttribute("data-value", data_value)
+            const el_img = el_MSJ_etenorm.children[0];
+            if(el_img){
+                add_or_remove_class(el_img, "tickmark_2_2", !!data_value, "tickmark_0_0")
             }
 
             MSJ_FillSelectTableDepartment(mod_MSJ_dict.depbases);
@@ -1056,14 +1389,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if(!el_focus){ el_focus = el_MSJ_code};
             setTimeout(function (){el_focus.focus()}, 50);
 
+            el_MSJ_message_container.innerHTML = null;
+
     // ---  disable btn submit, hide delete btn when is_addnew
             add_or_remove_class(el_MSJ_btn_delete, cls_hide, is_addnew )
             add_or_remove_class(el_MSJ_btn_log, cls_hide, is_addnew )
 
-            const disable_btn_save = (!el_MSJ_code.value || !el_MSJ_name.value || !el_MSJ_sequence.value )
-            el_MSJ_btn_save.disabled = disable_btn_save;
-
-            MSJ_validate_and_disable();
+            el_MSJ_btn_save.disabled = true;
 
     // ---  show modal
             $("#id_mod_subject").modal({backdrop: true});
@@ -1077,16 +1409,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(permit_dict.crud_subject){
             // delete is handled by ModConfirm("delete")
-
+            let has_changes = false;
             let upload_dict = {table: 'subject', examyear_pk: mod_MSJ_dict.examyear_id};
             if(mod_MSJ_dict.is_addnew) {
                 upload_dict.mode = "create";
+                has_changes = true;
             } else {
                 upload_dict.subject_pk = mod_MSJ_dict.id;
                 upload_dict.mapid = mod_MSJ_dict.mapid;
             }
     // ---  put changed values of input elements in upload_dict
-            let form_elements = document.getElementById("id_MSJ_form_controls").querySelectorAll(".awp_input_text")
+            const form_elements = document.getElementById("id_MSJ_form_controls").querySelectorAll(".awp_input_text")
             for (let i = 0, el_input; el_input = form_elements[i]; i++) {
                 const fldName = get_attr_from_el(el_input, "data-field");
 
@@ -1099,6 +1432,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if (new_value !== old_value) {
                     upload_dict[fldName] = new_value;
+                    has_changes = true;
 
     // put changed new value in tblRow before uploading
                     const tblRow = document.getElementById(mod_MSJ_dict.mapid);
@@ -1117,19 +1451,30 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("old_depbases", old_depbases);
             if (new_depbases !== old_depbases) {
                 upload_dict['depbases'] = new_depbases;
+                has_changes = true;
             }
 
+    // ---  get etenorm from attribute 'data-value' in el_input
+        const is_etenorm = (!!get_attr_from_el_int(el_MSJ_etenorm, "data-value"));
+        if (is_etenorm !== mod_MSJ_dict.etenorm) {
+            upload_dict['etenorm'] = is_etenorm;
+            has_changes = true;
+        }
+        if(has_changes){
         console.log("upload_dict", upload_dict);
             document.getElementById("id_MSJ_loader").classList.remove(cls_visible_hide)
 // modal is closed by data-dismiss="modal"
-            //UploadChanges(upload_dict, url_subject_upload);
+            UploadChanges(upload_dict, url_subject_upload);
+        } else {
+            $("#id_mod_subject").modal("hide");
         };
+        }
     }  // MSJ_Save
 
 //========= MSJ_FillSelectTableDepartment  ============= PR2021-05-10
     function MSJ_FillSelectTableDepartment(subject_depbases) {
-        console.log("===== MSJ_FillSelectTableDepartment ===== ");
-        console.log("department_map", department_map);
+        //console.log("===== MSJ_FillSelectTableDepartment ===== ");
+        //console.log("department_map", department_map);
 
         const data_map = department_map;
         const tblBody_select = document.getElementById("id_MSJ_tblBody_department");
@@ -1147,8 +1492,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSJ_FillSelectRowDepartment  ============= PR2021-05-10
     function MSJ_FillSelectRowDepartment(tblBody_select, count_selected, dict, select_all_text) {
-        console.log("===== MSJ_FillSelectRowDepartment ===== ");
-        console.log("dict", dict);
+        //console.log("===== MSJ_FillSelectRowDepartment ===== ");
+        //console.log("dict", dict);
 
 // add_select_all when not isEmpty(dict)
         let pk_int = null, map_id = null, base_code = null;
@@ -1209,7 +1554,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSJ_SelectDepartment  ============= PR2021-05-10
     function MSJ_SelectDepartment(tblRow){
-        console.log( "===== MSJ_SelectDepartment  ========= ");
+        //console.log( "===== MSJ_SelectDepartment  ========= ");
 
         if(tblRow){
             const old_is_selected = (!!get_attr_from_el_int(tblRow, "data-selected"));
@@ -1234,8 +1579,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 let has_rows = false, unselected_rows_found = false;
                 for (let i = 0, row; row = tblBody_selectTable.rows[i]; i++) {
                     let row_pk = get_attr_from_el_int(row, "data-pk");
-                    console.log( "row_pk", row_pk);
-                    console.log( "data-selected", get_attr_from_el_int(row, "data-selected"));
+                    //console.log( "row_pk", row_pk);
+                    //console.log( "data-selected", get_attr_from_el_int(row, "data-selected"));
                     // skip row 'select_all'
                     if(row_pk){
                         has_rows = true;
@@ -1286,117 +1631,103 @@ document.addEventListener('DOMContentLoaded', function() {
         return list_str;
     }  // MSJ_GetDepartmentsSelected
 
-
 //========= MSJ_InputKeyup  ============= PR2020-10-01
     function MSJ_InputKeyup(el_input){
-        //console.log( "===== MSJ_InputKeyup  ========= ");
+        console.log( "===== MSJ_InputKeyup  ========= ");
+        console.log( "el_input", el_input);
+        el_input.classList.remove("border_bg_invalid");
         MSJ_validate_and_disable();
     }; // MSJ_InputKeyup
+
+//========= MSJ_Toggle  ============= PR2021-05-13
+    function MSJ_Toggle(el_input){
+        //console.log( "===== MSJ_Toggle  ========= ");
+
+  // put value of etenorm  as "1" or "0" in data-value
+        const old_data_value = get_attr_from_el_int(el_input, "data-value")
+        const new_data_value = (!old_data_value) ? 1 : 0;
+        el_MSJ_etenorm.setAttribute("data-value", new_data_value)
+
+  // set img_class
+        const el_img = el_MSJ_etenorm.children[0];
+        if(el_img){
+            add_or_remove_class(el_img, "tickmark_2_2", !!new_data_value, "tickmark_0_0")
+        }
+    }; // MSJ_Toggle
 
 //=========  MSJ_validate_and_disable  ================  PR2020-10-01
     function MSJ_validate_and_disable() {
         console.log(" -----  MSJ_validate_and_disable   ----")
         let disable_save_btn = false;
 // ---  loop through input fields on MSJ_Open
-        let form_elements = el_MSJ_div_form_controls.querySelectorAll(".awp_input_text")
-        for (let i = 0, el_input; el_input = form_elements[i]; i++) {
-            const fldName = get_attr_from_el(el_input, "data-field")
-            const  msg_err = MSJ_validate_field(el_input, fldName)
-// ---  show / hide error message
-            const el_msg = document.getElementById("id_MSJ_msg_" + fldName);
-            el_msg.innerText = msg_err;
-            add_or_remove_class(el_msg, cls_hide, !msg_err)
-            if (msg_err){ disable_save_btn = true};
+        let input_elements = el_MSJ_div_form_controls.querySelectorAll(".awp_input_text")
+        for (let i = 0, el_input; el_input=input_elements[i]; i++) {
+            const fldName = get_attr_from_el(el_input, "data-field");
+            const msg_err = MSJ_validate_field(el_input, fldName);
+            if(msg_err){disable_save_btn = true};
+// ---  put border_bg_invalid in input box when error
+            add_or_remove_class(el_input, "border_bg_invalid", msg_err)
+// ---  put msg_err in msg_box or reset and hide
+            b_render_msg_box("id_MSJ_msg_" + fldName, [msg_err])
         };
-
 // ---  disable save button on error
         el_MSJ_btn_save.disabled = disable_save_btn;
+
+        el_MSJ_message_container.innerHTML = null;
     }  // MSJ_validate_and_disable
 
-//=========  MSJ_validate_field  ================  PR2020-10-01
+//=========  MSJ_validate_field  ================  PR2020-10-01 PR2021-05-14
     function MSJ_validate_field(el_input, fldName) {
         console.log(" -----  MSJ_validate_field   ----")
+        console.log("fldName", fldName)
         let msg_err = null;
         if (el_input){
             const value = el_input.value;
-            if(["sequence"].indexOf(fldName) > -1){
-                const arr = get_number_from_input(loc, fldName, el_input.value);
-                msg_err = arr[1];
-            } else {
-                 const caption = (fldName === "code") ? loc.Abbreviation :
-                                (fldName === "name") ? loc.Name  : loc.This_field;
-                if (["code", "name"].indexOf(fldName) > -1 && !value) {
+            console.log("value", value)
+            if (["code", "name"].includes(fldName)) {
+                const caption = (fldName === "code") ? loc.Abbreviation : loc.Name;
+                const max_length = (fldName === "code") ? 8 : 50;
+                if (!value) {
                     msg_err = caption + loc.cannot_be_blank;
-                } else if (["code"].indexOf(fldName) > -1 && value.length > 10) {
-                    msg_err = caption + loc.is_too_long_MAX10;
-                } else if (["name"].indexOf(fldName) > -1 &&
-                    value.length > 50) {
-                        msg_err = caption + loc.is_too_long_MAX50;
-                } else if (["code", "name"].indexOf(fldName) > -1) {
-                        msg_err = validate_duplicates_in_department(loc, "subject", fldName, caption, mod_MSJ_dict.mapid, value)
+                } else if (value.length > max_length) {
+                    msg_err = caption + ( (fldName === "code") ? loc.is_too_long_MAX10 : loc.is_too_long_MAX50 );
+                }
+            } else if(["sequence"].includes(fldName)){
+                 if (!value) {
+                    msg_err = loc.Sequence + loc.cannot_be_blank;
+                 } else {
+                    const arr = b_get_number_from_input(loc, fldName, el_input.value);
+                    msg_err = arr[1];
                 }
             }
         }
         return msg_err;
     }  // MSJ_validate_field
 
-
-//=========  validate_duplicates_in_department  ================ PR2020-09-11
-    function validate_duplicates_in_department(loc, tblName, fldName, caption, selected_mapid, selected_code) {
-        //console.log(" =====  validate_duplicates_in_department =====")
-        //console.log("fldName", fldName)
-        let msg_err = null;
-        if (tblName && fldName && selected_code){
-            const data_map = (tblName === "subject") ? subject_map : null;
-            if (data_map && data_map.size){
-                const selected_code_lc = selected_code.trim().toLowerCase()
-    //--- loop through subjects
-                for (const [map_id, map_dict] of data_map.entries()) {
-                    // skip current item
-                    if(map_id !== selected_mapid) {
-                        const lookup_value = (map_dict[fldName]) ? map_dict[fldName].trim().toLowerCase() : null;
-                        if(lookup_value && lookup_value === selected_code_lc){
-                            console.log(" =====  validate_duplicates_in_department =====")
-
-                            // check if they have at least one department in common
-                            let depbase_in_common = false;
-                            const selected_depbases = MSJ_GetDepartmentsSelected();
-                            const lookup_departments = map_dict.depbases;
-                            console.log("selected_depbases", selected_depbases)
-                            console.log("lookup_departments", lookup_departments)
-                            if(selected_depbases && lookup_departments){
-                                selected_depbases.forEach((sel_dep_pk, i) => {
-                                    lookup_departments.forEach((lookup_dep_pk, j) => {
-                                        if (sel_dep_pk === lookup_dep_pk){depbase_in_common = true}
-                                    });
-                                });
-                            }
-                            if(depbase_in_common){
-                                msg_err = caption + " '" + selected_code + "'" + loc.already_exists_in_departments
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        };
-        return msg_err;
-    }  // validate_duplicates_in_department
-
 //========= MSJ_ResetElements  ============= PR2020-08-03
     function MSJ_ResetElements(also_remove_values){
         //console.log( "===== MSJ_ResetElements  ========= ");
         // --- loop through input elements
-        const fields = ["abbrev", "sequence", "name", "department", "modified"]
+        const fields = ["code", "sequence", "name", "department", "modified"]
         for (let i = 0, field, el_input, el_msg; field = fields[i]; i++) {
             el_input = document.getElementById("id_MSJ_" + field);
             if(el_input){
                 el_input.classList.remove("border_bg_invalid", "border_bg_valid");
-                if(also_remove_values){ el_input.value = null};
+                if(also_remove_values){
+                    if (field === "modified"){
+                        el_input.innertText = null;
+                    } else {
+                        el_input.value = null;
+                    }
+                };
             }
             el_msg = document.getElementById("id_MSJ_msg_" + field);
             if(el_msg){el_msg.innerText = null};
         }
+        if(also_remove_values){
+            document.getElementById("")
+        }
+
     }  // MSJ_ResetElements
 
 //========= MSJ_SetMsgElements  ============= PR2020-08-02
@@ -1470,8 +1801,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSJ_headertext  ======== // PR2020-09-30
     function MSJ_headertext(is_addnew, tblName, name) {
-        //console.log(" -----  MSJ_headertext   ----")
-        //console.log("tblName", tblName, "is_addnew", is_addnew)
+        console.log(" -----  MSJ_headertext   ----")
+        console.log("tblName", tblName, "is_addnew", is_addnew)
 
         let header_text = (tblName === "subject") ? (is_addnew) ? loc.Add_subject : loc.Subject :
                     (tblName === "level") ? (is_addnew) ? loc.Add_level : loc.Level :
@@ -1482,23 +1813,49 @@ document.addEventListener('DOMContentLoaded', function() {
                     (tblName === "package") ? (is_addnew) ? loc.Add_package : loc.Package :
                     (tblName === "packageitem") ? (is_addnew) ? loc.Add_package_item : loc.Package_item : "---";
 
+        console.log("header_text", header_text)
         if (!is_addnew) {
             header_text += ": " + ((name) ? name : "---")
-
-            };
+        };
         document.getElementById("id_MSJ_header").innerText = header_text;
-
-        let this_dep_text = (tblName === "subject") ? loc.this_subject :
-                    (tblName === "level") ? loc.this_level :
-                    (tblName === "sector") ? loc.this_sector :
-                    (tblName === "subjecttype") ? loc.this_subjecttype :
-                    (tblName === "scheme") ? loc.this_scheme :
-                    (tblName === "schemeitem") ? loc.this_schemeitem :
-                    (tblName === "package") ? loc.this_package :
-                    (tblName === "packageitem") ?  loc.this_package_item : "---";
-        document.getElementById("id_MSJ_label_dep").innerText = loc.Departments_where + this_dep_text + loc.occurs + ":";
     }  // MSJ_headertext
 
+//========= MSJ_get_max_sequence  ============= PR2021-05-14
+    function MSJ_get_max_sequence(){
+        let max_sequence = 0;
+        for (const [map_id, map_dict] of subject_map.entries()) {
+            if(map_dict.sequence && map_dict.sequence > max_sequence) { max_sequence = map_dict.sequence}
+        };
+        return max_sequence;
+    }
+
+//========= MSJ_render_messages  =================  PR2021-05-14
+    function MSJ_render_messages(messages) {
+        //console.log( "===== MSJ_render_messages -----")
+        //console.log( "messages", messages)
+        if (el_MSJ_message_container){
+             el_MSJ_message_container.innerHTML = null;
+
+            if (messages && messages.length) {
+                for (let i = 0, msg_dict; msg_dict = messages[i]; i++) {
+                    if (msg_dict && msg_dict.class){
+                        let el_div = document.createElement("div");
+                        el_div.classList.add("m-2", "p-2")
+                        el_div.classList.add(msg_dict.class)
+
+                        const msg_list = msg_dict.msg_list;
+                        if(msg_list && msg_list.length){
+                            for (let j = 0, msg, el_p; msg = msg_list[j]; j++) {
+                                if(msg){
+                                    el_p = document.createElement("p");
+                                    el_p.innerHTML = msg
+                                    el_div.appendChild(el_p);
+                                }
+                            }
+                        }
+                        el_MSJ_message_container.appendChild(el_div);
+        }}}};
+    }  // MSJ_render_messages
 
 // +++++++++ END MOD SUBJECT ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -1507,6 +1864,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function ModConfirmOpen(mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "delete", "inactive" or "resend_activation_email", "permission_sysadm"
+        console.log("mode", mode)
 
         if(permit_dict.crud_subject){
             el_confirm_msg01.innerText = null;
@@ -1521,9 +1879,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 tblName = get_attr_from_el(tblRow, "data-table")
                 selected_pk = get_attr_from_el(tblRow, "data-pk")
             } else {
-                tblName = selected_btn;
+                tblName = get_tblName_from_selectedBtn();
                 selected_pk = (tblName === "subject") ? selected_subject_pk :
-                            (tblName === "department") ? selected_department_pk :
+
                             (tblName === "level") ? selected_level_pk :
                             (tblName === "sector") ? selected_sector_pk :
                             (tblName === "subjecttype") ? selected_subjecttype_pk :
@@ -1627,6 +1985,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
+
         let close_modal = !permit_dict.crud_subject;
 
         if(permit_dict.crud_subject){
@@ -1637,35 +1996,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 ShowClassWithTimeout(tblRow, "tsa_tr_error");
             }
             if(mod_dict.mode === "delete") {
-    // show loader
+    // show loader in mod confirm
                 el_confirm_loader.classList.remove(cls_visible_hide)
-            } else if (mod_dict.mode === "inactive") {
-                mod_dict.new_isactive = !mod_dict.current_isactive
-                close_modal = true;
-                // change inactive icon, before uploading, not when new_inactive = true
-                const el_input = document.getElementById(mod_dict.mapid)
-                for (let i = 0, cell, el; cell = tblRow.cells[i]; i++) {
-                    const cell_fldName = get_attr_from_el(cell, "data-field")
-                    if (cell_fldName === "is_active"){
-    // ---  change icon, before uploading
-                        let el_icon = cell.children[0];
-                        if(el_icon){add_or_remove_class (el_icon, "inactive_1_3", !mod_dict.new_isactive,"inactive_0_2" )};
-                        break;
-                    }
-                }
             }
 
     // ---  Upload Changes
-            let upload_dict = { id: {pk: mod_dict.id,
-                                     ppk: mod_dict.examyear_id,
-                                     table: mod_dict.table,
-                                     mode: mod_dict.mode,
-                                     mapid: mod_dict.mapid}};
-            if (mod_dict.mode === "inactive") {
-                upload_dict.is_active = {value: mod_dict.new_isactive, update: true}
-            };
+            let upload_dict = { mode: mod_dict.mode,
+                                table: mod_dict.table,
+                                subject_pk: mod_dict.id,
+                                examyear_pk: mod_dict.examyear_id,
+                                mapid: mod_dict.mapid};
 
-            console.log("upload_dict: ", upload_dict);
             UploadChanges(upload_dict, url_subject_upload);
         };
 // ---  hide modal
@@ -1715,308 +2056,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }  // ModConfirmResponse
 
-//###########################################################################
-// +++++++++++++++++ REFRESH DATA MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
 
-//=========  RefreshDataMap  ================ PR2020-08-16 PR2020-09-30 PR2021-05-10
-    function RefreshDataMap(tblName, data_rows, data_map) {
-
-        console.log(" --- RefreshDataMap  ---");
-        if (data_rows) {
-            const field_setting = field_settings[tblName];
-            const field_names = (field_setting) ? field_setting.field_names : null;
-            for (let i = 0, update_dict; update_dict = data_rows[i]; i++) {
-                RefreshDatamapItem(field_setting, field_names, update_dict, data_map);
-            }
-        }
-    }  //  RefreshDataMap
-
-//=========  RefreshDatamapItem  ================ PR2020-08-16 PR2020-09-30
-    function RefreshDatamapItem(field_setting, field_names, update_dict, data_map) {
-        console.log(" --- RefreshDatamapItem  ---");
-        console.log("update_dict", update_dict);
-        if(!isEmpty(update_dict)){
-// ---  update or add update_dict in subject_map
-            let updated_columns = [];
-    // get existing map_item
-            const tblName = update_dict.table;
-            const map_id = update_dict.mapid;
-            let tblRow = document.getElementById(map_id);
-
-            const is_deleted = get_dict_value(update_dict, ["deleted"], false)
-            const is_created = get_dict_value(update_dict, ["created"], false)
-
-// ++++ created ++++
-            if(is_created){
-    // ---  insert new item
-                data_map.set(map_id, update_dict);
-                updated_columns.push("created")
-    // ---  create row in table., insert in alphabetical order
-                const order_by = (update_dict.sequence) ? update_dict.sequence + 10000 : 90000;
-                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
-                tblRow = CreateTblRow(tblBody_datatable, tblName, field_setting, map_id, update_dict, order_by, row_index)
-    // ---  scrollIntoView,
-                if(tblRow){
-                    tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
-    // ---  make new row green for 2 seconds,
-                    ShowOkElement(tblRow);
-                }
-
-// ++++ deleted ++++
-            } else if(is_deleted){
-                data_map.delete(map_id);
-    //--- delete tblRow
-                if (tblRow){tblRow.parentNode.removeChild(tblRow)};
-            } else {
-                const old_map_dict = (map_id) ? data_map.get(map_id) : null;
-    // ---  check which fields are updated, add to list 'updated_columns'
-                if(!isEmpty(old_map_dict) && field_names){
-                    // skip first column (is margin)
-                    for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
-                        if (col_field in old_map_dict && col_field in update_dict){
-                            if (old_map_dict[col_field] !== update_dict[col_field] ) {
-                                updated_columns.push(col_field)
-                            }}}}
-    // ---  update item
-
-            console.log("map_id", map_id);
-                data_map.set(map_id, update_dict)
-            }
-    // ---  make update
-            // note: when updated_columns is empty, then updated_columns is still true.
-            // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
-            if(tblRow && updated_columns.length){
-    // ---  make entire row green when row is created
-                if(updated_columns.includes("created")){
-                    ShowOkElement(tblRow);
-                } else {
-    // loop through cells of row
-                    for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
-                        if (el){
-                            el_fldName = get_attr_from_el(el, "data-field")
-                            UpdateField(el, update_dict);
-    // make gield green when field name is in updated_columns
-                            if(updated_columns.includes(el_fldName)){
-                                ShowOkElement(el);
-                            }}}}}
-        }
-
-            console.log("data_map", data_map);
-    }  // RefreshDatamapItem
-
-//=========  fill_data_list  ================ PR2020-10-07
-// TODO deprecate
-    function fill_data_list(data_rows, key_field, value_field) {
-        console.log(" --- fill_data_list  ---");
-        // datalist maps row.id with row.abbrev
-        let data_list = {};
-        if (data_rows) {
-            for (let i = 0, row; row = data_rows[i]; i++) {
-                const key = row[key_field];
-                data_list[key] = row[value_field];
-            }
-        }
-       //console.log( "data_list", data_list);
-        return data_list
-    }  //  fill_data_list
-
-//###########################################################################
-// +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
-
-//========= HandleFilterField  ====================================
-    function HandleFilterField(el, col_index, event) {
-       //console.log( "===== HandleFilterField  ========= ");
-        // skip filter if filter value has not changed, update variable filter_text
-
-        //console.log( "el_key", el_key);
-        //console.log( "col_index", col_index);
-        const filter_tag = get_attr_from_el(el, "data-filtertag")
-        //console.log( "filter_tag", filter_tag);
-
-// --- get filter tblRow and tblBody
-        const tblRow = get_tablerow_selected(el);
-        const tblName = get_attr_from_el(tblRow, "data-table")
-
-// --- reset filter row when clicked on 'Escape'
-        const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
-
-         if ( ["toggle", "inactive"].indexOf(filter_tag) > -1) {
-// ---  toggle filter_checked
-            let filter_checked = (col_index in filter_dict) ? filter_dict[col_index] : 0;
-    // ---  change icon
-            let el_icon = el.children[0];
-            if(el_icon){
-                add_or_remove_class(el_icon, "tickmark_0_0", !filter_checked)
-                if(filter_tag === "toggle"){
-                    add_or_remove_class(el_icon, "tickmark_0_1", filter_checked === -1)
-                    add_or_remove_class(el_icon, "tickmark_0_2", filter_checked === 1)
-                } else  if(filter_tag === "inactive"){
-                    add_or_remove_class(el_icon, "inactive_0_2", filter_checked === -1)
-                    add_or_remove_class(el_icon, "inactive_1_3", filter_checked === 1)
-                }
-            }
-
-        } else if (filter_tag === "activated") {
-// ---  toggle activated
-            let filter_checked = (col_index in filter_dict) ? filter_dict[col_index] : 0;
-            filter_checked += 1
-            if (filter_checked > 1) { filter_checked = -2 }
-            if (!filter_checked){
-                delete filter_dict[col_index];
-            } else {
-                filter_dict[col_index] = filter_checked;
-            }
-    // ---  change icon
-            let el_icon = el.children[0];
-            if(el_icon){
-                add_or_remove_class(el_icon, "tickmark_0_0", !filter_checked)
-                add_or_remove_class(el_icon, "exclamation_0_2", filter_checked === -2)
-                add_or_remove_class(el_icon, "tickmark_0_1", filter_checked === -1)
-                add_or_remove_class(el_icon, "tickmark_0_2", filter_checked === 1)
-
-            }
-        }
-
-
-        Filter_TableRows(tblBody_datatable);
-    }; // HandleFilterField
-
-//========= Filter_TableRows  ==================================== PR2020-08-17
-    function Filter_TableRows(tblBody) {
-        //console.log( "===== Filter_TableRows  ========= ");
-
-        const tblName_settings = (selected_btn === "btn_user_list") ? "users" : "permissions";
-
-// ---  loop through tblBody.rows
-        for (let i = 0, tblRow, show_row; tblRow = tblBody.rows[i]; i++) {
-            show_row = ShowTableRow(tblRow, tblName_settings)
-            add_or_remove_class(tblRow, cls_hide, !show_row)
-        }
-    }; // Filter_TableRows
-
-//========= ShowTableRow  ==================================== PR2020-08-17
-    function ShowTableRow(tblRow, tblName_settings) {
-        // only called by Filter_TableRows
-        //console.log( "===== ShowTableRow  ========= ");
-        let hide_row = false;
-        if (tblRow){
-// show all rows if filter_name = ""
-            if (!isEmpty(filter_dict)){
-                for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
-                    const filter_text = filter_dict[i];
-                    const filter_tag = field_settings[tblName_settings].filter_tags[i];
-                // skip if no filter on this colums
-                    if(filter_text){
-                        if(filter_tag === "text"){
-                            const blank_only = (filter_text === "#")
-                            const non_blank_only = (filter_text === "@" || filter_text === "!")
-                // get value from el.value, innerText or data-value
-                            // PR2020-06-13 debug: don't use: "hide_row = (!el_value)", once hide_row = true it must stay like that
-                            let el_value = el.innerText;
-                            if (blank_only){
-                                // empty value gets '\n', therefore filter asc code 10
-                                if(el_value && el_value !== "\n" ){
-                                    hide_row = true
-                                };
-                            } else if (non_blank_only){
-                                // empty value gets '\n', therefore filter asc code 10
-                                if(!el_value || el_value === "\n" ){
-                                    hide_row = true
-                                }
-                            } else {
-                                el_value = el_value.toLowerCase();
-                                // hide row if filter_text not found or el_value is empty
-                                // empty value gets '\n', therefore filter asc code 10
-                                if(!el_value || el_value === "\n" ){
-                                    hide_row = true;
-                                } else if(el_value.indexOf(filter_text) === -1){
-                                    hide_row = true;
-                                }
-                            }
-                        } else if(filter_tag === "toggle"){
-                            const el_value = get_attr_from_el_int(el, "data-value")
-                            if (filter_text === 1){
-                                if (!el_value ) {hide_row = true};
-                            } else  if (filter_text === -1){
-                                if (el_value) {hide_row = true};
-                            }
-                        } else if(filter_tag === "inactive"){
-                            const el_value = get_attr_from_el_int(el, "data-value")
-                            if (filter_text === 1){
-                                if (!el_value ) {hide_row = true};
-                            } else  if (filter_text === -1){
-                                if (el_value) {hide_row = true};
-                            }
-                        } else if(filter_tag === "activated"){
-                            const el_value = get_attr_from_el_int(el, "data-value")
-                            if (filter_text && el_value !== filter_text ) {hide_row = true};
-                        }
-                    }  //  if(!!filter_text)
-                }  // for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
-            }  // if if (!isEmpty(filter_dict))
-        }  // if (!!tblRow)
-        return !hide_row
-    }; // ShowTableRow
-
-//========= ResetFilterRows  ====================================
-    function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20
-       //console.log( "===== ResetFilterRows  ========= ");
-
-        selected_subject_pk = null;
-
-        filter_dict = {};
-
-        Filter_TableRows(tblBody_datatable);
-
-        let filterRow = tblHead_datatable.rows[1];
-        if(!!filterRow){
-            for (let j = 0, cell, el; cell = filterRow.cells[j]; j++) {
-                if(cell){
-                    el = cell.children[0];
-                    if(el){
-                        const filter_tag = get_attr_from_el(el, "data-filtertag")
-                        if(el.tag === "INPUT"){
-                            el.value = null
-                        } else {
-                            const el_icon = el.children[0];
-                            if(el_icon){
-                                let classList = el_icon.classList;
-                                while (classList.length > 0) {
-                                    classList.remove(classList.item(0));
-                                }
-                                el_icon.classList.add("tickmark_0_0")
-                            }
-                        }
-                    }
-                }
-            }
-       };
-        FillTblRows();
-    }  // function ResetFilterRows
-
-//========= get_datamap_from_selBtn  ======== // PR2020-09-30
-    function get_datamap_from_selBtn() {
-        const data_map = (selected_btn === "btn_subject") ? subject_map :
-                        (selected_btn === "btn_schemeitem") ? schemeitem_map :
-                        (selected_btn === "btn_department") ? department_map :
-                        (selected_btn === "btn_level") ? level_map :
-                        (selected_btn === "btn_sector") ? sector_map :
-                        (selected_btn === "btn_subjecttype") ? subjecttype_map :
-                        (selected_btn === "btn_package") ? packageitem_map  : null;
-        return data_map;
-    }
-//========= get_tblName_from_selectedBtn  ======== // PR2021-05-10
-    function get_tblName_from_selectedBtn() {
-        const data_map = (selected_btn === "btn_subject") ? "subject" :
-                        (selected_btn === "btn_schemeitem") ? "schemeitem" :
-                        (selected_btn === "btn_department") ? "department" :
-                        (selected_btn === "btn_level") ? "level" :
-                        (selected_btn === "btn_sector") ? "sector" :
-                        (selected_btn === "btn_subjecttype") ? "subjecttype" :
-                        (selected_btn === "btn_package") ? "packageitem"  : null;
-        return data_map;
-    }
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
 // +++++++++++++++++ MODAL SELECT EXAMYEAR, SCHOOL OR DEPARTMENT ++++++++++++++++++++
 //=========  ModSelSchOrDep_Open  ================ PR2020-10-27 PR2020-11-17
     function ModSelSchOrDep_Open(tblName) {
@@ -2160,6 +2203,29 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         return add_to_list;
     }  // ModSelSchOrDep_FillSelectRow
+
+//========= get_datamap_from_selBtn  ======== // PR2020-09-30
+    function get_datamap_from_selBtn() {
+        const data_map = (selected_btn === "btn_subject") ? subject_map :
+                        (selected_btn === "btn_schemeitem") ? schemeitem_map :
+                        (selected_btn === "btn_department") ? department_map :
+                        (selected_btn === "btn_level") ? level_map :
+                        (selected_btn === "btn_sector") ? sector_map :
+                        (selected_btn === "btn_subjecttype") ? subjecttype_map :
+                        (selected_btn === "btn_package") ? packageitem_map  : null;
+        return data_map;
+    }
+//========= get_tblName_from_selectedBtn  ======== // PR2021-05-10
+    function get_tblName_from_selectedBtn() {
+        const tblName = (selected_btn === "btn_subject") ? "subject" :
+                        (selected_btn === "btn_schemeitem") ? "schemeitem" :
+                        (selected_btn === "btn_department") ? "department" :
+                        (selected_btn === "btn_level") ? "level" :
+                        (selected_btn === "btn_sector") ? "sector" :
+                        (selected_btn === "btn_subjecttype") ? "subjecttype" :
+                        (selected_btn === "btn_package") ? "packageitem"  : null;
+        return tblName;
+    }
 
 
 })  // document.addEventListener('DOMContentLoaded', function()

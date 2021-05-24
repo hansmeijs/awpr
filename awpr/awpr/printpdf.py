@@ -66,13 +66,22 @@ def draw_exam(canvas, sel_exam_instance, user_lang):  # PR2021-05-07
     examtype_caption = c.get_examtype_caption(examtype)
 
 # create list of questions
-    assignment_dict = subj_views.get_assignment_dict(amount, assignment)
+    assignment_dict = subj_views.get_assignment_dict(sel_exam_instance)
 
-# - create string with department abbrevs
-    dep_abbrevs = subj_views.get_department_abbrevs(sel_exam_instance, examyear)
+# - get dep_abbrev from department
+    dep_abbrev = '---'
+    department = sel_exam_instance.department
+    if department:
+        dep_abbrev = department.abbrev
 
-# - create string with level abbrevs
-    level_abbrevs = subj_views.get_level_abbrevs(sel_exam_instance, examyear)
+# - get level_abbrev from level
+    level_abbrev = None
+    level = sel_exam_instance.level
+    if level and level.abbrev:
+        dep_abbrev += ' - ' + level.abbrev
+
+# - get version
+    version = sel_exam_instance.version
 
     last_modified_text = af.get_modifiedby_formatted(sel_exam_instance, user_lang)
 
@@ -81,12 +90,11 @@ def draw_exam(canvas, sel_exam_instance, user_lang):  # PR2021-05-07
     header_list = ("MINISTERIE VAN ONDERWIJS, WETENSCHAP, CULTUUR EN SPORT",
                  "Examenvragen voor het examenjaar " + examyear_code)
 
-    data_list = [( str(_('Education type')) + ':', dep_abbrevs) ]
-    if level_abbrevs:
-        data_list.append( (str(_('Level')) + ':', level_abbrevs) )
+    data_list = [( str(_('Education type')) + ':', dep_abbrev) ]
     data_list.append( (str(_('Exam type')) + ':', ' '.join( (examtype_caption, examperiod_caption) ) ) )
     data_list.append((str(_('Subject')) + ':', subject_name) )
-
+    if version:
+        data_list.append( (str(_('Version')) + ':', version) )
     question_list = [ ( str(_('Number of questions')) + ':', amount_str ),
                       ( str(_('Maximum score')) + ':', maxscore_str )
                     ]

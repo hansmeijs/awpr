@@ -87,8 +87,8 @@
             {% include 'includes/modimport.html' %}
 
             <div class="content_margin_top78">
-
                 {% include 'includes/messages.html' %}
+
     <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="grade_by_subject" class="btn btn-secondary ">{% trans 'Grades by subject' %}</button>
@@ -98,10 +98,10 @@
                 </div>
     <!-- end BUTTON GROUP -->
 
-<!-- CONTENT HEADER - LOADER -->
-        <!-- submenu -->
+    <!-- CONTENT HEADER - LOADER -->
                 <div class="content_header flex_container">
-                    <div id="id_submenu" class="awp_navbar_submenuXX mt-5">
+        <!-- submenu -->
+                    <div id="id_submenu" class="mt-5">
                     </div>
         <!-- left header_text -->
                     <div class="flex_4 pl-4 py-2">
@@ -117,18 +117,16 @@
                         <h5 id="id_hdr_textright1"></h5>
                     </div>
                 </div>
-            <!-- end content_header -->
-
     <!-- CONTENT BODY -->
-    <!-- =================== DATA TABLE  =================== -->
                 <div class="content_header ml-2 mr-0">
-                <table class="table tsa_tbl">
-                    <thead id="id_tblHead_datatable"></thead>
-                    <tbody id="id_tblBody_datatable"></tbody>
-                </table>
-            </div>
+    <!-- =================== DATA TABLE  =================== -->
+                    <table class="table tsa_tbl">
+                        <thead id="id_tblHead_datatable"></thead>
+                        <tbody id="id_tblBody_datatable"></tbody>
+                    </table>
+                </div>
+    <!-- =================== END DATA TABLE  =================== -->
     <!-- END OF CONTENT BODY -->
-
                 <div id="id_data"
                     data-datalist_download_url="{% url 'datalist_download_url' %}"
                     data-settings_upload_url="{% url 'settings_upload_url' %}"

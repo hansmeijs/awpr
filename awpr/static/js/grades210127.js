@@ -531,7 +531,6 @@ document.addEventListener("DOMContentLoaded", function() {
         const datalist_request = {setting: new_setting};
 
 // also retrieve the tables that have been changed because of the change in examperiod
-        // TODO change setting and get rows in one request
         datalist_request.grade_rows = {get: true};
         DatalistDownload(datalist_request);
 
@@ -766,20 +765,16 @@ document.addEventListener("DOMContentLoaded", function() {
         //console.log("===  CreateTblHeader ===== ");
 
         const column_count = field_setting.field_names.length;
-        //console.log("field_setting", field_setting);
+
 // +++  insert header and filter row ++++++++++++++++++++++++++++++++
         let tblRow_header = tblHead_datatable.insertRow (-1);
         let tblRow_filter = tblHead_datatable.insertRow (-1);
+
     // --- loop through columns
         for (let j = 0; j < column_count; j++) {
             const field_name = field_setting.field_names[j];
             const key = field_setting.field_caption[j];
-            /*
-             "segrade",
-              "pescore", "pegrade",
-              "cescore", "cegrade",
-              "pecegrade",
-            */
+
             let caption = (loc[key]) ? loc[key] : key;
             if (field_name === "segrade") {
                 if (setting_dict.sel_examperiod === 4){
@@ -806,7 +801,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const class_width = "tw_" + field_setting.field_width[j] ;
             const class_align = "ta_" + field_setting.field_align[j];
 
-            // skip columns if not columns_shown[field_name]) = true;
+    // - skip columns if not columns_shown[field_name]) = true;
             if (columns_shown[field_name]){
 
 // ++++++++++ insert columns in header row +++++++++++++++
@@ -831,7 +826,10 @@ document.addEventListener("DOMContentLoaded", function() {
 // ++++++++++ create filter row +++++++++++++++
         // --- add th to tblRow_filter.
                 const th_filter = document.createElement("th");
-                    const el_filter = document.createElement(field_tag);
+        // --- create element with tag based on filter_tag
+                    const el_tag = (["text", "number"].includes(filter_tag)) ? "input" : "div";
+                    const el_filter = document.createElement(el_tag);
+        // --- add data-field Attribute.
                         el_filter.setAttribute("data-field", field_name);
                         el_filter.setAttribute("data-filtertag", filter_tag);
 
@@ -847,10 +845,10 @@ document.addEventListener("DOMContentLoaded", function() {
                             el_filter.setAttribute("autocomplete", "off");
                             el_filter.setAttribute("ondragstart", "return false;");
                             el_filter.setAttribute("ondrop", "return false;");
-                        } else if (["toggle", "activated", "inactive"].indexOf(filter_tag) > -1) {
+                        } else if (["toggle", "activated", "inactive"].includes(filter_tag)) {
                             // default empty icon necessary to set pointer_show
                             // default empty icon necessary to set pointer_show
-                            append_background_class(el_filter,"tickmark_0_0");
+                            append_background_class(el_filter, "tickmark_0_0");
                         }
 
         // --- add width, text_align
@@ -1165,7 +1163,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log("fldName", fldName)
         console.log("map_dict", map_dict)
 
-            if (!permit_dict.edit_grade){
+            if (!permit_dict.crud_grade){
         // show message no permission
                 b_show_mod_message(loc.grade_err_list.no_permission);
         // put back old value  in el_input
@@ -1231,7 +1229,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         }
                     }
                 }
-            }  // if (!permit_dict.edit_grade)
+            }  // if (!permit_dict.crud_grade)
         }
     };  // HandleInputChange
 

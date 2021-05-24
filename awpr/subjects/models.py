@@ -174,13 +174,6 @@ class Sector(sch_mod.AwpBaseModel):  # PR2018-06-06
     def __str__(self):
         return self.abbrev
 
-    @property  # PR2018-08-11
-    def has_no_child_rows(self):
-        linked_items_count = Scheme.objects.filter(sector_id=self.pk).count()
-        # logger.debug('SubjectDefault Model has_no_child_rows linked_items_count: ' + str(linked_items_count))
-        return not bool(linked_items_count)
-
-
     @classmethod
     def get_sct_by_abbrev(cls, abbrev, dep, examyear):  # PR2019-02-26
         # function gets Sector with this abbrev and examyear, returns None if multiple found
@@ -287,39 +280,6 @@ class Subjecttype_log(sch_mod.AwpBaseModel):
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
-# PR2018-08-23 PR2020-12-16
-class Norm(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
-    # TODO move fields to table Exam PR2021-05-05
-    examyear = ForeignKey(sch_mod.Examyear, related_name='+', on_delete=CASCADE)
-
-    is_etenorm = BooleanField(default=False)
-    scalelength_ce = PositiveSmallIntegerField(null=True)
-    norm_ce = CharField(max_length=c.MAX_LENGTH_10, null=True)
-    scalelength_pe = PositiveSmallIntegerField(null=True)
-    norm_practex = CharField(max_length=c.MAX_LENGTH_10, null=True)
-    scalelength_reex =  PositiveSmallIntegerField(null=True)
-    norm_reex = CharField(max_length=c.MAX_LENGTH_10, null=True)
-
-# PR2018-08-23
-class Norm_log(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
-
-    norm_id = IntegerField(db_index=True)
-
-    examyear_log = ForeignKey(sch_mod.Examyear_log, related_name='+', on_delete=CASCADE)
-
-    is_etenorm = BooleanField(default=False)
-    scalelength_ce = PositiveSmallIntegerField(null=True)
-    norm_ce = CharField(max_length=c.MAX_LENGTH_10, null=True)
-    scalelength_pe = PositiveSmallIntegerField(null=True)
-    norm_practex = CharField(max_length=c.MAX_LENGTH_10, null=True)
-    scalelength_reex = PositiveSmallIntegerField(null=True)
-    norm_reex = CharField(max_length=c.MAX_LENGTH_10, null=True)
-
-    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
-
-
 # PR2018-06-06 There is one Scheme per department/level/sector per year per country
 class Scheme(sch_mod.AwpBaseModel):
     objects = sch_mod.AwpModelManager()
@@ -337,12 +297,6 @@ class Scheme(sch_mod.AwpBaseModel):
 
     def __str__(self):
         return self.name
-
-    @property  # PR2018-08-11
-    def has_no_child_rows(self):
-        linked_items_count = Scheme.objects.filter(level_id=self.pk).count()
-        # logger.debug('SubjectDefault Model has_no_child_rows linked_items_count: ' + str(linked_items_count))
-        return not bool(linked_items_count)
 
 #  ++++++++++  Class methods  +++++++++++++++++++++++++++
 
@@ -409,6 +363,8 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
     sequence = PositiveSmallIntegerField(default=9999)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
+    etenorm = BooleanField(default=False)
+
     # pr2021-05-04 temporary, used when importing from AWP to determine if subject is uploaded from school
     addedbyschool = BooleanField(default=False)
 
@@ -417,13 +373,6 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
 
     def __str__(self):
         return self.name
-
-    @property  # PR2018-07-19
-    def has_no_child_rows(self):
-        # TODO find records in linked tables
-        linked_items_count = False  # Subject.objects.filter(subject_id=self.pk).count()
-        # logger.debug('SubjectDefault Model has_no_child_rows linked_items_count: ' + str(linked_items_count))
-        return not bool(linked_items_count)
 
 #  ++++++++++  Class methods  +++++++++++++++++++++++++++
     @classmethod
@@ -455,36 +404,40 @@ class Subject_log(sch_mod.AwpBaseModel):
     code = CharField(max_length=c.MAX_LENGTH_10, null=True)  # stored in subjectbase PR2020-12-11
     sequence = PositiveSmallIntegerField(null=True)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    etenorm = BooleanField(default=False)
     addedbyschool = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
-
 class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
-    # PR2021-03-04 contains exam possible ansewers per exam question
-
+    # PR2021-03-04 contains exam with possible answers per exam question
     objects = sch_mod.AwpModelManager()
 
     subject = ForeignKey(Subject, related_name='+', on_delete=CASCADE)
+    department = ForeignKey(sch_mod.Department, related_name='+', on_delete=PROTECT)
+    level = ForeignKey(Level, related_name='+', null=True, on_delete=SET_NULL)
 
     examperiod = PositiveSmallIntegerField(db_index=True, default=1)
     examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True, default='ce')
 
-    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-    levelbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-    sectorbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-
+    version = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     amount = PositiveSmallIntegerField(null=True)
     maxscore = PositiveSmallIntegerField(null=True)
 
     assignment = CharField(max_length=2048, null=True)
+    keys = CharField(max_length=2048, null=True)
 
     status = PositiveSmallIntegerField(default=0)
     auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     locked = BooleanField(default=False)
+
+    nex_id = PositiveSmallIntegerField(null=True)
+    scalelength = PositiveSmallIntegerField(null=True)
+    cesuur = PositiveSmallIntegerField(null=True)
+    nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
 
 
 class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
@@ -496,19 +449,19 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
 
     exam_id = IntegerField(db_index=True)
 
-    subject_log = ForeignKey(Subject_log, related_name='+', on_delete=CASCADE)
+    subject_log = ForeignKey(Subject_log, related_name='+', null=True, on_delete=SET_NULL)
+    department_log = ForeignKey(sch_mod.Department_log, related_name='+', null=True, on_delete=SET_NULL)
+    level_log = ForeignKey(Level_log, related_name='+', null=True, on_delete=SET_NULL)
 
     examperiod = PositiveSmallIntegerField(db_index=True, default=1)
     examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
 
-    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-    levelbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-    sectorbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-
+    version = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     amount = PositiveSmallIntegerField(null=True)
     maxscore = PositiveSmallIntegerField(null=True)
 
     assignment = CharField(max_length=2048, null=True)
+    keys = CharField(max_length=2048, null=True)
 
     status = PositiveSmallIntegerField(default=0)
     auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -516,6 +469,10 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     locked = BooleanField(default=False)
 
+    nex_id = PositiveSmallIntegerField(null=True)
+    scalelength = PositiveSmallIntegerField(null=True)
+    cesuur = PositiveSmallIntegerField(null=True)
+    nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
 
 # PR2018-06-05
 class Schemeitem(sch_mod.AwpBaseModel):
@@ -692,15 +649,13 @@ class Cluster(sch_mod.AwpBaseModel):
     objects = sch_mod.AwpModelManager()
 
     school = ForeignKey(sch_mod.School, related_name='clusters', on_delete=CASCADE)
+    department = ForeignKey(sch_mod.Department, related_name='clusters', on_delete=CASCADE)
     subject = ForeignKey(Subject, related_name='clusters', on_delete=CASCADE)
 
     name = CharField(max_length=50)
-    abbrev = CharField(max_length=20)
-    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-
 
     def __str__(self):
-        return self.abbrev
+        return self.name
 
 # PR2018-06-06
 class Cluster_log(sch_mod.AwpBaseModel):

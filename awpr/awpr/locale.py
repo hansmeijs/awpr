@@ -37,6 +37,10 @@ def get_locale_dict(table_dict, user_lang):
     dict['Select_examyear'] = _('Select an exam year')
     dict['Select_school'] = _('Select a school')
     dict['Select_department'] = _('Select a department')
+    dict['No_departments_found'] = _("No departments found")
+
+    dict['There_is_no__'] = _('There is no ')
+    dict['__selected'] = _(' selected.')
 
     dict['No_examyear_selected'] = _('No exam year selected')
     dict['No_school'] = _('No school')
@@ -159,7 +163,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['link_The_column'] = _("The column ")
         dict['link_The_columns'] = _("The columns ")
         dict['link_One_ofthe_columns'] = _("One of the columns ")
-        dict['_or_'] = _(" or ")
+        dict['_or_'] = TXT__or_
         dict['link_mustbelinked_single'] =  pgettext_lazy('single', ' must be linked.')
         dict['link_mustbelinked_plural'] =  pgettext_lazy('plural', ' must be linked.')
 
@@ -328,6 +332,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Add_subjecttype'] = _('Add subject type')
         dict['Add_scheme'] = _('Add scheme')
         dict['Add_package'] = _('Add package')
+        dict['Copy_from_previous_year'] = _('Copy from previous years')
 
         dict['Delete_subject'] = _('Delete subject')
         dict['Delete_department'] = _('Delete department')
@@ -343,6 +348,8 @@ def get_locale_dict(table_dict, user_lang):
         dict['Schemeitem'] = _('Scheme item')
         dict['Package'] = _('Package')
         dict['Package_item'] = _('Package item')
+        dict['ETE_exam'] = _('ETE exam')
+        dict['Added_by_school'] = _('Added by school')
 
         dict['Sequence'] = TXT_Sequence
         dict['Upload_subjects'] = _('Upload subjects')
@@ -354,9 +361,11 @@ def get_locale_dict(table_dict, user_lang):
         dict['this_scheme'] = _('this scheme')
         dict['this_package'] = _('this package')
 
-        dict['Departments_where'] = _('Departments, in which ')
-        dict['occurs'] = _(' occurs')
+
+
+        dict['Departments_with'] = _('Departments with ')
         dict['All_departments'] = _('All departments')
+
         dict['already_exists_in_departments'] = _(' already exists in one of the departments.')
 
 # ====== PAGE SCHOOL ========================= PR2020-09-30
@@ -390,7 +399,8 @@ def get_locale_dict(table_dict, user_lang):
         dict['No_candidate_selected'] = _('No candidate selected')
         dict['This_candidate_has_nosubjects_yet'] = _('This candidate has no subjects yet.')
 
-        dict['Examnumber_twolines'] = _('Exam\nnumber')
+        dict['Examnumber_twolines'] = TXT_Examnumber_twolines
+
         dict['Last_name'] = _('Last name')
         dict['First_name'] = _('First name')
         dict['Gender'] = _('Gender')
@@ -406,7 +416,7 @@ def get_locale_dict(table_dict, user_lang):
 # ====== PAGE STUDENTSUBJECTS ========================= PR2020-12-21
     if 'page_studsubj' in page_list:
         dict['Character'] = _('Character')
-        dict['Examnumber_twolines'] = _('Exam\nnumber')
+        dict['Examnumber_twolines'] = TXT_Examnumber_twolines
         dict['This_candidate_has_nosubjects_yet'] = _('This candidate has no subjects yet.')
         dict['No_subject_selected'] = _('No subject selected.')
 
@@ -417,6 +427,7 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['at_'] = pgettext_lazy('at_date', 'at ')
         dict['_of_'] = TXT__of_
+        dict['_or_'] = TXT__or_
 
 
         dict['Submit_Ex1_form'] = _('Submit Ex2A form')
@@ -445,7 +456,6 @@ def get_locale_dict(table_dict, user_lang):
 # ====== PAGE EXAM ========================= PR2021-04-04
     if 'page_exams' in page_list:
 
-
         dict['Exam_period'] = TXT_Exam_period
         dict['Select_examperiod'] = TXT_Select_examperiod
         dict['No_examperiods_found'] = TXT_No_examperiods_found
@@ -455,14 +465,17 @@ def get_locale_dict(table_dict, user_lang):
         dict['No_examtypes_found'] = TXT_No_examtypes_found
 
         dict['Select_subject'] = _('Select subject')
-        dict['All_levels'] = _("All 'leerwegen'")
-        dict['All_sectors'] = _("All sectors")
-        dict['All_profielen'] = _("All 'profielen'")
-        dict['Profiel'] = _('Profiel')
+        #dict['All_levels'] = _("All 'leerwegen'")
+        #dict['All_sectors'] = _("All sectors")
+        #dict['All_profielen'] = _("All 'profielen'")
+        #dict['Profiel'] = _('Profiel')
 
-        dict['options_examperiod'] = c.EXAMPERIOD_OPTIONS_12ONLY
+        dict['Select_leerweg'] = TXT_Select_leerweg
+        dict['No_leerwegen_found'] = TXT_No_leerwegen_found
+
+        dict['options_examperiod_exam'] = c.EXAMPERIOD_OPTIONS_12ONLY
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
-        dict['options_examtype'] = c.EXAMTYPE_OPTIONS_EXAM
+        dict['options_examtype_exam'] = c.EXAMTYPE_OPTIONS_EXAM
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
 
         dict['All_leerwegen'] = _("All 'leerwegen'")
@@ -475,6 +488,8 @@ def get_locale_dict(table_dict, user_lang):
         dict['Download_PDF'] = _("Download PDF")
         dict['Download_JSON'] = _("Download JSON")
 
+        dict['Key'] = _("Key")
+        dict['Version'] = _("Version")
         dict['Quest'] = _('Quest.')
         dict['Number_of_questions'] = _('Number of questions')
 
@@ -482,14 +497,26 @@ def get_locale_dict(table_dict, user_lang):
         dict['Maximum_score_2lines'] = pgettext_lazy('2 lines', 'Maximum\nscore')
         dict['Sequence_2lines'] = TXT_Sequence_2lines
 
+        dict['No_exam_for_this_subject'] = _("There is no exam for this subject.")
+
         dict['err_list'] = {
             'Amount': _("Amount"),
             'not_allowed': _(" is not allowed."),
             'Amount_cannot_be_blank': _("The amount cannot be blank."),
-            'amount_mustbe_between': _('The amount must be a whole number between 1 and 250.'),
+            'amount_mustbe_between': _('The amount must be a whole number between 1 and %(max)s.') % {'max': 100},
+            'Minimum_score': _('Minimum score'),
+            'Minimum_score_mustbe_lessthan_or_equalto': _('Minimum score must be less than or equal to'),
+            'This_isnota_multiplechoice_question': _('This is not a multiple choice question.'),
+            'must_enter_whole_number_between_0_and_': _('You must enter a whole number between 0 and '),
             'Character': pgettext_lazy('Teken', 'Character'),
+            'already_exists': _('already exists.'),
+            'exists_multiple_times': _('exists multiple times.'),
             'character_mustbe_between': _('The character must be between B and Z or between b and z.'),
             'maxscore_mustbe_between': _('The maximum score must be a whole number between 1 and 99.'),
+
+            'key_mustbe_between_and_': _('The key must be one or more letters between A and '),
+            'Exam_assignment_does_notexist': _('This exam assignment does not exist.'),
+            'Contact_divison_of_exams': _('Please contact the Division of Exams.')
         }
 
 # ====== PAGE GRADES ========================= PR2020-10-27
@@ -499,7 +526,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['This_candidate_has_nosubjects_yet'] = _('This candidate has no subjects yet.')
 
         dict['Ex_nr'] = _('Ex.#')
-        dict['Examnumber_twolines'] = _('Exam\nnumber')
+        dict['Examnumber_twolines'] = TXT_Examnumber_twolines
         dict['Last_name'] = _('Last name')
         dict['First_name'] = _('First name')
         dict['Gender'] = _('Gender')
@@ -649,6 +676,8 @@ def get_locale_dict(table_dict, user_lang):
     return dict
 
 
+TXT_Examnumber_twolines = _('Exam\nnumber')
+
 TXT_Exam_period = _('Exam period')
 TXT_Select_examperiod = _('Select exam period')
 TXT_No_examperiods_found = _('No exam periods found')
@@ -657,6 +686,8 @@ TXT_Exam_type = _('Exam type')
 TXT_Select_examtype = _('Select exam type')
 TXT_No_examtypes_found = _('No exam types found')
 
+TXT_Select_leerweg = _("Select a 'leerweg'")
+TXT_No_leerwegen_found = _("No 'leerwegen' found")
 
 TXT_Email_address = _('Email address')
 
@@ -672,6 +703,7 @@ TXT_Approved_by = _('Approved by')
 TXT_Submitted_by = _('Submitted by')
 
 TXT__and_ = _(' and ')
+TXT__or_ = _(" or ")
 
 TXT_Sequence = _('Sequence')
 TXT_Sequence_2lines =  pgettext_lazy('2 lines', 'Sequence')

@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
         users: { field_caption: ["", "School", "User", "Name", "Email_address",  "Activated", "Last_loggedin", "Inactive"],
                     field_names: ["select", "sb_code", "username", "last_name", "email",  "activated", "last_login", "is_active"],
                     field_tags: ["div", "div", "div", "div", "div",  "div", "div", "div"],
-                    filter_tags: ["select", "text","text",  "text", "text",  "triple", "text", "triple"],
+                    filter_tags: ["select", "text","text",  "text", "text",  "toggle", "text", "toggle"],
                     field_width:  ["020", "075", "150",  "180", "240",  "100", "180", "090"],
                     field_align: ["c", "l", "l", "l",  "l",  "c", "l", "c"]},
         usergroups: {
@@ -71,9 +71,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_tags: ["div", "div", "div", "div", "div",
                                     "div", "div", "div",
                                     "div", "div"],
-                    filter_tags: ["select", "text", "text",  "triple", "triple",
-                                    "triple", "triple", "triple",
-                                     "triple", "triple"],
+                    filter_tags: ["select", "text", "text",  "toggle", "toggle",
+                                    "toggle", "toggle", "toggle",
+                                     "toggle", "toggle"],
                     field_width:  ["020", "075", "150", "090", "090",
                                     "090", "090", "090",
                                     "090", "090"],
@@ -88,8 +88,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                     "group_read", "group_edit", "group_auth1", "group_auth2", "group_auth3", "group_anlz", "group_admin"],
                     field_tags: ["div", "div", "div", "input", "input", "div", "div",
                                     "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text", "number", "triple", "triple",
-                                    "triple", "triple", "triple", "triple", "triple"],
+                    filter_tags: ["select", "text", "text", "text", "number", "toggle", "toggle",
+                                    "toggle", "toggle", "toggle", "toggle", "toggle"],
                     field_width:  ["020", "090", "120","150", "075", "075", "075",
                                     "090", "090", "090", "090", "090"],
                     field_align: ["c", "l", "l", "l", "c", "c", "c", "c", "c", "c", "c", "c"]}
@@ -429,7 +429,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++  create header and filter row ++++++++++++++++++++++++++++++++
         let tblRow_header = tblHead_datatable.insertRow (-1);
         let tblRow_filter = tblHead_datatable.insertRow (-1);
-            tblRow_filter.setAttribute("data-filterrow", "1")
+            // NIU, only necessary when there is also a totalrow:
+            //      tblRow_filter.setAttribute("data-filterrow", "1")
 
 // - insert th's into header row
         const column_count = field_setting.field_names.length;
@@ -438,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // skip columns if in columns_hidden
             if (!columns_hidden.includes(field_name)){
-                const field_caption = loc[field_setting.field_caption[j]]
+                const field_caption = loc[field_setting.field_caption[j]];
                 const field_tag = field_setting.field_tags[j];
                 const filter_tag = field_setting.filter_tags[j];
                 const class_width = "tw_" + field_setting.field_width[j] ;
@@ -451,6 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const el_header = document.createElement("div");
                         el_header.innerText = (field_caption) ? field_caption : null;
         // --- add width, text_align
+                        // not necessary: th_header.classList.add(class_width, class_align);
                         el_header.classList.add(class_width, class_align);
                     th_header.appendChild(el_header)
                 tblRow_header.appendChild(th_header);
@@ -461,15 +463,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- create element with tag from field_tags
                 const filter_field_tag = (["text", "number"].includes(filter_tag)) ? "input" : "div";
                 const el_filter = document.createElement(filter_field_tag);
+
         // --- add data-field Attribute.
                     el_filter.setAttribute("data-field", field_name);
                     el_filter.setAttribute("data-filtertag", filter_tag);
                     el_filter.setAttribute("data-colindex", j);
+
         // --- add EventListener to th_filter, not el_filter
                     if (["text", "number"].includes(filter_tag)) {
                         el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
                         add_hover(th_filter);
-                    } else if (filter_tag === "triple") {
+                    } else if (filter_tag === "toggle") {
                         // add EventListener for icon to th_filter, not el_filter
                         th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
                         th_filter.classList.add("pointer_show");
@@ -484,12 +488,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         el_filter.setAttribute("ondragstart", "return false;");
                         el_filter.setAttribute("ondrop", "return false;");
 
-                    } else if (["toggle", "triple", "activated"].includes(filter_tag)) {
+                    } else if (["toggle", "toggle", "activated"].includes(filter_tag)) {
                         // default empty icon necessary to set pointer_show
                         el_filter.classList.add("tickmark_0_0");
                     }
 
     // --- add width, text_align
+                    // not necessary: th_filter.classList.add(class_width, class_align);
                     el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
                 th_filter.appendChild(el_filter)
                 tblRow_filter.appendChild(th_filter);
@@ -581,13 +586,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
 
             // --- add width, text_align
-                        td.classList.add(class_width, class_align);
-                        if (field_tag === "input") {
+                        // not necessary: td.classList.add(class_width, class_align);
+                        el.classList.add(class_width, class_align);
+                        //if (field_tag === "input") {
                             // dont set width in input field , to adjust width to length
-                            el.classList.add(class_align);
-                        } else {
-                            el.classList.add(class_width, class_align);
-                        }
+                        //    el.classList.add(class_align);
+                        //} else {
+                        //    el.classList.add(class_width, class_align);
+                        //}
             // --- append element
                     td.appendChild(el);
     // --- put value in field
@@ -618,14 +624,14 @@ document.addEventListener('DOMContentLoaded', function() {
             let inner_text = null, title_text = null, filter_value = null;
             if (field_name === "select") {
                 // TODO add select multiple users option PR2020-08-18
-            } else if (["sb_code", "username", "last_name", "email", "employee_code", "page", ].includes(field_name)){
+            } else if (["sb_code", "username", "last_name", "email", "employee_code", "page"].includes(field_name)){
                 inner_text = map_dict[field_name];
-                filter_value = inner_text;
+                filter_value = (inner_text) ? inner_text.toLowerCase() : null;
             } else if (field_name === "role") {
                 const role = map_dict[field_name];
                 inner_text = (loc.role_caption && loc.role_caption[role])  ? loc.role_caption[role] : role;
                 filter_value = inner_text;
-            } else if (["action", "sequence"].includes(field_name)){
+            } else if (["sequence", "action"].includes(field_name)){
                 el_div.value = map_dict[field_name];
                 filter_value = map_dict[field_name];
             } else if (field_name.slice(0, 5) === "group") {
@@ -675,9 +681,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  put value in innerText and title
             el_div.innerText = inner_text;
             add_or_remove_attr (el_div, "title", !!title_text, title_text);
+
 // ---  add attribute filter_value
         //console.log("filter_value", filter_value);
             add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
+
         }  // if(el_div && field_name){
     };  // UpdateField
 
@@ -1839,7 +1847,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // - get new icon_class
             icon_class =  (new_value === "2") ? "inactive_1_3" : (new_value === "1") ? "inactive_0_2" : "inactive_0_0";
 
-        } else if(filter_tag === "triple") {
+        } else if(filter_tag === "toggle") {
             // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
 // - toggle filter value
             new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";

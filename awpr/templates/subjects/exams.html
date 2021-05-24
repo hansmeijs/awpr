@@ -54,11 +54,11 @@
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
-            {% include 'subjects/modexam.html' %}
+            {% include 'includes/modselectexam.html' %}
+            {% include 'subjects/modexamquestions.html' %}
             {% include 'students/modapprovegrade.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'includes/modstatus.html' %}
-            {% include 'includes/modnote.html' %}
             {% include 'includes/modmessage.html' %}
 
             <div class="content_margin_top78">
@@ -109,6 +109,7 @@
                 data-student_upload_url="{% url 'student_upload_url' %}"
                 data-studsubj_upload_url="{% url 'studsubj_upload_url' %}"
                 data-exam_upload_url="{% url 'exam_upload_url' %}"
+                data-grade_upload_url="{% url 'grade_upload_url' %}"
                 data-grade_approve_url="{% url 'grade_approve_url' %}"
                 data-download_published_url="{% url 'grades_download_published_url' %}"
                 data-exam_download_exam_pdf_url="{% url 'exam_download_exam_pdf_url' '-' %}"

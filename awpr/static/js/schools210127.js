@@ -710,8 +710,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function MSCH_Open(el_input){
         console.log(" -----  MSCH_Open   ----")
                 console.log("permit_dict", permit_dict)
-                console.log("permit_dict.permit_list.edit_school", permit_dict.permit_list.edit_school)
-        if(permit_dict.edit_school){
+                console.log("permit_dict.permit_list.crud_school", permit_dict.permit_list.crud_school)
+        if(permit_dict.crud_school){
             let user_pk = null, user_country_pk = null, user_schoolbase_pk = null, mapid = null;
             const fldName = get_attr_from_el(el_input, "data-field");
 
@@ -792,7 +792,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  MSCH_save  ----", crud_mode);
         console.log( "mod_MSCH_dict: ", mod_MSCH_dict);
 
-        if(permit_dict.edit_school){
+        if(permit_dict.crud_school){
             const is_delete = (crud_mode === "delete")
 
             let upload_dict = {table: 'school', examyear_pk: setting_dict.sel_examyear_pk}
@@ -1199,7 +1199,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "delete", "inactive" or "resend_activation_email", "permission_sysadm"
 
-        if(permit_dict.edit_school){
+        if(permit_dict.crud_school){
 
     // ---  get selected_pk
             let tblName = null, selected_pk = null;
@@ -1289,9 +1289,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
-        let close_modal = !permit_dict.edit_school;
+        let close_modal = !permit_dict.crud_school;
 
-        if(permit_dict.edit_school){
+        if(permit_dict.crud_school){
             let tblRow = document.getElementById(mod_dict.mapid);
             let upload_dict = {};
 
@@ -1877,7 +1877,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // permit.view_page: (!!el_loader), got value at start of script
 
         const locked = (setting_dict.sel_examyear_locked || setting_dict.sel_school_locked);
-        //permit_dict.edit_school = (!locked && permit_list.includes("edit_school"));
+        //permit_dict.crud_school = (!locked && permit_list.includes("crud_school"));
     }  // get_permits
 
 

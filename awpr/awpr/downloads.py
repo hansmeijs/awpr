@@ -113,15 +113,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['sector_rows'] = school_dicts.create_sector_rows(sel_examyear, sel_depbase)
 # ----- subjects
                 if datalist_request.get('subject_rows'):
-                    datalists['subject_rows'] = sj_vw.create_subject_rows(new_setting_dict, {}, None)
+                    etenorm_only = af.get_dict_value(datalist_request, ('subject_rows', 'etenorm_only'), False)
+                    cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
+                    datalists['subject_rows'] = sj_vw.create_subject_rows(new_setting_dict, None, etenorm_only, cur_dep_only)
 # ----- exams
                 if datalist_request.get('exam_rows'):
-
-                    if logging_on:
-                        logger.debug(' ----- got osj_vw.create_exam_rows ----- ')
-                        logger.debug('new_setting_dict: ' + str(new_setting_dict))
-
-                    datalists['exam_rows'] = sj_vw.create_exam_rows(new_setting_dict, {})
+                    cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
+                    datalists['exam_rows'] = sj_vw.create_exam_rows(new_setting_dict, {}, cur_dep_only)
 # ----- students
                 if datalist_request.get('student_rows'):
                     datalists['student_rows'] = st_vw.create_student_rows(new_setting_dict, {}, None)
@@ -132,6 +130,17 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 #request_item = datalist_request.get('studentsubjectnote_rows')
                 #if request_item:
                 #    datalists['studentsubjectnote_rows'] = st_vw.create_studentsubjectnote_rows(request_item, request)
+
+# ----- grade_with_exam_rows
+                if datalist_request.get('grade_with_exam_rows'):
+                    if sel_examyear and sel_schoolbase and sel_depbase:
+                        datalists['grade_with_exam_rows'] = gr_vw.create_grade_with_exam_rows(
+                            sel_examyear_pk=sel_examyear.pk,
+                            sel_schoolbase_pk=sel_schoolbase.pk,
+                            sel_depbase_pk=sel_depbase.pk,
+                            sel_examperiod=new_setting_dict.get('sel_examperiod'),
+                            request=request
+                        )
 # ----- grades
                 if datalist_request.get('grade_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
@@ -153,7 +162,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             request=request
                         )
 
-        # ----- published
+# ----- published
                 if datalist_request.get('published_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
                         datalists['published_rows'] = gr_vw.create_published_rows(
@@ -248,8 +257,10 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
         setting_dict['sel_schoolbase_code'] = sel_schoolbase_instance.code
         setting_dict['sel_schoolbase_equals_requsr_sb'] = (sel_schoolbase_instance.pk == requsr_schoolbase.pk)
 
-    # only role_school and same_school can view grades that are not published, PR2021-04-29
+    # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
+    # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Comm can not neter grades
     permit_dict['requsr_same_school'] = (req_user.role == c.ROLE_008_SCHOOL and requsr_schoolbase.pk == sel_schoolbase_instance.pk)
+
 
 # ===== EXAMYEAR =======================
     # every user can change examyear, is stored in Usersetting.
@@ -280,7 +291,6 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     awp_message = val.message_diff_exyr(sel_examyear_instance)  # PR2020-10-30
     if awp_message:
         awp_messages.append(awp_message)
-    #logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
 
 # ===== SCHOOL =======================
 # - only roles insp, admin and system may select other schools
@@ -298,9 +308,6 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     #logger.debug('get_or_none sel_school: ' + str(sel_school) )
 
     if sel_school:
-        # is_requsr_school = True when selected school is same as requsr_school PR2021-04-27
-        # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Comm can not neter grades
-        permit_dict['is_requsr_school'] = (sel_schoolbase_instance.pk == requsr_schoolbase.pk)
         setting_dict['sel_school_pk'] = sel_school.pk
         setting_dict['sel_school_name'] = sel_school.name
         setting_dict['sel_school_abbrev'] = sel_school.abbrev
@@ -556,7 +563,7 @@ def get_selected_examyear_school_dep_from_usersetting(request):  # PR2021-1-13
     # if not in request_item_setting, it takes the saved settings.
 
     req_user = request.user
-    is_locked, examyear_published, school_activated, is_requsr_school = False, False, False, False
+    is_locked, examyear_published, school_activated, requsr_same_school = False, False, False, False
 
 # ==== COUNTRY ========================
 # - get country from req_user
@@ -567,8 +574,10 @@ def get_selected_examyear_school_dep_from_usersetting(request):  # PR2021-1-13
 # ===== SCHOOLBASE ======================= PR2020-12-18
 # - get sel_schoolbase from settings / request when role is insp, admin or system, from req_user otherwise
     sel_schoolbase, sel_schoolbase_saveNIU = af.get_sel_schoolbase_instance(request)
-    if sel_schoolbase and req_user.schoolbase and sel_schoolbase == req_user.schoolbase:
-        is_requsr_school = True
+
+    # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
+    # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Comm can not neter grades
+    requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and req_user.schoolbase.pk == sel_schoolbase.pk)
 
 # ===== EXAMYEAR =======================
 # every user can change examyear, is stored in Usersetting.
@@ -597,7 +606,7 @@ def get_selected_examyear_school_dep_from_usersetting(request):  # PR2021-1-13
         sel_department = sch_mod.Department.objects.get_or_none(base=sel_depbase, examyear=sel_examyear)
 
     return sel_examyear, sel_school, sel_department, \
-           is_locked, examyear_published, school_activated, is_requsr_school
+           is_locked, examyear_published, school_activated, requsr_same_school
 # - end of get_selected_examyear_school_dep_from_usersetting
 
 

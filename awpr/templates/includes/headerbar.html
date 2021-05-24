@@ -3,7 +3,7 @@
 
 <div class="fixed-top">
     <!-- NAVBAR 1 -->
-    <nav class="navbar navbar-expand-md awp_navbar awp_headerbar">
+    <nav class="navbar navbar-expand-md awp_navbar {{class_bg_color}}">
         <!-- Toggler/collapsibe Button -->
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsibleNavbar2">
           <span class="navbar-toggler-icon"></span>
@@ -19,23 +19,23 @@
 
         <div id="collapsibleNavbar1" class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
             <ul class="navbar-nav">
-                <li id="id_hdrbar_examyear" class="nav-item awp_navbar_item mr-0 pr-0">
+                <li id="id_hdrbar_examyear" class="nav-item awp_navbar_item {{class_bg_color}} mr-0 pr-0">
                     <div>{{examyear_code}}</div>
                 </li>
-                <li id="id_hdrbar_examyear_locked" class="nav-item awp_navbar ml-0 mt-1">
+                <li id="id_hdrbar_examyear_locked" class="nav-item awp_navbar {{class_bg_color}} ml-0 mt-1">
                     <div class="stat_0_0"></div>
                 </li>
                 {% if display_department %}
-                    <li id="id_hdrbar_department" class="nav-item awp_navbar_item">
+                    <li id="id_hdrbar_department" class="nav-item awp_navbar_item {{class_bg_color}}">
                         {{department}}
                     </li>
                 {% endif %}
                 {% if display_school %}
-                    <li id="id_hdrbar_school" class="nav-item awp_navbar_item">
+                    <li id="id_hdrbar_school" class="nav-item awp_navbar_item {{class_bg_color}}">
                         {{school}}
                     </li>
                 {% endif %}
-                <li id="id_hdrbar_school_locked" class="nav-item awp_navbar ml-0 mt-1">
+                <li id="id_hdrbar_school_locked" class="nav-item awp_navbar {{class_bg_color}} ml-0 mt-1">
                     <div class="stat_0_0"></div>
                 </li>
             </ul>
@@ -44,7 +44,7 @@
             <ul class="navbar-nav ml-auto">
                 {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
-                        <a id="userMenu" class="awp_navbar_item dropdown-toggle"
+                        <a id="userMenu" class="awp_navbar_item {{class_bg_color}} dropdown-toggle"
                            href="#" data-toggle="dropdown"
                            aria-haspopup="true" aria-expanded="false">{{ user.username_sliced }}</a>
                         <div class="dropdown-menu" aria-labelledby="userMenu">
@@ -55,17 +55,17 @@
                         </div>
                     </li>
                     <li >
-                        <a class="awp_navbar_item" href="{% url 'logout' %}" >{% trans 'Logout' %}</a>
+                        <a class="awp_navbar_item {{class_bg_color}}" href="{% url 'logout' %}" >{% trans 'Logout' %}</a>
                     </li>
                 {% else %}
                     <li >
-                        <a class="awp_navbar_item" href="{% url 'login' %}" >{% trans 'Login' %}</a>
+                        <a class="awp_navbar_item {{class_navbar_bg_color}}" href="{% url 'login' %}" >{% trans 'Login' %}</a>
                     </li>
                 {% endif %}
             </ul>
             <ul class="navbar-nav">
                 <li class="nav-item dropdown">
-                    <div id="id_hdr_language" class="awp_navbar_item dropdown-toggle {{class_flag}}"
+                    <div id="id_hdr_language" class="awp_navbar_item {{class_navbar_bg_color}} dropdown-toggle {{class_flag}}"
                        data-toggle="dropdown"
                        aria-haspopup="true" aria-expanded="false">
                     </div>

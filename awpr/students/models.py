@@ -497,6 +497,8 @@ class Grade(sch_mod.AwpBaseModel):
 
     studentsubject = ForeignKey(Studentsubject, related_name='+', on_delete=CASCADE)
 
+    exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
+
     examperiod = PositiveSmallIntegerField(db_index=True, default=1) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
 
     pescore = PositiveSmallIntegerField(null=True)
@@ -552,6 +554,9 @@ class Grade(sch_mod.AwpBaseModel):
     ce_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_exam_locked = BooleanField(default=False)
+
+    answers = CharField(max_length=2048, null=True)
+    answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     deleted = BooleanField(default=False)
     status = PositiveSmallIntegerField(default=0)
@@ -564,6 +569,7 @@ class Grade_log(sch_mod.AwpBaseModel):
     grade_id = IntegerField(db_index=True)
 
     studentsubject_log = ForeignKey(Studentsubject_log, related_name='+', on_delete=CASCADE)
+    exam_log = ForeignKey(subj_mod.Exam_log, related_name='+', null=True, on_delete=SET_NULL)
 
     examperiod = PositiveSmallIntegerField(db_index=True, default=1) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
 
@@ -620,6 +626,9 @@ class Grade_log(sch_mod.AwpBaseModel):
     ce_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_exam_locked = BooleanField(default=False)
+
+    answers = CharField(max_length=2048, null=True)
+    answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     deleted = BooleanField(default=False)
     status = PositiveSmallIntegerField(default=0)

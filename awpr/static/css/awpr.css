@@ -23,7 +23,6 @@ a:hover {
 
 .awp_navbar {
   background-color: #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
-
   /*color: #ffffff /* #ffffff is white;#edf2f8; is light light blue /*95% #233d5c */
   background-image: none;
   background-repeat: no-repeat;
@@ -32,12 +31,10 @@ a:hover {
 
   padding: 2px 8px;  /* top, right, bottom, left: */
   border-bottom: 1px #f3f3f3; /* offwhite */
-
  }
 
 .awp_navbar_item, .awp_navbaritem_may_select { /* PR20202-09-29 */
-    background:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
-
+    background:  #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
     color: #ffffff; /* #ffffff is white; #edf2f8; is light light blue*/
    /* font-size: 1.1rem;*/
     font-size: 18px;
@@ -61,7 +58,6 @@ a:hover {
   list-style: none;
   cursor: pointer;
  }
-
 
 
 .navbar-item-default {
@@ -91,13 +87,17 @@ a:hover {
   list-style: none;
  }
 
-.navbar-otheryear {
-  background-color: grey; /* #2d4e77; */
-  color: #edf2f8; /*95% #233d5c */
-  background-image: none;
-  background-repeat: no-repeat;
-  list-style: none;
- }
+.awp_bg_purple {
+    background-color : #c7386a !important; /* ETE paars #c7386a RGB199-56-106 PR2021-05-21 */
+}
+
+.awp_bg_blue {
+    background-color: #2d4e77 !important; /* HeaderBackColor Default Schema Blauw donkerblauw */
+}
+.awp_bg_green {
+    background-color: #04928c !important; /* ETE groen #04928c RGB 4-146-140  PR2021-05-22 */
+}
+
 /* change the brand and text color */
 .navbar-custom .navbar-brand,
 .navbar-custom .navbar-text {
@@ -299,9 +299,19 @@ select.form-control:not([size]):not([multiple]) {
     margin: 2px 0px;
     padding: 0;
 }
-.menu_polygon_selected {
-    fill: #2d4e77;
-    stroke: #2d4e77;
+.menu_polygon_selected_blue {
+    fill: #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    stroke: #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    stroke-width: 1;
+}
+.menu_polygon_selected_purple {
+    fill: #c7386a; /* ETE paars #c7386a RGB199-56-106 PR2021-05-21 */
+    stroke: #c7386a; /* ETE paars #c7386a RGB199-56-106 PR2021-05-21 */
+    stroke-width: 1;
+}
+.menu_polygon_selected_green {
+    fill: #04928c !important; /* ETE groen #04928c RGB 4-146-140  PR2021-05-22 */
+    stroke: #04928c !important; /* ETE groen #04928c RGB 4-146-140  PR2021-05-22 */
     stroke-width: 1;
 }
 .menu_polygon_unselected {

@@ -11,9 +11,9 @@
 
 //=========  t_MSED_Open  ================ PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10
     function t_MSED_Open(loc, tblName, data_map, setting_dict, permit_dict, MSED_Response) {
-        console.log( "===== t_MSED_Open ========= ", tblName);
-        console.log( "setting_dict", setting_dict);
-        console.log( "permit_dict", permit_dict);
+        //console.log( "===== t_MSED_Open ========= ", tblName);
+        //console.log( "setting_dict", setting_dict);
+        //console.log( "permit_dict", permit_dict);
 
         if (!isEmpty(loc)) {
             let may_open_modal = false, selected_pk = null;
@@ -49,7 +49,7 @@
 
     //=========  t_MSED_Save  ================ PR2021-05-10
     function t_MSED_Save(MSED_Response, tblRow) {
-        console.log("===  t_MSED_Save =========");
+        //console.log("===  t_MSED_Save =========");
     // --- put tblName, sel_pk and value in MSED_Response, MSED_Response handles uploading
 
         const el_MSED_input = document.getElementById("id_MSED_input");
@@ -245,22 +245,22 @@
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23
     function t_MSSSS_Open (loc, tblName, data_map, add_all, setting_dict, permit_dict, MSSSS_Response) {
-        console.log(" ===  t_MSSSS_Open  =====", tblName) ;
-        console.log( "setting_dict", setting_dict);
-        console.log( "permit_dict", permit_dict);
+        //console.log(" ===  t_MSSSS_Open  =====", tblName) ;
+        //console.log( "setting_dict", setting_dict);
+        //console.log( "permit_dict", permit_dict);
         // tblNames are: "school", "subject", "student"
 
         // PR2021-04-27 debug: opening modal before loc and setting_dict are loaded gives 'NaN' on modal.
         // allow opening only when loc has value
         if(!isEmpty(permit_dict)){
             const may_select = (tblName === "school") ? !!permit_dict.may_select_school : true;
-            console.log( "may_select", may_select);
+            //console.log( "may_select", may_select);
             if (may_select){
                 const selected_pk = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_pk : null;
 
                 const el_MSSSS_input = document.getElementById("id_MSSSS_input")
                 el_MSSSS_input.setAttribute("data-table", tblName);
-                console.log( "el_MSSSS_input", el_MSSSS_input);
+                //console.log( "el_MSSSS_input", el_MSSSS_input);
         // --- fill select table
                 t_MSSSS_Fill_SelectTable(loc, tblName, data_map, setting_dict, el_MSSSS_input, MSSSS_Response, selected_pk, add_all)
                 el_MSSSS_input.value = null;
@@ -938,10 +938,13 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         return item_text
     }  // FillOptionText
 
-//========= t_FillSelectOptions  =======  // PR2020-09-30
-    function t_FillSelectOptions(el_select, data_map, tblName, fldName, has_selectall, hide_none,
+//========= t_FillSelectOptions  =======  // PR2020-09-30 PR2021-05-12
+    function t_FillSelectOptions(el_select, data_map, id_field, display_field, hide_none,
                 selected_pk, selectall_text, select_text_none, select_text) {
-        //console.log( "=== t_FillSelectOptions ", tblName);
+        //console.log( "===== t_FillSelectOptions  ===== ");
+        // only called by page exam MEXQ_FillSelectTableLevel
+        // and page SUbject SBR select department
+        //console.log( "selected_pk", selected_pk, typeof selected_pk);
 
 // ---  fill options of select box
         let option_text = "";
@@ -950,12 +953,13 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 // --- loop through data_map
         if(!!data_map){
             for (const [map_id, map_dict] of data_map.entries()) {
-                const pk_int = map_dict.id;
-                const value = (map_dict[fldName]) ?  map_dict[fldName] : "---";
+                const pk_int = map_dict[id_field];
+                const display_value = (map_dict[display_field]) ?  map_dict[display_field] : "---";
 
+        //console.log( "pk_int", pk_int, typeof pk_int);
                 option_text += "<option value=\"" + pk_int + "\"";
                 if (pk_int === selected_pk) {option_text += " selected=true" };
-                option_text +=  ">" + value + "</option>";
+                option_text +=  ">" + display_value + "</option>";
                 row_count += 1
 
             }
@@ -966,7 +970,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         // to display 'all orders' instead of 'no orders' we make have boolean 'hide_none' = true
         if (!row_count && select_text_none && !hide_none){
             option_text = "<option value=\"\" disabled selected hidden>" + select_text_none + "...</option>"
-        } else if (!!has_selectall){
+        } else if (!!selectall_text){
             option_text = "<option value=\"0\">" + selectall_text + "</option>" + option_text;
         } else if (row_count === 1) {
             select_first_option = true
@@ -1348,7 +1352,7 @@ console.log( "show_row", show_row);
                 let el = tblRow.cells[i].children[0];
                 if(el){ el.value = null};
             }
-        } else if ( filter_tag === "triple") {
+        } else if ( filter_tag === "toggle") {
             let arr = (filter_dict && filter_dict[col_index]) ? filter_dict[col_index] : "";
             const old_value = (arr && arr[1] ) ? arr[1] : 0;
             // subtract 1, to get order V, X, -
@@ -1465,15 +1469,14 @@ console.log( "show_row", show_row);
                     const filter_value = filter_arr[1];
                     const filter_mode = filter_arr[2];
 
-       //console.log( "filter_arr", filter_arr);;
-       //console.log( "filter_value", filter_value, typeof filter_value);
+       //console.log( "filter_tag", filter_tag)
                     const cell = tblRow.cells[col_index];
                     if(cell){
                         const el = cell.children[0];
                         if (el){
                             const cell_value = get_attr_from_el(el, "data-filter")
-       //console.log( "cell_value", cell_value, typeof cell_value);
-                            if (filter_tag === "triple"){
+       //console.log( "cell_value", cell_value)
+                            if (filter_tag === "toggle"){
                                 // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
                                 if (filter_value === "2"){
                                     // only show rows without tickmark

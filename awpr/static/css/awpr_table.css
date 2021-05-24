@@ -1009,7 +1009,7 @@ aXX:hover{
     width: 320px;
 }
 
-.tbl_MSED_h180_w360 {
+.tbl_h180_w360 {
     overflow-x: hidden;
     overflow-y: auto;
     height: 180px;
@@ -1022,11 +1022,11 @@ aXX:hover{
     height: 390px;
     width: 280px;
 }
-.tbl_h140_w270 {
+.tbl_h140_w240 {
     overflow-x: hidden;
     overflow-y: auto;
     height: 140px;
-    width: 270px;
+    width: 240px;
     padding: 4px;
 }
 

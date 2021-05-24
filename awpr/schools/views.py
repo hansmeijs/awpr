@@ -87,9 +87,9 @@ def Loggedin(request):
 # retrieve last opened page from, so at next login this page will open. Uses in LoggedIn
     sel_page = None
     if request and request.user:
-        req_user = request.user
-        #logger.debug('req_user: ' + str(req_user))
-        sel_page_dict = req_user.get_usersetting_dict('sel_page')
+        req_usr = request.user
+        #logger.debug('req_usr: ' + str(req_usr))
+        sel_page_dict = req_usr.get_usersetting_dict('sel_page')
         #logger.debug('sel_page_dict: ' + str(sel_page_dict))
 
         if sel_page_dict is not None:
@@ -141,8 +141,8 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
         examyear_rows = []
 
         if request.user is not None and request.user.country is not None:
-            req_user = request.user
-            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_examyear', req_user)
+            req_usr = request.user
+            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_examyear', req_usr)
             has_permit = 'crud_examyear' in permit_list
 
         # - reset language
@@ -155,7 +155,7 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
                 upload_dict = json.loads(upload_json)
 
                 append_dict = {}
-                msg_list = []
+                error_list = []
 
 # - get mode
                 mode = upload_dict.get('mode')
@@ -189,7 +189,7 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
         # - check if examyear is closed or schools have activated or locked it
                             msg_err = av.validate_delete_examyear(examyear)
                             if msg_err:
-                                msg_list.append(msg_err)
+                                error_list.append(msg_err)
                                 if logging_on:
                                     logger.debug('msg_err: ' + str(msg_err))
 
@@ -197,7 +197,7 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
                                 if logging_on:
                                     logger.debug('delete examyear: ' + str(examyear))
                                 examyear_pk = examyear.pk
-                                deleted_ok = sch_mod.delete_instance(examyear, msg_list, request, this_text)
+                                deleted_ok = sch_mod.delete_instance(examyear, error_list, request, this_text)
                                 if logging_on:
                                     logger.debug('deleted_ok' + str(deleted_ok))
 
@@ -215,7 +215,7 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
                         examyear_code_int = upload_dict.get('examyear_code')
                         msg_err = av.validate_unique_examyear(examyear_code_int, request)
                         if msg_err:
-                            msg_list.append(msg_err)
+                            error_list.append(msg_err)
                             if logging_on:
                                 logger.debug('msg_err: ' + str(msg_err))
                         else:
@@ -226,20 +226,20 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
     # - copy all tables from last examyear existing examyear
                                 msg_err = copy_tables_from_last_year(examyear, request)
                             if msg_err:
-                                msg_list.append(msg_err)
+                                error_list.append(msg_err)
                                 if logging_on:
                                     logger.debug('msg_err: ' + str(msg_err))
 
 # +++ update examyear, skip when it is created. All fields are saved in create_examyear
                     if examyear and mode != 'create':
-                        update_examyear(examyear, upload_dict, msg_list, request)
+                        update_examyear(examyear, upload_dict, error_list, request)
 
-                    if msg_list:
-                        append_dict['error'] = msg_list
+                    if error_list:
+                        append_dict['error'] = error_list
 # - add update_dict to update_wrap
                     if examyear:
                         examyear_rows = sd.create_examyear_rows(
-                            country=country,
+                            req_usr=req_usr,
                             append_dict=append_dict,
                             examyear_pk=examyear.pk
                         )
@@ -424,19 +424,19 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
         update_wrap = {}
 
         if request.user and request.user.country and request.user.schoolbase:
-            req_user = request.user
+            req_usr = request.user
 
-            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_school', req_user)
+            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_school', req_usr)
             if logging_on:
                 logger.debug('permit_list: ' + str(permit_list))
 
             permit_create = 'create_school' in permit_list
-            permit_edit = 'edit_school' in permit_list
+            permit_edit = 'crud_school' in permit_list
             permit_delete ='delete_school' in permit_list
 
             if permit_create or permit_edit or permit_delete:
     # -  get user_lang
-                requsr_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+                requsr_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
                 activate(requsr_lang)
 
     # --- get upload_dict from request.POST
@@ -453,6 +453,7 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                     school_rows = []
                     append_dict = {}
                     error_dict = {}
+                    error_list = []
 
                     if logging_on:
                         logger.debug('upload_dict' + str(upload_dict))
@@ -477,7 +478,7 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                                 if school:
                                     append_dict['created'] = True
                                 elif msg_err:
-                                    error_dict['err_create'] = msg_err
+                                    error_list.append(msg_err)
 
                                 if logging_on:
                                     logger.debug('school: ' + str(school))
@@ -496,12 +497,12 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                             # a. check if school has child rows, put msg_err in update_dict when error
                                     msg_err = None #validate_employee_has_emplhours(employee)
                                     if msg_err:
-                                        error_dict['err_delete'] = msg_err
+                                        error_list.append(msg_err)
                                     else:
                             # b. check if there are teammembers with this employee: absence teammembers, remove employee from shift teammembers
                                         # delete_employee_from_teammember(employee, request)
                             # c. delete school
-                                        deleted_ok = sch_mod.delete_instance(school, error_dict, request, this_text)
+                                        deleted_ok = sch_mod.delete_instance(school, error_list, request, this_text)
                                         #logger.debug('deleted_ok' + str(deleted_ok))
                                         if deleted_ok:
                              # - add deleted_row to school_rows
@@ -523,14 +524,13 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
 
                                 update_school(school, upload_dict, error_dict, request)
 
-                                #logger.debug('error_dict' + str(error_dict))
     # --- add update_dict to update_wrap
-                                if error_dict:
-                                    append_dict['error'] = error_dict
+                                if error_list:
+                                    append_dict['error'] = error_list
 
                                 permit_dict = {
-                                    'requsr_role': req_user.role,
-                                    'requsr_schoolbase_pk': req_user.schoolbase_id
+                                    'requsr_role': req_usr.role,
+                                    'requsr_schoolbase_pk': req_usr.schoolbase_id
                                 }
                                 school_rows = sd.create_school_rows(
                                     examyear=examyear,
@@ -736,7 +736,7 @@ class SchoolAwpUploadView(View):  # PR2021-05-03
 
                 # - get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, is_locked, \
-                examyear_published, school_activated, is_requsr_school = \
+                examyear_published, school_activated, requsr_same_schoolNIU = \
                     dl.get_selected_examyear_school_dep_from_usersetting(request)
 
                 file_type = upload_dict.get('file_type')
@@ -750,14 +750,15 @@ class SchoolAwpUploadView(View):  # PR2021-05-03
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-def create_school(examyear, upload_dict, request):
-    # --- create school # PR2019-07-30 PR2020-10-22
+def create_school(examyear, upload_dict, error_list,  request):
+    # --- create school # PR2019-07-30 PR2020-10-22 PR2021-05-13
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_school ----- ')
+        logger.debug('examyear: ' + str(examyear))
+        logger.debug('upload_dict: ' + str(upload_dict))
 
     school = None
-    msg_err = None
 
     if examyear:
 # - get value of 'abbrev'
@@ -766,7 +767,6 @@ def create_school(examyear, upload_dict, request):
         name = upload_dict.get('name')
         article = upload_dict.get('article')
         depbases = upload_dict.get('depbases')
-
         if logging_on:
             logger.debug('code: ' + str(code))
             logger.debug('abbrev: ' + str(abbrev))
@@ -774,7 +774,6 @@ def create_school(examyear, upload_dict, request):
             logger.debug('article: ' + str(article))
             logger.debug('depbases: ' + str(depbases) + str(type(depbases)))
 
-        msg_err = None
         if abbrev and name and code:
             lookup_value = code
 # - validate if code already exists
@@ -823,8 +822,8 @@ def create_school(examyear, upload_dict, request):
 
 
 #######################################################
-def update_school(instance, upload_dict, msg_dict, request):
-    # --- update existing and new instance PR2019-06-06
+def update_school(instance, upload_dict, error_list, request):
+    # --- update existing and new instance PR2019-06-06 PR2021-05-13
     # add new values to update_dict (don't reset update_dict, it has values)
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -861,7 +860,7 @@ def update_school(instance, upload_dict, msg_dict, request):
                             setattr(instance, field, new_value)
                             save_changes = True
                         else:
-                            msg_dict['err_' + field] = msg_err
+                            error_list.append(msg_err)
 
     # 3. save changes in depbases
                 elif field == 'depbases':
@@ -909,15 +908,24 @@ def update_school(instance, upload_dict, msg_dict, request):
                     logger.debug('parent changes saved')
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
-                msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
+                msg_list = [_('An error occurred: ') + str(e),
+                            _('The changes have not been saved.')]
+                # error_list = [ { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
+                #                {'class': 'alert-danger', msg_list: [text1, text2]} ] (for use in modal message)
+                error_list.append({'class': 'alert-danger', 'msg_list': msg_list})
+
         if save_changes:
             try:
                 instance.save(request=request)
                 if logging_on:
                     logger.debug('instance changes saved')
-            except:
-                msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
-
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                msg_list = [_('An error occurred: ') + str(e),
+                            _('The changes have not been saved.')]
+                # error_list = [ { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
+                #                {'class': 'alert-danger', msg_list: [text1, text2]} ] (for use in modal message)
+                error_list.append({'class': 'alert-danger', 'msg_list': msg_list})
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
@@ -1065,18 +1073,10 @@ def upload_school(school_list, school_dict, lookup_field, awpKey_list,
 
 # - check if schoolbase with this code exists in request.user.country. schoolbase has value when only one found
         # lookup_value = school_dict.get(lookup_field)
-        schoolbase, multiple_found = lookup_schoolbase(lookup_value, request)
-        if multiple_found:
-            log_str = str(_("Value '%(fld)s' is found multiple times.") % {'fld': lookup_value})
-            msg_err = ' '.join((skipped_str, log_str))
-
-# - check if school with this schoolbase exists in request.user.examyear. school has value when only one found
-        multiple_schools_found = False
-        if schoolbase:
-            school, multiple_schools_found = lookup_school(schoolbase, request)
-        if multiple_schools_found:
-            log_str = str(_("Value '%(fld)s' is found multiple times in this exam year.") % {'fld': lookup_value})
-            msg_err = ' '.join((skipped_str, log_str))
+        schoolbase, school, msg_err_multiple_found = lookup_schoolbase(lookup_value, request)
+        if msg_err_multiple_found:
+            log_str = msg_err_multiple_found
+            msg_err = msg_err_multiple_found
 
     code_text = (new_code + space_str)[:30]
 
@@ -1226,7 +1226,7 @@ def lookup_schoolbase(lookup_value, request, this_pk=None):  # PR2020-10-22
             crit.add(~Q(pk=this_pk), crit.connector)
         row_count = sch_mod.Schoolbase.objects.filter(crit).count()
         if row_count > 1:
-            msg_err_multiple_found = _("Value '%(fld)s' is found multiple times.") % {'fld': lookup_value}
+            msg_err_multiple_found = _("School code '%(fld)s' is found multiple times.") % {'fld': lookup_value}
         elif row_count == 1:
     # get schoolbase when only one found (get_or_none does not work with Q, is not necessary, use first() instead)
             schoolbase = sch_mod.Schoolbase.objects.filter(crit).first()
@@ -1236,7 +1236,7 @@ def lookup_schoolbase(lookup_value, request, this_pk=None):  # PR2020-10-22
                 crit = Q(base=schoolbase) & Q(examyear=request.user.examyear)
                 school_count = sch_mod.School.objects.filter(crit).count()
                 if school_count > 1:
-                    msg_err_multiple_found = _("Value '%(fld)s' is found multiple times in this exam year.") % {'fld': lookup_value}
+                    msg_err_multiple_found = _("School code '%(fld)s' is found multiple times in this exam year.") % {'fld': lookup_value}
                 elif row_count == 1:
     # get school when only one found (get_or_none does not work with Q, is not necessary, use first() instead)
                     school = sch_mod.School.objects.filter(crit).first()

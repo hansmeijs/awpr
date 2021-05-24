@@ -282,15 +282,22 @@ class SubjectListView(View):
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
 
+# - get sel_schoolbase from settings / request when role is insp, admin or system, from req_user otherwise
+        sel_schoolbase, sel_schoolbase_saveNIU = af.get_sel_schoolbase_instance(request)
+
+        # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
+        # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Comm can not neter grades
+        requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and request.user.schoolbase.pk == sel_schoolbase.pk)
+
 # - get headerbar parameters
-        if request.user.is_role_school:
+        if requsr_same_school:
             page = 'page_studsubj'
             html_page = 'studentsubjects.html'
             param = {'display_school': True, 'display_department': True}
         else:
             page = 'page_subject'
             html_page = 'subjects.html'
-            param = {'display_school': False, 'display_department': True}
+            param = {'display_school': False, 'display_department': False}
 
         params = awpr_menu.get_headerbar_param(request, page, param)
 
@@ -300,17 +307,19 @@ class SubjectListView(View):
         return render(request, html_page, params)
 
 
-def create_subject_rows(setting_dict, append_dict, subject_pk):
+def create_subject_rows(setting_dict, subject_pk, etenorm_only=False, cur_dep_only=False):
     # --- create rows of all subjects of this examyear  PR2020-09-29 PR2020-10-30 PR2020-12-02
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
     sel_depbase_pk = af.get_dict_value(setting_dict, ('sel_depbase_pk',))
+
     if logging_on:
         logger.debug(' =============== create_subject_rows ============= ')
         logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk) + ' ' + str(type(sel_examyear_pk)))
         logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk) + ' ' + str(type(sel_depbase_pk)))
+        logger.debug('etenorm_only: ' + str(etenorm_only) + ' ' + str(type(etenorm_only)))
 
     # lookup if sel_depbase_pk is in subject.depbases PR2020-12-19
     # use: AND %(depbase_pk)s::INT = ANY(sj.depbases)
@@ -321,52 +330,49 @@ def create_subject_rows(setting_dict, append_dict, subject_pk):
     # first_name LIKE '%Jen%';
     subject_rows = []
     if sel_examyear_pk:
-        depbase_lookup = ''.join( ('%;', str(sel_depbase_pk), ';%') )
-        sql_keys = {'ey_id': sel_examyear_pk, 'depbase_pk': depbase_lookup}
-        sql_list = ["""SELECT sj.id, sj.base_id, sj.examyear_id,
-            CONCAT('subject_', sj.id::TEXT) AS mapid,
-            sj.name, sb.code, sj.sequence, sj.depbases,
-            sj.modifiedby_id, sj.modifiedat,
-            ey.code AS examyear_code,
-            SUBSTRING(au.username, 7) AS modby_username
+        sql_keys = {'ey_id': sel_examyear_pk}
+        sql_list = ["SELECT sj.id, sj.base_id, sj.examyear_id,",
+            "CONCAT('subject_', sj.id::TEXT) AS mapid,",
+            "sj.name, sb.code, sj.sequence, sj.depbases, sj.etenorm, sj.addedbyschool,",
+            "sj.modifiedby_id, sj.modifiedat,",
+            "ey.code AS examyear_code,",
+            "SUBSTRING(au.username, 7) AS modby_username",
     
-            FROM subjects_subject AS sj 
-            INNER JOIN subjects_subjectbase AS sb ON (sb.id = sj.base_id) 
-            INNER JOIN schools_examyear AS ey ON (ey.id = sj.examyear_id) 
-            LEFT JOIN accounts_user AS au ON (au.id = sj.modifiedby_id) 
+            "FROM subjects_subject AS sj",
+            "INNER JOIN subjects_subjectbase AS sb ON (sb.id = sj.base_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = sj.examyear_id)",
+            "LEFT JOIN accounts_user AS au ON (au.id = sj.modifiedby_id)",
             
-            WHERE sj.examyear_id = %(ey_id)s::INT
-            AND CONCAT(';', sj.depbases::TEXT, ';') LIKE %(depbase_pk)s::TEXT
-
-            """]
-#             AND CONCAT(';', sj.depbases::TEXT, ';') LIKE CONCAT(';', %(depbase_pk)s::TEXT, ';')
+            "WHERE sj.examyear_id = %(ey_id)s::INT"
+            ]
         if subject_pk:
             # when employee_pk has value: skip other filters
-            sql_list.append('AND sj.id = %(sj_id)s::INT')
             sql_keys['sj_id'] = subject_pk
+            sql_list.append('AND sj.id = %(sj_id)s::INT')
         else:
-            sql_list.append('ORDER BY sb.code')
+            if etenorm_only:
+                sql_list.append('AND sj.etenorm')
+            if cur_dep_only:
+                sql_keys['depbase_lookup'] = ''.join( ('%;', str(sel_depbase_pk), ';%') )
+                sql_list.append("AND CONCAT(';', sj.depbases::TEXT, ';') LIKE %(depbase_lookup)s::TEXT")
+
+            sql_list.append('ORDER BY LOWER(sj.name)')
 
         sql = ' '.join(sql_list)
 
-        newcursor = connection.cursor()
-        newcursor.execute(sql, sql_keys)
-        subject_rows = af.dictfetchall(newcursor)
+        if logging_on:
+            logger.debug('sql: ' + str(sql))
 
-        # - add messages to subject_row
-        if subject_pk and subject_rows:
-            # when subject_pk has value there is only 1 row
-            row = subject_rows[0]
-            if row:
-                for key, value in append_dict.items():
-                    row[key] = value
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            subject_rows = af.dictfetchall(cursor)
 
     return subject_rows
 # --- end of create_subject_rows
 
 
 @method_decorator([login_required], name='dispatch')
-class SubjectUploadView(View):  # PR2020-10-01
+class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -399,15 +405,14 @@ class SubjectUploadView(View):  # PR2020-10-01
                 if logging_on:
                     logger.debug('upload_dict' + str(upload_dict))
 
-                error_dict = {}
+                error_list = []
                 append_dict = {}
+                is_created = False
 
 # - get  variables
                 mode = upload_dict.get('mode')
                 examyear_pk = upload_dict.get('examyear_pk')
                 subject_pk = upload_dict.get('subject_pk')
-
-                # append_dict = {'mode': mode, 'table': 'subject'}
 
 # - check if examyear exists and equals selected examyear from Usersetting
                 selected_dict = req_usr.get_usersetting_dict(c.KEY_SELECTED_PK)
@@ -415,60 +420,61 @@ class SubjectUploadView(View):  # PR2020-10-01
                 examyear = None
                 if examyear_pk == selected_examyear_pk:
                     examyear = sch_mod.Examyear.objects.get_or_none(id=examyear_pk, country=req_usr.country)
-                # note: subjects may be changed before publishing, threfore don't filter on examyear.published
+
+# - exit when examyear is locked or no examyear
+                # note: subjects may be changed before publishing, therefore don't exit on examyear.published
                 if examyear and not examyear.locked:
+                    subject_rows = []
 
 # ++++ Create new instance if is_create:
                     if mode == 'create':
-                        subject, msg_err = create_subject(examyear, upload_dict, request)
+                        subject = create_subject(examyear, upload_dict, subject_rows, error_list, request)
                         if subject:
-                            append_dict['created'] = True
-                        elif msg_err:
-                            append_dict['err_create'] = msg_err
-                        if logging_on:
-                            logger.debug('append_dict' + str(append_dict))
+                            is_created = True
+
                     else:
 # - else: get existing subject instance
                         subject = sbj_mod.Subject.objects.get_or_none(
                             id=subject_pk,
                             examyear=examyear
                         )
-                        if logging_on:
-                            logger.debug('subject: ' + str(subject))
+                    if logging_on:
+                        logger.debug('..... subject: ' + str(subject))
 
                     if subject:
-                        subject_rows = []
 # ++++ Delete subject if is_delete
                         if mode == 'delete':
-                            this_text = _("Subject '%(tbl)s'") % {'tbl': subject.name}
-                            deleted_ok = sch_mod.delete_instance(subject, append_dict, request, this_text)
-                            if logging_on:
-                                logger.debug('deleted_ok' + str(deleted_ok))
+                            deleted_ok = delete_subject(subject, subject_rows, error_list, request)
                             if deleted_ok:
-        # - add deleted_row to subject_rows
-                                subject_rows.append({'pk': subject_pk,
-                                                     'mapid': 'subject_' + str(subject_pk),
-                                                     'deleted': True})
                                 subject = None
-                            if logging_on:
-                                logger.debug('subject_rows' + str(subject_rows))
-                        else:
 
-# +++ Update subject, also when it is created.
-                            update_subject_instance(subject, examyear, upload_dict, error_dict, request)
+# +++ Update subject, also when it is created, not when delete has failed (when deleted ok there is no subject)
+                        if subject and mode != 'delete':
+                                update_subject_instance(subject, examyear, upload_dict, error_list, request)
 
-        # - add update_dict to update_wrap
-                            if error_dict:
-                                append_dict['error'] = error_dict
-        # - create subject_row
+# - create subject_row, also when deleting failed (when deleted ok there is no subject, subject_row is made above)
+                        if subject:
                             setting_dict = {'sel_examyear_pk': examyear.pk}
                             subject_rows = create_subject_rows(
                                 setting_dict=setting_dict,
-                                append_dict=append_dict,
                                 subject_pk=subject.pk
                             )
-                        if subject_rows:
-                            update_wrap['updated_subject_rows'] = subject_rows
+        # - add messages to subject_row (there is only 1 subject_row
+                    if subject_rows:
+                        row = subject_rows[0]
+                        if row:
+                            # - add error_list to subject_rows[0]
+                            if error_list:
+                                # structure of error_list: [ { 'field': 'code', msg_list ['line 1', 'line 2'] } ]
+                                # or general error:        [ { 'class': 'alert-danger', msg_list ['line 1', 'line 2'] } ]
+                                row['error'] = error_list
+                            if is_created:
+                                row['created'] = True
+
+                            for key, value in append_dict.items():
+                                row[key] = value
+
+                        update_wrap['updated_subject_rows'] = subject_rows
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -481,9 +487,21 @@ class ExamListView(View):  # PR2021-04-04
     def get(self, request):
         logging_on = False  # s.LOGGING_ON
 
-# - set headerbar parameters PR2018-08-06
+# -  get user_lang
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get sel_schoolbase from settings / request when role is insp, admin or system, from req_user otherwise
+        sel_schoolbase, sel_schoolbase_saveNIU = af.get_sel_schoolbase_instance(request)
+
+# requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
+        # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Comm can not neter grades
+        requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and request.user.schoolbase.pk == sel_schoolbase.pk)
+
+# - set headerbar parameters
         page = 'page_exams'
-        param = {'display_school': False, 'display_department': True}
+        # show school only when requsr_same_school
+        param = {'display_school': requsr_same_school, 'display_department': True}
         params = awpr_menu.get_headerbar_param(request, page, param)
 
         if logging_on:
@@ -509,6 +527,11 @@ class ExamUploadView(View):
 
         req_usr = request.user
         update_wrap = {}
+        err_html = ''
+
+# - reset language
+        user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+        activate(user_lang)
 
 # - add edit permit
         has_permit = False
@@ -520,11 +543,9 @@ class ExamUploadView(View):
                 logger.debug('permit_list: ' + str(permit_list))
                 logger.debug('has_permit: ' + str(has_permit))
 
-        if has_permit:
-# - reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
-
+        if not has_permit:
+            err_html = str(_("You don't have permission to perform this action."))
+        else:
 # - get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
             if upload_json:
@@ -541,7 +562,8 @@ class ExamUploadView(View):
                 mode = upload_dict.get('mode')
                 examyear_pk = upload_dict.get('examyear_pk')
                 depbase_pk = upload_dict.get('depbase_pk')
-                examperiod = upload_dict.get('examperiod')
+                levelbase_pk = upload_dict.get('levelbase_pk')
+
                 exam_pk = upload_dict.get('exam_pk')
                 subject_pk = upload_dict.get('subject_pk')
 
@@ -552,8 +574,9 @@ class ExamUploadView(View):
                 if examyear_pk == selected_examyear_pk:
                     examyear = sch_mod.Examyear.objects.get_or_none(id=examyear_pk, country=req_usr.country)
 
-                # note: exams cannot be changed before publishing examyear, therefore filter on examyear.published
-                if examyear and not examyear.locked:  # TODO add and examyear.published
+                # note: exams can be changed before publishing examyear, therefore don't filter on examyear.published
+                if examyear and not examyear.locked:
+
 # - get subject
                     subject = subj_mod.Subject.objects.get_or_none(
                         pk=subject_pk,
@@ -564,9 +587,20 @@ class ExamUploadView(View):
 
 # +++++ Create new instance if is_create:
                     if mode == 'create':
+                        department = sch_mod.Department.objects.get_or_none(
+                            base_id=depbase_pk,
+                            examyear=examyear
+                        )
+                        level = subj_mod.Level.objects.get_or_none(
+                            base_id=levelbase_pk,
+                            examyear=examyear
+                        )
+                        if logging_on:
+                            logger.debug('department:     ' + str(department))
+                            logger.debug('level:     ' + str(level))
                         examperiod_int = upload_dict.get('examperiod')
                         examtype = upload_dict.get('examtype')
-                        exam, msg_err = create_exam_instance(subject, examperiod_int, examtype, request)
+                        exam, msg_err = create_exam_instance(subject, department, level, examperiod_int, examtype, request)
 
                         if exam:
                             append_dict['created'] = True
@@ -609,6 +643,8 @@ class ExamUploadView(View):
                         exam_rows.extend(deleted_list)
                     if exam_rows:
                         update_wrap['updated_exam_rows'] = exam_rows
+        if err_html:
+            update_wrap['err_html'] = err_html
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of ExamUploadView
@@ -630,11 +666,13 @@ class ExamApproveView(View):  # PR2021-04-04
 # --- end of ExamApproveView
 
 
-def create_exam_instance(subject, examperiod_int, examtype, request):
+def create_exam_instance(subject, department, level, examperiod_int, examtype, request):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' --- create_exam_instance --- ')
         logger.debug('subject: ' + str(subject))
+        logger.debug('department: ' + str(department))
+        logger.debug('level: ' + str(level))
         logger.debug('examperiod_int: ' + str(examperiod_int))
         logger.debug('examtype: ' + str(examtype))
 
@@ -645,6 +683,8 @@ def create_exam_instance(subject, examperiod_int, examtype, request):
         #a = 1 / 0 # to create error
         exam = subj_mod.Exam(
             subject=subject,
+            department=department,
+            level=level,
             examperiod=examperiod_int,
             examtype=examtype
         )
@@ -738,7 +778,7 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request):
                     setattr(instance, field, new_value)
                     save_changes = True
 
-            elif field in ('assignment', 'amount', 'maxscore'):
+            elif field in ('assignment', 'keys', 'amount', 'maxscore', 'version'):
                 old_value = getattr(instance, field)
                 if new_value != old_value:
                     setattr(instance, field, new_value)
@@ -767,9 +807,9 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request):
 # - end of update_exam_instance
 
 
-def create_exam_rows(setting_dict, append_dict):
+def create_exam_rows(setting_dict, append_dict, cur_dep_only=False):
     # --- create rows of all exams of this examyear  PR2021-04-05
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_exam_rows ============= ')
         logger.debug('setting_dict: ' + str(setting_dict))
@@ -777,7 +817,7 @@ def create_exam_rows(setting_dict, append_dict):
     sel_examyear_pk = setting_dict.get('sel_examyear_pk')
     sel_examperiod = setting_dict.get('sel_examperiod')
     sel_depbase_pk = setting_dict.get('sel_depbase_pk')
-    depbase_lookup = ''.join( ('%;', str(sel_depbase_pk), ';%') )
+    sel_levelbase_pk = setting_dict.get('sel_levelbase_pk')
     exam_pk = setting_dict.get('exam_pk')
 
     if logging_on:
@@ -785,15 +825,20 @@ def create_exam_rows(setting_dict, append_dict):
         logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
         logger.debug('sel_examperiod:  ' + str(sel_examperiod))
         logger.debug('sel_depbase_pk:  ' + str(sel_depbase_pk))
+        logger.debug('sel_levelbase_pk:  ' + str(sel_levelbase_pk))
 
-    exam_rows = []
-    sql_keys = {'ey_id': sel_examyear_pk, 'depbase_lookup': depbase_lookup}
+    sql_keys = {'ey_id': sel_examyear_pk, 'depbase_id': sel_depbase_pk}
 
     sql_list = [
         "SELECT ex.id, ex.subject_id, subj.base_id AS subj_base_id, subj.examyear_id AS subj_examyear_id,",
         "CONCAT('exam_', ex.id::TEXT) AS mapid,",
-        "ex.examperiod, ex.examtype, ex.depbases, ex.levelbases, ex.sectorbases,",
-        "ex.assignment, ex.amount, ex.maxscore,",
+        "CONCAT(subj.name,",
+        "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' ', lvl.abbrev) END,",
+        "CASE WHEN ex.version IS NULL THEN NULL ELSE CONCAT(' (', ex.version, ')') END ) AS exam_name,",
+
+        "ex.examperiod, ex.examtype, ex.department_id, depbase.code AS depbase_code,",
+        "ex.level_id, lvl.base_id AS levelbase_id, lvl.abbrev AS lvl_abbrev,",
+        "ex.version, ex.assignment, ex.keys, ex.amount, ex.maxscore,",
         "ex.status, ex.auth1by_id, ex.auth2by_id, ex.locked,",
         "ex.modifiedby_id, ex.modifiedat,",
         "sb.code AS subj_base_code, subj.name AS subj_name,",
@@ -804,15 +849,31 @@ def create_exam_rows(setting_dict, append_dict):
         "INNER JOIN subjects_subject AS subj ON (subj.id = ex.subject_id)",
         "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
         "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
+
+        "INNER JOIN schools_department AS dep ON (dep.id = ex.department_id)",
+        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+        "LEFT JOIN subjects_level AS lvl ON (lvl.id = ex.level_id)",
+
         "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
-        "WHERE ey.id = %(ey_id)s::INT AND CONCAT(';', ex.depbases::TEXT, ';') LIKE %(depbase_lookup)s::TEXT"
+        "WHERE ey.id = %(ey_id)s::INT AND depbase.id = %(depbase_id)s::INT"
     ]
     if exam_pk:
         sql_keys ['ex_id'] = exam_pk
         sql_list.append('AND ex.id = %(ex_id)s::INT')
-    elif sel_examperiod:
-        sql_keys ['ex_per'] = sel_examperiod
-        sql_list.append("AND ex.examperiod = %(ex_per)s::INT")
+    else:
+        if sel_levelbase_pk:
+            # cannot filter on levelbase_pk because of LEFT JOIN subjects_level
+            level = subj_mod.Level.objects.get_or_none(
+                base_id=sel_levelbase_pk,
+                examyear_id=sel_examyear_pk
+            )
+            if level:
+                sql_keys ['lvl_id'] = level.pk
+                sql_list.append("AND lvl.id = %(lvl_id)s::INT")
+
+        if sel_examperiod:
+            sql_keys ['ex_per'] = sel_examperiod
+            sql_list.append("AND ex.examperiod = %(ex_per)s::INT")
         sql_list.append("ORDER BY LOWER(sb.code)")
 
     sql = ' '.join(sql_list)
@@ -1348,104 +1409,178 @@ def get_field_caption(table, field):
     return caption
 
 
-
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def create_subject(examyear, upload_dict, request):
-    # --- create subject # PR2019-07-30 PR2020-10-11
-    logger.debug(' ----- create_subject ----- ')
+
+def delete_subject(subject, subject_rows, error_list, request):
+    # --- delete subject # PR2021-05-14
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- delete_subject ----- ')
+        logger.debug('subject: ' + str(subject))
+
+    subject_row = {'pk': subject.pk,
+                   'mapid': 'subject_' + str(subject.pk),
+                   'deleted': True}
+    base_pk = subject.base.pk
+
+    this_text = _("Subject '%(tbl)s'") % {'tbl': subject.name}
+    deleted_ok = sch_mod.delete_instance(subject, error_list, request, this_text)
+
+    if deleted_ok:
+        # check if this subject also exists in other examyears.
+        subjects = subj_mod.Subject.objects.filter(base_id=base_pk).first()
+        # If not: delete also subject_base
+        if subjects is None:
+            subject_base = subj_mod.Subjectbase.objects.get_or_none(id=base_pk)
+            if subject_base:
+                subject_base.delete()
+        # - add deleted_row to subject_rows
+        subject_rows.append(subject_row)
+
+    if logging_on:
+        logger.debug('subject_rows' + str(subject_rows))
+        logger.debug('error_list' + str(error_list))
+
+    return deleted_ok
+
+
+def create_subject(examyear, upload_dict, subject_rows, error_list, request):
+    # --- create subject # PR2019-07-30 PR2020-10-11 PR2021-05-13
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_subject ----- ')
+        logger.debug('examyear: ' + str(examyear))
+        logger.debug('upload_dict: ' + str(upload_dict))
 
     subject = None
-    msg_err = None
 
-    logger.debug('examyear: ' + str(examyear))
     if examyear:
-
 # - get values
-        code = af.get_dict_value(upload_dict, ('code', 'value'))
-        name = af.get_dict_value(upload_dict, ('name', 'value'))
-        sequence = af.get_dict_value(upload_dict, ('sequence', 'value'), 9999)
-        depbases = af.get_dict_value(upload_dict, ('depbases', 'value'))
-        logger.debug('code: ' + str(code))
-        logger.debug('name: ' + str(name))
-        logger.debug('sequence: ' + str(sequence))
-        logger.debug('depbases: ' + str(depbases) + str(type(depbases)))
+        code = upload_dict.get('code')
+        name = upload_dict.get ('name')
+        sequence = upload_dict.get ('sequence', 9999)
+        depbases = upload_dict.get('depbases')
+        if logging_on:
+            logger.debug('code: ' + str(code))
+            logger.debug('name: ' + str(name))
+            logger.debug('sequence: ' + str(sequence))
+            logger.debug('depbases: ' + str(depbases) + str(type(depbases)))
+
         if code and name:
-# - validate abbrev checks null, max_len, exists and is_lokced
-            msg_err = av.validate_subject_code(
-                code=code,
-                cur_subject=None
-            )
+            has_error = False
+# - validate code and name. Function checks null, max_len, exists
+            msg_list = av.validate_subject_code(code, subject)
+            if msg_list:
+                has_error = True
+                error_list.append({'msg_list': msg_list, 'class': 'alert-danger'})
 
+            msg_list = av.validate_subject_name(name, subject)
+            if msg_list:
+                has_error = True
+                error_list.append({'msg_list': msg_list, 'class': 'alert-danger'})
 # - create and save subject
-            if not msg_err:
-
-               # try:
+            if not has_error:
+                try:
                     # First create base record. base.id is used in Subject. Create also saves new record
-                base = sbj_mod.Subjectbase.objects.create(
-                    country=examyear.country,
-                    code=code
-                )
-                logger.debug('base: ' + str(base))
+                    base = sbj_mod.Subjectbase.objects.create(
+                        country=examyear.country,
+                        code=code
+                    )
 
-                subject = sbj_mod.Subject(
-                    base=base,
-                    examyear=examyear,
-                    name=name,
-                    sequence=sequence,
-                    depbases=depbases
-                )
-                subject.save(request=request)
-                logger.debug('subject: ' + str(subject))
-                #except:
-                #    msg_err = str(_("An error occurred. Subject '%(val)s' could not be added.") % {'val': name})
+                    subject = sbj_mod.Subject(
+                        base=base,
+                        examyear=examyear,
+                        name=name,
+                        sequence=sequence,
+                        depbases=depbases
+                    )
+                    subject.save(request=request)
 
-    logger.debug('subject: ' + str(subject))
-    logger.debug('msg_err: ' + str(msg_err))
-    return subject, msg_err
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+                    msg_list = [_('An error occurred.'),
+                                ''.join(('(', str(e), ')')),
+                                str(_("Subject '%(val)s' could not be added.") % {'val': name})]
+                    error_list.append({'msg_list': msg_list, 'class': 'alert-danger'})
+                else:
+                    if logging_on:
+                        logger.debug('created subject: ' + str(subject))
+
+    # - create subjectrow when create has failed
+        if subject is None:
+            # - add deleted_row to subject_rows
+            subject_rows.append({'name': name, 'created': False} )
+
+    if logging_on:
+        logger.debug('error_list: ' + str(error_list))
+
+    return subject
 
 
 #######################################################
-def update_subject_instance(instance, examyear, upload_dict, msg_dict, request):
+def update_subject_instance(instance, examyear, upload_dict, error_list, request):
     # --- update existing and new instance PR2019-06-06 PR2021-05-10
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' --------- update_subject_instance -------------')
+        logger.debug(' ----- update_subject_instance -----')
         logger.debug('upload_dict: ' + str(upload_dict))
 
     if instance:
         save_changes = False
+        save_changes_in_base = False
         for field, new_value in upload_dict.items():
         # --- skip fields that don't contain new values
-            if field not in ('mode', 'table', 'examyear_pk', 'subject_pk'):
+            if field not in ('mode', 'table', 'mapid', 'examyear_pk', 'subject_pk'):
                 if logging_on:
                     logger.debug('field: ' + str(field))
-                    logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+                    logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
 
 # a. get saved_value
 
-# 2. save changes in field 'name', 'abbrev'
-                if field in ['name', 'abbrev']:
+# - save changes in field 'code'
+                if field == 'code':
+                    base = instance.base
+                    saved_value = getattr(base, field)
+                    if logging_on:
+                        logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
+
+                    if new_value != saved_value:
+                        if logging_on:
+                            logger.debug('new_value != saved_value')
+        # - validate abbrev checks null, max_len, exists
+                        #  msg_err = { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
+                        msg_list = av.validate_subject_code(
+                            code=new_value,
+                            cur_subject=instance
+                        )
+                        if msg_list:
+                            error_list.append({'msg_list': msg_list, 'class': 'alert-danger'})
+                            if logging_on:
+                                logger.debug('msg_list: ' + str(msg_list))
+                        else:
+         # - save field if changed and no_error
+                            setattr(base, field, new_value)
+                            save_changes_in_base = True
+
+# - save changes in field 'name'
+                if field == 'name':
                     saved_value = getattr(instance, field)
                     if new_value != saved_value:
-        # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
-                        """
-                        msg_err = validate_code_name_identifier(
-                            table='subject',
-                            field=field,
-                            new_value=new_value, parent=parent,
-                            is_absence=False,
-                            update_dict={},
-                            msg_dict={},
-                            request=request,
-                            this_pk=instance.pk)
-                        """
-                        msg_err = None
-                        if not msg_err:
-                            # c. save field if changed and no_error
+        # - validate abbrev checks null, max_len, exists
+                        #  msg_err = { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
+                        msg_list = av.validate_subject_name(
+                            name=new_value,
+                            examyear=examyear,
+                            cur_subject=instance
+                        )
+                        if msg_list:
+                            error_list.append({'msg_list': msg_list, 'class': 'alert-danger'})
+                            if logging_on:
+                                logger.debug('msg_list: ' + str(msg_list))
+                        else:
+                            # - save field if changed and no_error
                             setattr(instance, field, new_value)
                             save_changes = True
-                        else:
-                            msg_dict['err_' + field] = msg_err
 
     # 3. save changes in depbases
                 elif field == 'depbases':
@@ -1471,7 +1606,7 @@ def update_subject_instance(instance, examyear, upload_dict, msg_dict, request):
                         setattr(instance, field, new_value)
                         save_changes = True
 
-                elif field == 'sequence':
+                elif field in ('sequence', 'etenorm', 'addedbyschool'):
                     saved_value = getattr(instance, field)
                     if new_value != saved_value:
                         setattr(instance, field, new_value)
@@ -1479,11 +1614,21 @@ def update_subject_instance(instance, examyear, upload_dict, msg_dict, request):
 # --- end of for loop ---
 
 # 5. save changes
-        if save_changes:
+        if save_changes or save_changes_in_base:
             try:
+                if save_changes_in_base:
+                    # also save instance when base has changed, to update modifiedat and modifiedby
+                    instance.base.save()
                 instance.save(request=request)
-            except:
-                msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                msg_list = [_('An error occurred: ') + str(e),
+                            _('The changes have not been saved.')]
+
+                # error_list = [ { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
+                #                {'class': 'alert-danger', msg_list: [text1, text2]} ] (for use in modal message)
+                error_list.append({'class': 'alert-danger', 'msg_list': msg_list})
+
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -1627,7 +1772,7 @@ class ExamDownloadExamView(View):  # PR2021-05-06
 
 # - get selected examyear, school and department from usersettings
             sel_examyear, sel_school, sel_department, is_locked, \
-                examyear_published, school_activated, is_requsr_school = \
+                examyear_published, school_activated, requsr_same_schoolNIU = \
                     dl.get_selected_examyear_school_dep_from_usersetting(request)
 
             if logging_on:
@@ -1721,7 +1866,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
 
 # - get selected examyear, school and department from usersettings
             sel_examyear, sel_school, sel_department, is_locked, \
-                examyear_published, school_activated, is_requsr_school = \
+                examyear_published, school_activated, requsr_same_schoolNIU = \
                     dl.get_selected_examyear_school_dep_from_usersetting(request)
 
 # - get selected examperiod, examtype, subject_pk from usersettings
@@ -1742,13 +1887,13 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                     subject = sel_exam_instance.subject
                     examyear = subject.examyear
                     exam_dict['examyear'] = examyear.code
-                    # - create string with department abbrevs
-                    exam_dict['departments'] = get_department_codes(sel_exam_instance, examyear)
 
-                    # - create string with level abbrevs
-                    level_abbrevs = get_level_abbrevs(sel_exam_instance, examyear)
-                    if level_abbrevs:
-                        exam_dict['levels'] = level_abbrevs
+            # - create string with department abbrev
+                    exam_dict['department'] = sel_exam_instance.department.base.code
+
+            # - create string with level abbrevs
+                    if sel_exam_instance.level:
+                        exam_dict['level'] = sel_exam_instance.level.abbrev
 
                     examperiod = sel_exam_instance.examperiod
                     exam_dict['examperiod'] = str(examperiod) if examperiod else '---'
@@ -1767,7 +1912,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                     exam_dict['subject_name'] = subject.name
 
                     # create list of questions
-                    exam_dict['assignment'] = get_assignment_dict(amount, sel_exam_instance.assignment)
+                    exam_dict['assignment'] = get_assignment_dict(sel_exam_instance)
 
 
         response = HttpResponse(json.dumps(exam_dict), content_type="application/json")
@@ -1791,21 +1936,63 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
 # - end of ExamDownloadExamJsonView
 
 
-def get_assignment_dict(amount, assignment):
-    # - create dict with assignments PR2021-05-08
+def get_assignment_dict(sel_exam_instance):
+    # - create dict with assignments PR2021-05-08  PR2021-05-24
+
+    amount = getattr(sel_exam_instance, 'amount')
+    assignment = getattr(sel_exam_instance, 'assignment')
+    keys =  getattr(sel_exam_instance, 'keys')
+
     assignment_dict = {}
-    if amount and assignment:
-        # assignment: 1:4|2:5|3:6|4:M
-        assignment_list = assignment.split('|')
-        for qa in assignment_list:
-            qa_arr = qa.split(':')
-            if len(qa_arr) > 0:
-                q_index = int(qa_arr[0])
+    keys_dict = {}
+    exam_dict = {}
+    if amount:
+        if assignment:
+            assignment_list = assignment.split('|')
+            for qa in assignment_list:
+                qa_arr = qa.split(':')
+                if len(qa_arr) > 0:
+                    if qa_arr[1]:
+                        q_nr = int(qa_arr[0])
+                        value_list = qa_arr[1].split(';')
+                        assignment_dict[q_nr] = {
+                            'max_score': value_list[0] if value_list[0] else '',
+                            'max_char': value_list[1] if value_list[1] else '',
+                            'min_score': value_list[2] if value_list[2] else ''
+                        }
+        if keys:
+            keys_list = keys.split('|')
+            for qk in keys_list:
+                qk_arr = qk.split(':')
+                if len(qk_arr) > 0:
+                    if qk_arr[1]:
+                        qk_nr = int(qk_arr[0])
+                        value_list = qk_arr[1].split(';')
+                        keys_dict[qk_nr] = {
+                            'keys': value_list[0] if value_list[0] else ''
+                        }
+
+        for q_number in range(1, amount + 1):  # range(start_value, end_value, step), end_value is not included!
+            if q_number in assignment_dict:
                 value = ''
-                if qa_arr[1]:
-                    value = qa_arr[1].replace(';', ' ')
-                assignment_dict[q_index] = value
-    return assignment_dict
+                max_char = af.get_dict_value(assignment_dict, (q_number, 'max_char'), '')
+                max_score = af.get_dict_value(assignment_dict, (q_number, 'max_score'), '')
+                min_score = af.get_dict_value(assignment_dict, (q_number, 'min_score'), '')
+                keys = af.get_dict_value(keys_dict, (q_number, 'keys'), '')
+                if max_char:
+                    value += max_char
+                if max_score:
+                    if value:
+                        value += ' - '
+                    value += max_score
+                if keys:
+                    if value:
+                        value += ' - '
+                    value += keys
+
+                exam_dict[q_number] = value
+    logger.debug('exam_dict: ' + str(exam_dict))
+    return exam_dict
 
 
 def get_department_codes(sel_exam_instance, examyear):
@@ -1829,6 +2016,7 @@ def get_department_codes(sel_exam_instance, examyear):
     return dep_codes
 
 
+# NIU, may be used for other instances with depbases
 def get_department_abbrevs(sel_exam_instance, examyear):
     # - create string with depbase abbrevs PR2021-05-08
     dep_abbrevs = ''

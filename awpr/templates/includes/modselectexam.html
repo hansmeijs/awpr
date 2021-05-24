@@ -1,0 +1,37 @@
+{% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL SELECT EXAM =================== -->
+    <div class="modal" id="id_mod_select_exam" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md" role="document">
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 class="modal-title mx-2" >{% trans 'Select exam' %}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="modal_container">
+                            <table class="table tsa_tbl mx-1 my-1">
+                                <tbody id="id_MSEX_tblBody_select">
+                                </tbody>
+                            </table>
+
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <div class="content_subheader_left mx-1">
+                        <button id="id_MSEX_btn_delete" class="btn btn-outline-danger" data-dismiss="modal">{% trans 'Remove exam' %}</button>
+                    </div>
+                    <div class="content_subheader_right">
+                        <button id="id_MSEX_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MSEX_btn_save" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>

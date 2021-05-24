@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
                     // b_get_permits_from_permitlist must come before CreateSubmenu and FiLLTbl
-                    b_get_permits_from_permitlist(permit_dict.permit_list);
+                    b_get_permits_from_permitlist(permit_dict);
                     usergroups = permit_dict.usergroup_list;
                     isloaded_permits = true;
                 }
@@ -679,6 +679,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("mode", mode)
         // mode = 'create, 'publish', 'activate', 'close_admin', 'close_school', 'edit' (with el_input)
 
+        console.log("permit_dict", permit_dict)
         const is_addnew = (mode === "create")
         //console.log("permit_dict", permit_dict)
         if(permit_dict.crud_examyear){
@@ -686,6 +687,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const fldName = get_attr_from_el(el_input, "data-field");
             const tblName = "examyear";
 
+        console.log("fldName", fldName)
             // el_input is undefined when called by submenu buttons
             if(el_input){
                 const tblRow = get_tablerow_selected(el_input);

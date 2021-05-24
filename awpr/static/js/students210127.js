@@ -275,6 +275,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
                     // get_permits must come before CreateSubmenu and FiLLTbl
+                    b_get_permits_from_permitlist(permit_dict);
                     //get_permits(permit_dict.permit_list);
                     //usergroups = permit_dict.usergroup_list;
                     isloaded_permits = true;
@@ -673,7 +674,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- also used for level, sector,
     function MSTUD_Open(el_input){
         console.log(" -----  MSTUD_Open   ----")
-        if( has_permit_edit){
+        console.log("permit_dict.crud_student", permit_dict.crud_student)
+        if (permit_dict.crud_student){
+
             let user_pk = null, user_country_pk = null, user_schoolbase_pk = null, mapid = null;
             const fldName = get_attr_from_el(el_input, "data-field");
 
@@ -751,7 +754,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  MSTUD_save  ----", crud_mode);
         console.log( "mod_MSTUD_dict: ", mod_MSTUD_dict);
 
-        if(has_permit_edit){
+        if (permit_dict.crud_student){
             const is_delete = (crud_mode === "delete")
             let new_level_pk = null, new_sector_pk = null, level_or_sector_has_changed = false;;
             let upload_dict = {
@@ -884,7 +887,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el_input){
             const value = el_input.value;
             if(["sequence"].indexOf(fldName) > -1){
-                const arr = get_number_from_input(loc, fldName, el_input.value);
+                const arr = b_get_number_from_input(loc, fldName, el_input.value);
                 msg_err = arr[1];
             } else {
                  const caption = (fldName === "abbrev") ? loc.Abbreviation :
@@ -1064,7 +1067,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     (tblName === "schemeitem") ? loc.this_schemeitem :
                     (tblName === "package") ? loc.this_package :
                     (tblName === "packageitem") ?  loc.this_package_item : "---";
-        //document.getElementById("id_MSTUD_label_dep").innerText = loc.Departments_where + this_dep_text + loc.occurs + ":";
+        //document.getElementById("id_MSTUD_label_dep").innerText = loc.Departments_with + this_dep_text + loc.occurs + ":";
     }  // MSTUD_headertext
 
 // +++++++++ END MOD STUDENT +++++++++++++++++++++++++++++++++++++++++
@@ -1073,7 +1076,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++ MOD STUDENT SUBJECT++++++++++++++++ PR2020-11-16
     function MSTUDSUBJ_Open(el_input){
         console.log(" -----  MSTUDSUBJ_Open   ----")
-        if(el_input && has_permit_edit){
+        if(el_input && permit_dict.crud_student){
 
             mod_MSTUDSUBJ_dict = {}; // stores general info of selected candidate in MSTUDSUBJ PR2020-11-21
             //mod_studsubj_dict = {};  // stores studsubj of selected candidate in MSTUDSUBJ
@@ -1136,7 +1139,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  MSTUDSUBJ_Save   ----")
         console.log( "mod_studsubj_map: ", mod_studsubj_map);
 
-        if(has_permit_edit && mod_MSTUDSUBJ_dict.stud_id){
+        if(permit_dict.crud_student && mod_MSTUDSUBJ_dict.stud_id){
             const upload_dict = {
             table: 'studentsubject',
             sel_examyear_pk: setting_dict.sel_examyear_pk,
@@ -1194,7 +1197,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log("upload_dict: ", upload_dict)
                 UploadChanges(upload_dict, url_studsubj_upload);
             }
-        };  // if(has_permit_edit && mod_MSTUDSUBJ_dict.stud_id){
+        };  // if(permit_dict.crud_student && mod_MSTUDSUBJ_dict.stud_id){
 
 // ---  hide modal
         $("#id_mod_studentsubject").modal("hide");
@@ -1617,7 +1620,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "delete", "inactive" or "resend_activation_email", "permission_sysadm"
 
-        if(has_permit_edit){
+        if(permit_dict.crud_student){
 
 
     // ---  get selected_pk
@@ -1716,9 +1719,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
-        let close_modal = !has_permit_edit;
+        let close_modal = !permit_dict.crud_student;
 
-        if(has_permit_edit){
+        if(permit_dict.crud_student){
             let tblRow = document.getElementById(mod_dict.mapid);
 
     // ---  when delete: make tblRow red, before uploading

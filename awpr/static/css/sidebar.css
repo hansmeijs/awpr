@@ -19,6 +19,10 @@
     z-index: 1040; /* header has z-indez 1030  dropdown z-indez 1030 = 1000*/
 
     background-color: #a5a5a5; /* medium grey; 165 165 165*/
+
+    /* background-color: #58d2cc; /* ETE licht groen #58d2cc RGB198-243-231PR2021-05-21 */
+    /*background-color: #01b9b1; /* ETE groen #01b9b1 RGB 1-185-177  PR2021-05-21 */
+
     color: #fff;
     transition: all 0.3s;
 }
@@ -31,11 +35,16 @@
     padding: 20px 12px 12px 12px;;  /* top, right, bottom, left:
     /*background: #6d7fcc;   kind of pale blue */
     background-color: #a5a5a5; /* medium grey; 165 165 165*/
+    /*background-color: #58d2cc; /* ETE licht groen #58d2cc RGB198-243-231PR2021-05-21 */
+    /*background-color: #01b9b1; /* ETE groen #01b9b1 RGB 1-185-177  PR2021-05-21 */
 }
 .awp_sidebar .sidebar_btngroup {
     padding: 20px 0px 12px 0px;  /* top, right, bottom, left:
     /*background: #6d7fcc;   kind of pale blue */
     background-color: #a5a5a5; /* medium grey; 165 165 165*/
+
+    /*background-color: #58d2cc; /* ETE licht groen #58d2cc RGB198-243-231PR2021-05-21 */
+    /*background-color: #01b9b1; /* ETE groen #01b9b1 RGB 1-185-177  PR2021-05-21 */
 }
 
 .awp_sidebar .sidebar_filter {
@@ -43,6 +52,9 @@
     padding: .5rem; /* mx-2 my-2 = 0.5rem (8px if font-size is 16px)*/
     /*background: #6d7fcc;   kind of pale blue */
     background-color: #a5a5a5; /* medium grey; 165 165 165*/
+
+    /*background-color: #58d2cc; /* ETE licht groen #58d2cc RGB198-243-231PR2021-05-21 */
+    /*background-color: #01b9b1; /* ETE groen #01b9b1 RGB 1-185-177  PR2021-05-21 */
 }
 .awp_sidebar .components {
     padding: 20px 0;

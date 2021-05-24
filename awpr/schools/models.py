@@ -125,14 +125,6 @@ class Country(AwpBaseModel):
     def __str__(self):
         return self.name
 
-    @property # PR2018-06-22
-    def has_no_child_rows(self):
-        User = get_user_model()
-        linked_users_count = User.objects.filter(country_id=self.pk).count()
-        #logger.debug('Country(Model has_linked_data linked_users_count: ' + str(linked_users_count))
-        # TODO add other dependencies: Subject, Schoolcode etc
-        return not bool(linked_users_count)
-
 
 # PR2018-05-05
 class Country_log(AwpBaseModel):
@@ -640,8 +632,10 @@ def dep_initials(dep_name):
 
 
 def delete_instance(instance, error_list, request, this_text=None):
-    #logger.debug(' ----- delete_instance  -----')
-    #logger.debug('instance: ' + str(instance))
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- delete_instance  -----')
+        logger.debug('instance: ' + str(instance))
 
     # function deletes instance of table,  PR2019-08-25 PR2020-10-23
     deleted_ok = False
@@ -649,21 +643,34 @@ def delete_instance(instance, error_list, request, this_text=None):
     if instance:
         instance.delete(request=request)
         try:
+            a = 1 / 0
             instance.delete(request=request)
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-            error_list.append(str( _('An error occurred.')))
+
             tbl = this_text if this_text else _('This item')
-            error_list.append(str(_('%(tbl)s could not be deleted.') % {'tbl': tbl}))
+            msg_list = [str(_('An error occurred: ')) + str(e),
+                        str(_('%(tbl)s could not be deleted.') % {'tbl': tbl})]
+
+            # error_list = [ { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
+            #                {'class': 'alert-danger', msg_list: [text1, text2]} ] (for use in modal message)
+            error_list.append({'class': 'alert-danger', 'msg_list': msg_list})
+
         else:
+            instance = None
             deleted_ok = True
+
+    if logging_on:
+        logger.debug('error_list: ' + str(error_list))
+        logger.debug('instance: ' + str(instance))
+        logger.debug('deleted_ok: ' + str(deleted_ok))
 
     return deleted_ok
 
 
 def save_to_log(instance, req_mode, request):
     # PR2019-02-23 PR2020-10-23 PR2020-12-15 PR2021-05-11
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- save_to_log  ----- mode: ' + str(req_mode))
         logger.debug('instance: ' + str(instance))

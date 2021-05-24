@@ -9,6 +9,7 @@ from students import models as stud_mod
 from schools import models as sch_mod
 from subjects import models as subj_mod
 from awpr import constants as c
+from awpr import settings as s
 
 import logging
 logger = logging.getLogger(__name__)  # __name__ tsap.validators
@@ -178,34 +179,93 @@ def message_diff_exyr(examyear):  #PR2020-10-30
                 'Please note: the selected exam year %(exyr)s is different from the current exam year.') % {
                           'exyr': str(examyear.code)})
             awp_message = {'msg_list': [msg], 'class': 'alert-warning'}
+
     return awp_message
 
 
 # ============ SUBJECTS
-def validate_subject_code(code, cur_subject=None):  # PR2020-12-11
-    #logger.debug ('validate_unique_company_name', value)
+def validate_subject_code(code, cur_subject=None):  # PR2020-12-11 PR2021-05-14
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug ('----- validate_subject_code -----')
+        logger.debug('code: ' + str(code))
+
     # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
-    msg_err = None
-    value_exists = False
-    is_locked = False
+    msg_list = []
+
     if not code:
-        msg_err = _('Abbreviation cannot be blank.')
+        msg_list.append(_('Abbreviation cannot be blank.'))
     elif len(code) > c.MAX_LENGTH_SCHOOLCODE:
-        value_too_long_str = str(_("Value '%(val)s' is too long.") % {'val': code})
-        max_str = str(_("Max %(fld)s characters.") % {'fld': c.MAX_LENGTH_SCHOOLCODE})
-        msg_err = ' '.join((value_too_long_str, max_str))
-    elif cur_subject is None:
-        value_exists = subj_mod.Subjectbase.objects.filter(code__iexact=code).exists()
+        msg_list.append(str(_("Value '%(val)s' is too long.") % {'val': code}))
+        msg_list.append(str(_("Max %(fld)s characters.") % {'fld': c.MAX_LENGTH_SCHOOLCODE}))
     else:
-        # check if current subject is in locked examyears
-        is_locked = subj_mod.Subject.objects.filter(base__pk=cur_subject.base.pk, examyear__locked=True).exists()
-        if is_locked:
-            msg_err = _('This subject appears in locked exam years. The abbreviation cannot be changed.')
-        else:
-            value_exists = subj_mod.Subjectbase.objects.filter(code__iexact=code).exclude(pk=cur_subject.base.pk).exists()
-    if value_exists:
-        msg_err = str(_("Abbreviation '%(val)s' already exists.") % {'val': code})
-    return msg_err
+
+# - check if this code already exists
+        value_exists = False
+
+        # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
+        crit = Q(code__iexact=code)
+    # - exclude this subject base in case it is an existing subject
+        if cur_subject:
+            crit.add(~Q(pk=cur_subject.base.pk), crit.connector)
+        subjectbases = subj_mod.Subjectbase.objects.filter(crit)
+
+    # check if the matching subjectbases have children (=subjects). If no subjects: delete subjectbase
+        # PR2021-05-14 debug: could not add subject because there was a subjectbase with this code without children
+        # there might be multiple subjectbases with this code and no children. Check them all
+        for subjectbase in subjectbases:
+            has_children = subj_mod.Subject.objects.filter(base=subjectbase).exists()
+            if logging_on:
+                logger.debug('matching subjectbase: ' + str(subjectbase))
+                logger.debug('has_children: ' + str(has_children))
+
+            if has_children:
+                value_exists = True
+                if logging_on:
+                    logger.debug('value_exists')
+            else:
+                subjectbase.delete()
+                if logging_on:
+                    logger.debug('subjectbase deleted')
+
+        if value_exists:
+            msg_list.append(str(_("Abbreviation '%(val)s' already exists.") % {'val': code}))
+
+    if logging_on:
+        logger.debug('msg_list: ' + str(msg_list))
+    return msg_list
+
+
+def validate_subject_name(name, examyear, cur_subject=None):  # PR2021-05-14
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug ('----- validate_subject_name -----')
+        logger.debug('name: ' + str(name))
+
+    msg_list = []
+    field_caption = ' '.join((str(_('Subject')), str(_('name'))))
+    max_length = c.MAX_LENGTH_NAME
+    if not name:
+        msg_list.append(str(_('%(fld)s cannot be blank.') % {'fld': field_caption, 'val': name}))
+    elif len(name) > max_length:
+        msg_list.append(str(_("%(fld)s '%(val)s' is too long.") % {'fld': field_caption, 'val': name}))
+        msg_list.append(str(_("Max %(max)s characters.") % {'max': max_length}))
+
+    if not msg_list:
+        # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
+        crit = Q(examyear=examyear)
+        crit.add(Q(name__iexact=name), crit.connector)
+
+# exclude this subject
+        if cur_subject:
+            crit.add(~Q(pk=cur_subject.pk), crit.connector)
+
+        value_exists = subj_mod.Subject.objects.filter(crit).exists()
+
+        if value_exists:
+            msg_list.append(str(_("%(fld)s '%(val)s' already exists.") % {'fld': field_caption, 'val': name}))
+
+    return msg_list
 
 
 def validate_code_name_identifier(table, field, new_value, is_absence, parent, update_dict, msg_dict, request, this_pk=None):
