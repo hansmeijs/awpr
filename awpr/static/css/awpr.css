@@ -88,7 +88,7 @@ a:hover {
  }
 
 .awp_bg_purple {
-    background-color : #c7386a !important; /* ETE paars #c7386a RGB199-56-106 PR2021-05-21 */
+    background-color: #9f2d53 !important; /* ETE paars #9f2d53 RGB 159-45-85 PR2021-05-24 */
 }
 
 .awp_bg_blue {
@@ -305,8 +305,8 @@ select.form-control:not([size]):not([multiple]) {
     stroke-width: 1;
 }
 .menu_polygon_selected_purple {
-    fill: #c7386a; /* ETE paars #c7386a RGB199-56-106 PR2021-05-21 */
-    stroke: #c7386a; /* ETE paars #c7386a RGB199-56-106 PR2021-05-21 */
+    fill: #9f2d53; /* ETE paars #9f2d53 RGB 159-45-85 PR2021-05-24 */
+    stroke: #9f2d53; /* ETE paars #9f2d53 RGB 159-45-85 PR2021-05-24 */
     stroke-width: 1;
 }
 .menu_polygon_selected_green {

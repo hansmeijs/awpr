@@ -1818,9 +1818,10 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             success: function (response) {
                 console.log(response)
+                $("#id_mod_uploadawp").modal("hide");
             },
             error: function (error) {
-                // handle error
+                $("#id_mod_uploadawp").modal("hide");
                 alert(error)
             },
             async: true,

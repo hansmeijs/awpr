@@ -447,8 +447,7 @@ def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
 
     logging_on = s.LOGGING_ON
     if ws_name == 'subjecttype' and row_data:
-        #try:
-        if True:
+        try:
             requsr_country = request.user.country
             #  row_data: {'subjecttype_id': 1, 'name': 'Gemeenschappelijk deel'}
 
@@ -460,37 +459,38 @@ def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
             if awp_name:
                 awp_name_sliced_lc = awp_name.lower()[0:8]
 
+                subjecttype_base = None
+
                 if logging_on:
                     logger.debug('awp_name: ' + str(awp_name))
                     logger.debug('awp_name_sliced_lc: ' + str(awp_name_sliced_lc))
 
-
-    # - check if subjecttype with this name already exists in this examyear. If not: create
+    # - check if subjecttype with this name already exists in this examyear.
+                    # PR2021-05-24 don't create new base_record
                 subjecttype = subj_mod.Subjecttype.objects.filter(
                     examyear=sel_examyear,
                     name__istartswith=awp_name_sliced_lc
                 ).order_by('-pk').first()
 
-    # - create new subjecttype record  if subjecttype is None:
-                if subjecttype is None:
+    # - get subjecttype_base if subjecttype is found
+                if subjecttype:
+                    subjecttype_base = subjecttype.base
+                else:
                     if logging_on:
                         logger.debug('subjecttype with this name does not exist in this examyear: ' + str(awp_name))
-        # - check if subjecttype with this name already exists in any examyear in this country, to retrieve base_id
+    # - is not found: check if subjecttype with this name already exists in any examyear in this country, to retrieve base_id
                     subjecttype = subj_mod.Subjecttype.objects.filter(
                         base__country=requsr_country,
                         name__istartswith=awp_name_sliced_lc
                     ).order_by('-examyear__code', '-pk').first()
 
                     if subjecttype:
-                        base = subjecttype.base
-        # - first create new base record. Create also saves new record
-                    else:
-                        base = subj_mod.Subjecttypebase.objects.create(
-                            country=requsr_country
-                        )
+                        subjecttype_base = subjecttype.base
 
-                    if logging_on:
-                        logger.debug('base: ' + str(base))
+                if subjecttype_base is None:
+        # - first create new base record. Create also saves new record
+                    subjecttype_base = subj_mod.Subjecttypebase.objects.create(country=requsr_country)
+
                     code_dict = {'gemeensc': 'gmd', 'sectorde': 'spd', 'profield': 'spd', 'overig v': 'vrd', 'vrije de': 'vrd',
                                 'sectorpr': 'spr', 'sectorwe': 'wst', 'profielw': 'wst', 'stage': 'stg'}
                     name_dict = {'gemeensc': 'Gemeenschappelijk deel.', 'sectorde': 'Sectordeel', 'profield': 'Profieldeel',
@@ -509,6 +509,14 @@ def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
                     abbrev = abbrev_dict.get(awp_name_sliced_lc)
                     sequence = sequence_dict.get(awp_name_sliced_lc, 1)
 
+                    if logging_on:
+                        logger.debug('subjecttype_base: ' + str(subjecttype_base))
+                        logger.debug('code: ' + str(code))
+                        logger.debug('name: ' + str(name))
+                        logger.debug('abbrev: ' + str(abbrev))
+                        logger.debug('sequence: ' + str(sequence))
+                        logger.debug('awp_AfdelingIdReeks_dict: ' + str(awp_AfdelingIdReeks_dict))
+
                     depbases_list = []
                     awp_AfdelingIdReeks_list = awp_AfdelingIdReeks_dict.get(awp_name_sliced_lc)
                     if awp_AfdelingIdReeks_list:
@@ -521,24 +529,26 @@ def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
                     if depbases_list:
                         depbases_list.sort()
                         depbases = ';'.join(depbases_list)
+                    if logging_on:
+                        logger.debug('depbases: ' + str(depbases))
 
                     has_prac = True if awp_name_sliced_lc == 'sectorpr' else False  # has practical exam
                     has_pws = True if awp_name_sliced_lc in ('sectorwe', 'profielw') else False  # has profielwerkstuk or sectorwerkstuk
                     one_allowed = True if awp_name_sliced_lc in ('sectorpr', 'sectorwe', 'profielw', 'stage') else False  # if true: only one subject with this Subjecttype allowed per student
-
-                    subjecttype = subj_mod.Subjecttype(
-                        base=base,
-                        examyear=sel_examyear,
-                        name=name,
-                        abbrev=abbrev,
-                        code=code,
-                        sequence=sequence,
-                        has_prac=has_prac,
-                        has_pws=has_pws,
-                        one_allowed=one_allowed,
-                        depbases=depbases
-                    )
-                    subjecttype.save(request=request)
+                    if name and abbrev and code and sequence and depbases:
+                        subjecttype = subj_mod.Subjecttype(
+                            base=subjecttype_base,
+                            examyear=sel_examyear,
+                            name=name,
+                            abbrev=abbrev,
+                            code=code,
+                            sequence=sequence,
+                            has_prac=has_prac,
+                            has_pws=has_pws,
+                            one_allowed=one_allowed,
+                            depbases=depbases
+                        )
+                        subjecttype.save(request=request)
 
                     if logging_on:
                         logger.debug ('subjecttype created = ' + str(subjecttype))
@@ -551,10 +561,10 @@ def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
                         mapped['subjecttype'] = {}
                     mapped['subjecttype'][awp_id] = subjecttype.pk
 
-        #except Exception as e:
-        #   logfile.append('Error subjecttype: ' + str(e))
-        #   if logging_on:
-        #       logger.debug(getattr(e, 'message', str(e)))
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            logfile.append('Error subjecttype: ' + str(e))
+
 # - end of ImportSubjecttype
 
 

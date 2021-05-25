@@ -2591,7 +2591,7 @@ document.addEventListener
 
             } else if (mod_MEX_dict.is_same_school_mode){
 //================================================================
-// when answer of student are entered by requsr_same_school
+// when input is answer, entered by requsr_same_school
                 const assignment_dict = mod_MEX_dict.assignment[q_number];
                 if (isEmpty(assignment_dict)){
                     msg_err =  loc.err_list.Exam_assignment_does_notexist + "<br>" + loc.err_list.Contact_divison_of_exams
@@ -2615,13 +2615,15 @@ document.addEventListener
                             // check if is integer
                             char_lc = input_number.toString();
                         } else {
-                            if (!is_multiple_choice){
+                            char_lc = input_value.toLowerCase();
+                            if (char_lc === "x"){
+                                // pass, enter x for blank answer, also when not multiple choice
+                            } else if (!is_multiple_choice){
                                 msg_err =  loc.err_list.This_isnota_multiplechoice_question  +
                                 "<br>" + loc.err_list.must_enter_whole_number_between_0_and_ + max_score + "."
                             } else if (input_value.length > 1){
                                 msg_err += " '" + max_score_str  + "'" + loc.err_list.not_allowed + "<br>"
                             } else {
-                                char_lc = input_value.toLowerCase();
                                 if(!"abcdefghijklmnopqrstuvwxyz".includes(char_lc)){
                                     msg_err += " '" + input_value  + "'" + loc.err_list.not_allowed + "<br>"
                                  //   "<br>" + loc.err_list.maxscore_mustbe_between;

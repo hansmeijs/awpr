@@ -8,6 +8,7 @@ from django.utils.encoding import force_text
 from django.core.serializers.json import DjangoJSONEncoder
 
 from django.db import connection
+from django.db.models import Q
 from django.db.models.functions import Lower
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 
@@ -31,6 +32,7 @@ from awpr import printpdf
 
 from schools import models as sch_mod
 from subjects import models as sbj_mod
+from students import models as stud_mod
 
 import json  # PR2018-10-25
 # PR2018-04-27
@@ -1842,24 +1844,18 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
             logger.debug('===== ExamDownloadExamJsonView ===== ')
             logger.debug('list: ' + str(list) + ' ' + str(type(list)))
 
-        # function creates, Exam pdf file
-
         exam_pk = None
 
-        exam_dict = {}
-        #try:
+        response = None
 
         if request.user and request.user.country and request.user.schoolbase:
             req_user = request.user
 
-            # - get order_pk_list from parameter 'list
+            # - get exam_pk from parameter 'list'
             if list:
                 # list: 10 <class 'str'>
                 exam_pk = int(list)
-
-                #list_dict = json.loads(list)
-                #logger.debug('list_dict: ' + str(list_dict))
-
+            exam_pk = None
 # - reset language
             user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
             activate(user_lang)
@@ -1878,46 +1874,48 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                 logger.debug('sel_department: ' + str(sel_department))
                 logger.debug('exam_pk: ' + str(exam_pk))
 
-            if sel_examperiod and sel_school and sel_department and exam_pk:
-                sel_exam_instance = subj_mod.Exam.objects.get_or_none(
-                    pk=exam_pk,
-                    subject__examyear=sel_examyear)
+            if sel_examperiod:
+                examenlijst = []
 
-                if sel_exam_instance:
-                    subject = sel_exam_instance.subject
-                    examyear = subject.examyear
-                    exam_dict['examyear'] = examyear.code
+                # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
+                crit = Q(subject__examyear=sel_examyear)
+                # - exclude this subject base in case it is an existing subject
+                if exam_pk:
+                    crit.add(Q(pk=exam_pk), crit.connector)
+                exam_instances = subj_mod.Exam.objects.filter(crit)
 
-            # - create string with department abbrev
-                    exam_dict['department'] = sel_exam_instance.department.base.code
+                if exam_instances:
+                    for exam_instance in exam_instances:
+                        exam_dict = {}
+                        subject = exam_instance.subject
+                        examyear = subject.examyear
 
-            # - create string with level abbrevs
-                    if sel_exam_instance.level:
-                        exam_dict['level'] = sel_exam_instance.level.abbrev
+                        exam_dict['code'] = subject.base.code
+                        exam_dict['vak'] = subject.name
 
-                    examperiod = sel_exam_instance.examperiod
-                    exam_dict['examperiod'] = str(examperiod) if examperiod else '---'
-                    exam_dict['examperiod_caption'] = c.get_examperiod_caption(examperiod)
+                # - create string with department abbrev
+                        exam_dict['afdeling'] = exam_instance.department.base.code
 
-                    examtype = sel_exam_instance.examtype
-                    exam_dict['examtype'] = str(examtype) if examtype else '---'
-                    exam_dict['examtype_caption'] = c.get_examtype_caption(examtype)
+                # - create string with level abbrevs
+                        if exam_instance.level:
+                            exam_dict['leerweg'] = exam_instance.level.abbrev
 
-                    amount = sel_exam_instance.amount
-                    exam_dict['number_of_questions'] = amount if amount else 0
+                        exam_dict['examensoort'] = c.get_examtype_caption(exam_instance.examtype)
+                        exam_dict['aantal vragen'] = exam_instance.amount if exam_instance.amount else 0
+                        exam_dict['opgaven'] = get_assignment_dict(exam_instance)
+                        exam_dict['kandidaten'] = get_answers_list(exam_instance)
 
-                    exam_dict['maximum_score'] = sel_exam_instance.maxscore if sel_exam_instance.maxscore else 0
+                        examenlijst.append(exam_dict)
 
-                    exam_dict['subject_code'] = subject.base.code
-                    exam_dict['subject_name'] = subject.name
+                examens_dict = {
+                    'examenjaar': sel_examyear.code,
+                    'tijdvak': c.get_examperiod_caption(sel_examperiod),
+                    'examens': examenlijst
+                }
 
-                    # create list of questions
-                    exam_dict['assignment'] = get_assignment_dict(sel_exam_instance)
-
-
-        response = HttpResponse(json.dumps(exam_dict), content_type="application/json")
-        #response['Content-Disposition'] = 'exam_dict; filename="testjson.json"'
-        response['Content-Disposition'] = 'inline; filename="testjson.pdf"'
+                response = HttpResponse(json.dumps(examens_dict), content_type="application/json")
+                response['Content-Disposition'] = 'exam_dict; filename="testjson.json"'
+                #response['Content-Disposition'] = 'inline; filename="testjson.pdf"'
 
         # except Exception as e:
         #     logger.error(getattr(e, 'message', str(e)))
@@ -1940,16 +1938,14 @@ def get_assignment_dict(sel_exam_instance):
     # - create dict with assignments PR2021-05-08  PR2021-05-24
 
     amount = getattr(sel_exam_instance, 'amount')
-    assignment = getattr(sel_exam_instance, 'assignment')
-    keys =  getattr(sel_exam_instance, 'keys')
 
-    assignment_dict = {}
-    keys_dict = {}
-    exam_dict = {}
+    assignment_list = []
+
     if amount:
+        assignment_dict = {}
+        assignment = getattr(sel_exam_instance, 'assignment')
         if assignment:
-            assignment_list = assignment.split('|')
-            for qa in assignment_list:
+            for qa in assignment.split('|'):
                 qa_arr = qa.split(':')
                 if len(qa_arr) > 0:
                     if qa_arr[1]:
@@ -1960,9 +1956,11 @@ def get_assignment_dict(sel_exam_instance):
                             'max_char': value_list[1] if value_list[1] else '',
                             'min_score': value_list[2] if value_list[2] else ''
                         }
+
+        keys_dict = {}
+        keys = getattr(sel_exam_instance, 'keys')
         if keys:
-            keys_list = keys.split('|')
-            for qk in keys_list:
+            for qk in keys.split('|'):
                 qk_arr = qk.split(':')
                 if len(qk_arr) > 0:
                     if qk_arr[1]:
@@ -1974,25 +1972,95 @@ def get_assignment_dict(sel_exam_instance):
 
         for q_number in range(1, amount + 1):  # range(start_value, end_value, step), end_value is not included!
             if q_number in assignment_dict:
-                value = ''
-                max_char = af.get_dict_value(assignment_dict, (q_number, 'max_char'), '')
+                exam_dict = {'nr': q_number}
                 max_score = af.get_dict_value(assignment_dict, (q_number, 'max_score'), '')
-                min_score = af.get_dict_value(assignment_dict, (q_number, 'min_score'), '')
-                keys = af.get_dict_value(keys_dict, (q_number, 'keys'), '')
-                if max_char:
-                    value += max_char
-                if max_score:
-                    if value:
-                        value += ' - '
-                    value += max_score
-                if keys:
-                    if value:
-                        value += ' - '
-                    value += keys
+                max_score_int = int(max_score) if max_score else 0
+                max_char = af.get_dict_value(assignment_dict, (q_number, 'max_char'), '')
+                is_multiple_choice = True if max_char else False
 
-                exam_dict[q_number] = value
-    logger.debug('exam_dict: ' + str(exam_dict))
-    return exam_dict
+                if is_multiple_choice:
+                    asc_code = ord(max_char.lower())
+                    alternatives = asc_code - 96
+
+                    keys = af.get_dict_value(keys_dict, (q_number, 'keys'), '')
+                    logger.debug('keys: ' + str(keys) + ' ' + str(type(keys)))
+                    key_list = list(keys)
+                    logger.debug('key_list: ' + str(key_list) + ' ' + str(type(key_list)))
+                    key_int_list = []
+                    for key_str in key_list:
+                        logger.debug('key_str: ' + str(key_str) + ' ' + str(type(key_str)))
+                        asc_code = ord(key_str.lower())
+                        logger.debug('asc_code: ' + str(asc_code) + ' ' + str(type(asc_code)))
+                        key_int = asc_code - 96
+
+                        logger.debug('alternatives: ' + str(alternatives) + ' ' + str(type(alternatives)))
+                        if key_int < 1 or key_int > alternatives:
+                            key_int = -1
+                        logger.debug('key_int: ' + str(key_int) + ' ' + str(type(key_int)))
+                        key_int_list.append(key_int)
+                        logger.debug('key_int_list: ' + str(key_int_list) + ' ' + str(type(key_int_list)))
+
+                    exam_dict['opgavetype'] = 'Meerkeuze'
+                    exam_dict['alternatieven'] = alternatives
+                    exam_dict['sleutel'] = key_int_list
+                else:
+                    exam_dict['opgavetype'] = 'Open'
+                    exam_dict['maximum score'] = max_score_int
+
+                assignment_list.append(exam_dict)
+
+    return assignment_list
+
+
+def get_answers_list(sel_exam_instance):
+    # - create dict with answers PR2021-05-08  PR2021-05-24
+
+    answer_dict = {}
+    answer_list = []
+
+    amount = getattr(sel_exam_instance, 'amount')
+    if amount:
+        grades = stud_mod.Grade.objects.filter(exam=sel_exam_instance)
+        if grades:
+            for grade in grades:
+                if grade.answers:
+                    school_code = grade.studentsubject.student.school.base.code
+
+                    a_dict = {}
+                    for qa in grade.answers.split('|'):
+                        qa_arr = qa.split(':')
+                        if len(qa_arr) > 0:
+                            if qa_arr[1]:
+                                q_nr = int(qa_arr[0])
+                                value_str = qa_arr[1]
+                                a_dict[q_nr] = value_str
+                    logger.debug('a_dict: ' + str(a_dict) + ' ' + str(type(a_dict)))
+
+                    a_list = []
+                    for q_number in range(1, amount + 1):  # range(start_value, end_value, step), end_value is not included!
+                        value_int = 0
+                        if q_number in a_dict:
+                            value_str = a_dict.get(q_number)
+                            if value_str:
+                                is_multiple_choice = True if not value_str.isnumeric() else False
+                                if is_multiple_choice:
+                                    value_lc = value_str.lower()
+                                    if value_lc == 'x':
+                                        value_int = -1
+                                    else:
+                                        logger.debug('value_str: ' + str(value_str) + ' ' + str(type(value_str)))
+                                        asc_code = ord(value_lc)
+                                        logger.debug('asc_code: ' + str(asc_code) + ' ' + str(type(asc_code)))
+                                        value_int = asc_code - 96
+                                else:
+                                    value_int = int(value_str)
+                        a_list.append(value_int)
+
+                    answer_list.append({'school': school_code, 'responses': a_list} )
+
+    return answer_list
+
+
 
 
 def get_department_codes(sel_exam_instance, examyear):

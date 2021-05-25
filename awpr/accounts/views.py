@@ -309,17 +309,19 @@ class UserDownloadPermitsView(View):
     #  UserDownloadPermitsView is called from Users form
     #  it returns a HttpResponse, with all permits
     def get(self, request):
-        logging_on = True # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserDownloadPermitsView ===============')
 
+        response = None
         if request.user is not None and request.user.country is not None:
             req_user = request.user
+            # PR2021-05-25 debug. Don't use permit_list, to prevent locking out yourself
             permit_list, requsr_usergroups_list = get_userpermit_list('page_user', req_user)
-            has_permit = 'crud_permit' in permit_list
+            has_permit = request.user.is_role_system and  'admin' in requsr_usergroups_list
             if logging_on:
-                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('requsr_usergroups_list: ' + str(requsr_usergroups_list))
                 logger.debug('has_permit: ' + str(has_permit))
 
             if has_permit:
@@ -331,7 +333,11 @@ class UserDownloadPermitsView(View):
                 permits_rows = create_permits_rows(request)
                 response = create_permits_xlsx(permits_rows, user_lang, request)
 
-                return response
+        if response:
+            return response
+        else:
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
 # - end of UserDownloadPermitsView
 
 
@@ -394,15 +400,15 @@ def create_permits_xlsx(permits_rows, user_lang, request):  # PR2021-04-20
 
 # --- title row
     # was: sheet.write(0, 0, str(_('Report')) + ':', bold)
-    sheet.write(0, 0, str(_('Report')) + ':')
-    sheet.write(0, 1, title)
-    sheet.write(1, 0, str(_('Country')) + ':')
-    sheet.write(1, 1, country_name)
-    sheet.write(2, 0, str(_('Created on ')) + ':')
-    sheet.write(2, 1, today_formatted)
+    # sheet.write(0, 0, str(_('Report')) + ':')
+    # sheet.write(0, 1, title)
+    # sheet.write(1, 0, str(_('Country')) + ':')
+    # sheet.write(1, 1, country_name)
+    # sheet.write(2, 0, str(_('Created on ')) + ':')
+    # sheet.write(2, 1, today_formatted)
+    #row_index = 4
 
-    row_index = 4
-
+    row_index = 0
     for i, caption in enumerate(field_names):
         sheet.write(row_index, i, caption, tblHead_format)
 
