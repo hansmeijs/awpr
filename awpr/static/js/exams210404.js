@@ -367,9 +367,9 @@ document.addEventListener
 
 //=========  CreateSubmenu  ===  PR2020-07-31 PR2021-01-19 PR2021-03-25 PR2021-05-25
     function CreateSubmenu() {
-        console.log("===  CreateSubmenu == ");
-        console.log("permit_dict.crud_exam", permit_dict.crud_exam);
-        console.log("permit_dict.requsr_same_school", permit_dict.requsr_same_school);
+        //console.log("===  CreateSubmenu == ");
+        //console.log("permit_dict.crud_exam", permit_dict.crud_exam);
+        //console.log("permit_dict.requsr_same_school", permit_dict.requsr_same_school);
 
         let el_submenu = document.getElementById("id_submenu")
 
@@ -678,13 +678,13 @@ document.addEventListener
     function FillTblRows() {
         console.log( "===== FillTblRows  === ");
 
-
         const tblName = (!!permit_dict.requsr_role_school) ? "grades" : "exam"  // get_tblName_from_selectedBtn()
         const field_setting = field_settings[tblName];
 
 // --- get data_map
         const data_map = (!!permit_dict.requsr_role_school) ? grade_with_exam_map : exam_map;
 
+        console.log( "data_map", data_map);
 // --- reset table
         tblHead_datatable.innerText = null;
         tblBody_datatable.innerText = null;
@@ -1373,7 +1373,7 @@ document.addEventListener
         //console.log( "===== HandleFilterKeyup  ========= ");
         // skip filter if filter value has not changed, update variable filter_text
         const col_index = get_attr_from_el(el, "data-colindex")
-        console.log( "col_index", col_index, "event.key", event.key);
+        //console.log( "col_index", col_index, "event.key", event.key);
         const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
         //console.log( "filter_dict", filter_dict);
 
@@ -1385,21 +1385,21 @@ document.addEventListener
 //========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23
 
     function HandleFilterToggle(el_input) {
-        console.log( "===== HandleFilterToggle  ========= ");
+        //console.log( "===== HandleFilterToggle  ========= ");
 
     // - get col_index and filter_tag from  el_input
         const col_index = get_attr_from_el(el_input, "data-colindex")
         const filter_tag = get_attr_from_el(el_input, "data-filtertag")
         const field_name = get_attr_from_el(el_input, "data-field")
-        console.log( "col_index", col_index);
-        console.log( "filter_tag", filter_tag);
-        console.log( "field_name", field_name);
+        //console.log( "col_index", col_index);
+        //console.log( "filter_tag", filter_tag);
+        //console.log( "field_name", field_name);
 
     // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
         const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
         const filter_value = (filter_array[1]) ? filter_array[1] : "0";
-        console.log( "filter_array", filter_array);
-        console.log( "filter_value", field_name);
+        //console.log( "filter_array", filter_array);
+        //console.log( "filter_value", field_name);
         let new_value = "0", icon_class = "tickmark_0_0"
         if(filter_tag === "toggle") {
             // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
@@ -1550,15 +1550,15 @@ document.addEventListener
             const tblRow = get_tablerow_selected(el_input)
             const tblName = get_attr_from_el(tblRow, "data-table")
             const map_id = tblRow.id
-            const map_dict = get_mapdict_from_datamap_by_id(grade_with_exam_map, map_id);
-            if(!isEmpty(map_dict)){
-        console.log( "map_dict", map_dict);
-                mod_MSEX_dict.exam_pk = map_dict.exam_id;
-                mod_MSEX_dict.mapid = map_dict.mapid;
-                mod_MSEX_dict.grade_pk = map_dict.id;
-                mod_MSEX_dict.student_pk = map_dict.student_id;
-                mod_MSEX_dict.studsubj_pk = map_dict.studsubj_id;
-                mod_MSEX_dict.subj_pk = map_dict.subj_id;
+            const grade_dict = get_mapdict_from_datamap_by_id(grade_with_exam_map, map_id);
+            if(!isEmpty(grade_dict)){
+                mod_MSEX_dict.exam_pk = grade_dict.exam_id;
+                mod_MSEX_dict.mapid = grade_dict.mapid;
+                mod_MSEX_dict.grade_pk = grade_dict.id;
+                mod_MSEX_dict.student_pk = grade_dict.student_id;
+                mod_MSEX_dict.studsubj_pk = grade_dict.studsubj_id;
+                mod_MSEX_dict.subj_pk = grade_dict.subj_id;
+                mod_MSEX_dict.student_levelbase_pk = grade_dict.levelbase_id;
             }
 // ---  fill select table
             const row_count = MSEX_FillSelectTable(tblName)
@@ -1585,12 +1585,12 @@ document.addEventListener
                 return_grades_with_exam: true,
                 examyear_pk: setting_dict.sel_examyear_pk,
                 depbase_pk: setting_dict.sel_depbase_pk,
-                levelbase_pk: setting_dict.sel_levelbase_pk,
                 examperiod: setting_dict.sel_examperiod,
 
                 examtype: mod_MSEX_dict.examtype,
                 exam_pk: mod_MSEX_dict.exam_pk,
                 student_pk: mod_MSEX_dict.student_pk,
+                levelbase_pk: mod_MSEX_dict.student_levelbase_pk,
                 studsubj_pk: mod_MSEX_dict.studsubj_pk,
                 grade_pk: mod_MSEX_dict.grade_pk,
             }
@@ -1605,20 +1605,28 @@ document.addEventListener
 
 //=========  MSEX_FillSelectTable  ================ PR2020-08-21
     function MSEX_FillSelectTable(tblName) {
-        //console.log( "===== MSEX_FillSelectTable ========= ");
+        console.log( "===== MSEX_FillSelectTable ========= ");
         //console.log( "tblName: ", tblName);
 
         const tblBody_select = el_MSEX_tblBody_select;
         tblBody_select.innerText = null;
 
         let row_count = 0, add_to_list = false;
-// ---  loop through data_map
-        const data_map = exam_map;
-        for (const [map_id, map_dict] of data_map.entries()) {
-        // add only when eam has same subject as grade
-            if(mod_MSEX_dict.subj_pk === map_dict.subject_id){
+// ---  loop through exam_map
+        for (const [map_id, exam_dict] of exam_map.entries()) {
+            console.log( "exam_dict: ", exam_dict);
+        // add only when eam has same subject as grade, and also the same depbase and levelbase_id
+            let show_row = false;
+            if (mod_MSEX_dict.subj_pk === exam_dict.subject_id){
+                if(mod_MSEX_dict.student_levelbase_pk){
+                    show_row = (mod_MSEX_dict.student_levelbase_pk === exam_dict.levelbase_id);
+                } else {
+                    show_row = true;
+                }
+            }
+            if (show_row){
                 row_count += 1;
-                MSEX_FillSelectRow(map_dict, tblBody_select, tblName, -1);
+                MSEX_FillSelectRow(exam_dict, tblBody_select, tblName, -1);
             }
         }
 
@@ -1640,14 +1648,14 @@ document.addEventListener
     }  // MSEX_FillSelectTable
 
 //=========  MSEX_FillSelectRow  ================ PR2020-10-27
-    function MSEX_FillSelectRow(map_dict, tblBody_select, tblName, row_index) {
+    function MSEX_FillSelectRow(exam_dict, tblBody_select, tblName, row_index) {
         console.log( "===== MSEX_FillSelectRow ========= ");
         console.log("tblName: ", tblName);
-        console.log( "map_dict: ", map_dict);
+        console.log( "exam_dict: ", exam_dict);
 
 //--- loop through data_map
-        const exam_pk_int = map_dict.id;
-        const code_value = (map_dict.exam_name) ? map_dict.exam_name : "---"
+        const exam_pk_int = exam_dict.id;
+        const code_value = (exam_dict.exam_name) ? exam_dict.exam_name : "---"
         const is_selected_pk = (mod_MSEX_dict.exam_pk != null && exam_pk_int === mod_MSEX_dict.exam_pk)
 // ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
         let tblRow = tblBody_select.insertRow(row_index);
@@ -2594,11 +2602,12 @@ document.addEventListener
                                 }  // for (let i = 0, len=input_value.length; i < len; i++) {
         // - show message when error, delete input in element and in mod_MEX_dict.keys
                                 if (msg_err){
+                                    msg_err += loc.err_list.key_mustbe_between_and_ + max_char.toLowerCase() + "'.";
                                     el_input.value = null;
                                      if (q_number in mod_MEX_dict.keys){
                                         delete mod_MEX_dict.keys[q_number];
                                     }
-                                    msg_err += loc.err_list.key_mustbe_between_and_ + max_char.toLowerString() + "'." ;
+
                                     el_mod_message_text.innerHTML = msg_err;
                                     $("#id_mod_message").modal({backdrop: false});
                                     set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
@@ -2868,17 +2877,16 @@ document.addEventListener
 
                             grade_map_id: grade_dict.mapid,
                             grade_pk: grade_dict.id,
-                            exam_map_id: exam_dict.mapid,
                             student_pk: grade_dict.student_id,
+                            levelbase_pk: grade_dict.levelbase_id,
+                            lvl_abbrev: grade_dict.lvl_abbrev,
 
                             exam_pk: exam_dict.id,
+                            exam_map_id: exam_dict.mapid,
                             subject_pk: (exam_dict.subject_id) ? exam_dict.subject_id : null,
                             subject_code: (exam_dict.subj_base_code) ? exam_dict.subj_base_code : null,
                             subject_name: (exam_dict.subj_name) ? exam_dict.subj_name : null,
-
                             department_pk: exam_dict.department_id,
-                            levelbase_pk: exam_dict.levelbase_id,
-                            lvl_abbrev: exam_dict.lvl_abbrev,
 
                             is_admin_mode: false,
                             is_keys_mode: false,

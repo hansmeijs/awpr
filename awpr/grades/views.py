@@ -1269,7 +1269,7 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
     sql_list = ["SELECT grd.id, CONCAT('grade_', grd.id::TEXT) AS mapid,",
                 "stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
                 "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix,",
-                "lvl.abbrev AS lvl_abbrev,",
+                "lvl.id AS level_id, lvl.base_id AS levelbase_id, lvl.abbrev AS lvl_abbrev,",
                 "subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name,",
                 "studsubj.id AS studsubj_id, sub_exam.exam_name, sub_exam.amount,",
                 "grd.exam_id, grd.answers, grd.blanks, grd.answers_published_id",

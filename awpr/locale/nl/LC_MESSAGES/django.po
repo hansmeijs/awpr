@@ -2240,7 +2240,7 @@ msgstr "Je moet een geheel getal invullen tussen 0 en "
 
 #: .\awpr\locale.py:515
 msgid "You must enter a letter between 'a' and '"
-msgstr "Je moet een letter invullen tussen 'a' en "
+msgstr "Je moet een letter invullen tussen 'a' en '"
 
 #: .\awpr\locale.py:516
 msgid "or an 'x' if the answer is blank."
@@ -2270,7 +2270,7 @@ msgstr "De maximale score moet een geheel getal zijn tussen 1 en 99."
 
 #: .\awpr\locale.py:523
 msgid "The key must be one or more letters between 'a' and '"
-msgstr "De sleutel moet een of meer letters zijn tussen 'a' en "
+msgstr "De sleutel moet een of meer letters zijn tussen 'a' en '"
 
 #: .\awpr\locale.py:524
 msgid "This exam assignment does not exist."
