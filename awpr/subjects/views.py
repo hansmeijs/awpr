@@ -780,7 +780,7 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request):
                     setattr(instance, field, new_value)
                     save_changes = True
 
-            elif field in ('assignment', 'keys', 'amount', 'maxscore', 'version'):
+            elif field in ('assignment', 'keys', 'amount', 'version', 'blanks'):
                 old_value = getattr(instance, field)
                 if new_value != old_value:
                     setattr(instance, field, new_value)
@@ -840,7 +840,7 @@ def create_exam_rows(setting_dict, append_dict, cur_dep_only=False):
 
         "ex.examperiod, ex.examtype, ex.department_id, depbase.code AS depbase_code,",
         "ex.level_id, lvl.base_id AS levelbase_id, lvl.abbrev AS lvl_abbrev,",
-        "ex.version, ex.assignment, ex.keys, ex.amount, ex.maxscore,",
+        "ex.version, ex.assignment, ex.keys, ex.amount, ex.blanks,",
         "ex.status, ex.auth1by_id, ex.auth2by_id, ex.locked,",
         "ex.modifiedby_id, ex.modifiedat,",
         "sb.code AS subj_base_code, subj.name AS subj_name,",
@@ -1902,7 +1902,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
 
                         exam_dict['examensoort'] = c.get_examtype_caption(exam_instance.examtype)
                         exam_dict['aantal vragen'] = exam_instance.amount if exam_instance.amount else 0
-                        exam_dict['opgaven'] = get_assignment_dict(exam_instance)
+                        exam_dict['opgaven'] = get_assignment_list(exam_instance)
                         exam_dict['kandidaten'] = get_answers_list(exam_instance)
 
                         examenlijst.append(exam_dict)
@@ -1933,9 +1933,61 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
 
 # - end of ExamDownloadExamJsonView
 
+def get_assignment_keys_dict(amount, assignment, keys):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- get_assignment_keys_dict -----')
 
-def get_assignment_dict(sel_exam_instance):
-    # - create dict with assignments PR2021-05-08  PR2021-05-24
+    # - create dict with assignments PR2021-05-08
+    assignment_keys_dict = {}
+    if amount and assignment:
+        # assignment: 1:4|2:5|3:6|4:M
+        maxchar_maxscore_dict = {}
+        minscore_dict = {}
+        for qa in assignment.split('|'):
+            # qa_arr: ['1', '4;;']
+            qa_arr = qa.split(':')
+            if len(qa_arr) > 0:
+                q_number = int(qa_arr[0])
+                if logging_on:
+                    logger.debug('qa_arr: ' + str(qa_arr) + ' ' + str(type(qa_arr)))
+                if qa_arr[1]:
+                    value_list = qa_arr[1].split(';')
+
+                    value = ''
+                    if value_list[1]:
+                        value = value_list[1]
+                    elif value_list[0]:
+                        value += value_list[0]
+                    if value:
+                        maxchar_maxscore_dict[q_number] = value
+
+                    if value_list[2]:
+                        minscore_dict[q_number] = value_list[2]
+
+        keys_dict = {}
+        if keys:
+            for qa in keys.split('|'):
+                qa_arr = qa.split(':')
+                if len(qa_arr) > 0:
+                    keys_dict[int(qa_arr[0])] = qa_arr[1]
+        if logging_on:
+            logger.debug('keys_dict: ' + str(keys_dict) + ' ' + str(type(keys_dict)))
+
+        for q_number in range(1, amount + 1):  # range(start_value, end_value, step), end_value is not included!
+            if q_number in maxchar_maxscore_dict:
+                value = maxchar_maxscore_dict.get(q_number, '')
+                if q_number in keys_dict:
+                    value += ' - ' +  keys_dict.get(q_number,'')
+                if q_number in minscore_dict:
+                    value += ' - min:' + minscore_dict.get(q_number,'')
+                assignment_keys_dict[q_number] = value
+
+    return assignment_keys_dict
+
+
+def get_assignment_list(sel_exam_instance):
+    # - create list with assignments PR2021-05-08  PR2021-05-24
 
     amount = getattr(sel_exam_instance, 'amount')
 

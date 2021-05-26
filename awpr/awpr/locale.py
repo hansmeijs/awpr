@@ -484,7 +484,10 @@ def get_locale_dict(table_dict, user_lang):
         dict['Add_exam'] = _("Add exam")
         dict['Delete_exam'] = _("Delete exam")
         dict['Publish_exam'] = _("Publish exam")
+        dict['Submit_exam'] = _("Submit exam")
+
         dict['Print_exam'] = _("Print exam")
+        dict['Blanks'] = _("Blanks")
         dict['Download_PDF'] = _("Download PDF")
         dict['Download_JSON'] = _("Download JSON")
 
@@ -506,15 +509,18 @@ def get_locale_dict(table_dict, user_lang):
             'amount_mustbe_between': _('The amount must be a whole number between 1 and %(max)s.') % {'max': 100},
             'Minimum_score': _('Minimum score'),
             'Minimum_score_mustbe_lessthan_or_equalto': _('Minimum score must be less than or equal to'),
+            'This_isa_multiplechoice_question': _('This is a multiple choice question.'),
             'This_isnota_multiplechoice_question': _('This is not a multiple choice question.'),
             'must_enter_whole_number_between_0_and_': _('You must enter a whole number between 0 and '),
+            'must_enter_letter_between_a_and_': _("You must enter a letter between 'a' and '"),
+            'or_an_x_if_blank': _("or an 'x' if the answer is blank."),
             'Character': pgettext_lazy('Teken', 'Character'),
             'already_exists': _('already exists.'),
             'exists_multiple_times': _('exists multiple times.'),
             'character_mustbe_between': _('The character must be between B and Z or between b and z.'),
             'maxscore_mustbe_between': _('The maximum score must be a whole number between 1 and 99.'),
 
-            'key_mustbe_between_and_': _('The key must be one or more letters between A and '),
+            'key_mustbe_between_and_': _("The key must be one or more letters between 'a' and '"),
             'Exam_assignment_does_notexist': _('This exam assignment does not exist.'),
             'Contact_divison_of_exams': _('Please contact the Division of Exams.')
         }

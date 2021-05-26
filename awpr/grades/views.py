@@ -776,7 +776,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
 
 # +++ update existing grade - also when grade is created - grade is None when deleted
                         if mode == 'update':
-                            update_grade(grade, upload_dict, error_dict, logging_on, request)
+                            update_grade_instance(grade, upload_dict, error_dict, logging_on, request)
 
 # - add update_dict to update_wrap
                         grade_rows = []
@@ -816,11 +816,11 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
 
 
 #######################################################
-def update_grade(instance, upload_dict, err_dict, logging_on, request):
+def update_grade_instance(instance, upload_dict, err_dict, logging_on, request):
     # --- update existing grade PR2020-12-16
     # add new values to update_dict (don't reset update_dict, it has values)
     if logging_on:
-        logger.debug(' ------- update_grade -------')
+        logger.debug(' ------- update_grade_instance -------')
     # upload_dict{'id': {'pk': 6, 'table': 'grade', 'student_pk': 5, 'studsubj_pk': 10, 'examperiod': 1,
     #                   'mode': 'update', 'mapid': 'grade_6'},
     #             'segrade': 'ww'}
@@ -892,11 +892,20 @@ def update_grade(instance, upload_dict, err_dict, logging_on, request):
     # 2. save changes if changed and no_error
             if new_value != saved_value:
                 setattr(instance, field, new_value)
+                setattr(instance, 'blanks', upload_dict.get('blanks'))
                 save_changes = True
                 if logging_on:
                     logger.debug('save_changes: ' + str(save_changes))
 
-# - save changes in fields 'xx_status' and 'xxpublished'
+# - save changes in field 'blanks'
+        elif field == 'blanks':
+            saved_value = getattr(instance, field)
+            # 2. save changes if changed and no_error
+            if new_value != saved_value:
+                setattr(instance, field, new_value)
+                save_changes = True
+
+        # - save changes in fields 'xx_status' and 'xxpublished'
         elif field in ('se_status', 'pe_status', 'ce_status', 'sepublished', 'pepublished', 'cepublished'):
             pass
             # fields are updated in GradeApproveView
@@ -917,7 +926,7 @@ def update_grade(instance, upload_dict, err_dict, logging_on, request):
             err_dict['err_update'] = msg_err
             if logging_on:
                 logger.debug(msg_err)
-# --- end of update_grade
+# --- end of update_grade_instance
 
 
 def create_grade_note_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, request):
@@ -1247,7 +1256,7 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
     sub_list = ["SELECT exam.id, ",
                 "CONCAT(subjbase.code,",
                 "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
-                "CASE WHEN exam.version IS NULL THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name",
+                "CASE WHEN exam.version IS NULL THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name, exam.amount",
 
                 "FROM subjects_exam AS exam",
                 "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
@@ -1262,8 +1271,8 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix,",
                 "lvl.abbrev AS lvl_abbrev,",
                 "subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name,",
-                "studsubj.id AS studsubj_id, sub_exam.exam_name,",
-                "grd.exam_id, grd.answers, grd.answers_published_id",
+                "studsubj.id AS studsubj_id, sub_exam.exam_name, sub_exam.amount,",
+                "grd.exam_id, grd.answers, grd.blanks, grd.answers_published_id",
 
                 "FROM students_grade AS grd",
                 "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",

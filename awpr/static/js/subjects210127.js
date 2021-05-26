@@ -1592,7 +1592,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  set tickmark in row 'select_all'when has_rows and no unselected_rows_found
                 const tblRow_selectall = document.getElementById("sel_depbase_selectall")
-                MSJ_SetDepartmentSelected(tblRow_selectall, selectall_is_selected)
+                MSJ_SetDepartmentSelected(tblRow_selectall, selectall_is_selected);
+
+// ---  enable btn save
+                MSJ_validate_and_disable()
             }
         }
     }  // MSJ_SelectDepartment

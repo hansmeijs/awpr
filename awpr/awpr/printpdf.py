@@ -56,9 +56,10 @@ def draw_exam(canvas, sel_exam_instance, user_lang):  # PR2021-05-07
     amount = sel_exam_instance.amount if sel_exam_instance.amount else 0
     amount_str = str(amount) if amount else '---'
 
-    maxscore_str = str(sel_exam_instance.maxscore) if sel_exam_instance.maxscore else '---'
+    blanks_str = str(sel_exam_instance.blanks) if sel_exam_instance.blanks else '-'
 
     assignment = sel_exam_instance.assignment
+    keys = sel_exam_instance.keys
     examyear_code = str(examyear.code)
 
     subject_name = subject.name
@@ -66,7 +67,9 @@ def draw_exam(canvas, sel_exam_instance, user_lang):  # PR2021-05-07
     examtype_caption = c.get_examtype_caption(examtype)
 
 # create list of questions
-    assignment_dict = subj_views.get_assignment_dict(sel_exam_instance)
+    assignment_keys_dict = subj_views.get_assignment_keys_dict(amount, assignment, keys)
+    if logging_on:
+        logger.debug('assignment_keys_dict: ' + str(assignment_keys_dict) + ' ' + str(type(assignment_keys_dict)))
 
 # - get dep_abbrev from department
     dep_abbrev = '---'
@@ -96,7 +99,7 @@ def draw_exam(canvas, sel_exam_instance, user_lang):  # PR2021-05-07
     if version:
         data_list.append( (str(_('Version')) + ':', version) )
     question_list = [ ( str(_('Number of questions')) + ':', amount_str ),
-                      ( str(_('Maximum score')) + ':', maxscore_str )
+                      ( str(_('Blanks')) + ':', blanks_str )
                     ]
     filepath = s.STATICFILES_FONTS_DIR + 'arial.ttf'
     try:
@@ -114,24 +117,28 @@ def draw_exam(canvas, sel_exam_instance, user_lang):  # PR2021-05-07
     if amount:
         page_count = 1 + int( (amount - 1) / max_questions_per_page )
 
-    for page_number in range(1, 5):  # range(start_value, end_value, step), end_value is not included!
+    if logging_on:
+        logger.debug('amount: ' + str(amount))
+        logger.debug('page_count: ' + str(page_count))
+
+    for page_number in range(1, 6):  # range(start_value, end_value, step), end_value is not included!
 
 # create 2 frames per column: 1 for label and 1 for values
         first_q_number_on_page = (page_number -1) * max_questions_per_page
         if logging_on:
             logger.debug('first_q_number_on_page: ' + str(first_q_number_on_page))
-            logger.debug('amount: ' + str(amount))
+
         if first_q_number_on_page < amount:
             # go to new page
             if page_number > 1:
                 canvas.showPage()
-            write_page(canvas, header_list, data_list, question_list, assignment_dict,
+            write_page(canvas, header_list, data_list, question_list, assignment_keys_dict,
                        amount, page_number, page_count, max_rows_per_page, last_modified_text)
 
 # - end of draw_exam
 
 
-def write_page(canvas, header_list, data_list, question_list, assignment_dict, amount, page_number, page_count, max_rows_per_page, last_modified_text):
+def write_page(canvas, header_list, data_list, question_list, assignment_keys_dict, amount, page_number, page_count, max_rows_per_page, last_modified_text):
     # PR2021-05-10
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -187,7 +194,7 @@ def write_page(canvas, header_list, data_list, question_list, assignment_dict, a
     top = top - 60 * mm
 
     #canvas.setFont('Arial', 10, leading=None)
-    write_question(canvas, amount, assignment_dict, max_rows_per_page, page_number, top, left)
+    write_question(canvas, amount, assignment_keys_dict, max_rows_per_page, page_number, top, left)
 
 
 def write_page_header(canvas, border, header_list, data_list, style_label, style_data, row_height):
@@ -272,8 +279,10 @@ def write_page_footer(canvas, border, question_list, style_label, style_data, st
     pagenumber_frame.addFromList([Paragraph(pagenumber_text, style_footer_right)], canvas)
 
 
-def write_question(canvas, amount, assignment_dict, max_rows_per_page, page_number, top, left):
-
+def write_question(canvas, amount, assignment_keys_dict, max_rows_per_page, page_number, top, left):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- write_question -----')
     # The vertical offset between the point at which one line starts and where the next starts is called the leading offset.
 
     col_width = 38*mm
@@ -299,7 +308,9 @@ def write_question(canvas, amount, assignment_dict, max_rows_per_page, page_numb
                 y = top - row_index * row_height
                 question_number += 1
                 if question_number <= amount:
-                    data_text = assignment_dict.get(question_number)
+                    data_text = assignment_keys_dict.get(question_number)
+                    if logging_on:
+                        logger.debug('data_text: ' + str(data_text) + ' ' + str(type(data_text)))
 
                     label_text = str(question_number) + ':'
                     label_list.append(Paragraph(label_text, styleLabel))

@@ -556,6 +556,7 @@ class Grade(sch_mod.AwpBaseModel):
     ce_exam_locked = BooleanField(default=False)
 
     answers = CharField(max_length=2048, null=True)
+    blanks = PositiveSmallIntegerField(null=True)
     answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     deleted = BooleanField(default=False)
@@ -628,6 +629,7 @@ class Grade_log(sch_mod.AwpBaseModel):
     ce_exam_locked = BooleanField(default=False)
 
     answers = CharField(max_length=2048, null=True)
+    blanks = PositiveSmallIntegerField(null=True)
     answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     deleted = BooleanField(default=False)

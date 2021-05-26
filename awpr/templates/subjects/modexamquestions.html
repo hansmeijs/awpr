@@ -67,8 +67,6 @@
                                             <small id="id_MEX_err_amount" class="text-danger"></small>
                                         </div>
                                     </div>
-
-
                                 </div>
                             </div>
                         </div>
@@ -98,10 +96,12 @@
                     </div>
                     <div class="tab_show tab_answers display_hide">
                         <div class="mx-2">
-                            <small>{% trans "Enter the score or the letter of the answer of a multiple choice question." %}</small>
+                            <small>{% trans "Enter the letter of the answer in case of a multiple choice question, enter the score in case of an open question." %}</small><br>
+                            <small>{% trans "Enter 'x' when an answer is blank." %}</small><br>
+                            <small>{% trans "A multiple choice question is indicated with an * after the question number." %}</small>
                         </div>
                     </div>
-                    <div class="tab_show tab_assign tab_keys tab_answers display_hide">
+                    <div class="tab_show tab_assign tab_keys display_hide">
                         <div class="mx-2">
                             <small>{% trans 'Click ENTER, TAB or &#8595; to go to the next question or click SHIFT+TAB or &#8593; to go to the previous one.' %}</small>
                         </div>
@@ -109,25 +109,27 @@
 
                 </div>
                 <div class="modal-footer">
-                    <div class="content_subheader_leftX flex_2">
-                        <div id="id_MEX_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                            {% if is_requsr_admin_or_system %}
-                                <button data-btn="tab_0" class="btn btn-secondary">{% trans 'Start' %}</button>
-                            {% endif %}
-                            <button data-btn="tab_1" class="btn btn-secondary">1-50</button>
-                            <button data-btn="tab_2" class="btn btn-secondary display_hide"></button>
-                            <button data-btn="tab_3" class="btn btn-secondary display_hide "></button>
-                            <button data-btn="tab_4" class="btn btn-secondary display_hide "></button>
-                            <button data-btn="tab_5" class="btn btn-secondary display_hide "></button>
-                        </div>
-                    </div>
                     {% if is_requsr_admin_or_system %}
-                        <div class="content_subheader_middleX flex_2">
-                            <button id="id_MEX_btn_questions" type="button" class="btn btn-secondary">{% trans 'Questions' %}</button>
-                            <button id="id_MEX_btn_keys" type="button" class="btn btn-secondary">{% trans 'Keys' %}</button>
+                        <div class="flex_3">
+                            <div id="id_MEX_btn_tab_container" class="btn-group btn-block px-2 my-2" role="group" aria-label="Choose option" >
+                                <button data-btn="tab_start" class="btn btn-secondary">{% trans 'Start' %}</button>
+                                <button data-btn="tab_assign" class="btn btn-secondary">{% trans 'Questions' %}</button>
+                                <button data-btn="tab_minscore" class="btn btn-secondary display_hide">{% trans 'Min. score' %}</button>
+                                <button data-btn="tab_keys" class="btn btn-secondary">{% trans 'Keys' %}</button>
+                            </div>
                         </div>
                     {% endif %}
-                    <div class="content_subheader_right">
+
+                    <div class="flex_2">
+                        <div id="id_MEX_btn_pge_container" class="btn-group btn-block px-2 my-2" role="group" aria-label="Choose option" >
+                            <button data-btn="pge_1" class="btn btn-secondary">1-50</button>
+                            <button data-btn="pge_2" class="btn btn-secondary display_hide"></button>
+                            <button data-btn="pge_3" class="btn btn-secondary display_hide "></button>
+                            <button data-btn="pge_4" class="btn btn-secondary display_hide "></button>
+                            <button data-btn="pge_5" class="btn btn-secondary display_hide "></button>
+                        </div>
+                    </div>
+                    <div class="content_subheader_right_flex2">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
                         <button id="id_MEX_btn_save" type="button" class="btn btn-primary">{% trans 'Save' %}</button>
                     </div>

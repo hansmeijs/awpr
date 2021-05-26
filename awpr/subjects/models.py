@@ -423,7 +423,7 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
 
     version = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     amount = PositiveSmallIntegerField(null=True)
-    maxscore = PositiveSmallIntegerField(null=True)
+    blanks = PositiveSmallIntegerField(null=True)
 
     assignment = CharField(max_length=2048, null=True)
     keys = CharField(max_length=2048, null=True)
@@ -458,7 +458,7 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
 
     version = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     amount = PositiveSmallIntegerField(null=True)
-    maxscore = PositiveSmallIntegerField(null=True)
+    blanks = PositiveSmallIntegerField(null=True)
 
     assignment = CharField(max_length=2048, null=True)
     keys = CharField(max_length=2048, null=True)

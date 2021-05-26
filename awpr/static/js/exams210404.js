@@ -60,27 +60,27 @@ document.addEventListener
 // --- get field_settings
     const field_settings = {
         exam: { field_caption: ["", "Abbreviation", "Subject", "Leerweg", "Version", "Exam_period", "Exam_type",
-                                "", "Download_PDF", "Download_JSON"],
+                                "Blanks", "Download_PDF", "Download_JSON"],
                 field_names: ["select", "subj_base_code", "subj_name", "lvl_abbrev", "version", "examperiod", "examtype",
-                            "status", "printpdf", "printjson"],
+                            "blanks", "printpdf", "printjson"],
                 field_tags: ["div", "div", "div", "div", "div", "div",
                             "div", "div", "a", "a"],
                 filter_tags: ["text",  "text", "text", "text", "text", "text",
                               "text", "text", "text","text"],
                 field_width: ["020", "100", "240", "120", "120", "120",
-                                "120", "020", "090", "090"],
+                                "120", "075", "090", "090"],
                 field_align: ["c",  "l", "l", "l", "l", "l",
-                             "l", "l", "c", "c", "c"]},
+                             "l", "c", "c", "c"]},
         grades: {  field_caption: ["", "Examnumber_twolines", "Candidate",  "Leerweg",
-                        "Abbreviation", "Subject", "Exam", ""],
+                        "Abbreviation", "Subject", "Exam", "Blanks"],
             field_names: ["select", "examnumber", "fullname", "lvl_abbrev",
-                        "subj_code", "subj_name", "exam_name", "status"],
+                        "subj_code", "subj_name", "exam_name", "blanks"],
             field_tags: ["div", "div", "div", "div",
                             "div", "div", "div", "div"],
             filter_tags: ["select", "text", "text",  "text",
                         "text", "text", "text",  "text"],
             field_width:  ["020", "075", "240",  "075",
-                            "075", "300", "150", "032"],
+                            "075", "300", "150", "075"],
             field_align: ["c", "r", "l", "l",
                             "l", "l", "l", "c"]}
         };
@@ -179,28 +179,30 @@ document.addEventListener
             el_MEX_input_version.addEventListener("change", function() {MEXQ_InputVersion(el_MEX_input_version)}, false );
         }
         const el_MEX_input_amount = document.getElementById("id_MEX_input_amount");
-        //if (el_MEX_input_amount){
-        //    el_MEX_input_amount.addEventListener("change", function() {MEXQ_InputAmount(el_MEX_input_amount)}, false );
-        //}
         if (el_MEX_input_amount){
             el_MEX_input_amount.addEventListener("keyup", function(){
                 setTimeout(function() {MEXQ_InputAmount(el_MEX_input_amount)}, 50)});
         }
-
         const el_MEX_err_amount = document.getElementById("id_MEX_err_amount");
-        const el_MEX_btn_container = document.getElementById("id_MEX_btn_container");
-        if (el_MEX_btn_container){
-            const btns = el_MEX_btn_container.children;
+
+        const el_MEX_btn_tab_container = document.getElementById("id_MEX_btn_tab_container");
+        if (el_MEX_btn_tab_container){
+            const btns = el_MEX_btn_tab_container.children;
             for (let i = 0, btn; btn = btns[i]; i++) {
                 const data_btn = get_attr_from_el(btn,"data-btn");
-                btn.addEventListener("click", function() {MEX_BtnClicked(data_btn)}, false );
+                btn.addEventListener("click", function() {MEX_BtnTabClicked(data_btn)}, false );
+            };
+        };
+        const el_MEX_btn_pge_container = document.getElementById("id_MEX_btn_pge_container");
+        if (el_MEX_btn_pge_container){
+            const btns = el_MEX_btn_pge_container.children;
+            for (let i = 0, btn; btn = btns[i]; i++) {
+                const data_btn = get_attr_from_el(btn,"data-btn");
+                const pge_index = (data_btn) ? Number(data_btn.slice(4)) : 1;
+                btn.addEventListener("click", function() {MEX_BtnPageClicked(pge_index)}, false );
             };
         };
 
-        const el_MEX_btn_keys = document.getElementById("id_MEX_btn_keys");
-        if (el_MEX_btn_keys){
-            el_MEX_btn_keys.addEventListener("click", function() {MEXQ_Keys(el_MEX_btn_keys)}, false )
-        }
         const el_MEX_btn_save = document.getElementById("id_MEX_btn_save");
         if (el_MEX_btn_save){
             el_MEX_btn_save.addEventListener("click", function() {MEX_Save()}, false )
@@ -246,7 +248,7 @@ document.addEventListener
         const el_modmessage_btn_cancel = document.getElementById("id_modmessage_btn_cancel");
         const el_mod_message_text = document.getElementById("id_mod_message_text");
         if(el_modmessage_btn_cancel){
-            el_modmessage_btn_cancel.addEventListener("click", function() {ModMessageClose()}, false);
+            el_modmessage_btn_cancel.addEventListener("click", function() {ModMessageClose(el_modmessage_btn_cancel)}, false);
         }
 
     if(may_view_page){
@@ -305,7 +307,7 @@ document.addEventListener
 
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict;
-                    selected_btn = (setting_dict.sel_btn)
+                    selected_btn = (setting_dict.sel_tab)
                     must_update_headerbar = true;
                 };
 
@@ -363,17 +365,22 @@ document.addEventListener
         });
     }  // function DatalistDownload
 
-//=========  CreateSubmenu  ===  PR2020-07-31 PR2021-01-19 PR2021-03-25
+//=========  CreateSubmenu  ===  PR2020-07-31 PR2021-01-19 PR2021-03-25 PR2021-05-25
     function CreateSubmenu() {
-        //console.log("===  CreateSubmenu == ");
+        console.log("===  CreateSubmenu == ");
+        console.log("permit_dict.crud_exam", permit_dict.crud_exam);
+        console.log("permit_dict.requsr_same_school", permit_dict.requsr_same_school);
 
         let el_submenu = document.getElementById("id_submenu")
 
-        if(permit_dict.crud_exam){
+        if(permit_dict.crud_exam && permit_dict.requsr_role_admin){
             AddSubmenuButton(el_submenu, loc.Add_exam, function() {MEXQ_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_exam, function() {ModConfirmOpen("exam", "delete")});
-        }
             AddSubmenuButton(el_submenu, loc.Publish_exam, function() {ModConfirmOpen("deleteXX")});
+        }
+         if(permit_dict.crud_exam && permit_dict.requsr_same_school){
+            AddSubmenuButton(el_submenu, loc.Submit_exam, function() {ModConfirmOpen("deleteXX")});
+        }
         //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A_form, null, "id_submenu_download_ex2a", url_grade_download_ex2a, true);  // true = download
         //if (permit.approve_grade){
         //    AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MAG_Open("approve")});
@@ -563,15 +570,16 @@ document.addEventListener
         t_FillOptionsFromList(el_SBR_select_examtype, loc.options_examtype_exam, "value", "caption",
             loc.Select_examtype + "...", loc.No_examtypes_found, setting_dict.sel_examtype, "filter", filter_value);
         document.getElementById("id_SBR_container_examtype").classList.remove(cls_hide);
-        document.getElementById("id_SBR_container_showall").classList.remove(cls_hide);
+
+        //document.getElementById("id_SBR_container_showall").classList.remove(cls_hide);
 
     }  // FillOptionsExamperiodExamtype
 
 //=========  FillOptionsSelectLevelSector  ================ PR2021-03-06  PR2021-05-22
     function FillOptionsSelectLevelSector(tblName, rows) {
-        console.log("=== FillOptionsSelectLevelSector");
-        console.log("tblName", tblName);
-        console.log("rows", rows);
+        //console.log("=== FillOptionsSelectLevelSector");
+        //console.log("tblName", tblName);
+        //console.log("rows", rows);
 
     // sector not in use
         const display_rows = []
@@ -612,7 +620,8 @@ document.addEventListener
         }
         // hide select level when department has no levels
         if (tblName === "level"){
-            add_or_remove_class(document.getElementById("id_SBR_container_level"), cls_hide, !has_items);
+            //add_or_remove_class(document.getElementById("id_SBR_container_level"), cls_hide, !has_items);
+            add_or_remove_class(document.getElementById("id_SBR_container_level"), cls_hide, true);
         // set label of profiel
          } else if (tblName === "sector"){
             add_or_remove_class(document.getElementById("id_SBR_container_sector"), cls_hide, false);
@@ -639,8 +648,9 @@ document.addEventListener
 
 // ---  upload new setting
         const selected_pk_dict = {sel_levelbase_pk: null, sel_sector_pk: null, sel_subject_pk: null, sel_student_pk: null};
-        const page_grade_dict = {sel_btn: "grade_by_all"}
-        const upload_dict = {selected_pk: selected_pk_dict, page_grade: page_grade_dict};
+        //const page_grade_dict = {sel_btn: "grade_by_all"}
+       //const upload_dict = {selected_pk: selected_pk_dict, page_grade: page_grade_dict};
+        const upload_dict = {selected_pk: selected_pk_dict};
         UploadSettings (upload_dict, url_settings_upload);
 
         HandleBtnSelect("grade_by_all", true) // true = skip_upload
@@ -926,6 +936,12 @@ document.addEventListener
                     inner_text = loc.examtype_caption[map_dict.examtype];
                     el_div.innerText = inner_text;
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
+                } else if (field_name === "blanks"){
+                    const blanks = (map_dict[field_name]) ? map_dict[field_name] : null;
+                    const amount = (map_dict.amount) ? map_dict.amount : "-";
+                    inner_text = (blanks) ? blanks + " / " + amount : "";
+                    el_div.innerText = inner_text;
+                    filter_value = (inner_text) ? inner_text : null;
                 } else if (field_name === "printpdf"){
             // +++  create href and put it in button PR2021-05-07
                     const href_str = map_dict.id.toString()
@@ -1684,7 +1700,8 @@ document.addEventListener
             const is_addnew = (!el_input);
             const tblName = "exam" // (permit_dict.)
             mod_MEX_dict = {
-                sel_btn: "tab_0",
+                sel_tab: "tab_start",
+                pge_index: 1,
                 examyear_pk: setting_dict.sel_examyear_pk,
                 depbase_pk: setting_dict.sel_depbase_pk,
                 examperiod: setting_dict.sel_examperiod,
@@ -1762,8 +1779,11 @@ document.addEventListener
             el_MEX_err_amount.innerHTML = loc.err_list.amount_mustbe_between;
 
     // ---  set buttons
-            MEX_SetBtn();
-            el_MEX_btn_keys.classList.remove("tsa_btn_selected");
+            add_or_remove_class(el_MEX_btn_tab_container, cls_hide, is_same_school_mode);
+            MEX_BtnTabClicked(mod_MEX_dict.sel_tab);
+            MEX_SetPages();
+            //el_MEX_btn_keys.classList.remove("tsa_btn_selected");
+
     // ---  disable save button when not all required fields have value
             MEXQ_validate_and_disable();
 
@@ -1774,7 +1794,7 @@ document.addEventListener
 
 //========= MEX_get_assignment  ============= PR2021-05-23
     function MEX_get_assignment(exam_dict, grade_dict) {
-        console.log("MEX_get_assignment");
+        //console.log("MEX_get_assignment");
 
         if(exam_dict) {
             mod_MEX_dict.exam_map_id = exam_dict.mapid;
@@ -1794,7 +1814,7 @@ document.addEventListener
                 // fortmat of assignment: 1:2;D;1 | 2:3;C;1 "  question_number: max_score; max_char;m in_score
                 // fortmat of keys: 1:ba | 2:cd  question_number:keys
                 const arr = exam_dict.assignment.split("|");
-       console.log( "arr", arr);
+       //console.log( "arr", arr);
                 // arr: ["1:2;D;1", "2:3;C;1"]
                 for (let i = 0, q, q_arr; q = arr[i]; i++) {
                     // q_arr = ["1", "2;D;1"]
@@ -1802,7 +1822,7 @@ document.addEventListener
                     const question_number = q_arr[0];
                     const question_values = q_arr[1];
                     const values_arr = question_values.split(";");
-       console.log( "values_arr", values_arr);
+       //console.log( "values_arr", values_arr);
                     // values_arr = ["D", "3", "ba", "1"]
                     if (values_arr && values_arr.length){
                         mod_MEX_dict.assignment[question_number] = {
@@ -1811,7 +1831,7 @@ document.addEventListener
                             min_score: (values_arr[2]) ? values_arr[2] : ""
                         }
                     }
-       console.log( "mod_MEX_dict.assignment[question_number]", mod_MEX_dict.assignment[question_number]);
+       //console.log( "mod_MEX_dict.assignment[question_number]", mod_MEX_dict.assignment[question_number]);
                 }
             }
 
@@ -1845,24 +1865,10 @@ document.addEventListener
 
             }
        }
-       console.log( "mod_MEX_dict.assignment", mod_MEX_dict.assignment);
-       console.log( "mod_MEX_dict.keys", mod_MEX_dict.keys);
-       console.log( "mod_MEX_dict.answers", mod_MEX_dict.answers);
+       //console.log( "mod_MEX_dict.assignment", mod_MEX_dict.assignment);
+       //console.log( "mod_MEX_dict.keys", mod_MEX_dict.keys);
+       //console.log( "mod_MEX_dict.answers", mod_MEX_dict.answers);
     }  // MEX_get_assignment
-
-//========= MEXQ_Keys  ============= PR2021-04-05
-    function MEXQ_Keys(btn) {
-        console.log("===== MEXQ_Keys ===== ");
-        console.log( "mod_MEX_dict: ", mod_MEX_dict);
-        mod_MEX_dict.is_keys_mode = !mod_MEX_dict.is_keys_mode;
-         // highlight selected btn
-        add_or_remove_class(btn, "tsa_btn_selected", mod_MEX_dict.is_keys_mode);
-
-        const data_btn = "tab_" + mod_MEX_dict.btn_index
-        MEX_BtnClicked(data_btn);
-
-    };  // MEXQ_Keys
-
 
 //========= MEX_Save  ============= PR2021-05-24
     function MEX_Save() {
@@ -1917,7 +1923,7 @@ document.addEventListener
                 // 2: keys (answers)
                 // 3: min score
 
-                let assignments_str = ""
+                let assignments_str = "", non_blanks = 0;
                 if (mod_MEX_dict.assignment && !isEmpty(mod_MEX_dict.assignment)){
                     for (let i = 1, dict; i <= mod_MEX_dict.amount; i++) {
                         if(i in mod_MEX_dict.assignment){
@@ -1927,14 +1933,14 @@ document.addEventListener
                                 const max_score = get_dict_value(value_dict, ["max_score"], "")
                                 const min_score = get_dict_value(value_dict, ["min_score"], "")
                                 assignments_str += "|" + i + ":" + max_score + ";" + max_char + ";" + min_score;
+                                non_blanks += 1;
                             }
                 }}};
                 if(assignments_str) { assignments_str = assignments_str.slice(1)};
                 upload_dict.assignment = (assignments_str) ? assignments_str : null;
+                upload_dict.blanks =  mod_MEX_dict.amount - non_blanks;
 
-
-        console.log( "mod_MEX_dict.keys: ", mod_MEX_dict.keys);
-                let keys_str = ""
+                let keys_str = "";
                 if (mod_MEX_dict.keys && !isEmpty(mod_MEX_dict.keys)){
                     for (let i = 1, dict; i <= mod_MEX_dict.amount; i++) {
                         if(i in mod_MEX_dict.keys){
@@ -1946,8 +1952,6 @@ document.addEventListener
                 }}};
                 if(keys_str) {keys_str = keys_str.slice(1)};
                 upload_dict.keys = (keys_str) ? keys_str : null;
-
-        console.log( "upload_dict: ", upload_dict);
             }
             UploadChanges(upload_dict, url_exam_upload);
         };  // if(has_permit_edit
@@ -1983,16 +1987,18 @@ document.addEventListener
 
 
         console.log( "mod_MEX_dict.answers: ", mod_MEX_dict.answers);
-            let answers_str = ""
+            let answers_str = "", non_blanks = 0;
             if (mod_MEX_dict.answers && !isEmpty(mod_MEX_dict.answers)){
                 for (let i = 1, dict; i <= mod_MEX_dict.amount; i++) {
                     if(i in mod_MEX_dict.answers){
                         const value_dict = mod_MEX_dict.answers[i];
-                        answers_str += "|" + i + ":" + get_dict_value(value_dict, ["answer"], "");
-
+                        const value = get_dict_value(value_dict, ["answer"], "")
+                        answers_str += "|" + i + ":" + value;
+                        if(value) { non_blanks += 1};
             }}};
             if(answers_str) {answers_str = answers_str.slice(1)};
             upload_dict.answers = (answers_str) ? answers_str : null;
+            upload_dict.blanks =  mod_MEX_dict.amount - non_blanks;
 
         console.log( "upload_dict: ", upload_dict);
 
@@ -2002,6 +2008,7 @@ document.addEventListener
 // ---  hide modal
         $("#id_mod_exam_questions").modal("hide");
     }  // MEXA_Save
+
 //========= MEXQ_Fill_SelectTableSubjects  ============= PR2021-04-04
     function MEXQ_Fill_SelectTableSubjects() {
         console.log("===== MEXQ_Fill_SelectTableSubjects ===== ");
@@ -2090,12 +2097,12 @@ document.addEventListener
         }
     } // MEXQ_FillSelectTableLevel
 
-//=========  MEX_SetBtn  ================ PR2021-04-04 PR2021-05-23
-    function MEX_SetBtn() {
-        console.log( "===== MEX_SetBtn ========= ");
+//=========  MEX_SetPages  ================ PR2021-04-04 PR2021-05-23
+    function MEX_SetPages() {
+        console.log( "===== MEX_SetPages ========= ");
 
         mod_MEX_dict.total_rows = Math.ceil((mod_MEX_dict.amount) / 5);
-        mod_MEX_dict.btns_visible = Math.ceil((mod_MEX_dict.amount) / 50);
+        mod_MEX_dict.pages_visible = Math.ceil((mod_MEX_dict.amount) / 50);
         mod_MEX_dict.max_rows_per_page = (mod_MEX_dict.amount > 200) ? 10 :
                             (mod_MEX_dict.amount > 160) ? 10 :
                             (mod_MEX_dict.amount > 150) ? 8 :
@@ -2105,19 +2112,20 @@ document.addEventListener
                             (mod_MEX_dict.amount > 60) ? 8 :
                             (mod_MEX_dict.amount > 50) ? 6 : 10;
         mod_MEX_dict.page_min_max = {}
-        const btns = el_MEX_btn_container.children;
+
+        const btns = el_MEX_btn_pge_container.children;
         for (let j = 0, btn; btn = btns[j]; j++) {
             const el_data_btn = get_attr_from_el(btn, "data-btn");
+            // note: pge_index is different from j
+            const pge_index = (el_data_btn) ? Number(el_data_btn.slice(4)) : 0
 
-            const btn_index =(el_data_btn) ? Number(el_data_btn.slice(4)) : 0
-
-            add_or_remove_class(btn, cls_hide, (btn_index > mod_MEX_dict.btns_visible));
-            if (btn_index) {
+            add_or_remove_class(btn, cls_hide, (pge_index > mod_MEX_dict.pages_visible));
+            if (pge_index) {
                 let blank_questions_found = false;
                 let blank_answers_found = false;
-                let max_value = btn_index * mod_MEX_dict.max_rows_per_page * 5;
+                let max_value = pge_index * mod_MEX_dict.max_rows_per_page * 5;
                 if (max_value > mod_MEX_dict.amount) {max_value = mod_MEX_dict.amount}
-                const min_value = ((btn_index - 1) * mod_MEX_dict.max_rows_per_page * 5) + 1;
+                const min_value = ((pge_index - 1) * mod_MEX_dict.max_rows_per_page * 5) + 1;
                 btn.innerText  = min_value + "-" + max_value;
                 // check for blank values
                 for (let q = min_value, btn; q <= max_value; q++) {
@@ -2131,18 +2139,18 @@ document.addEventListener
                 const class_warning = (permit_dict.requsr_same_school) ? blank_answers_found :
                                       (permit_dict.requsr_role_admin) ? blank_questions_found : false;
                 add_or_remove_class(btn, "color_orange", class_warning );
-                if(btn_index <= mod_MEX_dict.btns_visible) {
-                    mod_MEX_dict.page_min_max[btn_index] = {min: min_value, max: max_value}
+                if(pge_index <= mod_MEX_dict.pages_visible) {
+                    mod_MEX_dict.page_min_max[pge_index] = {min: min_value, max: max_value}
                 };
             }
         };
 
-        const button_index = (mod_MEX_dict.btn_index) ? mod_MEX_dict.btn_index : 0;
-        const data_btn = "tab_" + button_index
-        MEX_BtnClicked(data_btn);
+        MEX_BtnPageClicked();
+
+        add_or_remove_class(el_MEX_btn_pge_container, cls_hide, mod_MEX_dict.pge_index <= 1)
 
         console.log( "mod_MEX_dict", mod_MEX_dict);
-    }  // MEX_SetBtn
+    }  // MEX_SetPages
 
 //=========  MEXQ_SelectItem  ================ PR2021-04-05
     function MEXQ_SelectItem(tblRow) {
@@ -2214,26 +2222,28 @@ document.addEventListener
             const q_number_str = (el_input.id) ? el_input.id.slice(9) : null;
             const q_number = (Number(q_number_str)) ? Number(q_number_str) : null;
             //console.log("q_number", q_number)
-            let btn_index = mod_MEX_dict.btn_index;
-            const q_min = mod_MEX_dict.page_min_max[btn_index].min;
-            const q_max = mod_MEX_dict.page_min_max[btn_index].max;
+            let pge_index = mod_MEX_dict.pge_index;
+            const q_min = mod_MEX_dict.page_min_max[pge_index].min;
+            const q_max = mod_MEX_dict.page_min_max[pge_index].max;
             //console.log("q_min", q_min)
             //console.log("q_max", q_max)
 
 // --- set move up / down 1 row when min / max index is reached
             let new_q_number = q_number + move_vertical;
             if(new_q_number > q_max) {
-                btn_index += 1;
-                MEX_BtnClicked("tab_" + btn_index);
+                pge_index += 1;
+                MEX_BtnPageClicked(pge_index);
 
                 new_q_number = q_min
             } else if(new_q_number < q_min) {
-                btn_index -= 1;
-                MEX_BtnClicked("tab_" + btn_index);
+                pge_index -= 1;
+                MEX_BtnPageClicked(pge_index);
             }
 // --- set focus to next / previous cell
-            let el_focus = document.getElementById("id_MEX_q_" + new_q_number )
-            if(el_focus){ set_focus_on_el_with_timeout(el_focus, 50) }
+
+            const next_id = "id_MEX_q_" + new_q_number;
+        console.log("next_id", next_id);
+            set_focus_on_el_with_timeout(document.getElementById(next_id), 50);
         }
     }  // MEX_InputKeyDown
 
@@ -2287,7 +2297,7 @@ document.addEventListener
         }
         if (new_number) {
             mod_MEX_dict.amount = new_number;
-            MEX_SetBtn();
+            MEX_SetPages();
         }
 
 // ---  disable save button when not all required fields have value
@@ -2295,48 +2305,63 @@ document.addEventListener
 
     }; // MEXQ_InputAmount
 
-//=========  MEX_BtnClicked  ================ PR2021-04-04
-    function MEX_BtnClicked(data_btn) {
-        console.log( "===== MEX_BtnClicked ========= ", data_btn);
 
-        mod_MEX_dict.btn_index = (data_btn) ? Number(data_btn.slice(4)) : 0;
-        console.log( "mod_MEX_dict.btn_index", mod_MEX_dict.btn_index);
-        console.log( "mod_MEX_dict.is_keys_mode", mod_MEX_dict.is_keys_mode);
+//=========  MEX_BtnTabClicked  ================ PR2021-05-25
+    function MEX_BtnTabClicked(data_btn) {
+        //console.log( "===== MEX_BtnTabClicked ========= ", data_btn);
+
+        mod_MEX_dict.sel_tab = (data_btn) ? data_btn : "tab_start";
 
 // ---  highlight selected button
-        highlight_BtnSelect(document.getElementById("id_MEX_btn_container"), mod_MEX_dict.sel_btn)
-
-// ---  show only the elements that are used in this tab
-        let tab_show = "";
-        if (!mod_MEX_dict.btn_index){
-            tab_show = "tab_start";
-        } else if (mod_MEX_dict.is_same_school_mode) {
-            tab_show = "tab_answers";
-        } else if (mod_MEX_dict.is_admin_mode) {
-            if (mod_MEX_dict.is_keys_mode){
-                tab_show = "tab_keys";
-            } else {
-                tab_show = "tab_assign";
-            }
+        if(el_MEX_btn_tab_container){
+            highlight_BtnSelect(el_MEX_btn_tab_container, mod_MEX_dict.sel_tab)
         }
-        console.log( "tab_show", tab_show);
+// ---  show only the elements that are used in this option
+        let tab_show = "";
+        if (mod_MEX_dict.is_same_school_mode) {
+            tab_show = "tab_answers";
+        } else if (mod_MEX_dict.sel_tab === "tab_start" ){
+            tab_show = "tab_start";
+        } else if (mod_MEX_dict.sel_tab === "tab_assign" ){
+            tab_show = "tab_assign";
+        } else if (mod_MEX_dict.sel_tab === "tab_keys" ){
+            tab_show = "tab_keys";
+            mod_MEX_dict.is_keys_mode = true;
+        } else if (mod_MEX_dict.sel_tab === "tab_minscore" ){
+            tab_show = "tab_minscore";
+        }
+        mod_MEX_dict.is_keys_mode = (mod_MEX_dict.sel_tab === "tab_keys");
+
         show_hide_selected_elements_byClass("tab_show", tab_show);
 
-        if (mod_MEX_dict.btn_index) {
+        if (["tab_assign", "tab_keys", "tab_minscore", "tab_answers"].includes(tab_show)) {
+           MEX_BtnPageClicked()
+        };
+
+    }  // MEX_BtnTabClicked
+
+//=========  MEX_BtnPageClicked  ================ PR2021-04-04 PR2021-05-25
+    function MEX_BtnPageClicked(pge_index) {
+        console.log( "===== MEX_BtnPageClicked ========= ", pge_index);
+        mod_MEX_dict.pge_index = (pge_index) ? pge_index : 1;
+
+// ---  highlight selected button
+        highlight_BtnSelect(el_MEX_btn_pge_container, "pge_" + mod_MEX_dict.pge_index)
+
+        if (mod_MEX_dict.pge_index) {
             MEX_FillPage()
         };
 
-    }  // MEX_BtnClicked
+    }  // MEX_BtnPageClicked
 
 //=========  MEX_FillPage  ================ PR2021-04-04
     function MEX_FillPage() {
         console.log( "===== MEX_FillPage ========= ");
 /*
         console.log( ".........total_rows", mod_MEX_dict.total_rows);
-        console.log( ".........btns_visible", mod_MEX_dict.btns_visible);
+        console.log( ".........pages_visible", mod_MEX_dict.pages_visible);
         console.log( ".........max_rows_per_page", mod_MEX_dict.max_rows_per_page);
         console.log( ".........amount", mod_MEX_dict.amount);
-*/
         console.log( ".........mod_MEX_dict.amount", mod_MEX_dict.amount);
         console.log( ".........assignment", mod_MEX_dict.assignment);
         console.log( ".........keys", mod_MEX_dict.keys);
@@ -2344,14 +2369,16 @@ document.addEventListener
         console.log( ".........is_keys_mode", mod_MEX_dict.is_keys_mode);
         console.log( ".........is_same_school_mode", mod_MEX_dict.is_same_school_mode);
 
+*/
+
         //const len = mod_MEX_dict.max_rows_per_page
-        let question_number = (mod_MEX_dict.btn_index - 1) * mod_MEX_dict.max_rows_per_page * 5;
+        let question_number = (mod_MEX_dict.pge_index - 1) * mod_MEX_dict.max_rows_per_page * 5;
 
         let first_q_number_of_page = 0;
         for (let col_index = 0; col_index < 5; col_index++) {
             const el_col_container = document.getElementById("id_MEX_col_" + col_index)
-        console.log( ".........el_col_container", el_col_container);
-        console.log( ".........col_index", col_index);
+        //console.log( ".........el_col_container", el_col_container);
+        //console.log( ".........col_index", col_index);
             el_col_container.innerHTML = null;
             if (question_number < mod_MEX_dict.amount){
                 for (let row_index = 0; row_index < mod_MEX_dict.max_rows_per_page; row_index++) {
@@ -2365,7 +2392,7 @@ document.addEventListener
                         const max_char = get_dict_value(mod_MEX_dict.assignment, [question_number, "max_char"], '')
                         const max_score = get_dict_value(mod_MEX_dict.assignment, [question_number, "max_score"], '')
                         //const min_score = get_dict_value(mod_MEX_dict.assignment, [question_number, "min_score"], '')
-        console.log( ".........question_number", question_number);
+        //console.log( ".........question_number", question_number);
 
                         let display_value = null, is_read_only = false, is_invalid = false, footnote_multiple_choice = "";
                         if(mod_MEX_dict.is_admin_mode){
@@ -2399,16 +2426,20 @@ document.addEventListener
                                 const el_input = document.createElement("input");
                                 el_input.id = "id_MEX_q_" + question_number;
                                 el_input.value = display_value;
-        console.log( ".=========..display_value", display_value);
+        //console.log( ".=========..display_value", display_value);
                                 el_input.className = "form-control";
                                 if(is_invalid) { el_input.classList.add("border_invalid")}
                                 el_input.setAttribute("type", "text")
                                 el_input.setAttribute("autocomplete", "off");
                                 el_input.setAttribute("ondragstart", "return false;");
                                 el_input.setAttribute("ondrop", "return false;");
-                                // --- add EventListener
-                                el_input.addEventListener("change", function(){MEX_InputChange(el_input)});
-                                el_input.addEventListener("keydown", function(event){MEX_InputKeyDown(el_input, event)});
+        // --- add EventListener
+                                if (mod_MEX_dict.is_same_school_mode){
+                                    el_input.addEventListener("keyup", function(event){MEX_InputAnswer(el_input, event)});
+                                } else {
+                                    el_input.addEventListener("change", function(){MEX_InputChange(el_input)});
+                                    el_input.addEventListener("keydown", function(event){MEX_InputKeyDown(el_input, event)});
+                                }
                                 // set readonly=true when mode = 'keys' and quesrion is not multiple choice
                                 if (is_read_only) {el_input.readOnly = true}
                             el_flex_1.appendChild(el_input);
@@ -2424,6 +2455,7 @@ document.addEventListener
             if (el_focus) { set_focus_on_el_with_timeout(el_focus, 50)}
         }
     }  // MEX_FillPage
+
 
 //========= MEX_InputChange  ===============PR2020-08-16 PR2021-03-25
     function MEX_InputChange(el_input){
@@ -2566,7 +2598,7 @@ document.addEventListener
                                      if (q_number in mod_MEX_dict.keys){
                                         delete mod_MEX_dict.keys[q_number];
                                     }
-                                    msg_err += loc.err_list.key_mustbe_between_and_ + max_char + "." ;
+                                    msg_err += loc.err_list.key_mustbe_between_and_ + max_char.toLowerString() + "'." ;
                                     el_mod_message_text.innerHTML = msg_err;
                                     $("#id_mod_message").modal({backdrop: false});
                                     set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
@@ -2588,54 +2620,95 @@ document.addEventListener
                         }  // if (!is_multiple_choice)
                     }  //   if (assignment_dict)
                 }
+            }
+        }  //  if (q_number){
+    };  // MEX_InputChange
 
-            } else if (mod_MEX_dict.is_same_school_mode){
+//========= MEX_InputAnswer  =============== PR2021-05-25
+    function MEX_InputAnswer(el_input, event){
+        console.log(" --- MEX_InputAnswer ---")
+        console.log("el_input.id: ", el_input.id)
+        console.log("event.key", event.key, "event.shiftKey", event.shiftKey)
+        // el_input.id = 'id_MEX_q_24'
+        //const q_number_str = (el_input.id) ? el_input.id[10] : null;
+        const q_number_str = (el_input.id) ? el_input.id.slice(9) : null;
+        const q_number = (Number(q_number_str)) ? Number(q_number_str) : null;
+        console.log("q_number", q_number)
+
+        if (q_number){
+            MEX_goto_next(q_number, event)
+
+    // add key = q_number with empty values when not exists
+            const answers_dict = mod_MEX_dict.answers;
+            // open question input has a number (8)
+            // multiple choice question has one letter, may be followed by a number as score (D3)
+            let max_char = "", max_score_str = "", max_score = "", msg_err = "";
+            const input_value = el_input.value;
+            if (mod_MEX_dict.is_same_school_mode){
 //================================================================
 // when input is answer, entered by requsr_same_school
                 const assignment_dict = mod_MEX_dict.assignment[q_number];
+     //console.log("assignment_dict", assignment_dict)
                 if (isEmpty(assignment_dict)){
-                    msg_err =  loc.err_list.Exam_assignment_does_notexist + "<br>" + loc.err_list.Contact_divison_of_exams
+                    msg_err = loc.err_list.Exam_assignment_does_notexist + "<br>" + loc.err_list.Contact_divison_of_exams
                     console.log("msg_err", msg_err)
                 } else {
                     const max_score = (assignment_dict.max_score) ? assignment_dict.max_score : "";
                     const max_char = (assignment_dict.max_char) ? assignment_dict.max_char : "";
                     const is_multiple_choice = (!!max_char);
-                    console.log("is_multiple_choice", is_multiple_choice)
+     // console.log("is_multiple_choice", is_multiple_choice)
 
     // - add mod_MEX_dict.answers[q_number] if it does not yet exist
                     if (!(q_number in mod_MEX_dict.answers)){
                         mod_MEX_dict.answers[q_number] =  {answer: ""};
                     };
                     const answers_dict = mod_MEX_dict.answers[q_number];
-                    console.log("answers_dict", answers_dict)
+    //console.log("answers_dict", answers_dict)
                     let char_lc = null;
                     if (input_value){
                         const input_number = Number(input_value);
+    //console.log("input_value", input_value, typeof input_value)
+    //console.log("input_number", input_number, typeof input_number)
                         if (input_number || input_number === 0){
                             // check if is integer
                             char_lc = input_number.toString();
+    //console.log("is integer char_lc", char_lc)
+                            if (is_multiple_choice){
+                                msg_err =  loc.err_list.This_isa_multiplechoice_question  +
+                                "<br>" + loc.err_list.must_enter_letter_between_a_and_ + max_char.toLowerCase() + "'," +
+                                "<br>" + loc.err_list.or_an_x_if_blank;
+                            } else if (input_number < 0 || input_number > max_score){
+                                msg_err += " '" + input_value  + "'" + loc.err_list.not_allowed +
+                                "<br>" + loc.err_list.must_enter_whole_number_between_0_and_ + max_score + "," +
+                                "<br>" + loc.err_list.or_an_x_if_blank;
+                            }
                         } else {
                             char_lc = input_value.toLowerCase();
+    //console.log("char_lc", char_lc)
                             if (char_lc === "x"){
                                 // pass, enter x for blank answer, also when not multiple choice
                             } else if (!is_multiple_choice){
                                 msg_err =  loc.err_list.This_isnota_multiplechoice_question  +
-                                "<br>" + loc.err_list.must_enter_whole_number_between_0_and_ + max_score + "."
+                                "<br>" + loc.err_list.must_enter_whole_number_between_0_and_ + max_score + "," +
+                                "<br>" + loc.err_list.or_an_x_if_blank;
                             } else if (input_value.length > 1){
-                                msg_err += " '" + max_score_str  + "'" + loc.err_list.not_allowed + "<br>"
+                                msg_err += " '" + max_score_str  + "'" + loc.err_list.not_allowed +
+                                "<br>" + loc.err_list.must_enter_letter_between_a_and_ + max_char.toLowerCase() + "'," +
+                                "<br>" + loc.err_list.or_an_x_if_blank;
                             } else {
                                 if(!"abcdefghijklmnopqrstuvwxyz".includes(char_lc)){
-                                    msg_err += " '" + input_value  + "'" + loc.err_list.not_allowed + "<br>"
-                                 //   "<br>" + loc.err_list.maxscore_mustbe_between;
-
+                                    msg_err += " '" + input_value  + "'" + loc.err_list.not_allowed +
+                                    "<br>" + loc.err_list.must_enter_letter_between_a_and_ + max_char.toLowerCase() + "'," +
+                                    "<br>" + loc.err_list.or_an_x_if_blank;
                                 } else {
                                     const max_char_lc = max_char.toLowerCase();
+    //console.log("max_char_lc", max_char_lc)
                                     if (char_lc > max_char_lc ) {
-                                        msg_err += "'" + input_value  + "'" + loc.err_list.not_allowed + "<br>"
-                                     //   "<br>" + loc.err_list.maxscore_mustbe_between;
-                                    }
-                                }
-                            }
+    //console.log("char_lc > max_char_lc", max_char_lc)
+                                        msg_err += "'" + input_value  + "'" + loc.err_list.not_allowed +
+                                        "<br>" + loc.err_list.must_enter_letter_between_a_and_ + max_char.toLowerCase() + "'," +
+                                        "<br>" + loc.err_list.or_an_x_if_blank;
+                            }}}
                         }
                     }
                     if (!msg_err) {
@@ -2647,22 +2720,75 @@ document.addEventListener
                             }
                         }
                         el_input.value = char_lc;
+                        if(char_lc){
+                        // set focus to net input element, got btn save after last question
+                            const next_question = q_number + 1;
+                            const next_id = (next_question > mod_MEX_dict.amount) ? "id_MEX_btn_save" :"id_MEX_q_" + (q_number + 1).toString();
+                            const el_focus = document.getElementById(next_id)
+                            if(el_focus) {set_focus_on_el_with_timeout(el_focus, 50)}
+                        }
+
                     } else {
-                //  if input_value == null
+                //  on error: set input_value null and delete answer from mod_MEX_dict.answers
                         if (q_number in mod_MEX_dict.answers){
                             delete mod_MEX_dict.answers[q_number];
                         }
                         el_input.value = null;
                         el_mod_message_text.innerHTML = msg_err;
                         $("#id_mod_message").modal({backdrop: false});
+                        // set focus to current input element
+                        el_modmessage_btn_cancel.setAttribute("data-nextid", "id_MEX_q_" + q_number)
                         set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
 
                     }  //  if (!msg_err)
                 }  //  if (isEmpty(assignment_dict))
-
             }  // if (mod_MEX_dict.is_same_school_mode)
         }  //  if (q_number){
-    };  // MEX_InputChange
+    }  // MEX_InputAnswer
+
+
+//========= MEX_goto_next  ================== PR2021-04-07
+    function MEX_goto_next(q_number, event){
+        console.log(" --- MEX_goto_next ---")
+        //console.log("event.key", event.key, "event.shiftKey", event.shiftKey)
+        // This is not necessary: (event.key === "Tab" && event.shiftKey === true)
+        // Tab and shift-tab move cursor already to next / prev element
+        if (["Enter", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(event.key) > -1) {
+// --- get move_vertical based on event.key and event.shiftKey
+            let move_vertical = (["Enter", "Tab", "ArrowDown"].includes(event.key) ) ? 1 :
+                                    (event.key === "ArrowUp") ? -1 : 0
+
+            let pge_index = mod_MEX_dict.pge_index;
+            const q_min = mod_MEX_dict.page_min_max[pge_index].min;
+            const q_max = mod_MEX_dict.page_min_max[pge_index].max;
+            console.log("q_number", q_number)
+            console.log("pge_index", pge_index)
+            console.log("q_min", q_min)
+            console.log("q_max", q_max)
+
+// --- set move up / down 1 row when min / max index is reached
+            let new_q_number = q_number + move_vertical;
+            if(new_q_number > q_max) {
+                pge_index += 1;
+                MEX_BtnPageClicked(pge_index);
+
+                new_q_number = q_min
+            } else if(new_q_number < q_min) {
+                pge_index -= 1;
+                MEX_BtnPageClicked(pge_index);
+            }
+// --- set focus to next / previous cell
+
+            const next_id = "id_MEX_q_" + new_q_number;
+        console.log("next_id", next_id);
+            set_focus_on_el_with_timeout(document.getElementById(next_id), 50);
+        }
+    }  // MEX_goto_next
+
+
+
+
+
 
 //=========  MEXQ_validate_and_disable  ================  PR2021-05-21
     function MEXQ_validate_and_disable() {
@@ -2718,21 +2844,21 @@ document.addEventListener
             const map_id = (tblRow) ? tblRow.id : null;
             const grade_dict = get_mapdict_from_datamap_by_id(grade_with_exam_map, map_id);
 
-            console.log( ".......... grade_dict", grade_dict );
+            console.log( "grade_dict", grade_dict );
 
             if(grade_dict) {
             // get exam questions
                 if(grade_dict.exam_id){
                     const exam_dict = get_mapdict_from_datamap_by_id(exam_map, "exam_" + grade_dict.exam_id);
                     if(exam_dict){
-            console.log( ".......... exam_dict", exam_dict );
+            console.log( "exam_dict", exam_dict );
                         const fullname = (grade_dict.fullname) ? grade_dict.fullname : "---";
                         const exam_name = (exam_dict.exam_name) ? exam_dict.exam_name : "---";
                         const amount = (exam_dict.amount) ? exam_dict.amount : "---";
                         const version = (exam_dict.version) ? exam_dict.version : null;
 
                         mod_MEX_dict = {
-                            sel_btn: "tab_1",
+                            sel_tab: "tab_answers",
                             examyear_pk: setting_dict.sel_examyear_pk,
                             depbase_pk: setting_dict.sel_depbase_pk,
                             examperiod: setting_dict.sel_examperiod,
@@ -2763,7 +2889,7 @@ document.addEventListener
                             answers: {}
                         }
                         MEX_get_assignment(exam_dict, grade_dict);
-                        console.log( "mod_MEX_dict.assignment", mod_MEX_dict.assignment);
+            console.log( "mod_MEX_dict.assignment", mod_MEX_dict.assignment);
 
                 // ---  set header text
                         const examtype = (loc.examtype_caption && mod_MEX_dict.examtype) ? loc.examtype_caption[mod_MEX_dict.examtype] : loc.Exam;
@@ -2775,8 +2901,10 @@ document.addEventListener
                         document.getElementById("id_MEX_header2").innerText = exam_name;
                         document.getElementById("id_MEX_header3").innerText = fullname;
 
-                // ---  set buttons
-                        MEX_SetBtn();
+    // ---  set buttons
+                        add_or_remove_class(el_MEX_btn_tab_container, cls_hide, is_same_school_mode);
+                        MEX_BtnTabClicked(mod_MEX_dict.sel_tab);
+                        MEX_SetPages();
 
                 // ---  disable save button when not all required fields have value
                         // TODOMEXQ_validate_and_disable();
@@ -2821,7 +2949,7 @@ document.addEventListener
 
     // ---  get info from data_map
             const data_map = (tblName === "exam") ? exam_map : null;
-            const map_id =  tblName + "_" + MEXQ_;
+            const map_id =  tblName + "_" + selected_pk;
             const map_dict = get_mapdict_from_datamap_by_id(data_map, map_id);
             let href_str = {};
 
@@ -2959,10 +3087,10 @@ document.addEventListener
     }  // ModConfirmResponse
 
 //=========  ModMessageClose  ================ PR2020-12-20
-    function ModMessageClose() {
+    function ModMessageClose(el_btn) {
         console.log(" --- ModMessageClose --- ");
-        //console.log("mod_dict: ", mod_dict);
-
+        const next_id = get_attr_from_el(el_btn, "data-nextid")
+        set_focus_on_el_with_timeout(document.getElementById(next_id), 150 )
     }  // ModMessageClose
 
 //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
