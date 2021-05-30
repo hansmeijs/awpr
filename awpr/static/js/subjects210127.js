@@ -449,7 +449,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- add data-field Attribute.
                     el_filter.setAttribute("data-field", field_name);
                     el_filter.setAttribute("data-filtertag", filter_tag);
-                    el_filter.setAttribute("data-colindex", j);
 
         // --- add EventListener to el_filter
                     if (["text", "number"].includes(filter_tag)) {
@@ -575,16 +574,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
                 } else if (["abbrev", "code", "name", "last_name"].includes(field_name)){
-                    inner_text = map_dict[field_name];
+                    inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
                 } else if (["sequence"].includes(field_name)){
-                    inner_text = map_dict[field_name];
+                    inner_text = fld_value;
                     filter_value =(inner_text) ? inner_text : null;
                 } else if ( field_name === "depbases") {
                     inner_text = b_get_depbases_display(department_map, "base_code", fld_value);
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
                 } else if (["etenorm", "addedbyschool"].includes(field_name)) {
-                    const is_etenorm = map_dict[field_name];
+                    const is_etenorm = fld_value;
                     filter_value = (is_etenorm) ? "1" : "0";
                     el_div.className = (is_etenorm) ? "tickmark_1_2" : "tickmark_0_0";
                 }
@@ -849,8 +848,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function HandleFilterKeyup(el, event) {
         console.log( "===== HandleFilterKeyup  ========= ");
         // skip filter if filter value has not changed, update variable filter_text
-        const col_index = get_attr_from_el(el, "data-colindex")
+
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el.parentNode.cellIndex;
         console.log( "col_index", col_index, "event.key", event.key);
+
         const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
         console.log( "filter_dict", filter_dict);
 
@@ -863,8 +867,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function HandleFilterToggle(el_input) {
         console.log( "===== HandleFilterToggle  ========= ");
 
-    // - get col_index and filter_tag from  el_input
-        const col_index = get_attr_from_el(el_input, "data-colindex")
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el_input.parentNode.cellIndex;
+        console.log( "col_index", col_index, "event.key", event.key);
+
+    // - get filter_tag from  el_input
         const filter_tag = get_attr_from_el(el_input, "data-filtertag")
         const field_name = get_attr_from_el(el_input, "data-field")
         console.log( "col_index", col_index);
@@ -884,7 +893,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // - get new icon_class
             icon_class =  (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "tickmark_2_2" : "tickmark_0_0";
         }
-
     // - put new filter value in filter_dict
         filter_dict[col_index] = [filter_tag, new_value]
         console.log( "filter_dict", filter_dict);

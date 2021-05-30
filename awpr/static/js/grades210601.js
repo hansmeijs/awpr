@@ -105,10 +105,10 @@ document.addEventListener("DOMContentLoaded", function() {
                                   "text","text", "text",
                                   "text", "text", "text",
                                   "text", "text", "text", "text"],
-                    field_width: ["020", "060", "120", "060", "060", "100", "120",
-                                 "090", "020",
+                    field_width: ["020", "060", "120", "060", "060", "060", "120",
+                                 "060", "020",
                                 "060", "060", "020",
-                                "090","090","020",
+                                "060","060","020",
                                 "060", "060", "060", "020"],
                     field_align: ["c", "r", "l", "l", "l", "l", "l",
                                  "r", "c",
@@ -774,25 +774,25 @@ document.addEventListener("DOMContentLoaded", function() {
         for (let j = 0; j < column_count; j++) {
             const field_name = field_setting.field_names[j];
             const key = field_setting.field_caption[j];
+            let field_caption = (loc[key]) ? loc[key] : key;
 
-            let caption = (loc[key]) ? loc[key] : key;
             if (field_name === "segrade") {
                 if (setting_dict.sel_examperiod === 4){
-                    caption = "Vrijstelling\nSE-cijfer"
+                    field_caption = "Vrijstelling\nSE-cijfer"
                 }
             } else if (field_name === "cescore") {
                 if (setting_dict.sel_examperiod === 2){
-                    caption = "Herexamen\nscore"
+                    field_caption = "Herexamen\nscore"
                 } else if (setting_dict.sel_examperiod === 3){
-                    caption = "Her 3e tv\nscore"
+                    field_caption = "Her 3e tv\nscore"
                 }
             } else if (field_name === "cegrade") {
                 if (setting_dict.sel_examperiod === 2){
-                    caption = "Herexamen cijfer"
+                    field_caption = "Herexamen cijfer"
                 } else if (setting_dict.sel_examperiod === 3){
-                    caption = "Her 3e tv cijfer"
+                    field_caption = "Her 3e tv cijfer"
                 } else if (setting_dict.sel_examperiod === 4){
-                    caption = "Vrijstelling\nCE-cijfer"
+                    field_caption = "Vrijstelling\nCE-cijfer"
                 }
             }
 
@@ -809,10 +809,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 let th_header = document.createElement("th");
         // --- add div to th, margin not working with th
                     const el_header = document.createElement("div");
-                        el_header.innerText = caption;
+                        el_header.innerText = field_caption;
         // --- add width, text_align, right padding in examnumber
                         th_header.classList.add(class_width, class_align);
-                        el_header.classList.add(class_width, class_align);
+                        //el_header.classList.add(class_width, class_align);
                         if(field_name === "examnumber"){
                             el_header.classList.add("pr-2")
                         } else if (["se_status", "pe_status", "ce_status"].indexOf(field_name) > -1) {
@@ -827,16 +827,25 @@ document.addEventListener("DOMContentLoaded", function() {
         // --- add th to tblRow_filter.
                 const th_filter = document.createElement("th");
         // --- create element with tag based on filter_tag
-                    const el_tag = (["text", "number"].includes(filter_tag)) ? "input" : "div";
-                    const el_filter = document.createElement(el_tag);
+                    const filter_field_tag = (["text", "number"].includes(filter_tag)) ? "input" : "div";
+                    const el_filter = document.createElement(filter_field_tag);
+
         // --- add data-field Attribute.
                         el_filter.setAttribute("data-field", field_name);
                         el_filter.setAttribute("data-filtertag", filter_tag);
 
         // --- add EventListener to el_filter
-                        const event_str = (filter_tag === "text") ? "keyup" : "click";
-                        el_filter.addEventListener(event_str, function(event){HandleFilterField(el_filter, j, event)});
+                    if (["text", "number"].includes(filter_tag)) {
+                        el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
+                        add_hover(th_filter);
+                    } else if (filter_tag === "toggle") {
+                        // add EventListener for icon to th_filter, not el_filter
+                        th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
+                        th_filter.classList.add("pointer_show");
 
+                        el_filter.classList.add("tickmark_0_0");
+                        add_hover(th_filter);
+                    }
         // --- add other attributes
                         if (filter_tag === "text") {
                             el_filter.setAttribute("type", "text")
@@ -845,15 +854,17 @@ document.addEventListener("DOMContentLoaded", function() {
                             el_filter.setAttribute("autocomplete", "off");
                             el_filter.setAttribute("ondragstart", "return false;");
                             el_filter.setAttribute("ondrop", "return false;");
-                        } else if (["toggle", "activated", "inactive"].includes(filter_tag)) {
-                            // default empty icon necessary to set pointer_show
-                            // default empty icon necessary to set pointer_show
-                            append_background_class(el_filter, "tickmark_0_0");
+
+                        //} else if (["toggle", "activated", "inactive"].includes(filter_tag)) {
+                        //    // default empty icon necessary to set pointer_show
+                        //    // default empty icon necessary to set pointer_show
+                        //    append_background_class(el_filter, "tickmark_0_0");
                         }
 
         // --- add width, text_align
+                        // PR2021-05-30 debug. Google chrome not setting width without th_filter class_width
                         th_filter.classList.add(class_width, class_align);
-                        el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
+                        // >>> el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
                     th_filter.appendChild(el_filter)
                 tblRow_filter.appendChild(th_filter);
 
@@ -939,12 +950,13 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
 
     // --- add width, text_align, right padding in examnumber
-                    td.classList.add(class_width, class_align);
+                    // >>> td.classList.add(class_width, class_align);
                     if(["fullname", "subj_name"].indexOf(field_name) > -1){
                         // dont set width in field student and subject, to adjust width to length of name
-                        el.classList.add(class_align);
+                        // >>> el.classList.add(class_align);
+                       // >>>  el.classList.add(class_width, class_align);
                     } else {
-                        el.classList.add(class_width, class_align);
+                        // >>> el.classList.add(class_width, class_align);
                     };
                     if(field_name === "examnumber"){
                         el.classList.add("pr-2");
@@ -1004,31 +1016,46 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     };  // UpdateTblRow
 
-//=========  UpdateField  ================ PR2020-12-18
-    function UpdateField(el, map_dict) {
+//=========  UpdateField  ================ PR2020-12-18 PR2021-05-30
+    function UpdateField(el_div, map_dict) {
         //console.log("=========  UpdateField =========");
         //console.log("map_dict", map_dict);
-        if(el){
-            const field_name = get_attr_from_el(el, "data-field");
+        if(el_div){
+            const field_name = get_attr_from_el(el_div, "data-field");
             const fld_value = map_dict[field_name];
-            if (el.nodeName === "INPUT"){
-                 el.value = (fld_value) ? fld_value : null;
-            } else if (["se_status", "pe_status", "ce_status"].includes(field_name)){
-                el.className = get_status_class(fld_value)
-            } else if (field_name === "note_status"){
-                el.className = "note_" + ( (fld_value && fld_value !== "0" ) ? (fld_value.length === 3) ? fld_value : "0_1" : "0_0" )
-            } else if (field_name === "examperiod"){
-                el.innerText = loc.examperiod_caption[map_dict.examperiod];
-            } else if (field_name === "examtype"){
-                el.innerText = loc.examtype_caption[map_dict.examtype];
-            } else if (field_name === "datepublished"){
-                el.innerText = format_dateISO_vanilla (loc, map_dict.datepublished, true, false, true, false);
-            } else if (field_name === "filename"){
-                el.innerHTML = "&#8681;";
-            } else if (field_name === "url"){
-                el.href = fld_value;
-            } else {
-                 el.innerText = (fld_value) ? fld_value : null;
+
+            if(field_name){
+                let inner_text = null, title_text = null, filter_value = null;
+                if (el_div.nodeName === "INPUT"){
+                    el_div.value = (fld_value) ? fld_value : null;
+                    filter_value = (fld_value) ? fld_value.toLowerCase() : null;
+                } else if (["se_status", "pe_status", "ce_status"].includes(field_name)){
+                    el_div.className = get_status_class(fld_value)
+                } else if (field_name === "note_status"){
+                    el_div.className = "note_" + ( (fld_value && fld_value !== "0" ) ? (fld_value.length === 3) ? fld_value : "0_1" : "0_0" )
+                 } else if (field_name === "filename"){
+                    el_div.innerHTML = "&#8681;";
+                } else if (field_name === "url"){
+                    el_div.href = fld_value;
+                } else {
+                    if (field_name === "examperiod"){
+                        inner_text = loc.examperiod_caption[map_dict.examperiod];
+                    } else if (field_name === "examtype"){
+                        inner_text = loc.examtype_caption[map_dict.examtype];
+                    } else if (field_name === "datepublished"){
+                        inner_text = format_dateISO_vanilla (loc, map_dict.datepublished, true, false, true, false);
+                    } else {
+                        inner_text = fld_value;
+                    }
+                    el_div.innerText = (inner_text) ? inner_text : null;
+                    filter_value = (inner_text) ? inner_text.toLowerCase() : null;
+                }
+        // ---  put value in innerText and title
+                el_div.innerText = (inner_text) ? inner_text : null;;
+                // NIU yet: add_or_remove_attr (el_div, "title", !!title_text, title_text);
+
+    // ---  add attribute filter_value
+                add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
             }
         }
     };  // UpdateField
@@ -2479,7 +2506,66 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 
 //###########################################################################
-// +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++++++++++++++ FILTER TABLE ROWS ++++++++++++++++++++++++++++++++++++++
+
+//========= HandleFilterKeyup  ================= PR2021-05-12
+    function HandleFilterKeyup(el, event) {
+        console.log( "===== HandleFilterKeyup  ========= ");
+        // skip filter if filter value has not changed, update variable filter_text
+
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el.parentNode.cellIndex;
+        console.log( "col_index", col_index, "event.key", event.key);
+
+        const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
+        console.log( "filter_dict", filter_dict);
+
+        if (!skip_filter) {
+            Filter_TableRows(tblBody_datatable);
+        }
+    }; // function HandleFilterKeyup
+
+
+//========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23
+    function HandleFilterToggle(el_input) {
+        console.log( "===== HandleFilterToggle  ========= ");
+
+    // - get col_index and filter_tag from  el_input
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el.parentNode.cellIndex;
+
+    // - get filter_tag from  el_input
+        const filter_tag = get_attr_from_el(el_input, "data-filtertag")
+        const field_name = get_attr_from_el(el_input, "data-field")
+        console.log( "col_index", col_index);
+        console.log( "filter_tag", filter_tag);
+        console.log( "field_name", field_name);
+
+    // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
+        const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
+        const filter_value = (filter_array[1]) ? filter_array[1] : "0";
+        console.log( "filter_array", filter_array);
+        console.log( "filter_value", field_name);
+        let new_value = "0", icon_class = "tickmark_0_0"
+        if(filter_tag === "toggle") {
+            // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+// - toggle filter value
+            new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
+// - get new icon_class
+            icon_class =  (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "tickmark_2_2" : "tickmark_0_0";
+        }
+
+    // - put new filter value in filter_dict
+        filter_dict[col_index] = [filter_tag, new_value]
+        console.log( "filter_dict", filter_dict);
+        el_input.className = icon_class;
+        Filter_TableRows(tblBody_datatable);
+
+    };  // HandleFilterToggle
 
 //========= HandleFilterField  ====================================
     function HandleFilterField(el, col_index, event) {
@@ -2541,29 +2627,35 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 //========= Filter_TableRows  ==================================== PR2020-08-17
     function Filter_TableRows(tblBody) {
-        //console.log( "===== Filter_TableRows  ========= ");
+        console.log( "===== Filter_TableRows  ========= ");
 
-        const tblName_settings = (selected_btn === "btn_user_list") ? "users" : "permissions";
+        const tblName_settings = (selected_btn === "grade_published") ? "published" : "grades";
+        const field_setting = field_settings[tblName_settings];
+        const filter_tags = field_setting.filter_tags;
 
-// ---  loop through tblBody.rows
-        for (let i = 0, tblRow, show_row; tblRow = tblBody.rows[i]; i++) {
-            show_row = ShowTableRow(tblRow, tblName_settings)
-            show_row = true
+        for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
+            tblRow = tblBody_datatable.rows[i]
+            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row)
         }
     }; // Filter_TableRows
 
 //========= ShowTableRow  ==================================== PR2020-08-17
-    function ShowTableRow(tblRow, tblName_settings) {
+    function ShowTableRow(tblRow, filter_tags) {
         // only called by Filter_TableRows
-        //console.log( "===== ShowTableRow  ========= ");
+        console.log( "===== ShowTableRow  ========= ");
+        console.log( "filter_dict", filter_dict);
+
         let hide_row = false;
         if (tblRow){
 // show all rows if filter_name = ""
             if (!isEmpty(filter_dict)){
                 for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
                     const filter_text = filter_dict[i];
-                    const filter_tag = field_settings[tblName_settings].filter_tags[i];
+                    const filter_tag = filter_tags[i];
+
+        console.log( "filter_text", filter_text);
+        console.log( "filter_tag", filter_tag);
                 // skip if no filter on this colums
                     if(filter_text){
                         if(filter_tag === "text"){

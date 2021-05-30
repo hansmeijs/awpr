@@ -1440,7 +1440,6 @@ console.log( "show_row", show_row);
 
 //========= t_ShowTableRowExtended  ==================================== PR2020-07-12 PR2020-09-12 PR2021-03-23
     function t_ShowTableRowExtended(filter_dict, tblRow) {
-        // only called by FillPayrollRows,
         //console.log( "===== t_ShowTableRowExtended  ========= ");
         //console.log( "filter_dict", filter_dict);
         // filter_dict = {2: ["text", "r", ""], 4: ["text", "y", ""] }
@@ -1530,13 +1529,12 @@ console.log( "show_row", show_row);
                                     }
                                 }
                             }
-       //console.log( "hide_row", hide_row);
                         }
                     };  // if(cell)
                 };  //  if(filter_arr)
             };  // for (const [index_str, filter_arr] of Object.entries(filter_dict))
         }  // if (tblRow && !isEmpty(filter_dict))
-       //console.log("hide_row", hide_row);
+      //console.log("hide_row", hide_row);
        return !hide_row
     }; // t_ShowTableRowExtended
 

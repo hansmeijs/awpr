@@ -472,9 +472,7 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
 # +++ Create new school
                         if is_create:
                             if permit_create:
-
-                                school, msg_err = create_school(examyear, upload_dict, request)
-
+                                school, msg_err = create_school(examyear, upload_dict, error_list, request)
                                 if school:
                                     append_dict['created'] = True
                                 elif msg_err:
@@ -759,7 +757,8 @@ def create_school(examyear, upload_dict, error_list,  request):
         logger.debug('upload_dict: ' + str(upload_dict))
 
     school = None
-
+    # TODO deprecate returnvalue msg_err
+    msg_err = None
     if examyear:
 # - get value of 'abbrev'
         code = upload_dict.get('code')
