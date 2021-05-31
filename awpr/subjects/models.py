@@ -482,6 +482,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
     subject = ForeignKey(Subject, related_name='+', on_delete=CASCADE)
     subjecttype = ForeignKey(Subjecttype, related_name='+', on_delete=CASCADE)
 
+    # TODO delete exam from schemitem, is linked to grade
     exam = ForeignKey(Exam, related_name='+', null=True, on_delete=SET_NULL)
 
     gradetype = PositiveSmallIntegerField(default=0)

@@ -1056,7 +1056,9 @@ console.log( "show_row", show_row);
 
 // show text "No items found" when no rows and select_text_none has value
         if (!row_count){
-            option_text = "<option value=\"\" disabled selected hidden>" + select_text_none + "</option>"
+            if(select_text_none){
+                option_text = "<option value=\"\" disabled selected hidden>" + select_text_none + "</option>"
+            }
         } else if (row_count === 1) {
             select_first_option = true
         } else if (row_count > 1 && select_text){

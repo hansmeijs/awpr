@@ -57,10 +57,11 @@ def validate_input_grade(grade, field, input_value, logging_on):  # PR2021-01-18
     is_eveningschool = school.iseveningschool
     is_lexschool = school.islexschool
 
-    norm = schemeitem.norm
-    scalelength_ce = norm.scalelength_ce if norm else None
-    scalelength_pe =  norm.scalelength_pe if norm else None
-    scalelength_reex =  norm.scalelength_reex if norm else None
+    # TODO make correct
+    exam = grade.exam
+    ##scalelength_ce = exam.scalelength_ce if exam else None
+    #scalelength_pe = exam.scalelength_pe if exam else None
+    #scalelength_reex = exam.scalelength_reex if exam else None
 
     if logging_on:
         logger.debug(' ------- validate_input_grade -------')
@@ -177,16 +178,19 @@ def validate_input_grade(grade, field, input_value, logging_on):  # PR2021-01-18
                 # 'PR2020-05-15 Corona: geen scores
                 # strMsgText = "Er kunnen geen scores ingevuld worden in examenjaar " & ExkExamenjaar & "."
 
+                pass
                 #PR2015-12-27 debug: vervang komma door punt, anders wordt komma genegeerd
-                max_score = None
-                if field == "pescore":
-                    max_score = scalelength_pe
-                elif field == "cescore":
-                    if examperiod_int == c.EXAMPERIOD_FIRST:
-                        max_score =  scalelength_ce
-                    elif examperiod_int == c.EXAMPERIOD_SECOND:
-                        max_score =  scalelength_reex
-                input_number, msg_err = calc_final.get_score_from_inputscore(input_value, max_score)
+
+                # TODO make correct
+                #max_score = None
+                #if field == "pescore":
+                #    max_score = scalelength_pe
+                #elif field == "cescore":
+                #    if examperiod_int == c.EXAMPERIOD_FIRST:
+               #         max_score =  scalelength_ce
+                #    elif examperiod_int == c.EXAMPERIOD_SECOND:
+                #        max_score =  scalelength_reex
+                #input_number, msg_err = calc_final.get_score_from_inputscore(input_value, max_score)
 # B. CIJFER
             elif is_grade:
 #  /1. exit als CijferType VoldoendeOnvoldoende is en inputcijfer niet booIsOvg is

@@ -44,9 +44,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     const field_settings = {
-        school: {field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments",  "Activated",  "Locked", ""],
+        school: {field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments", "Activated",  "Locked", ""],
                  field_names: ["select", "sb_code", "article", "name", "abbrev", "depbases", "activated", "locked", "select"],
-                 filter_tags: ["select", "text", "text",  "text", "text",  "text",  "toggle", "toggle", "select"],
+                 filter_tags: ["select", "text", "text",  "text", "text",  "text", "toggle", "toggle", "select"],
                  field_width:  ["020", "075", "075", "360", "180", "120","120","120", "120"],
                  field_align: ["c", "l", "l", "l","l", "l", "c",  "c", "c"]}
         };
@@ -110,7 +110,6 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save(el_MSSSS_input, MSSSS_Response)}, false );
         }
 
-
 // ---  MOD SELECT EXAM YEAR ------------------------------------
         const el_SBR_school = document.getElementById("id_SBR_school")
         const el_SBR_department = document.getElementById("id_SBR_department")
@@ -138,11 +137,16 @@ document.addEventListener('DOMContentLoaded', function() {
             let form_elements = el_MSCH_div_form_controls.querySelectorAll(".awp_input_text")
             for (let i = 0, el, len = form_elements.length; i < len; i++) {
                 el = form_elements[i];
-                if(el){el.addEventListener("keyup", function() {MSCH_InputKeyup(el)}, false )};
+                if(el){
+                    const event_key = (el.tag === "INPUT") ? "keyup" : "change";
+                    el.addEventListener(event_key, function() {MSCH_InputKeyup(el)}, false )
+                };
             }
             el_MSCH_btn_delete.addEventListener("click", function() {MSCH_Save("delete")}, false )
             el_MSCH_btn_save.addEventListener("click", function() {MSCH_Save("save")}, false );
         };
+        const el_MSCH_defaultrole_container = document.getElementById("id_MSCH_defaultrole_container");
+        const el_MSCH_select_defaultrole = document.getElementById("id_MSCH_select_defaultrole");
 
 // ---  MODAL UPLOAD PERMITS
     // --- create EventListener for buttons in btn_container
@@ -249,12 +253,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     usergroups = response.usergroup_list;
                 };
 
-                if(must_create_submenu){CreateSubmenu()};
-
-                if(must_update_headerbar){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
-                if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
-
-                if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
+                if(must_create_submenu){
+                    CreateSubmenu();
+                };
+                if(must_update_headerbar){
+                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                };
+                if ("schoolsetting_dict" in response) {
+                    i_UpdateSchoolsettingsImport(response.schoolsetting_dict);
+                };
+                if ("examyear_rows" in response) {
+                    b_fill_datamap(examyear_map, response.examyear_rows);
+                };
 
                 if ("department_rows" in response) {
                     const tblName = "department";
@@ -286,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function() {
             AddSubmenuButton(el_submenu, loc.Add_school, function() {MSCH_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_school, function() {ModConfirmOpen("delete")});
 
-        if (permit_dict.requsr_role <= 8 || (permit_dict.requsr_role_system)){
+        if (permit_dict.requsr_same_school || (permit_dict.requsr_role_system)){
             AddSubmenuButton(el_submenu, loc.Upload_awpdata, function() {ModUploadAwp_open()}, "id_submenu_importawp");
         };
 
@@ -368,7 +378,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }  // if(!!data_map)
     }  // FillTblRows
 
-
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-05-10
     function CreateTblHeader(field_setting) {
         //console.log("===========  CreateTblHeader ======== ");
@@ -444,7 +453,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }  // for (let j = 0; j < column_count; j++)
         }  // if(field_settings[tblName]){
     };  //  CreateTblHeader
-
 
 //=========  CreateTblRow  ================ PR2020-06-09
     function CreateTblRow(tblBody, tblName, map_id, map_dict, row_index) {
@@ -537,67 +545,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_div.innerText = map_dict[field_name];
                 } else if ( field_name === "depbases") {
                      el_div.innerText = b_get_depbases_display(department_map, "base_code", fld_value);
-                } else if (field_name.slice(0, 4) === "perm") {
-                    const is_true = (map_dict[field_name]) ? map_dict[field_name] : false;
-                    const value_str = field_name.slice(4, 6);
-                    const permit_value = (!is_true) ? 0 : (!Number(value_str)) ? 0 : Number(value_str);
-                    el_div.setAttribute("data-value", permit_value);
-                    let el_icon = el_div.children[0];
-                    if(el_icon){add_or_remove_class (el_icon, "tickmark_0_2", is_true)};
-
                 } else if ( field_name === "activated") {
                     const is_activated = (map_dict[field_name]) ? map_dict[field_name] : false;
-                    let is_expired = false;
-                    if(!is_activated) {
-                        is_expired = activationlink_is_expired(map_dict.date_joined);
-                    }
-                    const data_value = (is_expired) ? "2" : (is_activated) ? "1" : "0"
+                    const data_value = (is_activated) ? "1" : "0"
                     el_div.setAttribute("data-value", data_value);
                     let el_icon = el_div.children[0];
                     if(el_icon){
-                        add_or_remove_class (el_icon, "tickmark_0_2", is_activated);
-                        add_or_remove_class (el_icon, "exclamation_0_2", is_expired);
-                        add_or_remove_class (el_icon, "tickmark_0_0", !is_activated && !is_expired);
+                        add_or_remove_class(el_icon, "tickmark_1_2", is_activated, "tickmark_0_0")
                     }
-// ---  add EventListener
-                    if(!is_activated){
-                        el_div.addEventListener("click", function() {ModConfirmOpen("resend_activation_email", el_div)}, false )
-                    }
-// ---  add title
-                    const title = (is_expired) ? loc.Activationlink_expired + "\n" + loc.Resend_activationlink : null
-                    add_or_remove_attr (el_div, "title", title, title);
-
-                } else if (field_name === "is_active") {
-                    const is_inactive = !( (map_dict[field_name]) ? map_dict[field_name] : false );
-                    el_div.setAttribute("data-value", ((is_inactive) ? 1 : 0) );
-                    const img_class = (is_inactive) ? "inactive_1_3" : "inactive_0_2";
-                    b_refresh_icon_class(el_div, img_class)
-                    //let el_icon = el_div.children[0];
-                    //if(el_icon){add_or_remove_class (el_icon, "inactive_1_3", is_inactive, "inactive_0_2")};
-// ---  add title
-                    add_or_remove_attr (el_div, "title", is_inactive, loc.This_user_is_inactive);
-                } else if ( field_name === "last_login") {
-                    const datetimeUTCiso = map_dict[field_name]
-                    const datetimeLocalJS = (datetimeUTCiso) ? new Date(datetimeUTCiso) : null;
-                    el_div.innerText = format_datetime_from_datetimeJS(loc, datetimeLocalJS)
                 }
             }  // if(field_name)
         }  // if(el_div)
     };  // UpdateField
-
-//=========  activationlink_is_expired  ================ PR2020-08-18
-    function activationlink_is_expired(datetime_linksent_ISO){
-        let is_expired = false;
-        const days_valid = 7;
-        if(datetime_linksent_ISO){
-            const datetime_linksent_LocalJS = new Date(datetime_linksent_ISO);
-            const datetime_linkexpires_LocalJS = add_daysJS(datetime_linksent_LocalJS, days_valid)
-            const now = new Date();
-            const time_diff_in_ms = now.getTime() - datetime_linkexpires_LocalJS.getTime();
-            is_expired = (time_diff_in_ms > 0)
-        }
-        return is_expired;
-    }
 
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
 
@@ -724,6 +683,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if(is_addnew){
                 tblName = get_tblName_from_selectedBtn();
                 mod_MSCH_dict.examyear_id = setting_dict.sel_examyear_pk;
+                mod_MSCH_dict.defaultrole = 0;
 
             } else {
                 const tblRow = get_tablerow_selected(el_input);
@@ -746,7 +706,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     mod_MSCH_dict.article = map_dict.article;
                     mod_MSCH_dict.name = map_dict.name;
                     mod_MSCH_dict.depbases = map_dict.depbases;
-
+                    mod_MSCH_dict.defaultrole = map_dict.defaultrole,
                     mod_MSCH_dict.modby_username = map_dict.modby_username;
                     mod_MSCH_dict.modifiedat = map_dict.modifiedat;
                 }
@@ -771,6 +731,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             MSCH_FillSelectTableDepartment();
+
+            if(permit_dict.requsr_role_system){
+                t_FillOptionsFromList(el_MSCH_select_defaultrole, loc.options_role, "value", "caption",
+                            loc.Select_organization + "...", loc.No_organizations_found, mod_MSCH_dict.defaultrole);
+            };
+            add_or_remove_class(el_MSCH_defaultrole_container, cls_hide, !permit_dict.requsr_role_system);
 
     // ---  set focus to el_MSCH_code
             setTimeout(function (){el_MSCH_code.focus()}, 50);
@@ -810,10 +776,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 const fldName = get_attr_from_el(el_input, "data-field");
                 let new_value = (el_input.value) ? el_input.value : null;
                 let old_value = (mod_MSCH_dict[fldName]) ? mod_MSCH_dict[fldName] : null;
-                if(fldName === "sequence"){
+
+
+                if(["sequence", "defaultrole"].includes(fldName)){
                     new_value = (new_value && Number(new_value)) ? Number(new_value) : null;
                     old_value = (old_value && Number(old_value)) ? Number(old_value) : null;
                 }
+
+        console.log( "fldName: ", fldName);
+        console.log( "new_value: ", new_value);
+        console.log( "old_value: ", old_value);
                 if (new_value !== old_value) {
                     upload_dict[fldName] = new_value
 
@@ -994,10 +966,9 @@ document.addEventListener('DOMContentLoaded', function() {
         return dep_list_str;
     }  // MSCH_get_selected_depbases
 
-
 //========= MSCH_InputKeyup  ============= PR2020-10-01
     function MSCH_InputKeyup(el_input){
-        //console.log( "===== MSCH_InputKeyup  ========= ");
+        console.log( "===== MSCH_InputKeyup  ========= ");
         MSCH_validate_and_disable();
     }; // MSCH_InputKeyup
 
@@ -1029,8 +1000,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const value = el_input.value;
              const caption = (fldName === "sb_code") ? loc.School_code :
                              (fldName === "abbrev") ? loc.Short_name :
-                             (fldName === "name") ? loc.Name  : loc.This_field;
-            if (["sb_code", "abbrev", "name"].indexOf(fldName) > -1 && !value) {
+                             (fldName === "name") ? loc.Name  :
+                             (fldName === "defaultrole") ? loc.Organization  : loc.This_field;
+            if (["sb_code", "abbrev", "name", "defaultrole"].indexOf(fldName) > -1 && !value) {
                 msg_err = caption + loc.cannot_be_blank;
             } else if (fldName === "abbrev" && value.length > 30) {
                 msg_err = caption + loc.is_too_long_max_schoolcode;
@@ -1039,11 +1011,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (["abbrev", "name"].indexOf(fldName) > -1) {
                     msg_err = validate_duplicates_in_department(loc, "school", fldName, caption, mod_MSCH_dict.mapid, value)
             }
-
         }
         return msg_err;
     }  // MSCH_validate_field
-
 
 //=========  validate_duplicates_in_department  ================ PR2020-09-11
     function validate_duplicates_in_department(loc, tblName, fldName, caption, selected_mapid, selected_code) {
@@ -1189,7 +1159,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById("id_MSCH_label_dep").innerText = loc.Departments_of_this_school + ":";
     }  // MSCH_headertext
-
 
 // +++++++++ END MOD SCHOOL ++++++++++++++++++++++++++++++++++++++++++++++++++++
 

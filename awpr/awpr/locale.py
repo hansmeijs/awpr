@@ -189,7 +189,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Secretary'] = TXT_Secretary
         dict['Commissioner'] = TXT_Commissioner
 
-        dict['Organization'] = _('Organization')
+        dict['Organization'] = TXT_Organization
         dict['Action'] = _('Action')
         dict['Page'] = _('Page')
         dict['Commissioner_2lines'] =  pgettext_lazy('2 lines', 'Commis-\nsioner')
@@ -379,6 +379,13 @@ def get_locale_dict(table_dict, user_lang):
         dict['Add_school'] = _('Add school')
         dict['Delete_school'] = _('Delete school')
         dict['No_schools'] = _('No schools')
+
+
+        # options_role only used in mod_school PR2201-05-30
+        dict['options_role'] = c.ROLE_OPTIONS
+        dict['Organization'] = TXT_Organization
+        dict['Select_organization'] = _('Select organization')
+        dict['No_organizations_found'] = _('No organizations found')
 
         dict['Departments_of_this_school'] = _('Departments of this school')
         dict['All_departments'] = _('All departments')
@@ -682,6 +689,8 @@ def get_locale_dict(table_dict, user_lang):
     return dict
 
 
+TXT_Organization = _('Organization')
+
 TXT_Examnumber_twolines = _('Exam\nnumber')
 
 TXT_Exam_period = _('Exam period')
@@ -713,7 +722,6 @@ TXT__or_ = _(" or ")
 
 TXT_Sequence = _('Sequence')
 TXT_Sequence_2lines =  pgettext_lazy('2 lines', 'Sequence')
-
 
 # get weekdays translated
 TXT_weekdays_abbrev = ('', _('Mon'), _('Tue'), _('Wed'), _('Thu'), _('Fri'), _('Sat'), _('Sun'))

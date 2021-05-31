@@ -13,6 +13,7 @@ from schools import functions as sch_fnc
 from awpr import constants as c
 from awpr import functions as af
 from awpr import downloads as dl
+from awpr import settings as s
 
 import xlsxwriter
 import io
@@ -24,9 +25,12 @@ logger = logging.getLogger(__name__)
 class StudsubjDownloadEx1View(View):  # PR2021-01-24
 
     def get(self, request):
-        logger.debug(' ============= GradeDownloadEx2aView ============= ')
-        # function creates, Ex2A pdf file based on settings in usersetting
-
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= GradeDownloadEx2aView ============= ')
+        # function creates, Ex1 xlsx file based on settings in usersetting
+        # TODO ex form prints colums twice, and totals are not correct,
+        # TODO text EINDEXAMEN missing the rest, school not showing PR2021-05-30
         response = None
         #try:
         if True:
@@ -46,7 +50,8 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24
 
     # get text from examyearsetting
                     settings = af.get_exform_text(examyear, ['exform', 'ex1'])
-                    #logger.debug('settings: ' + str(settings))
+                    if logging_on:
+                        logger.debug('settings: ' + str(settings))
 
     # +++ get selected studsubj_rows
                     subject_row_count, subject_pk_list, subject_code_list, level_pk_list = create_ex1_subject_rows(examyear, school, department)
@@ -54,7 +59,11 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24
                     #  subject_code_list: ['bw', 'cav', 'en', 'inst', 'lo', 'mm1', 'mt', 'mvt', 'ne', 'ns1', 'pa']
                     #  index = row_count
 
-                    logger.debug('..........level_pk_list: ' + str(level_pk_list))
+                    if logging_on:
+                        logger.debug('subject_row_count: ' + str(subject_row_count))
+                        logger.debug('subject_pk_list: ' + str(subject_pk_list))
+                        logger.debug('subject_code_list: ' + str(subject_code_list))
+                        logger.debug('level_pk_list: ' + str(level_pk_list))
 
     # +++ get dict of subjects of these studsubj_rows
                     studsubj_rows = create_ex1_rows(examyear, school, department)
@@ -142,7 +151,6 @@ def create_ex1_xlsx(examyear, school, department, settings, subject_col_count,
         totalrow_align_center = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
         totalrow_number = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
         totalrow_merge = book.add_format({'border': True, 'align': 'right', 'valign': 'vcenter'})
-
 
     # get number of columns
         # columns are (0: 'exnumber', 1: idnumber, 2: name 3: 'class' 4: level "
@@ -327,7 +335,6 @@ def create_ex1_xlsx(examyear, school, department, settings, subject_col_count,
 def create_ex1_rows(examyear, school, department):
     level_req = department.level_req
 
-    # PR2020-04-04 called by: sql_employee_with_aggr_sub07
     sql_studsubj_agg_list = [
         "SELECT studsubj.student_id AS student_id,",
         "ARRAY_AGG(si.subject_id) AS subj_id_arr",
@@ -374,6 +381,7 @@ def create_ex1_subject_rows(examyear, school, department):
     level_pk_list = []
     sql_list = [
         "SELECT subj.id, subjbase.code, st.level_id",
+
         "FROM students_studentsubject AS studsubj",
         "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
         "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
@@ -396,7 +404,7 @@ def create_ex1_subject_rows(examyear, school, department):
             subject_pk_dict[subject_row[0]] = index
             subject_pk_list.append(subject_row[0])
             subject_code_list.append(subject_row[1])
-            if subject_row[2] and  subject_row[2] not in level_pk_list:
+            if subject_row[2] and subject_row[2] not in level_pk_list:
                 level_pk_list.append(subject_row[2])
             index += 1
 

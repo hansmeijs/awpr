@@ -114,7 +114,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                  "r", "c",
                                  "r","r","c",
                                  "r","r","c",
-                                 "r", "r", "r", "c"]},
+                                 "r", "c", "c", "c"]},
         published: {field_caption: ["", "Name_ex_form", "Exam_period", "Exam_type", "Date_submitted", "Download_Exform"],
                     field_names: ["select", "name", "examperiod",  "examtype", "datepublished", "url"],
                     field_tags: ["div", "div", "div", "div", "div", "a"],
@@ -325,7 +325,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 if ("locale_dict" in response) {
                     loc = response.locale_dict;
-                    mimp_loc = loc;
+                    // mimp_loc = loc;
                     isloaded_loc = true;
                 };
 
@@ -954,9 +954,9 @@ document.addEventListener("DOMContentLoaded", function() {
                     if(["fullname", "subj_name"].indexOf(field_name) > -1){
                         // dont set width in field student and subject, to adjust width to length of name
                         // >>> el.classList.add(class_align);
-                       // >>>  el.classList.add(class_width, class_align);
+                        el.classList.add(class_width, class_align);
                     } else {
-                        // >>> el.classList.add(class_width, class_align);
+                        el.classList.add(class_width, class_align);
                     };
                     if(field_name === "examnumber"){
                         el.classList.add("pr-2");
@@ -1406,7 +1406,7 @@ console.log("???????????????? grade_stat_icon_rows", response.grade_stat_icon_ro
 /////////////////////////////////////////////
 //========= UploadToggle  ============= PR2020-07-31  PR2021-01-14
     function UploadToggle(el_input) {
-        //console.log( " ==== UploadToggle ====");
+        console.log( " ==== UploadToggle ====");
         //console.log( "usergroups", usergroups);
         // only called by field 'se_status', 'pe_status', 'ce_status'
         // mode = 'approve_submit' or ''approve_reset'
@@ -1421,13 +1421,16 @@ console.log("???????????????? grade_stat_icon_rows", response.grade_stat_icon_ro
             if(true){
                 const map_id = tblRow.id
                 const map_dict = get_mapdict_from_datamap_by_id(grade_map, map_id);
-    //console.log( "map_dict", map_dict);
+    console.log( "map_dict", map_dict);
                 if(!isEmpty(map_dict)){
+                    const tblName = "grade";
                     const fldName = get_attr_from_el(el_input, "data-field");
+    console.log( "fldName", fldName);
                     if(fldName in map_dict ){
                         const examtype = fldName.substring(0,2);
                         const published_field = examtype + "_published"
-                        let published_pk = (map_dict[published_field]) ? map_dict[published_field] : null;
+                        const published_pk = (map_dict[published_field]) ? map_dict[published_field] : null;
+    console.log( "published_pk", published_pk);
             // give message when grade is published
                         if (published_pk){
                             const msg_html = loc.approve_err_list.This_grade_is_submitted + "<br>" + loc.approve_err_list.You_cannot_remove_approval;
@@ -1445,6 +1448,8 @@ console.log("???????????????? grade_stat_icon_rows", response.grade_stat_icon_ro
                                 const status_sum = (map_dict[fldName]) ? map_dict[fldName] : 0;
                                 const status_bool_at_index = b_get_status_bool_at_index(status_sum, status_index)
 
+    console.log( "status_sum", status_sum);
+    console.log( "status_bool_at_index", status_bool_at_index);
                         // ---  toggle value of status_bool_at_index
                                 const new_status_bool_at_index = !status_bool_at_index;
 
@@ -1468,11 +1473,13 @@ console.log("???????????????? grade_stat_icon_rows", response.grade_stat_icon_ro
                                     const new_status_sum = b_set_status_bool_at_index(status_sum, status_index, new_status_bool_at_index);
                                     el_input.className = get_status_class(new_status_sum)
 
+    console.log( "new_status_sum", new_status_sum);
+    console.log( "get_status_class(new_status_sum)", get_status_class(new_status_sum));
                 // ---  upload changes
-                                    // value of 'mode' setermines if status is set to 'approved' or 'not
+                                    // value of 'mode' determines if status is set to 'approved' or 'not
                                     // instead of using value of new_status_bool_at_index,
                                     const mode = (new_status_bool_at_index) ? "approve_submit" : "approve_reset"
-                                    const upload_dict = { table: map_dict.table,
+                                    const upload_dict = { table: tblName,
                                                            mode: mode,
                                                            mapid: map_id,
                                                            field: fldName,

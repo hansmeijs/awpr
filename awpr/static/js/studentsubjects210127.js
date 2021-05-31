@@ -531,7 +531,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         el_filter.setAttribute("ondragstart", "return false;");
                         el_filter.setAttribute("ondrop", "return false;");
                     } else if (["toggle"].indexOf(filter_tag) > -1) {
-
                         // default empty icon necessary to set pointer_show
                         // default empty icon necessary to set pointer_show
                         append_background_class(el_filter,"tickmark_1_2");

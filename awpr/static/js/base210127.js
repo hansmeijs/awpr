@@ -184,8 +184,6 @@
         }
 //console.log(el_hdrbar_school)
 
-
-
     }  // UpdateHeaderbar
 
 //========= b_get_depbases_display  ============= PPR2021-05-06

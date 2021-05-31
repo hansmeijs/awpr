@@ -766,14 +766,16 @@ def create_school(examyear, upload_dict, error_list,  request):
         name = upload_dict.get('name')
         article = upload_dict.get('article')
         depbases = upload_dict.get('depbases')
+        defaultrole = upload_dict.get('defaultrole')
         if logging_on:
             logger.debug('code: ' + str(code))
             logger.debug('abbrev: ' + str(abbrev))
             logger.debug('name: ' + str(name))
             logger.debug('article: ' + str(article))
             logger.debug('depbases: ' + str(depbases) + str(type(depbases)))
+            logger.debug('defaultrole: ' + str(defaultrole) + str(type(defaultrole)))
 
-        if abbrev and name and code:
+        if abbrev and name and code and defaultrole:
             lookup_value = code
 # - validate if code already exists
             schoolbase, school, msg_err_multiple_found = lookup_schoolbase(lookup_value, request)
@@ -796,7 +798,8 @@ def create_school(examyear, upload_dict, error_list,  request):
                     # First create base record. base.id is used in School. Create also saves new record
                     schoolbase = sch_mod.Schoolbase.objects.create(
                         country=request.user.country,
-                        code=code
+                        code=code,
+                        defaultrole=defaultrole
                     )
                     if logging_on:
                         logger.debug('schoolbase: ' + str(schoolbase))
@@ -837,8 +840,8 @@ def update_school(instance, upload_dict, error_list, request):
         save_parent = False
         schoolbase = instance.base
         for field, new_value in upload_dict.items():
-            if field in ('code', 'name', 'abbrev', 'article', 'depbases', 'activated', 'locked'):
-                if field == 'code':
+            if field in ('code', 'name', 'abbrev', 'article', 'depbases', 'defaultrole', 'activated', 'locked'):
+                if field in ('code', 'defaultrole'):
                     saved_value = getattr(schoolbase, field)
                 else:
                     saved_value = getattr(instance, field)
@@ -847,6 +850,11 @@ def update_school(instance, upload_dict, error_list, request):
                     if new_value != saved_value:
                         # TODO validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
                         #msg_err = av.validate_code_name_identifier()
+                        setattr(schoolbase, field, new_value)
+                        save_parent = True
+
+                elif field == 'defaultrole':
+                    if new_value != saved_value:
                         setattr(schoolbase, field, new_value)
                         save_parent = True
 
@@ -860,6 +868,7 @@ def update_school(instance, upload_dict, error_list, request):
                             save_changes = True
                         else:
                             error_list.append(msg_err)
+
 
     # 3. save changes in depbases
                 elif field == 'depbases':

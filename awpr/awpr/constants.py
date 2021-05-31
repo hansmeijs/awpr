@@ -457,6 +457,18 @@ ROLE_CAPTION = {
     ROLE_128_SYSTEM: _('System manager')
     }
 
+# options_examtype value = ecamtype, filter = examperiod PR2020-12-17
+ROLE_OPTIONS = [
+    {'value': ROLE_008_SCHOOL, 'caption': _('School')},
+    {'value': ROLE_016_COMM,'caption': _('Commissioners')},
+    {'value': ROLE_032_INSP, 'caption': _('Inspection')},
+    {'value': ROLE_064_ADMIN, 'caption': _('Division of Examinations')},
+    {'value': ROLE_128_SYSTEM, 'caption': _('System manager')}
+    ]
+
+
+
+
 # PR2018-05-21 PR2021-04-23
 USERGROUP_READ = 'read'
 USERGROUP_EDIT = 'edit'

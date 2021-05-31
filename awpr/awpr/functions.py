@@ -728,7 +728,6 @@ def update_examyearsetting(examyear, request):
         ('ex1', 'lex_footnote07', '   vóór 1 november inzenden naar de Onderwijs Inspectie.'),
         ('ex1', 'lex_footnote08', None),
 
-
         ('ex2', 'title', 'Verzamellijst van cijfers van schoolexamens'),
         ('ex2', 'submit', 'Inzenden ten minste 3 dagen vóór aanvang van de centrale examens*'),
         ('ex2', 'eex_backpage', 'Handtekening van de examinatoren voor akkoord cijfers schoolonderzoek als aan ommezijde vermeld.'),
@@ -837,7 +836,6 @@ def update_examyearsetting(examyear, request):
         else:
             instance.setting = key_value[2]
         instance.save()
-
 
 def get_exform_text(examyear, key_list):  # PR2021-03-10
     # get text for exform etc from ExfilesText
