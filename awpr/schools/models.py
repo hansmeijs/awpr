@@ -631,7 +631,7 @@ def dep_initials(dep_name):
     return initials
 
 
-def delete_instance(instance, error_list, request, this_text=None):
+def delete_instance(instance, error_dict, request, this_text=None):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_instance  -----')
@@ -654,14 +654,14 @@ def delete_instance(instance, error_list, request, this_text=None):
 
             # error_list = [ { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
             #                {'class': 'alert-danger', msg_list: [text1, text2]} ] (for use in modal message)
-            error_list.append({'class': 'alert-danger', 'msg_list': msg_list})
+            error_dict['error_delete'] = {'class': 'alert-danger', 'msg_list': msg_list}
 
         else:
             instance = None
             deleted_ok = True
 
     if logging_on:
-        logger.debug('error_list: ' + str(error_list))
+        logger.debug('error_dict: ' + str(error_dict))
         logger.debug('instance: ' + str(instance))
         logger.debug('deleted_ok: ' + str(deleted_ok))
 

@@ -159,6 +159,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_schoolbase_pk=sel_schoolbase.pk,
                             sel_depbase_pk=sel_depbase.pk,
                             sel_examperiod=new_setting_dict.get('sel_examperiod'),
+                            studsubj_pk=None,
                             request=request
                         )
 

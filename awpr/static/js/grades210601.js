@@ -106,10 +106,10 @@ document.addEventListener("DOMContentLoaded", function() {
                                   "text", "text", "text",
                                   "text", "text", "text", "text"],
                     field_width: ["020", "060", "120", "060", "060", "060", "120",
-                                 "060", "020",
-                                "060", "060", "020",
-                                "060","060","020",
-                                "060", "060", "060", "020"],
+                                 "075", "020",
+                                "075", "075", "020",
+                                "075","075","020",
+                                "075", "075", "075", "020"],
                     field_align: ["c", "r", "l", "l", "l", "l", "l",
                                  "r", "c",
                                  "r","r","c",
@@ -251,7 +251,6 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_ModNote_input_note = document.getElementById("id_ModNote_input_note");
         const el_ModNote_notes_container = document.getElementById("id_ModNote_notes_container");
         const el_ModNote_btn_save = document.getElementById("id_ModNote_btn_save");
-        const el_ModNote_memo_internal = document.getElementById("id_ModNote_memo_internal");
         const el_ModNote_internal = document.getElementById("id_ModNote_memo_internal");
         const el_ModNote_external = document.getElementById("id_ModNote_memo_external");
         if(el_ModNote_btn_save){
@@ -412,7 +411,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //###########################################################################
 //=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14  PR2021-03-15
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ", data_btn);
+        //console.log( "===== HandleBtnSelect ========= ", data_btn);
         // function is called by HandleShowAll, MSSSS_Response, select_btn.click, DatalistDownload after response.setting_dict
 
         if(data_btn){
@@ -812,13 +811,15 @@ document.addEventListener("DOMContentLoaded", function() {
                         el_header.innerText = field_caption;
         // --- add width, text_align, right padding in examnumber
                         th_header.classList.add(class_width, class_align);
-                        //el_header.classList.add(class_width, class_align);
+                        el_header.classList.add(class_width, class_align);
                         if(field_name === "examnumber"){
                             el_header.classList.add("pr-2")
                         } else if (["se_status", "pe_status", "ce_status"].indexOf(field_name) > -1) {
                             el_header.classList.add("appr_0_1")
                         } else if(field_name === "note_status"){
-                            el_header.classList.add("note_0_1")
+                             // dont show note icon when user has no permit_read_note
+                            const class_str = (permit_dict.read_note) ? "note_0_1" : "note_0_0"
+                            el_header.classList.add(class_str)
                         }
                     th_header.appendChild(el_header)
                 tblRow_header.appendChild(th_header);
@@ -831,8 +832,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     const el_filter = document.createElement(filter_field_tag);
 
         // --- add data-field Attribute.
-                        el_filter.setAttribute("data-field", field_name);
-                        el_filter.setAttribute("data-filtertag", filter_tag);
+                    el_filter.setAttribute("data-field", field_name);
+                    el_filter.setAttribute("data-filtertag", filter_tag);
 
         // --- add EventListener to el_filter
                     if (["text", "number"].includes(filter_tag)) {
@@ -920,8 +921,10 @@ document.addEventListener("DOMContentLoaded", function() {
                     td.addEventListener("click", function() {UploadToggle(el)}, false)
                     add_hover(td);
                 } else if (field_name === "note_status"){
-                    td.addEventListener("click", function() {ModNote_Open(el)}, false)
-                    add_hover(td);
+                    if(permit_dict.read_note){
+                        td.addEventListener("click", function() {ModNote_Open(el)}, false)
+                        add_hover(td);
+                    }
                 //} else if (field_name === "filename"){
                    // const file_name = (map_dict.name) ? map_dict.name : "";
                     //add_hover(td);
@@ -964,7 +967,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                     if (field_name.includes("status")){
     // --- add column with status icon
-                        el.classList.add("stat_0_1")
+                        el.classList.add("stat_0_0")
                     } else if (field_name === "note_status"){
                         el.classList.add("note_0_0")
 
@@ -986,10 +989,9 @@ document.addEventListener("DOMContentLoaded", function() {
                         }
                         */
                     } else if (field_name === "url"){
-
-                         // --- create href
-                         el.innerHTML = "&#8681;";
+                         el.innerHTML = "download &#8681;";
                          el.target = "_blank";
+                         //console.log("????????el", el)
                         //const el_attment = document.createElement("a");
                         //el_attment.innerText = att_name;
                         //el_attment.setAttribute("href", att_url)
@@ -1025,19 +1027,22 @@ document.addEventListener("DOMContentLoaded", function() {
             const fld_value = map_dict[field_name];
 
             if(field_name){
-                let inner_text = null, title_text = null, filter_value = null;
+                let title_text = null, filter_value = null;
                 if (el_div.nodeName === "INPUT"){
                     el_div.value = (fld_value) ? fld_value : null;
                     filter_value = (fld_value) ? fld_value.toLowerCase() : null;
                 } else if (["se_status", "pe_status", "ce_status"].includes(field_name)){
                     el_div.className = get_status_class(fld_value)
                 } else if (field_name === "note_status"){
-                    el_div.className = "note_" + ( (fld_value && fld_value !== "0" ) ? (fld_value.length === 3) ? fld_value : "0_1" : "0_0" )
+                    // dont show note icon when user has no permit_read_note
+                    el_div.className = "note_" + ( (permit_dict.read_note && fld_value && fld_value !== "0") ?
+                        (fld_value.length === 3) ? fld_value : "0_1" : "0_0" )
                  } else if (field_name === "filename"){
-                    el_div.innerHTML = "&#8681;";
+                    //el_div.innerHTML = "&#8681;";
                 } else if (field_name === "url"){
                     el_div.href = fld_value;
                 } else {
+                    let inner_text = null;
                     if (field_name === "examperiod"){
                         inner_text = loc.examperiod_caption[map_dict.examperiod];
                     } else if (field_name === "examtype"){
@@ -1049,10 +1054,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
                     el_div.innerText = (inner_text) ? inner_text : null;
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
-                }
-        // ---  put value in innerText and title
-                el_div.innerText = (inner_text) ? inner_text : null;;
                 // NIU yet: add_or_remove_attr (el_div, "title", !!title_text, title_text);
+                }
 
     // ---  add attribute filter_value
                 add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
@@ -1379,8 +1382,9 @@ document.addEventListener("DOMContentLoaded", function() {
             data: param,
             dataType: "json",
             success: function (response) {
-// console.log("response", response)
+console.log("response", response)
                 if ("grade_note_icon_rows" in response) {
+console.log("--------------- grade_note_icon_rows", response.grade_note_icon_rows)
 //console.log("grade_note_icon_rows", response.grade_note_icon_rows)
                     const tblName = "grades";
                     const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
@@ -1411,92 +1415,95 @@ console.log("???????????????? grade_stat_icon_rows", response.grade_stat_icon_ro
         // only called by field 'se_status', 'pe_status', 'ce_status'
         // mode = 'approve_submit' or ''approve_reset'
         mod_dict = {};
-        const tblRow = get_tablerow_selected(el_input);
-        if(tblRow){
-            // get_usrgrp_auth returns index of auth user, returns 0 when user has none or multiple auth usergroups
-            // gives err messages when multiple found.
-            const status_index = get_usrgrp_auth();
+        if(permit_dict.approve_grade){
+            const tblRow = get_tablerow_selected(el_input);
+            if(tblRow){
 
-            // if(status_index){
-            if(true){
-                const map_id = tblRow.id
-                const map_dict = get_mapdict_from_datamap_by_id(grade_map, map_id);
-    console.log( "map_dict", map_dict);
-                if(!isEmpty(map_dict)){
-                    const tblName = "grade";
-                    const fldName = get_attr_from_el(el_input, "data-field");
-    console.log( "fldName", fldName);
-                    if(fldName in map_dict ){
-                        const examtype = fldName.substring(0,2);
-                        const published_field = examtype + "_published"
-                        const published_pk = (map_dict[published_field]) ? map_dict[published_field] : null;
-    console.log( "published_pk", published_pk);
-            // give message when grade is published
-                        if (published_pk){
-                            const msg_html = loc.approve_err_list.This_grade_is_submitted + "<br>" + loc.approve_err_list.You_cannot_remove_approval;
-                            b_show_mod_message(msg_html);
-                        } else {
+                // get_statusindex_of_user returns index of auth user, returns 0 when user has none or multiple auth usergroups
+                // gives err messages when multiple found.
+                const status_index = get_statusindex_of_user();
 
-            // give message when grade /score  has no value
-                            const no_grade_value = (!map_dict[examtype + "grade"]);
-                            const no_score_value = (['pe', 'ce'].includes(examtype) && !map_dict[examtype + "score"]);
-
-                            if (no_grade_value || no_score_value){
-                                const msg_html = loc.approve_err_list.This_grade_has_no_value + "<br>" + loc.approve_err_list.You_cannot_approve;
+                // if(status_index){
+                if(true){
+                    const map_id = tblRow.id
+                    const map_dict = get_mapdict_from_datamap_by_id(grade_map, map_id);
+        console.log( "map_dict", map_dict);
+                    if(!isEmpty(map_dict)){
+                        const tblName = "grade";
+                        const fldName = get_attr_from_el(el_input, "data-field");
+        console.log( "fldName", fldName);
+                        if(fldName in map_dict ){
+                            const examtype = fldName.substring(0,2);
+                            const published_field = examtype + "_published"
+                            const published_pk = (map_dict[published_field]) ? map_dict[published_field] : null;
+        console.log( "published_pk", published_pk);
+                // give message when grade is published
+                            if (published_pk){
+                                const msg_html = loc.approve_err_list.This_grade_is_submitted + "<br>" + loc.approve_err_list.You_cannot_remove_approval;
                                 b_show_mod_message(msg_html);
                             } else {
-                                const status_sum = (map_dict[fldName]) ? map_dict[fldName] : 0;
-                                const status_bool_at_index = b_get_status_bool_at_index(status_sum, status_index)
 
-    console.log( "status_sum", status_sum);
-    console.log( "status_bool_at_index", status_bool_at_index);
-                        // ---  toggle value of status_bool_at_index
-                                const new_status_bool_at_index = !status_bool_at_index;
+                // give message when grade /score  has no value
+                                const no_grade_value = (!map_dict[examtype + "grade"]);
+                                const no_score_value = (['pe', 'ce'].includes(examtype) && !map_dict[examtype + "score"]);
 
-            // give message when status_bool = true and grade already approved bu this user in different function
-                                let double_approved = false
-                                if(new_status_bool_at_index){
-                                    if (status_index === 1){
-                                        double_approved = (map_dict.se_auth2by_id === setting_dict.requsr_pk || map_dict.se_auth3by_id === setting_dict.requsr_pk);
-                                    } else if (status_index === 2){
-                                        double_approved = (map_dict.se_auth1by_id === setting_dict.requsr_pk || map_dict.se_auth3by_id === setting_dict.requsr_pk);
-                                    } else if (status_index === 3){
-                                        double_approved = (map_dict.se_auth1by_id === setting_dict.requsr_pk || map_dict.se_auth2by_id === setting_dict.requsr_pk);
-                                    }
-                                }
-                                if (double_approved) {
-                                    const msg_html = loc.approve_err_list.Approved_different_function + "<br>" + loc.approve_err_list.You_cannot_approve_again;
+                                if (no_grade_value || no_score_value){
+                                    const msg_html = loc.approve_err_list.This_grade_has_no_value + "<br>" + loc.approve_err_list.You_cannot_approve;
                                     b_show_mod_message(msg_html);
                                 } else {
+                                    const status_sum = (map_dict[fldName]) ? map_dict[fldName] : 0;
+                                    const status_bool_at_index = b_get_status_bool_at_index(status_sum, status_index)
 
-                // ---  change icon, before uploading
-                                    const new_status_sum = b_set_status_bool_at_index(status_sum, status_index, new_status_bool_at_index);
-                                    el_input.className = get_status_class(new_status_sum)
+        console.log( "status_sum", status_sum);
+        console.log( "status_bool_at_index", status_bool_at_index);
+                            // ---  toggle value of status_bool_at_index
+                                    const new_status_bool_at_index = !status_bool_at_index;
 
-    console.log( "new_status_sum", new_status_sum);
-    console.log( "get_status_class(new_status_sum)", get_status_class(new_status_sum));
-                // ---  upload changes
-                                    // value of 'mode' determines if status is set to 'approved' or 'not
-                                    // instead of using value of new_status_bool_at_index,
-                                    const mode = (new_status_bool_at_index) ? "approve_submit" : "approve_reset"
-                                    const upload_dict = { table: tblName,
-                                                           mode: mode,
-                                                           mapid: map_id,
-                                                           field: fldName,
-                                                           status_index: status_index,
-                                                           status_bool_at_index: new_status_bool_at_index,
-                                                           //examperiod: map_dict.examperiod,
-                                                           examtype: examtype,
+                // give message when status_bool = true and grade already approved bu this user in different function
+                                    let double_approved = false
+                                    if(new_status_bool_at_index){
+                                        if (status_index === 1){
+                                            double_approved = (map_dict.se_auth2by_id === setting_dict.requsr_pk || map_dict.se_auth3by_id === setting_dict.requsr_pk);
+                                        } else if (status_index === 2){
+                                            double_approved = (map_dict.se_auth1by_id === setting_dict.requsr_pk || map_dict.se_auth3by_id === setting_dict.requsr_pk);
+                                        } else if (status_index === 3){
+                                            double_approved = (map_dict.se_auth1by_id === setting_dict.requsr_pk || map_dict.se_auth2by_id === setting_dict.requsr_pk);
+                                        }
+                                    }
+                                    if (double_approved) {
+                                        const msg_html = loc.approve_err_list.Approved_different_function + "<br>" + loc.approve_err_list.You_cannot_approve_again;
+                                        b_show_mod_message(msg_html);
+                                    } else {
 
-                                                           grade_pk: map_dict.id};
-                                    UploadChanges(upload_dict, url_grade_approve);
-                                } //  if (double_approved))
-                            }  // if (!grade_value)
-                        }  // if (published_pk)
-                    }  //   if(fldName in map_dict ){
-                }  //  if(!isEmpty(map_dict))
-            }  //if(perm_auth1 || perm_auth1)
-        }  //   if(!!tblRow)
+                    // ---  change icon, before uploading
+                                        const new_status_sum = b_set_status_bool_at_index(status_sum, status_index, new_status_bool_at_index);
+                                        el_input.className = get_status_class(new_status_sum)
+
+        console.log( "new_status_sum", new_status_sum);
+        console.log( "get_status_class(new_status_sum)", get_status_class(new_status_sum));
+                    // ---  upload changes
+                                        // value of 'mode' determines if status is set to 'approved' or 'not
+                                        // instead of using value of new_status_bool_at_index,
+                                        const mode = (new_status_bool_at_index) ? "approve_submit" : "approve_reset"
+                                        const upload_dict = { table: tblName,
+                                                               mode: mode,
+                                                               mapid: map_id,
+                                                               field: fldName,
+                                                               status_index: status_index,
+                                                               status_bool_at_index: new_status_bool_at_index,
+                                                               //examperiod: map_dict.examperiod,
+                                                               examtype: examtype,
+
+                                                               grade_pk: map_dict.id};
+                                        UploadChanges(upload_dict, url_grade_approve);
+                                    } //  if (double_approved))
+                                }  // if (!grade_value)
+                            }  // if (published_pk)
+                        }  //   if(fldName in map_dict ){
+                    }  //  if(!isEmpty(map_dict))
+                }  //if(perm_auth1 || perm_auth1)
+            }  //   if(!!tblRow)
+        }  // if(permit_dict.approve_grade){
     }  // UploadToggle
 
 //========= UploadChanges  ============= PR2020-08-03
@@ -1781,16 +1788,16 @@ console.log("???????????????? grade_stat_icon_rows", response.grade_stat_icon_ro
         console.log("permit_dict", permit_dict) ;
         // mode = 'approve' or 'submit
 
+        mod_MAG_dict = {}
+
         const is_approve_mode = (mode === "approve");
         const is_submit_mode = (mode === "submit");
 
-        // get_usrgrp_auth returns index of auth user, returns 0 when user has none or multiple auth usergroups
+        // get_statusindex_of_user returns index of auth user, returns 0 when user has none or multiple auth usergroups
         // gives err messages when multiple found.
-        const status_index = get_usrgrp_auth();
-
-        mod_MAG_dict = {}
-        if(status_index){
-            if (permit_dict.approve_grade || permit_dict.submit_grade) {
+        const status_index = get_statusindex_of_user();
+        if (permit_dict.approve_grade || permit_dict.submit_grade) {
+            if(status_index){
                 // modes are 'approve' 'submit_test' 'submit_submit'
                 mod_MAG_dict = {mode: mode,
                             step: 0,
@@ -1846,49 +1853,51 @@ console.log("???????????????? grade_stat_icon_rows", response.grade_stat_icon_ro
 
                 $("#id_mod_approve_grade").modal({backdrop: true});
 
-            }  //  if (has_permit)
-        }  //if (permit_dict.approve_grade || permit_dict.submit_grade)
+            }  // if(status_index)
+        }  // if (permit_dict.approve_grade || permit_dict.submit_grade)
     }  // MAG_Open
-
 
 //=========  MAG_Save  ================
     function MAG_Save (mode) {
         //console.log("===  MAG_Save  =====") ;
         //console.log("mod_MAG_dict.mode", mod_MAG_dict.mode) ;
 
-        mod_MAG_dict.is_reset = (mode === "delete");
+        if (permit_dict.approve_grade || permit_dict.submit_grade) {
 
-        //  upload_modes are: 'approve_test', 'approve_submit', 'approve_reset', 'submit_test', 'submit_submit'
-        let upload_mode = null;
-        if (mod_MAG_dict.is_approve_mode){
-            if (mod_MAG_dict.is_reset) {
-                upload_mode = "approve_reset";
-            } else {
-                upload_mode = (mod_MAG_dict.test_is_ok) ? "approve_submit" : "approve_test";
-            }
-        } else if (mod_MAG_dict.is_submit_mode){
-            upload_mode = (mod_MAG_dict.test_is_ok) ? "submit_submit" : "submit_test";
-        };
+            mod_MAG_dict.is_reset = (mode === "delete");
 
-// ---  show loader
-        add_or_remove_class(el_MAG_loader, cls_hide, false)
+            //  upload_modes are: 'approve_test', 'approve_submit', 'approve_reset', 'submit_test', 'submit_submit'
+            let upload_mode = null;
+            if (mod_MAG_dict.is_approve_mode){
+                if (mod_MAG_dict.is_reset) {
+                    upload_mode = "approve_reset";
+                } else {
+                    upload_mode = (mod_MAG_dict.test_is_ok) ? "approve_submit" : "approve_test";
+                }
+            } else if (mod_MAG_dict.is_submit_mode){
+                upload_mode = (mod_MAG_dict.test_is_ok) ? "submit_submit" : "submit_test";
+            };
 
-// ---  hide info box and msg box
-        show_hide_selected_elements_byClass("tab_show", "-", el_mod_approve_grade);
+    // ---  show loader
+            add_or_remove_class(el_MAG_loader, cls_hide, false)
 
-// ---  hide delete btn
-        add_or_remove_class(el_MAG_btn_delete, cls_hide, true);
+    // ---  hide info box and msg box
+            show_hide_selected_elements_byClass("tab_show", "-", el_mod_approve_grade);
 
-// ---  upload changes
-        const upload_dict = { table: "grade",
-                               subject_pk: setting_dict.sel_subject_pk,
-                               mode: upload_mode,
-                               status_index: mod_MAG_dict.status_index,
-                               now_arr: get_now_arr()  // only for timestamp on filename saved Ex-form
-                               }
-        //console.log("upload_dict", upload_dict);
-        UploadChanges(upload_dict, url_grade_approve);
+    // ---  hide delete btn
+            add_or_remove_class(el_MAG_btn_delete, cls_hide, true);
 
+    // ---  upload changes
+            const upload_dict = { table: "grade",
+                                   subject_pk: setting_dict.sel_subject_pk,
+                                   mode: upload_mode,
+                                   status_index: mod_MAG_dict.status_index,
+                                   now_arr: get_now_arr()  // only for timestamp on filename saved Ex-form
+                                   }
+            //console.log("upload_dict", upload_dict);
+            UploadChanges(upload_dict, url_grade_approve);
+
+        }  // if (permit_dict.approve_grade || permit_dict.submit_grade)
 // hide modal
         //$("#id_mod_approve_grade").modal("hide");
     };  // MAG_Save
@@ -2035,45 +2044,60 @@ console.log("???????????????? grade_stat_icon_rows", response.grade_stat_icon_ro
         console.log("===  ModNote_Open  =====") ;
         console.log("el_input", el_input) ;
 
+    // get has_note from grade_map
+        let grade_dict = get_itemdict_from_datamap_by_el(el_input, grade_map)
+        const has_note = !!get_dict_value(grade_dict, ["note_status"])
+
 // reset notes_container
         el_ModNote_notes_container.innerText = null;
+
 // reset input_note
-        el_ModNote_input_note.innerText = null;
-// --- show input element for note, only when permit_edit_rows
+        el_ModNote_input_note.value = null;
+
+// --- show input element for note, only when user has permit
         // TODO permit_dict.write_note_extern
-        add_or_remove_class(el_ModNote_input_container, cls_hide, !permit_dict.write_note_intern)
 
-        mod_note_dict = {table: "studentsubjectnote"};
+        const has_permit_intern_extern = (permit_dict.write_note_intern || permit_dict.write_note_extern)
+        let may_open_modnote = has_permit_intern_extern || (permit_dict.read_note && has_note);
+        if(may_open_modnote){
+            // only show input block when  has_permit_intern_extern
+            add_or_remove_class(el_ModNote_input_container, cls_hide, !has_permit_intern_extern)
+            // hide external note if no permit write_note_extern
+            add_or_remove_class(el_ModNote_external, cls_hide, !permit_dict.write_note_extern)
 
-// get tr_selected
-        let tr_selected = get_tablerow_selected(el_input)
+            // hide 'x' option when not inspection
+            const el_ModNote_memo_icon4 = document.getElementById("id_ModNote_memo_icon4")
+            add_or_remove_class(el_ModNote_memo_icon4, cls_hide, !permit_dict.requsr_role_insp)
 
-// get info from grade_map
-        let grade_dict = get_itemdict_from_datamap_by_el(el_input, grade_map)
-        //console.log("grade_dict", grade_dict) ;
-        if(!isEmpty(grade_dict)){
-            let headertext = (grade_dict.fullname) ? grade_dict.fullname + "\n" : "";
-            if(grade_dict.subj_code) { headertext += grade_dict.subj_name};
-            el_ModNote_header.innerText = headertext;
+    // get tr_selected
+            let tr_selected = get_tablerow_selected(el_input)
 
-            mod_note_dict.studsubj_pk = grade_dict.studsubj_id
+            if(!isEmpty(grade_dict)){
+                let headertext = (grade_dict.fullname) ? grade_dict.fullname + "\n" : "";
+                if(grade_dict.subj_code) { headertext += grade_dict.subj_name};
+                el_ModNote_header.innerText = headertext;
 
-            ModNote_SetInternalExternal("internal");
+        console.log("grade_dict", grade_dict) ;
+                mod_note_dict.studsubj_pk = grade_dict.studsubj_id
+                mod_note_dict.examperiod = grade_dict.examperiod
 
-// download existing studentsubjectnote_rows of this studsubj
-            // will be filled in ModNote_FillNotes
+                ModNote_SetInternalExternal("internal");
 
-// show loader
-        const el_ModNote_loader = document.getElementById("id_ModNote_loader");
-        add_or_remove_class(el_ModNote_loader, cls_hide, false);
-            const upload_dict = {studsubj_pk: grade_dict.studsubj_id};
-            UploadChanges(upload_dict, url_studentsubjectnote_download)
+    // download existing studentsubjectnote_rows of this studsubj
+                // will be filled in ModNote_FillNotes
 
-            if (el_input){ setTimeout(function (){ el_ModNote_input_note.focus() }, 50)};
+    // show loader
+            const el_ModNote_loader = document.getElementById("id_ModNote_loader");
+            add_or_remove_class(el_ModNote_loader, cls_hide, false);
+                const upload_dict = {studsubj_pk: grade_dict.studsubj_id};
+                UploadChanges(upload_dict, url_studentsubjectnote_download)
 
-// get info from grade_map
-            $("#id_mod_note").modal({backdrop: true});
-        }
+                if (el_input){ setTimeout(function (){ el_ModNote_input_note.focus() }, 50)};
+
+    // get info from grade_map
+                $("#id_mod_note").modal({backdrop: true});
+            }
+        }  // if(permit_dict.read_note)
     }  // ModNote_Open
 
 //========= ModNote_Save============== PR2020-10-15
@@ -2085,7 +2109,7 @@ console.log("???????????????? grade_stat_icon_rows", response.grade_stat_icon_ro
             const note = el_ModNote_input_note.value;
             const note_status = (!mod_note_dict.is_internal) ? "1_" + mod_note_dict.sel_icon : "0_1";
 
-// get attachment infor
+// get attachment info
             const file = document.getElementById("id_ModNote_filedialog").files[0];  // file from input
             const file_type = (file) ? file.type : null;
             const file_name = (file) ? file.name : null;
@@ -2093,17 +2117,18 @@ console.log("???????????????? grade_stat_icon_rows", response.grade_stat_icon_ro
 
            // may check size or type here with
             // ---  upload changes
-                const upload_dict = { table: mod_note_dict.table,
-                                       create: true,
-                                       studsubj_pk: mod_note_dict.studsubj_pk,
-                                       note: note,
-                                       note_status: note_status,
-                                       is_internal_note: mod_note_dict.is_internal,
-                                       file_type: file_type,
-                                       file_name: file_name,
-                                       file_size: file_size
-                                       };
-                const upload_json = JSON.stringify (upload_dict)
+            const upload_dict = { table: mod_note_dict.table,
+                                   create: true,
+                                   studsubj_pk: mod_note_dict.studsubj_pk,
+                                   examperiod: mod_note_dict.examperiod,
+                                   note: note,
+                                   note_status: note_status,
+                                   is_internal_note: mod_note_dict.is_internal,
+                                   file_type: file_type,
+                                   file_name: file_name,
+                                   file_size: file_size
+                                   };
+            const upload_json = JSON.stringify (upload_dict)
 
             if(note || file_size){
                 const upload = new Upload(upload_json, file, url_studentsubjectnote_upload);
@@ -2143,8 +2168,8 @@ console.log("???????????????? grade_stat_icon_rows", response.grade_stat_icon_ro
         // formData.append('myfiles[]', file, file.name);
 
         // add assoc key values, this will be posts values
-        console.log( this.getType())
-        console.log( this.getName())
+        console.log( "attachment type",  this.getType())
+        console.log( "attachment name", this.getName())
 
         formData.append("upload_file", true);
         formData.append("filename", this.getName());
@@ -2158,22 +2183,38 @@ console.log("???????????????? grade_stat_icon_rows", response.grade_stat_icon_ro
         formData.append('csrfmiddlewaretoken', csrftoken);
         formData.append('upload', this.upload_json);
 
-        console.log(formData)
+        //const parameters = {"upload": JSON.stringify (upload_dict)}
+        const parameters = formData;
         $.ajax({
             type: "POST",
             url: this.url_str,
-            xhr: function () {
-                var myXhr = $.ajaxSettings.xhr();
-                if (myXhr.upload) {
-                    myXhr.upload.addEventListener('progress', that.progressHandling, false);
+                //xhr: function () {
+                //     var myXhr = $.ajaxSettings.xhr();
+                //      if (myXhr.upload) {
+                //         myXhr.upload.addEventListener('progress', that.progressHandling, false);
+                //      }
+                //     return myXhr;
+                //   },
+            data: parameters,
+            dataType:'json',
+            success: function (response) {
+                // ---  hide loader
+                el_loader.classList.add(cls_visible_hide)
+
+                if ("grade_note_icon_rows" in response) {
+                    const tblName = "grades";
+                    const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
+                    RefreshDataMap(tblName, field_names, response.grade_note_icon_rows, grade_map, false);  // false = don't show green ok background
                 }
-                return myXhr;
-            },
-            success: function (data) {
-                // your callback here
-            },
-            error: function (error) {
-                // handle error
+
+            },  // success: function (response) {
+
+
+            error: function (xhr, msg) {
+                // ---  hide loader
+                el_loader.classList.add(cls_visible_hide)
+                console.log(msg + '\n' + xhr.responseText);
+                alert(msg + '\n' + xhr.responseText);
             },
             async: true,
             data: formData,
@@ -2186,6 +2227,7 @@ console.log("???????????????? grade_stat_icon_rows", response.grade_stat_icon_ro
     };
 
     Upload.prototype.progressHandling = function (event) {
+    console.log("progressHandling", event)
         let percent = 0;
         const position = event.loaded || event.position;
         const total = event.total;
@@ -2193,6 +2235,7 @@ console.log("???????????????? grade_stat_icon_rows", response.grade_stat_icon_ro
         if (event.lengthComputable) {
             percent = Math.ceil(position / total * 100);
         }
+    console.log("percent", percent)
         // update progressbars classes so it fits your code
         $(progress_bar_id + " .progress-bar").css("width", +percent + "%");
         $(progress_bar_id + " .status").text(percent + "%");
@@ -2274,7 +2317,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                 const note_len = (note_text) ? note_text.length : 0;
                 const modified_dateJS = parse_dateJS_from_dateISO(row.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
-                let modified_by = (row.schoolcode) ? row.schoolcode + " " : "";
+                let modified_by = (row.sch_abbrev) ? row.sch_abbrev + " - " : "";
                 modified_by += (row.modifiedby) ? row.modifiedby : "-";
                 const mod_text = modified_by + ", " + modified_date_formatted + ":"
 
@@ -2350,6 +2393,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                                     const el_attment = document.createElement("a");
                                     el_attment.innerText = att_name;
                                     el_attment.setAttribute("href", att_url)
+                                    el_attment.target = "_blank";
                                     el_note_btn_attment.appendChild(el_attment);
 
                         }  //  if (att_id){
@@ -2366,7 +2410,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 //=========  RefreshDataMap  ================ PR2020-08-16 PR2020-09-30, PR2021-05-01
     function RefreshDataMap(tblName, field_names, data_rows, data_map, show_ok) {
         console.log(" --- RefreshDataMap  ---");
-        //console.log("data_rows", data_rows);
+        console.log("data_rows", data_rows);
         if (data_rows) {
             const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
             for (let i = 0, update_dict; update_dict = data_rows[i]; i++) {
@@ -3501,8 +3545,8 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
     }  // GetNumberFromInputGrade
 
 
-//========= get_usrgrp_auth  ======== // PR2021-03-26
-    function get_usrgrp_auth(){
+//========= get_statusindex_of_user  ======== // PR2021-03-26
+    function get_statusindex_of_user(){
         // function returns status_index of auth user, returns 0 when user has none or multiple auth usergroups
         // gives err messages when multiple found.
         // STATUS_01_AUTH1 = 2,  STATUS_02_AUTH2 = 4, STATUS_03_AUTH3 = 8
@@ -3533,7 +3577,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                 status_index = 3;
             }
     return status_index;
-    }  // get_usrgrp_auth
+    }  // get_statusindex_of_user
 
 //========= get_tblName_from_selectedBtn  ======== // PR2021-01-22
     function get_tblName_from_selectedBtn() {

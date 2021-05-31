@@ -374,6 +374,19 @@ def get_mode_str(self):  # PR2018-11-28
         mode_str = c.MODE_DICT.get(str(self.mode))
     return mode_str
 
+def get_selected_examyear_from_usersetting(request):  # PR2021-05-31
+    #logger.debug(' ----- get_selected_examyear_from_usersetting ----- ' )
+    # this function gets sel_examyear_instance from saved settings.
+    # used in students.create_studentsubjectnote_rows
+    selected_dict = request.user.get_usersetting_dict(c.KEY_SELECTED_PK)
+    s_ey_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+    sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(
+        pk=s_ey_pk,
+        country=request.user.country
+    )
+    return sel_examyear_instance
+# - end of get_selected_examyear_from_usersetting
+
 
 def get_sel_examyear_instance(request, request_setting=None):  # PR2020-12-25
     #logger.debug('  -----  get_sel_examyear_instance  -----')

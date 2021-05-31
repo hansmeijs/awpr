@@ -30,7 +30,13 @@ note_flex_2 {
   position: relative;
   overflow: hidden;
   display: inline-block;
-  pointer_show
+    cursor: pointer;
+    /* to prevent text selection */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .note_attachment_wrapper input[type=file] {

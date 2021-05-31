@@ -18,6 +18,8 @@ from students import validators as v
 from awpr import functions as af
 from awpr import downloads as dl
 
+from grades import views as grd_vw
+
 from accounts import models as acc_mod
 from schools import models as sch_mod
 from students import models as stud_mod
@@ -693,7 +695,8 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 upload_dict = json.loads(upload_json)
-                logger.debug('upload_dict: ' + str(upload_dict))
+                if logging_on:
+                    logger.debug('upload_dict: ' + str(upload_dict))
 
                 # - get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, is_locked, \
@@ -701,7 +704,7 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                     dl.get_selected_examyear_school_dep_from_usersetting(request)
 
 # - get current grade - when mode is 'create': studsubj is None. It will be created at "elif mode == 'create'"
-                examperiod_int = upload_dict.get('examperiod_int')
+                examperiod = upload_dict.get('examperiod')
                 studsubj_pk = upload_dict.get('studsubj_pk')
                 note = upload_dict.get('note')
 
@@ -714,8 +717,10 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                     student__school=sel_school,
                     student__department=sel_department
                 )
-                logger.debug('studsubj: ' + str(studsubj))
-                logger.debug('note: ' + str(note))
+
+                if logging_on:
+                    logger.debug('studsubj: ' + str(studsubj))
+                    logger.debug('note: ' + str(note))
 
 # - Create new studsubjnote if is_create:
                 # studsubjnote is also called when studsubjnote is_created, save_to_log is called in update_studsubjnote
@@ -724,12 +729,12 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
 
         # if is_internal_note: get schoolbase of request_user, to be put in  intern_schoolbase
                     is_internal_note = upload_dict.get('is_internal_note', False)
-
-                    logger.debug('is_internal_note: ' + str(is_internal_note))
                     intern_schoolbase = None
                     if is_internal_note:
                         intern_schoolbase = request.user.schoolbase
-                    logger.debug('is_internal_note: ' + str(is_internal_note))
+                    if logging_on:
+                        logger.debug('is_internal_note: ' + str(is_internal_note))
+                        logger.debug('intern_schoolbase: ' + str(intern_schoolbase))
 
                     studsubjnote = stud_mod.Studentsubjectnote(
                         studentsubject=studsubj,
@@ -737,12 +742,15 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                         note_status=note_status,
                         intern_schoolbase=intern_schoolbase
                     )
-                    logger.debug('studsubjnote.note: ' + str(studsubjnote.note))
+                    if logging_on:
+                        logger.debug('studsubjnote.note: ' + str(studsubjnote.note))
                     studsubjnote.save(request=request)
-                    logger.debug('studsubjnote.pk: ' + str(studsubjnote.pk))
-                    logger.debug('file_type: ' + str(file_type))
-                    logger.debug('file_name: ' + str(file_name))
-                    logger.debug('file: ' + str(file))
+
+                    if logging_on:
+                        logger.debug('studsubjnote.pk: ' + str(studsubjnote.pk))
+                        logger.debug('file_type: ' + str(file_type))
+                        logger.debug('file_name: ' + str(file_name))
+                        logger.debug('file: ' + str(file))
 
                     if studsubjnote and file:
                         instance = stud_mod.Noteattachment(
@@ -751,9 +759,32 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                             filename=file_name,
                             file=file)
 
-                        logger.debug('instance: ' + str(instance))
+                        if logging_on:
+                            logger.debug('instance: ' + str(instance))
                         instance.save()
-                        logger.debug('instance.pk: ' + str(instance.pk))
+                        if logging_on:
+                            logger.debug('instance.pk: ' + str(instance.pk))
+
+#======================
+
+                    grade_note_icon_rows = grd_vw.create_grade_note_icon_rows(
+                        sel_examyear_pk=sel_examyear.pk,
+                        sel_schoolbase_pk=sel_school.base_id,
+                        sel_depbase_pk=sel_department.base_id,
+                        sel_examperiod=examperiod,
+                        studsubj_pk=studsubj.pk,
+                        request=request)
+                    if grade_note_icon_rows:
+                        update_wrap['grade_note_icon_rows'] = grade_note_icon_rows
+
+                #=========================
+
+
+
+
+
+
+
 
                 """
 # - also set emplhour.hasnote = True, save emplhour and update last_emplhour_updated PR2020-10-26
@@ -1480,61 +1511,74 @@ def create_studentsubjectnote_rows(upload_dict, request):  # PR2021-03-16
     logger.debug('upload_dict: ' + str(upload_dict))
     # create list of studentsubjectnote of this studentsubject, filter intern_schoolbase
     # to show intern note only to user of the same school/insp: filter intern_schoolbase = requsr.schoolbase or null
+    # intern_schoolbase only has value when it is an intern memo.
+    # It has the value of the school of the user, NOT the school of the student
     note_rows = []
     if upload_dict:
         studsubj_pk = upload_dict.get('studsubj_pk')
         if studsubj_pk:
-            requsr_intern_schoolbase_pk = request.user.schoolbase_id
             logger.debug('studsubj_pk: ' + str(studsubj_pk))
-            logger.debug('requsr_intern_schoolbase_pk: ' + str(requsr_intern_schoolbase_pk))
+            sel_examyear_instance = af.get_selected_examyear_from_usersetting(request)
+            if sel_examyear_instance:
+                sql_keys = {
+                    'ss_id': studsubj_pk,
+                    'ex_yr': sel_examyear_instance.pk,
+                    'req_int_sb_id': request.user.schoolbase_id}
+                sql_list = ["SELECT au.id, COALESCE(SUBSTRING (au.username, 7), '') AS name,",
+                            "sb.code AS sb_code, sch.abbrev as sch_abbrev ",
+                            "FROM accounts_user AS au",
+                            "INNER JOIN schools_schoolbase AS sb ON (sb.id = au.schoolbase_id)",
+                            "INNER JOIN schools_school AS sch ON (sch.base_id = au.schoolbase_id)",
+                            "WHERE sch.examyear_id = %(ex_yr)s::INT"
+                            ]
 
-            sql_keys = {'ss_id': studsubj_pk, 'int_sb_id': requsr_intern_schoolbase_pk}
-            sql_user = "SELECT au.id, COALESCE(SUBSTRING (au.username, 7), '') AS name, sb.code AS sb_code " + \
-                            "FROM accounts_user AS au INNER JOIN schools_schoolbase AS sb ON (sb.id = au.schoolbase_id)"
-            sql_list = ["SELECT ssn.id, ssn.studentsubject_id, ssn.note, ssn.note_status, ssn.intern_schoolbase_id,",
-                        "ssn.modifiedat, au.name AS modifiedby, au.sb_code AS schoolcode",
-                        "FROM students_studentsubjectnote AS ssn",
-                        "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = ssn.studentsubject_id)",
-                        "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-                        "LEFT JOIN ( " + sql_user + ") AS au ON (au.id = ssn.modifiedby_id)",
-                        "WHERE ssn.studentsubject_id = %(ss_id)s::INT"
-                        ]
-            sql_list.append("ORDER BY ssn.modifiedat DESC")
+                sql_user = ' '.join(sql_list)
+                sql_list = ["SELECT ssn.id, ssn.studentsubject_id, ssn.note, ssn.note_status, ssn.intern_schoolbase_id,",
+                            "ssn.modifiedat, au.name AS modifiedby, au.sb_code, au.sch_abbrev",
 
-            sql = ' '.join(sql_list)
-            newcursor = connection.cursor()
-            newcursor.execute(sql, sql_keys)
-            note_rows = af.dictfetchall(newcursor)
-            if note_rows:
-                for note_row in note_rows:
-                    ssn_id = note_row.get('id')
-                    logger.debug('note_row: ' + str(note_row))
-                    logger.debug('ssn_id: ' + str(ssn_id))
-                    sql_keys = {'ssn_id': ssn_id}
-                    sql_list = [
-                        "SELECT nat.id, nat.file, nat.contenttype, nat.studentsubjectnote_id",
-                        "FROM students_noteattachment AS nat",
-                        "WHERE nat.studentsubjectnote_id = %(ssn_id)s::INT"
-                        ]
-                    #                         "WHERE nat.studentsubjectnote_id = %(ssn_id)s::INT"
-                    sql_list.append("ORDER BY nat.file")
-                    sql = ' '.join(sql_list)
-                    newcursor.execute(sql, sql_keys)
-                    rows = newcursor.fetchall()
+                            "FROM students_studentsubjectnote AS ssn",
+                            "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = ssn.studentsubject_id)",
+                            "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+                            "LEFT JOIN ( " + sql_user + ") AS au ON (au.id = ssn.modifiedby_id)",
+                            "WHERE ssn.studentsubject_id = %(ss_id)s::INT",
+                            "AND (ssn.intern_schoolbase_id = %(req_int_sb_id)s::INT OR ssn.intern_schoolbase_id IS NULL)"
+                            ]
+                sql_list.append("ORDER BY ssn.modifiedat DESC")
 
-                    logger.debug('rows: ' + str(rows))
+                sql = ' '.join(sql_list)
+                newcursor = connection.cursor()
+                newcursor.execute(sql, sql_keys)
+                note_rows = af.dictfetchall(newcursor)
+                if note_rows:
+                    for note_row in note_rows:
+                        ssn_id = note_row.get('id')
+                        logger.debug('note_row: ' + str(note_row))
+                        logger.debug('ssn_id: ' + str(ssn_id))
+                        sql_keys = {'ssn_id': ssn_id}
+                        sql_list = [
+                            "SELECT nat.id, nat.file, nat.contenttype, nat.studentsubjectnote_id",
+                            "FROM students_noteattachment AS nat",
+                            "WHERE nat.studentsubjectnote_id = %(ssn_id)s::INT"
+                            ]
+                        #                         "WHERE nat.studentsubjectnote_id = %(ssn_id)s::INT"
+                        sql_list.append("ORDER BY nat.file")
+                        sql = ' '.join(sql_list)
+                        newcursor.execute(sql, sql_keys)
+                        rows = newcursor.fetchall()
 
-                    attachments = stud_mod.Noteattachment.objects.filter(
-                        studentsubjectnote=ssn_id)
-            # get list of attachments
-                    nat_rows = []
-                    if attachments:
-                        for attachment in attachments:
-                            file = attachment.file
-                            url = file.url
-                            nat_rows.append({'id': attachment.pk, 'file_name': str(file), 'url': url})
-                    if nat_rows:
-                        note_row['attachments'] = nat_rows
+                        logger.debug('rows: ' + str(rows))
+
+                        attachments = stud_mod.Noteattachment.objects.filter(
+                            studentsubjectnote=ssn_id)
+                # get list of attachments
+                        nat_rows = []
+                        if attachments:
+                            for attachment in attachments:
+                                file = attachment.file
+                                url = file.url
+                                nat_rows.append({'id': attachment.pk, 'file_name': str(file), 'url': url})
+                        if nat_rows:
+                            note_row['attachments'] = nat_rows
 
     return note_rows
 # - end of create_studentsubjectnote_rows
@@ -1660,7 +1704,9 @@ def upload_student(student_list, student_dict, lookup_field, awpKey_list,
 
         # - check if studentbase with this code exists in request.user.country. studentbase has value when only one found
         # lookup_value = student_dict.get(lookup_field)
-        studentbase, multiple_found = lookup_studentbase(lookup_value, request)
+        # TODO replace by lookup_student()
+        # was: studentbase, multiple_found = lookup_studentbase(lookup_value, request)
+        studentbase, multiple_found = None, None # temporary null value
         if multiple_found:
             log_str = str(_("Value '%(fld)s' is found multiple times.") % {'fld': lookup_value})
             msg_err = ' '.join((skipped_str, log_str))

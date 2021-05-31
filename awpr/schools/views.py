@@ -453,7 +453,6 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                     school_rows = []
                     append_dict = {}
                     error_dict = {}
-                    error_list = []
 
                     if logging_on:
                         logger.debug('upload_dict' + str(upload_dict))
@@ -472,11 +471,11 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
 # +++ Create new school
                         if is_create:
                             if permit_create:
-                                school, msg_err = create_school(examyear, upload_dict, error_list, request)
+                                school, msg_err = create_school_instance(examyear, upload_dict, error_dict, request)
                                 if school:
                                     append_dict['created'] = True
-                                elif msg_err:
-                                    error_list.append(msg_err)
+                                #elif msg_err:
+                                #    error_dict.append(msg_err)
 
                                 if logging_on:
                                     logger.debug('school: ' + str(school))
@@ -492,16 +491,16 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                                 if school:
                                     this_text = _("School '%(tbl)s' ") % {'tbl': school.name}
                                     #logger.debug('this_text: ' + str(this_text))
-                            # a. check if school has child rows, put msg_err in update_dict when error
+                            # a. TODO check if school has child rows, put msg_err in update_dict when error
                                     msg_err = None #validate_employee_has_emplhours(employee)
                                     if msg_err:
-                                        error_list.append(msg_err)
+                                        #error_dict['error'] = msg_err
+                                        pass
                                     else:
                             # b. check if there are teammembers with this employee: absence teammembers, remove employee from shift teammembers
                                         # delete_employee_from_teammember(employee, request)
                             # c. delete school
-                                        deleted_ok = sch_mod.delete_instance(school, error_list, request, this_text)
-                                        #logger.debug('deleted_ok' + str(deleted_ok))
+                                        deleted_ok = sch_mod.delete_instance(school, error_dict, request, this_text)
                                         if deleted_ok:
                              # - add deleted_row to school_rows
                                             school_rows.append({'pk': school_pk,
@@ -509,7 +508,6 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                                                                  'mapid': 'school_' + str(school_pk),
                                                                  'deleted': True})
                                             school = None
-                                        #logger.debug('school_rows' + str(school_rows))
 
     # --- get existing school
                         else:
@@ -518,13 +516,13 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                         if school:
                             if permit_create or permit_edit:
     # --- Update school, also when it is created. When deleted: school is None
-                            #  Not necessary when created. Most fields are required. All fields are saved in create_school
+                            #  Not necessary when created. Most fields are required. All fields are saved in create_school_instance
 
-                                update_school(school, upload_dict, error_dict, request)
+                                update_school_instance(school, upload_dict, error_dict, request)
 
     # --- add update_dict to update_wrap
-                                if error_list:
-                                    append_dict['error'] = error_list
+                                if error_dict:
+                                    append_dict['error'] = error_dict
 
                                 permit_dict = {
                                     'requsr_role': req_usr.role,
@@ -748,11 +746,11 @@ class SchoolAwpUploadView(View):  # PR2021-05-03
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-def create_school(examyear, upload_dict, error_list,  request):
+def create_school_instance(examyear, upload_dict, error_dict,  request):
     # --- create school # PR2019-07-30 PR2020-10-22 PR2021-05-13
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- create_school ----- ')
+        logger.debug(' ----- create_school_instance ----- ')
         logger.debug('examyear: ' + str(examyear))
         logger.debug('upload_dict: ' + str(upload_dict))
 
@@ -793,7 +791,9 @@ def create_school(examyear, upload_dict, error_list,  request):
                     logger.debug('msg_err: ' + str(msg_err))
 
 # - create and save school
-            if msg_err is None:
+            if msg_err:
+                error_dict['error_create'] = msg_err
+            else:
                 try:
                     # First create base record. base.id is used in School. Create also saves new record
                     schoolbase = sch_mod.Schoolbase.objects.create(
@@ -801,9 +801,6 @@ def create_school(examyear, upload_dict, error_list,  request):
                         code=code,
                         defaultrole=defaultrole
                     )
-                    if logging_on:
-                        logger.debug('schoolbase: ' + str(schoolbase))
-
                     school = sch_mod.School(
                         base=schoolbase,
                         examyear=examyear,
@@ -815,21 +812,23 @@ def create_school(examyear, upload_dict, error_list,  request):
                     school.save(request=request)
                     if logging_on:
                         logger.debug('schoolbase: ' + str(schoolbase))
+                        logger.debug('school: ' + str(school))
                 except Exception as e:
+                    school = None
                     logger.error(getattr(e, 'message', str(e)))
-                else:
                     msg_err = str(_("An error occurred. School '%(val)s' could not be added.") % {'val': name})
+                    error_dict['error_create'] = msg_err
 
-    return school, msg_err
-
+    return school
+# - end of create_school_instance
 
 #######################################################
-def update_school(instance, upload_dict, error_list, request):
+def update_school_instance(instance, upload_dict, err_dict, request):
     # --- update existing and new instance PR2019-06-06 PR2021-05-13
     # add new values to update_dict (don't reset update_dict, it has values)
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ------- update_school -------')
+        logger.debug(' ------- update_school_instance -------')
         logger.debug('upload_dict' + str(upload_dict))
 
     # upload_dict = {id: {table: "school", ppk: 1, pk: 1, mapid: "school_1"},
@@ -847,28 +846,33 @@ def update_school(instance, upload_dict, error_list, request):
                     saved_value = getattr(instance, field)
 
                 if field == 'code':
-                    if new_value != saved_value:
-                        # TODO validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
-                        #msg_err = av.validate_code_name_identifier()
+                    if new_value and new_value != saved_value:
+                        # TODO validate_code_name_id checks for null, too long and exists. Puts err_msg in update_dict
+                        #err_msg = av.validate_code_name_identifier()
                         setattr(schoolbase, field, new_value)
                         save_parent = True
 
                 elif field == 'defaultrole':
-                    if new_value != saved_value:
+                    if new_value and new_value != saved_value:
                         setattr(schoolbase, field, new_value)
                         save_parent = True
 
-                elif field in ['name', 'abbrev', 'article']:
-                    if new_value != saved_value:
-                        # TODO validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
-                        # msg_err = validate_code_name_identifier(
-                        msg_err = None
-                        if not msg_err:
+                elif field in ['name', 'abbrev']:
+                    if new_value and new_value != saved_value:
+                        # TODO validate_code_name_id checks for null, too long and exists. Puts err_msg in update_dict
+                        # err_msg = validate_code_name_identifier(
+                        err_msg = None
+                        if not err_msg:
                             setattr(instance, field, new_value)
                             save_changes = True
                         else:
-                            error_list.append(msg_err)
+                            err_dict[field] = err_msg
 
+                elif field == 'article':
+                    # article can be None
+                    if new_value != saved_value:
+                        setattr(instance, field, new_value)
+                        save_changes = True
 
     # 3. save changes in depbases
                 elif field == 'depbases':
@@ -918,12 +922,13 @@ def update_school(instance, upload_dict, error_list, request):
                 logger.error(getattr(e, 'message', str(e)))
                 msg_list = [_('An error occurred: ') + str(e),
                             _('The changes have not been saved.')]
-                # error_list = [ { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
+                # err_dict = [ { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
                 #                {'class': 'alert-danger', msg_list: [text1, text2]} ] (for use in modal message)
-                error_list.append({'class': 'alert-danger', 'msg_list': msg_list})
+                err_dict['err_save'] = {'class': 'alert-danger', 'msg_list': msg_list}
 
         if save_changes:
             try:
+                a = 1 / 0
                 instance.save(request=request)
                 if logging_on:
                     logger.debug('instance changes saved')
@@ -931,9 +936,10 @@ def update_school(instance, upload_dict, error_list, request):
                 logger.error(getattr(e, 'message', str(e)))
                 msg_list = [_('An error occurred: ') + str(e),
                             _('The changes have not been saved.')]
-                # error_list = [ { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
+                # err_dict = [ { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
                 #                {'class': 'alert-danger', msg_list: [text1, text2]} ] (for use in modal message)
-                error_list.append({'class': 'alert-danger', 'msg_list': msg_list})
+                err_dict['err_save'] = {'class': 'alert-danger', 'msg_list': msg_list}
+# - -end of update_school_instance
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 

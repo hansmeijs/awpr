@@ -466,9 +466,6 @@ ROLE_OPTIONS = [
     {'value': ROLE_128_SYSTEM, 'caption': _('System manager')}
     ]
 
-
-
-
 # PR2018-05-21 PR2021-04-23
 USERGROUP_READ = 'read'
 USERGROUP_EDIT = 'edit'

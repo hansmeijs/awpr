@@ -455,7 +455,7 @@ class Studentsubjectnote(sch_mod.AwpBaseModel):
 
     studentsubject = ForeignKey(Studentsubject, related_name='+', on_delete=CASCADE)
 
-    # intern_school only has value when it is an intern memo.
+    # intern_schoolbase only has value when it is an intern memo.
     # It has the value of the school of the user, NOT the school of the student
     intern_schoolbase = ForeignKey(sch_mod.Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
 

@@ -86,6 +86,7 @@ class GradeDownloadGradeIconsView(View):  # PR2021-04-30
                 sel_schoolbase_pk=sel_school.base_id,
                 sel_depbase_pk=sel_department.base_id,
                 sel_examperiod=sel_examperiod,
+                studsubj_pk=None,
                 request=request)
             if grade_note_icon_rows:
                 download_wrap['grade_note_icon_rows'] = grade_note_icon_rows
@@ -761,7 +762,6 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
                         logger.debug('student: ' + str(student))
                 # TODO msgerr when student is locked
                 if student:
-                    append_dict = {}
                     error_dict = {}
 
 # - get current grade
@@ -781,9 +781,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
 # - add update_dict to update_wrap
                         grade_rows = []
 
-                        # TODO check value of error_dict
-                        if error_dict:
-                            append_dict['error'] = error_dict
+
                         if return_grades_with_exam:
                             rows = create_grade_with_exam_rows(
                                 sel_examyear_pk=sel_examyear.pk,
@@ -794,6 +792,11 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
                                 grade_pk=grade.pk
                             )
                         else:
+                            # TODO check value of error_dict
+                            append_dict = {}
+                            if error_dict:
+                                append_dict['error'] = error_dict
+
                             rows = create_grade_rows(
                                 sel_examyear_pk=sel_examyear.pk,
                                 sel_schoolbase_pk=sel_school.base_id,
@@ -840,10 +843,10 @@ def update_grade_instance(instance, upload_dict, err_dict, logging_on, request):
             saved_value = getattr(instance, field)
 
 # - validate new_value
-            validated_value, msg_err = grad_val.validate_input_grade(instance, field, new_value, logging_on)
+            validated_value, err_msg = grad_val.validate_input_grade(instance, field, new_value, logging_on)
 
-            if msg_err:
-                err_dict[field] = msg_err
+            if err_msg:
+                err_dict[field] = err_msg
             else:
 # 2. save changes if changed and no_error
                 if validated_value != saved_value:
@@ -851,13 +854,13 @@ def update_grade_instance(instance, upload_dict, err_dict, logging_on, request):
                     save_changes = True
                     recalc_finalgrade = True
                 else:
-                    err_dict[field] = msg_err
+                    err_dict[field] = err_msg
             if logging_on:
                 logger.debug('field          : ' + str(field))
                 logger.debug('new_value      : ' + str(new_value))
                 logger.debug('validated_value: ' + str(validated_value) + ' ' + str(type(validated_value)))
                 logger.debug('saved_value    : ' + str(saved_value))
-                logger.debug('msg_err        : ' + str(msg_err))
+                logger.debug('err_msg        : ' + str(err_msg))
                 logger.debug('recalc_final   : ' + str(recalc_finalgrade))
 
 # - save changes in field 'exam'
@@ -921,15 +924,16 @@ def update_grade_instance(instance, upload_dict, err_dict, logging_on, request):
             instance.save(request=request)
             if logging_on:
                 logger.debug('The changes have been saved.')
-        except:
-            msg_err = _('An error occurred. The changes have not been saved.')
-            err_dict['err_update'] = msg_err
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            err_msg = _('An error occurred. The changes have not been saved.')
+            err_dict['err_update'] = err_msg
             if logging_on:
-                logger.debug(msg_err)
+                logger.debug(err_msg)
 # --- end of update_grade_instance
 
 
-def create_grade_note_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, request):
+def create_grade_note_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, studsubj_pk, request):
 
     # --- calculate the note- and status icons to be show in the grade rows  PR2021-04-20
     logger.debug(' ----- create_grade_note_icon_rows -----')
@@ -974,7 +978,9 @@ def create_grade_note_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                     "AND dep.base_id = %(db_id)s::INT",
                     "AND grd.examperiod = %(ex_per)s::INT"
                     ]
-
+        if studsubj_pk:
+            sql_keys['studsubj_id'] = studsubj_pk
+            sql_list.append("AND studsubj.id = %(studsubj_id)s::INT")
         sql = ' '.join(sql_list)
 
         with connection.cursor() as cursor:

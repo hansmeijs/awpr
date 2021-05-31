@@ -924,8 +924,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MUA_Save  ============= PR2020-08-02 PR2020-08-15
    function MUA_Save(args) {
         console.log("=== MUA_Save === ");
-        //console.log("args: ", args);
-        //console.log("time_stamp:     ", time_stamp);
+        console.log("args: ", args);
 
         //  args = 'save'     when called by el_MUA_btn_submit
         //  args = time_stamp when called by MUA_InputKeyup
@@ -936,34 +935,32 @@ document.addEventListener('DOMContentLoaded', function() {
         // abort if within that period a new value is entered.
         // checked by comparing the timestamp
         // 'args' is either 'save' or a time_stamp number
-        // time_stamp gets new value 'now' whenever a 'keyup' event occurs
+        // variable 'time_stamp' gets new value 'now' whenever a 'keyup' event occurs
         // MUA_Save has a time-out of 1500 ms
-        // init_time_stamp is the value of time_stamp at the time this 'keyup' event occurred
+        // parameter 'args' (init_time_stamp) contains the value of time_stamp at the time this 'keyup' event occurred
         // when time_stamp = init_time_stamp, it means that there are no new keyup events within the time-out period
 
         if(Number(args)){
-// ---  skip if a new key is entered in the elapsed period of 1500 ms
+// ---  skip if a new key is entered within the elapsed period of 1500 ms
             const init_time_stamp = Number(args)
             skip = (time_stamp !== init_time_stamp)
         } else {
-            mode = args; // 'value can only be 'save'
+            mode = (args) ? args : "validate" ; // 'value of parameter 'args' can only be 'save' or timeastamp
         }
         if(!skip) {
 // ---  skip if one of the fields is blank
             skip = !(el_MUA_username.value && el_MUA_last_name.value && el_MUA_email.value)
         }
-        //console.log("skip: ", skip);
         if(!skip){
             // mod_MUA_dict. modes are: 'addnew', 'update'
 
             // in ModConfirmSave upload_dict.mode can get value "delete" or "resend_activation_email"
             // in this function value of 'mode' is only 'save'
-            const upload_mode =  (mod_MUA_dict.mode === "addnew") ? "create" : "update";
 
-                                // (mode === "validate") ? "validate" :
+            const upload_mode = (mode === "validate") ? "validate" :
                                 //(mode === "resend_activation_email" ) ? "resend_activation_email" :
-                               // (mod_MUA_dict.mode === "update") ? "update" :
-                               // (mod_MUA_dict.mode === "addnew") ? "create" : null;
+                                (mod_MUA_dict.mode === "update") ? "update" :
+                                (mod_MUA_dict.mode === "addnew") ? "create" : null;
 
             console.log("mod_MUA_dict", mod_MUA_dict);
             console.log("mode", mode);

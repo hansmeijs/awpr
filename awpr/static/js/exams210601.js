@@ -1050,9 +1050,9 @@ document.addEventListener
         mod_dict = {};
         const tblRow = get_tablerow_selected(el_input);
         if(tblRow){
-            // get_usrgrp_auth returns index of auth user, returns 0 when user has none or multiple auth usergroups
+            // get_statusindex_of_user returns index of auth user, returns 0 when user has none or multiple auth usergroups
             // gives err messages when multiple found.
-            const status_index = get_usrgrp_auth();
+            const status_index = get_statusindex_of_user();
 
             // if(status_index){
             if(true){
