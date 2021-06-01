@@ -142,7 +142,7 @@ class GradeApproveView(View):  # PR2021-01-19
             has_permit = False
             requsr_auth = None
             status_index = None
-            # msg_err is made on client side. Here: just skip if user has no or multipe functions
+            # msg_err is made on client side. Here: just skip if user has no or multiple functions
             if is_auth1 + is_auth2 + is_auth3 == 1:
                 if is_auth1:
                     requsr_auth = 'auth1'
@@ -300,7 +300,10 @@ class GradeApproveView(View):  # PR2021-01-19
                                         append_dict=append_dict,
                                         grade_pk=grade.pk)
                                     if rows:
-                                        grade_rows.append(rows[0])
+                                        # PR2021-06-01 debug. Remove key 'note_status', otherwise it will erase not icon when refreshing this row
+                                        row = rows[0]
+                                        row.pop('note_status')
+                                        grade_rows.append(row)
         # +++++  end of loop through  grades
 
                             row_count = len(grade_rows)
@@ -325,7 +328,8 @@ class GradeApproveView(View):  # PR2021-01-19
                                     update_wrap['updated_published_rows'] = create_published_rows(
                                         sel_examyear_pk=sel_examyear.pk,
                                         sel_schoolbase_pk=sel_school.base_id,
-                                        sel_depbase_pk=sel_department.base_id
+                                        sel_depbase_pk=sel_department.base_id,
+                                        published_pk=published_instance.pk
                                     )
 
                                 update_wrap['updated_grade_rows'] = grade_rows
@@ -1336,7 +1340,7 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
 
 ###############################################
 
-def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk):
+def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, published_pk=None):
     # --- create rows of published records PR2021-01-21
     #logger.debug(' ----- create_grade_rows -----')
 
@@ -1370,11 +1374,16 @@ def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk):
         published_rows = af.dictfetchall(cursor)
     """
     # can't use sql because of file field
-    rows = sch_mod.Published.objects.filter(
-        school__base_id=sel_schoolbase_pk,
-        school__examyear_id=sel_examyear_pk,
-        department__base_id=sel_depbase_pk
-    ).order_by('datepublished')
+    # +++ get selected grade_rows
+    crit = Q(school__base_id=sel_schoolbase_pk) & \
+           Q(school__examyear_id=sel_examyear_pk) & \
+           Q(department__base_id=sel_depbase_pk)
+    # published_pk only has value when called by GradeApproveView. Then it is a created row
+    if published_pk:
+        crit.add(Q(pk=published_pk), crit.connector)
+
+    rows = sch_mod.Published.objects.filter(crit).order_by('-datepublished')
+
     published_rows = []
     for row in rows:
         file_name = None
@@ -1382,8 +1391,8 @@ def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk):
         if row.file:
             file_name = str(row.file)
             file_url = row.file.url
-        published_rows.append(
-            {
+
+        dict = {
             'id': row.pk,
             'mapid': 'published_' + str(row.pk),
             'table': 'published',
@@ -1397,9 +1406,10 @@ def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk):
             'db_code': row.department.base.code,
             'ey_code': row.school.examyear.code,
             'file_name': file_name,
-            'url': file_url
-            }
-        )
+            'url': file_url}
+        if published_pk:
+            dict['created'] = True
+        published_rows.append(dict)
 
     return published_rows
 # --- end of create_grade_rows

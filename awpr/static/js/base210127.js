@@ -682,7 +682,7 @@
         return status_array_reversed
     }  // b_get_status_array
 
-    function b_get_status_iconclass(publ, auth1, auth2, auth3) {
+    function b_get_status_iconclass(publ, auth1, auth2, auth3) { //  PR2021-05-07
         const img_class = (publ) ? "appr_1_5" :
                           (auth1 && auth2 && auth3) ? "appr_1_4" :
                           (auth2 && auth3) ? "appr_1_3" :
@@ -766,6 +766,22 @@
         }}};
         return dict_clone;
     }  // deepcopy_dict
+
+//=========  deepcopy_dict  ================ PR2021-05-31
+// TODO replace old one with this one
+    let deepcopy_dictNEW = function copy_fnc(data_dict) {
+        //console.log(" === Deepcopy_Dict ===")
+        let dict_clone = {};
+        for (const [key, value] of Object.entries(mod_studentsubject_dict)) {
+            if (typeof value==='object' && value!==null && !(value instanceof Array) && !(value instanceof Date)) {
+               dict_clone[key] = copy_fnc(value);
+            } else {
+                dict_clone[key] = value;
+            }
+        };
+        return dict_clone;
+    }  // deepcopy_dict
+
 
 
 //#########################################################################
