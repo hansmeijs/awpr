@@ -1034,7 +1034,11 @@ document.addEventListener("DOMContentLoaded", function() {
                     el_div.value = (fld_value) ? fld_value : null;
                     filter_value = (fld_value) ? fld_value.toLowerCase() : null;
                 } else if (field_name === "se_status"){
-                    el_div.className = b_get_status_iconclass(map_dict.se_published_id, map_dict.se_auth1by_id, map_dict.se_auth2by_id, map_dict.se_auth3by_id);
+                    let class_str = "appr_0_0";
+                    if(permit_dict.requsr_same_school || map_dict.se_published_id){
+                        class_str = b_get_status_iconclass(map_dict.se_published_id, map_dict.se_auth1by_id, map_dict.se_auth2by_id, map_dict.se_auth3by_id);
+                    }
+                    el_div.className = class_str;
                 } else if (["pe_status", "ce_status"].includes(field_name)){
                     el_div.className = get_status_class(fld_value)
                 } else if (field_name === "note_status"){
