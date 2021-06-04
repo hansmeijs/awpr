@@ -76,10 +76,10 @@ def validate_input_grade(grade, field, input_value, logging_on):  # PR2021-01-18
     #  if (dict.ey_locked) { msg_err = err_list.examyear_locked} else
     #  if (dict.school_locked) { msg_err = err_list.school_locked} else
     #  if (dict.stud_locked) {msg_err = err_list.candidate_locked};
-    #  if( (dict.se_locked && fldName === "segrade") ||
-    #      (dict.sr_locked && fldName === "srgrade") ||
-    #      (dict.pe_locked && fldName in ["pescore", "pegrade"]) ||
-    #      (dict.ce_locked && fldName in ["cescore", "cegrade"]) ) {
+    #  if( (dict.se_blocked && fldName === "segrade") ||
+    #      (dict.sr_blocked && fldName === "srgrade") ||
+    #      (dict.pe_blocked && fldName in ["pescore", "pegrade"]) ||
+    #      (dict.ce_blocked && fldName in ["cescore", "cegrade"]) ) {
     #          msg_err = err_list.grade_locked;
     #  }
 

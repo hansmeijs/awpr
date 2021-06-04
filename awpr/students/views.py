@@ -1364,8 +1364,7 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
         "si.is_mandatory, si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
         "si.elective_combi_allowed, si.has_practexam,",
 
-        "sjt.id AS sjt_id, sjt.abbrev AS sjt_abbrev, sjt.has_prac AS sjt_has_prac,",
-        "sjt.has_pws AS sjt_has_pws, sjt.one_allowed AS sjt_one_allowed,",
+        "sjt.id AS sjt_id, sjt.abbrev AS sjt_abbrev, sjt.has_prac AS sjt_has_prac, sjt.has_pws AS sjt_has_pws,",
 
         "studsubj.subj_auth1by_id AS subj_auth1_id, SUBSTRING(subj_auth1.username, 7) AS subj_auth1_usr, subj_auth1.modified_at AS subj_auth1_modat,",
         "studsubj.subj_auth2by_id AS subj_auth2_id, SUBSTRING(subj_auth2.username, 7) AS subj_auth2_usr, subj_auth2.modified_at AS subj_auth2_modat,",
@@ -1435,7 +1434,7 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
         "studsubj.has_exemption, studsubj.has_reex, studsubj.has_reex03, studsubj.has_pok,",
 
         "studsubj.is_mandatory, studsubj.is_combi, studsubj.extra_count_allowed, studsubj.extra_nocount_allowed, studsubj.elective_combi_allowed,",
-        "studsubj.sjt_id, studsubj.sjt_abbrev, studsubj.sjt_has_prac, studsubj.sjt_has_pws, studsubj.sjt_one_allowed,",
+        "studsubj.sjt_id, studsubj.sjt_abbrev, studsubj.sjt_has_prac, studsubj.sjt_has_pws,",
 
         "studsubj.subj_auth1_id, studsubj.subj_auth1_usr, studsubj.subj_auth1_modat,",
         "studsubj.subj_auth2_id, studsubj.subj_auth2_usr, studsubj.subj_auth2_modat,",

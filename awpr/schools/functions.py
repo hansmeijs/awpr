@@ -232,7 +232,7 @@ def copy_subjecttypes_from_prev_examyear(request, prev_examyear, new_examyear):
 
                 has_prac=prev_sjt.has_prac,
                 has_pws=prev_sjt.has_pws,
-                one_allowed=prev_sjt.one_allowed,
+                # removed: one_allowed=prev_sjt.one_allowed,
 
                 modifiedby_id=modifiedby_id,
                 modifiedat=modifiedat

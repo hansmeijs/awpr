@@ -534,7 +534,7 @@ def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
 
                     has_prac = True if awp_name_sliced_lc == 'sectorpr' else False  # has practical exam
                     has_pws = True if awp_name_sliced_lc in ('sectorwe', 'profielw') else False  # has profielwerkstuk or sectorwerkstuk
-                    one_allowed = True if awp_name_sliced_lc in ('sectorpr', 'sectorwe', 'profielw', 'stage') else False  # if true: only one subject with this Subjecttype allowed per student
+                    # removed: one_allowed = True if awp_name_sliced_lc in ('sectorpr', 'sectorwe', 'profielw', 'stage') else False  # if true: only one subject with this Subjecttype allowed per student
                     if name and abbrev and code and sequence and depbases:
                         subjecttype = subj_mod.Subjecttype(
                             base=subjecttype_base,
@@ -545,7 +545,7 @@ def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
                             sequence=sequence,
                             has_prac=has_prac,
                             has_pws=has_pws,
-                            one_allowed=one_allowed,
+                            # removed: one_allowed=one_allowed,
                             depbases=depbases
                         )
                         subjecttype.save(request=request)

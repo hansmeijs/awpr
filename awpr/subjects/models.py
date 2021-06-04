@@ -245,7 +245,6 @@ class Subjecttype(sch_mod.AwpBaseModel):
 
     has_prac = BooleanField(default=False) # has practical exam
     has_pws = BooleanField(default=False) # has profielwerkstuk or sectorwerkstuk
-    one_allowed = BooleanField(default=False) # if true: only one subject with this Subjecttype allowed per student
 
     class Meta:
         ordering = ['sequence',]
@@ -256,11 +255,9 @@ class Subjecttype(sch_mod.AwpBaseModel):
 
 class Subjecttype_log(sch_mod.AwpBaseModel):
     objects = sch_mod.AwpModelManager()
-
     subjecttype_id = IntegerField(db_index=True)
 
     base = ForeignKey(Subjecttypebase, related_name='+', on_delete=CASCADE)
-
     examyear_log = ForeignKey(sch_mod.Examyear_log, related_name='+', on_delete=CASCADE)
 
     name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
@@ -272,10 +269,6 @@ class Subjecttype_log(sch_mod.AwpBaseModel):
     # has_prac only enables the has_practexam option of a schemeitem
     has_prac = BooleanField(default=False)
     has_pws = BooleanField(default=False)
-    # TODO replace one_allowed by min and max allowed
-    one_allowed = BooleanField(default=False)
-    min_allowed = PositiveSmallIntegerField(null=True)
-    max_allowed = PositiveSmallIntegerField(null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -290,7 +283,10 @@ class Scheme(sch_mod.AwpBaseModel):
     level = ForeignKey(Level, null=True, blank=True, related_name='schemes', on_delete=CASCADE)
     sector = ForeignKey(Sector, null=True,  blank=True, related_name='schemes', on_delete=CASCADE)
     name = CharField(max_length=50)  # TODO set department+level+sector Unique per examyear True.
-    fields = CharField(max_length=255, null=True, blank=True, choices=c.SCHEMEFIELD_CHOICES)
+    fields = CharField(max_length=255, null=True, blank=True)
+
+    # dictionay with min and/or max amount of subjects per subjectttype_pk { 1: {min: 1, max: 1}
+    minmaxamount = CharField(max_length=255, null=True, blank=True)
 
     class Meta:
         ordering = ['name',]
@@ -332,6 +328,8 @@ class Scheme_log(sch_mod.AwpBaseModel):
 
     name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
     fields = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
+
+    minmaxamount = CharField(max_length=255, null=True, blank=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -567,8 +565,8 @@ class Schemeitem(sch_mod.AwpBaseModel):
                 if item.subjecttype.has_pws:
                     item_dict['sjtp_haspws'] = 1
 
-                if item.subjecttype.one_allowed:
-                    item_dict['sjtp_onlyone'] = 1
+                #if item.subjecttype.one_allowed:
+                #    item_dict['sjtp_onlyone'] = 1
 
             item_dict['sequence'] = sequence
             schemeitem_list.append(item_dict)

@@ -1,3 +1,5 @@
+import tempfile
+
 from django.db import connection
 
 from django.contrib.auth.decorators import login_required
@@ -106,8 +108,6 @@ def create_ex1_xlsx(examyear, school, department, settings, subject_col_count,
   
     """
 
-
-
     response = None
 
     if settings and studsubj_rows:
@@ -130,6 +130,7 @@ def create_ex1_xlsx(examyear, school, department, settings, subject_col_count,
         # 'in_memory' Workbook() constructor option as shown in the docs.
         #  book = xlsxwriter.Workbook(response, {'in_memory': True})
         book = xlsxwriter.Workbook(output)
+
         sheet = book.add_worksheet(worksheet_name)
         sheet.hide_gridlines(2) # 2 = Hide screen and printed gridlines
 
@@ -325,6 +326,7 @@ def create_ex1_xlsx(examyear, school, department, settings, subject_col_count,
             output,
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
+
         response['Content-Disposition'] = 'attachment; filename=%s' % file_name
     # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     # response['Content-Disposition'] = "attachment; filename=" + file_name

@@ -1424,7 +1424,7 @@ document.addEventListener('DOMContentLoaded', function() {
             pwstitle = null, pwssubjects = null,
             extra_count_allowed = false, extra_nocount_allowed = false, elective_combi_allowed = false;
 
-        let sjt_has_prac = false, sjt_has_pws = false, sjt_one_allowed = false;
+        let sjt_has_prac = false, sjt_has_pws = false;
 
         let map_dict = {};
 

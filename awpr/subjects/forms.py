@@ -209,12 +209,11 @@ class SectorEditForm(ModelForm):  # PR2018-08-24
 class SubjecttypeAddForm(ModelForm):
     class Meta:
         model = Subjecttype
-        fields = ('examyear', 'name', 'abbrev', 'sequence','has_pws', 'one_allowed')
+        fields = ('examyear', 'name', 'abbrev', 'sequence','has_pws')
         labels = {'examyear': _('Exam year'), 'name': _('Name'),
                   'abbrev': _('Abbreviation'),
                   'sequence': _('Sequence'),
-                  'has_pws': _('Has werkstuk'),
-                  'one_allowed': _('One allowed')}
+                  'has_pws': _('Has werkstuk')}
 
     # PR2018-06-09 from https://stackoverflow.com/questions/16205908/django-modelform-not-required-field/30403969?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
     # called by SubjectdefaultAddForm(request=request) in SubjectdefaultAddView.get and -.post
@@ -240,9 +239,9 @@ class SubjecttypeAddForm(ModelForm):
         )
 
         # ======= field 'one allowed' ============
-        self.fields['one_allowed'] = BooleanField(
-            help_text= _('If checked, student can only have one subject of this subject type.')
-        )
+        #self.fields['one_allowed'] = BooleanField(
+        #    help_text= _('If checked, student can only have one subject of this subject type.')
+        #)
 
         # ======= field 'depbase_list' ============
         # in AddMode: get examyear from request.user
@@ -258,13 +257,12 @@ class SubjecttypeAddForm(ModelForm):
 class SubjecttypeEditForm(ModelForm):  # PR2018-08-11
     class Meta:
         model = Subjecttype
-        fields = ('examyear', 'name', 'abbrev', 'code', 'sequence', 'has_pws', 'one_allowed')
+        fields = ('examyear', 'name', 'abbrev', 'code', 'sequence', 'has_pws')
         labels = {'examyear': _('Exam year'),
                   'name': _('Name'),
                   'abbrev': _('Abbreviation'),
                   'sequence': _('Sequence'),
-                  'has_pws': _('Has werkstuk'),
-                  'one_allowed': _('One allowed')}
+                  'has_pws': _('Has werkstuk')}
 
 
 
@@ -289,10 +287,10 @@ class SubjecttypeEditForm(ModelForm):  # PR2018-08-11
         )
 
         # ======= field 'one allowed' ============
-        self.fields['one_allowed'] = BooleanField(
-            required=False,
-            help_text= _('If checked, student can only have one subject of this subject type.')
-        )
+        #self.fields['one_allowed'] = BooleanField(
+        #    required=False,
+        #    help_text= _('If checked, student can only have one subject of this subject type.')
+        #)
 
 
         # ======= field 'depbase_list' ============

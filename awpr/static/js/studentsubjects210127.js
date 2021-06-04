@@ -1454,13 +1454,13 @@ document.addEventListener('DOMContentLoaded', function() {
         el_tblBody_schemeitems.innerText = null;
         for (const [schemeitem_pk_str, dict] of Object.entries(mod_schemeitem_dict)) {
             const schemeitem_pk = dict.id;
-// skip subjects with 'sjt_one_allowed' when
+// skip subjects with 'sjt_one_allowed' when NIU
             const highlighted = (sel_schemeitem_pk_list && sel_schemeitem_pk_list.includes(schemeitem_pk))
     // - skip subjects that are already in table of subjects of this student
             const skip_row = (studsubj_si_list.includes(schemeitem_pk))
             if (!skip_row ) {
-    // - disable subject if subjecttype is 'one_allowd' and a subject f this type is already in table of subjects of this student
-                const enabled = !(dict.sjt_one_allowed && dict.sjt_id in count_subjecttype);
+    // - disable subject if subjecttype is 'one_allowd' NIU and a subject f this type is already in table of subjects of this student
+                const enabled = !(dict.sjt_id in count_subjecttype);
                 MSTUDSUBJ_FillSelectRow("schemeitem", el_tblBody_schemeitems, schemeitem_pk, dict, enabled, highlighted);
             }
         }
@@ -1592,7 +1592,7 @@ document.addEventListener('DOMContentLoaded', function() {
             pwstitle = null, pwssubjects = null,
             extra_count_allowed = false, extra_nocount_allowed = false, elective_combi_allowed = false;
 
-        let sjt_has_prac = false, sjt_has_pws = false, sjt_one_allowed = false;
+        let sjt_has_prac = false, sjt_has_pws = false;
 
         let map_dict = {};
 

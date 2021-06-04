@@ -107,12 +107,6 @@ class GradeDownloadGradeIconsView(View):  # PR2021-04-30
 
 
 ########################################
-
-
-
-
-
-
 @method_decorator([login_required], name='dispatch')
 class GradeApproveView(View):  # PR2021-01-19
 
@@ -1050,7 +1044,7 @@ def create_grade_stat_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
         sql_list = [
             "SELECT grd.id, grd.studentsubject_id AS studsubj_id, grd.examperiod,",
             grades, final_grade, status,
-            "grd.se_locked, grd.sr_locked, grd.pe_locked, grd.ce_locked,",
+            "grd.se_blocked, grd.sr_blocked, grd.pe_blocked, grd.ce_blocked,",
             "si.weight_se, si.weight_ce",
             "FROM students_grade AS grd",
             "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
@@ -1136,10 +1130,10 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
 
                 grades, final_grade, status,
                 "grd.examperiod,",
-                "grd.se_auth1by_id, grd.se_auth2by_id, grd.se_auth3by_id, grd.se_published_id, grd.se_locked,",
-                "grd.sr_auth1by_id, grd.sr_auth2by_id, grd.sr_auth3by_id, grd.sr_published_id, grd.sr_locked,",
-                "grd.pe_auth1by_id, grd.pe_auth2by_id, grd.pe_auth3by_id, grd.pe_published_id, grd.pe_locked,",
-                "grd.ce_auth1by_id, grd.ce_auth2by_id, grd.ce_auth3by_id, grd.ce_published_id, grd.ce_locked,",
+                "grd.se_auth1by_id, grd.se_auth2by_id, grd.se_auth3by_id, grd.se_published_id, grd.se_blocked,",
+                "grd.sr_auth1by_id, grd.sr_auth2by_id, grd.sr_auth3by_id, grd.sr_published_id, grd.sr_blocked,",
+                "grd.pe_auth1by_id, grd.pe_auth2by_id, grd.pe_auth3by_id, grd.pe_published_id, grd.pe_blocked,",
+                "grd.ce_auth1by_id, grd.ce_auth2by_id, grd.ce_auth3by_id, grd.ce_published_id, grd.ce_blocked,",
 
                 "si.subject_id, si.subjecttype_id,",
                 "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_combi, si.extra_count_allowed,",

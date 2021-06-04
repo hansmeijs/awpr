@@ -1700,7 +1700,7 @@ def create_schemeitem_rows(setting_dict, append_dict, scheme_pk):
             "CONCAT('schemeitem_', si.id::TEXT) AS mapid,",
             "si.subject_id AS subj_id, subj.name AS subj_name, subjbase.code AS subj_code,",
             "si.subjecttype_id AS sjt_id, subjtype.name AS sjt_name, subjtype.abbrev AS sjt_abbrev, subjtype.sequence AS sjt_sequence,",
-            "subjtype.has_prac AS sjt_has_prac, subjtype.has_pws AS sjt_has_pws, subjtype.one_allowed AS sjt_one_allowed,",
+            "subjtype.has_prac AS sjt_has_prac, subjtype.has_pws AS sjt_has_pws, subjtype,",
             "scheme.name, scheme.fields,",
             "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
 
