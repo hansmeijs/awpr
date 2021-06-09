@@ -892,6 +892,7 @@ def create_user_list(request, user_pk=None):
         if request.user.role >= c.ROLE_008_SCHOOL:
             #if request.user.is_group_system :
             if True:
+
                 sql_keys = {'country_id': request.user.country.pk, 'max_role': request.user.role}
                 sql_list = ["SELECT u.id, u.schoolbase_id,",
                     "CONCAT('user_', u.id) AS mapid, 'user' AS table,",

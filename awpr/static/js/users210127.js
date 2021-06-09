@@ -924,12 +924,12 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MUA_Save  ============= PR2020-08-02 PR2020-08-15
    function MUA_Save(args) {
         console.log("=== MUA_Save === ");
-        console.log("args: ", args);
-
+        //console.log("args: ", args);
+        // args contains 'save when clicked on save button, otherwise it contains a time_stamp
         //  args = 'save'     when called by el_MUA_btn_submit
         //  args = time_stamp when called by MUA_InputKeyup
 
-        let mode = null, skip = false;
+        let mode = "validate", skip = false;
 
         // send schoolbase, username and email to server after 1500 ms
         // abort if within that period a new value is entered.
@@ -944,8 +944,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  skip if a new key is entered within the elapsed period of 1500 ms
             const init_time_stamp = Number(args)
             skip = (time_stamp !== init_time_stamp)
-        } else {
-            mode = (args) ? args : "validate" ; // 'value of parameter 'args' can only be 'save' or timeastamp
+        } else if (args === "save") {
+            mode = "save"; // 'value of parameter 'args' can only be 'save' or timeastamp
         }
         if(!skip) {
 // ---  skip if one of the fields is blank
@@ -959,11 +959,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const upload_mode = (mode === "validate") ? "validate" :
                                 //(mode === "resend_activation_email" ) ? "resend_activation_email" :
-                                (mod_MUA_dict.mode === "update") ? "update" :
-                                (mod_MUA_dict.mode === "addnew") ? "create" : null;
+                                (mode === "save") ? "create" :
+                                (mod_MUA_dict.mode === "update") ? "update" : null;
 
-            console.log("mod_MUA_dict", mod_MUA_dict);
-            console.log("mode", mode);
+            console.log("mode: ", mode);
+            console.log("mod_MUA_dict.mode", mod_MUA_dict.mode);
             console.log("................upload_mode", upload_mode);
 
    // ---  create mod_dict
@@ -1245,8 +1245,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MUA_InputKeyup  ================ PR2020-09-24
     function MUA_InputKeyup(el_input, event_key) {
-        console.log( "===== MUA_InputKeyup  ========= ");
-        console.log( "event_key", event_key);
+        //console.log( "===== MUA_InputKeyup  ========= ");
+        //console.log( "event_key", event_key);
 
         const fldName = get_attr_from_el(el_input, "data-field");
         if(el_input){
@@ -1258,8 +1258,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_MUA_email.focus();
             } else {
                 let field_value = el_input.value;
-            console.log( "fldName", fldName);
-            console.log( "field_value", field_value);
+            //console.log( "fldName", fldName);
+            //console.log( "field_value", field_value);
                 // fldName is 'username', 'last_name' or 'email' . fldName "schoolname" is handled in MUA_InputSchoolname
                 if (fldName === "username" && field_value){
                     field_value = field_value.replace(/, /g, "_"); // replace comma or space with "_"
@@ -1274,7 +1274,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // abort if within that period a new value is entered.
                 // checked by comparing the timestamp
                 time_stamp = Number(Date.now())
-                setTimeout(MUA_Save, 1500, time_stamp);  // time_stamp is an argument passed to the function MUA_Save.
+                setTimeout(MUA_Save, 1500, time_stamp);  // time_stamp is an argument passed to the function  MUA_Save.
             }
         }
     }; // MUA_InputKeyup
