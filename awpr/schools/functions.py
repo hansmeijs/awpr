@@ -222,17 +222,15 @@ def copy_subjecttypes_from_prev_examyear(request, prev_examyear, new_examyear):
 # - create new subjecttype
             new_subjecttype = subj_mod.Subjecttype(
                 base=prev_sjt.base,
-                examyear=new_examyear,
+                scheme=prev_sjt.scheme,
 
                 name=prev_sjt.name,
                 abbrev=prev_sjt.abbrev,
-                code=prev_sjt.code,
-                sequence=prev_sjt.sequence,
-                depbases=prev_sjt.depbases,
 
                 has_prac=prev_sjt.has_prac,
                 has_pws=prev_sjt.has_pws,
-                # removed: one_allowed=prev_sjt.one_allowed,
+                minsubjects=prev_sjt.minsubjects,
+                maxsubjects=prev_sjt.maxsubjects,
 
                 modifiedby_id=modifiedby_id,
                 modifiedat=modifiedat
@@ -503,7 +501,7 @@ def get_department(old_examyear, new_examyear):
 
 # ===============================
 def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_depbase):  # PR2020-04-17 PR2020-12-28  PR2021-01-12
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------- get_schoolsetting ---------------- ')
         logger.debug('request_item_setting: ' + str(request_item_setting))
@@ -524,7 +522,7 @@ def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_de
             schoolsetting_dict = {'sel_examyear_pk': sel_examyear_pk,
                                   'sel_schoolbase_pk': sel_schoolbase_pk,
                                   'sel_depbase_pk': sel_depbase_pk}
-            schoolsetting_dict[setting_key] = get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase, logging_on)
+            schoolsetting_dict[setting_key] = get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase)
         else:
             schoolsetting_dict[setting_key] = sel_schoolbase.get_setting(setting_key)
 
@@ -535,8 +533,8 @@ def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_de
 
 
 # ===============================
-def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase, logging_on):
-
+def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase):
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------- get_stored_coldefs_dict ---------------- ')
         logger.debug('setting_key: ' + str(setting_key))
@@ -589,10 +587,8 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
     worksheetname = ''
     coldef_list = []
     stored_coldef = {}
-    one_unique_identifier = c.IMPORT_ONE_UNIQUE_IDENTIFIER.get(setting_key, False)
 
 # - get list of tables needed for uploading
-    table_list = None
     if setting_key == c.KEY_IMPORT_STUDENT:
         table_list = ("coldef", "department", "level", "sector", "profiel")
     elif setting_key == c.KEY_IMPORT_STUDENTSUBJECT:
@@ -644,8 +640,7 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
         'worksheetname': worksheetname,
         'noheader': noheader,
         'coldefs': coldef_list,
-        'tablelist': table_list,
-        'one_unique_identifier': one_unique_identifier
+        'tablelist': table_list
         }
 
 # create list of required levels and sectors with excColdef when linked
@@ -689,7 +684,7 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
                     elif tblName == 'subject':
                         instances = subj_mod.Subject.objects.filter(examyear=sel_examyear)
                     elif tblName == 'subjecttype':
-                        instances = subj_mod.Subjecttype.objects.filter(examyear=sel_examyear)
+                        instances = subj_mod.Subjecttype.objects.filter(scheme__department__examyear=sel_examyear)
 
         # - loop through instances of this examyear
                     for instance in instances:
@@ -702,6 +697,12 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
                     # if department: check if depbasePk is in school_depbasePk_list
                                 if instance == sel_department:
                                     add_to_list = True
+
+                    # if subjecttype: check if subjecttype.scheme.department is in school_depbasePk_list
+                            elif tblName == 'subjecttype':
+                                if instance.scheme.department == sel_department:
+                                    add_to_list = True
+
                             elif instance.depbases:
                     # in other tables: only add if sel_depbase.pk is in depbases
                                 # PR20210-05-04 debug . imported depbases may contain ';2;3;',

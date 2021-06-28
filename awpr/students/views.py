@@ -14,7 +14,8 @@ from django.views.generic import UpdateView, DeleteView, View, ListView, CreateV
 from awpr import menus as awpr_menu
 from awpr import constants as c
 from awpr import settings as s
-from students import validators as v
+from awpr import validators as av
+from students import validators as sv
 from awpr import functions as af
 from awpr import downloads as dl
 
@@ -64,9 +65,8 @@ class StudentListView(View):  # PR2018-09-02 PR2020-10-27 PR2021-03-25
         page = 'page_student'
         params = awpr_menu.get_headerbar_param(request, page)
 
-# - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
-        if request and request.user:
-            request.user.set_usersetting_dict('sel_page', {'page': page})
+# - save this page in Usersetting, so at next login this page will open. Used in LoggedIn
+        #         # PR2021-06-22 moved to get_headerbar_param
 
         return render(request, 'students.html', params)
 
@@ -86,21 +86,30 @@ class StudentsubjectListView(View): # PR2020-09-29 PR2021-03-25
         page = 'page_studsubj'
         params = awpr_menu.get_headerbar_param(request, page)
 
-# - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
-        request.user.set_usersetting_dict('sel_page', {'page': page})
+# - save this page in Usersetting, so at next login this page will open.  Used in LoggedIn
+         # PR2021-06-22 moved to get_headerbar_param
 
         return render(request, 'studentsubjects.html', params)
 #/////////////////////////////////////////////////////////////////
 
 def create_student_rows(setting_dict, append_dict, student_pk):
     # --- create rows of all students of this examyear / school PR2020-10-27
-    #logger.debug(' =============== create_student_rows ============= ')
-    sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
-    sel_schoolbase_pk = af.get_dict_value(setting_dict, ('sel_schoolbase_pk',))
-    sel_depbase_pk = af.get_dict_value(setting_dict, ('sel_depbase_pk',))
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_student_rows -----')
+    sel_examyear_pk = setting_dict.get('sel_examyear_pk')
+    sel_schoolbase_pk = setting_dict.get('sel_schoolbase_pk')
+    sel_depbase_pk = setting_dict.get('sel_depbase_pk')
+
+    if logging_on:
+        logger.debug(' ----- create_student_rows -----')
+        logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
+        logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
+        logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
 
     sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
     sql_list = ["SELECT st.id, st.base_id, st.school_id AS s_id,",
+        "sch.locked AS s_locked, ey.locked AS ey_locked, ",
         "st.department_id AS dep_id, st.level_id AS lvl_id, st.sector_id AS sct_id, st.scheme_id,",
         "dep.abbrev AS dep_abbrev, db.code AS db_code,",
         "dep.level_req AS lvl_req, lvl.abbrev AS lvl_abbrev,",
@@ -116,6 +125,7 @@ def create_student_rows(setting_dict, append_dict, student_pk):
 
         "FROM students_student AS st",
         "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
         "LEFT JOIN schools_department AS dep ON (dep.id = st.department_id)",
         "INNER JOIN schools_departmentbase AS db ON (db.id = dep.base_id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
@@ -127,13 +137,19 @@ def create_student_rows(setting_dict, append_dict, student_pk):
         sql_list.append('AND st.id = %(st_id)s::INT')
         sql_keys['st_id'] = student_pk
     else:
-        sql_list.append('ORDER BY LOWER(st.lastname), LOWER(st.firstname)')
+        # PR2021-06-16
+        # order by id necessary to make sure that lookup function on client gets the right row
+        #sql_list.append("ORDER BY LOWER(st.lastname), LOWER(st.firstname), CONCAT('student_', st.id::TEXT)")
+        sql_list.append("ORDER BY st.id::TEXT")
     sql = ' '.join(sql_list)
 
-    newcursor = connection.cursor()
-    newcursor.execute(sql, sql_keys)
-    student_rows = af.dictfetchall(newcursor)
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        student_rows = af.dictfetchall(cursor)
 
+    if logging_on:
+        logger.debug('student_rows: ' + str(student_rows))
+        logger.debug('student_rows: ' + str(student_rows))
 # - add lastname_firstname_initials to rows
     if student_rows:
         for row in student_rows:
@@ -159,124 +175,124 @@ def create_student_rows(setting_dict, append_dict, student_pk):
 class StudentUploadView(View):  # PR2020-10-01
 
     def post(self, request):
-        logger.debug(' ============= studentUploadView ============= ')
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= studentUploadView ============= ')
 
         update_wrap = {}
+        messages = []
+
+# - get permit
         has_permit = False
-        if request.user and request.user.country and request.user.schoolbase:
-            has_permit = True  # (request.user.is_perm_planner or request.user.is_perm_hrman)
+        req_usr = request.user
+        if req_usr and req_usr.country and req_usr.schoolbase:
+            permit_list = req_usr.permit_list('page_student')
+            if permit_list:
+                has_permit = 'crud' in permit_list
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
         if has_permit:
 
-            # - Reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+# - reset language
+            user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
             activate(user_lang)
 
-            # - get upload_dict from request.POST
+# - get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 upload_dict = json.loads(upload_json)
-                logger.debug('upload_dict' + str(upload_dict))
 
-                # - get id  variables
+# - get variables
                 student_pk = upload_dict.get('student_pk')
-                is_create = upload_dict.get('create', False)
-                is_delete = upload_dict.get('delete', False)
+                mode = upload_dict.get('mode')
+                is_create = mode == 'create'
+                is_delete =  mode == 'delete'
 
-                logger.debug('student_pk' + str(student_pk))
-                student_rows = []
+                if logging_on:
+                    logger.debug('upload_dict: ' + str(upload_dict))
+                    logger.debug('mode: ' + str(mode))
+
+                updated_rows = []
                 append_dict = {}
                 error_dict = {}
 
-                sel_country = request.user.country
+                sel_country = req_usr.country
 
-                # - get examyear of requsr, TODO only if examyear is published and not locked
-                s_ey_pk = upload_dict.get(c.KEY_SEL_EXAMYEAR_PK)
-                sel_examyear = sch_mod.Examyear.objects.get_or_none(pk=s_ey_pk, country=sel_country)
-                sel_examyear_pk = sel_examyear.pk if sel_examyear else None
+# ----- get selected examyear, school and department from usersettings
+                # may_edit = False when:
+                #  - country is locked,
+                #  - examyear is not found, not published or locked
+                #  - school is not found, not same_school, not activated, or locked
+                #  - department is not found, not in user allowed depbase or not in school_depbase
+                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
 
-                s_sb_pk = upload_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
-                sel_schoolbase = sch_mod.Schoolbase.objects.get_or_none(pk=s_sb_pk, country=sel_country)
-                sel_schoolbase_pk = sel_schoolbase.pk if sel_schoolbase else None
+                if logging_on:
+                    logger.debug('sel_examyear:   ' + str(sel_examyear))
+                    logger.debug('sel_school:     ' + str(sel_school))
+                    logger.debug('sel_department: ' + str(sel_department))
+                    logger.debug('may_edit:       ' + str(may_edit))
+                    logger.debug('msg_list:       ' + str(msg_list))
 
-                s_sb_pk = upload_dict.get(c.KEY_SEL_DEPBASE_PK)
-                sel_depbase = sch_mod.Departmentbase.objects.get_or_none(pk=s_sb_pk, country=sel_country)
-                sel_depbase_pk = sel_depbase.pk if sel_depbase else None
+                if len(msg_list):
+                    messages.append({'class': "alert-warning", 'msg_list': [msg_list]})
+                else:
+# +++  Create new student
+                    if is_create:
+                        student = create_student(sel_country, sel_school, sel_department, upload_dict, messages, request)
+                        if student:
+                            append_dict['created'] = True
 
-                # - get school only if school is not locked
-                sel_school = sch_mod.School.objects.get_or_none(
-                    base=sel_schoolbase,
-                    examyear=sel_examyear,
-                    locked=False
-                )
-                logger.debug('sel_school: ' + str(sel_school))
-
-                sel_department = sch_mod.Department.objects.get_or_none(
-                    base=sel_depbase,
-                    examyear=sel_examyear
-                )
-                logger.debug('sel_department: ' + str(sel_department))
-
-                if sel_school:
-# - Delete student
-                    if is_delete:
+# +++  or get existing student
+                    else:
                         student = stud_mod.Student.objects.get_or_none(
                             id=student_pk,
                             school=sel_school
                         )
-                        if student:
-                            this_text = _("student '%(tbl)s' ") % {'tbl': student.name}
-                            # a. check if student has grades, put msg_err in update_dict when error
+                    if logging_on:
+                        logger.debug('student: ' + str(student))
+
+                    if student:
+# +++ Delete student
+                        if is_delete:
+                            student_name = getattr(student, 'fullname', '---')
+                            this_text = _("Candidate '%(tbl)s' ") % {'tbl': student_name}
+                # - check if student has grades, put msg_err in update_dict when error
                             msg_err = None  # validate_student_has_emplhours(student)
                             if msg_err:
                                 error_dict['err_delete'] = msg_err
                             else:
-                                # b. check if there are teammembers with this student: absence teammembers, remove student from shift teammembers
                                 # delete_student_from_teammember(student, request)
-                                # c. delete student
-                                deleted_ok = True  # m.delete_instance(student, {}, error_dict, request, this_text)
+                # - delete student
+                                deleted_ok = sch_mod.delete_instance(student, messages, request, this_text)
                                 # logger.debug('deleted_ok' + str(deleted_ok))
                                 if deleted_ok:
-                                    # - add deleted_row to absence_rows
-                                    student_rows.append({'pk': student_pk,
+                # - add deleted_row to student_rows
+                                    updated_rows.append({'pk': student_pk,
                                                          'mapid': 'student_' + str(student_pk),
                                                          'deleted': True})
                                     student = None
-                                # logger.debug('student_rows' + str(student_rows))
-                    else:
-# D. Create new student
-                        if is_create:
-                            student, msg_err = create_student(sel_country, sel_school, sel_department, upload_dict, request)
-                            if student:
-                                append_dict['created'] = True
-                            elif msg_err:
-                                append_dict['err_create'] = msg_err
-                        # E. Get existing student
+                                # logger.debug('updated_rows' + str(updated_rows))
                         else:
-                            student = stud_mod.Student.objects.get_or_none(id=student_pk, school=sel_school)
+    # +++  Update student, also when it is created.
+                            update_student(student, upload_dict, messages, request)
 
-                    # I. add update_dict to update_wrap
-                    if student:
-                        logger.debug('student: ' + str(student))
-# F. Update student, also when it is created.
-                        #  Not necessary. Most fields are required. All fields are saved in create_student
-                        # if student:
-                        update_student(student, upload_dict, error_dict, request)
+                            setting_dict = {
+                                'sel_examyear_pk': sel_school.examyear.pk,
+                                'sel_schoolbase_pk': sel_school.base_id,
+                                'sel_depbase_pk': sel_department.base_id}
+                            updated_rows = create_student_rows(
+                                setting_dict=setting_dict,
+                                append_dict=append_dict,
+                                student_pk=student.pk
+                            )
 
-                        if error_dict:
-                            append_dict['error'] = error_dict
-                        setting_dict = {
-                            'sel_examyear_pk': sel_school.examyear.pk,
-                            'sel_schoolbase_pk': sel_school.base_id
-                        }
-                        student_rows = create_student_rows(
-                            setting_dict=setting_dict,
-                            append_dict=append_dict,
-                            student_pk=student.pk
-                        )
-
-                update_wrap['updated_student_rows'] = student_rows
-
-        # - return update_wrap
+                update_wrap['updated_student_rows'] = updated_rows
+        if len(messages):
+            update_wrap['messages'] = messages
+            # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 
 
@@ -361,21 +377,20 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                 upload_dict = json.loads(upload_json)
 
 # ----- get selected examyear, school and department from usersettings
-                sel_examyear, sel_school, sel_department, is_locked, \
-                    examyear_published, school_activated, requsr_same_school = \
-                        dl.get_selected_examyear_school_dep_from_usersetting(request)
+                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                        dl.get_selected_ey_school_dep_from_usersetting(request)
 
                 if logging_on:
                     logger.debug('upload_dict' + str(upload_dict))
                     logger.debug('sel_examyear: ' + str(sel_examyear))
                     logger.debug('sel_school: ' + str(sel_school))
                     logger.debug('sel_department: ' + str(sel_department))
-                    logger.debug('is_locked: ' + str(is_locked))
+                    logger.debug('may_edit: ' + str(may_edit))
+                    logger.debug('msg_list: ' + str(msg_list))
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                 student = None
                 # TODO : may_edit = examyear_published and school_activated and requsr_same_school and sel_department and not is_locked
-                may_edit = sel_department and not is_locked
                 if may_edit:
                     student_pk = upload_dict.get('student_pk')
                     student = stud_mod.Student.objects.get_or_none(
@@ -699,9 +714,10 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                     logger.debug('upload_dict: ' + str(upload_dict))
 
                 # - get selected examyear, school and department from usersettings
-                sel_examyear, sel_school, sel_department, is_locked, \
-                examyear_published, school_activated, is_requsr_school = \
-                    dl.get_selected_examyear_school_dep_from_usersetting(request)
+                # was: sel_examyear, sel_school, sel_department, is_locked, \
+                #examyear_published, school_activated, is_requsr_school =
+                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
 
 # - get current grade - when mode is 'create': studsubj is None. It will be created at "elif mode == 'create'"
                 examperiod = upload_dict.get('examperiod')
@@ -1068,163 +1084,176 @@ def get_field_caption(table, field):
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def create_student(country, school, department, upload_dict, request):
-    # --- create student # PR2019-07-30 PR2020-10-11  PR2020-12-14
-    logger.debug(' ----- create_student ----- ')
+def create_student(country, school, department, upload_dict, messages, request):
+    # --- create student # PR2019-07-30 PR2020-10-11  PR2020-12-14 PR2021-06-15
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_student ----- ')
+        logger.debug('school: ' + str(school))
 
     student = None
-    msg_err = None
-
-    logger.debug('school: ' + str(school))
 
     if school:
 
-# - get value of 'abbrev'
-        lastname = af.get_dict_value(upload_dict, ('lastname', 'value'))
-        firstname = af.get_dict_value(upload_dict, ('firstname', 'value'))
+# - get value of 'lastname', 'firstname', 'ID-number'
+        last_name = upload_dict.get('lastname')
+        first_name = upload_dict.get('firstname')
+        id_number = upload_dict.get('idnumber')
+        studentbase_pk = upload_dict.get('studentbase_pk')
 
-        if lastname and firstname:
-# - validate abbrev checks null, max len and exists
-            """
-            msg_err = validate_code_name_identifier(
-                table='student',
-                field='code',
-                new_value=code,
-                is_absence=False,
-                parent=parent,
-                update_dict={},
-                msg_dict={},
-                request=request,
-                this_pk=None)
-            """
-            msg_err = None
+        msg_list = []
+        msg_err = av.validate_notblank_maxlength(last_name, c.MAX_LENGTH_FIRSTLASTNAME, _('The last name'))
+        if msg_err:
+            msg_list.append(msg_err)
+        msg_err = av.validate_notblank_maxlength(first_name, c.MAX_LENGTH_FIRSTLASTNAME, _('The first name'))
+        if msg_err:
+            msg_list.append(msg_err)
+        msg_err = av.validate_notblank_maxlength(id_number, c.MAX_LENGTH_IDNUMBER, _('The ID-number'))
+        if msg_err:
+            msg_list.append(msg_err)
+        #TODO validate if student already exists
+        if len(msg_list) > 0:
+            messages.append({'class': "alert-warning", 'msg_list': msg_list})
+        else:
 # - create and save student
-            if not msg_err:
+            try:
+                studentbase = None
+                if studentbase_pk:
+                    studentbase = stud_mod.Studentbase.objects.get_or_none(pk=studentbase_pk)
 
-                try:
-                    # First create base record. base.id is used in Student. Create also saves new record
-                    base = stud_mod.Studentbase.objects.create(country=country)
+                # First create base record. base.id is used in Student. Create also saves new record
+                if studentbase is None:
+                    studentbase = stud_mod.Studentbase.objects.create(country=country)
 
-                    student = stud_mod.Student(
-                        base=base,
-                        school=school,
-                        lastname=lastname,
-                        firstname=firstname,
-                        department=department
-                    )
-                    student.save(request=request)
-                except:
-                    name = lastname + ', ' + firstname
-                    msg_err = str(_("An error occurred. Student '%(val)s' could not be added.") % {'val': name})
+                student = stud_mod.Student(
+                    base=studentbase,
+                    school=school,
+                    lastname=last_name,
+                    firstname=first_name,
+                    idnumber=id_number,
+                    department=department
+                )
+                student.save(request=request)
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                name = ' '.join([first_name, last_name])
+                msg_list = [str(_('An error occurred.')),
+                            'Error: ' + str(e),
+                            str(_("Student '%(val)s' could not be added.") % {'val': name})]
+                messages.append({'class': "alert-danger", 'msg_list': msg_list})
+    if logging_on:
+        logger.debug('student: ' + str(student))
+        logger.debug('messages: ' + str(messages))
 
-    logger.debug('student: ' + str(student))
-    logger.debug('msg_err: ' + str(msg_err))
-    return student, msg_err
+    return student
 
 
 #######################################################
-def update_student(instance, upload_dict, msg_dict, request):
+def update_student(instance, upload_dict, messages, request):
     # --- update existing and new instance PR2019-06-06
     # add new values to update_dict (don't reset update_dict, it has values)
-    logger.debug(' ------- update_student -------')
-    logger.debug('upload_dict' + str(upload_dict))
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- update_student -------')
+        logger.debug('upload_dict' + str(upload_dict))
 
     if instance:
-        #
-        # FIELDS_STUDENT = ('base', 'school', 'department', 'level', 'sector', 'scheme', 'package',
-        #                   'lastname', 'firstname', 'prefix', 'gender', 'idnumber', 'birthdate', 'birthcountry', 'birthcity',
-        #                   'classname', 'examnumber', 'regnumber', 'diplomanumber', 'gradelistnumber',
-        #                   'iseveningstudent', 'hasdyslexia',
-        #                   'locked', 'has_reex', 'bis_exam', 'withdrawn', 'modifiedby', 'modifiedat')
+        student_name = ' '.join([instance.firstname, instance.lastname])
+
         update_scheme = False
         save_changes = False
-        for field in c.FIELDS_STUDENT:
 
-# --- get field_dict from  upload_dict  if it exists
-            field_dict = upload_dict[field] if field in upload_dict else {}
-            if field_dict:
-                logger.debug('field' + str(field))
-                logger.debug('field_dict' + str(field_dict))
-                if 'update' in field_dict:
-# a. get new_value and saved_value
-                    new_value = field_dict.get('value')
-                    saved_value = getattr(instance, field)
-                    logger.debug('new_value' + str(new_value))
-                    logger.debug('saved_value' + str(saved_value))
+        for field, new_value in upload_dict.items():
+            if logging_on:
+                logger.debug('field:     ' + str(field))
+                logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
 
 # - save changes in fields 'namefirst', 'namelast'
-                    if field in ['lastname', 'firstname']:
-                        if new_value != saved_value:
-                            name_first = None
-                            name_last = None
-                            if field == 'firstname':
-                                name_first = new_value
-                                name_last = getattr(instance, 'lastname')
-                            elif field == 'lastname':
-                                name_first = getattr(instance, 'firstname')
-                                name_last = new_value
-                            # check if student namefirst / namelast combination already exists
-                            """
-                            has_error = validate_namelast_namefirst(
-                                namelast=name_last,
-                                namefirst=name_first,
-                                company=request.user.company,
-                                update_field=field,
-                                msg_dict=msg_dict,
-                                this_pk=instance.pk)
-                            """
-                            has_error = False
-                            if not has_error:
-                                setattr(instance, field, new_value)
-                                save_changes = True
+            if field in ['lastname', 'firstname']:
+                saved_value = getattr(instance, field)
+                if new_value != saved_value:
+                    name_first = None
+                    name_last = None
+                    if field == 'firstname':
+                        name_first = new_value
+                        name_last = getattr(instance, 'lastname')
+                    elif field == 'lastname':
+                        name_first = getattr(instance, 'firstname')
+                        name_last = new_value
+                    # check if student namefirst / namelast combination already exists
+                    """
+                    has_error = validate_namelast_namefirst(
+                        namelast=name_last,
+                        namefirst=name_first,
+                        company=request.user.company,
+                        update_field=field,
+                        msg_dict=msg_dict,
+                        this_pk=instance.pk)
+                    """
+                    has_error = False
+                    if not has_error:
+                        setattr(instance, field, new_value)
+                        save_changes = True
 
-                    # 2. save changes in field 'name', 'abbrev'
-                    elif field in ('prefix', 'gender', 'idnumber',
-                                 'birthdate', 'birthcountry', 'birthcity',
-                                'classname', 'examnumber', 'regnumber', 'diplomanumber', 'gradelistnumber'):
-                        if new_value != saved_value:
-            # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
-                            msg_err = None
-                            if not msg_err:
-                                # c. save field if changed and no_error
-                                setattr(instance, field, new_value)
-                                save_changes = True
-                            else:
-                                msg_dict['err_' + field] = msg_err
+            # 2. save changes in field 'name', 'abbrev'
+            elif field in ('prefix', 'gender', 'idnumber',
+                         'birthdate', 'birthcountry', 'birthcity',
+                        'classname', 'examnumber', 'regnumber', 'diplomanumber', 'gradelistnumber'):
+                saved_value = getattr(instance, field)
+
+                if logging_on:
+                    logger.debug('field:     ' + str(field))
+                    logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+                    logger.debug('saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
+
+                if new_value != saved_value:
+    # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
+                    msg_list = []
+                    if len(msg_list):
+                        messages.append({'class': "alert-warning", 'msg_list': msg_list})
+                    else:
+                        setattr(instance, field, new_value)
+                        save_changes = True
+                        if logging_on:
+                            logger.debug('setattr(instance, field, new_value: ' + str(new_value))
 
 # 3. save changes in department, level or sector
-                    # department cannot be changed
-                    if field in ('level','sector' ):
-                        logger.debug('field' + str(field))
-                        logger.debug('new_value' + str(new_value) + ' ' + str(type(new_value)))
-                        logger.debug('saved_value' + str(saved_value) + ' ' + str(type(saved_value)))
-                        if new_value != saved_value:
-                            # TODO also change scheme when level changes.
-                            # delete student_subjects that are not in the new scheme
-                            if field == 'level':
-                                level_or_sector = subj_mod.Level.objects.get_or_none(pk=new_value)
-                            else:
-                                level_or_sector = subj_mod.Sector.objects.get_or_none(pk=new_value)
-                            setattr(instance, field, level_or_sector)
-                            save_changes = True
-                            update_scheme = True
+            # department cannot be changed
+            elif field in ('level','sector' ):
 
-                            # - update scheme in student instance, also remove scheme if necessary
-                            # - update scheme in all studsubj of this student
-                            update_scheme_in_studsubj(instance, request)
-
-                    # 4. save changes in field 'inactive'
-                    elif field == 'inactive':
-                        #logger.debug('inactive new_value]: ' + str(new_value) + ' ' + str(type(new_value)))
-                        saved_value = getattr(instance, field)
-                        #logger.debug('inactive saved_value]: ' + str(saved_value) + ' ' + str(type(saved_value)))
-                        if new_value != saved_value:
-                            setattr(instance, field, new_value)
-                            save_changes = True
+                saved_value = getattr(instance, field)
+                if logging_on:
+                    logger.debug('field: ' + str(field))
+                    logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+                    logger.debug('saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                if new_value != saved_value:
+                    # TODO also change scheme when level changes.
+                    # delete student_subjects that are not in the new scheme
+                    if field == 'level':
+                        level_or_sector = subj_mod.Level.objects.get_or_none(pk=new_value)
                     else:
-                        if new_value != saved_value:
-                            setattr(instance, field, new_value)
-                            save_changes = True
+                        level_or_sector = subj_mod.Sector.objects.get_or_none(pk=new_value)
+                    setattr(instance, field, level_or_sector)
+                    save_changes = True
+                    update_scheme = True
+
+                    # - update scheme in student instance, also remove scheme if necessary
+                    # - update scheme in all studsubj of this student
+                    update_scheme_in_studsubj(instance, request)
+
+# - save changes in field 'bis_exam'
+            elif field == 'bis_exam':
+                saved_value = getattr(instance, field)
+                if new_value != saved_value:
+                    setattr(instance, field, new_value)
+                    save_changes = True
+
+                if logging_on:
+                    logger.debug('---- field:   ' + str(field))
+                    logger.debug('new_value:    ' + str(new_value))
+                    logger.debug('saved_value:  ' + str(saved_value))
+                    logger.debug('save_changes: ' + str(save_changes))
+
 # --- end of for loop ---
         if update_scheme:
             department = getattr(instance, 'department')
@@ -1239,12 +1268,16 @@ def update_student(instance, upload_dict, msg_dict, request):
         if save_changes:
             try:
                 instance.save(request=request)
-            except:
-                msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                msg_list = [str(_('An error occurred.')),
+                            ' '.join(('Error:', str(e))),
+                            str(_("The changes of '%(val)s' have not be saved.") % {'val': student_name})]
+                messages.append({'class': "alert-danger", 'msg_list': msg_list})
+# - end of update_student
+
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def update_scheme_in_studsubj(student, request):
     # --- update_scheme_in_studsubj # PR2021-03-13
     logger.debug(' ----- update_scheme_in_studsubj ----- ')
@@ -1624,7 +1657,7 @@ def create_ssnote_attachment_rows(upload_dict, request):  # PR2021-03-17
 
 
 
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# OLD VERSION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def upload_student(student_list, student_dict, lookup_field, awpKey_list,
                    is_test, dateformat, indent_str, space_str, logfile, request):  # PR2019-12-17 PR2020-10-21
     logger.debug('----------------- import student  --------------------')

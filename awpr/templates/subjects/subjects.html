@@ -11,7 +11,7 @@
 <!-- SIDE BAR -->
 {% block sidebar %}
     <nav id="id_sidebar" class="awp_sidebar">
-        <div class="content_subheader_left tab_show tab_init mx-2 my-4">
+        <div class="content_subheader_left mx-2 my-4">
             <h5>{% trans 'Subjects' %}</h5>
         </div>
         {% if not no_access %}
@@ -32,55 +32,63 @@
             {% include 'includes/message_noaccess.html' %}
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
+            {% include 'includes/modselectschoolsubjectstudent.html' %}
+            {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'subjects/modsubject.html' %}
+            {% include 'subjects/modsubjecttype.html' %}
+            {% include 'subjects/modschemeitem.html' %}
+
+
 
             <div class="content_margin_top78">
                 {% include 'includes/messages.html' %}
-
-    <!-- BUTTON GROUP -->
-                <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="btn_subject" class="btn btn-secondary ">{% trans 'Subjects' %}</button>
-                    <button data-btn="btn_schemeitem" class="btn btn-secondary display_hide">{% trans 'Subject schemes' %}</button>
-                    <button data-btn="btn_department" class="btn btn-secondary display_hide">{% trans 'Departments' %}</button>
-                    <button data-btn="btn_level" class="btn btn-secondary display_hide">{% trans 'Levels' %}</button>
-                    <button data-btn="btn_sector" class="btn btn-secondary display_hide">{% trans 'Sectors' %}</button>
-                    <button data-btn="btn_subjecttype" class="btn btn-secondary display_hide">{% trans 'Subject types' %}</button>
-                    <button data-btn="btn_package" class="btn btn-secondary display_hide">{% trans 'Subject packages' %}</button>
+    <!-- header_text left -->
+                <div class="flex_4 mx-4 visibility_hide">
+                    <h5 id="id_hdr_left"></h5>
                 </div>
-
-    <!-- CONTENT HEADER - LOADER -->
-                <div class="content_header flex_container">
-        <!-- left header_text -->
-                    <div class="flex_4 pl-4 py-2">
-                        <h5 id="id_hdr_left"></h5>
-                    </div>
-        <!-- loader -->
-                    <div class="flex_1 py-2">
-                        {% include 'includes/loader.html' %}
-                    </div>
-        <!-- right header_text -->
-                    <div class="text_align_right flex_4 pr-4 py-2">
-                        <h5 id="id_hdr_textright1"></h5>
-                    </div>
+    <!-- loader -->
+                <div class="flex_1 py-2">
+                    {% include 'includes/loader.html' %}
                 </div>
+    <!-- header_text right -->
+                <div class="flex_2 mx-4 visibility_hide">
+                    <h5 id="id_hdr_textright1"></h5>
+                </div>
+                <div class="flex_2 mx-4 visibility_hide">
+                    <h5 id="id_hdr_textright2"></h5>
+                </div>
+            </div>
+
+<!-- BUTTON GROUP -->
+            <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
+                <button data-btn="btn_subject" class="btn btn-secondary ">{% trans 'Subjects' %}</button>
+                <button data-btn="btn_scheme" class="btn btn-secondary">{% trans 'Subject schemes' %}</button>
+                <button data-btn="btn_schemeitem" class="btn btn-secondary">{% trans 'Subject scheme items' %}</button>
+                <button data-btn="btn_subjecttype" class="btn btn-secondary">{% trans 'Subject types' %}</button>
+                <button data-btn="btn_department" class="btn btn-secondary display_hide">{% trans 'Departments' %}</button>
+                <button data-btn="btn_level" class="btn btn-secondary display_hide">{% trans 'Levels' %}</button>
+                <button data-btn="btn_sector" class="btn btn-secondary display_hide">{% trans 'Sectors' %}</button>
+                <button data-btn="btn_package" class="btn btn-secondary display_hide">{% trans 'Subject packages' %}</button>
+            </div>
 
     <!-- CONTENT BODY -->
-                <div class="content_body ml-2 mr-4">
-                    <table class="table tsa_tbl">
-                        <thead id="id_tblHead_datatable"></thead>
-                        <tbody id="id_tblBody_datatable"></tbody>
-                    </table>
-
-                </div>
-    <!-- END OF CONTENT BODY -->
-                <div id="id_data"
+    <!-- =================== DATA TABLE  =================== -->
+            <div class="content_body ml-2 mt-2 mr-4">
+                <table class="table tsa_tbl">
+                    <thead id="id_tblHead_datatable"></thead>
+                    <tbody id="id_tblBody_datatable"></tbody>
+                </table>
+            </div>
+<!-- END OF CONTENT BODY -->
+            <div id="id_data"
                 data-datalist_download_url="{% url 'datalist_download_url' %}"
                 data-settings_upload_url="{% url 'settings_upload_url' %}"
                 data-subject_upload_url="{% url 'subject_upload_url' %}"
-                data-subject_import_url="{% url 'subject_import_url' %}"
+                data-subjecttype_upload_url="{% url 'subjecttype_upload_url' %}"
+                data-scheme_upload_url="{% url 'scheme_upload_url' %}"
+                data-schemeitem_upload_url="{% url 'schemeitem_upload_url' %}"
             >
-            </div>
             </div>
         {% endif %}
     </div>

@@ -38,45 +38,44 @@
             {% include 'includes/message_noaccess.html' %}
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
+            {% include 'includes/modselectschoolsubjectstudent.html' %}
+            {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'students/modstudent.html' %}
             {% include 'students/modstudentsubject.html' %}
             {% include 'includes/modimport.html' %}
 
-            <div class="content_margin_top78">
     <!-- CONTENT HEADER - LOADER -->
+            <div class="content_margin_top78">
             <!-- content_header -->
                 {% include 'includes/messages.html' %}
-        <!-- submenu -->
-                <div class="content_header flex_container">
-                    <div id="id_submenu" class="awp_navbar_submenuXX mt-5">
+    <!-- header_text left -->
+                <div class="flex_4 mx-4 visibility_hide">
+                    <h5 id="id_hdr_left"></h5>
                 </div>
-        <!-- header_text -->
-                    <div class="flex_4 mx-4 visibility_hide">
-                        <h5 id="id_hdr_left"></h5>
-                    </div>
-        <!-- loader -->
-                    <div class="flex_1">
-                        <div id="id_loader" class="image_container visibility_hide">
-                            <img src="{% static 'img/loader.gif' %}" class="icon_24">
-                        </div>
-                    </div>
-        <!-- header_text -->
-                    <div class="flex_2 mx-4 visibility_hide">
-                        <h5 id="id_hdr_textright1"></h5>
-                    </div>
-                    <div class="flex_2 mx-4 visibility_hide">
-                        <h5 id="id_hdr_textright2"></h5>
-                    </div>
+    <!-- loader -->
+                <div class="flex_1 py-2">
+                    {% include 'includes/loader.html' %}
                 </div>
+    <!-- header_text right -->
+                <div class="flex_2 mx-4 visibility_hide">
+                    <h5 id="id_hdr_textright1"></h5>
+                </div>
+                <div class="flex_2 mx-4 visibility_hide">
+                    <h5 id="id_hdr_textright2"></h5>
+                </div>
+            </div>
             <!-- end content_header -->
     <!-- BUTTON GROUP -->
-                <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="btn_student" class="btn btn-secondary">{% trans 'Candidates' %}</button>
-                    <button data-btn="btn_studsubj" class="btn btn-secondary display_hide">{% trans 'Subjects' %}</button>
-                    <button data-btn="btn_exemption" class="btn btn-secondary display_hide">{% trans 'Exemptions' %}</button>
-                    <button data-btn="btn_reexamination" class="btn btn-secondary display_hide">{% trans 'Re-examinations' %}</button>
-                </div>
+            <div id="id_btn_container"
+                 class="btn-group btn-block pl-2 pr-4 my-2"
+                 role="group"
+                 aria-label="Choose option" >
+                <button data-btn="btn_student" class="btn btn-secondary">{% trans 'Candidates' %}</button>
+                <button data-btn="btn_studsubj" class="btn btn-secondary display_hide">{% trans 'Subjects' %}</button>
+                <button data-btn="btn_exemption" class="btn btn-secondary display_hide">{% trans 'Exemptions' %}</button>
+                <button data-btn="btn_reexamination" class="btn btn-secondary display_hide">{% trans 'Re-examinations' %}</button>
+            </div>
     <!-- end BUTTON GROUP -->
     <!-- END OF CONTENT HEADER -->
 
@@ -88,10 +87,8 @@
                     <tbody id="id_tblBody_datatable"></tbody>
                 </table>
             </div>
-    <!-- =================== STUDENT SUBJECTS  =================== -->
 
     <!-- END OF CONTENT BODY -->
-            </div>
             <div id="id_data"
                 data-datalist_download_url="{% url 'datalist_download_url' %}"
                 data-settings_upload_url="{% url 'settings_upload_url' %}"

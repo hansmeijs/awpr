@@ -9,11 +9,10 @@ logger = logging.getLogger(__name__)
 
 from students.models import Student
 from awpr import constants as c
+from awpr import settings as s
+
 
 # TODO from tsa, to be adapted
-
-
-
 def validate_namelast_namefirst(namelast, namefirst, company, update_field, msg_dict, this_pk=None):
     # validate if employee already_exists in this company PR2019-03-16
     # from https://stackoverflow.com/questions/1285911/how-do-i-check-that-multiple-keys-are-in-a-dict-in-a-single-pass
@@ -92,6 +91,81 @@ def employee_email_exists(email, company, this_pk = None):
 
 
 # ++++++++++++ Validations  +++++++++++++++++++++++++
+
+
+# ========  get_double_entrieslist_from_uploadfile  ======= PR2021-06-14
+def get_double_entrieslist_from_uploadfile(data_list):
+    # function returns list of trimmed idnumbers without dots that occur multiple times in data_list
+    double_entrieslist = []
+    id_number_list = []
+    for data_dict in data_list:
+        id_number = data_dict.get('idnumber')
+        if id_number:
+            id_number_nodots = id_number.strip().replace('.', '')
+            if id_number_nodots not in id_number_list:
+                id_number_list.append(id_number_nodots)
+            else:
+                double_entrieslist.append(id_number_nodots)
+    return double_entrieslist
+
+
+# ========  validate_double_entries_in_uploadfile  ======= PR2021-06-19
+def validate_double_entries_in_uploadfile(id_number_nodots, double_entrieslist, error_list):
+
+    has_error = False
+    if id_number_nodots and double_entrieslist:
+        if id_number_nodots in double_entrieslist:
+            has_error = True
+            error_list.append(_("%(fld)s '%(val)s' is found multiple times in this upload file.") \
+                      % {'fld': _("The ID-number"), 'val': id_number_nodots})
+    return has_error
+
+
+# ========  validate_name_idnumber_length  ======= PR2021-06-19
+def validate_name_idnumber_length(id_number_nodots, lastname_stripped, firstname_stripped, prefix_stripped, error_list):
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('----------- validate_name_idnumber_length ----------- ')
+
+    has_error = False
+    if not id_number_nodots:
+        has_error = True
+        error_list.append(_('%(fld)s cannot be blank.') % {'fld': _("The ID-number")})
+    elif len(id_number_nodots) > c.MAX_LENGTH_IDNUMBER:
+        has_error = True
+        error_list.append(_("%(fld)s '%(val)s' is too long, maximum %(max)s characters.") \
+                    % {'fld': _("The ID-number"), 'val': id_number_nodots, 'max': c.MAX_LENGTH_IDNUMBER})
+
+    if not lastname_stripped:
+        has_error = True
+        error_list.append(_('%(fld)s cannot be blank.') % {'fld': _("The last name")})
+    elif len(lastname_stripped) > c.MAX_LENGTH_FIRSTLASTNAME:
+        has_error = True
+        error_list.append(_("%(fld)s '%(val)s' is too long, maximum %(max)s characters.") \
+                    % {'fld': _("The last name"), 'val': lastname_stripped, 'max': c.MAX_LENGTH_FIRSTLASTNAME})
+
+    if not firstname_stripped:
+        has_error = True
+        error_list.append(_('%(fld)s cannot be blank.') % {'fld': _("The first name")})
+    elif len(firstname_stripped) > c.MAX_LENGTH_FIRSTLASTNAME:
+        has_error = True
+        error_list.append(_("%(fld)s '%(val)s' is too long, maximum %(max)s characters.") \
+                    % {'fld': _("The first name"), 'val': firstname_stripped, 'max': c.MAX_LENGTH_FIRSTLASTNAME})
+
+    if len(prefix_stripped) > c.MAX_LENGTH_10:
+        has_error = True
+        error_list.append(_("%(fld)s '%(val)s' is too long, maximum %(max)s characters.") \
+                          % {'fld': _("The prefix"), 'val': prefix_stripped, 'max': c.MAX_LENGTH_10})
+
+    if logging_on:
+        logger.debug('has_error: ' + str(has_error))
+        logger.debug('error_list: ' + str(error_list))
+
+    return has_error
+# - end of validate_name_idnumber_length
+
+
+# +++++++++++++++++++++++++++++++++++++
 
 def validate_idnumber(id_str):
     # logger.debug('validate_idnumber: ' + id_str)

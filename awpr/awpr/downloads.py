@@ -1,7 +1,7 @@
 # PR2020-09-17 PR2021-01-27
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from django.utils.translation import activate
+from django.utils.translation import activate, ugettext_lazy as _
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
@@ -101,21 +101,38 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['examyear_rows'] = school_dicts.create_examyear_rows(request.user, {}, None)
 # ----- schools
                 if datalist_request.get('school_rows'):
-                    datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear, permit_dict, {}, None)
+                    datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear, permit_dict)
 # ----- departments
                 if datalist_request.get('department_rows'):
                     datalists['department_rows'] = school_dicts.create_department_rows(sel_examyear)
 # ----- levels
                 if datalist_request.get('level_rows'):
-                    datalists['level_rows'] = school_dicts.create_level_rows(sel_examyear, sel_depbase)
+                    cur_dep_only = af.get_dict_value(datalist_request, ('level_rows', 'cur_dep_only'), False)
+                    datalists['level_rows'] = school_dicts.create_level_rows(sel_examyear, sel_depbase, cur_dep_only)
 # ----- sectors
                 if datalist_request.get('sector_rows'):
-                    datalists['sector_rows'] = school_dicts.create_sector_rows(sel_examyear, sel_depbase)
+                    cur_dep_only = af.get_dict_value(datalist_request, ('sector_rows', 'cur_dep_only'), False)
+                    datalists['sector_rows'] = school_dicts.create_sector_rows(sel_examyear, sel_depbase, cur_dep_only)
+
+# ----- subjecttypes
+                if datalist_request.get('subjecttype_rows'):
+                    cur_dep_only = af.get_dict_value(datalist_request, ('subjecttype_rows', 'cur_dep_only'), False)
+                    datalists['subjecttype_rows'] = sj_vw.create_subjecttype_rows(sel_examyear, sel_depbase, cur_dep_only)
+                    datalists['subjecttypebase_rows'] = sj_vw.create_subjecttypebase_rows(request.user.country)
+
 # ----- subjects
                 if datalist_request.get('subject_rows'):
                     etenorm_only = af.get_dict_value(datalist_request, ('subject_rows', 'etenorm_only'), False)
                     cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
                     datalists['subject_rows'] = sj_vw.create_subject_rows(new_setting_dict, None, etenorm_only, cur_dep_only)
+# ----- schemes
+                if datalist_request.get('scheme_rows'):
+                    cur_dep_only = af.get_dict_value(datalist_request, ('scheme_rows', 'cur_dep_only'), False)
+                    datalists['scheme_rows'] = sj_vw.create_scheme_rows(sel_examyear, sel_depbase, {}, None, cur_dep_only)
+# ----- schemeitems
+                if datalist_request.get('schemeitem_rows'):
+                    cur_dep_only = af.get_dict_value(datalist_request, ('schemeitem_rows', 'cur_dep_only'), False)
+                    datalists['schemeitem_rows'] = sj_vw.create_schemeitem_rows(sel_examyear, None, None, cur_dep_only)
 # ----- exams
                 if datalist_request.get('exam_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
@@ -171,12 +188,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_schoolbase_pk=sel_schoolbase.pk,
                             sel_depbase_pk=sel_depbase.pk
                         )
-# ----- schemes
-                if datalist_request.get('scheme_rows'):
-                    datalists['scheme_rows'] = sj_vw.create_scheme_rows(new_setting_dict, {}, None)
-# ----- schemeitems
-                if datalist_request.get('schemeitem_rows'):
-                    datalists['schemeitem_rows'] = sj_vw.create_schemeitem_rows(new_setting_dict, {}, None)
+
 
         elapsed_seconds = int(1000 * (timer() - starttime)) / 1000
         datalists['elapsed_seconds'] = elapsed_seconds
@@ -222,12 +234,19 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     permit_dict = create_permit_dict(req_user)
     permit_list, usergroup_list = acc_view.get_userpermit_list(page, request.user)
     if permit_list:
-        permit_dict['permit_list'] = permit_list
+        for prm in permit_list:
+            if prm:
+                permit_dict[prm] = True
+    if usergroup_list:
         permit_dict['usergroup_list'] = usergroup_list
 
+    if logging_on:
+        logger.debug('permit_list: ' + str(permit_list) )
+        logger.debug('usergroup_list: ' + str(usergroup_list) )
+        logger.debug('permit_dict: ' + str(permit_dict) )
 # - selected_pk_dict contains saved selected_pk's from Usersetting, key: selected_pk
     # changes are stored in this dict, saved at the end when
-    selected_pk_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
+    selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
     selected_pk_dict_has_changed = False
 
 # ==== COUNTRY ========================
@@ -327,7 +346,6 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
 
     if logging_on:
         logger.debug('sel_depbase_instance: ' + str(sel_depbase_instance))
-        logger.debug('sel_depbase_instance.pk: ' + str(sel_depbase_instance.pk))
 
     permit_dict['allowed_depbases'] = allowed_depbases
     allowed_depbases_len = len(allowed_depbases)
@@ -498,7 +516,22 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
 
     # - save settings when they have changed
     if selected_pk_dict_has_changed:
-        req_user.set_usersetting_dict(c.KEY_SELECTED_PK, selected_pk_dict)
+        acc_view.set_usersetting_dict(c.KEY_SELECTED_PK, selected_pk_dict, request)
+
+# ===== PAGE SETTINGS ======================= PR2021-06-22
+# these settings can not be changed by calling download, are changes by UploadSettings
+# value of key 'sel_page' is set and retrieved in get_headerbar_param
+    # get page settings - keys starting with 'page_'
+    if page:
+        page_dict = acc_view.get_usersetting_dict(page, request)
+        # if 'page_' in request: and saved_btn == 'planning': also retrieve period
+        if page_dict:
+            sel_btn = page_dict.get(c.KEY_SEL_BTN)
+# - add info to setting_dict, will be sent back to client
+            if sel_btn:
+                setting_dict[c.KEY_SEL_BTN] = sel_btn
+
+
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
     """
@@ -508,7 +541,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
         if key not in skip_keys:
             has_changed = False
             new_page_dict = {}
-            saved_setting_dict = req_user.get_usersetting_dict(key)
+            saved_setting_dict = acc_view.get_usersetting_dict(key, request)
 
             ################################
             # get page settings - keys starting with 'page_'
@@ -532,7 +565,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
                         new_page_dict[sel_key] = new_value
                         setting_dict[sel_key] = new_value
             if has_changed:
-                req_user.set_usersetting_dict(key, new_page_dict)
+                acc_view.set_usersetting_dict(key, new_page_dict, request)
     # logger.debug('setting_dict: ' + str(setting_dict))
     """
 
@@ -549,7 +582,7 @@ def get_selected_examperiod_examtype_from_usersetting(request):  # PR2021-01-20
     sel_examperiod, sel_examtype, sel_subject_pk = None, None, None
     req_user = request.user
     if req_user:
-        selected_pk_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
+        selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
         if selected_pk_dict:
             sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
             sel_examtype = selected_pk_dict.get(c.KEY_SEL_EXAMTYPE)
@@ -557,58 +590,121 @@ def get_selected_examperiod_examtype_from_usersetting(request):  # PR2021-01-20
     return sel_examperiod, sel_examtype, sel_subject_pk
 
 
-def get_selected_examyear_school_dep_from_usersetting(request):  # PR2021-1-13
-    #logger.debug(' ----- get_selected_examyear_school_dep_from_usersetting ----- ' )
-    #logger.debug('request_item_setting: ' + str(request_item_setting) )
-    # this function get settingss from request_item_setting.
-    # if not in request_item_setting, it takes the saved settings.
+def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-06-14
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_selected_ey_school_dep_from_usersetting ----- ' )
+    # this function gets sel_examyear, sel_school, sel_department from req_user and usersetting
+    # checks if user may edit .
 
     req_user = request.user
-    is_locked, examyear_published, school_activated, requsr_same_school = False, False, False, False
+    sel_examyear, sel_school, sel_department = None, None, None
+    msg_list = []
 
 # ==== COUNTRY ========================
 # - get country from req_user
-    requsr_country = req_user.country
-    if requsr_country.locked:
-        is_locked = True
+    if req_user.country:
+        requsr_country = req_user.country
+        if requsr_country.locked:
+            msg_list.append(str(_('This country is locked.')))
 
-# ===== SCHOOLBASE ======================= PR2020-12-18
-# - get sel_schoolbase from settings / request when role is insp, admin or system, from req_user otherwise
-    sel_schoolbase, sel_schoolbase_saveNIU = af.get_sel_schoolbase_instance(request)
+        selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
 
-    # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
-    # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Comm can not neter grades
-    requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and req_user.schoolbase.pk == sel_schoolbase.pk)
+        if logging_on:
+            logger.debug('selected_dict: ' + str(selected_dict))
 
+# ===== SCHOOLBASE =================
+    # - get selected schoolbase from Usersetting, from role if role = school
+        if req_user.role == c.ROLE_008_SCHOOL:
+            sel_sb_pk = req_user.schoolbase.pk
+        else:
+            sel_sb_pk = selected_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
+
+        sel_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
+            pk=sel_sb_pk,
+            country=requsr_country
+        )
+        if sel_schoolbase is None:
+            msg_list.append(str(_('User has no school.')))
+        else:
+            # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
+            # used on entering students and grades. Schools can only enter grades of their own school
+            requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and req_user.schoolbase.pk == sel_schoolbase.pk)
+            if not requsr_same_school:
+                msg_list.append(str(_('Only users of this school are allowed to make changes.')))
+
+            if logging_on:
+                logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
 # ===== EXAMYEAR =======================
-# every user can change examyear, is stored in Usersetting.
-# - get selected examyear from request_item_setting, Usersetting or first in list
-    sel_examyear, sel_examyear_save, may_select_examyear = af.get_sel_examyear_instance(request)
+    # - get selected examyear from Usersetting
+            sel_examyear = sch_mod.Examyear.objects.get_or_none(
+                pk=selected_dict.get(c.KEY_SEL_EXAMYEAR_PK),
+                country=requsr_country
+            )
+    # - add info to msg_list, will be sent back to client
+            if sel_examyear is None:
+                msg_list.append(str(_('No exam year selected.')))
+            elif not sel_examyear.published:
+                msg_list.append(str(_('This exam year is not published yet.')))
+            elif sel_examyear.locked:
+                msg_list.append(str(_('This exam year is locked.')))
 
-    # - add info to setting_dict, will be sent back to client
-    if sel_examyear:
-        if sel_examyear.published:
-            examyear_published = True
-        if sel_examyear.locked:
-            is_locked = True
+            if logging_on:
+                logger.debug('sel_examyear: ' + str(sel_examyear))
 
 # ===== SCHOOL =======================
-    sel_school = sch_mod.School.objects.get_or_none(base=sel_schoolbase, examyear=sel_examyear)
-    if sel_school:
-        if sel_school.activated:
-            school_activated = True
-        if sel_school.locked:
-            is_locked = True
+            sel_school = sch_mod.School.objects.get_or_none(
+                base=sel_schoolbase,
+                examyear=sel_examyear
+            )
+            if sel_school is None:
+                msg_list.append(str(_('School not found in this exam year.')))
+            else:
+                if not sel_school.activated:
+                    msg_list.append(str(_('This school has not activated this exam year yet.')))
+                elif sel_school.locked:
+                    msg_list.append(str(_('This school is locked this exam year.')))
 
+                if logging_on:
+                    logger.debug('sel_school: ' + str(sel_school))
 # ===== DEPBASE =======================
-    sel_depbase, sel_depbase_saveNIU, allowed_depbasesNIU = af.get_sel_depbase_instance(sel_school, request)
-    sel_department = None
-    if sel_depbase:
-        sel_department = sch_mod.Department.objects.get_or_none(base=sel_depbase, examyear=sel_examyear)
+                sel_depbase = sch_mod.Departmentbase.objects.get_or_none(
+                    pk=selected_dict.get(c.KEY_SEL_DEPBASE_PK),
+                    country=requsr_country
+                )
 
-    return sel_examyear, sel_school, sel_department, \
-           is_locked, examyear_published, school_activated, requsr_same_school
-# - end of get_selected_examyear_school_dep_from_usersetting
+                if logging_on:
+                    logger.debug('sel_depbase: ' + str(sel_depbase))
+# ===== DEPARTMENT =======================
+                if sel_depbase is None:
+                    msg_list.append(str(_('No department selected.')))
+                else:
+                    if not af.is_allowed_depbase_requsr(sel_depbase.pk, request):
+                        msg_list.append(str(_("You don't have permission to view department %(val)s.") % {'val': sel_depbase.code}))
+                    else:
+                        if not af.is_allowed_depbase_school(sel_depbase.pk, sel_school):
+                            msg_list.append(str(_("This school does not have department %(val)s.") % {'val': sel_depbase.code}))
+
+                        else:
+                            sel_department = sch_mod.Department.objects.get_or_none(
+                                base=sel_depbase,
+                                examyear=sel_examyear
+                            )
+
+                            if logging_on:
+                                logger.debug('sel_department: ' + str(sel_department))
+
+                            if sel_department is None:
+                                msg_list.append(str(_("Department %(val)s not found in this examyear.") % {'val': sel_depbase.code}))
+
+    may_edit = len(msg_list) == 0
+
+    if logging_on:
+        logger.debug('msg_list: ' + str(msg_list))
+        logger.debug('may_edit: ' + str(may_edit))
+
+    return sel_examyear, sel_school, sel_department, may_edit, msg_list
+# - end of get_selected_ey_school_dep_from_usersetting
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -636,19 +732,19 @@ def create_permit_dict(req_user):
             requsr_usergroups_list = user_groups.split(';')
             for usergroup in requsr_usergroups_list:
                 if usergroup == c.USERGROUP_READ:
-                    permit_dict['requsr_group_read'] = True
+                    permit_dict['usergroup_read'] = True
                 if usergroup == c.USERGROUP_EDIT:
-                    permit_dict['requsr_group_edit'] = True
+                    permit_dict['usergroup_edit'] = True
                 if usergroup == c.USERGROUP_AUTH1_PRES:
-                    permit_dict['requsr_group_auth1'] = True
+                    permit_dict['usergroup_auth1'] = True
                 if usergroup == c.USERGROUP_AUTH2_SECR:
-                    permit_dict['requsr_group_auth2'] = True
+                    permit_dict['usergroup_auth2'] = True
                 if usergroup == c.USERGROUP_AUTH3_COM:
-                    permit_dict['requsr_group_auth3'] = True
+                    permit_dict['usergroup_auth3'] = True
                 if usergroup == c.USERGROUP_ANALYZE:
-                    permit_dict['requsr_group_anlz'] = True
+                    permit_dict['usergroup_anlz'] = True
                 if usergroup == c.USERGROUP_ADMIN:
-                    permit_dict['requsr_group_admin'] = True
+                    permit_dict['usergroup_admin'] = True
 
 # ===== SCHOOL =======================
 # - roles higher than school may select other schools PR2021-04-23

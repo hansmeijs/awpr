@@ -1,0 +1,88 @@
+ {% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL SCHEMEITEM  =================== -->
+    <div class="modal" id="id_mod_schemeitem" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 id="id_MSI_header" class="modal-title mx-2" ></h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="flex_container px-3 mb-3">
+                        <div class="flex_1 mx-1">
+                            <label for="id_MSI_department" class="mx-2">{% trans 'Department' %}:</label>
+                            <select id="id_MSI_department" data-field="department_pk" class="form-control"
+                                   autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                            </select>
+                        </div>
+                        <div id="id_MSI_level_container" class="flex_1 mx-1 ">
+                            <label for="id_MSI_level" class="mx-2">{% trans 'Leeerweg' %}:</label>
+                            <select id="id_MSI_level" data-field="lvl_pk" class="form-control"
+                                   autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                            </select>
+                        </div>
+                        <div id="id_MSI_sector_container" class="flex_1 mx-1 ">
+                            <label id="id_MSI_sector_label" for="id_MSI_sector" class="mx-2">{% trans 'Sector' %}:</label>
+                            <select id="id_MSI_sector" data-field="sct_pk" class="form-control"
+                                   autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="content_header ml-2 mr-0 mb-3">
+                        <div class="mx-3 mt-2 mb-0">
+                            <small>{% trans "To add a subject: select one or more subjects in the list on the left, then click the proper subject type in the list on the right." %}</small><br>
+                            <small>{% trans "To remove a subject: click the subject in the list on the right." %}</small><br>
+                            <small>{% trans "Click 'Save' to save the changes, or click 'Cancel' to leave the scheme as it is." %}</small>
+                        </div>
+                    </div>
+
+
+                    <div class="flex_container ml-2 mr-0">
+                         <div class="flex_2 p-2 ">
+                             <h6 class="px-2">{% trans 'Available subjects' %}:</h6>
+                             <table class="tableX tsa_tbl border_bg_message tbl_studsubj_h390_w_auto">
+                                <tbody id="id_MSI_tblBody_subjects"></tbody>
+                             </table>
+                         </div>
+
+                         <div class="flex_2 p-2">
+                             <h6 class="px-2">{% trans 'Subjects of this scheme' %}:</h6>
+                              <table class="tableX tsa_tbl border_bg_lightblue tbl_studsubj_h390_w_auto">
+                                <tbody id="id_MSI_tblBody_schemeitems"></tbody>
+                              </table>
+                        </div>
+                    </div>
+
+                    <div class="content_header ml-2 mr-0">
+                        <div class="mx-3 mt-2 mb-0">
+                            <small>* : {% trans 'Combination subject' %}</small>
+                        </div>
+                        <div class="mx-3 mt-2 mb-0">
+                            <small>!! : {% trans 'Mandatory subject' %}</small>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+                    <div class="content_subheader_left mx-1 tab_show tab_update display_hideX">
+                        <button id="id_MSI_btn_delete" type="button" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete subject' %}</button>
+                        <button id="id_MSI_btn_log" class="btn btn-outline-secondary" >{% trans 'Show logfile' %}</button>
+                    </div>
+                    <div class="content_subheader_right">
+                        <button id="id_MSI_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MSI_btn_save" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>

@@ -32,31 +32,38 @@
 // ---  remove class 'active' from all buttons in this menubar
             let menubuttons = menubar.children;
             for (let i = 0, len = menubuttons.length; i < len; i++) {
-              menubuttons[i].classList.remove (cls_active);
+              menubuttons[i].classList.remove ("active");
             }
 
 // ---  add class 'active' to clicked buttons
-           btn_clicked.classList.add (cls_active);
+           btn_clicked.classList.add ("active");
         }; //if(!!e.target)
     }; //function SetMenubuttonActive()
 
-//=========  AddSubmenuButton  === PR2020-01-26 PR2021-04-26
-    function AddSubmenuButton(el_div, a_innerText, a_function, a_id, a_href, a_download) {
+//=========  AddSubmenuButton  === PR2020-01-26 PR2021-04-26 PR2021-06-23
+    function AddSubmenuButton(el_div, a_innerText, a_function, classnames_list, a_id, a_href, a_download) {
         //console.log(" ---  AddSubmenuButton --- ");
         let el_a = document.createElement("a");
-            if(!!a_id){el_a.setAttribute("id", a_id)};
+            if(a_id){el_a.setAttribute("id", a_id)};
+
             if(a_href) {
-                el_a.setAttribute("href", a_href)
-                if(a_download){
-                    //el_a.setAttribute("download", true)
-                    el_a.setAttribute("target", "_blank")
-                }
+                el_a.setAttribute("href", a_href);
+                if(a_download){ el_a.setAttribute("target", "_blank") }
             };
             el_a.innerText = a_innerText;
             if(!!a_function){el_a.addEventListener("click", a_function, false)};
+            el_a.classList.add("no_select");
             // set background color of btn
             el_a.classList.add("tsa_tr_selected");
             el_a.classList.add("px-2", "mr-2");
+            if (classnames_list && classnames_list.length) {
+                for (let i = 0, len = classnames_list.length; i < len; i++) {
+                    const classname = classnames_list[i];
+                    if(!!classname){
+                        el_a.classList.add(classname);
+                    }
+                }
+            }
 
             el_div.classList.add("pointer_show")
         el_div.appendChild(el_a);
@@ -80,11 +87,10 @@
                     //console.log( response);
                 },  // success: function (response) {
                 error: function (xhr, msg) {
-                    //console.log(msg + '\n' + xhr.responseText);
-                    //alert(msg + '\n' + xhr.responseText);
-                }  // error: function (xhr, msg) {
-            });  // $.ajax({
-        }  //  if(!!row_upload)
+                    console.log(msg + '\n' + xhr.responseText);
+                }
+            });
+        }
     };  // UploadSettings
 
 //========= UpdateHeaderbar  ================== PR2020-11-14 PR2020-12-02
@@ -354,6 +360,7 @@
             setTimeout(function (){ tblRow.classList.remove(cls_error); }, 2000);
         }
     }
+
     function ShowOkRow(tblRow ) {
         // make row green, / --- remove class 'ok' after 2 seconds
         tblRow.classList.add("tsa_tr_ok");
@@ -602,7 +609,6 @@
         return map_dict
     }
 
-
 //========= get_itemdict_from_datamap_by_el  ============= PR2019-10-12 PR2020-09-13 PR2021-01-014
     function get_itemdict_from_datamap_by_el(el, data_map) {
         // function gets map_id form 'data-map_id' of tblRow, looks up 'map_id' in data_map
@@ -645,7 +651,6 @@
         }
         return new_status_sum
     }  // b_set_status_bool_at_index
-
 
 //========= b_get_statussum_from_array  =============  PR2021-02-05
     function b_get_statussum_from_array(status_array) {
@@ -809,6 +814,8 @@
        // exc_subject_ColIndex_list.sort((a, b) => a - b);
        return a - b;
     };
+
+
 //#########################################################################
 // +++++++++++++++++ DATE FUNCTIONS +++++++++++++++++++++++++++++++++++++++
 
@@ -968,42 +975,270 @@
     }  // validate_blank_unique_text
 
 
-//#########################################################################
-// +++++++++++++++++ SVG  +++++++++++++++++++++++++++++++++++++++++++
+//######### IT WORKS !!! #################################################################
+// +++++++++++++++++ LOOKUP dict in ordered dictlist +++++++++++++++++++++++++++ PR2021-06-16
 
-    function create_svg_html(id_svg, href, caption, txt_x, txt_y,
-                                height, width, indent_left, indent_right,
-                                polygon_class, fill) {
+//========= b_get_mapdict_from_datarows  ================== PR2021-06-21
+    function b_get_mapdict_from_datarows(data_rows, map_id, user_lang){
+        const [middle_index, found_dict, compare] = b_recursive_lookup(data_rows, map_id, user_lang);
+        const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
+        return selected_dict;
+    }
 
-        const points = get_svg_arrow_points(height, width, indent_left, indent_right);
+//========= b_recursive_lookup  ========== PR2020-06-16
+    function b_recursive_lookup(dict_list, search_value, user_lang){
+        //console.log( " ----- b_recursive_lookup -----");
+        // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
+        // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
+        // function returns rowindex of searched value, or rowindex of row to be inserted
+        // dict_list must be ordered by id (as text field), done by server
 
-        let svg_html = "<svg id=\"" + id_svg + "\" height=\"" + height + "\" width=\"" + width + "\">"
-        svg_html += "<a href=\"" + href + "\">"
-        svg_html += "<polygon points=\"" + points + "\" class=\"" + polygon_class + "\"></polygon>"
-        svg_html += "<text x=\"" + txt_x + "\" y=\"" + txt_y + "\" fill=\"" + fill + "\""
-        svg_html +=  "text-anchor=\"middle\" alignment-baseline=\"middle\">"
-        svg_html += caption
-        svg_html += "</text></a></svg>"
-        return svg_html
-    };
-//========= get_svg_arrow_points  =================
-    function get_svg_arrow_points(height, width, indent_left, indent_right) {
-        // PR2018-12-21 creates arrow shape
-        points = "0,0 " // lower left corner
-        if (indent_right) {
-            points += (width - indent_right) + ",0 " // lower right corner
-            points += (width) + "," + (height/2) + " "  // middle right point
-            points += (width - indent_right) + "," + (height) + " " // top right corner
+        let compare = null, middle_index = null, found_dict = null;
+        if (dict_list && dict_list.length){
+            const lookup_field = "mapid";
+            const last_index = dict_list.length - 1;
+            let min_index = 0;
+            let max_index = last_index;
+            middle_index =  Math.floor( (min_index + max_index) / 2);
+
+            if(!search_value){search_value = ""};
+        //console.log( "search_value: ", search_value);
+        //console.log( "lookup_field: ", lookup_field);
+
+            const max_loop = 25;
+            for (let i = 0; i < max_loop; i++) {
+                if (i > 23) {
+                // exit when loop not breaked (should not be possible), put index at end of list
+                    compare = 1;
+                    middle_index = last_index;
+                    break;
+                } else {
+                    const middle_dict = dict_list[middle_index];
+                    const middle_value = middle_dict[lookup_field];
+
+        //console.log( i, "LOOP : ", min_index, " - ", max_index, " > ", middle_index);
+        //console.log( "middle_value: ", middle_value);
+
+                    // PR2021-06-08 note: toLowerCase is not necessary, because sensitivity: 'base' ignores lower- / uppercase and accents;
+                    // sort function from https://stackoverflow.com/questions/51165/how-to-sort-strings-in-javascript
+                    // localeCompare from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare
+                    // 'acu'.localeCompare('giro') = -1
+                    // 'mcb'.localeCompare('giro') = 1
+                    // note: value of compare can be 2 or -2 in some browsers, teherfore use compare < 0 instead of compare === -1
+                    compare = search_value.localeCompare(middle_value, user_lang, {sensitivity: 'base'});
+        //console.log( "compare : ", compare);
+        //console.log( "min_index : ", min_index);
+        //console.log( "max_index : ", max_index);
+                    if (!compare) {
+                        //  search_value === middle_value
+                        // exit, return middle_index (compare = 0 means item is found at index: middle_index
+                        found_dict = middle_dict;
+                        break;
+
+                    } else {
+                        // value not found, return compare and middle_index
+                        if (min_index === max_index){
+                            // if returnvalue of compare = 0: value found at middle_index
+                            // if returnvalue of compare < 0: value not found in list, must be inserted just before middle_index
+                            // if returnvalue of compare > 0: value not found in list, must be inserted just after middle_index
+
+        //console.log( "compare = 0, middle_index === max_index");
+
+                            break;
+                        } else {
+                            // value not found, next lookup
+                            if (compare < 0) {
+                                if (middle_index === min_index){
+                                    // exit if middle_index equals min_index and comapre is neagtive: means that value is not found
+
+        //console.log( "compare < 0, middle_index === max_index");
+                                    break;
+                                } else {
+                                    //  search_value < middle_value
+                                    // set middle_index to halfway lower part
+                                    //  set max_index = middle_index - 1
+                                    // rounddown to integer
+                                    max_index = middle_index - 1;
+                                    middle_index =  Math.floor( (min_index + max_index) / 2);
+        //console.log( "new middle_index", middle_index);
+                                }
+                            } else if (compare > 0) {
+                                if (middle_index === max_index){
+                                    // exit if middle_index equals max_index and comapre is positive: means that value is not found
+
+        //console.log( "compare > 0, middle_index === max_index");
+
+                                    break;
+                                } else {
+                                    //  search_value > middle_value
+                                    // set middle_index to halfway upper part
+                                    //  set min_index = middle_index + 1
+                                    // round up to integer
+                                    min_index = middle_index + 1;
+                                    middle_index =  Math.ceil( (min_index + max_index) / 2);
+
+        //console.log( "min_index", min_index);
+        //console.log( "new middle_index", middle_index);
+                                }
+                            }
+        //console.log( "GOTO NEXT LOOP 2 : ", min_index, " - ", max_index, " >< ", middle_index);
+                        }
+                    }
+                };  // if (i > 23)
+            };  // for (let i = 0,
+        };  //  if (dict_list && dict_list.length){
+
+        //console.log( "found_dict: ", found_dict);
+        //console.log( "compare: ", compare);
+        return [middle_index, found_dict, compare];
+    };  // b_recursive_lookup
+
+//========= b_recursive_tblRow_lookup  ========== PR2020-06-16
+    function b_recursive_tblRow_lookup(tblBody, search_value_1, search_value_2, search_value_3, user_lang){
+        // console.log( " ----- b_recursive_tblRow_lookup -----");
+        // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
+        // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
+        // function returns rowindex of searched value, or rowindex of row to be inserted
+
+        const lookup_field_1 = "data-ob1", lookup_field_2 = "data-ob2", lookup_field_3 = "data-ob3";
+        let compare = null, middle_index = null, found_row = null;
+        const last_index = (tblBody.rows && tblBody.rows.length) ? tblBody.rows.length -1 : 0;
+        if (tblBody.rows && tblBody.rows.length){
+            let min_index = 0;
+            let max_index = last_index;
+            middle_index =  Math.floor( (min_index + max_index) / 2);
+
+            const s_val_1 = (search_value_1) ? search_value_1.toLowerCase() : "";
+            const s_val_2 = (search_value_2) ? search_value_2.toLowerCase() : "";
+            const s_val_3 = (search_value_3) ? search_value_3.toLowerCase() : "";
+
+            const max_loop = 25;
+            for (let i = 0; i < max_loop; i++) {
+                if (i > 23) {
+                // exit when loop not breaked (should not be possible), put index at end of list
+                    compare = 1;
+                    middle_index = last_index;
+                    break;
+                } else {
+                    const tblRow = tblBody.rows[middle_index];
+                    const middle_value_field_1 = get_attr_from_el(tblRow, lookup_field_1, "");
+                    const middle_value_field_2 = get_attr_from_el(tblRow, lookup_field_2, "");
+                    const middle_value_field_3 = get_attr_from_el(tblRow, lookup_field_3, "");
+
+        //console.log( i, "LOOP : ", min_index, " - ", max_index, " > ", middle_index);
+        //console.log( "lookup_values: ", search_value_1, " - ",  search_value_2, search_value_3);
+        //console.log( "row_values: ", middle_value_field_1, " - ",  middle_value_field_2, middle_value_field_3);
+
+                    // PR2021-06-08 note: toLowerCase is not necessary, because sensitivity: 'base' ignores lower- / uppercase and accents;
+                    // sort function from https://stackoverflow.com/questions/51165/how-to-sort-strings-in-javascript
+                    // localeCompare from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare
+                    // 'acu'.localeCompare('giro') = -1
+                    // 'mcb'.localeCompare('giro') = 1
+                    // note: value of compare can be 2 or -2 in some browsers, therefore use compare < 0 instead of compare === -1
+                    const compare1 = s_val_1.localeCompare(middle_value_field_1, user_lang, {sensitivity: 'base'});
+                    // if first lookup field matches: compare has value of second field
+                    // if first lookup field does not match: compare has value of first field
+                    if (!compare1){
+                        const compare2 = s_val_2.localeCompare(middle_value_field_2, user_lang, {sensitivity: 'base'});
+                        if (!compare2){
+                             compare = s_val_3.localeCompare(middle_value_field_3, user_lang, {sensitivity: 'base'});
+                        } else {
+                            compare = compare2;
+                        };
+                    } else {
+                        compare = compare1;
+                    }
+        //console.log( "compare : ", compare);
+                    if (!compare ) {
+                        //  search_value === middle_value
+                        // exit, return middle_index (compare = 0 means item is found at index: middle_index
+                        found_row = tblRow;
+                        break;
+
+                    } else {
+                        // value not found, return compare and middle_index
+                        if (min_index === max_index){
+                            // if returnvalue of compare = 0: value found at middle_index
+                            // if returnvalue of compare < 0: value not found in list, must be inserted just before middle_index
+                            // if returnvalue of compare > 0: value not found in list, must be inserted just after middle_index
+                            break;
+                        } else {
+                            // value not found, next lookup
+                            if (compare < 0) {
+                                if (middle_index === min_index){
+                                    // exit if middle_index equals min_index and comapre is neagtive: means that value is not found
+                                    break;
+                                } else {
+                                    //  search_value < middle_value
+                                    // set middle_index to halfway lower part
+                                    //  set max_index = middle_index - 1
+                                    // rounddown to integer
+                                    max_index = middle_index - 1;
+                                    middle_index =  Math.floor( (min_index + max_index) / 2);
+                                }
+                            } else if (compare > 0) {
+                                if (middle_index === max_index){
+                                    // exit if middle_index equals max_index and comapre is positive: means that value is not found
+                                    break;
+                                } else {
+                                    //  search_value > middle_value
+                                    // set middle_index to halfway upper part
+                                    //  set min_index = middle_index + 1
+                                    // round up to integer
+                                    min_index = middle_index + 1;
+                                    middle_index =  Math.ceil( (min_index + max_index) / 2);
+                                }
+                            }
+                        }
+                    }
+                };  // if (i > 23)
+            };  // for (let i = 0
+
+            // set index = -1 when new row comes after last tablerow, add 1 to index at other rows
+            if (compare > 0) {
+                if (middle_index === last_index){
+                    middle_index = -1;
+                } else {
+                    middle_index += 1;
+                }
+            }
         } else {
-            points += (width) + ",0 " // lower right corner
-            points += (width) + "," + (height) + " " // top right corner
-        };
-        points += "0," + (height) + " " // top left corner
-        if (indent_left) {
-            points += (indent_left) + "," + (height/2)  // middle left point
+            // table is empty
+            compare = 1;
+            middle_index = -1;
+        };  //  if (tblBody.rows && tblBody.rows.length)
+
+        //console.log( "return : index", middle_index, " found_row ", found_row, " compare ", return_compare);
+        return middle_index;
+    };  // b_recursive_tblRow_lookup
+
+// when list is not sorted - lookup the oldfashioned way
+//========= b_lookup_dict_in_dictlist  ========== PR2020-06-25
+    function b_lookup_dict_in_dictlist(dictlist, search_field, search_value){
+        let lookup_dict = null;
+        for (let i = 0, lookup_value, dict; dict = dictlist[i]; i++) {
+            lookup_value = dict[search_field];
+            if(lookup_value && lookup_value === search_value){
+                lookup_dict = dict;
+                break;
+            }
         }
-        return points
-    };  // get_svg_arrow_points
+        return lookup_dict;
+    };  // b_lookup_dict_in_dictlist
+
+//========= b_lookup_dict_in_dictlist  ========== PR2020-06-25
+    function b_lookup_dict_with_index_in_dictlist(dictlist, search_field, search_value){
+        let lookup_dict = null, lookup_index = null;
+        for (let i = 0, lookup_value, dict; dict = dictlist[i]; i++) {
+            lookup_value = dict[search_field];
+            if(lookup_value && lookup_value === search_value){
+                lookup_index = i;
+                lookup_dict = dict;
+                break;
+            }
+        }
+        return [lookup_index, lookup_dict];
+    };  // b_lookup_dict_in_dictlist
 
 
 //#########################################################################
@@ -1016,7 +1251,6 @@
         $("#id_mod_message").modal({backdrop: false});
         set_focus_on_el_with_timeout(document.getElementById("id_modmessage_btn_cancel"), 150 )
     }  // show_mod_message
-
 
 //========= b_render_awp_messages  =================
     function b_render_awp_messages(awp_messages) {
@@ -1090,4 +1324,85 @@
         }
     }  // b_render_msg_box
 
+
+//=========  ShowModMessages  ================ PR2021-06-27
+    function b_ShowModMessages(msg_dictlist) {
+        console.log("==== ShowModMessages  ======")
+        console.log("msg_dictlist", msg_dictlist)
+
+        //  [ { class: "alert-warning", header: 'Update this',
+        //      msg_html: "Deze loonperiode heeft 7 diensten."]
+
+        if(msg_dictlist && msg_dictlist.length){
+            const el_container = document.getElementById("id_mod_message_container");
+            let header_text = null
+            console.log("el_container", el_container)
+            if(el_container){
+                el_container.innerHTML = null;
+                for (let i = 0, msg_dict; msg_dict = msg_dictlist[i]; i++) {
+                    const class_str = (msg_dict.class) ? msg_dict.class : "border_bg_transparent";
+                    if(!header_text && msg_dict.header){
+                        header_text = msg_dict.header;
+                    }
+                    const msg_html = msg_dict.msg_html;
+                    if (msg_html){
+            // --- create div element with alert border for each message in messages
+                        const el_border = document.createElement("div");
+                        el_border.classList.add(class_str, "p-2", "my-2");
+                        const el_div = document.createElement("div");
+                        el_div.innerHTML = msg_html;
+                        el_border.appendChild(el_div);
+                        el_container.appendChild(el_border);
+                    };
+                };
+            }  // if(el_container)
+
+            const el_header =  document.getElementById("id_mod_message_header");
+            if(el_header) {el_header.innerText = header_text};
+// ---  set focus to close button - not working
+            const el_btn_cancel = document.getElementById("id_mod_message_btn_cancel");
+            set_focus_on_el_with_timeout(el_btn_cancel, 150);
+
+            $("#id_mod_message").modal({backdrop: true});
+        };
+    }  // ShowModMessages
+
+
+
+
+//#########################################################################
+// +++++++++++++++++ SVG  +++++++++++++++++++++++++++++++++++++++++++
+    function create_svg_html(id_svg, href, caption, txt_x, txt_y,
+                                height, width, indent_left, indent_right,
+                                polygon_class, fill) {
+
+        const points = get_svg_arrow_points(height, width, indent_left, indent_right);
+
+        let svg_html = "<svg id=\"" + id_svg + "\" height=\"" + height + "\" width=\"" + width + "\">"
+        svg_html += "<a href=\"" + href + "\">"
+        svg_html += "<polygon points=\"" + points + "\" class=\"" + polygon_class + "\"></polygon>"
+        svg_html += "<text x=\"" + txt_x + "\" y=\"" + txt_y + "\" fill=\"" + fill + "\""
+        svg_html +=  "text-anchor=\"middle\" alignment-baseline=\"middle\">"
+        svg_html += caption
+        svg_html += "</text></a></svg>"
+        return svg_html
+    };
+//========= get_svg_arrow_points  =================
+    function get_svg_arrow_points(height, width, indent_left, indent_right) {
+        // PR2018-12-21 creates arrow shape
+        points = "0,0 " // lower left corner
+        if (indent_right) {
+            points += (width - indent_right) + ",0 " // lower right corner
+            points += (width) + "," + (height/2) + " "  // middle right point
+            points += (width - indent_right) + "," + (height) + " " // top right corner
+        } else {
+            points += (width) + ",0 " // lower right corner
+            points += (width) + "," + (height) + " " // top right corner
+        };
+        points += "0," + (height) + " " // top left corner
+        if (indent_left) {
+            points += (indent_left) + "," + (height/2)  // middle left point
+        }
+        return points
+    };  // get_svg_arrow_points
 

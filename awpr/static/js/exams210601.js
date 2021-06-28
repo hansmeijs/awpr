@@ -261,8 +261,8 @@ document.addEventListener
                 examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true},
-                level_rows: {get: true},
-                sector_rows: {get: true},
+                level_rows: {cur_dep_only: true},
+                sector_rows: {cur_dep_only: true},
                 exam_rows: {cur_dep_only: true},
                 subject_rows: {etenorm_only: true, cur_dep_only: true},
                 grade_with_exam_rows: {get: true},
@@ -368,17 +368,17 @@ document.addEventListener
 //=========  CreateSubmenu  ===  PR2020-07-31 PR2021-01-19 PR2021-03-25 PR2021-05-25
     function CreateSubmenu() {
         //console.log("===  CreateSubmenu == ");
-        //console.log("permit_dict.crud_exam", permit_dict.crud_exam);
+        //console.log("permit_dict.permit_crud", permit_dict.permit_crud);
         //console.log("permit_dict.requsr_same_school", permit_dict.requsr_same_school);
 
         let el_submenu = document.getElementById("id_submenu")
 
-        if(permit_dict.crud_exam && permit_dict.requsr_role_admin){
+        if(permit_dict.permit_crud && permit_dict.requsr_role_admin){
             AddSubmenuButton(el_submenu, loc.Add_exam, function() {MEXQ_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_exam, function() {ModConfirmOpen("exam", "delete")});
             AddSubmenuButton(el_submenu, loc.Publish_exam, function() {ModConfirmOpen("deleteXX")});
         }
-         if(permit_dict.crud_exam && permit_dict.requsr_same_school){
+         if(permit_dict.permit_crud && permit_dict.requsr_same_school){
             AddSubmenuButton(el_submenu, loc.Submit_exam, function() {ModConfirmOpen("deleteXX")});
         }
         //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A_form, null, "id_submenu_download_ex2a", url_grade_download_ex2a, true);  // true = download
@@ -724,7 +724,6 @@ document.addEventListener
 //=========  CreateTblHeader  === PR2020-12-03 PR2020-12-18 PR2021-01-022
     function CreateTblHeader(field_setting) {
         //console.log("===  CreateTblHeader ===== ");
-
 
 // +++  insert header and filter row ++++++++++++++++++++++++++++++++
         let tblRow_header = tblHead_datatable.insertRow (-1);
@@ -1520,7 +1519,7 @@ document.addEventListener
                     el = cell.children[0];
                     if(el){
                         const filter_tag = get_attr_from_el(el, "data-filtertag")
-                        if(el.tag === "INPUT"){
+                        if(el.tagName === "INPUT"){
                             el.value = null
                         } else {
                             const el_icon = el.children[0];
@@ -1546,7 +1545,7 @@ document.addEventListener
         console.log(" ===  MSEX_Open  =====") ;
         console.log( "el_input", el_input);
         mod_MSEX_dict = {exam_pk: null}
-        if(permit_dict.crud_exam){
+        if(permit_dict.permit_crud){
             const tblRow = get_tablerow_selected(el_input)
             const tblName = get_attr_from_el(tblRow, "data-table")
             const map_id = tblRow.id
@@ -1578,7 +1577,7 @@ document.addEventListener
 
         console.log( "mod_MSEX_dict: ", mod_MSEX_dict);
 
-        if(permit_dict.crud_exam){
+        if(permit_dict.permit_crud){
             const upload_dict = {
                 table: 'grade',
                 mode: "update",
@@ -1599,7 +1598,7 @@ document.addEventListener
             UploadChanges(upload_dict, url_grade_upload);
 
 
-        }  // if(permit_dict.crud_exam){
+        }  // if(permit_dict.permit_crud){
         $("#id_mod_select_exam").modal("hide");
     }  // MSEX_Save
 
@@ -1699,8 +1698,8 @@ document.addEventListener
 // +++++++++ MOD EXAM QUESTIONS ++++++++++++++++ PR2021-04-05 PR2021-05-22
     function MEXQ_Open(el_input){
         console.log(" ===  MEXQ_Open  =====") ;
-        const is_admin_mode = (permit_dict.requsr_role_admin && permit_dict.crud_exam);
-        const is_same_school_mode = (permit_dict.requsr_same_school && permit_dict.crud_exam);
+        const is_admin_mode = (permit_dict.requsr_role_admin && permit_dict.permit_crud);
+        const is_same_school_mode = (permit_dict.requsr_same_school && permit_dict.permit_crud);
 
         mod_MEX_dict = {};
         if(is_admin_mode){
@@ -1892,7 +1891,7 @@ document.addEventListener
         console.log("===== MEXQ_Save ===== ");
         console.log( "mod_MEX_dict: ", mod_MEX_dict);
 
-        if(permit_dict.crud_exam){
+        if(permit_dict.permit_crud){
             const upload_dict = {
                 table: 'exam',
                 mode: ((mod_MEX_dict.is_addnew) ? "create" : "update"),
@@ -1973,7 +1972,7 @@ document.addEventListener
         console.log("===== MEXA_Save ===== ");
         console.log( "mod_MEX_dict: ", mod_MEX_dict);
 
-        if(permit_dict.crud_exam){
+        if(permit_dict.permit_crud){
             const upload_dict = {
                 table: 'grade',
                 mode: "update",
@@ -2839,9 +2838,9 @@ document.addEventListener
 ///////////////////////////////////////
 // +++++++++ MOD EXAM ANSWERS ++++++++++++++++ PR2021-05-23
     function MEXA_Open(el_input){
-        //if(permit.crud_school){
+        //if(permit.crud){
         console.log(" ===  MEXA_Open  =====") ;
-        const is_same_school_mode = (permit_dict.requsr_same_school && permit_dict.crud_exam);
+        const is_same_school_mode = (permit_dict.requsr_same_school && permit_dict.permit_crud);
 
         mod_MEX_dict = {};
 
@@ -2936,7 +2935,7 @@ document.addEventListener
         console.log("mode", mode)
         // values of mode are : "delete",
         // TODO print_exam not in use: remove, add 'publish'
-        if(permit_dict.crud_exam){
+        if(permit_dict.permit_crud){
 
             const is_delete = (mode === "delete")
 
@@ -3032,9 +3031,9 @@ document.addEventListener
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
-        let close_modal = !permit_dict.crud_exam;
+        let close_modal = !permit_dict.permit_crud;
 
-        if(permit_dict.crud_exam){
+        if(permit_dict.permit_crud){
 
     // ---  Upload Changes
             let upload_dict = { mode: mod_dict.mode,

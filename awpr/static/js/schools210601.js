@@ -44,11 +44,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     const field_settings = {
-        school: {field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments", "Activated",  "Locked", ""],
-                 field_names: ["select", "sb_code", "article", "name", "abbrev", "depbases", "activated", "locked", "select"],
-                 filter_tags: ["select", "text", "text",  "text", "text",  "text", "toggle", "toggle", "select"],
-                 field_width:  ["020", "075", "075", "360", "180", "120","120","120", "120"],
-                 field_align: ["c", "l", "l", "l","l", "l", "c",  "c", "c"]}
+        school: {field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments", "Day_Evening_LEXschool",  "Activated",  "Locked"],
+                 field_names: ["select", "sb_code", "article", "name", "abbrev", "depbases", "dayevelex", "activated", "locked"],
+                 filter_tags: ["select", "text", "text",  "text", "text",  "text", "text", "toggle", "toggle"],
+                 field_width:  ["020", "075", "075", "360", "180", "120","120","100","100"],
+                 field_align: ["c", "l", "l", "l","l", "l", "l", "c",  "c"]}
         };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -130,23 +130,26 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MSCH_article = document.getElementById("id_MSCH_article")
         const el_MSCH_name = document.getElementById("id_MSCH_name")
         const el_MSCH_tbody_select = document.getElementById("id_MSCH_tbody_select")
+
         const el_MSCH_btn_delete = document.getElementById("id_MSCH_btn_delete");
         const el_MSCH_btn_save = document.getElementById("id_MSCH_btn_save");
+        if(el_MSCH_btn_delete){el_MSCH_btn_delete.addEventListener("click", function() {MSCH_Save("delete")}, false )};
+        if(el_MSCH_btn_save){el_MSCH_btn_save.addEventListener("click", function() {MSCH_Save("save")}, false );};
+
         const el_MSCH_div_form_controls = document.getElementById("id_MSCH_form_controls")
-        if(el_MSCH_div_form_controls){
-            let form_elements = el_MSCH_div_form_controls.querySelectorAll(".awp_input_text")
-            for (let i = 0, el, len = form_elements.length; i < len; i++) {
-                el = form_elements[i];
-                if(el){
-                    const event_key = (el.tag === "INPUT") ? "keyup" : "change";
-                    el.addEventListener(event_key, function() {MSCH_InputKeyup(el)}, false )
-                };
-            }
-            el_MSCH_btn_delete.addEventListener("click", function() {MSCH_Save("delete")}, false )
-            el_MSCH_btn_save.addEventListener("click", function() {MSCH_Save("save")}, false );
+        const form_elements = el_MSCH_div_form_controls.querySelectorAll(".form-control")
+        for (let i = 0, el; el = form_elements[i]; i++) {
+            if(el.tagName === "INPUT"){
+                el.addEventListener("keyup", function() {MSCH_InputKeyup(el)}, false )
+            } else if(el.tagName === "SELECT"){
+                el.addEventListener("change", function() {MSCH_InputSelect(el)}, false )
+            } else if(el.tagName === "DIV"){
+                el.addEventListener("click", function() {MSCH_InputToggle(el)}, false );
+            };
         };
+
         const el_MSCH_defaultrole_container = document.getElementById("id_MSCH_defaultrole_container");
-        const el_MSCH_select_defaultrole = document.getElementById("id_MSCH_select_defaultrole");
+        const el_MSCH_select_defaultrole = document.getElementById("id_MSCH_defaultrole");
 
 // ---  MODAL UPLOAD PERMITS
     // --- create EventListener for buttons in btn_container
@@ -289,18 +292,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // function DatalistDownload
 
 
-//=========  CreateSubmenu  ===  PR2020-07-31
+//=========  CreateSubmenu  ===  PR2020-07-31 PR2021-06-20
     function CreateSubmenu() {
-        //console.log("===  CreateSubmenu == ");
+        console.log("===  CreateSubmenu == ");
+        console.log("permit_dict:", permit_dict);
+
         let el_submenu = document.getElementById("id_submenu")
-            AddSubmenuButton(el_submenu, loc.Add_school, function() {MSCH_Open()});
-            AddSubmenuButton(el_submenu, loc.Delete_school, function() {ModConfirmOpen("delete")});
-
-        if (permit_dict.requsr_same_school || (permit_dict.requsr_role_system)){
-            AddSubmenuButton(el_submenu, loc.Upload_awpdata, function() {ModUploadAwp_open()}, "id_submenu_importawp");
+        if(el_submenu){
+            if (permit_dict.permit_crud){
+                AddSubmenuButton(el_submenu, loc.Add_school, function() {MSCH_Open()});
+                AddSubmenuButton(el_submenu, loc.Delete_school, function() {ModConfirmOpen("delete")});
+            };
+            if (permit_dict.upload_awpfile){
+                AddSubmenuButton(el_submenu, loc.Upload_awpdata, function() {ModUploadAwp_open()}, null, "id_submenu_importawp");
+            };
+            const hide_submenu =  (!permit_dict.permit_crud && !permit_dict.upload_awpfile);
+            add_or_remove_class(el_submenu, cls_hide, hide_submenu);
         };
-
-         el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
 
 //###########################################################################
@@ -352,7 +360,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= FillTblRows  ====================================
     function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
+        console.log( "===== FillTblRows  === ");
+
         const tblName = get_tblName_from_selectedBtn()
         const field_setting = field_settings[tblName]
 
@@ -370,155 +379,154 @@ document.addEventListener('DOMContentLoaded', function() {
         if(data_map){
 // --- loop through data_map
           for (const [map_id, map_dict] of data_map.entries()) {
-          // --- insert row at row_index
-                const order_by = (map_dict.sb_code) ? map_dict.sb_code.toLowerCase() : "";
-                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
-                let tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, map_dict, row_index)
+                let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict)
           };
         }  // if(!!data_map)
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-05-10
     function CreateTblHeader(field_setting) {
-        //console.log("===========  CreateTblHeader ======== ");
+        console.log("===========  CreateTblHeader ======== ");
 
-// --- reset table
-        tblHead_datatable.innerText = null;
-        tblBody_datatable.innerText = null;
+        const column_count = field_setting.field_names.length;
 
-        if(field_setting){
-            const column_count = field_setting.field_names.length;
+// +++  insert header and filter row ++++++++++++++++++++++++++++++++
+        let tblRow_header = tblHead_datatable.insertRow (-1);
+        let tblRow_filter = tblHead_datatable.insertRow (-1);
 
-//--- insert table rows
-            let tblRow_header = tblHead_datatable.insertRow (-1);
-            let tblRow_filter = tblHead_datatable.insertRow (-1);
+    // --- loop through columns
+        for (let j = 0; j < column_count; j++) {
+            const field_name = field_setting.field_names[j];
 
-//--- insert th's to tblHead_datatable
-            for (let j = 0; j < column_count; j++) {
-                const key = field_setting.field_caption[j];
-                const caption = (loc[key]) ? loc[key] : key;
-                const field_name = field_setting.field_names[j];
-                const filter_tag = field_setting.filter_tags[j];
-                const class_width = "tw_" + field_setting.field_width[j] ;
-                const class_align = "ta_" + field_setting.field_align[j];
+            const key = field_setting.field_caption[j];
+            const field_caption = (loc[key]) ? loc[key] : key;
 
-// ++++++++++ create header row +++++++++++++++
-// --- add th to tblRow.
-                let th_header = document.createElement("th");
-// --- add div to th, margin not working with th
-                    const el_header = document.createElement("div");
-                        if (j === 0 ){
-// --- add checked image to first column
-                           // TODO add multiple selection
-                            //AppendChildIcon(el_header, imgsrc_stat00);
-                        } else {
-// --- add innerText to el_div
-                            if(caption) {el_header.innerText = caption};
-                        };
-// --- add width, text_align
-                        el_header.classList.add(class_width, class_align);
-                    th_header.appendChild(el_header)
-                tblRow_header.appendChild(th_header);
+            const filter_tag = field_setting.filter_tags[j];
+            const class_width = "tw_" + field_setting.field_width[j] ;
+            const class_align = "ta_" + field_setting.field_align[j];
+
+// ++++++++++ insert columns in header row +++++++++++++++
+        // --- add th to tblRow_header
+            let th_header = document.createElement("th");
+        // --- add div to th, margin not working with th
+                const el_header = document.createElement("div");
+        // --- add innerText to el_div
+                el_header.innerText = field_caption;
+        // --- add width, text_align
+                th_header.classList.add(class_width, class_align);
+                el_header.classList.add(class_width, class_align);
+                th_header.appendChild(el_header)
+            tblRow_header.appendChild(th_header);
 
 // ++++++++++ create filter row +++++++++++++++
-// --- add th to tblRow_filter.
-                const th_filter = document.createElement("th");
-// --- create element with tag from field_tags
-                const el_tag = (filter_tag === "text") ? "input" : "div";
-                const el_filter = document.createElement(el_tag);
-// --- add EventListener to el_filter
-                    const event_str = (filter_tag === "text") ? "keyup" : "click";
-                    el_filter.addEventListener(event_str, function(event){HandleFilterField(el_filter, j, event)});
-// --- add data-field Attribute.
-                    el_filter.setAttribute("data-field", field_name);
-                    el_filter.setAttribute("data-filtertag", filter_tag);
-// --- add other attributes
-                    if (filter_tag === "text") {
-                        el_filter.setAttribute("type", "text")
-                        el_filter.classList.add("input_text");
+    // --- add th to tblRow_filter.
+            const th_filter = document.createElement("th");
 
-                        el_filter.setAttribute("autocomplete", "off");
-                        el_filter.setAttribute("ondragstart", "return false;");
-                        el_filter.setAttribute("ondrop", "return false;");
-                    } else if (["toggle", "activated", "inactive"].indexOf(filter_tag) > -1) {
-                        // default empty icon necessary to set pointer_show
-                        // default empty icon necessary to set pointer_show
-                        append_background_class(el_filter,"tickmark_0_0");
-                    }
+    // --- create element with tag from field_tags
+            const el_tag = (filter_tag === "text") ? "input" : "div";
+            const el_filter = document.createElement(el_tag);
 
-// --- add width, text_align
-                    el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
-                th_filter.appendChild(el_filter)
-                tblRow_filter.appendChild(th_filter);
-            }  // for (let j = 0; j < column_count; j++)
-        }  // if(field_settings[tblName]){
+    // --- add data-field Attribute.
+                el_filter.setAttribute("data-field", field_name);
+                el_filter.setAttribute("data-filtertag", filter_tag);
+
+    // --- add EventListener to el_filter
+                if (filter_tag === "text") {
+                    el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
+                    add_hover(th_filter);
+                } else if (filter_tag === "toggle") {
+                    // add EventListener for icon to th_filter, not el_filter
+                    th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
+                    th_filter.classList.add("pointer_show");
+
+                    el_filter.classList.add("tickmark_0_0");
+                    add_hover(th_filter);
+                }
+
+    // --- add other attributes
+                if (filter_tag === "text") {
+                    el_filter.setAttribute("type", "text")
+                    el_filter.classList.add("input_text");
+
+                    el_filter.setAttribute("autocomplete", "off");
+                    el_filter.setAttribute("ondragstart", "return false;");
+                    el_filter.setAttribute("ondrop", "return false;");
+                }
+        // --- add width, text_align
+                // PR2021-05-30 debug. Google chrome not setting width without th_filter class_width
+                th_filter.classList.add(class_width, class_align);
+                //el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
+            th_filter.appendChild(el_filter)
+            tblRow_filter.appendChild(th_filter);
+        }  // for (let j = 0; j < column_count; j++)
     };  //  CreateTblHeader
 
-//=========  CreateTblRow  ================ PR2020-06-09
-    function CreateTblRow(tblBody, tblName, map_id, map_dict, row_index) {
+//=========  CreateTblRow  ================ PR2020-06-09 PR2021-06-21
+    function CreateTblRow(tblName, field_setting, map_id, map_dict) {
         //console.log("=========  CreateTblRow =========", tblName);
         //console.log("map_dict", map_dict);
-        let tblRow = null;
 
-        const field_setting = field_settings[tblName]
-        //console.log("field_setting", field_setting);
-        if(field_setting){
-            const field_names = field_setting.field_names;
-            const field_align = field_setting.field_align;
-            const column_count = field_names.length;
+        const field_names = field_setting.field_names;
+        const field_align = field_setting.field_align;
+        const field_width = field_setting.field_width;
+        const column_count = field_names.length;
+
+// ---  NOT YET IMPLEMENTED lookup index where this row must be inserted
+        //const orderby_lastname = (map_dict.lastname) ? map_dict.lastname : "";
+        //const orderby_firstname = (map_dict.firstname) ? map_dict.firstname : "";
+
+        //const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
+        //                             orderby_lastname, orderby_firstname, "", setting_dict.user_lang);
+        const row_index = -1
 
 // --- insert tblRow into tblBody at row_index
-            tblRow = tblBody.insertRow(row_index);
-            tblRow.id = map_id
+        let tblRow = tblBody_datatable.insertRow(row_index);
+        tblRow.id = map_id
+
 // --- add data attributes to tblRow
-            tblRow.setAttribute("data-pk", map_dict.id);
-            tblRow.setAttribute("data-ppk", map_dict.examyear_id);
-            //tblRow.setAttribute("data-table", tblName);
-            tblRow.setAttribute("data-sortby", (map_dict.sb_code) ? map_dict.sb_code : "");
+        tblRow.setAttribute("data-pk", map_dict.id);
+
+// ---  add data-sortby attribute to tblRow, for ordering new rows
+        //tblRow.setAttribute("data-ob1", orderby_lastname);
+        //tblRow.setAttribute("data-ob2", orderby_firstname);
+        // NIU: tblRow.setAttribute("data-ob3", ---);
 
 // --- add EventListener to tblRow
-            tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
+        tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
 
 // +++  insert td's into tblRow
-            for (let j = 0; j < column_count; j++) {
-                const field_name = field_names[j];
-// --- insert td element,
-                let el_td = tblRow.insertCell(-1);
-// --- add data-field attribute
-                el_td.setAttribute("data-field", field_name);
+        for (let j = 0; j < column_count; j++) {
+            const field_name = field_names[j];
 
-                if (field_name === "select") {
-                    // TODO add select multiple users option PR2020-08-18
-                } else if (["abbrev", "name", "last_name", "depbases", "sequence"].indexOf(field_name) > -1){
-                    el_td.addEventListener("click", function() {MSCH_Open(el_td)}, false)
-                    el_td.classList.add("pointer_show");
-                    add_hover(el_td);
-                } else if (field_name.slice(0, 4) === "perm") {
-                    el_td.addEventListener("click", function() {UploadToggle(el_td)}, false)
-                    let el_div = document.createElement("div");
-                        el_td.appendChild(el_div);
-                    add_hover(el_td);
-                } else if ( field_name === "activated") {
-                    el_td.addEventListener("click", function() {ModConfirmOpen("resend_activation_email", el_td)}, false )
-                    let el_div = document.createElement("div");
-                        el_td.appendChild(el_div);
-                    add_hover(el_td)
-                } else if (field_name === "is_active") {
-                    append_background_class(el_td,"inactive_0_2")
-                    el_td.addEventListener("click", function() {ModConfirmOpen("inactive", el_td)}, false )
-                    //let el_div = document.createElement("div");
-                    //    el_div.classList.add("inactive_0_2")
-                    //    el_td.appendChild(el_div);
-                    add_hover(el_td)
-                } else if ( field_name === "last_login") {
-                    // pass
-                }
-// --- add  text_align
-               el_td.classList.add("ta_" + field_align[j]);
+            const field_tag = "div";
+            const class_width = "tw_" + field_width[j];
+            const class_align = "ta_" + field_align[j];
+
+    // --- insert td element,
+            let td = tblRow.insertCell(-1);
+
+    // --- create element with tag from field_tags
+            const el = document.createElement(field_tag);
+
+    // --- add data-field attribute
+            el.setAttribute("data-field", field_name);
+
+    // --- add  text_align
+            el.classList.add(class_width, class_align);
+
+            td.appendChild(el);
+
+    // --- add EventListener to td
+            if (["code", "abbrev", "name", "last_name", "depbases", "dayevelex"].includes(field_name)){
+                td.addEventListener("click", function() {MSCH_Open(el)}, false)
+                td.classList.add("pointer_show");
+                add_hover(td);
+            }
+
 // --- put value in field
-               UpdateField(el_td, map_dict)
-            }  // for (let j = 0; j < 8; j++)
-        }  // if(field_settings_table)
+           UpdateField(el, map_dict)
+        }  // for (let j = 0; j < 8; j++)
+
         return tblRow
     };  // CreateTblRow
 
@@ -535,25 +543,33 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  UpdateField  ================ PR2020-08-16
     function UpdateField(el_div, map_dict) {
         //console.log("=========  UpdateField =========");
+        //console.log("map_dict", map_dict);
+
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
             const fld_value = map_dict[field_name];
+
             if(field_name){
+                let filter_value = null, display_txt = null;
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
-                } else if (["article", "sb_code", "abbrev", "name", "last_name", "sequence"].indexOf(field_name) > -1){
+                } else if (["activated", "locked"].includes(field_name)){
+                    el_div.className = (fld_value) ? "tickmark_2_2" : "tickmark_0_0";
+                    filter_value = (fld_value) ? "1" : "0";
+                } else if (["sb_code", "article", "name", "abbrev"].indexOf(field_name) > -1){
                     el_div.innerText = map_dict[field_name];
+                    filter_value = (fld_value) ? fld_value.toLowerCase() : null;
                 } else if ( field_name === "depbases") {
-                     el_div.innerText = b_get_depbases_display(department_map, "base_code", fld_value);
-                } else if ( field_name === "activated") {
-                    const is_activated = (map_dict[field_name]) ? map_dict[field_name] : false;
-                    const data_value = (is_activated) ? "1" : "0"
-                    el_div.setAttribute("data-value", data_value);
-                    let el_icon = el_div.children[0];
-                    if(el_icon){
-                        add_or_remove_class(el_icon, "tickmark_1_2", is_activated, "tickmark_0_0")
-                    }
+                    display_txt = b_get_depbases_display(department_map, "base_code", fld_value);
+                    el_div.innerText = display_txt;
+                    filter_value = (display_txt) ? display_txt.toLowerCase() : null;
+               } else if ( field_name === "dayevelex") {
+                     display_txt = get_dayevelex_display(map_dict);
+                     el_div.innerText = display_txt;
+                    filter_value = (display_txt) ? display_txt.toLowerCase() : null;
                 }
+    // ---  add attribute filter_value
+                add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
             }  // if(field_name)
         }  // if(el_div)
     };  // UpdateField
@@ -668,9 +684,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- also used for level, sector,
     function MSCH_Open(el_input){
         console.log(" -----  MSCH_Open   ----")
-                console.log("permit_dict", permit_dict)
-                console.log("permit_dict.permit_list.crud_school", permit_dict.permit_list.crud_school)
-        if(permit_dict.crud_school){
+        console.log("el_input", el_input)
+        if(permit_dict.permit_crud){
             let user_pk = null, user_country_pk = null, user_schoolbase_pk = null, mapid = null;
             const fldName = get_attr_from_el(el_input, "data-field");
 
@@ -683,7 +698,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if(is_addnew){
                 tblName = get_tblName_from_selectedBtn();
                 mod_MSCH_dict.examyear_id = setting_dict.sel_examyear_pk;
-                mod_MSCH_dict.defaultrole = 0;
+                // default setting: role = school, type = dayschool
+                mod_MSCH_dict.defaultrole = 8;
+                mod_MSCH_dict.isdayschool = true;
+                mod_MSCH_dict.iseveningschool = false;
+                mod_MSCH_dict.islexschool = false;
 
             } else {
                 const tblRow = get_tablerow_selected(el_input);
@@ -691,9 +710,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 tblName = "school"
                 const data_map = get_datamap_from_tblName(tblName);
                 const map_dict = get_mapdict_from_datamap_by_id(data_map, tblRow.id);
-            console.log("tblName", tblName)
-            console.log("data_map", data_map)
-            console.log("map_dict", map_dict)
+            //console.log("tblName", tblName)
+            //console.log("data_map", data_map)
+            //console.log("map_dict", map_dict)
                 if(!isEmpty(map_dict)){
 
                     mod_MSCH_dict.id = map_dict.id;
@@ -707,6 +726,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     mod_MSCH_dict.name = map_dict.name;
                     mod_MSCH_dict.depbases = map_dict.depbases;
                     mod_MSCH_dict.defaultrole = map_dict.defaultrole,
+
+                    mod_MSCH_dict.isdayschool = map_dict.isdayschool,
+                    mod_MSCH_dict.iseveningschool = map_dict.iseveningschool,
+                    mod_MSCH_dict.islexschool = map_dict.islexschool,
+
                     mod_MSCH_dict.modby_username = map_dict.modby_username;
                     mod_MSCH_dict.modifiedat = map_dict.modifiedat;
                 }
@@ -716,6 +740,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---  remove value from el_mod_employee_input
             MSCH_ResetElements(true);  // true = also_remove_values
+
+    // ---  remove value from el_mod_employee_input, set focus to selected field
+            MSCH_SetElements(fldName);
 
             if (!is_addnew){
                 el_MSCH_code.value = (mod_MSCH_dict.code) ? mod_MSCH_dict.code : null;
@@ -758,7 +785,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  MSCH_save  ----", crud_mode);
         console.log( "mod_MSCH_dict: ", mod_MSCH_dict);
 
-        if(permit_dict.crud_school){
+        if(permit_dict.permit_crud){
             const is_delete = (crud_mode === "delete")
 
             let upload_dict = {table: 'school', examyear_pk: setting_dict.sel_examyear_pk}
@@ -771,30 +798,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(is_delete) {upload_dict.delete = true}
             }
     // ---  put changed values of input elements in upload_dict
-            let form_elements = el_MSCH_div_form_controls.querySelectorAll(".awp_input_text")
-            for (let i = 0, el_input; el_input = form_elements[i]; i++) {
-                const fldName = get_attr_from_el(el_input, "data-field");
-                let new_value = (el_input.value) ? el_input.value : null;
-                let old_value = (mod_MSCH_dict[fldName]) ? mod_MSCH_dict[fldName] : null;
-
-
-                if(["sequence", "defaultrole"].includes(fldName)){
-                    new_value = (new_value && Number(new_value)) ? Number(new_value) : null;
-                    old_value = (old_value && Number(old_value)) ? Number(old_value) : null;
-                }
-
-        console.log( "fldName: ", fldName);
-        console.log( "new_value: ", new_value);
-        console.log( "old_value: ", old_value);
-                if (new_value !== old_value) {
-                    upload_dict[fldName] = new_value
-
-    // put changed new value in tblRow before uploading
-                    const tblRow = document.getElementById(mod_MSCH_dict.mapid);
-                    if(tblRow){
-                        const el_tblRow = tblRow.querySelector("[data-field=" + fldName + "]");
-                        if(el_tblRow){el_tblRow.innerText = new_value };
+            let form_elements = el_MSCH_div_form_controls.querySelectorAll(".form-control")
+            for (let i = 0, el, fldName, old_value, new_value; el = form_elements[i]; i++) {
+                fldName = get_attr_from_el(el, "data-field");
+                if(fldName === "dayevelex"){
+                    const new_isdayschool = ["day", "dayeve"].includes(el.value);
+                    if (new_isdayschool !== mod_MSCH_dict.isdayschool) {
+                        upload_dict.isdayschool = new_isdayschool;
                     }
+                    const new_iseveningschool = ["eve", "dayeve"].includes(el.value);
+                    if (new_iseveningschool !== mod_MSCH_dict.iseveningschool) {
+                        upload_dict.iseveningschool = new_iseveningschool;
+                    }
+                    const new_islexschool = (el.value === "lex");
+                    if (new_islexschool !== mod_MSCH_dict.islexschool) {
+                        upload_dict.islexschool = new_islexschool;
+                    }
+                } else {
+                    old_value = (mod_MSCH_dict[fldName]) ? mod_MSCH_dict[fldName] : null;
+                    new_value = (el.value) ? el.value : null;
+                    if (new_value !== old_value) {
+                        upload_dict[fldName] = new_value
+                    };
                 };
             };
     // ---  get selected departments
@@ -807,6 +832,7 @@ document.addEventListener('DOMContentLoaded', function() {
             UploadChanges(upload_dict, url_school_upload);
         };
     }  // MSCH_Save
+
 
 //========= MSCH_FillSelectTableDepartment  ============= PR2020--09-30
     function MSCH_FillSelectTableDepartment() {
@@ -972,19 +998,39 @@ document.addEventListener('DOMContentLoaded', function() {
         MSCH_validate_and_disable();
     }; // MSCH_InputKeyup
 
+
+//========= MSCH_InputSelect  ============= PR2020-12-11
+    function MSCH_InputSelect(el_input){
+        //console.log( "===== MSCH_InputSelect  ========= ");
+        MSCH_validate_and_disable();
+    }; // MSCH_InputSelect
+
+//========= MSCH_InputToggle  ============= PR2021-06-15
+    function MSCH_InputToggle(el_input){
+        console.log( "===== MSCH_InputToggle  ========= ");
+        const data_value = get_attr_from_el(el_input, "data-value")
+        const new_data_value = (data_value === "1") ? "0" : "1";
+        el_input.setAttribute("data-value", new_data_value);
+        const el_img = el_input.children[0];
+        add_or_remove_class(el_img, "tickmark_2_2", (new_data_value === "1"), "tickmark_1_1")
+    }; // MSCH_InputToggle
+
 //=========  MSCH_validate_and_disable  ================  PR2020-10-01
     function MSCH_validate_and_disable() {
         //console.log(" -----  MSCH_validate_and_disable   ----")
         let disable_save_btn = false;
 // ---  loop through input fields on MSCH_Open
-        let form_elements = el_MSCH_div_form_controls.querySelectorAll(".awp_input_text")
+        let form_elements = el_MSCH_div_form_controls.querySelectorAll(".form-control")
         for (let i = 0, el_input; el_input = form_elements[i]; i++) {
+
             const fldName = get_attr_from_el(el_input, "data-field")
             const msg_err = MSCH_validate_field(el_input, fldName)
 // ---  show / hide error message
             const el_msg = document.getElementById("id_MSCH_msg_" + fldName);
-            el_msg.innerText = msg_err;
-            add_or_remove_class(el_msg, cls_hide, !msg_err)
+            if(el_msg){
+                el_msg.innerText = msg_err;
+                add_or_remove_class(el_msg, cls_hide, !msg_err)
+            }
             if (msg_err){ disable_save_btn = true};
         };
 
@@ -1061,17 +1107,52 @@ document.addEventListener('DOMContentLoaded', function() {
     function MSCH_ResetElements(also_remove_values){
         //console.log( "===== MSCH_ResetElements  ========= ");
         // --- loop through input elements
-        const fields = ["abbrev", "sequence", "name", "department"]
-        for (let i = 0, field, el_input, el_msg; field = fields[i]; i++) {
-            el_input = document.getElementById("id_MSCH_" + field);
-            if(el_input){
-                el_input.classList.remove("border_bg_invalid", "border_bg_valid");
-                if(also_remove_values){ el_input.value = null};
-            }
-            el_msg = document.getElementById("id_MSCH_msg_" + field);
-            if(el_msg){el_msg.innerText = null};
-        }
+
+        const form_elements = el_MSCH_div_form_controls.querySelectorAll("INPUT, SELECT, SMALL");
+        for (let i = 0, el; el = form_elements[i]; i++) {
+            if(["INPUT", "SELECT"].includes(el.tagName) ){
+                el.classList.remove("border_bg_invalid", "border_bg_valid");
+                if(also_remove_values){ el.value = null};
+            } else if(el.tagName === "SMALL"){
+                if(also_remove_values){ el.innerText = "\n"};
+            };
+        };
     }  // MSCH_ResetElements
+
+//========= MSCH_SetElements  ============= PR2021-06-20
+    function MSCH_SetElements(focus_field){
+        console.log( "===== MSCH_SetElements  ========= ");
+        console.log( "mod_MSCH_dict", mod_MSCH_dict);
+        console.log( "focus_field", focus_field);
+// --- loop through input elements
+        let form_elements = el_MSCH_div_form_controls.querySelectorAll(".form-control")
+        for (let i = 0, el, fldName, fldValue; el = form_elements[i]; i++) {
+            fldName = get_attr_from_el(el, "data-field");
+            fldValue = (mod_MSCH_dict[fldName]) ? mod_MSCH_dict[fldName] : null;
+            if(fldName === "dayevelex"){
+                el.value = (mod_MSCH_dict.isdayschool && mod_MSCH_dict.iseveningschool) ? "dayeve" :
+                            (mod_MSCH_dict.islexschool)  ? "lex" :
+                            (mod_MSCH_dict.iseveningschool)  ? "eve" :
+                            (mod_MSCH_dict.isdayschool)  ? "day" : null
+            } else {
+                el.value = fldValue;
+            }
+        console.log( "fldName", fldName);
+            if(focus_field ){
+                if( (fldName === focus_field) ||
+                    (fldName === "lvl_id" && focus_field === "lvl_abbrev") ||
+                    (fldName === "sct_id" && focus_field === "sct_abbrev")){
+            console.log( "set_focus_on_el_with_timeout", fldName);
+                    set_focus_on_el_with_timeout(el, 150);
+                };
+            }
+        }
+
+        //let full_name = (mod_MSCH_dict.fullname) ? mod_MSCH_dict.lastname : "";
+        //document.getElementById("id_MSCH_hdr").innerText = (mod_MSCH_dict.fullname) ? mod_MSCH_dict.fullname : loc.Add_candidate;
+    }  // MSCH_SetElements
+
+
 
 //========= MSCH_SetMsgElements  ============= PR2020-08-02
     function MSCH_SetMsgElements(response){
@@ -1157,7 +1238,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         document.getElementById("id_MSCH_header").innerText = header_text;
 
-        document.getElementById("id_MSCH_label_dep").innerText = loc.Departments_of_this_school + ":";
+        //document.getElementById("id_MSCH_label_dep").innerText = loc.Departments_of_this_school + ":";
     }  // MSCH_headertext
 
 // +++++++++ END MOD SCHOOL ++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1168,7 +1249,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "delete", "inactive" or "resend_activation_email", "permission_sysadm"
 
-        if(permit_dict.crud_school){
+        if(permit_dict.permit_crud){
 
     // ---  get selected_pk
             let tblName = null, selected_pk = null;
@@ -1258,9 +1339,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
-        let close_modal = !permit_dict.crud_school;
+        let close_modal = !permit_dict.permit_crud;
 
-        if(permit_dict.crud_school){
+        if(permit_dict.permit_crud){
             let tblRow = document.getElementById(mod_dict.mapid);
             let upload_dict = {};
 
@@ -1357,14 +1438,15 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log(" --- RefreshDataMap  ---");
         //console.log("data_rows", data_rows);
         if (data_rows) {
+            const field_setting = field_settings[tblName];
             for (let i = 0, update_dict; update_dict = data_rows[i]; i++) {
-                RefreshDatamapItem(field_names, update_dict, data_map);
+                RefreshDatamapItem(tblName, field_setting, update_dict, data_map);
             }
         }
     }  //  RefreshDataMap
 
 //=========  RefreshDatamapItem  ================ PR2020-08-16 PR2020-09-30
-    function RefreshDatamapItem(field_names, update_dict, data_map) {
+    function RefreshDatamapItem(tblName, field_setting, update_dict, data_map) {
         //console.log(" --- RefreshDatamapItem  ---");
         //console.log("update_dict", update_dict);
         if(!isEmpty(update_dict)){
@@ -1393,7 +1475,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("order_by", order_by);
                 const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
         //console.log("row_index", row_index);
-                tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, update_dict, row_index)
+                tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict, row_index)
         //console.log("tblRow", tblRow);
     // ---  scrollIntoView,
                 if(tblRow){
@@ -1443,6 +1525,66 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //###########################################################################
 // +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
+
+//========= HandleFilterKeyup  ================= PR2021-06-16
+    function HandleFilterKeyup(el, event) {
+        console.log( "===== HandleFilterKeyup  ========= ");
+        // skip filter if filter value has not changed, update variable filter_text
+
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el.parentNode.cellIndex;
+        console.log( "col_index", col_index, "event.key", event.key);
+
+        const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
+        console.log( "filter_dict", filter_dict);
+
+        if (!skip_filter) {
+            Filter_TableRows();
+        }
+    }; // function HandleFilterKeyup
+
+
+//========= HandleFilterToggle  =============== PR2021-06-16
+    function HandleFilterToggle(el_input) {
+        //console.log( "===== HandleFilterToggle  ========= ");
+
+    // - get col_index and filter_tag from  el_input
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el_input.parentNode.cellIndex;
+
+    // - get filter_tag from  el_input
+        const filter_tag = get_attr_from_el(el_input, "data-filtertag")
+        const field_name = get_attr_from_el(el_input, "data-field")
+        console.log( "col_index", col_index);
+        console.log( "filter_tag", filter_tag);
+        console.log( "field_name", field_name);
+
+    // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
+        const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
+        const filter_value = (filter_array[1]) ? filter_array[1] : "0";
+        console.log( "filter_array", filter_array);
+        console.log( "filter_value", field_name);
+
+        let new_value = "0", icon_class = "tickmark_0_0"
+
+        // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+// - toggle filter value
+        new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
+// - get new icon_class
+        icon_class =  (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "tickmark_2_2" : "tickmark_0_0";
+
+    // - put new filter value in filter_dict
+        filter_dict[col_index] = [filter_tag, new_value]
+        //console.log( "filter_dict", filter_dict);
+        el_input.className = icon_class;
+
+        Filter_TableRows();
+
+    };  // HandleFilterToggle
 
 //========= HandleFilterField  ====================================
     function HandleFilterField(el, col_index, event) {
@@ -1499,18 +1641,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
 
-        Filter_TableRows(tblBody_datatable);
+        Filter_TableRows();
     }; // HandleFilterField
 
 //========= Filter_TableRows  ==================================== PR2020-08-17
-    function Filter_TableRows(tblBody) {
+    function Filter_TableRows() {
         //console.log( "===== Filter_TableRows  ========= ");
 
-        const tblName_settings = (selected_btn === "btn_school") ? "school" : "";
+        const tblName_settings = "school";
+        const field_setting = field_settings[tblName_settings];
+        const filter_tags = field_setting.filter_tags;
 
 // ---  loop through tblBody.rows
-        for (let i = 0, tblRow, show_row; tblRow = tblBody.rows[i]; i++) {
-            show_row = ShowTableRow(tblRow, tblName_settings)
+        for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
+            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row)
         }
     }; // Filter_TableRows
@@ -1587,7 +1731,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         filter_dict = {};
 
-        Filter_TableRows(tblBody_datatable);
+        Filter_TableRows();
 
         let filterRow = tblHead_datatable.rows[1];
         if(!!filterRow){
@@ -1596,7 +1740,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     el = cell.children[0];
                     if(el){
                         const filter_tag = get_attr_from_el(el, "data-filtertag")
-                        if(el.tag === "INPUT"){
+                        if(el.tagName === "INPUT"){
                             el.value = null
                         } else {
                             const el_icon = el.children[0];
@@ -1818,6 +1962,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 //?????????????????????????????????????????????????????????????????
+
+//========= get_tblName_from_selectedBtn  ======== // PR2021-06-20
+    function get_dayevelex_display(dict) {
+        let display_txt = null;
+        if(!isEmpty(dict)){
+            display_txt = (dict.isdayschool && dict.iseveningschool) ? loc.Day_Eveningschool :
+                        (dict.islexschool)  ? loc.Landsexamen :
+                        (dict.iseveningschool)  ? loc.Evening_school :
+                        (dict.isdayschool)  ? loc.Day_school : null
+        };
+        return display_txt
+    };
 //========= get_tblName_from_selectedBtn  ======== // PR2020-09-30
     function get_tblName_from_selectedBtn() {
         const tblName = (selected_btn === "btn_school") ? "school" : null;
@@ -1847,7 +2003,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // permit.view_page: (!!el_loader), got value at start of script
 
         const locked = (setting_dict.sel_examyear_locked || setting_dict.sel_school_locked);
-        //permit_dict.crud_school = (!locked && permit_list.includes("crud_school"));
+        //permit_dict.permit_crud = (!locked && permit_list.includes("crud"));
     }  // get_permits
 
 

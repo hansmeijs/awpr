@@ -280,6 +280,7 @@ KEY_SEL_SUBJECT_PK = 'sel_subject_pk'
 KEY_SEL_STUDENT_PK = 'sel_student_pk'
 KEY_SEL_LEVEL_PK = 'sel_level_pk'
 KEY_SEL_SECTOR_PK = 'sel_sector_pk'
+KEY_SEL_BTN = 'sel_btn'
 
 # SCHOOL SETTING KEYS PR2018-12-03  PR2020-12-04
 
@@ -293,24 +294,16 @@ KEY_IMPORT_PERMITS = 'import_permits'
 # when one_unique_identifier =  True: only 1 of the linkfields can be the identifier (either exnr or idnr of the candidate)
 # when one_unique_identifier = False: all linkfields must be used to lookup recrds (permits: c_abbrev, page, role and action)
 
-IMPORT_ONE_UNIQUE_IDENTIFIER = {
-    KEY_IMPORT_SUBJECT: True,
-    KEY_IMPORT_STUDENT: True,
-    KEY_IMPORT_STUDENTSUBJECT: True,
-    KEY_IMPORT_GRADE: True,
-    KEY_IMPORT_PERMITS: False
-}
-
 KEY_COLDEF = {
     KEY_IMPORT_SUBJECT:
-        ({'awpColdef': 'code', 'caption': _('Subject abbreviation'), 'linkfield': True},
+        ({'awpColdef': 'code', 'caption': _('Subject abbreviation'), 'linkrequired': True, 'unique': True},
           {'awpColdef': 'name', 'caption': _('Subject name')},
           {'awpColdef': 'sequence', 'caption': _('Sequence')},
           {'awpColdef': 'depbases', 'caption': _('Departments, in which this subject occurs')}),
 
     KEY_IMPORT_STUDENTSUBJECT:
-        ({'awpColdef': 'examnumber', 'caption': _('Exam number'), 'linkfield': True},
-            {'awpColdef': 'idnumber', 'caption': _('ID-number'), 'linkfield': True},
+        ({'awpColdef': 'examnumber', 'caption': _('Exam number')},
+            {'awpColdef': 'idnumber', 'caption': _('ID-number'), 'linkrequired': True, 'unique': True},
             {'awpColdef': 'pws_title', 'caption': _('Title assignment')},
             {'awpColdef': 'pws_subjects', 'caption': _('Subjects assignment')},
 
@@ -320,18 +313,17 @@ KEY_COLDEF = {
          ),
 
     KEY_IMPORT_STUDENT:
-        ({'awpColdef': 'lastname', 'caption': _('Last name')},
-        {'awpColdef': 'firstname', 'caption': _('First name')},
+        ( {'awpColdef': 'idnumber', 'caption': _('ID-number'), 'linkrequired': True, 'unique': True},
+        {'awpColdef': 'lastname', 'caption': _('Last name'), 'linkrequired': True},
+        {'awpColdef': 'firstname', 'caption': _('First name'), 'linkrequired': True},
         {'awpColdef': 'prefix', 'caption': _('Prefix')},
         {'awpColdef': 'gender', 'caption': _('Gender')},
-        {'awpColdef': 'examnumber', 'caption': _('Exam number'), 'linkfield': True},
-        {'awpColdef': 'idnumber', 'caption': _('ID-number'), 'linkfield': True},
+        {'awpColdef': 'examnumber', 'caption': _('Exam number')},
         {'awpColdef': 'birthdate', 'caption': _('Birthdate'), 'datefield': True},
         {'awpColdef': 'birthcountry', 'caption': _('Country of birth')},
         {'awpColdef': 'birthcity', 'caption': _('Place of birth')},
         {'awpColdef': 'classname', 'caption': _('Class name')},
         #{'awpColdef': 'iseveningstudent', 'caption': _('Evening student')},
-        #{'awpColdef': 'hasdyslexia', 'caption': _('Has dyslexia')},
         {'awpColdef': 'bis_exam', 'caption': _('Bis exam')},
         {'awpColdef': 'department', 'caption': _('Department')},
 
@@ -341,10 +333,10 @@ KEY_COLDEF = {
          ),
 
     KEY_IMPORT_PERMITS:
-        ({'awpColdef': 'c_abbrev', 'caption': _('Country'), 'linkfield': True},
-         {'awpColdef': 'page', 'caption': _('Page'), 'linkfield': True},
-         {'awpColdef': 'role', 'caption': _('Organization'), 'linkfield': True},
-         {'awpColdef': 'action', 'caption': _('Action'), 'linkfield': True},
+        ({'awpColdef': 'c_abbrev', 'caption': _('Country'), 'linkrequired': True},
+         {'awpColdef': 'page', 'caption': _('Page'), 'linkrequired': True},
+         {'awpColdef': 'role', 'caption': _('Organization'), 'linkrequired': True},
+         {'awpColdef': 'action', 'caption': _('Action'), 'linkrequired': True},
          {'awpColdef': 'usergroups', 'caption': _('User groups')},
          {'awpColdef': 'sequence', 'caption': _('Sequence')}
          ),
@@ -361,7 +353,6 @@ CAPTIONS = {'student': {'lastname': _('Last name'),
                         'birthcity': _('Place of birth'),
                         'classname': _('Class name'),
                         'iseveningstudent': _('Evening student'),
-                        'hasdyslexia': _('Has dyslexia'),
                         'bis_exam': _('Bis exam'),
                         'department': _('Department'),
                         'level': _('Level'),
@@ -402,8 +393,7 @@ FIELDS_SCHOOL = ('base', 'examyear', 'name', 'abbrev', 'article', 'depbases',
 FIELDS_SUBJECT = ('base', 'examyear', 'name', 'abbrev', 'sequence', 'depbases', 'modifiedby', 'modifiedat')
 FIELDS_STUDENT = ('base', 'school', 'department', 'level', 'sector', 'scheme', 'package',
                   'lastname', 'firstname', 'prefix', 'gender', 'idnumber', 'birthdate', 'birthcountry', 'birthcity',
-                  'classname', 'examnumber', 'regnumber', 'diplomanumber', 'gradelistnumber',
-                  'iseveningstudent', 'hasdyslexia',
+                  'classname', 'examnumber', 'regnumber', 'diplomanumber', 'gradelistnumber', 'iseveningstudent',
                   'locked', 'has_reex', 'bis_exam', 'withdrawn', 'modifiedby', 'modifiedat')
 FIELDS_STUDENTSUBJECT = ('student', 'schemeitem', 'cluster', 'is_extra_nocount', 'is_extra_counts', 'is_elective_combi',
                 'pws_title', 'pws_subjects', 'has_exemption', 'has_reex', 'has_reex03', 'has_pok',
@@ -422,8 +412,10 @@ FIELDS_GRADE =('studentsubject', 'examperiod', 'pescore', 'cescore',
 
 
 STRING_SPACE_30 = ' ' * 30
+STRING_SPACE_20 = ' ' * 20
+STRING_SPACE_15 = ' ' * 15
 STRING_SPACE_10 = ' ' * 10
-STRING_INDENT_5 = ' ' * 5
+STRING_SPACE_05 = ' ' * 5
 STRING_DOUBLELINE_80 = '=' * 80
 
 
@@ -496,76 +488,17 @@ PAGE_LIST = {
     'grades': _('Grades')
 }
 
-DEFAULT_PERMITS = [
-    {'role': 8, 'page': 'page_all', 'sequence': 10, 'action': 'href_userpage', 'usergroups': 'admin'},
-    {'role': 8, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
-    {'role': 8, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 8, 'page': 'page_grade', 'sequence': 20, 'action': 'crud_grade', 'usergroups': 'edit'},
-    {'role': 8, 'page': 'page_grade', 'sequence': 30, 'action': 'approve_grade', 'usergroups': 'auth1;auth2'},
-    {'role': 8, 'page': 'page_grade', 'sequence': 40, 'action': 'submit_grade', 'usergroups': 'auth1;auth2'},
-    {'role': 8, 'page': 'page_grade', 'sequence': 50, 'action': 'unlock_grade', 'usergroups': None},
-    {'role': 8, 'page': 'page_grade', 'sequence': 60, 'action': 'read_note', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 8, 'page': 'page_grade', 'sequence': 70, 'action': 'write_note_intern', 'usergroups': 'auth1;auth2;auth3;edit'},
-    {'role': 8, 'page': 'page_grade', 'sequence': 80, 'action': 'write_note_extern', 'usergroups': 'auth1;auth2'},
-    {'role': 8, 'page': 'page_school', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 8, 'page': 'page_student', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 8, 'page': 'page_studsubj', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 8, 'page': 'page_subject', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
-    {'role': 16, 'page': 'page_all', 'sequence': 10, 'action': 'href_userpage', 'usergroups': 'admin'},
-    {'role': 16, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
-    {'role': 16, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 16, 'page': 'page_grade', 'sequence': 20, 'action': 'crud_grade', 'usergroups': ''},
-    {'role': 16, 'page': 'page_grade', 'sequence': 30, 'action': 'approve_grade', 'usergroups': 'auth3'},
-    {'role': 16, 'page': 'page_grade', 'sequence': 40, 'action': 'submit_grade', 'usergroups': None},
-    {'role': 16, 'page': 'page_grade', 'sequence': 50, 'action': 'unlock_grade', 'usergroups': None},
-    {'role': 16, 'page': 'page_grade', 'sequence': 60, 'action': 'read_note', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 16, 'page': 'page_grade', 'sequence': 70, 'action': 'write_note_intern', 'usergroups': 'auth3'},
-    {'role': 16, 'page': 'page_grade', 'sequence': 80, 'action': 'write_note_extern', 'usergroups': 'auth3'},
-    {'role': 16, 'page': 'page_school', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 16, 'page': 'page_student', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 16, 'page': 'page_studsubj', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 16, 'page': 'page_subject', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
-    {'role': 32, 'page': 'page_all', 'sequence': 10, 'action': 'href_userpage', 'usergroups': 'admin'},
-    {'role': 32, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
-    {'role': 32, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 32, 'page': 'page_grade', 'sequence': 20, 'action': 'crud_grade', 'usergroups': ''},
-    {'role': 32, 'page': 'page_grade', 'sequence': 30, 'action': 'approve_grade', 'usergroups': ''},
-    {'role': 32, 'page': 'page_grade', 'sequence': 40, 'action': 'submit_grade', 'usergroups': None},
-    {'role': 32, 'page': 'page_grade', 'sequence': 50, 'action': 'unlock_grade', 'usergroups': 'edit'},
-    {'role': 32, 'page': 'page_grade', 'sequence': 60, 'action': 'read_note', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 32, 'page': 'page_grade', 'sequence': 70, 'action': 'write_note_intern', 'usergroups': 'auth1;auth2;auth3;edit'},
-    {'role': 32, 'page': 'page_grade', 'sequence': 80, 'action': 'write_note_extern', 'usergroups': 'auth1;auth2'},
-    {'role': 32, 'page': 'page_school', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 32, 'page': 'page_student', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 32, 'page': 'page_studsubj', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 32, 'page': 'page_subject', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
-    {'role': 64, 'page': 'page_all', 'sequence': 10, 'action': 'href_userpage', 'usergroups': 'admin'},
-    {'role': 64, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
-    {'role': 64, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 64, 'page': 'page_grade', 'sequence': 20, 'action': 'crud_grade', 'usergroups': ''},
-    {'role': 64, 'page': 'page_grade', 'sequence': 30, 'action': 'approve_grade', 'usergroups': None},
-    {'role': 64, 'page': 'page_grade', 'sequence': 40, 'action': 'submit_grade', 'usergroups': None},
-    {'role': 64, 'page': 'page_grade', 'sequence': 50, 'action': 'unlock_grade', 'usergroups': None},
-    {'role': 64, 'page': 'page_grade', 'sequence': 60, 'action': 'read_note', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 64, 'page': 'page_grade', 'sequence': 70, 'action': 'write_note_intern', 'usergroups': 'auth1;auth2;auth3;edit'},
-    {'role': 64, 'page': 'page_grade', 'sequence': 80, 'action': 'write_note_extern', 'usergroups': 'auth1;auth2'},
-    {'role': 64, 'page': 'page_school', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 64, 'page': 'page_student', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 64, 'page': 'page_studsubj', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 64, 'page': 'page_subject', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
-    {'role': 128, 'page': 'page_all', 'sequence': 10, 'action': 'href_userpage', 'usergroups': 'admin'},
-    {'role': 128, 'page': 'page_examyear', 'sequence': 10, 'action': 'view_page', 'usergroups': None},
-    {'role': 128, 'page': 'page_grade', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 128, 'page': 'page_grade', 'sequence': 20, 'action': 'crud_grade', 'usergroups': 'edit'},
-    {'role': 128, 'page': 'page_grade', 'sequence': 30, 'action': 'approve_grade', 'usergroups': 'auth1;auth2;auth3'},
-    {'role': 128, 'page': 'page_grade', 'sequence': 40, 'action': 'submit_grade', 'usergroups': 'auth1;auth2'},
-    {'role': 128, 'page': 'page_grade', 'sequence': 50, 'action': 'unlock_grade', 'usergroups': None},
-    {'role': 128, 'page': 'page_grade', 'sequence': 60, 'action': 'read_note', 'usergroups': 'anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 128, 'page': 'page_grade', 'sequence': 70, 'action': 'write_note_intern', 'usergroups': 'auth1;auth2;auth3;edit'},
-    {'role': 128, 'page': 'page_grade', 'sequence': 80, 'action': 'write_note_extern', 'usergroups': 'auth1;auth2'},
-    {'role': 128, 'page': 'page_school', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 128, 'page': 'page_student', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 128, 'page': 'page_studsubj', 'sequence': 10, 'action': 'view_page', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'},
-    {'role': 128, 'page': 'page_subject', 'sequence': 10, 'action': 'view_page', 'usergroups': None}
-]
+
+MENUS_DICT = {
+    'page_examyear': {'caption': _('Exam year'), 'href': 'examyears_url', 'width': 100},
+    'page_school': {'caption': _('School'), 'href': 'schools_url', 'width': 90},
+    'page_subject': {'caption': _('Subjects'), 'href': 'subjects_url', 'width': 100},
+    'page_student': {'caption': _('Students'), 'href': 'students_url', 'width': 120},
+    'page_studsubj': {'caption': _('Subjects'), 'href': 'studentsubjects_url', 'width': 100},
+    'page_exams': {'caption': _('Exam questions'), 'href': 'exams_url', 'width': 130},
+    'page_grade': {'caption': _('Grades'), 'href': 'grades_url', 'width': 120},
+    'page_result': {'caption': _('Results'), 'href': 'subjects_url', 'width': 120},
+    'page_report': {'caption': _('Reports'), 'href': 'subjects_url', 'width': 120},
+    'page_analysis': {'caption':  _('Analysis'), 'href': 'subjects_url', 'width': 90}
+}
 

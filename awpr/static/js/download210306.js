@@ -131,9 +131,6 @@
 
 		}//end saver
 
-
-
-
 		if (navigator.msSaveBlob) { // IE10+ : (has Blob, but not a[download] or URL)
 			return navigator.msSaveBlob(blob, fileName);
 		}

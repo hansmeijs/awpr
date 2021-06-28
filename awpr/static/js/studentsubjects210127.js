@@ -200,12 +200,17 @@ document.addEventListener('DOMContentLoaded', function() {
         el_filedialog.addEventListener("change", function() {MIMP_HandleFiledialog(el_filedialog, loc)}, false )
 
     const el_select_unique = document.getElementById("id_MIMP_select_unique");
+    if (el_select_unique){
         el_select_unique.addEventListener("change", function() {MIMP_SelectUniqueChanged(el_select_unique)}, false )
+    };
     const el_MIMP_tabular = document.getElementById("id_MIMP_tabular");
+    if (el_MIMP_tabular){
         el_MIMP_tabular.addEventListener("change", function() {MIMP_CheckboxCrosstabTabularChanged(el_MIMP_tabular)}, false )
+    };
     const el_MIMP_crosstab = document.getElementById("id_MIMP_crosstab");
+    if (el_MIMP_crosstab){
         el_MIMP_crosstab.addEventListener("change", function() {MIMP_CheckboxCrosstabTabularChanged(el_MIMP_crosstab)}, false )
-
+    };
 
     //const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
     //    el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false);
@@ -246,8 +251,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true},
-                level_rows: {get: true},
-                sector_rows: {get: true},
+                level_rows: {cur_dep_only: true},
+                sector_rows: {cur_dep_only: true},
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},
                 schemeitem_rows: {get: true}
@@ -302,8 +307,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     //  - can add/delete/edit only 'role_school' + same_school plus 'perm_edit'
                     //  - cannot edit when country, examyear or schoolis locked
                     //  - can only edit when school is published
-                   // permit_dict.crud_studsubj = (setting_dict.requsr_role_admin && setting_dict.requsr_group_edit) ||
-                    //                  (setting_dict.requsr_role_system && setting_dict.requsr_group_edit);
+                   // permit_dict.permit_crud = (setting_dict.requsr_role_admin && setting_dict.usergroup_edit) ||
+                    //                  (setting_dict.requsr_role_system && setting_dict.usergroup_edit);
                     // <PERMIT> PR2020-10-27
                     // - every user may change examyear and department
                     // -- only insp, admin and system may change school
@@ -360,8 +365,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Add_subject, function() {MSTUD_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_subject, function() {ModConfirmOpen("delete")});
-            AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, null, "id_submenu_download_ex1", url_grade_download_ex1, false);  // true = download
-            AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open("import_studentsubject")}, "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, null, null, "id_submenu_download_ex1", url_grade_download_ex1, false);  // true = download
+            AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open("import_studentsubject")}, null, "id_submenu_import");
 
          el_submenu.classList.remove(cls_hide);
 
@@ -475,15 +480,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const key = field_setting.field_caption[j];
             let caption = (loc[key]) ? loc[key] : key;
-        console.log("field_name", field_name);
-        console.log("key", key);
-        console.log("setting_dict.sel_dep_has_profiel", setting_dict.sel_dep_has_profiel);
-        console.log("loc.Sector", loc.Sector);
-        console.log("loc.Profiel", loc.Profiel);
+        //console.log("field_name", field_name);
+        //console.log("key", key);
+        //console.log("setting_dict.sel_dep_has_profiel", setting_dict.sel_dep_has_profiel);
+        //console.log("loc.Sector", loc.Sector);
+        //console.log("loc.Profiel", loc.Profiel);
             if (field_name === "sct_abbrev") {
                 caption = (setting_dict.sel_dep_has_profiel) ? loc.Profiel : loc.Sector;
             }
-        console.log("caption", caption);
+        //console.log("caption", caption);
 
             // skip columns if in columns_hidden
             if (!columns_hidden[field_name]){
@@ -776,10 +781,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 let model_field = null;
                 if (["auth1", "auth2"].indexOf(fldName) > -1){
-        console.log( "setting_dict.requsr_group_auth1", setting_dict.requsr_group_auth1);
-        console.log( "setting_dict.requsr_group_auth2", setting_dict.requsr_group_auth2);
-        console.log( "setting_dict.requsr_group_auth3", setting_dict.requsr_group_auth3);
-                    if ( fldName === "auth1" && setting_dict.requsr_group_auth1 || fldName === "auth2" && setting_dict.requsr_group_auth2  || fldName === "auth3" && setting_dict.requsr_group_auth3 ) {
+        console.log( "setting_dict.usergroup_auth1", setting_dict.usergroup_auth1);
+        console.log( "setting_dict.usergroup_auth2", setting_dict.usergroup_auth2);
+        console.log( "setting_dict.usergroup_auth3", setting_dict.usergroup_auth3);
+                    if ( fldName === "auth1" && setting_dict.usergroup_auth1 || fldName === "auth2" && setting_dict.usergroup_auth2  || fldName === "auth3" && setting_dict.usergroup_auth3 ) {
                         const prefix = (selected_btn === "btn_studsubj") ? "subj" :
                                         (selected_btn === "btn_exemption") ? "exem" :
                                         (selected_btn === "btn_reex") ? "reex" :
@@ -869,7 +874,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- also used for level, sector,
     function MSTUD_Open(el_input){
         console.log(" -----  MSTUD_Open   ----")
-        if( permit_dict.crud_studsubj){
+        if( permit_dict.permit_crud){
             let user_pk = null, user_country_pk = null, user_schoolbase_pk = null, mapid = null;
             const fldName = get_attr_from_el(el_input, "data-field");
 
@@ -944,7 +949,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  MSTUD_save  ----", crud_mode);
         console.log( "mod_MSTUD_dict: ", mod_MSTUD_dict);
 
-        if(permit_dict.crud_studsubj){
+        if(permit_dict.permit_crud){
             const is_delete = (crud_mode === "delete")
 
             let upload_dict = {
@@ -1247,7 +1252,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++ MOD STUDENT SUBJECT++++++++++++++++ PR2020-11-16
     function MSTUDSUBJ_Open(el_input){
         console.log(" -----  MSTUDSUBJ_Open   ----")
-        if(el_input && permit_dict.crud_studsubj){
+        console.log("el_input", el_input)
+        console.log("permit_dict", permit_dict)
+        if(el_input && permit_dict.permit_crud){
+        console.log(".........permit_dict", permit_dict)
 
             mod_MSTUDSUBJ_dict = {}; // stores general info of selected candidate in MSTUDSUBJ PR2020-11-21
             mod_schemeitem_dict = {};   // stores available studsubj for selected candidate in MSTUDSUBJ
@@ -1309,7 +1317,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "mod_studentsubject_dict: ", mod_studentsubject_dict);
         console.log( "mod_MSTUDSUBJ_dict: ", mod_MSTUDSUBJ_dict);
 
-        if(permit_dict.crud_studsubj && mod_MSTUDSUBJ_dict.stud_id){
+        if(permit_dict.permit_crud && mod_MSTUDSUBJ_dict.stud_id){
             const upload_dict = {
             table: 'studentsubject',
             sel_examyear_pk: setting_dict.sel_examyear_pk,
@@ -1358,7 +1366,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log("upload_dict: ", upload_dict)
                 UploadChanges(upload_dict, url_studsubj_upload);
             }
-        };  // if(permit_dict.crud_studsubj && mod_MSTUDSUBJ_dict.stud_id){
+        };  // if(permit_dict.permit_crud && mod_MSTUDSUBJ_dict.stud_id){
 
 // ---  hide modal
         $("#id_mod_studentsubject").modal("hide");
@@ -1404,7 +1412,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("mod_schemeitem_dict:", mod_schemeitem_dict);
         console.log("..................");
     } // MSTUDSUBJ_FillDicts
-
 
 //========= MSTUDSUBJ_FillTbls  ============= PR2020-11-17
     function MSTUDSUBJ_FillTbls(sel_schemeitem_pk_list) {
@@ -1525,7 +1532,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     } // MSTUDSUBJ_FillSelectRow
 
-
 //=========  MSTUDSUBJ_ClickedOrDoubleClicked  ================ PR2019-03-30 PR2021-03-05
     function MSTUDSUBJ_ClickedOrDoubleClicked(tblName, tblRow, event) {
         console.log("=== MSTUDSUBJ_ClickedOrDoubleClicked");
@@ -1579,7 +1585,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el){el.className = img_class}
         }
     }  // MSTUDSUBJ_SelectSubject
-
 
     function MSTUDSUBJ_SetInputFields(schemitem_pk, is_selected){
 // ---  put value in input box 'Characteristics of this subject
@@ -1795,7 +1800,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "delete", "inactive" or "resend_activation_email", "permission_sysadm"
 
-        if(permit_dict.crud_studsubj){
+        if(permit_dict.permit_crud){
 
 
     // ---  get selected_pk
@@ -1895,9 +1900,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
-        let close_modal = !permit_dict.crud_studsubj;
+        let close_modal = !permit_dict.permit_crud;
 
-        if(permit_dict.crud_studsubj){
+        if(permit_dict.permit_crud){
             let tblRow = document.getElementById(mod_dict.mapid);
 
     // ---  when delete: make tblRow red, before uploading
@@ -2281,7 +2286,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     el = cell.children[0];
                     if(el){
                         const filter_tag = get_attr_from_el(el, "data-filtertag")
-                        if(el.tag === "INPUT"){
+                        if(el.tagName === "INPUT"){
                             el.value = null
                         } else {
                             const el_icon = el.children[0];

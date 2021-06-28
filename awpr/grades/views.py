@@ -49,9 +49,8 @@ class GradeListView(View):  # PR2020-12-03 PR2021-03-25
         page = 'page_grade'
         headerbar_param = awpr_menu.get_headerbar_param(request, page)
 
-# - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
-        if request.user:
-            request.user.set_usersetting_dict('sel_page', {'page': page})
+# - save this page in Usersetting, so at next login this page will open. Used in LoggedIn
+        # PR2021-06-22 moved to get_headerbar_param
 
         return render(request, 'grades.html', headerbar_param)
 
@@ -66,12 +65,12 @@ class GradeDownloadGradeIconsView(View):  # PR2021-04-30
 
         download_wrap = {}
         if request.user and request.user.country and request.user.schoolbase:
-            req_user = request.user
 
 # - get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, is_locked, \
-                examyear_published, school_activated, requsr_same_schoolNIU = \
-                    dl.get_selected_examyear_school_dep_from_usersetting(request)
+            # TOD was: sel_examyear, sel_school, sel_department, is_locked, \
+                # examyear_published, school_activated, requsr_same_schoolNIU = \
+            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+            dl.get_selected_ey_school_dep_from_usersetting(request)
 
 # - get selected examperiod, examtype, subject_pk from usersettings
             sel_examperiod, sel_examtype, sel_subject_pk = dl.get_selected_examperiod_examtype_from_usersetting(request)
@@ -189,11 +188,11 @@ class GradeApproveView(View):  # PR2021-01-19
     # - get selected examyear, school and department from usersettings
                     sel_examyear, sel_school, sel_department, is_locked, \
                         examyear_published, school_activated, requsr_same_schoolNIU = \
-                            dl.get_selected_examyear_school_dep_from_usersetting(request)
+                            dl.get_selected_ey_school_dep_from_usersetting(request)
 
     # - get selected examperiod from usersetting
                     sel_examperiod = None
-                    selected_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
+                    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                     if selected_dict:
                         sel_examperiod = selected_dict.get(c.KEY_SEL_EXAMPERIOD)
 
@@ -219,7 +218,7 @@ class GradeApproveView(View):  # PR2021-01-19
                             if new_subject_pk:
                                 new_setting_dict[c.KEY_SEL_SUBJECT_PK] = new_subject_pk
 
-                            saved_setting_dict = req_user.set_usersetting_from_upload_subdict(c.KEY_SELECTED_PK, new_setting_dict)
+                            saved_setting_dict = req_user.set_usersetting_from_upload_subdict(c.KEY_SELECTED_PK, new_setting_dict, request)
 
                             if logging_on:
                                 logger.debug('new_examtype: ' + str(new_examtype))
@@ -689,6 +688,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
             logger.debug('')
             logger.debug(' ============= GradeUploadView ============= ')
         # function creates, deletes and updates grade records of current studentsubject PR2020-11-21
+        
         update_wrap = {}
         err_html = ''
 
@@ -699,7 +699,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
         has_permit = False
         if request.user and request.user.country and request.user.schoolbase:
             permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list('page_grade', request.user)
-            has_permit = 'crud_grade' in permit_list
+            has_permit = 'crud' in permit_list
         if not has_permit:
             err_html = _("You don't have permission to perform this action.")
         else:
@@ -714,7 +714,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
 # - get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, is_locked, \
                 examyear_published, school_activated, requsr_same_school = \
-                    dl.get_selected_examyear_school_dep_from_usersetting(request)
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
 
 # - get select
                 # ed examperiod and examtype from upload_dict
@@ -1138,9 +1138,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                 "si.subject_id, si.subjecttype_id,",
                 "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_combi, si.extra_count_allowed,",
                 "si.extra_nocount_allowed, si.elective_combi_allowed, si.has_practexam, si.has_pws,",
-
-                "si.reex_se_allowed, si.reex_combi_allowed, si.no_centralexam,",
-                "si.no_reex, si.no_thirdperiod, si.no_exemption_ce,",
+                "si.is_core_subject, si.is_mvt, si.reex_se_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce,",
 
                 "subj.name AS subj_name, subjbase.code AS subj_code,",
                 "NULL AS note_status", # will be filled in after downloading note_status

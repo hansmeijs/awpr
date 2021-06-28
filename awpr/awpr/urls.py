@@ -24,7 +24,6 @@ from django.views.generic import RedirectView
 from accounts import views as account_views
 
 from awpr import downloads as awpr_downloads
-from importing import views as import_views
 from schools import views as school_views
 from schools import imports as school_imports
 from students import views as student_views
@@ -33,6 +32,7 @@ from grades import views as grade_views
 from grades import excel as grade_excel
 from grades import exfiles as grade_exfiles
 from reports import views as report_views
+from upload import views as upload_views
 
 from accounts.forms import SchoolbaseAuthenticationForm
 
@@ -135,6 +135,11 @@ urlpatterns = [
 # PR2018-03-14
     # PR2018-04-17 debug: don't forget the brackets at the end of as_view() !!\
 
+# ===== MANUAL ==========================  PR2021-06-10
+    path('manual/', include([
+        path('main/<list>/', school_views.ManualListView.as_view(), name='manual_url')
+
+    ])),
 # ===== SCHOOLS ==========================  PR2018-08-23 PR2020-10-20 PR2021-04-26
     path('schools/', include([
         path('examyears', school_views.ExamyearListView.as_view(), name='examyears_url'),
@@ -144,7 +149,7 @@ urlpatterns = [
         path('school_upload', school_views.SchoolUploadView.as_view(), name='school_upload_url'),
         path('school_import', school_views.SchoolImportView.as_view(), name='school_import_url'),
 
-        path('awp_upload', import_views.UploadAwpView.as_view(), name='school_awpupload_url'),
+        path('awp_upload', upload_views.UploadAwpView.as_view(), name='school_awpupload_url'),
 
         path('uploadsetting', school_views.SchoolImportUploadSetting.as_view(), name='school_uploadsetting_url'),
         path('uploaddata', school_views.SchoolImportUploadData.as_view(), name='school_uploaddata_url')
@@ -158,6 +163,10 @@ urlpatterns = [
 
         path('uploadsetting', subject_views.SubjectImportUploadSetting.as_view(), name='subject_uploadsetting_url'),
         path('uploaddata', subject_views.SubjectImportUploadData.as_view(), name='subject_uploaddata_url'),
+
+        path('scheme_upload', subject_views.SchemeUploadView.as_view(), name='scheme_upload_url'),
+        path('subjecttype_upload', subject_views.SubjecttypeUploadView.as_view(), name='subjecttype_upload_url'),
+        path('schemeitem_upload', subject_views.SchemeitemUploadView.as_view(), name='schemeitem_upload_url'),
     ])),
 
 
@@ -204,13 +213,18 @@ urlpatterns = [
     # PR2019-02-25
     path('downloads/', report_views.download, name='downloads_url'),
 
+
+# ===== GRADES ========================== PR2021-06-11
+    path('uploads/', include([
+        path('upload', upload_views.UploadListView.as_view(), name='upload_url'),
+    ])),
+
 # ajax PR2018-12-02
     path('ajax/', include([
         #path('import_student_load/', student_views.StudentImportUploadDataView.as_view(), name='import_student_load_url'),
         path('importsettings_upload/', school_imports.UploadImportSettingView.as_view(), name='importsettings_upload_url'),
         path('importdata_upload/', school_imports.UploadImportDataView.as_view(), name='importdata_upload_url'),
         path('ajax_schemeitems_download/', subject_views.SchemeitemsDownloadView.as_view(), name='ajax_schemeitems_download_url'),
-        path('ajax_ssi_upload/', subject_views.SchemeitemUploadView.as_view(), name='ajax_ssi_upload_url'),
     ])),
 ]
 

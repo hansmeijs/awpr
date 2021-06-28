@@ -14,11 +14,11 @@ p {
     margin: 4px 8px;
 }
 
-ul {
+ulNIU {
     margin: 0px; /*these dont work: margin: none; margin: 0;*/
     padding: 0; /*padding: 0 8px;*/
 }
-li {
+liNIU {
     list-style-type: none;
 }
 
@@ -956,11 +956,16 @@ aXX:hover{
     border-top: 1px solid #dee2e6; /* from bootstrap table td */
 }
 
-.tsa_margin_form_label {
+.label_margin_top_m3 {
     margin: 16px 8px 4px 8px; /* mx-2 = .5 rem, mx-1 = .25 rem, 1 rem = 16 px  <top><right><bottom><left> */
 }
-.awp_margin_form_label {
-    margin: 8px 8px 4px 8px; /* mx-2 = .5 rem, mx-1 = .25 rem, 1 rem = 16 px  <top><right><bottom><left> */
+.label_margin_top_m2 {
+    margin: 8px 8px 4px 8px; /* <top><right><bottom><left> */
+    /*  m-1 = .25 rem 4px; m-2 = .2 rem 8px; m-3 = 1 rem 16px; m-4 = 1.5 rem 24px; m-5 = 3 rem 48px; 1 rem = 16 px  */
+}
+.awp_margin_top_48 {
+    /* margin: <top><right><bottom><left> */
+   margin-top: 48px
 }
 .tsa_margin_top_72 {
     /* margin: <top><right><bottom><left> */
@@ -972,6 +977,8 @@ aXX:hover{
    margin-left: 224px;
 }
 
+
+.tw_100perc { width: 100%; }
 
 .tw_480 { width: 480px; }
 .tw_420 { width: 420px; }
@@ -1002,11 +1009,12 @@ aXX:hover{
 .line_height_normal {
     line-height: normal;
 }
-.tbl_studsubj_h390_w320 {
+.tbl_studsubj_h390_w_auto {
     overflow-x: hidden;
     overflow-y: auto;
-    height: 390px;
-    width: 320px;
+    height: 240px;
+    /*width: 320px;*/
+    width: auto
 }
 
 .tbl_h180_w360 {
@@ -1030,10 +1038,10 @@ aXX:hover{
     padding: 4px;
 }
 
-.tbl_h140_w220 {
+.tbl_h128_w220 {
     overflow-x: hidden;
     overflow-y: auto;
-    height: 140px;
+    height: 128px;
     width: 220px;
     padding: 4px;
 }
@@ -1135,6 +1143,15 @@ aXX:hover{
     border-radius: .25rem  !important;
     background-color: #d7f4de !important; /*#ade8bb;*/
 }
+
+.border_bg_warning {
+    border: 1px solid  #ffc107 !important;  /*  #ffc107 orangeish */
+    border-radius: .25rem  !important;
+    background-color: #fff3cd !important; /* #fff3cd; alert-warning background  */
+    /*background-color: #fdd6ba !important; /* light organgeishbackground  */
+
+}
+
 .border_bg_transparent {
     border: 1px solid #303024; /* dark dark Panta Rhei grey 48 48 36 */
     border-radius: .25rem;
@@ -1164,6 +1181,18 @@ aXX:hover{
     transition: background-color 0.25s ease;
 */
 }
+.bg_medium_blue {
+    color: #ffffff; /*!important;*/
+    /*background-color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    background-color: #4c74a7; /* #4c74a7 rgba: 76-116-167-1 medium blue*/
+/*
+    transition: all 150ms ease;
+     -webkit-transition: all 150ms ease;
+     -o-transition: all 150ms ease;
+*/
+}
+
+
 .awp_tr_disabled {
     background-color: #f5f5f5;  /* licht licht licht grijs 245 245 245 */
     /*color: #808080 !important;  /* dark grey 128 128 128 */
@@ -1226,6 +1255,8 @@ aXX:hover{
 .tickmark_0_0, .tickmark_0_1, .tickmark_0_2,
 .tickmark_1_0, .tickmark_1_1, .tickmark_1_2,
 .tickmark_2_0, .tickmark_2_1, .tickmark_2_2,
+
+.questionmark,
 
 .delete_0_0, .delete_0_1, .delete_0_2 {
     background-repeat: no-repeat;
@@ -1390,6 +1421,7 @@ aXX:hover{
 .btn_del_0_2 { background-position: -56px -0px;}
 
 
+
 .flag_0_0, .flag_0_1, .flag_0_2,
 .flag_1_0, .flag_1_1, .flag_1_2 {
     background-image: url('/static/img/flags.png');
@@ -1406,6 +1438,18 @@ aXX:hover{
 .flag_1_0 { background-position: -0px -24px;}
 .flag_1_1 { background-position: -36px -24px;}
 .flag_1_2 { background-position: -72px -24px;}
+
+
+.questionmark {
+    background-image: url('/static/img/questionmark.png');
+    background-size: 32px 32px;
+    background-repeat: no-repeat;
+    height: 32px;
+    width: 32px;
+    margin: 4px 4px 4px 4px;
+    cursor: pointer;
+}
+
 
 
 .awplogo {

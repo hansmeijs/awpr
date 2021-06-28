@@ -115,6 +115,7 @@
     }  // format_datetime_from_datetimeJS
 
 
+
 /*
           <div  class="d-flex flex-wrap" id="id_dflex">
 

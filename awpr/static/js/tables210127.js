@@ -786,14 +786,14 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         if(search_sortby){
             if (typeof search_sortby === 'string' || search_sortby instanceof String) {
                 search_sortby = search_sortby.toLowerCase()};
-       //console.log("search_sortby", search_sortby);
             for (let i = 0, tblRow; tblRow = tblBody.rows[i]; i++) {
                 let row_sortby = get_attr_from_el(tblRow, "data-sortby");
-                //console.log("row_sortby", row_sortby);
+        //console.log("tblRow", tblRow);
+        //console.log("rowIndex", tblRow.rowIndex);
+        //console.log("i", i, "row_sortby", row_sortby);
                 if(row_sortby){
                     if (typeof row_sortby === 'string' || row_sortby instanceof String) {
                         row_sortby = row_sortby.toLowerCase()};
-       //console.log("row_sortby", row_sortby);
                     if(search_sortby < row_sortby) {
     // --- search_rowindex = row_index - 1, to put new row above row with higher row_sortby
                         row_index = tblRow.rowIndex - 1;
@@ -1470,13 +1470,16 @@ console.log( "show_row", show_row);
                     const filter_value = filter_arr[1];
                     const filter_mode = filter_arr[2];
 
-       //console.log( "filter_tag", filter_tag)
+        //console.log( "filter_tag", filter_tag)
+        //console.log( "filter_value", filter_value)
                     const cell = tblRow.cells[col_index];
+        //console.log( "cell", cell)
                     if(cell){
                         const el = cell.children[0];
+        //console.log( "el", el)
                         if (el){
                             const cell_value = get_attr_from_el(el, "data-filter")
-       //console.log( "cell_value", cell_value)
+        //console.log( "cell_value", cell_value)
                             if (filter_tag === "toggle"){
                                 // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
                                 if (filter_value === "2"){
@@ -1506,7 +1509,7 @@ console.log( "show_row", show_row);
                                 } else {
                                     const filter_number = Number(filter_value);
                                     const cell_number = (Number(cell_value)) ? Number(cell_value) : 0;
-       //console.log( "cell_number", cell_number, typeof cell_number);
+        //console.log( "cell_number", cell_number, typeof cell_number);
                                     if ( filter_mode === "lte") {
                                         if (cell_number > filter_number) {hide_row = true};
                                     } else if ( filter_mode === "lt") {
@@ -1536,8 +1539,8 @@ console.log( "show_row", show_row);
                 };  //  if(filter_arr)
             };  // for (const [index_str, filter_arr] of Object.entries(filter_dict))
         }  // if (tblRow && !isEmpty(filter_dict))
-      //console.log("hide_row", hide_row);
-       return !hide_row
+        //console.log("hide_row", hide_row);
+        return !hide_row
     }; // t_ShowTableRowExtended
 
 //========= t_create_filter_row  ====================================

@@ -8,8 +8,7 @@ from datetime import date, datetime, time
 from awpr import constants as c
 from awpr import settings as s
 
-from accounts import models as acc_mod
-from students import models as stud_mod
+from accounts import views as acc_view
 from schools import models as sch_mod
 from subjects import models as subj_mod
 import pytz
@@ -378,7 +377,7 @@ def get_selected_examyear_from_usersetting(request):  # PR2021-05-31
     #logger.debug(' ----- get_selected_examyear_from_usersetting ----- ' )
     # this function gets sel_examyear_instance from saved settings.
     # used in students.create_studentsubjectnote_rows
-    selected_dict = request.user.get_usersetting_dict(c.KEY_SELECTED_PK)
+    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
     s_ey_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
     sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(
         pk=s_ey_pk,
@@ -410,7 +409,7 @@ def get_sel_examyear_instance(request, request_setting=None):  # PR2020-12-25
 
         if sel_examyear_instance is None:
 # - get saved_examyear_pk from Usersetting, check if saved_examyear exists
-            selected_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
+            selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
             s_ey_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
             sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=s_ey_pk, country=requsr_country)
 
@@ -462,7 +461,7 @@ def get_sel_schoolbase_instance(request, request_setting=None):  # PR2020-12-25 
 
     # - if not: get saved_schoolbase_pk from Usersetting, check if saved_schoolbase exists
             if sel_schoolbase_instance is None:
-                selected_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
+                selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                 s_sb_pk = selected_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
                 sel_schoolbase_instance = sch_mod.Schoolbase.objects.get_or_none(pk=s_sb_pk, country=requsr_country)
 
@@ -523,7 +522,7 @@ def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR20
 
 # - get depbase_pk from Usersetting when there is no request_depbase_pk; check if request_depbase exists
         if sel_depbase_instance is None:
-            selected_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
+            selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
             s_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
     # check if saved_depbase is in allowed_depbases,
             if s_depbase_pk in allowed_depbases:
@@ -548,8 +547,47 @@ def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR20
 # --- end of get_sel_depbase_instance
 
 
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+def is_allowed_depbase_requsr(depbase_pk, request):  # PR2021-06-14
+    # function checks if depbase_pk is in req_user.allowed_depbases
+    is_allowed_depbase = False
+    if request.user:
+        allowed_depbases = request.user.allowed_depbases
 
+    # - get allowed depbases from user
+        # if req_user.allowed_depbases is empty, all depbases of the school are allowed
+        if allowed_depbases is None:
+            is_allowed_depbase = True
+        else:
+            # add ';' in front and after allowed_depbases and depbase_pk
+            depbases_str = ''.join([';', allowed_depbases, ';'])
+            depbase_pk_str = ''.join([';', str(depbase_pk), ';'])
+            if depbase_pk_str in depbases_str:
+                is_allowed_depbase = True
+
+    return is_allowed_depbase
+
+
+def is_allowed_depbase_school(depbase_pk, school):  # PR2021-06-14
+    # function checks if depbase_pk is in req_user.allowed_depbases
+    is_allowed_depbase = False
+    if school:
+        school_depbases = school.depbases
+
+        # - get allowed depbases from user
+        # if req_user.allowed_depbases is empty, all depbases of the school are allowed
+        if school_depbases is None:
+            is_allowed_depbase = True
+        else:
+            # add ';' in front and after allowed_depbases and depbase_pk
+            depbases_str = ''.join([';', school_depbases, ';'])
+            depbase_pk_str = ''.join([';', str(depbase_pk), ';'])
+            if depbase_pk_str in depbases_str:
+                is_allowed_depbase = True
+
+    return is_allowed_depbase
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def get_this_examyear_int():
     # get this year in Jan thru July, get next year in Aug thru Dec PR2020-09-29 PR2020-12-24
     now = timezone.now()
@@ -581,7 +619,7 @@ def get_saved_sel_depbase_instance(request):  # PR2020-12-24
 # - get saved selected_pk's from Usersetting, key: selected_pk
     req_user = request.user
     if req_user:
-        selected_dict = req_user.get_usersetting_dict(c.KEY_SELECTED_PK)
+        selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
 # - get saved_depbase_pk, check if saved_depbase exists
         if selected_dict:
             s_db_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
@@ -626,13 +664,12 @@ def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
     pass
+
     #update_examyearsetting(examyear, request)
     # PR2021-03-26
-    #load_default_permits(request)
 
     #transfer_depbases_from_array_to_string()
 # - end of system_updates
-
 
 def transfer_depbases_from_array_to_string():
     subjecttypes = subj_mod.Subjecttype.objects.all()
@@ -669,29 +706,6 @@ def transfer_depbases(instances):
             instance.depbases = ';'.join(depbases_list)
             instance.depbases = None
             instance.save()
-
-
-def load_default_permits(request):
-    logger.debug(' =============== load_default_permits ============= ')
-    # Once-only function to fill table accounts.permit PR2021-03-26
-
-    rowcount = acc_mod.Permit.objects.count()
-    logger.debug('rowcount: ' + str(rowcount))
-
-    if not rowcount:
-        default_permits = c.DEFAULT_PERMITS
-        for row in default_permits:
-            permit = acc_mod.Permit(
-                role=row.get('role'),
-                page=row.get('page'),
-                sequence=row.get('sequence'),
-                action=row.get('action'),
-                usergroups=row.get('usergroups'),
-                modifiedat= timezone.now(),
-                modifiedby=request.user
-            )
-            permit.save()
-            logger.debug('permit: ' + str(permit))
 
 
 def update_examyearsetting(examyear, request):

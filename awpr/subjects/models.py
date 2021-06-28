@@ -223,56 +223,6 @@ class Sector_log(sch_mod.AwpBaseModel):
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
-# === Subjecttype =====================================
-class Subjecttypebase(Model): # PR2018-10-17
-    objects = sch_mod.AwpModelManager()
-
-    country = ForeignKey(sch_mod.Country, related_name='+', on_delete=PROTECT)
-
-
-# PR2018-06-06
-class Subjecttype(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
-
-    base = ForeignKey(Subjecttypebase, related_name='characters', on_delete=CASCADE)
-    examyear = ForeignKey(sch_mod.Examyear, related_name='characters', on_delete=CASCADE)
-
-    name = CharField(max_length=50)
-    abbrev = CharField(db_index=True,max_length=20)
-    code = CharField(db_index=True,max_length=c.MAX_LENGTH_04)
-    sequence = PositiveSmallIntegerField(db_index=True, default=1)
-    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-
-    has_prac = BooleanField(default=False) # has practical exam
-    has_pws = BooleanField(default=False) # has profielwerkstuk or sectorwerkstuk
-
-    class Meta:
-        ordering = ['sequence',]
-
-    def __str__(self):
-        return self.name
-
-
-class Subjecttype_log(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
-    subjecttype_id = IntegerField(db_index=True)
-
-    base = ForeignKey(Subjecttypebase, related_name='+', on_delete=CASCADE)
-    examyear_log = ForeignKey(sch_mod.Examyear_log, related_name='+', on_delete=CASCADE)
-
-    name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
-    abbrev = CharField(max_length=c.MAX_LENGTH_20,null=True)
-    code = CharField(max_length=c.MAX_LENGTH_04,null=True)
-    sequence = PositiveSmallIntegerField(null=True)
-    depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-
-    # has_prac only enables the has_practexam option of a schemeitem
-    has_prac = BooleanField(default=False)
-    has_pws = BooleanField(default=False)
-
-    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
-
-
 # PR2018-06-06 There is one Scheme per department/level/sector per year per country
 class Scheme(sch_mod.AwpBaseModel):
     objects = sch_mod.AwpModelManager()
@@ -285,8 +235,10 @@ class Scheme(sch_mod.AwpBaseModel):
     name = CharField(max_length=50)  # TODO set department+level+sector Unique per examyear True.
     fields = CharField(max_length=255, null=True, blank=True)
 
-    # dictionay with min and/or max amount of subjects per subjectttype_pk { 1: {min: 1, max: 1}
-    minmaxamount = CharField(max_length=255, null=True, blank=True)
+    minsubjects = PositiveSmallIntegerField(null=True)
+    maxsubjects = PositiveSmallIntegerField(null=True)
+    min_mvt = PositiveSmallIntegerField(null=True)
+    max_mvt = PositiveSmallIntegerField(null=True)
 
     class Meta:
         ordering = ['name',]
@@ -329,13 +281,73 @@ class Scheme_log(sch_mod.AwpBaseModel):
     name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
     fields = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
 
-    minmaxamount = CharField(max_length=255, null=True, blank=True)
+    minsubjects = PositiveSmallIntegerField(null=True)
+    maxsubjects = PositiveSmallIntegerField(null=True)
+    min_mvt = PositiveSmallIntegerField(null=True)
+    max_mvt = PositiveSmallIntegerField(null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
     @property
     def mode_str(self):
         return c.MODE_DICT.get(str(self.mode),'-')
+
+
+# === Subjecttype =====================================
+class Subjecttypebase(Model):  # PR2018-10-17
+    objects = sch_mod.AwpModelManager()
+
+    country = ForeignKey(sch_mod.Country, related_name='+', on_delete=PROTECT)
+
+    code = CharField(db_index=True, max_length=c.MAX_LENGTH_04)
+    name = CharField(max_length=50)
+    abbrev = CharField(db_index=True, max_length=20)
+
+    sequence = PositiveSmallIntegerField(db_index=True, default=1)
+
+
+# PR2018-06-06
+class Subjecttype(sch_mod.AwpBaseModel):
+    objects = sch_mod.AwpModelManager()
+
+    base = ForeignKey(Subjecttypebase, related_name='characters', on_delete=CASCADE)
+
+    scheme = ForeignKey(Scheme, related_name='+', on_delete=CASCADE)
+
+    name = CharField(max_length=50)
+    abbrev = CharField(max_length=20, null=True)
+
+    # has_prac only enables the has_practexam option of a schemeitem
+    has_prac = BooleanField(default=False)  # has practical exam
+    has_pws = BooleanField(default=False)  # has profielwerkstuk or sectorwerkstuk
+
+    minsubjects = PositiveSmallIntegerField(null=True)
+    maxsubjects = PositiveSmallIntegerField(null=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Subjecttype_log(sch_mod.AwpBaseModel):
+    objects = sch_mod.AwpModelManager()
+    subjecttype_id = IntegerField(db_index=True)
+
+    base = ForeignKey(Subjecttypebase, related_name='+', on_delete=CASCADE)
+
+    scheme_log = ForeignKey(Scheme_log, related_name='+', on_delete=CASCADE)
+
+    name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
+    abbrev = CharField(max_length=c.MAX_LENGTH_20, null=True)
+    sequence = PositiveSmallIntegerField(null=True)
+
+    # has_prac only enables the has_practexam option of a schemeitem
+    has_prac = BooleanField(default=False)
+    has_pws = BooleanField(default=False)
+
+    minsubjects = PositiveSmallIntegerField(null=True)
+    maxsubjects = PositiveSmallIntegerField(null=True)
+
+    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
 # =============  Subject Model  =====================================
@@ -412,7 +424,7 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     # PR2021-03-04 contains exam with possible answers per exam question
     objects = sch_mod.AwpModelManager()
 
-    subject = ForeignKey(Subject, related_name='+', on_delete=CASCADE)
+    subject = ForeignKey(Subject, related_name='+', on_delete=PROTECT)
     department = ForeignKey(sch_mod.Department, related_name='+', on_delete=PROTECT)
     level = ForeignKey(Level, related_name='+', null=True, on_delete=SET_NULL)
 
@@ -472,6 +484,7 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     cesuur = PositiveSmallIntegerField(null=True)
     nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
 
+
 # PR2018-06-05
 class Schemeitem(sch_mod.AwpBaseModel):
     objects = sch_mod.AwpModelManager()
@@ -489,16 +502,21 @@ class Schemeitem(sch_mod.AwpBaseModel):
 
     is_mandatory = BooleanField(default=False)
     is_combi = BooleanField(default=False)
+
     extra_count_allowed = BooleanField(default=False)
     extra_nocount_allowed = BooleanField(default=False)
     elective_combi_allowed = BooleanField(default=False)
+
     has_practexam = BooleanField(default=False)
     has_pws = BooleanField(default=False)
+    is_core_subject = BooleanField(default=False)
+    is_mvt = BooleanField(default=False)
 
-    reex_se_allowed = BooleanField(default=False)
-    reex_combi_allowed = BooleanField(default=False)
-    no_centralexam = BooleanField(default=False)
-    no_reex = BooleanField(default=False)
+    reex_se_allowed = BooleanField(default=False)  # herkansing schoolexamen
+    # deleted: reex_combi_allowed = BooleanField(default=False)
+    # deleted: no_centralexam = BooleanField(default=False)
+    # deleted: no_reex = BooleanField(default=False)
+    max_reex = PositiveSmallIntegerField(default=1)
     no_thirdperiod = BooleanField(default=False)
     no_exemption_ce = BooleanField(default=False)
 
@@ -584,6 +602,8 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     scheme_log = ForeignKey(Scheme_log, null=True, related_name='+', on_delete=CASCADE)
     subject_log = ForeignKey(Subject_log, null=True, related_name='+', on_delete=CASCADE)
     subjecttype_log = ForeignKey(Subjecttype_log, null=True,  related_name='+', on_delete=CASCADE)
+
+    # TODO delete exam from schemitem, is linked to grade
     exam_log = ForeignKey(Exam_log, related_name='+', null=True, on_delete=CASCADE)
 
     gradetype = PositiveSmallIntegerField(null=True)
@@ -591,13 +611,21 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     weight_ce = PositiveSmallIntegerField(null=True)
 
     is_mandatory = BooleanField(default=False)
-    is_combination = BooleanField(default=False)
     is_combi = BooleanField(default=False)
 
     extra_count_allowed = BooleanField(default=False)
     extra_nocount_allowed = BooleanField(default=False)
     elective_combi_allowed = BooleanField(default=False)
+
     has_practexam = BooleanField(default=False)
+    has_pws = BooleanField(default=False)
+    is_core_subject = BooleanField(default=False)
+    is_mvt = BooleanField(default=False)
+
+    reex_se_allowed = BooleanField(default=False)  # herkansing schoolexamen
+    max_reex = PositiveSmallIntegerField(default=1)
+    no_thirdperiod = BooleanField(default=False)
+    no_exemption_ce = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 

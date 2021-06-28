@@ -51,7 +51,7 @@ class UserListView(ListView):
 
     def get(self, request, *args, **kwargs):
 
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(" =====  UserListView  =====")
 
@@ -101,15 +101,15 @@ class UserUploadView(View):
 
             requsr_usergroupslist = req_user.usergroups.split(';') if req_user.usergroups else []
 
-            # requsr_permitlist: ['view_page', 'crud_user_otherschool', 'crud_permit', 'crud_user', 'href_userpage']
+            # requsr_permitlist: ['view_page', 'crud_otherschool', 'crud', 'crud', 'permit_userpage']
             requsr_permitlist = req_user.permit_list('page_user')
             if logging_on:
                 logger.debug('requsr_permitlist: ' + str(requsr_permitlist))
 
             has_permit_this_school, has_permit_all_schools = False, False
             if requsr_permitlist:
-                has_permit_all_schools = 'crud_user_otherschool' in requsr_permitlist
-                has_permit_this_school = 'crud_user' in requsr_permitlist
+                has_permit_all_schools = 'crud_otherschool' in requsr_permitlist
+                has_permit_this_school = 'crud' in requsr_permitlist
 
             if has_permit_this_school or has_permit_all_schools:
 # - get upload_dict from request.POST
@@ -318,7 +318,7 @@ class UserDownloadPermitsView(View):
         if request.user is not None and request.user.country is not None:
             req_user = request.user
             # PR2021-05-25 debug. Don't use permit_list, to prevent locking out yourself
-            permit_list, requsr_usergroups_list = get_userpermit_list('page_user', req_user)
+            permit_listNIU, requsr_usergroups_list = get_userpermit_list('page_user', req_user)
             has_permit = request.user.is_role_system and  'admin' in requsr_usergroups_list
             if logging_on:
                 logger.debug('requsr_usergroups_list: ' + str(requsr_usergroups_list))
@@ -345,8 +345,8 @@ def create_permits_rows(request):
     # --- create list of permits_rows of this country PR2021-04-20
 
     sql_keys = {'country_id': request.user.country.pk}
-    sql = ' '.join(("SELECT LOWER(c.abbrev) AS c_abbrev, p.page, p.action, p.role, p.usergroups, p.sequence",
-                    "FROM accounts_permit AS p",
+    sql = ' '.join(("SELECT LOWER(c.abbrev) AS c_abbrev, p.page, p.action, p.role, p.usergroups",
+                    "FROM accounts_userpermit AS p",
                     "INNER JOIN schools_country AS c ON (c.id = p.country_id)",
                     "WHERE c.id = %(country_id)s::INT",
                     'ORDER BY LOWER(c.abbrev), p.page, p.action, p.role'))
@@ -380,7 +380,7 @@ def create_permits_xlsx(permits_rows, user_lang, request):  # PR2021-04-20
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = "attachment; filename=" + file_name
 
-    field_names = ('c_abbrev', 'page', 'action', 'usergroups', 'role', 'sequence')
+    field_names = ('c_abbrev', 'page', 'action', 'usergroups', 'role')
 
     field_width = (10, 20, 25, 40, 10, 10)
 
@@ -465,12 +465,13 @@ class UserGroupPermitUploadView(View):
                     mode = upload_dict.get('mode')
                     permit_pk = upload_dict.get('permit_pk')
 
+                    role = upload_dict.get('role')
                     page = upload_dict.get('page')
                     action = upload_dict.get('action')
-                    sequence = upload_dict.get('sequence', 1)
 
                     if logging_on:
                         logger.debug('mode:     ' + str(mode))
+                        logger.debug('role:     ' + str(role) + ' ' + str(type(role)))
                         logger.debug('page:     ' + str(page))
                         logger.debug('action:   ' + str(action))
 
@@ -479,7 +480,7 @@ class UserGroupPermitUploadView(View):
                     updated_permit_rows = []
 
 # +++  get current permit - when mode is 'create': permit is None. It will be created at "elif mode == 'create'"
-                    instance = acc_mod.Permit.objects.get_or_none(
+                    instance = acc_mod.Userpermit.objects.get_or_none(
                         pk=permit_pk
                     )
                     if logging_on:
@@ -505,14 +506,17 @@ class UserGroupPermitUploadView(View):
                     elif mode == 'create':
                         if page and action:
                             try:
-                                role_list = (c.ROLE_008_SCHOOL, c.ROLE_016_COMM, c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM)
-                                for role in role_list:
-                                    instance = acc_mod.Permit(
+                                if role is None:
+                                    role_list = (c.ROLE_008_SCHOOL, c.ROLE_016_COMM, c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM)
+                                else:
+                                    role_list = (role,)
+
+                                for value in role_list:
+                                    instance = acc_mod.Userpermit(
                                         country=request.user.country,
-                                        role=role,
+                                        role=value,
                                         page=page,
-                                        action=action,
-                                        sequence=sequence
+                                        action=action
                                     )
                                     instance.save()
                             except Exception as e:
@@ -550,7 +554,7 @@ def update_grouppermit(instance, upload_dict, msg_dict, request):
 
     save_changes = False
     for field, new_value in upload_dict.items():
-        if field in ['role', 'page', 'action', 'sequence']:
+        if field in ['role', 'page', 'action']:
             saved_value = getattr(instance, field)
             logger.debug('field:       ' + str(field))
             logger.debug('saved_value: ' + str(saved_value) + str(type(saved_value)))
@@ -591,8 +595,7 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
             upload_json = request.POST.get('upload')
             if upload_json:
                 upload_dict = json.loads(upload_json)
-                #logger.debug('upload_dict: ' + str(upload_dict))
-                req_user.set_usersetting_from_uploaddict(upload_dict)
+                set_usersetting_from_uploaddict(upload_dict, request)
 # - add update_dict to update_wrap
                 update_wrap['setting'] = {'result': 'ok'}
 # F. return update_wrap
@@ -932,15 +935,15 @@ def create_permit_list(permit_pk=None):
     #logger.debug(' =============== create_permit_list ============= ')
 
     sql_keys = {}
-    sql_list = ["SELECT p.id, CONCAT('permit_', p.id::TEXT) AS mapid,",
-                "p.role, p.page, p.action, p.sequence, p.usergroups",
-                "FROM accounts_permit AS p",
+    sql_list = ["SELECT p.id, CONCAT('userpermit_', p.id::TEXT) AS mapid,",
+                "p.action, p.role, p.page, p.usergroups",
+                "FROM accounts_userpermit AS p",
                 ]
     if permit_pk:
         sql_keys['pk'] = permit_pk
         sql_list.append("WHERE p.id = %(pk)s::INT")
     else:
-        sql_list.append("ORDER BY p.sequence")
+        sql_list.append("ORDER BY p.action")
     sql = ' '.join(sql_list)
 
     with connection.cursor() as cursor:
@@ -961,7 +964,7 @@ def get_userpermit_list(page, req_user):
     if req_user.usergroups:
         requsr_usergroups_list = req_user.usergroups.split(';')
     if logging_on:
-        logger.debug(' =============== get_userpermit_list ============= ')
+        logger.debug('=============== get_userpermit_list ============= ')
         logger.debug('page:                   ' + str(page) + ' ' + str(type(page)))
         logger.debug('requsr_usergroups_list: ' + str(requsr_usergroups_list) + ' ' + str(type(requsr_usergroups_list)))
 
@@ -975,7 +978,7 @@ def get_userpermit_list(page, req_user):
             sql_filter = "AND (" + sql_filter[4:] + ")"
 
             sql_keys = {'page': page, 'role': role}
-            sql_list = ["SELECT p.action FROM accounts_permit AS p",
+            sql_list = ["SELECT p.action FROM accounts_userpermit AS p",
                         "WHERE (p.page = %(page)s OR p.page = 'page_all') AND p.role = %(role)s::INT",
                         sql_filter
                         ]
@@ -984,8 +987,10 @@ def get_userpermit_list(page, req_user):
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)
                 for row in cursor.fetchall():
-                    if row[0] not in permit_list:
-                        permit_list.append(row[0])
+                    if row[0]:
+                        permit = 'permit_' + row[0]
+                        if permit not in permit_list:
+                            permit_list.append(permit)
 
     if logging_on:
         logger.debug('permit_list: ' + str(permit_list) + ' ' + str(type(permit_list)))
@@ -1380,7 +1385,7 @@ def resend_activation_email(user_pk, update_wrap, err_dict, request):
                 mail_count = send_mail(subject, message, from_email, [user.email], fail_silently=False)
                 if not mail_count:
                     err_dict['msg01'] = _('An error occurred.')
-                    err_dict['msg0'] = _('The activation email has not been sent.')
+                    err_dict['msg02'] = _('The activation email has not been sent.')
                 else:
                 # - return message 'We have sent an email to user'
                     msg01 = _("We have sent an email to the email address '%(email)s' of user '%(usr)s'.") % \
@@ -1391,7 +1396,7 @@ def resend_activation_email(user_pk, update_wrap, err_dict, request):
 
             except:
                 err_dict['msg01'] = _('An error occurred.')
-                err_dict['msg0'] = _('The activation email has not been sent.')
+                err_dict['msg02'] = _('The activation email has not been sent.')
 
 # - reset expiration date by setting the field 'date_joined', to now
         if not has_error:
@@ -1453,6 +1458,106 @@ def has_permit(permits_int, permit_index): # PR2020-10-12 separate function made
         permits_tuple = get_permits_tuple(permits_int)
         has_permit = permit_index in permits_tuple
     return has_permit
+
+
+# +++++++++++++++++++  get and set setting +++++++++++++++++++++++
+def get_usersetting_dict(key_str, request):  # PR2019-03-09 PR2021-01-25
+    # function retrieves the string value of the setting row that match the filter and converts it to a dict
+    # logger.debug(' ---  get_usersetting_dict  ------- ')
+    #  json.dumps converts a dict in a json object
+    #  json.loads retrieves a dict (or other type) from a json object
+
+    # logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
+    setting_dict = {}
+    row_setting = None
+    try:
+        if request.user and key_str:
+            row = Usersetting.objects.filter(user=request.user, key=key_str).order_by('-id').first()
+            if row:
+                row_setting = row.setting
+                if row_setting:
+                    setting_dict = json.loads(row_setting)
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+        logger.error('key_str: ', str(key_str))
+        logger.error('row_setting: ', str(row_setting))
+
+    return setting_dict
+
+
+def set_usersetting_dict(key_str, setting_dict, request):  # PR2019-03-09 PR2021-01-25
+    # function saves setting in first row that matches the filter, adds new row when not found
+    # logger.debug('---  set_usersetting_dict  ------- ')
+    # logger.debug('key_str: ' + str(key_str))
+    # logger.debug('setting_dict: ' + str(setting_dict))
+    # logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
+
+    #  json.dumps converts a dict in a json object
+    #  json.loads retrieves a dict (or other type) from a json object
+
+    try:
+        if request.user and key_str:
+            setting_str = json.dumps(setting_dict)
+            row = Usersetting.objects.filter(user=request.user, key=key_str).order_by('-id').first()
+            if row:
+                row.setting = setting_str
+            else:
+                # don't add row when setting has no value
+                # note: empty setting_dict {} = False, empty json "{}" = True, therefore check if setting_dict is empty
+                if setting_dict:
+                    row = Usersetting(user=request.user, key=key_str, setting=setting_str)
+            row.save()
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+        logger.error('key_str: ', str(key_str))
+        logger.error('setting_dict: ', str(setting_dict))
+
+# - end of set_usersetting_dict
+
+def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
+    # logger.debug(' ----- set_usersetting_from_uploaddict ----- ')
+    # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
+    # logger.debug('upload_dict: ' + str(upload_dict))
+    # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
+    # PR2020-10-04 not any more, don't know why
+    # - loop through keys of upload_dict
+    for key, new_setting_dict in upload_dict.items():
+        set_usersetting_from_upload_subdict(key, new_setting_dict, request)
+
+# - end of set_usersetting_from_uploaddict
+
+def set_usersetting_from_upload_subdict(key, new_setting_dict, request):  # PR2021-02-07
+    # logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
+    # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
+    # logger.debug('upload_dict: ' + str(upload_dict))
+    # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
+    # PR2020-10-04 not any more, don't know why
+    # - loop through keys of upload_dict
+
+    # key = 'page_examyear', dict = {'sel_btn': 'examyears'}
+    saved_settings_dict = get_usersetting_dict(key, request)
+    # logger.debug('new_setting_dict: ' + str(new_setting_dict))
+    # logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
+    # - loop through subkeys of new settings
+    for subkey, value in new_setting_dict.items():
+        # new_setting_dict: {'sel_subject_pk': 46}
+        # - if subkey has value in saved_settings_dict: replace saved value with new value
+        if subkey in saved_settings_dict:
+            if value:
+                saved_settings_dict[subkey] = value
+            else:
+                # - if subkey has no value in saved_settings_dict: remove key from dict
+                saved_settings_dict.pop(subkey)
+        else:
+            # - if subkey not found in saved_settings_dict and value is not None: create subkey with value
+            if value:
+                saved_settings_dict[subkey] = value
+    # logger.debug('Usersetting.set_setting from UserSettingsUploadView')
+    # - save key in usersetting and return settings_dict
+    set_usersetting_dict(key, saved_settings_dict, request)
+    return saved_settings_dict
+# - end of set_usersetting_from_upload_subdict
 
 
 

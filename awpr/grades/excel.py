@@ -44,9 +44,10 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24
                 activate(user_lang)
 
     # - get selected examyear, school and department from usersettings
-                examyear, school, department, is_locked, \
-                    examyear_published, school_activated, requsr_same_schoolNIU = \
-                        dl.get_selected_examyear_school_dep_from_usersetting(request)
+                # TODO was: examyear, school, department, is_locked, \
+                    # examyear_published, school_activated, requsr_same_schoolNIU = \
+                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
 
                 if examyear and school and department :
 

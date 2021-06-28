@@ -82,6 +82,8 @@ def get_locale_dict(table_dict, user_lang):
     dict['Level'] = _('Level')
     dict['Levels'] = _('Levels')
     dict['Sector'] = _('Sector')
+
+    dict['Profiel'] = _('Profiel')
     dict['SectorProfiel'] = _('Sector / Profiel')
     dict['SectorenProfielen'] = _('Sectoren / Profielen')
     dict['SectorProfiel_twolines'] = _('Sector /\nProfiel')
@@ -90,6 +92,7 @@ def get_locale_dict(table_dict, user_lang):
     dict['Leerweg_twolines'] = _('Leer-\nweg')
     dict['Sectors'] = _('Sectors')
     dict['Abbreviation'] = _('Abbreviation')
+
     dict['Candidate'] = _('Candidate')
     dict['Candidates'] = _('Candidates')
     dict['a_candidate'] = _('a candidate')
@@ -160,12 +163,14 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['First_select_valid_excelfile'] = _('You must select a valid Excel file before you can proceed.')
 
-        dict['link_The_column'] = _("The column ")
-        dict['link_The_columns'] = _("The columns ")
+        dict['link_The_column'] = _("The AWP-column ")
+        dict['link_The_columns'] = _("The AWP-columns ")
         dict['link_One_ofthe_columns'] = _("One of the columns ")
         dict['_or_'] = TXT__or_
-        dict['link_mustbelinked_single'] =  pgettext_lazy('single', ' must be linked.')
-        dict['link_mustbelinked_plural'] =  pgettext_lazy('plural', ' must be linked.')
+        dict['link_mustbelinked_single_zijn'] =  pgettext_lazy('single zijn', ' must be linked.')
+        dict['link_mustbelinked_plural_zijn'] =  pgettext_lazy('plural zijn', ' must be linked.')
+        dict['link_mustbelinked_single_worden'] =  pgettext_lazy('single worden', ' must be linked.')
+        dict['link_mustbelinked_plural_worden'] =  pgettext_lazy('plural worden', ' must be linked.')
 
         dict['Select_column'] = _("Select a column")
         dict['No_column_found'] = _("No column found")
@@ -224,7 +229,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Upload_permissions'] = _('Upload permissions')
         dict['Download_permissions'] = _('Download permissions')
 
-        dict['No_user_selected']  = _('There is no user selected.')
+        dict['No_user_selected'] = _('Please select a user first.')
         dict['Make_user_inactive'] = _('Make user inactive')
         dict['Make_user_active'] = _('Make user active')
         dict['This_user_is_inactive'] = _('This user is inactive.')
@@ -330,9 +335,43 @@ def get_locale_dict(table_dict, user_lang):
         dict['Add_level'] = _('Add level')
         dict['Add_sector'] = _('Add sector')
         dict['Add_subjecttype'] = _('Add subject type')
-        dict['Add_scheme'] = _('Add scheme')
+        dict['to_subject_scheme'] = _(' to subject scheme')
+
+        dict['Subject_scheme'] = _('Subject scheme')
+        dict['Add_subject_scheme'] = _('Add subject scheme')
+        dict['Change_subjects_of_subject_scheme'] = _('Change subjects of subject_scheme')
+        dict['Copy_subject_scheme'] = _('Copy subject scheme')
+
+        dict['Delete_subject_scheme'] = _('Delete subject scheme')
         dict['Add_package'] = _('Add package')
         dict['Copy_from_previous_year'] = _('Copy from previous years')
+
+        dict['Select_level'] = _("Select level")
+        dict['No_levels_found'] = _("No levels found")
+        dict['Select_sector'] = _("Select sector")
+        dict['No_sectors_found'] = _("No sectors found")
+        dict['No_subjecttypes_found'] = _("No subject types found")
+        dict['Select_subjecttypes'] = _("Select subject types")
+        dict['Base_subjecttype'] = _("Base subject type")
+
+
+        dict['Grade_type'] = _('Grade type')
+
+        dict['SE_weighing'] = _('SE weighing')
+        dict['CE_weighing'] = _('CE weighing')
+        dict['Mandatory'] = _('Mandatory')
+        dict['Combination_subject'] = _('Combination subject')
+        dict['Extra_count_allowed'] = _('Extra subject counts allowed')
+        dict['Extra_nocount_allowed'] = _('Extra subject does not count allowed')
+        dict['Elective_combi_allowed'] = _('Elective combi subject allowed')
+        dict['Has_practical_exam'] = _('Has practical exam')
+        dict['Has_assignment'] = _('Has assignment')
+        dict['Is_core_subject'] = _('Core subject')
+        dict['Is_MVT_subject'] = _('MVT subject')
+        dict['Herkansing_SE_allowed'] = _('Herkansing SE allowed')
+        dict['Maximum_reex'] = _('Maximum number of re-examinations')
+        dict['No_third_period'] = _('Subject has no third period')
+        dict['Exemption_without_CE_allowed'] = _('Exemption without CE allowed')
 
         dict['Delete_subject'] = _('Delete subject')
         dict['Delete_department'] = _('Delete department')
@@ -344,12 +383,20 @@ def get_locale_dict(table_dict, user_lang):
         dict['Upload_subjects'] = _('Upload subjects')
 
         dict['Subjecttype'] = _('Subject type')
-        dict['Scheme'] = _('Scheme')
+        dict['Subjecttype_name'] = _('Subject type name')
+
+        dict['Subject_scheme_name'] = _('Subject scheme name')
+
+
         dict['Schemeitem'] = _('Scheme item')
         dict['Package'] = _('Package')
         dict['Package_item'] = _('Package item')
         dict['ETE_exam'] = _('ETE exam')
         dict['Added_by_school'] = _('Added by school')
+        dict['Minimum_subjects'] = _('Minimum amount of subjects')
+        dict['Maximum_subjects'] = _('Maximum amount of subjects')
+        dict['Minimum_MVT_subjects'] = _('Minimum amount of MVT subjects')
+        dict['Maximum_MVT_subjects'] = _('Maximum amount of MVT subjects')
 
         dict['Sequence'] = TXT_Sequence
         dict['Upload_subjects'] = _('Upload subjects')
@@ -360,8 +407,6 @@ def get_locale_dict(table_dict, user_lang):
         dict['this_subjecttype'] = _('this subject type')
         dict['this_scheme'] = _('this scheme')
         dict['this_package'] = _('this package')
-
-
 
         dict['Departments_with'] = _('Departments with ')
         dict['All_departments'] = _('All departments')
@@ -387,7 +432,14 @@ def get_locale_dict(table_dict, user_lang):
         dict['Select_organization'] = _('Select organization')
         dict['No_organizations_found'] = _('No organizations found')
 
-        dict['Departments_of_this_school'] = _('Departments of this school')
+        dict['Day_Evening_LEXschool'] = _('Day- / Evening- / LEX school')
+        dict['Day_Eveningschool'] = _('Day- Evening school')
+        dict['Day_school'] = _('Day school')
+        dict['Evening_school'] = _('Evening school')
+        dict['Landsexamen'] = _('Landsexamen')
+
+
+        #dict['Departments_of_this_school'] = _('Departments of this school')
         dict['All_departments'] = _('All departments')
         dict['School_code'] = _('School code')
         dict['is_too_long_max_schoolcode'] = _(" is too long. Maximum is %(max)s characters.") % {'max': c.MAX_LENGTH_SCHOOLCODE}
@@ -403,7 +455,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Delete_candidate'] = _('Delete candidate')
         dict['Upload_candidates'] = _('Upload candidates')
 
-        dict['No_candidate_selected'] = _('No candidate selected')
+        dict['Please_select_candidate_first'] = _('Please select a candidate first.')
         dict['This_candidate_has_nosubjects_yet'] = _('This candidate has no subjects yet.')
 
         dict['Examnumber_twolines'] = TXT_Examnumber_twolines
@@ -414,11 +466,9 @@ def get_locale_dict(table_dict, user_lang):
         dict['ID_number'] = _('ID number')
 
         dict['Abbrev'] = _('Abbrev.')
-        dict['_of_'] = TXT__of_
 
-        dict['No_subject_selected'] = _('No subject selected.')
-
-        dict['Profiel'] = _('Profiel')
+        dict['Class'] = _('Class')
+        dict['Bis_candidate'] = _('Bis-candidate')
 
 # ====== PAGE STUDENTSUBJECTS ========================= PR2020-12-21
     if 'page_studsubj' in page_list:
@@ -475,7 +525,6 @@ def get_locale_dict(table_dict, user_lang):
         #dict['All_levels'] = _("All 'leerwegen'")
         #dict['All_sectors'] = _("All sectors")
         #dict['All_profielen'] = _("All 'profielen'")
-        #dict['Profiel'] = _('Profiel')
 
         dict['Select_leerweg'] = TXT_Select_leerweg
         dict['No_leerwegen_found'] = TXT_No_leerwegen_found
@@ -620,7 +669,6 @@ def get_locale_dict(table_dict, user_lang):
         dict['All_levels'] = _("All 'leerwegen'")
         dict['All_sectors'] = _("All sectors")
         dict['All_profielen'] = _("All 'profielen'")
-        dict['Profiel'] = _('Profiel')
         dict['Attachment'] = _('Attachment')
 
         # options_examperiod PR2020-12-20

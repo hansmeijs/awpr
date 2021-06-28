@@ -24,8 +24,7 @@
             </div>
         {% endif %}
         {% if user.is_role_system %}
-            <a href="{% static 'data/AWP_2021_03_20210606.accdb' %}" class="btn btn-secondary py-2 px-4 m-4 ">{% trans 'AWP2021.03' %}</a>
-            <a href="{% static 'data/AWP 2021_04_20210610.accdb' %}" class="btn btn-secondary py-2 px-4 m-4 ">{% trans 'AWP2021.04' %}</a>
+            <a href="{% static 'data/AWP 2021_05_20210628.accdb' %}" class="btn btn-secondary py-2 px-4 m-4 ">{% trans 'AWP2021.05' %}</a>
         {% endif %}
     </nav>
 {% endblock %}
@@ -37,6 +36,7 @@
             {% include 'includes/message_noaccess.html' %}
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
+            {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'schools/modexamyear.html' %}
 
@@ -44,18 +44,22 @@
                 {% include 'includes/messages.html' %}
 
                 <div class="content_header flex_container">
-            <!-- header_text -->
-                    <div class="content_subheader_left mx-4">
-                        <h5 id="id_hdr_text"></h5>
+        <!-- header_text -->
+                    <div class="flex_4 mx-4 visibility_hide">
+                        <h5 id="id_hdr_left"></h5>
                     </div>
-            <!-- loader -->
-                    <div class="content_header_middle ">
-                        <div id="id_loader" class="image_container visibility_hideXX">
-                            <img src="{% static 'img/loader.gif' %}" class="icon_24">
-                        </div>
+        <!-- loader -->
+                    <div class="flex_1 py-2">
+                        {% include 'includes/loader.html' %}
+                    </div>
+        <!-- header_text -->
+                    <div class="flex_2 mx-4 visibility_hide">
+                        <h5 id="id_hdr_textright1"></h5>
+                    </div>
+                    <div class="flex_2 mx-4 visibility_hide">
+                        <h5 id="id_hdr_textright2"></h5>
                     </div>
                 </div>
-
             </div>
             <!-- end content_header -->
     <!-- BUTTON GROUP -->

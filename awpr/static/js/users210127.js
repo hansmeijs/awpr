@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let loc = {};  // locale_dict
     let mod_dict = {};
     let mod_MUA_dict = {};
-    let mod_MGP_dict = {};
+    let mod_MUPM_dict = {};
     let time_stamp = null; // used in mod add user
 
     let user_list = [];
@@ -81,18 +81,18 @@ document.addEventListener('DOMContentLoaded', function() {
                      "c", "c", "c",
                      "c", "c"]},
         grouppermits: {
-                    field_caption: ["", "Organization", "Page", "Action", "Sequence_2lines", "Read_only_2lines", "Edit",
+                    field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
                                     "President", "Secretary", "Commissioner_2lines",
                                     "Analyze", "System_manager_2lines"],
-                    field_names: ["select", "role", "page", "action", "sequence",
+                    field_names: ["select", "role", "page", "action",
                                     "group_read", "group_edit", "group_auth1", "group_auth2", "group_auth3", "group_anlz", "group_admin"],
-                    field_tags: ["div", "div", "div", "input", "input", "div", "div",
+                    field_tags: ["div", "div", "div", "input", "div", "div",
                                     "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text", "number", "toggle", "toggle",
+                    filter_tags: ["select", "text", "text", "text", "toggle", "toggle",
                                     "toggle", "toggle", "toggle", "toggle", "toggle"],
-                    field_width:  ["020", "090", "120","150", "075", "075", "075",
+                    field_width:  ["020", "090", "120","150", "075", "075",
                                     "090", "090", "090", "090", "090"],
-                    field_align: ["c", "l", "l", "l", "c", "c", "c", "c", "c", "c", "c", "c"]}
+                    field_align: ["c", "l", "l", "l", "c", "c", "c", "c", "c", "c", "c"]}
         };
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -188,13 +188,13 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
 // ---  MODAL GROUP PERMISSION
-        const el_MGP_btn_delete = document.getElementById("id_MGP_btn_delete");
-        const el_MGP_btn_submit = document.getElementById("id_MGP_btn_submit");
-        if (el_MGP_btn_delete){
-            el_MGP_btn_delete.addEventListener("click", function() {MGP_Save("delete")}, false);
+        const el_MUPM_btn_delete = document.getElementById("id_MUPM_btn_delete");
+        const el_MUPM_btn_submit = document.getElementById("id_MUPM_btn_submit");
+        if (el_MUPM_btn_delete){
+            el_MUPM_btn_delete.addEventListener("click", function() {MUPM_Save("delete")}, false);
         }
-        if (el_MGP_btn_submit){
-            el_MGP_btn_submit.addEventListener("click", function() {MGP_Save("save")}, false);
+        if (el_MUPM_btn_submit){
+            el_MUPM_btn_submit.addEventListener("click", function() {MUPM_Save("save")}, false);
         };
 
 // ---  MODAL UPLOAD PERMITS
@@ -322,19 +322,19 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
 
-        // hardcode access of system admin, to get access before action 'crud_user' is added to permits
-        const permit_system_admin = (permit_dict.requsr_role_system && permit_dict.usergroup_list.includes("admin"));
-        if (permit_dict.crud_user || permit_system_admin){
+        // hardcode access of system admin, to get access before action 'crud' is added to permits
+        //const permit_system_admin = (permit_dict.requsr_role_system && permit_dict.usergroup_list.includes("admin"));
+        //if (permit_dict.permit_crud || permit_system_admin){
             AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")});
             AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("delete")});
-        }
+        //}
         // hardcode access of system admin
-        if (permit_dict.crud_permit || permit_system_admin){
-            AddSubmenuButton(el_submenu, loc.Add_permission, function() {MGP_Open("addnew")});
+        //if (permit_dict.permit_crud || permit_system_admin){
+            AddSubmenuButton(el_submenu, loc.Add_permission, function() {MUPM_Open("addnew")});
             //AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MUP_Open("addnew")});
-            AddSubmenuButton(el_submenu, loc.Download_permissions, null, "id_submenu_download_perm", url_download_permits, false);  // true = download
-            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open("import_permits")}, "id_submenu_import");
-        };
+            AddSubmenuButton(el_submenu, loc.Download_permissions, null, null, "id_submenu_download_perm", url_download_permits, false);  // true = download
+            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open("import_permits")}, null, "id_submenu_import");
+        //};
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
 
@@ -565,7 +565,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             el.classList.add("pointer_show");
                             add_hover(el);
                         } else if (["role", "page"].includes(field_name)){
-                            el.addEventListener("click", function() {MGP_Open("update", el)}, false)
+                            el.addEventListener("click", function() {MUPM_Open("update", el)}, false)
                             el.classList.add("pointer_show");
                             add_hover(el);
                         } else if (["role", "page", "action", "sequence"].includes(field_name)){
@@ -631,7 +631,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const role = map_dict[field_name];
                 inner_text = (loc.role_caption && loc.role_caption[role])  ? loc.role_caption[role] : role;
                 filter_value = inner_text;
-            } else if (["sequence", "action"].includes(field_name)){
+            } else if (field_name === "action"){
                 el_div.value = map_dict[field_name];
                 filter_value = map_dict[field_name];
             } else if (field_name.slice(0, 5) === "group") {
@@ -707,13 +707,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= UploadToggle  ============= PR2020-07-31
     function UploadToggle(el_input) {
+
         console.log( " ==== UploadToggle ====");
         console.log( "el_input", el_input);
         console.log( "permit_dict", permit_dict);
 
         mod_dict = {};
 
-        if(permit_dict.crud_user){
+        //if(permit_dict.permit_crud){
+        if(true){
             const tblRow = get_tablerow_selected(el_input);
             if(tblRow){
                 const tblName = get_attr_from_el(tblRow, "data-table")
@@ -741,7 +743,8 @@ document.addEventListener('DOMContentLoaded', function() {
            // ---  change icon, before uploading
                         el_input.className = (permit_bool) ? "tickmark_1_2" : "tickmark_0_0";
 
-           //console.log( "fldName", fldName);
+           console.log( "tblName", tblName);
+           console.log( "fldName", fldName);
                         const url_str = (tblName === "grouppermits") ? url_group_permit_upload : url_user_upload;
                         const upload_dict = {mode: "update", mapid: map_id};
                         if (tblName === "grouppermits"){
@@ -757,7 +760,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }  // if(fldName === "group_admin" && is_request_user && permit_bool ){
                 }  //  if(!isEmpty(map_dict)){
             }  //   if(!!tblRow)
-        }  // if(permit_dict.requsr_group_system)
+        }  // if(permit_dict.usergroup_system)
     }  // UploadToggle
 
 //========= UploadChanges  ============= PR2020-08-03
@@ -807,11 +810,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function MUA_Open(mode, el_input){
         console.log(" -----  MUA_Open   ---- mode: ", mode)  // modes are: addnew, update
         console.log("permit_dict: ", permit_dict)
-        console.log("permit_dict.crud_user_otherschool: ", permit_dict.crud_user_otherschool)
+        console.log("permit_dict.permit_crud_otherschool: ", permit_dict.permit_crud_otherschool)
         // mode = 'addnew' when called by SubmenuButton
         // mode = 'update' when called by tblRow event
 
-        if(permit_dict.crud_user){
+        if(permit_dict.permit_crud){
             let user_dict = {}, user_pk = null;
             let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null;
             const fldName = get_attr_from_el(el_input, "data-field");
@@ -829,7 +832,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     user_schoolbase_code = user_dict.sb_code;
                 }
         // when el_input is not defined: function is mode 'addnew'
-            } else if (!permit_dict.crud_user_otherschool){
+            } else if (!permit_dict.permit_crud_otherschool){
                 // when new user and not role_admin or role_system: : get user_schoolbase_pk from request_user
                 user_schoolbase_pk = permit_dict.requsr_schoolbase_pk;
                 user_schoolbase_code = permit_dict.requsr_schoolbase_code;
@@ -869,7 +872,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---  show only the elements that are used in this tab
             const container_element = document.getElementById("id_mod_user");
-            let tab_str = (is_addnew) ? (permit_dict.crud_user_otherschool) ? "tab_addnew_may_select_school" : "tab_addnew_noschool" : "tab_update";
+            let tab_str = (is_addnew) ? (permit_dict.permit_crud_otherschool) ? "tab_addnew_may_select_school" : "tab_addnew_noschool" : "tab_update";
             show_hide_selected_elements_byClass("tab_show", tab_str, container_element)
 
     // ---  set header text
@@ -878,7 +881,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUA_header.innerText = header_text;
 
     // ---  fill selecttable
-            if(permit_dict.crud_user_otherschool){
+            if(permit_dict.permit_crud_otherschool){
                 MUA_FillSelectTableSchool();
             }
 
@@ -893,8 +896,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_MUA_email.value = mod_MUA_dict.email;
             }
     // ---  set focus to next el
-            const el_focus = (is_addnew && permit_dict.crud_user_otherschool) ? el_MUA_schoolname :
-                             ( (is_addnew && !permit_dict.crud_user_otherschool) || (fldName === "username") ) ? el_MUA_username :
+            const el_focus = (is_addnew && permit_dict.permit_crud_otherschool) ? el_MUA_schoolname :
+                             ( (is_addnew && !permit_dict.permit_crud_otherschool) || (fldName === "username") ) ? el_MUA_username :
                              (fldName === "last_name") ? el_MUA_last_name :
                              (fldName === "email") ? el_MUA_email : null;
             if(el_focus){setTimeout(function (){el_focus.focus()}, 50)};
@@ -918,7 +921,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  show modal
             $("#id_mod_user").modal({backdrop: true});
 
-        }  //  if(permit_dict.crud_user)
+        }  //  if(permit_dict.permit_crud)
     };  // MUA_Open
 
 //========= MUA_Save  ============= PR2020-08-02 PR2020-08-15
@@ -1341,14 +1344,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++ END MOD UPLOAD PERMITS ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 // +++++++++ MOD GROUP PERMIT ++++++++++++++++ PR2021-03-19
-    function MGP_Open(mode, el_input){
-        console.log(" -----  MGP_Open   ---- mode: ", mode)  // modes are: addnew, update
+    function MUPM_Open(mode, el_input){
+        console.log(" -----  MUPM_Open   ---- mode: ", mode)  // modes are: addnew, update
         // mode = 'addnew' when called by SubmenuButton
         // mode = 'update' when called by tblRow event
 
         const is_addnew = (mode === "addnew");
-        mod_MGP_dict = {is_addnew: (is_addnew) ? "create" : "update" };
-        mod_MGP_dict = {mode: mode};
+        mod_MUPM_dict = {is_addnew: (is_addnew) ? "create" : "update" };
+        mod_MUPM_dict = {mode: mode};
 
         let permit_pk = null, permit_role = null, permit_page = null, permit_action = null, permit_sequence = null;
         if(el_input){
@@ -1364,31 +1367,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 permit_sequence = map_dict.sequence;
             }
         }
-        mod_MGP_dict.permit_pk = permit_pk;
-        document.getElementById("id_MGP_role").value = permit_role;
-        document.getElementById("id_MGP_page").value = permit_page;
-        document.getElementById("id_MGP_action").value = permit_action;
-        document.getElementById("id_MGP_sequence").value = permit_sequence;
+        mod_MUPM_dict.permit_pk = permit_pk;
+        //document.getElementById("id_MUPM_role").value = permit_role;
+        //document.getElementById("id_MUPM_page").value = permit_page;
+        document.getElementById("id_MUPM_action").value = permit_action;
 
     // ---  show modal
-        $("#id_mod_group_permit").modal({backdrop: true});
-    };  // MGP_Open
+        $("#id_mod_juserpermit").modal({backdrop: true});
+    };  // MUPM_Open
 
-    function MGP_Save(mode){ //PR2021-03-20
-        console.log("=== MGP_Save === ");
+    function MUPM_Save(mode){ //PR2021-03-20
+        console.log("=== MUPM_Save === ");
         //  mode = 'save', 'delete'
         const upload_mode = (mode === "delete") ? "delete" :
-                            (mod_MGP_dict.mode === "addnew") ? "create" : "update";
+                            (mod_MUPM_dict.mode === "addnew") ? "create" : "update";
 
-        const permit_role = document.getElementById("id_MGP_role").value;
-        const permit_page = document.getElementById("id_MGP_page").value;
-        const permit_action = document.getElementById("id_MGP_action").value;
-        const sequence_value = document.getElementById("id_MGP_sequence").value;
-        const permit_sequence_int = (Number(sequence_value)) ? Number(sequence_value) : 1;
+        const el_MUPM_role = document.getElementById("id_MUPM_role")
+        const permit_role = (el_MUPM_role && el_MUPM_role.value) ? el_MUPM_role.value : null;
+        const permit_page = document.getElementById("id_MUPM_page").value;
+        const permit_action = document.getElementById("id_MUPM_action").value;
+        const sequence_value = true; //document.getElementById("id_MUPM_sequence").value;
+        const permit_sequence_int = 0; //(Number(sequence_value)) ? Number(sequence_value) : 1;
 // ---  create mod_dict
         const url_str = url_group_permit_upload;
         const upload_dict = {mode: upload_mode,
-                            permit_pk: mod_MGP_dict.permit_pk,
+                            permit_pk: mod_MUPM_dict.permit_pk,
                             role: permit_role,
                             page: permit_page,
                             action: permit_action,
@@ -1421,8 +1424,171 @@ document.addEventListener('DOMContentLoaded', function() {
             }  // error: function (xhr, msg) {
         });  // $.ajax({
 
-        $("#id_mod_group_permit").modal("hide");
-    }  // MGP_Save
+        $("#id_mod_juserpermit").modal("hide");
+    }  // MUPM_Save
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+//========= MUPM_FillSelectTableDepartment  ============= PR2020--09-30
+    function MUPM_FillSelectTableDepartment() {
+        console.log("===== MUPM_FillSelectTableDepartment ===== ");
+        //console.log("department_map", department_map);
+
+        const data_map = department_map;
+        const tblBody_select = document.getElementById("id_MUPM_tbody_select");
+        tblBody_select.innerText = null;
+
+// ---  loop through data_map
+        let row_count = 0
+        if(data_map.size > 1) {
+            MUPM_FillSelectRow(tblBody_select, {}, "<" + loc.All_departments + ">");
+        }
+        for (const [map_id, dict] of data_map.entries()) {
+            MUPM_FillSelectRow(tblBody_select, dict);
+        }
+
+    } // MUPM_FillSelectTableDepartment
+
+//========= MUPM_FillSelectRow  ============= PR2020--09-30
+    function MUPM_FillSelectRow(tblBody_select, dict, select_all_text) {
+        console.log("===== MUPM_FillSelectRowDepartment ===== ");
+        // add_select_all when not isEmpty(dict)
+        //console.log("dict", dict);
+        let pk_int = null, map_id = null, abbrev = null
+        if (isEmpty(dict)){
+            pk_int = 0;
+            map_id = "sel_depbase_selectall";
+            abbrev = select_all_text
+        } else {
+            pk_int = dict.base_id;
+            map_id = "sel_depbase_" + dict.base_id;
+            abbrev = (dict.abbrev) ? dict.base_code : "";
+        };
+        // check if this dep is in mod_MUPM_dict.depbases. Set tickmark if yes
+        let selected_int = 0;
+        if(mod_MUPM_dict.depbases){
+            const arr = mod_MUPM_dict.depbases.split(";");
+            arr.forEach((obj, i) => {
+                 if (pk_int === Number(obj)) { selected_int = 1}
+             });
+        }
+        const tickmark_class = (selected_int === 1) ? "tickmark_2_2" : "tickmark_0_0";
+
+        const tblRow = tblBody_select.insertRow(-1);
+        tblRow.id = map_id;
+        tblRow.setAttribute("data-pk", pk_int);
+        tblRow.setAttribute("data-selected", selected_int);
+
+//- add hover to select row
+        add_hover(tblRow)
+
+// --- add first td to tblRow.
+        let td = tblRow.insertCell(-1);
+        let el_div = document.createElement("div");
+            el_div.classList.add("tw_032", tickmark_class)
+              td.appendChild(el_div);
+
+// --- add second td to tblRow.
+        td = tblRow.insertCell(-1);
+        el_div = document.createElement("div");
+            el_div.classList.add("tw_150")
+            el_div.innerText = abbrev;
+            td.appendChild(el_div);
+
+        td.classList.add("tw_200", "px-2", "pointer_show") // , "tsa_bc_transparent")
+
+//--------- add addEventListener
+        tblRow.addEventListener("click", function() {MUPM_SelectDepartment(tblRow)}, false);
+    } // MUPM_FillSelectRow
+
+//========= MUPM_SelectDepartment  ============= PR2020-10-01
+    function MUPM_SelectDepartment(tblRow){
+        console.log( "===== MUPM_SelectDepartment  ========= ");
+        //console.log( "event_key", event_key);
+
+        if(tblRow){
+            let is_selected = (!!get_attr_from_el_int(tblRow, "data-selected"));
+            let pk_int = get_attr_from_el_int(tblRow, "data-pk");
+            const is_select_all = (!pk_int);
+        console.log( "is_selected", is_selected);
+        console.log( "pk_int", pk_int);
+// ---  toggle is_selected
+            is_selected = !is_selected;
+
+            const tblBody_selectTable = tblRow.parentNode;
+            if(is_select_all){
+// ---  if is_select_all: select/ deselect all rows
+                for (let i = 0, row, el, set_tickmark; row = tblBody_selectTable.rows[i]; i++) {
+                    MUPM_set_selected(row, is_selected)
+                }
+            } else {
+// ---  put new value in this tblRow, show/hide tickmark
+                MUPM_set_selected(tblRow, is_selected)
+
+// ---  select row 'select_all' if all other rows are selected, deselect otherwise
+                // set 'select_all' true when all other rows are clicked
+                let has_rows = false, unselected_rows_found = false;
+                for (let i = 0, row; row = tblBody_selectTable.rows[i]; i++) {
+                    let row_pk = get_attr_from_el_int(row, "data-pk");
+                    // skip row 'select_all'
+                    if(row_pk){
+                        has_rows = true;
+                        if(!get_attr_from_el_int(row, "data-selected")){
+                            unselected_rows_found = true;
+                            break;
+                        }
+                    }
+                }
+// ---  set tickmark in row 'select_all'when has_rows and no unselected_rows_found
+                const tblRow_selectall = document.getElementById("sel_depbase_selectall")
+                MUPM_set_selected(tblRow_selectall, (has_rows && !unselected_rows_found))
+            }
+// check for double abbrev in deps
+            const fldName = "abbrev";
+            const msg_err = validate_duplicates_in_department(loc, "school", fldName, loc.Abbreviation, mod_MUPM_dict.mapid, mod_MUPM_dict.abbrev)
+            const el_msg = document.getElementById("id_MUPM_msg_" + fldName);
+            el_msg.innerText = msg_err;
+            add_or_remove_class(el_msg, cls_hide, !msg_err)
+
+            el_MUPM_btn_save.disabled = (!!msg_err);
+        }
+    }  // MUPM_SelectDepartment
+
+//========= MUPM_set_selected  ============= PR2020-10-01
+    function MUPM_set_selected(tblRow, is_selected){
+        //console.log( "  ---  MUPM_set_selected  --- ", is_selected);
+// ---  put new value in tblRow, show/hide tickmark
+        if(tblRow){
+            tblRow.setAttribute("data-selected", ( (is_selected) ? 1 : 0) )
+            const img_class = (is_selected) ? "tickmark_2_2" : "tickmark_0_0"
+            const el = tblRow.cells[0].children[0];
+            //if (el){add_or_remove_class(el, "tickmark_2_2", is_selected , "tickmark_0_0")}
+            if (el){el.className = img_class}
+        }
+    }  // MUPM_set_selected
+
+//========= MUPM_get_selected_depbases  ============= PR2020-10-07
+    function MUPM_get_selected_depbases(){
+        console.log( "  ---  MUPM_get_selected_depbases  --- ")
+        const tblBody_select = document.getElementById("id_MUPM_tbody_select");
+        let dep_list_arr = [];
+        for (let i = 0, row; row = tblBody_select.rows[i]; i++) {
+            let row_pk = get_attr_from_el_int(row, "data-pk");
+            // skip row 'select_all'
+            if(row_pk){
+                if(!!get_attr_from_el_int(row, "data-selected")){
+                    dep_list_arr.push(row_pk);
+                }
+            }
+        }
+        dep_list_arr.sort((a, b) => a - b);
+        const dep_list_str = dep_list_arr.join(";");
+        console.log( "dep_list_str", dep_list_str)
+        return dep_list_str;
+    }  // MUPM_get_selected_depbases
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 
 //========= HandleInputChange  ===============PR2021-03-20
     function HandleInputChange(el_input){
@@ -1568,9 +1734,8 @@ document.addEventListener('DOMContentLoaded', function() {
             el_confirm_btn_cancel.innerText = (has_selected_item && !is_mode_permission_admin) ? caption_cancel : loc.Close;
 
     // set focus to cancel button
-            setTimeout(function (){
-                el_confirm_btn_cancel.focus();
-            }, 500);
+            set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
+
 // show modal
             $("#id_mod_confirm").modal({backdrop: true});
         }
@@ -1974,7 +2139,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     el = cell.children[0];
                     if(el){
                         const filter_tag = get_attr_from_el(el, "data-filtertag")
-                        if(el.tag === "INPUT"){
+                        if(el.tagName === "INPUT"){
                             el.value = null
                         } else {
                             const el_icon = el.children[0];

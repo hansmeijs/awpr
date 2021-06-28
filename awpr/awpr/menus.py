@@ -27,62 +27,30 @@ pos_y = 18
 #class_sel = 'fill:#2d4e77;stroke:#2d4e77;stroke-width:1'
 #class_unsel = 'fill:#bacee6;stroke:#bacee6;stroke-width:1'
 
-menus_dict = {
-'page_examyear': {'index': 0, 'href_string': 'examyears_url',
-               'caption': str(_('Exam year')), 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
-               'indent_left': indent_none, 'indent_right': indent_10,
-               'submenu': ('cntrlst', 'exyrlst', 'schllst', 'deplst','levllst', 'sectlst')
-                },
-'page_school': {'index': 1, 'href_string': 'schools_url',
-               'caption': str(_('School')), 'width': 90, 'height': height, 'pos_x': 45, 'pos_y': pos_y,
-               'indent_left': indent_10, 'indent_right': indent_10,
-               'submenu': ('cntrlst', 'exyrlst', 'schllst', 'deplst','levllst', 'sectlst')
-               },
-'page_student': {'index': 2, 'href_string': 'students_url',
-               'caption': str(_('Students')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
-                 'indent_left': indent_10, 'indent_right': indent_10,
-                 },
-'page_subject': {'index': 3, 'href_string': 'subjects_url',
-               'caption': str(_('Subjects')), 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
-                 'indent_left': indent_10, 'indent_right': indent_10,
-                 'submenu': ('subjlst', 'subjtyplst', 'schemlst', 'schemitemlst')
-                 },
-'page_exams': {'index': 4, 'href_string': 'exams_url',
-               'caption': str(_('Exam questions')), 'width': 130, 'height': height, 'pos_x': 65, 'pos_y': pos_y,
-                 'indent_left': indent_10, 'indent_right': indent_10
-                 },
-'page_grade': {'index': 5, 'href_string': 'grades_url',
-               'caption': str(_('Grades')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
-                 'indent_left': indent_10, 'indent_right': indent_10
-                 },
-'page_result': {'index': 6, 'href_string': 'subjects_url',
-               'caption': str(_('Results')), 'width': 120, 'height': height, 'pos_x': 60, 'pos_y': pos_y,
-                'indent_left': indent_10, 'indent_right': indent_10
-                },
-'page_report': {'index': 7, 'href_string': 'subjects_url',
-               'caption': str(_('Reports')), 'width': 120, 'height': height,  'pos_x': 60,  'pos_y': pos_y,
-               'indent_left': indent_10, 'indent_right': indent_10
-                },
-'page_analysis': {'index': 8, 'href_string': 'subjects_url',
-               'caption':  str(_('Analysis')), 'width': 90, 'height': height,  'pos_x': 45,  'pos_y': pos_y,
-               'indent_left': indent_10, 'indent_right': indent_none
-                }
-}
-
 # viewpermits: 'none', 'read', 'write', 'auth', 'admin', 'all'
 
 
-def get_headerbar_param(request, page, param=None):  # PR2021-03-25
+def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
     # PR2018-05-28 set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug('===== get_headerbar_param ===== ' + str(page))
+        logger.debug('===== get_headerbar_param ===== ' + str(sel_page))
+
+# - save this page in Usersetting, so at next login this page will open. Used in LoggedIn
+    # PR2021-06-24 debug. Firefox gives sudenly error: 'AnonymousUser' object has no attribute 'set_usersetting_dict'
+    # solved by adding 'try' statement
+    if request and request.user:
+        try:
+            acc_view.set_usersetting_dict('sel_page', {'page': sel_page}, request)
+        except Exception as e:
+            logger.error('e: ' + str(e))
 
     param = param if param else {}
     headerbar_param = {}
     _class_bg_color = 'awp_bg_blue'
+
     req_user = request.user
     if req_user.is_authenticated and req_user.country and req_user.schoolbase:
         awp_messages = []
@@ -94,32 +62,22 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
 # - set background color in headerbar to purple when role is not a school
         if req_user.role in (c.ROLE_016_COMM, c.ROLE_032_INSP):
             _class_bg_color = 'awp_bg_green'
-        elif req_user.role in (c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM):
+        elif req_user.role == c.ROLE_064_ADMIN:
             _class_bg_color = 'awp_bg_purple'
+        elif req_user.role == c.ROLE_128_SYSTEM:
+            _class_bg_color = 'awp_bg_yellow'
         else:
             _class_bg_color = 'awp_bg_blue'
 
-# - set flag in headerbar to proper language
-        _class_flag, _class_flag0_hidden, _class_flag1_hidden, _class_flag2_hidden = '', '', '', ''
-        if requsr_lang == 'nl':
-            _class_flag = 'flag_1_0'
-            _class_flag0_hidden = 'display_hide'
-        elif requsr_lang == 'en':
-            _class_flag = 'flag_1_1'
-            _class_flag1_hidden = 'display_hide'
-        elif requsr_lang == 'pm':
-            _class_flag = 'flag_1_2'
-            _class_flag2_hidden = 'display_hide'
-
-        permit_list, usergroup_list = acc_view.get_userpermit_list(page, req_user)
+        permit_list, usergroup_list = acc_view.get_userpermit_list(sel_page, req_user)
 
         if logging_on:
-            logger.debug('page:           ' + str(page))
+            logger.debug('sel_page:           ' + str(sel_page))
             logger.debug('req_user.role:  ' + str(req_user.role))
             logger.debug('permit_list:    ' + str(permit_list))
             logger.debug('usergroup_list: ' + str(usergroup_list))
 
-# +++ display examyear -------- PR2020-11-17 PR2020-12-24
+# +++ display examyear -------- PR2020-11-17 PR2020-12-24 PR2021-06-14
     # - get selected examyear from Usersetting
         no_examyears, examyear_not_published = False, False
 
@@ -127,14 +85,24 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
         sel_examyear_code = None
         sel_examyear, sel_examyear_save, may_select_examyear = af.get_sel_examyear_instance(request)
         if sel_examyear is None:
-            # there is always an examyear selected, unless country has no examyears
+            # PR2021-06-14 debug: not true. New user has no selected examyear yet
+            # was: there is always an examyear selected, unless country has no examyears
+
+    # - if there is no saved examyear: get latest examyear_pk of table, save it in usersettings
+            sel_examyear = sch_mod.Examyear.objects.filter(
+                country=req_user.country
+            ).order_by('-code').first()
+            if sel_examyear:
+                selected_pk_dict = {c.KEY_SEL_EXAMYEAR_PK: sel_examyear.pk}
+                acc_view.set_usersetting_dict(c.KEY_SELECTED_PK, selected_pk_dict, request)
+
+        if sel_examyear is None:
             sel_examyear_str = ' <' + str(_('No exam years')) + '>'
             no_examyears = True
         else:
             # examyear.code is PositiveSmallIntegerField
             sel_examyear_code = sel_examyear.code
             sel_examyear_str = str(_('Exam year')) + ' ' + str(sel_examyear_code)
-            sel_country_abbrev = sel_examyear.country.abbrev
             sel_country_name = sel_examyear.country.name
 # +++ do not display pages when country is locked,
             country_locked = sel_examyear.country.locked
@@ -184,12 +152,11 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
             logger.debug('sel_school_activated: ' + str(sel_school_activated))
 
 # +++ display department -------- PR2029-10-27 PR2020-11-17
-        department_name = ''
 
 # PR2018-08-24 select department PR2020-10-13 PR2021-04-25
+        department_name = ''
         display_department = param.get('display_department', True)
-       #  if display_department:
-        if True:
+        if display_department:
             sel_depbase, sel_depbase_save, allowed_depbases = af.get_sel_depbase_instance(sel_school, request)
 
             sel_department = sch_mod.Department.objects.get_or_none(base=sel_depbase, examyear=sel_examyear)
@@ -201,24 +168,22 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
         if logging_on:
             logger.debug('department_name: ' + str(department_name))
             logger.debug('display_department: ' + str(display_department))
+
 # ------- set menu_items -------- PR2018-12-21
         # get selected menu_key and selected_button_key from request.GET, settings or default, check viewpermit
-        #XXX return_dict = lookup_button_key_with_viewpermit(request)
-        #XXX setting = return_dict['setting']
-        #XXX selected_menu_key = return_dict['menu_key']
-        selected_menu_key = page if page else 'page_examyear'  # default is 'page_examyear'
-        menu_items = set_menu_items(selected_menu_key, _class_bg_color, request)
+        menu_items = set_menu_items(sel_page, _class_bg_color, request)
 
 # ------- set no_access -------- PR2021-04-27
-        no_access = ('view_page' not in permit_list)
+        no_access = ('permit_view' not in permit_list)
 
 # ------- set message -------- PR2021-03-25
-        no_access_message = None
         if no_examyears:
             no_access_message = _("There are no exam years yet.")
+            awp_messages.append(no_access_message)
         elif country_locked:
             no_access_message = _("%(country)s has no license to use AWP-online.") % \
                                                  {'country': sel_country_name}
+            awp_messages.append(no_access_message)
         elif examyear_not_published:
             # get latest name of ETE / Div of Exam from schools, if not found: default = MinOnd
             school_admin = sch_mod.School.objects.filter(
@@ -235,11 +200,13 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
                 admin_name = _('The Ministry of Education')
             no_access_message = _("%(admin)s has not yet published examyear %(exyr)s. You cannot enter data yet.") % \
                                                  {'admin': admin_name, 'exyr': str(sel_examyear_code)}
+            awp_messages.append(no_access_message)
 
         elif not sel_school_activated:
             # block certain pages when not sel_school_activated
-            if page in ('page_student', 'page_studsubj', 'page_grade'):
+            if sel_page in ('page_student', 'page_studsubj', 'page_grade'):
                 no_access_message = _("You must first activate the examyear before you can enter data. Go to the page 'School' and activate the examyear.")
+                awp_messages.append(no_access_message)
 
         headerbar_param = {
             'no_access': no_access,
@@ -248,10 +215,6 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
             'examyear_code': sel_examyear_str,
             'display_school': display_school, 'school': school_name,
             'display_department': display_department, 'department': department_name,
-            'class_flag': _class_flag,
-            'class_flag0_hidden': _class_flag0_hidden,
-            'class_flag1_hidden': _class_flag1_hidden,
-            'class_flag2_hidden': _class_flag2_hidden,
             'menu_items': menu_items,
             'awp_messages': awp_messages,
             'permit_list': permit_list
@@ -259,10 +222,11 @@ def get_headerbar_param(request, page, param=None):  # PR2021-03-25
         if param:
             headerbar_param.update(param)
     headerbar_param['class_bg_color'] = _class_bg_color
-    if logging_on:
-        logger.debug('headerbar_param: ' + str(headerbar_param))
+    #if logging_on:
+        #logger.debug('headerbar_param: ' + str(headerbar_param))
 
     return headerbar_param
+
 
 def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-12-23
     #logger.debug('------------ get_saved_page_url ----------------')
@@ -273,9 +237,9 @@ def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-
     #logger.debug('lookup_page: ' + str(lookup_page))
 
     page_href = None
-    menu = menus_dict.get(lookup_page)
+    menu = c.MENUS_DICT.get(lookup_page)
     if menu:
-        page_href = menu.get('href_string')
+        page_href = menu.get('href')
     if page_href is None:
         page_href = 'home_url'
 
@@ -284,55 +248,61 @@ def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-def set_menu_items(selected_menu_key, _class_bg_color, request):
+def set_menu_items(sel_page, _class_bg_color, request):
     # function is called by get_headerbar_param, creates template tags menu_items and submenus
     # setting: {'menu': 'mn_schl', 'mn_schl': 'schllst'}
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('===== set_menu_items ===== ')
+        logger.debug('sel_page: ' + str(sel_page))
 
-    #logger.debug('===== set_menu_items ===== ')
-    #logger.debug('selected_menu_key: ' + str(selected_menu_key))
+# -  get user_lang
+    requsr_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+    activate(requsr_lang)
+    if logging_on:
+        logger.debug('requsr_lang: ' + str(requsr_lang))
+        logger.debug('Subject: ' + str(_('Subject')))
 
     menu_item_tags = []
 
+    # list of menuitems to be shown in page
+    menu_items = []
+    if request.user.role == c.ROLE_128_SYSTEM:
+        menu_items = ['page_examyear', 'page_school', 'page_student', 'page_exams', 'page_grade', 'page_result', 'page_report', 'page_analysis']
+    elif request.user.role == c.ROLE_064_ADMIN:
+        menu_items = ['page_examyear', 'page_subject', 'page_school', 'page_student', 'page_exams', 'page_grade', 'page_result', 'page_report', 'page_analysis']
+    elif request.user.role == c.ROLE_032_INSP:
+        menu_items = ['page_examyear', 'page_school', 'page_student', 'page_exams', 'page_grade', 'page_result', 'page_report', 'page_analysis']
+    elif request.user.role == c.ROLE_016_COMM:
+        menu_items = ['page_examyear', 'page_school', 'page_student', 'page_grade', 'page_result']
+    elif request.user.role == c.ROLE_008_SCHOOL:
+        menu_items = ['page_examyear', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_report']
+
+
     # loop through all menus in menus, to retrieve href from all menu-buttons
     # from https://treyhunner.com/2016/04/how-to-loop-with-indexes-in-python/
-    for key, menu in menus_dict.items():
-        #logger.debug('-----------------------------')
-        #logger.debug('key: ' + str(key) + ' menu: ' + str(menu))
-        # menu = {'subjects': {'index': 3, 'href_string': ('studentsubjects_url','subjects_url'),
-        #                'caption': str(_('Subjects')), 'width': 100, 'height': height, 'pos_x': 50, 'pos_y': pos_y,
-        #                  'indent_left': indent_10, 'indent_right': indent_10,
-        #                  'class_sel': 'menu_polygon_selected', 'class_unsel': 'menu_polygon_unselected', 'fill_sel': fill_sel, 'fill_unsel': fill_unsel,
-        #                  'submenu': ('subjlst', 'subjtyplst', 'schemlst', 'schemitemlst')
-        #                  },
+    for menu_index, key_str in enumerate(menu_items):
+        menu_item = c.MENUS_DICT[key_str]
 
         # lookup the href that belongs to this index in submenus_tuple
         # function gets first href in href_string, when insp or admin it gets the second item
-        menu_href = menu.get('href_string')
+        menu_href = menu_item.get('href')
 
     # ------------ get menu ------------
-        menu_index = menu.get('index', 0)
-        index_str = '0' + str(menu_index)
-        svg_id = 'id_svg' + index_str[-2]
-        polygon_id = 'id_plg' + index_str[-2]
-
-        caption = menu.get('caption', '-')
-
-    # add menu_key to GET parameters of menu link
-        # e.g.: h_ref_reverse: /subject/?menu=mn_rep&sub=subjlst
-
-        # Menu-items don't have their own link but use the link of selected submenu instead.
-        # GET parameters are needed to mark the buttons in the menu and submenu as 'selected'
+        caption = menu_item.get('caption', '-')
 
         h_ref_reverse = ''
         if menu_href:
            h_ref_reverse = reverse_lazy(menu_href)
 
         # highlight selected menu
-        if key == selected_menu_key:
+        if key_str == sel_page:
             if _class_bg_color == 'awp_bg_purple':
                 polygon_class = 'menu_polygon_selected_purple'
             elif _class_bg_color == 'awp_bg_green':
                 polygon_class = 'menu_polygon_selected_green'
+            elif _class_bg_color == 'awp_bg_yellow':
+                polygon_class = 'menu_polygon_selected_yellow'
             else:
                 polygon_class = 'menu_polygon_selected_blue'
             text_fill = '#EDF2F8'
@@ -343,57 +313,18 @@ def set_menu_items(selected_menu_key, _class_bg_color, request):
         #logger.debug('caption: ' + str(caption))
 
         # add menu settings to parameter 'menu_item'
-        indent_left = menu.get('indent_left', 0)
-        indent_right = menu.get('indent_right', 0)
-        height = menu.get('height', 0)
-        width = menu.get('width', 0)
+        width = menu_item.get('width', 0)
+        indent_left = indent_none if menu_index == 0 else indent_10
+        indent_right = indent_none if menu_index == len(menu_items) - 1 else indent_10
         points = get_svg_arrow(width, height, indent_left, indent_right)
-        pos_y = menu.get('pos_y', 0)
-        pos_x = menu.get('pos_x', 0)
-        menu_item_tag= {'svg_id': svg_id, 'caption': caption, 'href': h_ref_reverse, 'polygon_id': polygon_id,
+        pos_x = width / 2
+        menu_item_tag= {'caption': caption, 'href': h_ref_reverse,
                    'width': str(width), 'height':  str(height), 'points': points,
                     'class': polygon_class,
                     'x': str(pos_x), 'y': pos_y, 'fill': text_fill}
         menu_item_tags.append(menu_item_tag)
 
     return menu_item_tags
-
-def get_href_from_href_string(menu, request): # PR2020-12-23 PR2021-03-18
-    #logger.debug('------------ get_href_from_href_string ----------------')
-    # function gets first href in menu_href_string, when role is insp or admin: it gets the second item
-    menu_href = None
-    menu_href_string = menu.get('href_string', ('',))
-    if menu_href_string:
-        # PR2021-03-18 debug: page that must be shown depends on selected_school, not on requsr_role
-        # only role_admin, role_insp, role_insp, role_system can view pages that are meant for them
-        href_index = 0
-        if request.user.is_role_admin or request.user.is_role_insp  or request.user.is_role_system:
-            # - selected_dict contains saved selected_pk's from Usersetting, key: selected_pk
-            # changes are stored in this dict, saved at the end when
-            selected_dict = request.user.get_usersetting_dict(c.KEY_SELECTED_PK)
-            if selected_dict:
-                sel_schoolbase_pk = selected_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
-                if sel_schoolbase_pk:
-                    sb = sch_mod.Schoolbase.objects.get_or_none(pk=sel_schoolbase_pk)
-
-                    #logger.debug('sb.defaultrole: ' + str(sb.defaultrole) + ' ' + str(type(sb.defaultrole)))
-                    if sb and sb.defaultrole in (c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM):
-                        href_index = 1
-
-        # reset href_index when menu_href_string has no or empty index '1'
-        # don't. Make separate btn and hide it
-        #logger.debug('href_index: ' + str(href_index) + ' ' + str(type(href_index)))
-        if href_index == 1 and (len(menu_href_string) < 2 or not menu_href_string[href_index]):
-            href_index = 0
-        href_index = 0
-        menu_href = menu_href_string[href_index]
-        #logger.debug('href_index: ' + str(href_index) + ' ' + str(type(href_index)))
-        #logger.debug('menu_href: ' + str(menu_href) + ' ' + str(type(menu_href)))
-
-    if menu_href is None:
-        menu_href = 'home_url'
-    return menu_href
-
 
 def menubutton_has_view_permit(request, menubutton):
     # PR2018-12-23 submenus are only visible when user_role and user_permit have view_permit
@@ -403,7 +334,6 @@ def menubutton_has_view_permit(request, menubutton):
 
     has_permit = has_view_permit(request, viewpermit)
     return has_permit
-
 
 def has_view_permit(request, viewpermits):
     # Function checks if user role and permits are in the list of VIEW_PERMITS  # PR2018-12-23
@@ -475,8 +405,8 @@ def get_value_from_dict(key_str, dict):
 
 def get_menu_from_menus(menu_index):
     menu = {}
-    if menu_index in menus_dict:
-        menu = menus_dict.get(menu_index, {})
+    if menu_index in c.MENUS_DICT:
+        menu = c.MENUS_DICT.get(menu_index, {})
     return menu
 
 

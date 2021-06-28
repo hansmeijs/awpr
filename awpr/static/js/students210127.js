@@ -2,17 +2,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
-    // <PERMIT> PR220-10-02
-    //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
-    //  roles are:   'role_student', 'role_teacher', 'role_school', 'role_insp', 'role_admin', 'role_system'
-    //  permits are: 'perm_read', 'perm_edit', 'perm_auth1', 'perm_auth2', 'perm_docs', 'perm_admin', 'perm_system'
-
 // ---  check if user has permit to view this page. If not: el_loader does not exist PR2020-10-02
     let el_loader = document.getElementById("id_loader");
     const has_view_permit = (!!el_loader);
-    // has_permit_edit gets value after downloading settings
-    let has_permit_edit = false;
 
     const cls_hide = "display_hide";
     const cls_hover = "tr_hover";
@@ -20,13 +12,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_selected = "tsa_tr_selected";
 
 // ---  id of selected customer and selected order
-    let selected_btn = "btn_user_list";
+    let selected_btn = "btn_student";
     let setting_dict = {};
     let permit_dict = {};
     let loc = {};  // locale_dict
-    let selected_period = {};
 
     let selected_student_pk = null;
+    let selected_student_dict = null;
 
     let mod_dict = {};
     let mod_MSTUD_dict = {};
@@ -37,9 +29,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let mod_studsubj_map = new Map();  // stores studsubj of selected candidate in MSTUDSUBJ
     let mod_schemeitem_map = new Map();
 
-    let time_stamp = null; // used in mod add user
-
-    let user_list = [];
     let examyear_map = new Map();
     let school_map = new Map();
     // PR2020-12-26 These variable defintions are moved to import.js, so they can also be used in that file
@@ -47,13 +36,13 @@ document.addEventListener('DOMContentLoaded', function() {
     //let level_map = new Map();
     //let sector_map = new Map();
     let student_map = new Map();
+    let student_rows = [];
     let subject_map = new Map();
     let studentsubject_map = new Map()
     let scheme_map = new Map()
     let schemeitem_map = new Map()
 
     let filter_dict = {};
-    let filter_mod_employee = false;
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
@@ -63,13 +52,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const url_studsubj_upload = get_attr_from_el(el_data, "data-studsubj_upload_url");
     // importdata_upload_url is stored in id_MIMP_data of modimport.html
 
+
+    let columns_hidden = {lvl_abbrev: true};
+
 // --- get field_settings
     const field_settings = {
-        student: {  field_caption: ["", "Examnumber_twolines", "Last_name", "First_name", "Gender", "ID_number", "Department", "Leerweg", "SectorProfiel_twolines"],
-                    field_names: ["select", "examnumber", "lastname", "firstname", "gender", "idnumber", "db_code", "lvl_abbrev", "sct_abbrev"],
-                    filter_tags: ["select", "text", "text",  "text", "text", "text", "text", "text", "text"],
-                    field_width:  ["020", "090", "180", "240", "090", "120", "120", "090", "090"],
-                    field_align: ["c", "c", "l", "l", "c", "l", "c","c", "c"]},
+        student: {  field_caption: ["", "Examnumber_twolines", "Last_name", "First_name", "Gender", "ID_number", "Leerweg", "Sector", "Class", "Bis_candidate"],
+                    field_names: ["select", "examnumber", "lastname", "firstname", "gender", "idnumber", "lvl_abbrev", "sct_abbrev", "classname","bis_exam"],
+                    filter_tags: ["select", "text", "text",  "text", "text", "text", "text", "text", "text", "toggle"],
+                    field_width:  ["020", "090", "180", "240", "090", "120",  "090", "090", "090", "090"],
+                    field_align: ["c", "c", "l", "l", "c", "l", "l", "l", "l", "c"]},
         studsubj: { field_caption: ["", "Examnumber_twolines", "Candidate", "Abbreviation", "Subject", "Character"],
                     field_names: ["select", "examnumber", "fullname", "subj_code", "subj_name", "sjt_abbrev"],
                     filter_tags: ["select", "text", "text", "text", "text", "text", "text", "text", "text", "text"],
@@ -124,22 +116,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
 // ---  MODAL SIDEBAR FILTER ------------------------------------
-
         const el_SBR_filter = document.getElementById("id_SBR_filter")
+        if(el_SBR_filter){
             el_SBR_filter.addEventListener("keyup", function() {MSTUD_InputKeyup(el_SBR_filter)}, false );
-
+        }
 // ---  MODAL STUDENT
         const el_MSTUD_div_form_controls = document.getElementById("id_MSTUD_div_form_controls")
-        let form_elements = el_MSTUD_div_form_controls.querySelectorAll(".awp_input_text")
-        for (let i = 0, el, len = form_elements.length; i < len; i++) {
-            el = form_elements[i];
-            if(el){el.addEventListener("keyup", function() {MSTUD_InputKeyup(el)}, false )};
-        }
-        form_elements = el_MSTUD_div_form_controls.querySelectorAll(".awp_input_select")
-        for (let i = 0, el, len = form_elements.length; i < len; i++) {
-            el = form_elements[i];
-            if(el){el.addEventListener("change", function() {MSTUD_InputSelect(el)}, false )};
-        }
+        if(el_MSTUD_div_form_controls){
+            const form_elements = el_MSTUD_div_form_controls.querySelectorAll(".form-control")
+            for (let i = 0, el; el = form_elements[i]; i++) {
+                if(el.tagName === "INPUT"){
+                    el.addEventListener("keyup", function() {MSTUD_InputKeyup(el)}, false )
+                } else if(el.tagName === "SELECT"){
+                    el.addEventListener("change", function() {MSTUD_InputSelect(el)}, false )
+                } else if(el.tagName === "DIV"){
+                    el.addEventListener("click", function() {MSTUD_InputToggle(el)}, false );
+                };
+            };
+        };
         const el_MSTUD_abbrev = document.getElementById("id_MSTUD_abbrev")
         const el_MSTUD_name = document.getElementById("id_MSTUD_name")
 
@@ -152,26 +146,36 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MODAL STUDENT SUBJECTS
         const el_MSTUDSUBJ_hdr = document.getElementById("id_MSTUDSUBJ_hdr")
         const el_MSTUDSUBJ_btn_add_selected = document.getElementById("id_MSTUDSUBJ_btn_add_selected")
+        if(el_MSTUDSUBJ_btn_add_selected){
             el_MSTUDSUBJ_btn_add_selected.addEventListener("click", function() {MSTUDSUBJ_AddRemoveSubject("add")}, false);
-        const el_MSTUDSUBJ_btn_remove_selected = document.getElementById("id_MSTUDSUBJ_btn_remove_selected")
-            el_MSTUDSUBJ_btn_remove_selected.addEventListener("click", function() {MSTUDSUBJ_AddRemoveSubject("remove")}, false);
-        const el_MSTUDSUBJ_btn_add_package = document.getElementById("id_MSTUDSUBJ_btn_add_package")
-            el_MSTUDSUBJ_btn_add_package.addEventListener("click", function() {MSTUDSUBJ_AddPackage()}, false);
-
-        const el_input_controls = document.getElementById("id_MSTUDSUBJ_div_form_controls").querySelectorAll(".awp_input_text, .awp_input_checkbox")
-        for (let i = 0, el; el = el_input_controls[i]; i++) {
-            const key_str = (el.classList.contains("awp_input_checkbox")) ? "change" : "keyup";
-            el.addEventListener(key_str, function() {MSTUDSUBJ_InputboxEdit(el)}, false)
         }
 
+        const el_MSTUDSUBJ_btn_remove_selected = document.getElementById("id_MSTUDSUBJ_btn_remove_selected")
+        if(el_MSTUDSUBJ_btn_remove_selected){
+            el_MSTUDSUBJ_btn_remove_selected.addEventListener("click", function() {MSTUDSUBJ_AddRemoveSubject("remove")}, false);
+        };
+        const el_MSTUDSUBJ_btn_add_package = document.getElementById("id_MSTUDSUBJ_btn_add_package")
+        if(el_MSTUDSUBJ_btn_add_package){
+            el_MSTUDSUBJ_btn_add_package.addEventListener("click", function() {MSTUDSUBJ_AddPackage()}, false);
+        };
+        const el_MSTUDSUBJ_div_form_controls = document.getElementById("id_MSTUDSUBJ_div_form_controls");
+        if(el_MSTUDSUBJ_div_form_controls){
+            const el_input_controls = el_MSTUDSUBJ_div_form_controls.querySelectorAll(".awp_input_text, .awp_input_checkbox")
+            if(el_input_controls){
+                for (let i = 0, el; el = el_input_controls[i]; i++) {
+                    const key_str = (el.classList.contains("awp_input_checkbox")) ? "change" : "keyup";
+                    el.addEventListener(key_str, function() {MSTUDSUBJ_InputboxEdit(el)}, false)
+                }
+            };
+        };
         const el_MSTUDSUBJ_btn_save = document.getElementById("id_MSTUDSUBJ_btn_save")
+        if(el_MSTUDSUBJ_btn_save){
             el_MSTUDSUBJ_btn_save.addEventListener("click", function() {MSTUDSUBJ_Save()}, false);
-
+        };
         const el_tblBody_studsubjects = document.getElementById("id_MSTUDSUBJ_tblBody_studsubjects");
         const el_tblBody_schemeitems = document.getElementById("id_MSTUDSUBJ_tblBody_schemeitems");
 
 // ---  MOD IMPORT ------------------------------------
-// --- create EventListener for select dateformat element
 // --- create EventListener for buttons in btn_container
     const el_MIMP_btn_container = document.getElementById("id_MIMP_btn_container");
     if(el_MIMP_btn_container){
@@ -182,22 +186,37 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     const el_filedialog = document.getElementById("id_MIMP_filedialog");
+    if(el_filedialog){
         el_filedialog.addEventListener("change", function() {MIMP_HandleFiledialog(el_filedialog, loc)}, false )
+    };
     const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
+    if(el_worksheet_list){
         el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false);
+    };
     const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
+    if(el_MIMP_checkboxhasheader){
         el_MIMP_checkboxhasheader.addEventListener("change", MIMP_CheckboxHasheaderChanged) //, false);
+    };
     const el_select_dateformat = document.getElementById("id_MIMP_dateformat");
+    if(el_select_dateformat){
         el_select_dateformat.addEventListener("change", function() {MIMP_Selectdateformat(el_select_dateformat)}, false )
+    };
    const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
+    if(el_MIMP_btn_prev){
         el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false )
+    };
    const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
+    if(el_MIMP_btn_next){
         el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false )
+    };
    const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
+    if(el_MIMP_btn_test){
         el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test")}, false )
+    };
    const el_MIMP_btn_upload = document.getElementById("id_MIMP_btn_upload");
+   if(el_MIMP_btn_upload){
         el_MIMP_btn_upload.addEventListener("click", function() {MIMP_Save("save")}, false )
-
+    };
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_confirm_header");
@@ -212,21 +231,27 @@ document.addEventListener('DOMContentLoaded', function() {
         if(has_view_permit){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
 
 // ---  set selected menu button active
-    SetMenubuttonActive(document.getElementById("id_hdr_users"));
+        const btn_clicked = document.getElementById("id_plg_page_student")
+
+        console.log("btn_clicked: ", btn_clicked)
+        SetMenubuttonActive(document.getElementById("id_plg_page_student"));
+
+
     if(has_view_permit){
         // period also returns emplhour_list
         const datalist_request = {
                 setting: {page: "page_student"},
                 schoolsetting: {setting_key: "import_student"},
-                locale: {page: ["students", "upload"]},
+                locale: {page: ["page_student", "upload"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true},
-                level_rows: {get: true},
-                sector_rows: {get: true},
+                level_rows: {cur_dep_only: true},
+                sector_rows: {cur_dep_only: true},
                 student_rows: {get: true},
+                subject_rows: {get: true},
                 studentsubject_rows: {get: true},
-                scheme_rows: {get: true},
+                scheme_rows: {cur_dep_only: true},
                 schemeitem_rows: {get: true}
             };
 
@@ -276,8 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     permit_dict = response.permit_dict;
                     // get_permits must come before CreateSubmenu and FiLLTbl
                     b_get_permits_from_permitlist(permit_dict);
-                    //get_permits(permit_dict.permit_list);
-                    //usergroups = permit_dict.usergroup_list;
+                    set_columns_hidden();
                     isloaded_permits = true;
                 }
                 if ("schoolsetting_dict" in response) {
@@ -299,13 +323,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
 
                 if ("student_rows" in response) {
-                    const tblName = "student";
-                    const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                    RefreshDataMap(tblName, field_names, response.student_rows, student_map, false)  // false = no update
+                    student_rows = response.student_rows;
                 }
-                //if ("studentsubject_rows" in response)  { b_fill_datamap(studentsubject_map, response.studentsubject_rows) };
-                //if ("scheme_rows" in response)  { b_fill_datamap(scheme_map, response.scheme_rows) };
-                //if ("schemeitem_rows" in response)  { b_fill_datamap(schemeitem_map, response.schemeitem_rows) };
 
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
 
@@ -324,19 +343,19 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("===  CreateSubmenu == ");
         //console.log("loc.Add_subject ", loc.Add_subject);
         //console.log("loc ", loc);
-
+        if(permit_dict.permit_crud){
         let el_submenu = document.getElementById("id_submenu")
             AddSubmenuButton(el_submenu, loc.Add_candidate, function() {MSTUD_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete")});
-            AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open("import_student")}, "id_submenu_import");
-
+            AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open("import_student")}, null, "id_submenu_import");
          el_submenu.classList.remove(cls_hide);
+        };
     };//function CreateSubmenu
 
 //###########################################################################
 //=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ", data_btn);
+        //console.log( "===== HandleBtnSelect ========= ", data_btn);
         selected_btn = data_btn
         if(!selected_btn){selected_btn = "btn_student"}
 
@@ -356,7 +375,6 @@ document.addEventListener('DOMContentLoaded', function() {
         SBR_FillSelectTable();
 
 // ---  fill datatable
-        CreateTblHeader();
         FillTblRows();
 
 // --- update header text
@@ -365,8 +383,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  HandleTableRowClicked  ================ PR2020-08-03
     function HandleTableRowClicked(tr_clicked) {
-        //console.log("=== HandleTableRowClicked");
-        //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
+        console.log("=== HandleTableRowClicked");
+        console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
         selected_student_pk = null;
 
@@ -374,220 +392,224 @@ document.addEventListener('DOMContentLoaded', function() {
         DeselectHighlightedRows(tr_clicked, cls_selected);
         tr_clicked.classList.add(cls_selected)
 
-// ---  update selected_student_pk
-        // only select employee from select table
-        const row_id = tr_clicked.id
-        if(row_id){
-            const map_dict = get_mapdict_from_datamap_by_id(student_map, row_id)
-            selected_student_pk = map_dict.id;
-        }
+// ---  update selected_student_dict
+        selected_student_dict = get_selected_student_dict_from_mapid(tr_clicked.id);
+        console.log( "selected_student_dict: ", selected_student_dict);
+
     }  // HandleTableRowClicked
 
+// TODO repace by b_get_mapdict_from_datarows
+//========= get_selected_student_dict_from_mapid  ================== PR2021-06-16
+    function get_selected_student_dict_from_mapid(map_id){
+        const [middle_index, found_dict, compare] = b_recursive_lookup(student_rows, map_id, setting_dict.user_lang);
+        const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
+        return selected_dict;
+    }
 
 //========= UpdateHeaderText  ================== PR2020-07-31
     function UpdateHeaderText(){
         //console.log(" --- UpdateHeaderText ---" )
-        let header_text = null;
-        if(selected_btn === "btn_user_list"){
-            header_text = loc.User_list;
-        } else {
-            header_text = loc.Permissions;
-        }
+        // TODO
+        //let header_text = null;
+        //if(selected_btn === "btn_user_list"){
+        //   header_text = loc.User_list;
+        //} else {
+        //    header_text = loc.Permissions;
+        //}
         //document.getElementById("id_hdr_text").innerText = header_text;
     }   //  UpdateHeaderText
 
-//=========  CreateTblHeader  === PR2020-07-31
-    function CreateTblHeader() {
-        //console.log("===  CreateTblHeader ===== ");
-        const tblName = get_tblName_from_selectedBtn();
+//========= FillTblRows  ============== PR2021-06-16
+    function FillTblRows() {
+        console.log( "===== FillTblRows  === ");
+        console.log( "student_rows", student_rows);
+
+        const tblName = "student";
+        const field_setting = field_settings[tblName];
+        const data_rows = student_rows;
+
+// --- show columns
+        set_columns_hidden();
 
 // --- reset table
         tblHead_datatable.innerText = null;
-        tblBody_datatable.innerText = null;
+        tblBody_datatable.innerText = null
 
-        const field_setting = field_settings[tblName]
-        //console.log("tblName", tblName);
-        //console.log("field_setting", field_setting);
-        if(field_setting){
-            const column_count = field_setting.field_names.length;
+// --- create table header
+        CreateTblHeader(field_setting);
+
+// --- loop through data_rows
+        if(data_rows && data_rows.length){
+            for (let i = 0, map_dict; map_dict = data_rows[i]; i++) {
+                const map_id = map_dict.mapid;
+                //console.log( "map_dict ", map_dict);
+                let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict)
+            };
+        };
+    }  // FillTblRows
+
+//=========  CreateTblHeader  === PR2020-07-31 PR2021-06-15
+    function CreateTblHeader(field_setting) {
+        console.log("===  CreateTblHeader ===== ");
 
 //--- get info from selected department_map
-            const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", setting_dict.sel_department_pk);
+        let sct_caption = null, has_profiel = false,  lvl_req = false, sct_req = false;
+        const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", setting_dict.sel_department_pk);
+        if(dep_dict){
+            has_profiel = (!!dep_dict.has_profiel);
+            lvl_req = (!!dep_dict.lvl_req);
+            sct_req = (!!dep_dict.sct_req);
+        }
 
-            let sct_caption = null, lvl_req = false, sct_req = false;
-            if(dep_dict){
-                sct_caption = (dep_dict.sct_caption) ? dep_dict.sct_caption : null;
-                lvl_req = (dep_dict.lvl_req) ? dep_dict.lvl_req : false;
-                sct_req = (dep_dict.sct_req) ? dep_dict.sct_req : false;
-            }
+        const column_count = field_setting.field_names.length;
 
-            // TODO hide col level when lvl_req = false, but implement col_hidden
-//--- insert table rows
-            let tblRow_header = tblHead_datatable.insertRow (-1);
-            let tblRow_filter = tblHead_datatable.insertRow (-1);
+// +++  insert header and filter row ++++++++++++++++++++++++++++++++
+        let tblRow_header = tblHead_datatable.insertRow (-1);
+        let tblRow_filter = tblHead_datatable.insertRow (-1);
 
-//--- insert th's to tblHead_datatable
-            for (let j = 0; j < column_count; j++) {
+    // --- loop through columns
+        for (let j = 0; j < column_count; j++) {
+            const field_name = field_setting.field_names[j];
+
+    // - skip columns if columns_hidden[field_name]) = false;
+            if (!columns_hidden[field_name]){
+
+        // --- get field_caption from field_setting, diplay 'Profiel' in column sct_abbrev if has_profiel
                 const key = field_setting.field_caption[j];
-                let caption = (loc[key]) ? loc[key] : key;
+                const field_caption = (field_name === "sct_abbrev" && has_profiel) ? loc.Profiel : (loc[key]) ? loc[key] : key;
 
-                const field_name = field_setting.field_names[j];
                 const filter_tag = field_setting.filter_tags[j];
                 const class_width = "tw_" + field_setting.field_width[j] ;
                 const class_align = "ta_" + field_setting.field_align[j];
 
-// ++++++++++ create header row +++++++++++++++
-// --- add th to tblRow.
+// ++++++++++ insert columns in header row +++++++++++++++
+        // --- add th to tblRow_header
                 let th_header = document.createElement("th");
-// --- add div to th, margin not working with th
+        // --- add div to th, margin not working with th
                     const el_header = document.createElement("div");
-                        if (j === 0 ){
-// --- add checked image to first column
-                           // TODO add multiple selection
-                            //AppendChildIcon(el_header, imgsrc_stat00);
-                        } else {
-// --- add innerText to el_div
-                            if(field_name === "sct_abbrev"){
-                                const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", setting_dict.sel_department_pk);
-        console.log("dep_dict", dep_dict);
-                                if(dep_dict && dep_dict.sct_caption){
-        console.log("dep_dict.sct_caption", dep_dict.sct_caption);
-                                   // const caption_text = (dep_dict.sct_caption.toLowerCase() === "sector") ? mimp_loc.Link_sectors :
-                                    //(dep_dict.sct_caption.toLowerCase() === "profiel") ? mimp_loc.Link_profielen : null;
-                                    //if(caption_text){ document.getElementById("id_MIMP_header_sector").innerText = caption_text};
-                                }
-                            }
+        // --- add innerText to el_div
+                    el_header.innerText = field_caption;
+        // --- add width, text_align, right padding in examnumber
+                    th_header.classList.add(class_width, class_align);
+                    el_header.classList.add(class_width, class_align);
+                    if(field_name === "examnumber"){el_header.classList.add("pr-2")};
 
-                            if(caption) {el_header.innerText = caption};
-
-                            if(field_name === "examnumber"){
-                                el_header.classList.add("pr-2")
-                            }
-                        };
-// --- add width, text_align
-                        el_header.classList.add(class_width, class_align);
                     th_header.appendChild(el_header)
                 tblRow_header.appendChild(th_header);
 
 // ++++++++++ create filter row +++++++++++++++
-                tblRow_filter.setAttribute("data-table", tblName);
-// --- add th to tblRow_filter.
+        // --- add th to tblRow_filter.
                 const th_filter = document.createElement("th");
-// --- create element with tag from field_tags
-                const el_tag = (filter_tag === "text") ? "input" : "div";
-                const el_filter = document.createElement(el_tag);
-// --- add EventListener to el_filter
-                    const event_str = (filter_tag === "text") ? "keyup" : "click";
-                    el_filter.addEventListener(event_str, function(event){HandleFilterField(el_filter, j, event)});
-// --- add data-field Attribute.
-                    el_filter.setAttribute("data-field", field_name);
-                    el_filter.setAttribute("data-filtertag", filter_tag);
-// --- add other attributes
-                    if (filter_tag === "text") {
-                        el_filter.setAttribute("type", "text")
-                        el_filter.classList.add("input_text");
 
-                        el_filter.setAttribute("autocomplete", "off");
-                        el_filter.setAttribute("ondragstart", "return false;");
-                        el_filter.setAttribute("ondrop", "return false;");
-                    } else if (["toggle", "activated", "inactive"].indexOf(filter_tag) > -1) {
-                        // default empty icon necessary to set pointer_show
-                        // default empty icon necessary to set pointer_show
-                        append_background_class(el_filter,"tickmark_0_0");
-                    }
+        // --- create element with tag based on filter_tag
+                const filter_field_tag = (["text", "number"].includes(filter_tag)) ? "input" : "div";
+                const el_filter = document.createElement(filter_field_tag);
 
-// --- add width, text_align
-                    el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
+        // --- add data-field Attribute.
+                el_filter.setAttribute("data-field", field_name);
+                el_filter.setAttribute("data-filtertag", filter_tag);
+
+        // --- add EventListener to el_filter
+                if (filter_tag === "text") {
+                    el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
+                    add_hover(th_filter);
+                } else if (filter_tag === "toggle") {
+                    // add EventListener for icon to th_filter, not el_filter
+                    th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
+                    th_filter.classList.add("pointer_show");
+
+                    el_filter.classList.add("tickmark_0_0");
+                    add_hover(th_filter);
+                }
+
+        // --- add other attributes
+                if (filter_tag === "text") {
+                    el_filter.setAttribute("type", "text")
+                    el_filter.classList.add("input_text");
+
+                    el_filter.setAttribute("autocomplete", "off");
+                    el_filter.setAttribute("ondragstart", "return false;");
+                    el_filter.setAttribute("ondrop", "return false;");
+                }
+        // --- add width, text_align
+                // PR2021-05-30 debug. Google chrome not setting width without th_filter class_width
+                th_filter.classList.add(class_width, class_align);
+                // el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
                 th_filter.appendChild(el_filter)
                 tblRow_filter.appendChild(th_filter);
-            }  // for (let j = 0; j < column_count; j++)
-
-        }  // if(field_settings[tblName]){
+            }  //  if (!columns_hidden[field_name])
+        }  // for (let j = 0; j < column_count; j++)
     };  //  CreateTblHeader
 
-//========= FillTblRows  ====================================
-    function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
-        const tblName = get_tblName_from_selectedBtn()
-        const data_map = get_datamap_from_tblName(tblName);
-        //console.log( "tblName", tblName);
-        //console.log( "data_map", data_map);
-
-// --- reset table
-        tblBody_datatable.innerText = null
-        if(data_map){
-// --- loop through data_map
-          for (const [map_id, map_dict] of data_map.entries()) {
-
-                //console.log( "map_dict ", map_dict);
-          // --- insert row at row_index
-                const schoolcode_lc_trail = ( (map_dict.sb_code) ? map_dict.sb_code.toLowerCase() : "" ) + " ".repeat(8) ;
-                const schoolcode_sliced = schoolcode_lc_trail.slice(0, 8);
-                const order_by = schoolcode_sliced +  ( (map_dict.username) ? map_dict.username.toLowerCase() : "");
-                const row_index = -1; // t_get_rowindex_by_sortby(tblBody_datatable, order_by)
-                let tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, map_dict, row_index)
-          };
-        }  // if(!!data_map)
-
-    }  // FillTblRows
-
-//=========  CreateTblRow  ================ PR2020-06-09
-    function CreateTblRow(tblBody, tblName, map_id, map_dict, row_index) {
+//=========  CreateTblRow  ================ PR2020-06-09 PR2021-06-21
+    function CreateTblRow(tblName, field_setting, map_id, map_dict) {
         //console.log("=========  CreateTblRow =========", tblName);
         //console.log("map_dict", map_dict);
 
-        let tblRow = null;
+        const field_names = field_setting.field_names;
+        const field_align = field_setting.field_align;
+        const field_width = field_setting.field_width;
+        const column_count = field_names.length;
 
-        const field_setting = field_settings[tblName]
-        if(field_setting){
-            const field_names = field_setting.field_names;
-            const field_align = field_setting.field_align;
-            const column_count = field_names.length;
+// ---  lookup index where this row must be inserted
+        const orderby_lastname = (map_dict.lastname) ? map_dict.lastname : "";
+        const orderby_firstname = (map_dict.firstname) ? map_dict.firstname : "";
+
+        const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
+                                     orderby_lastname, orderby_firstname, "", setting_dict.user_lang);
 
 // --- insert tblRow into tblBody at row_index
-            tblRow = tblBody.insertRow(row_index);
-            tblRow.id = map_id
-            const order_by = (map_dict.fullname) ? map_dict.fullname.toLowerCase() : null;
+        let tblRow = tblBody_datatable.insertRow(row_index);
+        tblRow.id = map_id
+
 // --- add data attributes to tblRow
-            tblRow.setAttribute("data-table", tblName);
-            if (tblName === "student"){
-                tblRow.setAttribute("data-pk", map_dict.id);
-                //tblRow.setAttribute("data-ppk", map_dict.company_id);
-            }
-            tblRow.setAttribute("data-sortby", order_by);
+        tblRow.setAttribute("data-pk", map_dict.id);
+
+// ---  add data-sortby attribute to tblRow, for ordering new rows
+        tblRow.setAttribute("data-ob1", orderby_lastname);
+        tblRow.setAttribute("data-ob2", orderby_firstname);
+        // NIU: tblRow.setAttribute("data-ob3", ---);
 
 // --- add EventListener to tblRow
-            tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
+        tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
 
 // +++  insert td's into tblRow
-            for (let j = 0; j < column_count; j++) {
-                const field_name = field_names[j];
-// --- insert td element,
-                let el_td = tblRow.insertCell(-1);
-// --- add data-field attribute
-                el_td.setAttribute("data-field", field_name);
+        for (let j = 0; j < column_count; j++) {
+            const field_name = field_names[j];
 
-                if (field_name === "select") {
-                    // TODO add select multiple users option PR2020-08-18
-                } else if (["examnumber", "lastname", "firstname", "gender", "idnumber", "db_code", "lvl_abbrev", "sct_abbrev",
-                            "fullname", "subj_code", "subj_name", "sjt_abbrev"].indexOf(field_name) > -1){
-                    if(tblName === "student"){
-                        el_td.addEventListener("click", function() {MSTUD_Open(el_td)}, false)
-                    } else if(tblName === "studsubj"){
-                        el_td.addEventListener("click", function() {MSTUDSUBJ_Open(el_td)}, false)
+    // - skip columns if columns_hidden[field_name]) = false;
+            if (!columns_hidden[field_name]){
+                const field_tag = "div";
+                const class_width = "tw_" + field_width[j];
+                const class_align = "ta_" + field_align[j];
 
-                    }
-                    el_td.classList.add("pointer_show");
-                    add_hover(el_td);
+        // --- insert td element,
+                const td = tblRow.insertCell(-1);
 
-                    if(field_name === "examnumber"){el_td.classList.add("pr-4")}
+        // --- create element with tag from field_tags
+                const el = document.createElement(field_tag);
+
+        // --- add data-field attribute
+                el.setAttribute("data-field", field_name);
+
+        // --- add  text_align
+                el.classList.add(class_width, class_align);
+
+                td.appendChild(el);
+
+    // --- add EventListener to td
+                if (["examnumber", "lastname", "firstname", "gender", "idnumber", "db_code", "lvl_abbrev", "sct_abbrev", "classname",
+                            "fullname", "subj_code", "subj_name", "sjt_abbrev", "bis_exam"].includes(field_name)){
+                    td.addEventListener("click", function() {MSTUD_Open(el)}, false)
+                    td.classList.add("pointer_show");
+                    add_hover(td);
                 }
-// --- add  text_align
-               el_td.classList.add("ta_" + field_align[j]);
-// --- put value in field
-               UpdateField(el_td, map_dict)
-            }  // for (let j = 0; j < 8; j++)
-        }  // if(field_settings_table)
+
+    // --- put value in field
+               UpdateField(el, map_dict)
+           }  // if (!columns_hidden[field_name])
+        }  // for (let j = 0; j < 8; j++)
+
         return tblRow
     };  // CreateTblRow
 
@@ -601,24 +623,40 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };  // UpdateTblRow
 
-//=========  UpdateField  ================ PR2020-08-16
+//=========  UpdateField  ================ PR2020-08-16 PR2021-06-16
     function UpdateField(el_div, map_dict) {
         //console.log("=========  UpdateField =========");
         //console.log("map_dict", map_dict);
+
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
             const fld_value = map_dict[field_name];
+
             if(field_name){
+                let filter_value = null;
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
-                } else if (["examnumber", "lastname", "firstname", "gender", "idnumber", "db_code", "lvl_abbrev", "sct_abbrev",
-                            "fullname", "subj_code", "subj_name", "sjt_abbrev"].indexOf(field_name) > -1){
-                    el_div.innerText = (fld_value) ? fld_value : null;
+                } else if (field_name === "bis_exam") {
+                    el_div.className = (map_dict.bis_exam) ? "tickmark_2_2" : "tickmark_0_0";
+                    filter_value = (map_dict.bis_exam) ? "1" : "0";
+                } else if (["examnumber", "lastname", "firstname", "prefix", "gender", "idnumber", "db_code", "lvl_abbrev", "sct_abbrev", "classname",
+                            "fullname", "subj_code", "subj_name", "sjt_abbrev"].includes(field_name)){
+                    // put hard return in el_div, otherwise green border doesnt show in update PR2021-06-16
+                    el_div.innerText = (fld_value) ? fld_value : "\n";
+                    filter_value = (fld_value) ? fld_value.toLowerCase() : null;
                 }
+    // ---  add attribute filter_value
+                add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
             }  // if(field_name)
         }  // if(el_div)
     };  // UpdateField
 
+//========= set_columns_hidden  ====== PR2021-06-15
+    function set_columns_hidden() {
+        //console.log( "===== set_columns_hidden  === ");
+        //console.log("setting_dict.sel_dep_level_req", setting_dict.sel_dep_level_req);
+        columns_hidden.lvl_abbrev = (!setting_dict.sel_dep_level_req);
+    }  // set_columns_hidden
 
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
 
@@ -646,16 +684,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         const el_MSTUD_loader = document.getElementById("id_MSTUD_loader");
                         if(el_MSTUD_loader){ el_MSTUD_loader.classList.add(cls_visible_hide)};
                         const tblName = "student";
-                        const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                        RefreshDataMap(tblName, field_names, response.updated_student_rows, student_map, true)  // true = update
+                        RefreshDataRows(tblName, response.updated_student_rows, student_rows, true)  // true = update
                     };
-                    $("#id_mod_student").modal("hide");
 
-                    if ("updated_studsubj_rows" in response) {
-                        const tblName = "studsubj";
-                        const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                        RefreshDataMap(tblName, field_names, response.updated_studsubj_rows, studentsubject_map, true)  // true = update
+                    if("messages" in response){
+                        f_ShowModMessages(response.messages);
                     }
+
+                    $("#id_mod_student").modal("hide");
 
                 },  // success: function (response) {
                 error: function (xhr, msg) {
@@ -674,26 +710,26 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- also used for level, sector,
     function MSTUD_Open(el_input){
         console.log(" -----  MSTUD_Open   ----")
-        console.log("permit_dict.crud_student", permit_dict.crud_student)
-        if (permit_dict.crud_student){
+        console.log("permit_dict.permit_crud", permit_dict.permit_crud)
 
-            let user_pk = null, user_country_pk = null, user_schoolbase_pk = null, mapid = null;
+        if (permit_dict.permit_crud){
             const fldName = get_attr_from_el(el_input, "data-field");
+        console.log("el_input", el_input)
+        console.log("fldName", fldName)
 
             // el_input is undefined when called by submenu btn 'Add new'
             const is_addnew = (!el_input);
             mod_MSTUD_dict = {}
             let tblName = "student";
             if(is_addnew){
-                mod_MSTUD_dict = {is_addnew: is_addnew, db_code: setting_dict.sel_depbase_code}
+                mod_MSTUD_dict = {is_addnew: is_addnew,
+                    db_code: setting_dict.sel_depbase_code}
             } else {
                 const tblRow = get_tablerow_selected(el_input);
-                const map_dict = get_mapdict_from_datamap_by_id(student_map, tblRow.id);
+                // const map_dict = get_selected_student_dict_from_mapid(tblRow.id);
+                const map_dict = b_get_mapdict_from_datarows(student_rows, map_id, setting_dict.user_lang);
                 mod_MSTUD_dict = deepcopy_dict(map_dict);
             }
-
-    // ---  set header text
-            MSTUD_headertext(is_addnew, tblName, mod_MSTUD_dict.name);
 
     // ---  fill level and sector options, set select team in selectbox
             const selected_pk = null;
@@ -720,8 +756,8 @@ document.addEventListener('DOMContentLoaded', function() {
             add_or_remove_class(el_MSTUD_sector_div, cls_hide, !sct_req)
             add_or_remove_class(el_MSTUD_sector_div, "flex_2", !lvl_req, "flex_1")
 
-    // ---  remove value from el_mod_employee_input
-            MSTUD_SetElements();  // true = also_remove_values
+    // ---  remove value from el_mod_employee_input, set focus to selected field
+            MSTUD_SetElements(fldName);
 
             if (!is_addnew){
                 //el_MSTUD_abbrev.value = (mod_MSTUD_dict.abbrev) ? mod_MSTUD_dict.abbrev : null;
@@ -730,12 +766,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSTUD_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MSTUD_dict.modby_username) ? mod_MSTUD_dict.modby_username : "-";
-
-                document.getElementById("id_MSTUD_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
+                const display_txt = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by;
+                document.getElementById("id_MSTUD_msg_modified").innerText = display_txt;
             }
-
-    // ---  set focus to el_MSTUD_abbrev
-            //setTimeout(function (){el_MSTUD_abbrev.focus()}, 50);
 
     // ---  disable btn submit, hide delete btn when is_addnew
            // add_or_remove_class(el_MSTUD_btn_delete, cls_hide, is_addnew )
@@ -754,39 +787,38 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  MSTUD_save  ----", crud_mode);
         console.log( "mod_MSTUD_dict: ", mod_MSTUD_dict);
 
-        if (permit_dict.crud_student){
-            const is_delete = (crud_mode === "delete")
-            let new_level_pk = null, new_sector_pk = null, level_or_sector_has_changed = false;;
-            let upload_dict = {
-                table: 'student',
-                sel_examyear_pk: setting_dict.sel_examyear_pk,
-                sel_schoolbase_pk: setting_dict.sel_schoolbase_pk,
-                sel_department_pk: setting_dict.sel_department_pk,
-                }
-            if(mod_MSTUD_dict.is_addnew) {
-                upload_dict.create = true;
-            } else {
-                upload_dict.student_pk = mod_MSTUD_dict.id;
-                upload_dict.mapid = mod_MSTUD_dict.mapid;
-                if(is_delete) {upload_dict.delete = true}
-            }
+        if (permit_dict.permit_crud){
+            const is_create = (mod_MSTUD_dict.is_addnew);
+            const is_delete = (crud_mode === "delete");
+            const upload_mode = (is_create) ? "create" : (is_delete) ? "delete" : "update"
+
+            let upload_dict = {table: 'student', mode: upload_mode}
+            if(mod_MSTUD_dict.id){upload_dict.student_pk = mod_MSTUD_dict.id};
+            if(mod_MSTUD_dict.mapid){upload_dict.mapid = mod_MSTUD_dict.mapid};
+
     // ---  put changed values of input elements in upload_dict
+            let new_level_pk = null, new_sector_pk = null, level_or_sector_has_changed = false;
             //let form_elements = document.getElementById("id_MSTUDSUBJ_div_form_controls").querySelectorAll(".awp_input_text, .awp_input_select")
             let el_MSTUD_div_form_controls = document.getElementById("id_MSTUD_div_form_controls")
             let form_elements = el_MSTUD_div_form_controls.getElementsByClassName("form-control")
-
             for (let i = 0, el_input; el_input = form_elements[i]; i++) {
                 const fldName = get_attr_from_el(el_input, "data-field");
+        //console.log( "fldName: ", fldName);
                 let new_value = (el_input.value) ? el_input.value : null;
                 let old_value = (mod_MSTUD_dict[fldName]) ? mod_MSTUD_dict[fldName] : null;
-                if(["lvl_id", "sct_id"].indexOf(fldName) > -1){
+                if(["lvl_id", "sct_id"].includes(fldName)){
                     new_value = (new_value && Number(new_value)) ? Number(new_value) : null;
                     old_value = (old_value && Number(old_value)) ? Number(old_value) : null;
+                } else if (fldName === "bis_exam"){
+                    const data_value = get_attr_from_el(el_input, "data-value")
+                    new_value = (data_value === "1");
                 }
+        //console.log( "new_value: ", new_value);
+        //console.log( "old_value: ", old_value);
                 if (new_value !== old_value) {
                     const field = (fldName === "lvl_id") ? "level" :
                                   (fldName === "sct_id") ? "sector" : fldName;
-                    upload_dict[field] = {value: new_value, update: true}
+                    upload_dict[field] = new_value;
                     if(fldName === "lvl_id"){
                         new_level_pk = new_value;
                         level_or_sector_has_changed = true;
@@ -803,25 +835,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             };
 
-    console.log( "upload_dict.student_pk: ", upload_dict.student_pk);
-    console.log( "level_or_sector_has_changed: ", level_or_sector_has_changed);
-    console.log( "new_level_pk: ", new_level_pk);
-    console.log( "new_sector_pk: ", new_sector_pk);
+    //console.log( "upload_dict.student_pk: ", upload_dict.student_pk);
+    //console.log( "level_or_sector_has_changed: ", level_or_sector_has_changed);
+    //console.log( "new_level_pk: ", new_level_pk);
+    //console.log( "new_sector_pk: ", new_sector_pk);
     // ---  check if schemeitems must be changed when level or sector changes
             if (upload_dict.student_pk){
-                if (level_or_sector_has_changed){
-                    check_new_scheme(upload_dict.student_pk, new_level_pk, new_sector_pk)
-                }
+                    // TODO move to server
+                //if (level_or_sector_has_changed){
+                   // check_new_scheme(upload_dict.student_pk, new_level_pk, new_sector_pk)
+                //}
             }
-    // ---  get selected departments
-            //let dep_list = MSTUD_get_selected_depbases();
-            //upload_dict['depbases'] = {value: dep_list, update: true}
-    console.log( "upload_dict: ", upload_dict);
+    //console.log( "upload_dict: ", upload_dict);
             // TODO add loader
             //document.getElementById("id_MSTUD_loader").classList.remove(cls_visible_hide)
             // modal is closed by data-dismiss="modal"
             UploadChanges(upload_dict, url_student_upload);
         };
+
+    // ---  show modal
+            $("#id_mod_student").modal("hide");
     }  // MSTUD_Save
 
 
@@ -847,25 +880,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSTUD_InputKeyup  ============= PR2020-10-01
     function MSTUD_InputKeyup(el_input){
-        console.log( "===== MSTUD_InputKeyup  ========= ");
+        //console.log( "===== MSTUD_InputKeyup  ========= ");
         MSTUD_validate_and_disable();
     }; // MSTUD_InputKeyup
 
 //========= MSTUD_InputSelect  ============= PR2020-12-11
     function MSTUD_InputSelect(el_input){
-        console.log( "===== MSTUD_InputSelect  ========= ");
+        //console.log( "===== MSTUD_InputSelect  ========= ");
         MSTUD_validate_and_disable();
     }; // MSTUD_InputSelect
 
+//========= MSTUD_InputToggle  ============= PR2021-06-15
+    function MSTUD_InputToggle(el_input){
+        //console.log( "===== MSTUD_InputToggle  ========= ");
+        const data_value = get_attr_from_el(el_input, "data-value")
+        const new_data_value = (data_value === "1") ? "0" : "1";
+        el_input.setAttribute("data-value", new_data_value);
+        const el_img = el_input.children[0];
+        add_or_remove_class(el_img, "tickmark_2_2", (new_data_value === "1"), "tickmark_1_1")
+    }; // MSTUD_InputToggle
+
 //=========  MSTUD_validate_and_disable  ================  PR2020-10-01
     function MSTUD_validate_and_disable() {
-        console.log(" -----  MSTUD_validate_and_disable   ----")
+        //console.log(" -----  MSTUD_validate_and_disable   ----")
         let disable_save_btn = false;
 // ---  loop through input fields on MSTUD_Open
         let form_elements = el_MSTUD_div_form_controls.querySelectorAll(".awp_input_text")
         for (let i = 0, el_input; el_input = form_elements[i]; i++) {
-            const fldName = get_attr_from_el(el_input, "data-field")
-            const  msg_err = MSTUD_validate_field(el_input, fldName)
+            const fldName = get_attr_from_el(el_input, "data-field");
+            const msg_err = MSTUD_validate_field(el_input, fldName);
 // ---  show / hide error message
             const el_msg = document.getElementById("id_MSTUD_msg_" + fldName);
             if(el_msg){
@@ -873,7 +916,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 disable_save_btn = true;
                 add_or_remove_class(el_msg, cls_hide, !msg_err)
             }
-
         };
 
 // ---  disable save button on error
@@ -882,24 +924,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MSTUD_validate_field  ================  PR2020-10-01
     function MSTUD_validate_field(el_input, fldName) {
-        console.log(" -----  MSTUD_validate_field   ----")
+        //console.log(" -----  MSTUD_validate_field   ----")
         let msg_err = null;
         if (el_input){
             const value = el_input.value;
-            if(["sequence"].indexOf(fldName) > -1){
+            if(["sequence"].includes(fldName)){
                 const arr = b_get_number_from_input(loc, fldName, el_input.value);
                 msg_err = arr[1];
             } else {
                  const caption = (fldName === "abbrev") ? loc.Abbreviation :
                                 (fldName === "name") ? loc.Name  : loc.This_field;
-                if (["abbrev", "name"].indexOf(fldName) > -1 && !value) {
+                if (["abbrev", "name"].includes(fldName) && !value) {
                     msg_err = caption + loc.cannot_be_blank;
-                } else if (["abbrev"].indexOf(fldName) > -1 && value.length > 10) {
+                } else if (["abbrev"].includes(fldName) && value.length > 10) {
                     msg_err = caption + loc.is_too_long_MAX10;
-                } else if (["name"].indexOf(fldName) > -1 &&
+                } else if (["name"].includes(fldName) &&
                     value.length > 50) {
                         msg_err = caption + loc.is_too_long_MAX50;
-                } else if (["abbrev", "name"].indexOf(fldName) > -1) {
+                } else if (["abbrev", "name"].includes(fldName)) {
                         msg_err = validate_duplicates_in_department(loc, "subject", fldName, caption, mod_MSTUD_dict.mapid, value)
                 }
             }
@@ -950,35 +992,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // validate_duplicates_in_department
 
 //========= MSTUD_SetElements  ============= PR2020-08-03
-    function MSTUD_SetElements(){
+    function MSTUD_SetElements(focus_field){
         //console.log( "===== MSTUD_SetElements  ========= ");
         //console.log( "mod_MSTUD_dict", mod_MSTUD_dict);
+        //console.log( "focus_field", focus_field);
 // --- loop through input elements
         let form_elements = el_MSTUD_div_form_controls.querySelectorAll(".form-control")
-        for (let i = 0, el, fldName, fldValue, len = form_elements.length; i < len; i++) {
-            el = form_elements[i];
-            if(el){
-                fldName = get_attr_from_el(el, "data-field");
-                fldValue = (mod_MSTUD_dict[fldName]) ? mod_MSTUD_dict[fldName] : null;
+        for (let i = 0, el, fldName, fldValue; el = form_elements[i]; i++) {
+            fldName = get_attr_from_el(el, "data-field");
+            fldValue = (mod_MSTUD_dict[fldName]) ? mod_MSTUD_dict[fldName] : null;
+            if(fldName === "bis_exam"){
+                el.setAttribute("data-value", (fldValue) ? "1" : "0");
+                const el_img = el.children[0];
+                add_or_remove_class(el_img, "tickmark_2_2", !!fldValue, "tickmark_1_1")
+            } else {
                 el.value = fldValue;
-            };
+            }
+            if(focus_field ){
+                if( (fldName === focus_field) ||
+                    (fldName === "lvl_id" && focus_field === "lvl_abbrev") ||
+                    (fldName === "sct_id" && focus_field === "sct_abbrev")){
+                    set_focus_on_el_with_timeout(el, 150);
+                };
+            }
         }
 
-        let full_name = (mod_MSTUD_dict.lastname) ? mod_MSTUD_dict.lastname : "";
-        if (mod_MSTUD_dict.prefix) {full_name = mod_MSTUD_dict.prefix + " " + full_name}
-        if (mod_MSTUD_dict.firstname) {full_name += ", " + mod_MSTUD_dict.firstname}
-        document.getElementById("id_MSTUD_hdr").innerText = full_name;
+        let full_name = (mod_MSTUD_dict.fullname) ? mod_MSTUD_dict.lastname : "";
+        document.getElementById("id_MSTUD_hdr").innerText = (mod_MSTUD_dict.fullname) ? mod_MSTUD_dict.fullname : loc.Add_candidate;
     }  // MSTUD_SetElements
 
 //========= MSTUD_SetMsgElements  ============= PR2020-08-02
     function MSTUD_SetMsgElements(response){
-        console.log( "===== MSTUD_SetMsgElements  ========= ");
+        //console.log( "===== MSTUD_SetMsgElements  ========= ");
 
         const err_dict = ("msg_err" in response) ? response.msg_err : {}
         const validation_ok = get_dict_value(response, ["validation_ok"], false);
 
-        console.log( "err_dict", err_dict);
-        console.log( "validation_ok", validation_ok);
+        //console.log( "err_dict", err_dict);
+        //console.log( "validation_ok", validation_ok);
 
         const el_msg_container = document.getElementById("id_msg_container")
         let err_save = false;
@@ -1036,656 +1087,54 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MUA_btn_cancel = document.getElementById("id_MUA_btn_cancel");
         el_MUA_btn_cancel.innerText = ((is_ok || err_save) ? loc.Close: loc.Cancel);
         if(is_ok || err_save){el_MUA_btn_cancel.focus()}
-
     }  // MUA_SetMsgElements
-
-//========= MSTUD_headertext  ======== // PR2020-09-30
-    function MSTUD_headertext(is_addnew, tblName, name) {
-        //console.log(" -----  MSTUD_headertext   ----")
-        //console.log("tblName", tblName, "is_addnew", is_addnew)
-
-        let header_text = (tblName === "subject") ? (is_addnew) ? loc.Add_subject : loc.Subject :
-                    (tblName === "level") ? (is_addnew) ? loc.Add_level : loc.Level :
-                    (tblName === "sector") ? (is_addnew) ? loc.Add_sector : loc.Sector :
-                    (tblName === "subjecttype") ? (is_addnew) ? loc.Add_subjecttype : loc.Subjecttype :
-                    (tblName === "scheme") ? (is_addnew) ? loc.Add_scheme : loc.Scheme :
-                    (tblName === "schemeitem") ? (is_addnew) ? loc.Add_schemeitem : loc.Schemeitem :
-                    (tblName === "package") ? (is_addnew) ? loc.Add_package : loc.Package :
-                    (tblName === "packageitem") ? (is_addnew) ? loc.Add_package_item : loc.Package_item : "---";
-
-        if (!is_addnew) {
-            header_text += ": " + ((name) ? name : "---")
-
-            };
-        document.getElementById("id_MSTUD_hdr").innerText = header_text;
-
-        let this_dep_text = (tblName === "subject") ? loc.this_subject :
-                    (tblName === "level") ? loc.this_level :
-                    (tblName === "sector") ? loc.this_sector :
-                    (tblName === "subjecttype") ? loc.this_subjecttype :
-                    (tblName === "scheme") ? loc.this_scheme :
-                    (tblName === "schemeitem") ? loc.this_schemeitem :
-                    (tblName === "package") ? loc.this_package :
-                    (tblName === "packageitem") ?  loc.this_package_item : "---";
-        //document.getElementById("id_MSTUD_label_dep").innerText = loc.Departments_with + this_dep_text + loc.occurs + ":";
-    }  // MSTUD_headertext
-
 // +++++++++ END MOD STUDENT +++++++++++++++++++++++++++++++++++++++++
 
-
-// +++++++++ MOD STUDENT SUBJECT++++++++++++++++ PR2020-11-16
-    function MSTUDSUBJ_Open(el_input){
-        console.log(" -----  MSTUDSUBJ_Open   ----")
-        if(el_input && permit_dict.crud_student){
-
-            mod_MSTUDSUBJ_dict = {}; // stores general info of selected candidate in MSTUDSUBJ PR2020-11-21
-            //mod_studsubj_dict = {};  // stores studsubj of selected candidate in MSTUDSUBJ
-            //mod_schemeitem_dict = {};   // stores available studsubj for selected candidate in MSTUDSUBJ
-            mod_studsubj_map.clear();
-            mod_schemeitem_map.clear();
-
-            let tblName = "studsubj";
-
-            const tblRow = get_tablerow_selected(el_input);
-            const map_id = tblRow.id;
-            const arr = map_id.split("_");
-            const stud_pk_int = (Number(arr[1])) ? Number(arr[1]) : null;
-            const studsubj_pk_int = (Number(arr[2])) ? Number(arr[2]) : null;
-            const map_dict = get_mapdict_from_datamap_by_tblName_pk(student_map, "student", stud_pk_int);
-
-            console.log("stud_pk_int", stud_pk_int)
-            console.log("map_dict", map_dict)
-            if(!isEmpty(map_dict)) {
-                mod_MSTUDSUBJ_dict.stud_id = map_dict.id;
-                mod_MSTUDSUBJ_dict.scheme_id = map_dict.scheme_id;
-
-    // ---  set header text
-                let header_text = loc.Subjects + loc._of_ + map_dict.fullname
-                let dep_lvl_sct_text = (map_dict.db_code) ? map_dict.db_code + " - " : "";
-                if(map_dict.lvl_abbrev) {dep_lvl_sct_text += map_dict.lvl_abbrev + " - "};
-                if(map_dict.sct_abbrev) {dep_lvl_sct_text += map_dict.sct_abbrev};
-                if (dep_lvl_sct_text) {header_text += " (" + dep_lvl_sct_text + ")"};
-
-                el_MSTUDSUBJ_hdr.innerText = header_text
-        // ---  remove value from el_mod_employee_input
-                //MSTUD_SetElements();  // true = also_remove_values
-
-                //document.getElementById("id_MSTUDSUBJ_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
-
-                MSTUDSUBJ_FillDicts();
-                MSTUDSUBJ_FillTbls();
-
-                MSTUDSUBJ_SetInputFields(null, false);
-
-        // ---  set focus to el_MSTUD_abbrev
-                //setTimeout(function (){el_MSTUD_abbrev.focus()}, 50);
-
-        // ---  disable btn submit, hide delete btn when is_addnew
-               // add_or_remove_class(el_MSTUD_btn_delete, cls_hide, is_addnew )
-                //const disable_btn_save = (!el_MSTUD_abbrev.value || !el_MSTUD_name.value  )
-                //el_MSTUD_btn_save.disabled = disable_btn_save;
-
-                //MSTUD_validate_and_disable();
-
-        // ---  show modal
-                $("#id_mod_studentsubject").modal({backdrop: true});
-
-            }  // if(!isEmpty(map_dict)) {
-        }
-    };  // MSTUDSUBJ_Open
-
-//========= MSTUDSUBJ_Save  ============= PR2020-11-18
-    function MSTUDSUBJ_Save(){
-        console.log(" -----  MSTUDSUBJ_Save   ----")
-        console.log( "mod_studsubj_map: ", mod_studsubj_map);
-
-        if(permit_dict.crud_student && mod_MSTUDSUBJ_dict.stud_id){
-            const upload_dict = {
-            table: 'studentsubject',
-            sel_examyear_pk: setting_dict.sel_examyear_pk,
-            sel_schoolbase_pk: setting_dict.sel_schoolbase_pk,
-            sel_depbase_pk: setting_dict.sel_depbase_pk,
-            sel_student_pk: mod_MSTUDSUBJ_dict.stud_id
-            }
-            const studsubj_list = []
-// ---  loop through mod_studsubj_map
-
-            //for (const [studsubj_pk, ss_dict] of Object.entries(mod_studsubj_dict)) {
-
-            for (const [studsubj_pk, ss_dict] of mod_studsubj_map.entries()) {
-
-        console.log("studsubj_pk", studsubj_pk, "ss_dict", ss_dict);
-                if(!isEmpty(ss_dict)){
-                    let mode = null;
-                    if(ss_dict.isdeleted){
-                        mode = "delete"
-                    } else  if(ss_dict.iscreated){
-                        mode = "create"
-                    } else  if(ss_dict.haschanged){
-                        mode = "update"
-                    }
-        console.log("mode", mode);
-                    // add only teammembers with mode 'create, 'delete' or 'update'
-                    if (mode){
-                        studsubj_list.push({
-                                mode: mode,
-                                sel_examyear_pk: setting_dict.sel_examyear_pk,
-                                sel_schoolbase_pk: setting_dict.sel_schoolbase_pk,
-                                studsubj_id: ss_dict.studsubj_id,
-                                schemeitem_id: ss_dict.schemeitem_id,
-                                stud_id: ss_dict.stud_id,
-                                is_extra_nocount: ss_dict.is_extra_nocount,
-                                is_extra_counts: ss_dict.is_extra_counts,
-                                is_elective_combi: ss_dict.is_elective_combi,
-                                pws_title: ss_dict.pws_title,
-                                pws_subjects: ss_dict.pws_subjects
-                            });
-                    }  //  if (mode)
-                    if (mode === "delete"){
-// - make to_be_deleted tblRow red
-                        const row_id = "studsubj_" + ss_dict.stud_id + "_" + ss_dict.studsubj_id
-                        const tblRow = document.getElementById(row_id);
-
-                        ShowClassWithTimeout(tblRow, "tsa_tr_error")
-                    }
-                }  // if(!isEmpty(ss_dict)){
-            }  //  for (const [studsubj_pk, ss_dict] of Object.entries(mod_studsubj_dict)
-
-
-            if(studsubj_list && studsubj_list.length){
-                upload_dict.studsubj_list = studsubj_list;
-                console.log("upload_dict: ", upload_dict)
-                UploadChanges(upload_dict, url_studsubj_upload);
-            }
-        };  // if(permit_dict.crud_student && mod_MSTUDSUBJ_dict.stud_id){
-
-// ---  hide modal
-        $("#id_mod_studentsubject").modal("hide");
-
-    }  // MSTUDSUBJ_Save
-
-//========= MSTUDSUBJ_FillDicts  ============= PR2020-11-17
-    function MSTUDSUBJ_FillDicts() {
-        console.log("===== MSTUDSUBJ_FillDicts ===== ");
-        console.log("mod_MSTUDSUBJ_dict", mod_MSTUDSUBJ_dict);
-
-// reset lists
-        /*  PR2020-11-18 from https://love2dev.com/blog/javascript-remove-from-array/
-            splice can be used to add or remove elements from an array.
-            The first argument specifies the location at which to begin adding or removing elements.
-            The second argument specifies the number of elements to remove.
-            The third and subsequent arguments are optional; they specify elements to be added to the array
-        mod_studsubj_dict.splice(0, mod_studsubj_dict.length)
-        mod_schemeitem_dict.splice(0, mod_schemeitem_dict.length)
-*/
-
-//  list mod_studsubj_dict contains the existing, added and deleted subjects of the student
-//  list mod_schemeitem_dict contains all schemitems of the student's scheme
-
-        const student_pk = mod_MSTUDSUBJ_dict.stud_id
-        const scheme_pk = mod_MSTUDSUBJ_dict.scheme_id
-
-        //mod_studsubj_dict = {};
-        mod_studsubj_map.clear();
-// ---  loop through studentsubject_map
-        for (const [map_id, ss_dict] of studentsubject_map.entries()) {
-
-        // add only studsubj from this student
-            if (student_pk === ss_dict.stud_id) {
-                const item = deepcopy_dict(ss_dict);
-                if(item.schemeitem_id){
-                    //mod_studsubj_dict[item.schemeitem_id] = item
-                    mod_studsubj_map.set(item.schemeitem_id, item);
-
-                }
-            }
-        }
-        console.log("mod_studsubj_map", mod_studsubj_map);
-
-// ---  loop through schemeitem_map
-        /*
-        mod_schemeitem_dict = {};
-        el_tblBody_schemeitems.innerText = null;
-        for (const [map_id, dict] of schemeitem_map.entries()) {
-        // add only schemitems from scheme of this student
-            if (scheme_pk && scheme_pk === dict.scheme_id) {
-                const item = deepcopy_dict(dict)
-                mod_schemeitem_dict[item.id] = item
-            }
-        }
-        */
-        mod_schemeitem_map.clear();
-        el_tblBody_schemeitems.innerText = null;
-        for (const [map_id, dict] of schemeitem_map.entries()) {
-        // add only schemitems from scheme of this student
-            if (scheme_pk && scheme_pk === dict.scheme_id) {
-                const item = deepcopy_dict(dict)
-                mod_schemeitem_map.set(item.id, item);
-            }
-        }
-        console.log("mod_schemeitem_map", mod_schemeitem_map);
-
-    } // MSTUDSUBJ_FillDicts
-
-//========= MSTUDSUBJ_FillTbls  ============= PR2020-11-17
-    function MSTUDSUBJ_FillTbls(schemeitem_pk_list) {
-        //console.log("===== MSTUDSUBJ_FillTbls ===== ");
-        //console.log("mod_studsubj_dict", mod_studsubj_dict);
-// ---  loop through mod_studsubj_dict dict
-        el_tblBody_studsubjects.innerText = null;
-        const subject_list = [];
-        let has_rows = false;
-        for (const [studsubj_pk, dict] of mod_studsubj_map.entries()) {
-
-        //console.log("studsubj_pk", studsubj_pk);
-        //console.log("dict", dict);
-            if (!dict.isdeleted) {
-                subject_list.push(dict.subj_id)
-                const schemeitem_pk = dict.schemeitem_id;
-                const highlighted = (schemeitem_pk_list && schemeitem_pk_list.includes(schemeitem_pk))
-                MSTUDSUBJ_FillSelectRow("studsubj", el_tblBody_studsubjects, schemeitem_pk, dict, true, highlighted);
-                has_rows = true;
-            }
-        }
-
-// addrow 'This_candidate_has_nosubjects_yet'
-        if(!has_rows){
-            const tblRow = el_tblBody_studsubjects.insertRow(-1);
-            const td = tblRow.insertCell(-1);
-            const el_div = document.createElement("div");
-                el_div.classList.add("tw_300", "px-2")
-                el_div.innerText = loc.This_candidate_has_nosubjects_yet;
-                td.appendChild(el_div);
-        }
-
-// ---  loop through mod_schemeitem_dict =
-//      mod_schemeitem_dict is a deepcopy dict with schemeitems of the scheme of this candidate, key = schemeitem_pk
-        el_tblBody_schemeitems.innerText = null;
-        //for (const [schemeitem_pk, dict] of Object.entries(mod_schemeitem_dict)) {
-        for (const [schemeitem_pk, dict] of mod_schemeitem_map.entries()) {
-            const enabled = (dict.subj_id && !subject_list.includes(dict.subj_id))
-
-            const highlighted = (schemeitem_pk_list && schemeitem_pk_list.includes(schemeitem_pk))
-            MSTUDSUBJ_FillSelectRow("schemeitem", el_tblBody_schemeitems, schemeitem_pk, dict, enabled, highlighted);
-        }
-
-    } // MSTUDSUBJ_FillTbls
-
-//========= MSTUDSUBJ_FillSelectRow  ============= PR2020--09-30
-    function MSTUDSUBJ_FillSelectRow(tblName, tblBody_select, schemeitem_pk, dict, enabled, highlighted) {
-        //console.log("===== MSTUDSUBJ_FillSelectRow ===== ");
-        //console.log("..........schemeitem_pk", schemeitem_pk);
-        //console.log("dict", dict);
-
-        if (!isEmpty(dict)){
-            let subj_code = (dict.subj_code) ? dict.subj_code : "";
-            if(dict.is_combi) { subj_code += " *" }
-            let subj_name = (dict.subj_name) ? dict.subj_name : null;
-            const sjt_abbrev = (dict.sjt_abbrev) ? dict.sjt_abbrev : null;
-
-            const tblRow = tblBody_select.insertRow(-1);
-            tblRow.setAttribute("data-pk", schemeitem_pk);
-            //if(dict.mapid) { tblRow.id = "MSTUDSUBJ_" + dict.mapid }
-            const selected_int = 0
-            tblRow.setAttribute("data-selected", selected_int);
-
-    //- add hover to select row
-            if(enabled) {add_hover(tblRow)}
-
-            add_or_remove_class(tblRow, "awp_tr_disabled", !enabled )
-            if(highlighted){ ShowClassWithTimeout(tblRow, "bg_selected_blue")};
-
-    // --- add first td to tblRow.
-            let td = tblRow.insertCell(-1);
-            let el_div = document.createElement("div");
-                el_div.classList.add("tw_020")
-                el_div.className = "tickmark_0_0";
-                  td.appendChild(el_div);
-
-            tblRow.setAttribute("data-selected", 0)
-
-    // --- add second td to tblRow.
-            td = tblRow.insertCell(-1);
-            el_div = document.createElement("div");
-                el_div.classList.add("tw_120")
-                el_div.innerText = subj_code;
-                tblRow.title = subj_name;
-                td.appendChild(el_div);
-
-    // --- add second td to tblRow.
-            td = tblRow.insertCell(-1);
-            el_div = document.createElement("div");
-                el_div.classList.add("tw_120")
-                el_div.innerText = sjt_abbrev;
-                td.appendChild(el_div);
-
-            //td.classList.add("tw_200X", "px-2", "pointer_show") // , "tsa_bc_transparent")
-
-    //--------- add addEventListener
-            if(enabled) {
-                tblRow.addEventListener("click", function() {MSTUDSUBJ_SelectSubject(tblName, tblRow)}, false);
-            }
-        }
-    } // MSTUDSUBJ_FillSelectRow
-
-//========= MSTUDSUBJ_SelectSubject  ============= PR2020-10-01
-    function MSTUDSUBJ_SelectSubject(tblName, tblRow){
-        //console.log( "===== MSTUDSUBJ_SelectSubject  ========= ");
-        //console.log( "event_key", event_key);
-
-        if(tblRow){
-            let is_selected = (!!get_attr_from_el_int(tblRow, "data-selected"));
-            let pk_int = get_attr_from_el_int(tblRow, "data-pk");
-            const is_select_all = (!pk_int);
-// ---  toggle is_selected
-            is_selected = !is_selected;
-
-            const tblBody_selectTable = tblRow.parentNode;
-
-
-// ---  in tbl "studsubj" and when selected: deselect all other rows
-            if (tblName === "studsubj" && is_selected){
-                // fill characteristics
-                mod_MSTUDSUBJ_dict.sel_schemitem_pk = get_attr_from_el_int(tblRow, "data-pk")
-                MSTUDSUBJ_SetInputFields(mod_MSTUDSUBJ_dict.sel_schemitem_pk, is_selected)
-                }
-/*
-                for (let i = 0, row; row = tblBody_selectTable.rows[i]; i++) {
-                    let row_pk = get_attr_from_el_int(row, "data-pk");
-                    // set only the current row selected, deselect others
-                    const row_is_selected_row = (is_selected && row_pk === pk_int);
-                    MSTUDSUBJ_set_selected(row, row_is_selected_row);
-                }
-                */
-           // } else {
-// ---  put new value in this tblRow, show/hide tickmark
-                 MSTUDSUBJ_set_selected(tblRow, is_selected);
-            //}
-        }
-    }  // MSTUDSUBJ_SelectSubject
-
-    function MSTUDSUBJ_set_selected(tblRow, row_is_selected_row){
-// ---  put new value in this tblRow, show/hide tickmark PR2020-11-21
-        tblRow.setAttribute("data-selected", ( (row_is_selected_row) ? 1 : 0) )
-        add_or_remove_class(tblRow, "bg_selected_blue", row_is_selected_row )
-        const img_class = (row_is_selected_row) ? "tickmark_0_2" : "tickmark_0_0"
-        const el = tblRow.cells[0].children[0];
-        if (el){el.className = img_class}
-    }
-
-    function MSTUDSUBJ_SetInputFields(schemitem_pk, is_selected){
-// ---  put value in input box 'Characteristics of this subject
-        //console.log( "===== MSTUDSUBJ_SetInputFields  ========= ");
-        //console.log( "schemitem_pk", schemitem_pk);
-        //console.log( "is_selected", is_selected);
-
-        let is_empty = true, is_combi = false, is_elective_combi = false,
-            is_extra_counts = false, is_extra_nocount = false,
-            pwstitle = null, pwssubjects = null,
-            extra_count_allowed = false, extra_nocount_allowed = false, elective_combi_allowed = false;
-
-        let sjt_has_prac = false, sjt_has_pws = false;
-
-        let map_dict = {};
-
-        //if(is_selected && schemitem_pk && mod_studsubj_dict[schemitem_pk]){
-        if(is_selected && schemitem_pk && mod_studsubj_map.get(schemitem_pk)){
-            //map_dict = mod_studsubj_dict[schemitem_pk];
-            map_dict = mod_studsubj_map.get(schemitem_pk);
-            if(!isEmpty(map_dict)){
-                is_empty = false;
-                is_combi = map_dict.is_combi
-                extra_count_allowed = map_dict.extra_count_allowed
-                extra_nocount_allowed = map_dict.extra_nocount_allowed
-                elective_combi_allowed = map_dict.elective_combi_allowed
-                is_extra_counts = map_dict.is_extra_counts,
-                is_extra_nocount = map_dict.is_extra_nocount,
-                is_elective_combi = map_dict.is_elective_combi,
-                sjt_has_prac = map_dict.sjt_has_prac,
-                sjt_has_pws = map_dict.sjt_has_pws,
-                pwstitle = map_dict.pws_title,
-                pwssubjects = map_dict.pws_subjects;
-
-            }
-        }
-        document.getElementById("id_MSTUDSUBJ_char_header").innerText = (is_empty) ?  loc.No_subject_selected : map_dict.subj_name;
-
-    // ---  put changed values of input elements in upload_dict
-        const el_form_controls = document.getElementById("id_MSTUDSUBJ_div_form_controls").querySelectorAll(".awp_input_text, .awp_input_checkbox")
-        for (let i = 0, el; el = el_form_controls[i]; i++) {
-            const el_wrap = el.parentNode.parentNode.parentNode
-
-            const field = get_attr_from_el(el, "data-field")
-            const hide_element = (field === "is_combi") ? is_empty :
-                                 (field === "is_elective_combi") ? !map_dict.elective_combi_allowed :
-                                 (field === "is_extra_nocount") ? !map_dict.extra_nocount_allowed :
-                                 (field === "is_extra_counts") ? !map_dict.extra_count_allowed :
-                                 (["pws_title", "pws_subjects"].indexOf(field) > -1 ) ? !map_dict.sjt_has_pws : true;
-            if(el_wrap){ add_or_remove_class(el_wrap, cls_hide, hide_element )}
-
-           if(el.classList.contains("awp_input_text")){
-                el.value = map_dict[field];
-           } else if(el.classList.contains("awp_input_checkbox")){
-                el.checked = (map_dict[field]) ? map_dict[field] : false;
-           }
-        }
-    }  // MSTUDSUBJ_SetInputFields
-
-//========= MSTUDSUBJ_AddRemoveSubject  ============= PR2020-11-18
-    function MSTUDSUBJ_AddRemoveSubject(mode) {
-        console.log("  =====  MSTUDSUBJ_AddRemoveSubject  =====");
-        const tblBody = (mode === "add") ? el_tblBody_schemeitems : el_tblBody_studsubjects;
-        const schemeitem_pk_list = []
-
-// ---  loop through tblBody and create list of selected schemeitem_pk's
-        for (let i = 0, tblRow, is_selected, pk_int; tblRow = tblBody.rows[i]; i++) {
-            is_selected = !!get_attr_from_el_int(tblRow, "data-selected")
-            if (is_selected) {
-                pk_int = get_attr_from_el_int(tblRow, "data-pk")
-                schemeitem_pk_list.push(pk_int);
-            }
-        }
-        console.log("schemeitem_pk_list", schemeitem_pk_list);
-
-// ---  loop through schemeitem_pk_list
-        for (let i = 0, pk_int; pk_int = schemeitem_pk_list[i]; i++) {
-            let map_dict = {};
-            if(mode === "add"){
-// ---  check if schemeitem_pk already exists in mod_studsubj_dict
-                const ss_map_dict = (mod_studsubj_map.get(pk_int)) ? mod_studsubj_map.get(pk_int) : {};
-        console.log("mod_studsubj_map", mod_studsubj_map);
-        console.log("ss_map_dict", deepcopy_dict(ss_map_dict));
-                //if (mod_studsubj_dict[pk_int]) {
-                if (!isEmpty(ss_map_dict) ){
-// if it exists it must be a deleted row, remove 'isdeleted'
-                    ss_map_dict.isdeleted = false;
-                } else {
-                    const student_pk = mod_MSTUDSUBJ_dict.stud_id
-// add row to mod_studsubj_dict if it does not yet exist
-                    //const si_dict = mod_schemeitem_dict[pk_int];
-                    //const si_dict = get_mapdict_from_datamap_by_id(mod_schemeitem_map, pk_int)
-                    const si_dict = mod_schemeitem_map.get(pk_int);
-                    if(!isEmpty(si_dict)){
-                        const si_map_dict = deepcopy_dict(si_dict);
-                          // in si_dict schemeitem_id = si_dict.id, in mod_studsubj_dict it is mod_studsubj_dict.schemeitem_id
-                        si_map_dict.schemeitem_id = si_dict.id;
-                        delete si_map_dict.id;
-                        // si_map_dict.mapid overrides si_dict.mapid
-                        si_map_dict.mapid = "studsubj_" + student_pk + "_"// mapid: "studsubj_29_2" = "studsubj_" + stud_id + "_" + studsubj_id
-                        // adding keys that do't exist in si_dict
-                        si_map_dict.stud_id = mod_MSTUDSUBJ_dict.student_pk;
-                        si_map_dict.studsubj_id = null;
-
-                        si_map_dict.is_elective_combi = false;
-                        si_map_dict.is_extra_counts = false
-                        si_map_dict.is_extra_nocount = false;
-                        si_map_dict.pws_subjects = null;
-                        si_map_dict.pws_title = null;
-
-                        si_map_dict.modby_username = "---";
-                        si_map_dict.modifiedat = "---";
-
-                        si_map_dict.iscreated = true;
-                        si_map_dict.isdeleted = false;
-                        si_map_dict.haschanged = false;
-
-                        mod_studsubj_map.set(pk_int, si_map_dict);
-                    }
-                }
-            }  else if(mode === "remove"){
-
-    // ---  check if schemeitem_pk already exists in mod_studsubj_dict
-                const ss_map_dict = (mod_studsubj_map.get(pk_int)) ? mod_studsubj_map.get(pk_int) : {};
-                if (!isEmpty(ss_map_dict)) {
-    // set 'isdeleted' = true
-                    ss_map_dict.isdeleted = true;
-                }
-
-                MSTUDSUBJ_SetInputFields()
-            }
-        }  //  for (let i = 0, pk_int; pk_int = schemeitem_pk_list[i]; i++)
-        //console.log("mod_studsubj_dict", mod_studsubj_dict);
-        MSTUDSUBJ_FillTbls(schemeitem_pk_list)
-
-    }  // MSTUDSUBJ_AddRemoveSubject
-
-//========= MSTUDSUBJ_AddPackage  ============= PR2020-11-18
-    function MSTUDSUBJ_AddPackage() {
-        console.log("  =====  MSTUDSUBJ_AddPackage  =====");
-
-    }  // MSTUDSUBJ_AddPackage
-
-//========= MSTUDSUBJ_InputboxEdit  ============= PR2020-12-01
-    function MSTUDSUBJ_InputboxEdit(el_input) {
-        //console.log("  =====  MSTUDSUBJ_InputboxEdit  =====");
-        if(el_input){
-// ---  get dict of selected schemitem from mod_studsubj_dict
-            const field = get_attr_from_el(el_input, "data-field")
-            //const sel_studsubj_dict = mod_studsubj_dict[mod_MSTUDSUBJ_dict.sel_schemitem_pk];
-            const sel_studsubj_dict = mod_studsubj_map.get(mod_MSTUDSUBJ_dict.sel_schemitem_pk);
-            if(sel_studsubj_dict){
-                sel_studsubj_dict.haschanged = true;
-    // ---  put new value of el_input in sel_studsubj_dict
-                if(el_input.classList.contains("awp_input_text")) {
-            //console.log("awp_input_text");
-                    sel_studsubj_dict[field] = el_input.value;
-    // ---  if checkbox: put checked value in sel_studsubj_dict
-                } else if(el_input.classList.contains("awp_input_checkbox")) {
-            //console.log("awp_input_checkbox");
-                    const is_checked = el_input.checked;
-                    sel_studsubj_dict[field] = is_checked;
-    // ---  if element is checked: uncheck other 'extra subject' element if that one is also checked
-                    if(is_checked){
-                        const other_field = (field === "is_extra_nocount") ? "is_extra_counts" : "is_extra_nocount";
-                        const other_el = document.getElementById("id_MSTUDSUBJ_" + other_field)
-                        if(other_el && other_el.checked){
-                            other_el.checked = false;
-                            sel_studsubj_dict[other_field] = false;
-                        }
-                    }
-                }
-            }
-        //console.log("sel_studsubj_dict", sel_studsubj_dict);
-        }
-    }  // MSTUDSUBJ_InputboxEdit
-
-//========= MSTUDSUBJ_CheckboxEdit  ============= PR2020-12-01
-    function MSTUDSUBJ_CheckboxEdit(el_input) {
-        //console.log("  =====  MSTUDSUBJ_CheckboxEdit  =====");
-        if(el_input){
-            const field = get_attr_from_el(el_input, "data-field")
-            const is_checked = el_input.checked;
-            const sel_studsubj_dict = mod_studsubj_map.get(mod_MSTUDSUBJ_dict.sel_schemitem_pk);
-            if (sel_studsubj_dict) {
-                sel_studsubj_dict[field] = is_checked;
-                sel_studsubj_dict.haschanged = true;
-    // if element is checked: uncheck other 'extra subject' element if that one is also checked
-                if(is_checked){
-                    const other_field = (field === "is_extra_nocount") ? "is_extra_counts" : "is_extra_nocount";
-                    const other_el = document.getElementById("id_MSTUDSUBJ_" + other_field)
-                //console.log("other_el", other_el);
-                    if(other_el && other_el.checked){
-                        other_el.checked = false;
-                        sel_studsubj_dict[other_field] = false;
-                    }
-                }
-            }
-        }
-    }  // MSTUDSUBJ_CheckboxEdit
-
-// +++++++++ END MOD STUDENT SUBJECT +++++++++++++++++++++++++++++++++
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2020-08-03
+//=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-15
     function ModConfirmOpen(mode, el_input) {
-        console.log(" -----  ModConfirmOpen   ----")
+        //console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "delete", "inactive" or "resend_activation_email", "permission_sysadm"
 
-        if(permit_dict.crud_student){
+        //console.log("mode", mode)
+        //console.log("el_input", el_input)
 
+        if(permit_dict.permit_crud){
+            const tblName = "student";
 
-    // ---  get selected_pk
-            let tblName = null, selected_pk = null;
+// ---  get selected_student_dict
             // tblRow is undefined when clicked on delete btn in submenu btn or form (no inactive btn)
+            // in that case use the existing selected_student_dict
             const tblRow = get_tablerow_selected(el_input);
-            if(tblRow){
-                tblName = get_attr_from_el(tblRow, "data-table")
-                selected_pk = get_attr_from_el(tblRow, "data-pk")
-            } else {
-                tblName = get_tblName_from_selectedBtn()
-                selected_pk = (tblName === "student") ? selected_student_pk :
-                            (tblName === "department") ? selected_department_pk :
-                            (tblName === "level") ? selected_level_pk :
-                            (tblName === "sector") ? selected_sector_pk :
-                            (tblName === "subjecttype") ? selected_subjecttype_pk :
-                            (tblName === "scheme") ? selected_scheme_pk :
-                            (tblName === "package") ? selected_package_pk : null;
-            }
-            console.log("selected_pk", selected_pk )
+            if(tblRow){selected_student_dict = get_selected_student_dict_from_mapid(tr_clicked.id)};
 
-    // ---  get info from data_map
-            const data_map = get_datamap_from_tblName(tblName)
-            const map_id =  tblName + "_" + selected_pk;
-            const map_dict = get_mapdict_from_datamap_by_id(subject_map, map_id)
+// ---  get info from data_map
+            const map_dict = selected_student_dict; //    get_mapdict_from_datamap_by_id(student_map, map_id)
 
-            console.log("data_map", data_map)
-            console.log("map_id", map_id)
             console.log("map_dict", map_dict)
 
-    // ---  create mod_dict
+// ---  create mod_dict
             mod_dict = {mode: mode};
             const has_selected_item = (!isEmpty(map_dict));
             if(has_selected_item){
-                mod_dict.id = map_dict.id;
-                mod_dict.abbrev = map_dict.abbrev;
-                mod_dict.name = map_dict.name;
-                mod_dict.depbases = map_dict.depbases;
-                mod_dict.mapid = map_id;
+                mod_dict.student_pk = map_dict.id;
+                mod_dict.mapid = map_dict.mapid;
+                mod_dict.fullname = map_dict.fullname;
             };
-            if (mode === "inactive") {
-                  mod_dict.current_isactive = map_dict.is_active;
-            }
 
-    // ---  put text in modal form
+// ---  put text in modal form
             let dont_show_modal = false;
-
-            let header_text = loc.Delete + " ";
-            const item = (tblName === "subject") ? loc.Subject :
-                           (tblName === "department") ? loc.Department :
-                           (tblName === "level") ? loc.Level :
-                           (tblName === "sector") ? loc.Sector :
-                           (tblName === "subjecttype") ? loc.Subjecttype :
-                           (tblName === "scheme") ? loc.Scheme :
-                           (tblName === "package") ? loc.Package : "";
+            const header_text = loc.Delete_candidate;
 
             let msg_01_txt = null, msg_02_txt = null, msg_03_txt = null;
             let hide_save_btn = false;
             if(!has_selected_item){
-                msg_01_txt = loc.No_user_selected;
+                msg_01_txt = loc.Please_select_candidate_first;
                 hide_save_btn = true;
             } else {
-                const username = (map_dict.username) ? map_dict.username  : "-";
+                const full_name = (map_dict.fullname) ? map_dict.fullname  : "---";
                 if(mode === "delete"){
-                    msg_01_txt = loc.User + " '" + username + "'" + loc.will_be_deleted
+                    msg_01_txt = loc.Candidate + " '" + full_name + "'" + loc.will_be_deleted
                     msg_02_txt = loc.Do_you_want_to_continue;
                 }
             }
@@ -1697,18 +1146,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_confirm_msg02.innerText = msg_02_txt;
                 el_confirm_msg03.innerText = msg_03_txt;
 
-                const caption_save = (mode === "delete") ? loc.Yes_delete :
-                                (mode === "inactive") ? ( (mod_dict.current_isactive) ? loc.Yes_make_inactive : loc.Yes_make_active ) : loc.OK;
+                const caption_save = (mode === "delete") ? loc.Yes_delete : loc.OK;
                 el_confirm_btn_save.innerText = caption_save;
                 add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
 
-                add_or_remove_class (el_confirm_btn_save, "btn-primary", (mode !== "delete"));
-                add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete"));
+                //add_or_remove_class (el_confirm_btn_save, "btn-primary", (mode !== "delete"));
+                add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete"), "btn-primary");
+
+                el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
 
         // set focus to cancel button
-                setTimeout(function (){
-                    el_confirm_btn_cancel.focus();
-                }, 500);
+                set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
+
     // show modal
                 $("#id_mod_confirm").modal({backdrop: true});
             }
@@ -1719,58 +1168,34 @@ document.addEventListener('DOMContentLoaded', function() {
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
-        let close_modal = !permit_dict.crud_student;
 
-        if(permit_dict.crud_student){
+        if(permit_dict.permit_crud){
             let tblRow = document.getElementById(mod_dict.mapid);
 
     // ---  when delete: make tblRow red, before uploading
-            if (tblRow && mod_dict.mode === "delete"){
-                ShowClassWithTimeout(tblRow, "tsa_tr_error");
-            }
+            ShowClassWithTimeout(tblRow, "tsa_tr_error");
 
-            if(["delete", 'resend_activation_email'].indexOf(mod_dict.mode) > -1) {
     // show loader
-                el_confirm_loader.classList.remove(cls_visible_hide)
-            } else if (mod_dict.mode === "inactive") {
-                mod_dict.new_isactive = !mod_dict.current_isactive
-                close_modal = true;
-                // change inactive icon, before uploading, not when new_inactive = true
-                const el_input = document.getElementById(mod_dict.mapid)
-                for (let i = 0, cell, el; cell = tblRow.cells[i]; i++) {
-                    const cell_fldName = get_attr_from_el(cell, "data-field")
-                    if (cell_fldName === "is_active"){
-    // ---  change icon, before uploading
-                        let el_icon = cell.children[0];
-                        if(el_icon){add_or_remove_class (el_icon, "inactive_1_3", !mod_dict.new_isactive,"inactive_0_2" )};
-                        break;
-                    }
-                }
-            }
+            el_confirm_loader.classList.remove(cls_visible_hide)
 
     // ---  Upload Changes
-            let upload_dict = { id: {pk: mod_dict.user_pk,
-                                     ppk: mod_dict.user_ppk,
-                                     table: "user",
-                                     mode: mod_dict.mode,
-                                     mapid: mod_dict.mapid}};
-            if (mod_dict.mode === "inactive") {
-                upload_dict.is_active = {value: mod_dict.new_isactive, update: true}
-            };
+            let upload_dict = {
+                             table: "student",
+                             mode: "delete",
+                             student_pk: mod_dict.student_pk,
+                             mapid: mod_dict.mapid};
 
             console.log("upload_dict: ", upload_dict);
-            UploadChanges(upload_dict, url_subject_upload);
+            UploadChanges(upload_dict, url_student_upload);
         };
 // ---  hide modal
-        if(close_modal) {
-            $("#id_mod_confirm").modal("hide");
-        }
+        $("#id_mod_confirm").modal("hide");
     }  // ModConfirmSave
 
 //=========  ModConfirmResponse  ================ PR2019-06-23
     function ModConfirmResponse(response) {
-        //console.log(" --- ModConfirmResponse --- ");
-        //console.log("mod_dict: ", mod_dict);
+        console.log(" --- ModConfirmResponse --- ");
+        console.log("mod_dict: ", mod_dict);
         // hide loader
         el_confirm_loader.classList.add(cls_visible_hide)
         const mode = get_dict_value(response, ["mode"])
@@ -1811,96 +1236,144 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // ModConfirmResponse
 
 //###########################################################################
-// +++++++++++++++++ REFRESH DATA MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++++++++++++++ REFRESH DATA ROWS ++++++++++++++++++++++++++++++++++++++++++++++++++
 
-//=========  RefreshDataMap  ================ PR2020-08-16 PR2020-09-30
-    function RefreshDataMap(tblName, field_names, data_rows, data_map, is_update) {
-        //console.log(" --- RefreshDataMap  ---");
-        // PR2021-01-13 debug: when data_rows = [] then !!data_rows = true. Must add !!data_rows.length
-        if (data_rows && data_rows.length ) {
-            const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-            for (let i = 0, update_dict; update_dict = data_rows[i]; i++) {
-                RefreshDatamapItem(tblName, field_names, update_dict, data_map);
+//=========  RefreshDataRows  ================ PR2020-08-16 PR2021-06-16
+    function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
+        //console.log(" --- RefreshDataRows  ---");
+        // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
+        if (update_rows && update_rows.length ) {
+            const field_setting = field_settings[tblName];
+            for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
+                RefreshDatarowItem(tblName, field_setting, update_dict, data_rows);
             }
-        } else {
-            // empty the datamap when data_rows is empty PR2021-01-13 debug forgot to empty data_map
-            // PR2021-03-13 debug. Don't empty de data_map when is update. Returns [] when no changes made
-           if(!is_update) {data_map.clear()};
+        } else if (!is_update) {
+            // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
+            // PR2021-03-13 debug. Don't empty de data_rows when is update. Returns [] when no changes made
+           data_rows = [];
         }
-    }  //  RefreshDataMap
+    }  //  RefreshDataRows
 
-//=========  RefreshDatamapItem  ================ PR2020-08-16 PR2020-09-30
-    function RefreshDatamapItem(tblName, field_names, update_dict, data_map) {
-        //console.log(" --- RefreshDatamapItem  ---");
-        //console.log("update_dict", update_dict);
+//=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-16
+    function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
+        console.log(" --- RefreshDatarowItem  ---");
+        console.log("update_dict", update_dict);
+
         if(!isEmpty(update_dict)){
-// ---  update or add update_dict in subject_map
-            let updated_columns = [];
-    // get existing map_item
-            const tblName = update_dict.table;
-            const map_id = update_dict.mapid;
-            let tblRow = document.getElementById(map_id);
+            const field_names = field_setting.field_names;
 
-            const is_deleted = get_dict_value(update_dict, ["deleted"], false)
-            const is_created = get_dict_value(update_dict, ["created"], false)
+            const map_id = update_dict.mapid;
+            const is_deleted = (!!update_dict.deleted);
+            const is_created = (!!update_dict.created);
 
 // ++++ created ++++
+            // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
+            //arr.splice(index, 0, item); will insert item into arr at the specified index
+            // (deleting 0 items first, that is, it's just an insert).
+
             if(is_created){
-    // ---  insert new item
-                data_map.set(map_id, update_dict);
-                updated_columns.push("created")
+    // ---  first remove key 'created' from update_dict
+                delete update_dict.created;
+
+    // --- lookup index where new row must be inserted in data_rows
+                const [index, dict, compare] = b_recursive_lookup(student_rows, map_id, setting_dict.user_lang);
+                const map_index = index;
+                console.log("map_index", map_index, typeof map_index);
+
+    // ---  insert new item in data_rows at proper index (data_rows is ordered by mapid)
+                // insert new row in data_rows. Splice inserts row at index, 0 means deleting zero rows
+                data_rows.splice(map_index, 0, update_dict);
+
     // ---  create row in table., insert in alphabetical order
-                let order_by = (update_dict.fullname) ? update_dict.fullname.toLowerCase() : ""
-                const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by)
-                tblRow = CreateTblRow(tblBody_datatable, tblName, map_id, update_dict, row_index)
+                const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
 
     // ---  scrollIntoView,
-                if(tblRow){
-                    tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
+                if(new_tblRow){
+                    new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
     // ---  make new row green for 2 seconds,
-                    ShowOkElement(tblRow);
+                    ShowOkElement(new_tblRow);
                 }
-                // ---  remove the row without subject, if it exists
-                remove_studsubjrow_without_subject(map_id);
+            } else {
+
+// --- get existing map_dict from data_rows
+                const [index, dict, compare] = b_recursive_lookup(student_rows, map_id, setting_dict.user_lang);
+                const map_dict = dict;
+                const row_index = index;
 
 // ++++ deleted ++++
-            } else if(is_deleted){
-                data_map.delete(map_id);
-    //--- delete tblRow
-                if (tblRow){tblRow.parentNode.removeChild(tblRow)};
-            } else {
-                const old_map_dict = (map_id) ? data_map.get(map_id) : null;
-    // ---  check which fields are updated, add to list 'updated_columns'
-                if(!isEmpty(old_map_dict) && field_names){
-                    // skip first column (is margin)
-                    for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
-                        if (col_field in old_map_dict && col_field in update_dict){
-                            if (old_map_dict[col_field] !== update_dict[col_field] ) {
-                                updated_columns.push(col_field)
-                            }}}}
-    // ---  update item
-                data_map.set(map_id, update_dict)
-            }
-    // ---  make update
-            // note: when updated_columns is empty, then updated_columns is still true.
-            // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
-            if(tblRow && updated_columns.length){
-    // ---  make entire row green when row is created
-                if(updated_columns.includes("created")){
-                    ShowOkElement(tblRow);
-                } else {
-    // loop through cells of row
-                    for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
-                        if (el){
-                            el_fldName = get_attr_from_el(el, "data-field")
-                            UpdateField(el, update_dict);
-    // make gield green when field name is in updated_columns
-                            if(updated_columns.includes(el_fldName)){
-                                ShowOkElement(el);
-                            }}}}}
-        }
-    }  // RefreshDatamapItem
+                if(is_deleted){
+                    // delete row from data_rows. Splice returns array of deleted rows
+                    const deleted_row_arr = data_rows.splice(row_index, 1)
+                    const deleted_row_dict = deleted_row_arr[0];
 
+        //--- delete tblRow
+                    const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
+                    if (tblRow_tobe_deleted ){tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)};
+
+                } else {
+
+// +++++++++++ updated row +++++++++++
+    // ---  check which fields are updated, add to list 'updated_columns'
+                    if(!isEmpty(map_dict) && field_names){
+
+                        let updated_columns = [];
+                        // skip first column (is margin)
+                        for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
+                            if (col_field in map_dict && col_field in update_dict){
+                                if (map_dict[col_field] !== update_dict[col_field] ) {
+        // ---  add field to updated_columns list
+                                    updated_columns.push(col_field)
+        // ---  update field in data_row
+                                    map_dict[col_field] = update_dict[col_field];
+                                }}
+                        };
+
+        // ---  update field in tblRow
+                        // note: when updated_columns is empty, then updated_columns is still true.
+                        // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
+                        if(updated_columns.length){
+        console.log("updated_columns", updated_columns);
+
+// --- get existing tblRow
+                            let tblRow = document.getElementById(map_id);
+                            if(tblRow){
+                                // to make it perfect: move row when first or last name have changed
+                                if (updated_columns.includes("lastname") || updated_columns.includes("firstname")){
+                                //--- delete current tblRow
+                                    tblRow.parentNode.removeChild(tblRow);
+                                //--- insert row new at new position
+                                    tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
+                                }
+
+        console.log("tblRow", tblRow);
+                // loop through cells of row
+                                for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
+                                    el = td.children[0];
+                                    if (el){
+        console.log("el", el);
+                                        el_fldName = get_attr_from_el(el, "data-field")
+            console.log("el_fldName", el_fldName);
+                                        UpdateField(el, update_dict);
+
+                // make field green when field name is in updated_columns
+                                        if(updated_columns.includes(el_fldName)){
+                                            ShowOkElement(el);
+                                        }
+                                    }
+                                };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
+                            };  // if(tblRow){
+                        }; //  if(updated_columns.length){
+
+
+                    };  //  if(!isEmpty(map_dict) && field_names){
+                };  // if(is_deleted){
+            };  // if(is_created)
+
+        }  // if(!isEmpty(update_dict)){
+    }  // RefreshDatarowItem
+
+
+//###########################################################################
 
 //=========  remove_studsubjrow_without_subject  ================ PR2020-12-20
     function remove_studsubjrow_without_subject(map_id) {
@@ -2022,159 +1495,94 @@ document.addEventListener('DOMContentLoaded', function() {
         }  // if(!!tblRow) {
     }  // SBR_SelectRowClicked
 
-
-
 //###########################################################################
-// +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++++++++++++++ FILTER TABLE ROWS ++++++++++++++++++++++++++++++++++++++
 
-//========= HandleFilterField  ====================================
-    function HandleFilterField(el, col_index, event) {
-        console.log( "===== HandleFilterField  ========= ");
+//========= HandleFilterKeyup  ================= PR2021-06-16
+    function HandleFilterKeyup(el, event) {
+        console.log( "===== HandleFilterKeyup  ========= ");
         // skip filter if filter value has not changed, update variable filter_text
 
-        //console.log( "el_key", el_key);
-        //console.log( "col_index", col_index);
-        const filter_tag = get_attr_from_el(el, "data-filtertag")
-        //console.log( "filter_tag", filter_tag);
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el.parentNode.cellIndex;
+        console.log( "col_index", col_index, "event.key", event.key);
 
-// --- get filter tblRow and tblBody
-        const tblRow = get_tablerow_selected(el);
-        const tblName = get_attr_from_el(tblRow, "data-table")
-        //console.log( "tblRow", tblRow);
-        //console.log( "tblName", tblName);
-
-// --- reset filter row when clicked on 'Escape'
         const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
+        console.log( "filter_dict", filter_dict);
 
-         if ( ["toggle", "inactive"].indexOf(filter_tag) > -1) {
-// ---  toggle filter_checked
-            let filter_checked = (col_index in filter_dict) ? filter_dict[col_index] : 0;
-    // ---  change icon
-            let el_icon = el.children[0];
-            if(el_icon){
-                add_or_remove_class(el_icon, "tickmark_0_0", !filter_checked)
-                if(filter_tag === "toggle"){
-                    add_or_remove_class(el_icon, "tickmark_0_1", filter_checked === -1)
-                    add_or_remove_class(el_icon, "tickmark_0_2", filter_checked === 1)
-                } else  if(filter_tag === "inactive"){
-                    add_or_remove_class(el_icon, "inactive_0_2", filter_checked === -1)
-                    add_or_remove_class(el_icon, "inactive_1_3", filter_checked === 1)
-                }
-            }
-
-        } else if (filter_tag === "activated") {
-// ---  toggle activated
-            let filter_checked = (col_index in filter_dict) ? filter_dict[col_index] : 0;
-            filter_checked += 1
-            if (filter_checked > 1) { filter_checked = -2 }
-            if (!filter_checked){
-                delete filter_dict[col_index];
-            } else {
-                filter_dict[col_index] = filter_checked;
-            }
-    // ---  change icon
-            let el_icon = el.children[0];
-            if(el_icon){
-                add_or_remove_class(el_icon, "tickmark_0_0", !filter_checked)
-                add_or_remove_class(el_icon, "exclamation_0_2", filter_checked === -2)
-                add_or_remove_class(el_icon, "tickmark_0_1", filter_checked === -1)
-                add_or_remove_class(el_icon, "tickmark_0_2", filter_checked === 1)
-            }
+        if (!skip_filter) {
+            Filter_TableRows();
         }
+    }; // function HandleFilterKeyup
 
-        t_Filter_TableRows(tblBody_datatable, tblName, filter_dict, false, false, null)
-        //Filter_TableRows(tblBody_datatable);
-    }; // HandleFilterField
+
+//========= HandleFilterToggle  =============== PR2021-06-16
+    function HandleFilterToggle(el_input) {
+        //console.log( "===== HandleFilterToggle  ========= ");
+
+    // - get col_index and filter_tag from  el_input
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el_input.parentNode.cellIndex;
+
+    // - get filter_tag from  el_input
+        const filter_tag = get_attr_from_el(el_input, "data-filtertag")
+        const field_name = get_attr_from_el(el_input, "data-field")
+        //console.log( "col_index", col_index);
+        //console.log( "filter_tag", filter_tag);
+        //console.log( "field_name", field_name);
+
+    // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
+        const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
+        const filter_value = (filter_array[1]) ? filter_array[1] : "0";
+        //console.log( "filter_array", filter_array);
+        //console.log( "filter_value", field_name);
+
+        let new_value = "0", icon_class = "tickmark_0_0"
+
+        // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+// - toggle filter value
+        new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
+// - get new icon_class
+        icon_class =  (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "tickmark_2_2" : "tickmark_0_0";
+
+    // - put new filter value in filter_dict
+        filter_dict[col_index] = [filter_tag, new_value]
+        //console.log( "filter_dict", filter_dict);
+        el_input.className = icon_class;
+
+        Filter_TableRows();
+
+    };  // HandleFilterToggle
+
 
 //========= Filter_TableRows  ==================================== PR2020-08-17
-    function Filter_TableRows(tblBody) {
+    function Filter_TableRows() {
         //console.log( "===== Filter_TableRows  ========= ");
 
-        const tblName_settings = (selected_btn === "btn_studsubj") ? "studsubj" : "student";
+        const tblName_settings = "student";
+        const field_setting = field_settings[tblName_settings];
+        const filter_tags = field_setting.filter_tags;
 
 // ---  loop through tblBody.rows
-        for (let i = 0, tblRow, show_row; tblRow = tblBody.rows[i]; i++) {
-            show_row = ShowTableRow(tblRow, tblName_settings)
+        for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
+            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row)
         }
     }; // Filter_TableRows
-
-//========= ShowTableRow  ==================================== PR2020-08-17
-    function ShowTableRow(tblRow, tblName_settings) {
-        // only called by Filter_TableRows
-        console.log( "===== ShowTableRow  ========= ");
-        console.log( "filter_dict", filter_dict);
-        console.log( "field_settings", field_settings);
-        let hide_row = false;
-        if (tblRow){
-// show all rows if filter_name = ""
-            if (!isEmpty(filter_dict)){
-                for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
-                    const filter_text = filter_dict[i];
-                    const filter_tag = field_settings[tblName_settings].filter_tags[i];
-                // skip if no filter on this colums
-                    if(filter_text){
-                        if(filter_tag === "text"){
-                            const blank_only = (filter_text === "#")
-                            const non_blank_only = (filter_text === "@" || filter_text === "!")
-                // get value from el.value, innerText or data-value
-                            // PR2020-06-13 debug: don't use: "hide_row = (!el_value)", once hide_row = true it must stay like that
-                            let el_value = el.innerText;
-                            if (blank_only){
-                                // empty value gets '\n', therefore filter asc code 10
-                                if(el_value && el_value !== "\n" ){
-                                    hide_row = true
-                                };
-                            } else if (non_blank_only){
-                                // empty value gets '\n', therefore filter asc code 10
-                                if(!el_value || el_value === "\n" ){
-                                    hide = true
-                                }
-                            } else {
-                                el_value = el_value.toLowerCase();
-                                // hide row if filter_text not found or el_value is empty
-                                // empty value gets '\n', therefore filter asc code 10
-                                if(!el_value || el_value === "\n" ){
-                                    hide_row = true;
-                                } else if(el_value.indexOf(filter_text) === -1){
-                                    hide_row = true;
-                                }
-                            }
-                        } else if(filter_tag === "toggle"){
-                            const el_value = get_attr_from_el_int(el, "data-value")
-                            if (filter_text === 1){
-                                if (!el_value ) {hide_row = true};
-                            } else  if (filter_text === -1){
-                                if (el_value) {hide_row = true};
-                            }
-                        } else if(filter_tag === "inactive"){
-                            const el_value = get_attr_from_el_int(el, "data-value")
-                            if (filter_text === 1){
-                                if (!el_value ) {hide_row = true};
-                            } else  if (filter_text === -1){
-                                if (el_value) {hide_row = true};
-                            }
-                        } else if(filter_tag === "activated"){
-                            const el_value = get_attr_from_el_int(el, "data-value")
-                            if (filter_text && el_value !== filter_text ) {hide_row = true};
-                        }
-                    }  //  if(!!filter_text)
-                }  // for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
-            }  // if if (!isEmpty(filter_dict))
-        }  // if (!!tblRow)
-        return !hide_row
-    }; // ShowTableRow
 
 //========= ResetFilterRows  ====================================
     function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20
        //console.log( "===== ResetFilterRows  ========= ");
 
         selected_student_pk = null;
-        selected_school_depbases = [];
+        selected_student_dict = null;
         filter_dict = {};
-        filter_mod_employee = false;
 
-        Filter_TableRows(tblBody_datatable);
+        Filter_TableRows();
 
         let filterRow = tblHead_datatable.rows[1];
         if(!!filterRow){
@@ -2183,7 +1591,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     el = cell.children[0];
                     if(el){
                         const filter_tag = get_attr_from_el(el, "data-filtertag")
-                        if(el.tag === "INPUT"){
+                        if(el.tagName === "INPUT"){
                             el.value = null
                         } else {
                             const el_icon = el.children[0];
@@ -2223,24 +1631,84 @@ document.addEventListener('DOMContentLoaded', function() {
         DatalistDownload(datalist_request);
 
     }  // MSED_Response
-//###########################################################################
 
+
+//###########################################################################
+//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05
+    function MSSSS_Response(tblName, selected_pk, selected_code, selected_name) {
+        //console.log( "===== MSSSS_Response ========= ");
+        //console.log( "selected_pk", selected_pk);
+        //console.log( "selected_code", selected_code);
+        //console.log( "selected_name", selected_name);
+
+    // ---  upload new setting
+        if(selected_pk === -1) { selected_pk = null};
+        const upload_dict = {};
+        const selected_pk_dict = {sel_student_pk: selected_pk};
+        selected_pk_dict["sel_" + tblName + "_pk"] = selected_pk;
+        let new_selected_btn = null;
+        if (tblName === "school") {
+// ---  put new selected_pk in setting_dict
+            setting_dict.sel_schoolbase_pk = selected_pk;
+    // reset selected student and subject is selected, in setting_dict and upload_dict
+            if(selected_pk){
+                selected_pk_dict.sel_student_pk = null;
+                setting_dict.sel_student_pk = null;
+                setting_dict.sel_student_name = null;
+
+                selected_pk_dict.sel_subject_pk = null;
+                setting_dict.sel_subject_pk = null;
+
+                new_selected_btn = "grade_by_subject";
+            }
+
+        } else if (tblName === "subject") {
+            setting_dict.sel_subject_pk = selected_pk;
+    // reset selected student when subject is selected, in setting_dict and upload_dict
+            if(selected_pk){
+                selected_pk_dict.sel_student_pk = null;
+                setting_dict.sel_student_pk = null;
+                setting_dict.sel_student_name = null;
+                new_selected_btn = "grade_by_subject";
+            }
+
+        } else if (tblName === "student") {
+            setting_dict.sel_student_pk = selected_pk;
+            setting_dict.sel_student_name = selected_name;
+    // reset selected subject when student is selected, in setting_dict and upload_dict
+            if(selected_pk){
+                selected_pk_dict.sel_subject_pk = null;
+                setting_dict.sel_subject_pk = null;
+                new_selected_btn = "grade_by_student";
+            }
+        }
+
+        if (tblName === "school") {
+// ---  upload new setting and refresh page
+            let datalist_request = {setting: {page: "page_grade", sel_schoolbase_pk: selected_pk}};
+            DatalistDownload(datalist_request);
+        } else {
+            UploadSettings ({selected_pk: selected_pk_dict}, url_settings_upload);
+            if (new_selected_btn) {
+        // change selected_button
+                HandleBtnSelect(new_selected_btn, true)  // true = skip_upload
+                // also calls: FillTblRows(), MSSSS_display_in_sbr(), UpdateHeader()
+            }  else {
+        // fill datatable
+                FillTblRows();
+                MSSSS_display_in_sbr()
+        // --- update header text - comes after MSSSS_display_in_sbr
+                UpdateHeaderLeft();
+            }
+        }
+    }  // MSSSS_Response
+
+//###########################################################################
+// TODO move to studentsubject
 //========= check_new_scheme  ======== // PR2021-03-13
     function check_new_scheme(student_pk, new_level_pk, new_sector_pk) {
         console.log( "check_new_scheme ");
-        console.log( "studentsubject_map", studentsubject_map);
-/*
-    'PR 3 okt 09:
-        'Deze functie controleert VakSchemaItemID in vakkenlijst van kandidaat, nodig wanneer leerweg of sector gewijzigd wordt
-            'elk KandVak heeft een VakSchemaItem, dat hoort bij het VakSchema van de leerweg en sector van deze kandidaat
-            'Als de leerweg of sector gewijzigd wordt, moet ook het VakSchemaItem van dit KandVak worden aangepast
-            'Deze functie controleert:
-            '- of het vak ook voorkomt in het nieuwe vakschema. Zo niet, zet een vlag om het vak te wissen
-            '- zo ja, of het vak in het nieuwe vakschema ook voorkomt met hetzelfde vaktype.
 
-        'strMsgText = IIf(pblAfd.CurIsHavoVwo, "Het profiel van ", "De leerweg van ") & GetKandidaatNaam(lngKandidaatID) & vbCrLf & "wordt gewijzigd in '" & strAfk_Studierichting & IIf(pblAfd.CurIsHavoVwo, "'.", "', sector  " & strAfk_Sector & ".") & vbCrLf & vbCrLf
-
-*/
 // get new scheme
         const lookup_level_pk = (new_level_pk) ? new_level_pk : mod_MSTUD_dict.lvl_id;
         const lookup_sector_pk = (new_sector_pk) ? new_sector_pk : mod_MSTUD_dict.sct_id;
@@ -2345,22 +1813,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
-    }
-
-
-//###########################################################################
-
-//========= get_tblName_from_selectedBtn  ======== // PR2020-11-14
-    function get_tblName_from_selectedBtn() {
-        const tblName = (selected_btn === "btn_student") ? "student" :
-                        (selected_btn === "btn_studsubj") ? "studsubj" : null;
-        return tblName;
-    }
-//========= get_datamap_from_tblName  ======== // PR2020-11-14
-    function get_datamap_from_tblName(tblName) {
-        const data_map = (tblName === "student") ? student_map :
-                         (tblName === "studsubj") ? studentsubject_map : null;
-        return data_map;
     }
 
 })  // document.addEventListener('DOMContentLoaded', function()

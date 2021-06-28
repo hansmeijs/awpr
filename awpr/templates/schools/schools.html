@@ -15,22 +15,6 @@
         <div class="content_subheader_left tab_show tab_init mx-2 my-4">
             <h5>{% trans 'Schools' %}</h5>
         </div>
-        {% if not no_access %}
-            <div class="tw_200 mx-2 mt-2 mb-4">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Select department' %}:</h6>
-                <input id="id_SBR_department"
-                    type="text"
-                    class="tw_200 border_none pointer_show px-2"
-                    readonly>
-            </div>
-            <div class="tw_200 mx-2 mt-2 mb-4">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Select school' %}:</h6>
-                <input id="id_SBR_school"
-                    type="text"
-                    class="tw_200 border_none pointer_show px-2"
-                    readonly>
-            </div>
-        {% endif %}
     </nav>
 {% endblock %}
 <!-- END SIDE BAR -->
@@ -50,31 +34,36 @@
     <!-- CONTENT HEADER - LOADER -->
             <!-- content_header -->
                 {% include 'includes/messages.html' %}
-
-    <!-- BUTTON GROUP -->
-                <div id="id_btn_container" class="btn-group btn-block ml-2 mr-4 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="btn_school" class="btn btn-secondary ">{% trans 'Schools' %}</button>
+    <!-- header_text left -->
+                <div class="flex_4 mx-4 visibility_hide">
+                    <h5 id="id_hdr_left"></h5>
+                </div>
+    <!-- loader -->
+                <div class="flex_1 py-2">
+                    {% include 'includes/loader.html' %}
                 </div>
 
-    <!-- CONTENT HEADER - LOADER -->
-
-        <!-- header_text -->
-                    <div class="content_subheader_left mx-4 display_hide">
-                        <h5 id="id_hdr_text">{{examyear}}  {{school}}</h5>
-                    </div>
-        <!-- loader -->
-                    <div class="content_header_middle ">
-                        <div id="id_loader" class="image_container visibility_hideXX">
-                            <img src="{% static 'img/loader.gif' %}" class="icon_24">
-                        </div>
-                    </div>
+    <!-- header_text right -->
+                <div class="flex_2 mx-4 visibility_hide">
+                    <h5 id="id_hdr_textright1"></h5>
                 </div>
+                <div class="flex_2 mx-4 visibility_hide">
+                    <h5 id="id_hdr_textright2"></h5>
+                </div>
+            </div>
             <!-- end content_header -->
+    <!-- BUTTON GROUP -->
+            <div id="id_btn_container"
+                 class="btn-group btn-block pl-2 pr-4 my-2"
+                 role="group"
+                 aria-label="Choose option">
+                <button data-btn="btn_school" class="btn btn-secondary ">{% trans 'Schools' %}</button>
+            </div>
 
     <!-- END OF CONTENT HEADER -->
 
     <!-- CONTENT BODY -->
-            <div class="content_body ml-2 mr-0">
+            <div class="content_body mx-2 mt-2">
     <!-- =================== DATA TABLE  =================== -->
                 <table class="table tsa_tbl">
                     <thead id="id_tblHead_datatable"></thead>

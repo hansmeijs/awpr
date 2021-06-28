@@ -16,6 +16,12 @@ a:hover {
    text-decoration: none;
 }
 
+/* PR2021-06-19 to show blue in links in modimport result message. */
+.awp_href {
+    color: #15c;
+    text-decoration: underline;
+}
+
 .navbar .nav-link {
     padding-top:.3125rem;
     padding-bottom:.3125rem;
@@ -90,14 +96,19 @@ a:hover {
 .awp_bg_purple {
     background-color: #9f2d53 !important; /* ETE paars #9f2d53 RGB 159-45-85 PR2021-05-24 */
 }
-
 .awp_bg_blue {
     background-color: #2d4e77 !important; /* HeaderBackColor Default Schema Blauw donkerblauw */
 }
 .awp_bg_green {
     background-color: #04928c !important; /* ETE groen #04928c RGB 4-146-140  PR2021-05-22 */
 }
+.awp_bg_yellow {
+    background-color: #ffd01c !important; /* tsa yellow  PR2021-06-20 */
+}
 
+.awp_bg_offwhite {
+    background-color: #ededed ; /* Wix background light grey ##ededed RGB 237-237-237  PR2021-06-10 */
+}
 /* change the brand and text color */
 .navbar-custom .navbar-brand,
 .navbar-custom .navbar-text {
@@ -314,11 +325,24 @@ select.form-control:not([size]):not([multiple]) {
     stroke: #04928c !important; /* ETE groen #04928c RGB 4-146-140  PR2021-05-22 */
     stroke-width: 1;
 }
+.menu_polygon_selected_yellow {
+    /*color: #212529;  /* dark dark grey blue */
+    fill: #ffd01c !important; /* tsa yellow PR2021-06-20 */
+    stroke: #ffd01c !important; /* tsa yellow  PR2021-06-20 */
+    stroke-width: 1;
+}
+
 .menu_polygon_unselected {
     fill: #bacee6;
     stroke: #bacee6;
     stroke-width: 1;
 }
+
+.menu_polygon_unselected:hover {
+    fill: #c4c4c4; /* subemnu hover grey */
+    stroke: #c4c4c4; /* subemnu hover grey */
+    stroke-width: 1;
+ }
 
 .awp_content_container {
     /* margin: <top><right><bottom><left> */

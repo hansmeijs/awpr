@@ -168,12 +168,14 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
     published = BooleanField(default=False)
     locked = BooleanField(default=False)
 
-    # TODO move to schemitems PR2021-04-24
-    # no_practexam = BooleanField(default=False)
-    # no_centralexam = BooleanField(default=False)
-    # combi_reex_allowed = BooleanField(default=False)
-    # no_exemption_ce = BooleanField(default=False)
-    # no_thirdperiod = BooleanField(default=False)
+    # also in schemitems. Here is only to hide checkboxes in schemeitems PR2021-04-24
+    no_practexam = BooleanField(default=False)
+    reex_se_allowed = BooleanField(default=False)  # herkansing schoolexamen
+    # deleted: reex_combi_allowed = BooleanField(default=False)
+    no_centralexam = BooleanField(default=False)
+    # deleted: no_reex = BooleanField(default=False)
+    no_thirdperiod = BooleanField(default=False)
+    # deleted: no_exemption_ce = BooleanField(default=False)
 
     createdat = DateTimeField(null=True)
     publishedat = DateTimeField(null=True)
@@ -207,12 +209,13 @@ class Examyear_log(AwpBaseModel):
     published = BooleanField(default=False)
     locked = BooleanField(default=False)
 
-    # TODO move to schemitems PR2021-04-24
-    # no_practexam = BooleanField(default=False)
-    # no_centralexam = BooleanField(default=False)
-    # combi_reex_allowed = BooleanField(default=False)
-    # no_exemption_ce = BooleanField(default=False)
-    # no_thirdperiod = BooleanField(default=False)
+    no_practexam = BooleanField(default=False)
+    reex_se_allowed = BooleanField(default=False)  # herkansing schoolexamen
+    # deleted: reex_combi_allowed = BooleanField(default=False)
+    no_centralexam = BooleanField(default=False)
+    # deleted: no_reex = BooleanField(default=False)
+    no_thirdperiod = BooleanField(default=False)
+    # deleted: no_exemption_ce = BooleanField(default=False)
 
     createdat = DateTimeField(null=True)
     publishedat = DateTimeField(null=True)
@@ -449,6 +452,7 @@ class School_log(AwpBaseModel):
     objects = AwpModelManager()
 
     school_id = IntegerField(db_index=True)
+
     base = ForeignKey(Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
     examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=CASCADE)
 
@@ -456,6 +460,7 @@ class School_log(AwpBaseModel):
     name = CharField(max_length=c.MAX_LENGTH_NAME,null=True)
     abbrev = CharField(max_length=c.MAX_LENGTH_SCHOOLABBREV,null=True)
     article = CharField(max_length=c.MAX_LENGTH_SCHOOLARTICLE, null=True)
+
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     isdayschool = BooleanField(default=False)
@@ -631,37 +636,32 @@ def dep_initials(dep_name):
     return initials
 
 
-def delete_instance(instance, error_dict, request, this_text=None):
+def delete_instance(instance, messages, request, this_txt=None, header_txt=None):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_instance  -----')
         logger.debug('instance: ' + str(instance))
 
-    # function deletes instance of table,  PR2019-08-25 PR2020-10-23
+    # function deletes instance of table,  PR2019-08-25 PR2020-10-23 PR2021-06-20
     deleted_ok = False
 
     if instance:
-        instance.delete(request=request)
         try:
-            a = 1 / 0
             instance.delete(request=request)
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-
-            tbl = this_text if this_text else _('This item')
-            msg_list = [str(_('An error occurred: ')) + str(e),
-                        str(_('%(tbl)s could not be deleted.') % {'tbl': tbl})]
-
-            # error_list = [ { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
-            #                {'class': 'alert-danger', msg_list: [text1, text2]} ] (for use in modal message)
-            error_dict['error_delete'] = {'class': 'alert-danger', 'msg_list': msg_list}
+            caption = this_txt if this_txt else _('This item')
+            msg_html = ''.join((str(_('An error occurred')), ': ', str(e), '<br>',
+                        str(_("%(cpt)s could not be deleted.") % {'cpt': caption})))
+            msg_dict = {'class': 'border_bg_invalid', 'header': header_txt, 'msg_html': msg_html}
+            messages.append(msg_dict)
 
         else:
             instance = None
             deleted_ok = True
 
     if logging_on:
-        logger.debug('error_dict: ' + str(error_dict))
+        logger.debug('messages: ' + str(messages))
         logger.debug('instance: ' + str(instance))
         logger.debug('deleted_ok: ' + str(deleted_ok))
 

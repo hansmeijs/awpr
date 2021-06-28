@@ -287,8 +287,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 studentsubject_rows: {get: true},
                 grade_rows: {get: true},
                 published_rows: {get: true},
-                level_rows: {get: true},
-                sector_rows: {get: true}
+                level_rows: {cur_dep_only: true},
+                sector_rows: {cur_dep_only: true}
             };
 
         DatalistDownload(datalist_request);
@@ -397,7 +397,7 @@ document.addEventListener("DOMContentLoaded", function() {
         //console.log("===  CreateSubmenu == ");
 
         let el_submenu = document.getElementById("id_submenu")
-        AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A_form, null, "id_submenu_download_ex2a", url_grade_download_ex2a, true);  // true = download
+        AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A_form, null, null, "id_submenu_download_ex2a", url_grade_download_ex2a, true);  // true = download
         if (permit_dict.approve_grade){
             AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MAG_Open("approve")});
         }
@@ -756,7 +756,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
           };
         }  // if(!!data_map)
-
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-12-03 PR2020-12-18 PR2021-01-022
@@ -772,36 +771,38 @@ document.addEventListener("DOMContentLoaded", function() {
     // --- loop through columns
         for (let j = 0; j < column_count; j++) {
             const field_name = field_setting.field_names[j];
-            const key = field_setting.field_caption[j];
-            let field_caption = (loc[key]) ? loc[key] : key;
 
-            if (field_name === "segrade") {
-                if (setting_dict.sel_examperiod === 4){
-                    field_caption = "Vrijstelling\nSE-cijfer"
-                }
-            } else if (field_name === "cescore") {
-                if (setting_dict.sel_examperiod === 2){
-                    field_caption = "Herexamen\nscore"
-                } else if (setting_dict.sel_examperiod === 3){
-                    field_caption = "Her 3e tv\nscore"
-                }
-            } else if (field_name === "cegrade") {
-                if (setting_dict.sel_examperiod === 2){
-                    field_caption = "Herexamen cijfer"
-                } else if (setting_dict.sel_examperiod === 3){
-                    field_caption = "Her 3e tv cijfer"
-                } else if (setting_dict.sel_examperiod === 4){
-                    field_caption = "Vrijstelling\nCE-cijfer"
-                }
-            }
-
-            const field_tag = field_setting.field_tags[j];
-            const filter_tag = field_setting.filter_tags[j];
-            const class_width = "tw_" + field_setting.field_width[j] ;
-            const class_align = "ta_" + field_setting.field_align[j];
-
-    // - skip columns if not columns_shown[field_name]) = true;
+    // - skip columns if columns_shown[field_name]) = true;
             if (columns_shown[field_name]){
+
+                const key = field_setting.field_caption[j];
+                let field_caption = (loc[key]) ? loc[key] : key;
+
+                if (field_name === "segrade") {
+                    if (setting_dict.sel_examperiod === 4){
+                        field_caption = "Vrijstelling\nSE-cijfer"
+                    }
+                } else if (field_name === "cescore") {
+                    if (setting_dict.sel_examperiod === 2){
+                        field_caption = "Herexamen\nscore"
+                    } else if (setting_dict.sel_examperiod === 3){
+                        field_caption = "Her 3e tv\nscore"
+                    }
+                } else if (field_name === "cegrade") {
+                    if (setting_dict.sel_examperiod === 2){
+                        field_caption = "Herexamen cijfer"
+                    } else if (setting_dict.sel_examperiod === 3){
+                        field_caption = "Her 3e tv cijfer"
+                    } else if (setting_dict.sel_examperiod === 4){
+                        field_caption = "Vrijstelling\nCE-cijfer"
+                    }
+                }
+
+                const field_tag = field_setting.field_tags[j];
+                const filter_tag = field_setting.filter_tags[j];
+                const class_width = "tw_" + field_setting.field_width[j] ;
+                const class_align = "ta_" + field_setting.field_align[j];
+
 
 // ++++++++++ insert columns in header row +++++++++++++++
         // --- add th to tblRow_header +++
@@ -892,7 +893,6 @@ document.addEventListener("DOMContentLoaded", function() {
         tblRow.id = map_id
 
 // --- add data attributes to tblRow
-        const pk_int = map_dict.id
         tblRow.setAttribute("data-pk", map_dict.id);
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
@@ -916,36 +916,21 @@ document.addEventListener("DOMContentLoaded", function() {
                 const class_align = "ta_" + field_align[j];
 
         // --- insert td element,
-                let td = tblRow.insertCell(-1);
-
-        // --- add EventListener to td
-                if (["se_status", "pe_status", "ce_status"].includes(field_name)) {
-                    td.addEventListener("click", function() {UploadToggle(el)}, false)
-                    add_hover(td);
-                } else if (field_name === "note_status"){
-                    if(permit_dict.read_note){
-                        td.addEventListener("click", function() {ModNote_Open(el)}, false)
-                        add_hover(td);
-                    }
-                //} else if (field_name === "filename"){
-                   // const file_name = (map_dict.name) ? map_dict.name : "";
-                    //add_hover(td);
-                }
-                //td.classList.add("pointer_show", "px-2");
+                const td = tblRow.insertCell(-1);
 
         // --- create element with tag from field_tags
-                let el = document.createElement(field_tag);
+                const el = document.createElement(field_tag);
 
         // --- add data-field attribute
                     el.setAttribute("data-field", field_name);
 
-            // --- add data-field Attribute when input element
+        // --- add data-field Attribute when input element
                     if (field_tag === "input") {
                         el.setAttribute("type", "text")
                         el.setAttribute("autocomplete", "off");
                         el.setAttribute("ondragstart", "return false;");
                         el.setAttribute("ondrop", "return false;");
-            // --- add EventListener
+        // --- add EventListener
                         el.addEventListener("change", function(){HandleInputChange(el)});
                         el.addEventListener("keydown", function(event){HandleArrowEvent(el, event)});
 
@@ -1002,6 +987,17 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 td.appendChild(el);
 
+        // --- add EventListener to td
+                if (["se_status", "pe_status", "ce_status"].includes(field_name)) {
+                    td.addEventListener("click", function() {UploadToggle(el)}, false)
+                    add_hover(td);
+                } else if (field_name === "note_status"){
+                    if(permit_dict.read_note){
+                        td.addEventListener("click", function() {ModNote_Open(el)}, false)
+                        add_hover(td);
+                    }
+                }
+                //td.classList.add("pointer_show", "px-2");
     // --- put value in field
                 UpdateField(el, map_dict)
             }  //  if (columns_shown[field_name])
@@ -1201,7 +1197,7 @@ document.addEventListener("DOMContentLoaded", function() {
         //console.log("fldName", fldName)
         //console.log("map_dict", map_dict)
 
-            if (!permit_dict.crud_grade){
+            if (!permit_dict.permit_crud){
         // show message no permission
                 b_show_mod_message(loc.grade_err_list.no_permission);
         // put back old value  in el_input
@@ -1267,7 +1263,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         }
                     }
                 }
-            }  // if (!permit_dict.crud_grade)
+            }  // if (!permit_dict.permit_crud)
         }
     };  // HandleInputChange
 
@@ -2431,12 +2427,13 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 // +++++++++++++++++ REFRESH DATA MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
 
 //=========  RefreshDataMap  ================ PR2020-08-16 PR2020-09-30, PR2021-05-01
-    function RefreshDataMap(tblName, field_names, data_rows, data_map, show_ok) {
+    function RefreshDataMap(tblName, field_names, update_rows, data_map, show_ok) {
         console.log(" --- RefreshDataMap  ---");
-        //console.log("data_rows", data_rows);
-        if (data_rows) {
+        //console.log("update_rows", update_rows);
+        if (update_rows) {
+            const field_setting = field_settings[tblName];
             const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-            for (let i = 0, update_dict; update_dict = data_rows[i]; i++) {
+            for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
                 RefreshDatamapItem(field_names, update_dict, data_map, show_ok);
             }
             //console.log("data_map", data_map);
@@ -2640,63 +2637,6 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
     };  // HandleFilterToggle
 
-//========= HandleFilterField  ====================================
-    function HandleFilterField(el, col_index, event) {
-       //console.log( "===== HandleFilterField  ========= ");
-        // skip filter if filter value has not changed, update variable filter_text
-
-        //console.log( "el_key", el_key);
-        //console.log( "col_index", col_index);
-        const filter_tag = get_attr_from_el(el, "data-filtertag")
-        //console.log( "filter_tag", filter_tag);
-
-// --- get filter tblRow and tblBody
-        const tblRow = get_tablerow_selected(el);
-        const tblName = get_attr_from_el(tblRow, "data-table")
-
-// --- reset filter row when clicked on 'Escape'
-        const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
-
-         if ( ["toggle", "inactive"].indexOf(filter_tag) > -1) {
-// ---  toggle filter_checked
-            let filter_checked = (col_index in filter_dict) ? filter_dict[col_index] : 0;
-    // ---  change icon
-            let el_icon = el.children[0];
-            if(el_icon){
-                add_or_remove_class(el_icon, "tickmark_0_0", !filter_checked)
-                if(filter_tag === "toggle"){
-                    add_or_remove_class(el_icon, "tickmark_0_1", filter_checked === -1)
-                    add_or_remove_class(el_icon, "tickmark_0_2", filter_checked === 1)
-                } else  if(filter_tag === "inactive"){
-                    add_or_remove_class(el_icon, "inactive_0_2", filter_checked === -1)
-                    add_or_remove_class(el_icon, "inactive_1_3", filter_checked === 1)
-                }
-            }
-
-        } else if (filter_tag === "activated") {
-// ---  toggle activated
-            let filter_checked = (col_index in filter_dict) ? filter_dict[col_index] : 0;
-            filter_checked += 1
-            if (filter_checked > 1) { filter_checked = -2 }
-            if (!filter_checked){
-                delete filter_dict[col_index];
-            } else {
-                filter_dict[col_index] = filter_checked;
-            }
-    // ---  change icon
-            let el_icon = el.children[0];
-            if(el_icon){
-                add_or_remove_class(el_icon, "tickmark_0_0", !filter_checked)
-                add_or_remove_class(el_icon, "exclamation_0_2", filter_checked === -2)
-                add_or_remove_class(el_icon, "tickmark_0_1", filter_checked === -1)
-                add_or_remove_class(el_icon, "tickmark_0_2", filter_checked === 1)
-
-            }
-        }
-
-
-        Filter_TableRows(tblBody_datatable);
-    }; // HandleFilterField
 
 //========= Filter_TableRows  ==================================== PR2020-08-17
     function Filter_TableRows(tblBody) {
@@ -2707,80 +2647,10 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         const filter_tags = field_setting.filter_tags;
 
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
-            tblRow = tblBody_datatable.rows[i]
             show_row = t_ShowTableRowExtended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row)
         }
     }; // Filter_TableRows
-
-//========= ShowTableRow  ==================================== PR2020-08-17
-    function ShowTableRow(tblRow, filter_tags) {
-        // only called by Filter_TableRows
-        //console.log( "===== ShowTableRow  ========= ");
-        //console.log( "filter_dict", filter_dict);
-
-        let hide_row = false;
-        if (tblRow){
-// show all rows if filter_name = ""
-            if (!isEmpty(filter_dict)){
-                for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
-                    const filter_text = filter_dict[i];
-                    const filter_tag = filter_tags[i];
-
-        //console.log( "filter_text", filter_text);
-        //console.log( "filter_tag", filter_tag);
-                // skip if no filter on this colums
-                    if(filter_text){
-                        if(filter_tag === "text"){
-                            const blank_only = (filter_text === "#")
-                            const non_blank_only = (filter_text === "@" || filter_text === "!")
-                // get value from el.value, innerText or data-value
-                            // PR2020-06-13 debug: don't use: "hide_row = (!el_value)", once hide_row = true it must stay like that
-                            let el_value = el.innerText;
-                            if (blank_only){
-                                // empty value gets '\n', therefore filter asc code 10
-                                if(el_value && el_value !== "\n" ){
-                                    hide_row = true
-                                };
-                            } else if (non_blank_only){
-                                // empty value gets '\n', therefore filter asc code 10
-                                if(!el_value || el_value === "\n" ){
-                                    hide = true
-                                }
-                            } else {
-                                el_value = el_value.toLowerCase();
-                                // hide row if filter_text not found or el_value is empty
-                                // empty value gets '\n', therefore filter asc code 10
-                                if(!el_value || el_value === "\n" ){
-                                    hide_row = true;
-                                } else if(el_value.indexOf(filter_text) === -1){
-                                    hide_row = true;
-                                }
-                            }
-                        } else if(filter_tag === "toggle"){
-                            const el_value = get_attr_from_el_int(el, "data-value")
-                            if (filter_text === 1){
-                                if (!el_value ) {hide_row = true};
-                            } else  if (filter_text === -1){
-                                if (el_value) {hide_row = true};
-                            }
-                        } else if(filter_tag === "inactive"){
-                            const el_value = get_attr_from_el_int(el, "data-value")
-                            if (filter_text === 1){
-                                if (!el_value ) {hide_row = true};
-                            } else  if (filter_text === -1){
-                                if (el_value) {hide_row = true};
-                            }
-                        } else if(filter_tag === "activated"){
-                            const el_value = get_attr_from_el_int(el, "data-value")
-                            if (filter_text && el_value !== filter_text ) {hide_row = true};
-                        }
-                    }  //  if(!!filter_text)
-                }  // for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
-            }  // if if (!isEmpty(filter_dict))
-        }  // if (!!tblRow)
-        return !hide_row
-    }; // ShowTableRow
 
 //========= ResetFilterRows  ====================================
     function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20
@@ -2801,7 +2671,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                     el = cell.children[0];
                     if(el){
                         const filter_tag = get_attr_from_el(el, "data-filtertag")
-                        if(el.tag === "INPUT"){
+                        if(el.tagName === "INPUT"){
                             el.value = null
                         } else {
                             const el_icon = el.children[0];
@@ -2832,8 +2702,8 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 // also retrieve the tables that have been changed because of the change in examyear / dep
         const datalist_request = {
                 setting: new_setting,
-                level_rows: {get: true},
-                sector_rows: {get: true},
+                level_rows: {cur_dep_only: true},
+                sector_rows: {cur_dep_only: true},
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},
                 grade_rows: {get: true}

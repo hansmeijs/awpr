@@ -655,9 +655,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     const mode = get_dict_value(response, ["mode"]);
 
                     if ("updated_examyear_rows" in response) {
-                        MEY_update_after_response (response.updated_examyear_rows);
+                        MEY_update_after_response (response);
                     };
-
+                    if ("updated_school_rows" in response) {
+                        MEY_update_after_response (response);
+                    };
                 },  // success: function (response) {
                 error: function (xhr, msg) {
                     // ---  hide loader
@@ -672,7 +674,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
 
 // +++++++++ MOD EXAM YEAR ++++++++++++++++ PR2020-10-04
-// --- also used for level, sector,
     function MEY_Open(mode, el_input){
         console.log(" -----  MEY_Open   ----")
         console.log("selected.examyear_pk", selected.examyear_pk)
@@ -682,7 +683,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("permit_dict", permit_dict)
         const is_addnew = (mode === "create")
         //console.log("permit_dict", permit_dict)
-        if(permit_dict.crud_examyear){
+        if(permit_dict.permit_crud){
             let selected_pk = null, map_id = null;
             const fldName = get_attr_from_el(el_input, "data-field");
             const tblName = "examyear";
@@ -724,7 +725,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const mode = mod_MEY_dict.mode;
         console.log( "mode: ", mode);
 
-        if(!!permit_dict.crud_examyear){
+        if(!!permit_dict.permit_crud){
             let upload_changes = false;
             let upload_dict = {table: 'examyear', country_pk: mod_MEY_dict.country_id};
             if(btn_clicked === "undo"){
@@ -780,43 +781,75 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }  // MEY_Save
 
-//=========  MEY_update_after_response  ================  PR2020-10-01
-    function MEY_update_after_response(updated_examyear_rows) {
+//=========  MEY_update_after_response  ================  PR2020-10-01 PR2021-06-20
+    function MEY_update_after_response(response) {
         console.log(" -----  MEY_update_after_response  ----");
         console.log( "mod_MEY_dict: ", mod_MEY_dict);
 
-        if(updated_examyear_rows[0]) {
-            const tblName = "examyear";
-            const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-            RefreshDataMap(tblName, field_names, updated_examyear_rows, examyear_map);
+        if ("updated_examyear_rows" in response) {
+            const updated_examyear_rows = response.updated_examyear_rows
+            if(updated_examyear_rows.length) {
+                const tblName = "examyear";
+                const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
+                RefreshDataMap(tblName, field_names, updated_examyear_rows, examyear_map);
 
-            const updated_examyear_dict = updated_examyear_rows[0];
-            if(!isEmpty(updated_examyear_dict)){
-                console.log( "updated_examyear_dict: ", updated_examyear_dict);
-                console.log( "updated_examyear_dict.error: ", updated_examyear_dict.error);
+                const updated_examyear_dict = updated_examyear_rows[0];
+                if(!isEmpty(updated_examyear_dict)){
+                    console.log( "updated_examyear_dict: ", updated_examyear_dict);
+                    console.log( "updated_examyear_dict.error: ", updated_examyear_dict.error);
 
-                if ("error" in updated_examyear_dict){
-                    const msg_list = updated_examyear_dict.error;
-                    const border_class = "border_bg_invalid";
-                    MEY_SetMsgContainer(border_class, msg_list);
+                    if ("error" in updated_examyear_dict){
+                        const msg_list = updated_examyear_dict.error;
+                        const border_class = "border_bg_invalid";
+                        MEY_SetMsgContainer(border_class, msg_list);
 
-                } else if ("created" in updated_examyear_dict){
-                    let msg_list = [loc.Examyear_successfully_created];
-                    const el_msg_container = document.getElementById("id_msg_container")
-                    const el_list = select_elements_in_container_byClass(el_msg_container)
-                    for (let i = 0, el; el = el_list[i]; i++) {
-                        const index = get_attr_from_el_int(el, "data-index")
-                        el.innerText = (msg_list && msg_list[index]) ? msg_list[index] : null
+                    } else if ("created" in updated_examyear_dict){
+                        let msg_list = [loc.Examyear_successfully_created];
+                        const el_msg_container = document.getElementById("id_msg_container")
+                        const el_list = select_elements_in_container_byClass(el_msg_container)
+                        for (let i = 0, el; el = el_list[i]; i++) {
+                            const index = get_attr_from_el_int(el, "data-index")
+                            el.innerText = (msg_list && msg_list[index]) ? msg_list[index] : null
+                        }
+                        add_or_remove_class(el_msg_container, "border_bg_valid", true, "border_bg_message")
+                        el_MEY_btn_save.classList.add(cls_hide)
+                        el_MEY_btn_cancel.innertext = loc.Close
+
+                    } else {
+                        $("#id_mod_examyear").modal("hide");
                     }
-                    add_or_remove_class(el_msg_container, "border_bg_valid", true, "border_bg_message")
-                    el_MEY_btn_save.classList.add(cls_hide)
-                    el_MEY_btn_cancel.innertext = loc.Close
-
-                } else {
-                    $("#id_mod_examyear").modal("hide");
                 }
             }
-        }
+        };
+
+        if ("updated_school_rows" in response) {
+            const updated_school_rows = response.updated_school_rows
+            if(updated_school_rows.length) {
+                const tblName = "examyear_school";
+                const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
+                RefreshDataMap("school", field_names, updated_school_rows, school_map);
+
+                const updated_school_dict = updated_school_rows[0];
+                if(!isEmpty(updated_school_dict)){
+                    console.log( "updated_school_dict: ", updated_school_dict);
+                    if ("error" in updated_school_dict){
+                        const err_dict = updated_school_dict.error;
+                        if ("general" in err_dict){
+                            const msg_list = err_dict.general;
+                            const border_class = "border_bg_invalid";
+                            MEY_SetMsgContainer(border_class, msg_list);
+                            el_MEY_btn_save.classList.add(cls_hide);
+                            el_MEY_btn_save.classList.add(cls_hide);
+                            // ---  set text on btn Save Cancel, hide btn save on error  or after save
+                            const hide_btn_save = true;
+                            MEY_SetBtnOkCancel(mod_MEY_dict.mode, hide_btn_save);
+                        }
+                    } else {
+                        $("#id_mod_examyear").modal("hide");
+                    }
+                }
+            }
+        };
     }  // MEY_update_after_response
 
 //========= MEY_get_next_examyear  ============= PR2020-10-04
@@ -845,6 +878,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MEY_SetMsgElements  ============= PR2020-10-05 PR2021-04-24
     function MEY_SetMsgElements(response){
         console.log( "===== MEY_SetMsgElements  ========= ");
+        console.log( "response", response);
         console.log( "mod_MEY_dict", mod_MEY_dict);
         const mode = mod_MEY_dict.mode;
         console.log( "mode", mode);
@@ -864,13 +898,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- set input element
         el_MEY_examyear.value = (mod_MEY_dict.examyear_code) ? mod_MEY_dict.examyear_code : null;
 
-// ---  btn_save_text
-        const btn_save_text = (mode === "create") ? loc.Create_new_examyear :
-                              (mode === "publish")  ? loc.Publish_examyear :
-                              (mode === "activate")  ? loc.Activate_examyear :
-                              (["close_admin", "close_school"].includes(mode))  ? loc.Close_examyear : null;
-        el_MEY_btn_save.innerText = btn_save_text;
-
 
 // set msg elements
         const msg_list = (mode === "create") ? loc.msg_info.create :
@@ -887,8 +914,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let err_save = false;
 
-
-
 // ---  set text on msg_modified
         let modified_text = null;
         if (mode !== "create"){
@@ -899,13 +924,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         document.getElementById("id_MEY_msg_modified").innerText = modified_text;
 
-// ---  set text on btn cancel
-        el_MEY_btn_cancel.innerText = ((is_ok || err_save) ? loc.Close: loc.Cancel);
-        if(is_ok || err_save){el_MUA_btn_cancel.focus()}
-
-// ---  show / hide btn save
-        add_or_remove_class(el_MEY_btn_save, cls_hide, !btn_save_text)
-
 // ---  set text on btn delete
         const btn_del_text = (mode === "publish")  ? loc.Delete_examyear :
                              (mode === "close_admin")  ? loc.Undo_publish_examyear :
@@ -913,11 +931,35 @@ document.addEventListener('DOMContentLoaded', function() {
         el_MEY_btn_delete.innerText = btn_del_text;
         add_or_remove_class(el_MEY_btn_delete, cls_hide, !btn_del_text)
 
+// ---  set text on btn Save Cancel, hide btn save on error  or after save
+        const hide_btn_save = (is_ok || err_save);
+        MEY_SetBtnOkCancel(mode, hide_btn_save);
+
     }  // MEY_SetMsgElements
+
+//========= MEY_SetMsgContainer ======== // PR2021-06-20
+    function MEY_SetBtnOkCancel(mode, hide_btn_save) {
+
+// ---  btn_save_text
+        const btn_save_text = (mode === "create") ? loc.Create_new_examyear :
+                              (mode === "publish")  ? loc.Publish_examyear :
+                              (mode === "activate")  ? loc.Activate_examyear :
+                              (["close_admin", "close_school"].includes(mode))  ? loc.Close_examyear : null;
+        el_MEY_btn_save.innerText = btn_save_text;
+
+// ---  show / hide btn save
+        add_or_remove_class(el_MEY_btn_save, cls_hide, hide_btn_save)
+
+// ---  set text on btn cancel
+        el_MEY_btn_cancel.innerText = ((hide_btn_save) ? loc.Close: loc.Cancel);
+        if(hide_btn_save){el_MEY_btn_cancel.focus()}
+
+    }
 
 //========= MEY_SetMsgContainer ======== // PR2021-04-24
     function MEY_SetMsgContainer(border_class, msg_list) {
-        //console.log(" -----  MEY_SetMsgContainer   ----")
+        console.log(" -----  MEY_SetMsgContainer   ----")
+        console.log("msg_list", msg_list)
 
         const el_msg_container = document.getElementById("id_msg_container");
 
@@ -950,7 +992,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  ModConfirmOpen   ----")
         // called by el_MEY_btn_delete and submenu btn delete examyear
 
-        if(!!permit_dict.crud_examyear){
+        if(!!permit_dict.permit_crud){
             const tblName = "examyear";
             const data_map = examyear_map;
             let dont_show_modal = false;
@@ -1033,16 +1075,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 $("#id_mod_confirm").modal({backdrop: true});
             }  // if(!dont_show_modal)
 
-        }  // if(!!permit_dict.crud_examyear)
+        }  // if(!!permit_dict.permit_crud)
     };  // ModConfirmOpen
 
-//=========  ModConfirmSave  ================ PR2019-06-23
+//=========  ModConfirmSave  ================ PR2019-06-23 PR2021-06-15
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
-        let close_modal = (!permit_dict.crud_examyear)
+        let close_modal = (!permit_dict.permit_crud)
 
-        if(!!permit_dict.crud_examyear){
+        if(!!permit_dict.permit_crud){
             let tblRow = document.getElementById(mod_dict.mapid);
 
     // ---  when delete: make tblRow red, before uploading

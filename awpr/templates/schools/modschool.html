@@ -12,91 +12,106 @@
                     </button>
                 </div>
 
-                <div class="modal-body py-2">
-                    <div id="id_MSCH_form_controls" class="mx-">
-                        <div id="id_MSCH_loader" class="image_container visibility_hide">
-                            <img  src="{% static 'img/loader.gif' %}" height="24" width="24">
-                        </div>
-                            <div class="flex_container">
-                                <div class="flex_4 mx-1">
-
-                                    <div class="flex_container">
-                                        <div class="flex_1 mx-1">
-                                            <label for="id_MSCH_code" class="mx-2">{% trans 'Code' %}:</label>
-                                            <input id="id_MSCH_code" type="text" data-field="code"
-                                            class="form-control awp_input_text"
-                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                        </div>
-                                        <div class="flex_4 mx-1 ">
-                                            <label for="id_MSCH_abbrev" class="mx-2">{% trans 'Short name' %}:</label>
-                                            <input id="id_MSCH_abbrev" type="text" data-field="abbrev"
-                                            class="form-control awp_input_text"
-                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                        </div>
-                                    </div>
-                                    <div class="flex_container">
-                                        <div class="flex_1 mx-2">
-                                            <small id="id_MSCH_msg_code" class="text-danger "></small>
-                                        </div>
-                                        <div class="flex_4 mx-2">
-                                            <small id="id_MSCH_msg_abbrev" class="text-danger"></small>
-                                        </div>
-                                    </div>
-
-                                    <div class="flex_container mt-2">
-                                        <div class="flex_1 mx-1">
-                                            <label for="id_MSCH_article" class="mx-2">{% trans 'Article' %}:</label>
-                                            <select id="id_MSCH_article" data-field="article" class="form-control awp_input_text">
-                                                <option value="">-</option>
-                                                <option value="de">de</option>
-                                                <option value="het">het</option>
-                                            </select>
-                                        </div>
-                                        <div class="flex_4 mx-1">
-                                            <label for="id_MSCH_name" class="mx-2">{% trans 'Name' %}:</label>
-                                            <input id="id_MSCH_name" type="text" data-field="name"
-                                            class="form-control awp_input_text"
-                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                        </div>
-                                    </div>
-
-                                    <div class="flex_container">
-                                        <div class="flex_1 mx-2">
-                                            <small id="id_MSCH_msg_article" class="text-danger "></small>
-                                        </div>
-                                        <div class="flex_4 mx-2">
-                                            <small id="id_MSCH_msg_name" class="text-danger"></small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex_1 mx-2">
-                                    <div id="id_MSCH_label_dep" class="mx-2"></div>
-                                    <div class="tbl_h140_w220 form-control">
-                                        <table class="table tsa_tbl">
-                                            <tbody id="id_MSCH_tbody_select">
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div id="id_MSCH_defaultrole_container" class="mx-2" >
-                                <div>
-                                    <label class="mx-2">{% trans 'Organization' %}:</label>
-                                    <select id="id_MSCH_select_defaultrole" data-field="defaultrole" class="form-control awp_input_text">
-                                    </select>
-                                </div>
-                                <div class="mx-2">
-                                     <small id="id_MSCH_msg_defaultrole" class="text-danger"></small>
-                                </div>
-                            </div>
-
-                            <div class="mx-3 mt-2">
-                                <small id="id_MSCH_msg_modified"></small>
-                            </div>
+                <div id="id_MSCH_form_controls" class="modal-body py-2">
+                    <div id="id_MSCH_loader" class="image_container visibility_hide">
+                        <img  src="{% static 'img/loader.gif' %}" height="24" width="24">
                     </div>
 
+                    <div id="id_MSCH_defaultrole_container" class="mx-2" >
+                        <div>
+                            <label class="mx-2">{% trans 'Type of organization' %}:</label>
+                            <select id="id_MSCH_defaultrole" data-field="defaultrole" class="form-control">
+                            </select>
+                        </div>
+                        <div class="mx-2">
+                             <small id="id_MSCH_msg_defaultrole" class="text-danger"></small>
+                        </div>
+                    </div>
+
+                    <div class="flex_container">
+                        <div class="flex_4 mx-1">
+                            <div class="flex_container">
+                                <div class="flex_1 mx-1">
+                                    <label for="id_MSCH_code" class="label_margin_top_m2">{% trans 'Code' %}:</label>
+                                    <input id="id_MSCH_code" type="text" data-field="code"
+                                    class="form-control"
+                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                </div>
+                                <div class="flex_4 mx-1 ">
+                                    <label for="id_MSCH_abbrev" class="label_margin_top_m2">{% trans 'Short name' %}:</label>
+                                    <input id="id_MSCH_abbrev" type="text" data-field="abbrev"
+                                    class="form-control"
+                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                </div>
+                            </div>
+
+                            <div class="flex_container">
+                                <div class="flex_1 mx-2">
+                                    <small id="id_MSCH_msg_code" class="text-danger "></small>
+                                </div>
+                                <div class="flex_4 mx-2">
+                                    <small id="id_MSCH_msg_abbrev" class="text-danger"></small>
+                                </div>
+                            </div>
+
+                            <div class="flex_container">
+                                <div class="flex_1 mx-1">
+                                    <label for="id_MSCH_article" class="mx-2">{% trans 'Article' %}:</label>
+                                    <select id="id_MSCH_article" data-field="article" class="form-control">
+                                        <option value="">-</option>
+                                        <option value="de">de</option>
+                                        <option value="het">het</option>
+                                    </select>
+                                </div>
+                                <div class="flex_4 mx-1">
+                                    <label for="id_MSCH_name" class="mx-2">{% trans 'Name' %}:</label>
+                                    <input id="id_MSCH_name" type="text" data-field="name"
+                                    class="form-control"
+                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                </div>
+                            </div>
+
+                            <div class="flex_container">
+                                <div class="flex_1 mx-2">
+                                    <small id="id_MSCH_msg_article" class="text-danger "></small>
+                                </div>
+                                <div class="flex_4 mx-2">
+                                    <small id="id_MSCH_msg_name" class="text-danger"></small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex_1 mx-2">
+                            <div class="label_margin_top_m2">{% trans 'Departments of this school' %}:</div>
+                            <div class="tbl_h128_w220 form-control">
+                                <table class="table tsa_tbl mb-0">
+                                    <tbody id="id_MSCH_tbody_select">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mx-2" >
+                        <div>
+                            <label class="mx-2">{% trans 'Day school' %} / {% trans 'Evening school' %} / {% trans 'Landsexamen' %} / </label>
+                            <select data-field="dayevelex" class="form-control">
+                                <option value="day">{% trans 'Day school' %}</option>
+                                <option value="eve"> {% trans 'Evening school' %}</option>
+                                <option value="dayeve"> {% trans 'Day- Evening school' %}</option>
+                                <option value="lex"> {% trans 'Landsexamen' %}</option>
+                            </select>
+                        </div>
+                        <div class="mx-2">
+                             <small id="id_MSCH_msg_dayeveninglex" class="text-danger"></small>
+                        </div>
+                    </div>
+
+                    <div class="mx-3 mt-2">
+                        <small id="id_MSCH_msg_modified"></small>
+                    </div>
                 </div>
+
                 <div class="modal-footer">
                     <div class="content_subheader_left mx-1 tab_show tab_update display_hideX">
                         <button id="id_MSCH_btn_delete" type="button" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete school' %}</button>

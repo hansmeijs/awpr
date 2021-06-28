@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from schools.models import Country, Examyear, Departmentbase, Department, Schoolbase, School
 from awpr import constants as c
-from awpr.settings import AUTH_USER_MODEL
+from awpr import settings as s
 from schools import models as sch_mod
 
 import json #PR2018-12-19
@@ -87,9 +87,9 @@ class User(AbstractUser):
     # depbase = ForeignKey(Departmentbase, null=True, blank=True, related_name='+', on_delete=SET_NULL)
 
     lang = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    created_by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    created_by = ForeignKey(s.AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
     created_at = DateTimeField(null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modified_by = ForeignKey(s.AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
     modified_at = DateTimeField(null=True)
 
     class Meta:
@@ -140,12 +140,15 @@ class User(AbstractUser):
 
     def permit_list(self, page):
         # --- create list of all permits  of this user PR2021-04-22
-        logger.debug(' =============== permit_list ============= ')
-        logger.debug('page: ' + str(page) + ' ' + str(type(page)))
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' =============== permit_list ============= ')
+            logger.debug('page: ' + str(page) + ' ' + str(type(page)))
 
         _role = getattr(self, 'role')
         _usergroups = getattr(self, 'usergroups')
-        logger.debug('_usergroups: ' + str(_usergroups) + ' ' + str(type(_usergroups)))
+        if logging_on:
+            logger.debug('_usergroups: ' + str(_usergroups) + ' ' + str(type(_usergroups)))
         # requsr_usergroups_list: ['admin', 'auth2', 'edit'] <class 'list'>
         permit_list = []
         if page and _role and _usergroups:
@@ -158,7 +161,7 @@ class User(AbstractUser):
                 sql_filter = "AND (" + sql_filter[4:] + ")"
 
                 sql_keys = {'page': page, 'role': _role}
-                sql_list = ["SELECT p.action FROM accounts_permit AS p",
+                sql_list = ["SELECT p.action FROM accounts_userpermit AS p",
                             "WHERE (p.page = %(page)s OR p.page = 'page_all') AND p.role = %(role)s::INT",
                             sql_filter
                             ]
@@ -170,6 +173,8 @@ class User(AbstractUser):
                         if row[0] not in permit_list:
                             permit_list.append(row[0])
 
+        if logging_on:
+            logger.debug('permit_list: ' + str(permit_list))
         return permit_list
 
 
@@ -238,107 +243,6 @@ class User(AbstractUser):
                     if self.is_group_admin:
                         _has_permit = True
         return _has_permit
-
-
-
-# +++++++++++++++++++  get and set setting +++++++++++++++++++++++
-    def get_usersetting_dict(cls, key_str): # PR2019-03-09 PR2021-01-25
-        # function retrieves the string value of the setting row that match the filter and converts it to a dict
-        #logger.debug(' ---  get_usersetting_dict  ------- ')
-        #  json.dumps converts a dict in a json object
-        #  json.loads retrieves a dict (or other type) from a json object
-
-        #logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
-        setting_dict = {}
-        row_setting = None
-        try:
-            if cls and key_str:
-                row = Usersetting.objects.filter(user=cls, key=key_str).order_by('-id').first()
-                if row:
-                    row_setting = row.setting
-                    if row_setting:
-                        setting_dict = json.loads(row_setting)
-        except Exception as e:
-            logger.error(getattr(e, 'message', str(e)))
-            logger.error('key_str: ', str(key_str))
-            logger.error('row_setting: ', str(row_setting))
-
-        return setting_dict
-
-    def set_usersetting_dict(cls, key_str, setting_dict): #PR2019-03-09 PR2021-01-25
-        # function saves setting in first row that matches the filter, adds new row when not found
-        #logger.debug('---  set_usersetting_dict  ------- ')
-        #logger.debug('key_str: ' + str(key_str))
-        #logger.debug('setting_dict: ' + str(setting_dict))
-        #logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
-
-        #  json.dumps converts a dict in a json object
-        #  json.loads retrieves a dict (or other type) from a json object
-
-        try:
-            if cls and key_str:
-                setting_str = json.dumps(setting_dict)
-                row = Usersetting.objects.filter(user=cls, key=key_str).order_by('-id').first()
-                if row:
-                    row.setting = setting_str
-                else:
-                    # don't add row when setting has no value
-                    # note: empty setting_dict {} = False, empty json "{}" = True, therefore check if setting_dict is empty
-                    if setting_dict:
-                        row = Usersetting(user=cls, key=key_str, setting=setting_str)
-                row.save()
-
-        except Exception as e:
-            logger.error(getattr(e, 'message', str(e)))
-            logger.error('key_str: ', str(key_str))
-            logger.error('setting_dict: ', str(setting_dict))
-# - end of set_usersetting_dict
-
-
-    def set_usersetting_from_uploaddict(cls, upload_dict): #PR2021-02-07
-        #logger.debug(' ----- set_usersetting_from_uploaddict ----- ')
-        # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
-        # logger.debug('upload_dict: ' + str(upload_dict))
-        # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
-        # PR2020-10-04 not any more, don't know why
-# - loop through keys of upload_dict
-        for key, new_setting_dict in upload_dict.items():
-            cls.set_usersetting_from_upload_subdict(key, new_setting_dict)
-    # - end of set_usersetting_from_uploaddict
-
-
-    def set_usersetting_from_upload_subdict(cls, key, new_setting_dict):  # PR2021-02-07
-        # logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
-        # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
-        # logger.debug('upload_dict: ' + str(upload_dict))
-        # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
-        # PR2020-10-04 not any more, don't know why
-        # - loop through keys of upload_dict
-
-        # key = 'page_examyear', dict = {'sel_btn': 'examyears'}
-        saved_settings_dict = cls.get_usersetting_dict(key)
-        # logger.debug('new_setting_dict: ' + str(new_setting_dict))
-        # logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
-# - loop through subkeys of new settings
-        for subkey, value in new_setting_dict.items():
-            # new_setting_dict: {'sel_subject_pk': 46}
-# - if subkey has value in saved_settings_dict: replace saved value with new value
-            if subkey in saved_settings_dict:
-                if value:
-                    saved_settings_dict[subkey] = value
-                else:
-# - if subkey has no value in saved_settings_dict: remove key from dict
-                    saved_settings_dict.pop(subkey)
-            else:
-# - if subkey not found in saved_settings_dict and value is not None: create subkey with value
-                if value:
-                    saved_settings_dict[subkey] = value
-        # logger.debug('Usersetting.set_setting from UserSettingsUploadView')
-# - save key in usersetting and return settings_dict
-        cls.set_usersetting_dict(key, saved_settings_dict)
-        return saved_settings_dict
-    # - end of set_usersetting_from_upload_subdict
-
 
     # +++++++++++++++++++  FORM PERMITS  +++++++++++++++++++++++
 # - user
@@ -697,11 +601,11 @@ class User_log(Model):
     mode = CharField(max_length=1, null=True)
 
     created_at = DateTimeField(null=True)
-    created_by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    created_by = ForeignKey(s.AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
     created_username = CharField(max_length=c.USERNAME_MAX_LENGTH, null=True)
 
     modified_at = DateTimeField(null=True)
-    modified_by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    modified_by = ForeignKey(s.AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
     modified_username = CharField(max_length=c.USERNAME_MAX_LENGTH, null=True)
 
     def __str__(self):
@@ -715,18 +619,33 @@ class User_log(Model):
         return mode_str
 
 
-class Permit(sch_mod.AwpBaseModel):  # PR2021-03-18 PR2021-04-20
+class Userpermit(sch_mod.AwpBaseModel):  # PR2021-03-18 PR2021-04-20
     # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
     # AwpModelManager already is in AwpBaseModel
     # was: objects = sch_mod.AwpModelManager()
 
     country = ForeignKey(Country, related_name='+', on_delete=CASCADE)
+
     role = PositiveSmallIntegerField(default=0)
     page = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
     action = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
+    description = CharField(db_index=True, max_length=c.MAX_LENGTH_NAME)
+
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
+    roles = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+    pages = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
     usergroups = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
-    sequence = PositiveSmallIntegerField(db_index=True, default=1)
+
+
+class Usergroup(sch_mod.AwpBaseModel):  # PR2021-06-19
+    # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
+    # AwpModelManager already is in AwpBaseModel
+    # was: objects = sch_mod.AwpModelManager()
+
+    country = ForeignKey(Country, related_name='+', on_delete=CASCADE)
+    name = CharField(max_length=c.USERNAME_SLICED_MAX_LENGTH, null=True)
+    # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
+    roles = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
 
 
 # PR2018-05-06
@@ -740,7 +659,8 @@ class Usersetting(Model):
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
     # jsonsetting = JSONField(null=True)
 
-    """ NOT IN USE PR2021-01-25
+
+""" NOT IN USE PR2021-01-25
     @classmethod
     def get_jsonsetting(cls, key_str, user):  # PR2019-07-02
         setting_dict = {}

@@ -36,12 +36,12 @@ INSTALLED_APPS = [
     # 'menu', # PR2018-05-08 simple_menu removed PR2018-10-07
     # 'sitetree',  # PR2018-10-07 removed PR2018-10-07
     'accounts',  # PR2018-03-16
-    'importing',  # PR2018-07-24
     'schools',   # PR2018-04-13
     'subjects',  # PR2018-07-20
     'students',  # PR2018-07-20
     'grades',  # PR2020-12-16
     'reports',  # PR2018-07-20
+    'upload',  # PR2018-07-24
 
     'session_security', # PR2018-05-10
     'anymail', # PR2018-12-28
@@ -77,7 +77,7 @@ TEMPLATES = [
         'DIRS': [
             os.path.join(BASE_DIR, 'templates'),
             os.path.join(BASE_DIR, 'templates/accounts'),
-            os.path.join(BASE_DIR, 'templates/importing'),
+            os.path.join(BASE_DIR, 'templates/upload'),
             os.path.join(BASE_DIR, 'templates/reports'),
             os.path.join(BASE_DIR, 'templates/schools'),
             os.path.join(BASE_DIR, 'templates/students'),
@@ -336,7 +336,7 @@ LOGGING = {
         'py.warnings': {'handlers': ['console'],},
         'accounts': {'handlers': ['accounts_log'], 'level': 'DEBUG', 'propagate': True,},
         'awpr': {'handlers': ['awpr_log'], 'level': 'DEBUG', 'propagate': True,},
-        'importing': {'handlers': ['awpr_log'], 'level': 'DEBUG', 'propagate': True,},
+        'upload': {'handlers': ['awpr_log'], 'level': 'DEBUG', 'propagate': True,},
         'schools': {'handlers': ['schools_log'], 'level': 'DEBUG', 'propagate': True,},
         'students': {'handlers': ['students_log'], 'level': 'DEBUG', 'propagate': True,},
         'subjects': {'handlers': ['subjects_log'], 'level': 'DEBUG', 'propagate': True,},

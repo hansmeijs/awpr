@@ -99,7 +99,7 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     base = ForeignKey(Studentbase, related_name='students', on_delete=PROTECT)
 
     school = ForeignKey(sch_mod.School, related_name='students', on_delete=CASCADE)
-    department = ForeignKey(sch_mod.Department, related_name='students', on_delete=CASCADE)
+    department = ForeignKey(sch_mod.Department, related_name='students', on_delete=PROTECT)
     level = ForeignKey(subj_mod.Level, null=True, blank=True, related_name='students', on_delete=SET_NULL)
     sector = ForeignKey(subj_mod.Sector, null=True,blank=True, related_name='students', on_delete=SET_NULL)
     scheme = ForeignKey(subj_mod.Scheme, null=True, blank=True, related_name='students', on_delete=SET_NULL)
@@ -122,11 +122,11 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
 
     iseveningstudent = BooleanField(default=False)
     islexstudent = BooleanField(default=False)
-    hasdyslexia = BooleanField(default=False)
+    islinked = BooleanField(default=False)
 
     locked = BooleanField(default=False)
     has_reex = BooleanField(default=False)
-    bis_exam= BooleanField(default=False)
+    bis_exam = BooleanField(default=False)
     withdrawn = BooleanField(default=False)
 
     class Meta:
@@ -223,7 +223,8 @@ class Student_log(sch_mod.AwpBaseModel):
     gradelistnumber = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
 
     iseveningstudent = BooleanField(default=False)
-    hasdyslexia = BooleanField(default=False)
+    islexstudent = BooleanField(default=False)
+    islinked = BooleanField(default=False)
 
     locked = BooleanField(default=False)
     has_reex = BooleanField(default=False)

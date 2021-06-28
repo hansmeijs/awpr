@@ -19,6 +19,7 @@ from django.utils.translation import activate, ugettext_lazy as _
 from django.views.generic import View
 from reportlab.pdfgen.canvas import Canvas
 
+from accounts import views as acc_view
 from awpr import settings as s
 from awpr import menus as awpr_menu
 
@@ -162,117 +163,6 @@ class SchemeitemsDownloadView(View):  # PR2019-01-13
         return HttpResponse(json.dumps(params))
 
 
-@method_decorator([login_required], name='dispatch')
-class SchemeitemUploadView(View):  # PR2019-01-24
-
-    def post(self, request, *args, **kwargs):
-        logger.debug(' ============= SchemeitemUploadView ============= ')
-
-        # create mode: ssi =  {'mode': 'c', 'scheme_id': '168', 'subj_id': '314', 'wtse': '2', 'wtce': '1',
-        #                       'mand': '1', 'comb': '1', 'chal': '0', 'prac': '0', 'sequ': 60}
-
-        #  update mode: ssi = {'mode': 'u', 'ssi_id': '380', 'scheme_id': '168', 'scm_id': '168', 'subj_id': '314',
-        #                       'wtse': '2', 'wtce': '0', 'mand': '1', 'comb': '1', 'chal': '0', 'prac': '0',
-        #                       'name': 'Duitse taal', 'sequ': '60'}
-
-        #  delete mode: ssi = {"mod":"d", "ssi_id":"393"}
-
-        params = {}
-        if request.user is not None and request.user.examyear is not None:
-            # get sybject scheme item from  request.POST
-            ssi = json.loads(request.POST['ssi'])
-            logger.debug("ssi: " + str(ssi))
-
-            # convert values
-            # ssi_id only necessary when items are updated
-            mode = ssi.get('mode', '')
-            ssi_id = int(ssi.get('ssi_id', '0'))
-            scheme_id = int(ssi.get('scheme_id', '0')) # scheme_id has always value (retrieved form scheme)
-            scm_id = int(ssi.get('scm_id', '0'))  # scm_id = '' scheme_id is retrieved form schemeitem
-            subj_id = int(ssi.get('subj_id', '0'))
-            sjtp_id = int(ssi.get('sjtp_id', '0'))
-
-            # check if scheme_id and scm_id are the same and ssi_id not None (only at update and remove)
-            scm_id_ok = False
-            record_saved = False
-            if scheme_id:
-                if mode == 'c':
-                    scm_id_ok = True
-                elif ssi_id and scm_id == scheme_id:
-                    scm_id_ok = True
-            logger.debug("scm_id_ok: " + str(scm_id_ok))
-
-            if scm_id_ok:
-                # check if scheme exists
-                scheme = subj_mod.Scheme.objects.filter(id=scheme_id).first()
-                if scheme:
-                    if mode == 'd':
-                        # lookup schemeitem
-                        schemeitem = subj_mod.Schemeitem.objects.filter(id=ssi_id).first()
-                        if schemeitem:
-                            schemeitem.delete(request=self.request)
-                            record_saved = True
-                    else:
-                        # check if subject and subjecttype exist
-                        subject = subj_mod.Subject.objects.filter(id=subj_id, examyear=request.user.examyear).first()
-                        subjecttype = subj_mod.Subjecttype.objects.filter(id=sjtp_id, examyear=request.user.examyear).first()
-
-                        logger.debug('scheme: <' + str(scheme) + '> type: ' + str(type(scheme)))
-                        logger.debug('subject: <' + str(subject) + '> type: ' + str(type(subject)))
-                        logger.debug('subjecttype: <' + str(subjecttype) + '> type: ' + str(type(subjecttype)))
-
-                        if subject and subjecttype:
-                            logger.debug("scheme and subject and subjecttype")
-                            if mode == 'c':
-                                # create new schemeitem
-                                schemeitem = subj_mod.Schemeitem(
-                                    scheme=scheme,
-                                    subject=subject,
-                                    subjecttype=subjecttype
-                                )
-                            else:
-                                # lookup schemeitem
-                                schemeitem = subj_mod.Schemeitem.objects.filter(id=ssi_id).first()
-
-                            if schemeitem:
-                                # update mode or create mode
-                                schemeitem.subjecttype = subjecttype
-
-                                # ------------ import values from ssi  -----------------------------------
-                                schemeitem.gradetype = int(ssi.get('grtp_id', '0'))
-                                schemeitem.weight_se = int(ssi.get('wtse', '0'))
-                                schemeitem.weight_ce = int(ssi.get('wtce', '0'))
-                                schemeitem.is_mandatory = (ssi.get('mand', '0') == '1')
-                                schemeitem.is_combi = (ssi.get('comb', '0') == '1')
-                                schemeitem.elective_combi_allowed = (ssi.get('chal', '0') == '1')
-                                schemeitem.has_practexam = (ssi.get('prac', '0') == '1')
-
-                                schemeitem.save(request=self.request)
-
-                                record_saved = True
-
-            # renew list of all Subjects from this department and examyear (included in dep)
-            schemeitems = subj_mod.Schemeitem.get_schemeitem_list(scheme)
-            params.update({'schemeitems': schemeitems})
-
-            if not record_saved:
-                if mode == 'c':
-                    err_code = 'err_msg02'
-                elif mode == 'd':
-                    err_code = 'err_msg04'
-                else:
-                    err_code = 'err_msg03'
-                params.update({'err_code': err_code})
-
-        logger.debug("params: " + str(params))
-
-        # PR2019-02-04 was: return HttpResponse(json.dumps(params))
-
-        # return HttpResponse(json.dumps(params, cls=LazyEncoder), mimetype='application/javascript')
-
-        return HttpResponse(json.dumps(params, cls=af.LazyEncoder))
-
-
 # ========  SubjectListView  ======= # PR2020-09-29  PR2021-03-25
 @method_decorator([login_required], name='dispatch')
 class SubjectListView(View):
@@ -303,8 +193,8 @@ class SubjectListView(View):
 
         params = awpr_menu.get_headerbar_param(request, page, param)
 
-# - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
-        request.user.set_usersetting_dict('sel_page', {'page': page})
+# - save this page in Usersetting, so at next login this page will open.  Used in LoggedIn
+        # PR2021-06-22 moved to get_headerbar_param
 
         return render(request, html_page, params)
 
@@ -358,7 +248,7 @@ def create_subject_rows(setting_dict, subject_pk, etenorm_only=False, cur_dep_on
                 sql_keys['depbase_lookup'] = ''.join( ('%;', str(sel_depbase_pk), ';%') )
                 sql_list.append("AND CONCAT(';', sj.depbases::TEXT, ';') LIKE %(depbase_lookup)s::TEXT")
 
-            sql_list.append('ORDER BY LOWER(sj.name)')
+            sql_list.append("ORDER BY sj.id::TEXT")
 
         sql = ' '.join(sql_list)
 
@@ -382,20 +272,21 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14
             logger.debug('')
             logger.debug(' ============= SubjectUploadView ============= ')
 
-        req_usr = request.user
         update_wrap = {}
+        messages = []
 
-# - add edit permit
+# - get permit
         has_permit = False
+        req_usr = request.user
         if req_usr and req_usr.country:
             permit_list = req_usr.permit_list('page_subject')
             if permit_list:
-                has_permit = 'crud_subject' in permit_list
+                has_permit = 'crud' in permit_list
             if logging_on:
                 logger.debug('permit_list: ' + str(permit_list))
                 logger.debug('has_permit: ' + str(has_permit))
-
         if has_permit:
+
 # - reset language
             user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
             activate(user_lang)
@@ -404,36 +295,57 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 upload_dict = json.loads(upload_json)
-                if logging_on:
-                    logger.debug('upload_dict' + str(upload_dict))
-
-                error_list = []
-                append_dict = {}
-                is_created = False
 
 # - get  variables
-                mode = upload_dict.get('mode')
-                examyear_pk = upload_dict.get('examyear_pk')
                 subject_pk = upload_dict.get('subject_pk')
+                mode = upload_dict.get('mode')
+                is_create = mode == 'create'
+                is_delete =  mode == 'delete'
+                if is_delete:
+                    message_header = _('Delete subject')
+                elif is_create:
+                    message_header = _('Create subject')
+                else:
+                    message_header = _('Update subject')
 
-# - check if examyear exists and equals selected examyear from Usersetting
-                selected_dict = req_usr.get_usersetting_dict(c.KEY_SELECTED_PK)
+                if logging_on:
+                    logger.debug('upload_dict' + str(upload_dict))
+                    logger.debug('mode: ' + str(mode))
+
+                updated_rows = []
+                append_dict = {}
+                error_dict = {}
+                error_list = []
+                is_created = False
+
+# - get selected examyear from Usersetting
+                selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                 selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
                 examyear = None
-                if examyear_pk == selected_examyear_pk:
-                    examyear = sch_mod.Examyear.objects.get_or_none(id=examyear_pk, country=req_usr.country)
-
-# - exit when examyear is locked or no examyear
+                if selected_examyear_pk:
+                    examyear = sch_mod.Examyear.objects.get_or_none(
+                        id=selected_examyear_pk,
+                        country=req_usr.country
+                    )
+# - exit when no examyear or examyear is locked
                 # note: subjects may be changed before publishing, therefore don't exit on examyear.published
-                if examyear and not examyear.locked:
+                if examyear is None:
+                    messages.append({'class': "border_bg_warning",
+                                     'header': str(message_header),
+                                     'msg_list': [str(_('No exam year selected'))]})
+                elif examyear.locked:
+                    messages.append( {'class': "border_bg_warning",
+                                      'header': str(message_header),
+                                      'msg_list': [str(_("Exam year %(exyr)s is locked.") % {'exyr': str(examyear.code)})
+                        ]})
+                else:
                     subject_rows = []
 
-# ++++ Create new instance if is_create:
-                    if mode == 'create':
-                        subject = create_subject(examyear, upload_dict, subject_rows, error_list, request)
+# ++++ Create new subject:
+                    if is_create:
+                        subject = create_subject(examyear, upload_dict, messages, request)
                         if subject:
                             is_created = True
-
                     else:
 # - else: get existing subject instance
                         subject = sbj_mod.Subject.objects.get_or_none(
@@ -446,7 +358,7 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14
                     if subject:
 # ++++ Delete subject if is_delete
                         if mode == 'delete':
-                            deleted_ok = delete_subject(subject, subject_rows, error_list, request)
+                            deleted_ok = delete_subject(subject, subject_rows, messages, request)
                             if deleted_ok:
                                 subject = None
 
@@ -477,9 +389,349 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14
                                 row[key] = value
 
                         update_wrap['updated_subject_rows'] = subject_rows
-
+        if len(messages):
+            update_wrap['messages'] = messages
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+
+@method_decorator([login_required], name='dispatch')
+class SubjecttypeUploadView(View):  # PR2021-06-23
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= SubjecttypeUploadView ============= ')
+
+        update_wrap = {}
+        # error_list is attached to updated row, messages is attached to update_wrap
+        messages = []
+# - get permit
+        has_permit = get_permit_crud_page_subject(request)
+        if has_permit:
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                # upload_dict{'scheme_pk': 177,
+                #       'sjtp_list': [{'sjtpbase_pk': 5, 'scheme_pk': 177, 'create': True}]}
+                if logging_on:
+                    logger.debug('upload_dict' + str(upload_dict))
+
+                message_header = _('Update subject type')
+
+
+# - get selected examyear from Usersetting
+                examyear = get_sel_examyear(message_header, messages, request)
+
+# - exit when no examyear or examyear is locked
+                # note: subjects may be changed before publishing, therefore don't exit when examyear.published = False
+                if examyear:
+
+# - get scheme instance
+                    scheme_pk = upload_dict.get('scheme_pk')
+                    scheme = get_scheme_instance(examyear, scheme_pk, messages, message_header)
+                    if scheme:
+                        updated_rows = []
+
+# +++++++++++ update subjecttypes of scheme from sjtp_list
+                        sjtp_list = upload_dict.get('sjtp_list')
+                        if sjtp_list:
+                            update_sjtp_list(examyear, scheme, sjtp_list, updated_rows, messages, request)
+                        else:
+
+# +++++++++++ update single sjtp
+# if upload_dict does not have sjtp_list: it is single sjtp update - create, delete or update changes
+
+# ++++ Create new subjecttype:
+            # is done in sjtp_list
+                            error_list = []
+
+    # +++  get existing subjecttype
+                            sjtp_pk = upload_dict.get('sjtp_pk')
+                            subjecttype = sbj_mod.Subjecttype.objects.get_or_none(
+                                id=sjtp_pk,
+                                scheme=scheme
+                            )
+                            if logging_on:
+                                logger.debug('..... subjecttype: ' + str(subjecttype))
+
+                            if subjecttype:
+    # ++++ Delete subjecttype
+            # is done in sjtp_list
+
+    # +++ Update subjecttype
+                                update_subjecttype_instance(subjecttype, scheme, upload_dict, error_list, request)
+
+            # - create subjecttype_rows, also when deleting failed (when deleted ok there is no subject, subject_row is made above)
+                                updated_rows = create_subjecttype_rows(
+                                    examyear=examyear,
+                                    sjtp_pk=subjecttype.pk
+                                )
+
+            # - add error_list to subject_row (there is only 1 subject_row, or none
+                            # Note: error_list is attached to updated row, messages is attached to update_wrap
+                            if error_list and updated_rows:
+                                row = updated_rows[0]
+                                if row:
+                                    if error_list:
+                                         row['error'] = error_list
+
+                        update_wrap['updated_subjecttype_rows'] = updated_rows
+        if len(messages):
+            update_wrap['messages'] = messages
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of SubjecttypeUploadView
+
+##########################
+
+@method_decorator([login_required], name='dispatch')
+class SchemeUploadView(View):  # PR2021-06-27
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= SchemeUploadView ============= ')
+
+        update_wrap = {}
+
+# - get permit
+        has_permit = get_permit_crud_page_subject(request)
+        if has_permit:
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+
+                messages = []
+
+# - get  variables
+                message_header = _('Update scheme')
+
+                if logging_on:
+                    logger.debug('upload_dict' + str(upload_dict))
+
+                error_list = []
+
+# - get selected examyear from Usersetting
+                examyear = get_sel_examyear(message_header, messages, request)
+
+# - exit when no examyear or examyear is locked
+                # note: subjects may be changed before publishing, therefore don't exit when examyear.published = False
+                if examyear:
+
+                    updated_rows = []
+
+# - get scheme instance
+                    scheme_pk = upload_dict.get('scheme_pk')
+                    scheme = get_scheme_instance(examyear, scheme_pk, messages, message_header)
+
+                    if scheme:
+                        update_scheme_instance(scheme, examyear, upload_dict, updated_rows, messages, request)
+
+                    update_wrap['updated_scheme_rows'] = updated_rows
+
+            # - add messages to update_wrap, if any
+                if len(messages):
+                    update_wrap['messages'] = messages
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of SchemeUploadView
+
+
+##########################
+
+@method_decorator([login_required], name='dispatch')
+class SchemeitemUploadView(View):  # PR2021-06-25
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= SchemeitemUploadView ============= ')
+
+        update_wrap = {}
+
+# - get permit
+        has_permit = get_permit_crud_page_subject(request)
+        if has_permit:
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                # upload_dict{'scheme_pk': 177, 'si_list': [{'subj_pk': 755, 'sjtp_pk': 200, 'create': True}, {'subj_pk': 759, 'sjtp_pk': 202, 'create': True}]}
+
+                messages = []
+
+# - get  variables
+                message_header = _('Update subject scheme')
+
+                if logging_on:
+                    logger.debug('upload_dict' + str(upload_dict))
+
+                error_list = []
+
+# - get selected examyear from Usersetting
+                examyear = get_sel_examyear(message_header, messages, request)
+
+# - exit when no examyear or examyear is locked
+                # note: subjects may be changed before publishing, therefore don't exit when examyear.published = False
+                if examyear:
+
+# - get scheme instance
+                    scheme_pk = upload_dict.get('scheme_pk')
+                    scheme = get_scheme_instance(examyear, scheme_pk, messages, message_header)
+                    if scheme:
+                        updated_rows = []
+
+# - update subjects of scheme from si_list
+                        si_list = upload_dict.get('si_list')
+                        if si_list:
+                            update_si_list(examyear, scheme, si_list, updated_rows, messages, error_list, request)
+
+# if upload_dict does not have si_list: it is single schemeitem update
+                        else:
+# - get schemeitem instance
+                            si_pk = upload_dict.get('si_pk')
+                            schemeitem = get_schemeitem_instance(scheme, si_pk, logging_on)
+                            if schemeitem:
+                                update_schemeitem_instance(schemeitem, examyear, upload_dict, updated_rows, messages, request)
+
+                        update_wrap['updated_schemeitem_rows'] = updated_rows
+
+            # - add messages to update_wrap, if any
+                if len(messages):
+                    update_wrap['messages'] = messages
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of SchemeitemUploadView
+
+
+# - end of update_si_list
+
+def get_permit_crud_page_subject(request):
+    # --- get crud permit for page subject # PR2021-06-26
+    logging_on = False  # s.LOGGING_ON
+    has_permit = False
+    if request.user and request.user.country:
+        permit_list = request.user.permit_list('page_subject')
+        if permit_list:
+            has_permit = 'crud' in permit_list
+        if logging_on:
+            logger.debug('permit_list: ' + str(permit_list))
+            logger.debug('has_permit: ' + str(has_permit))
+
+    return has_permit
+
+
+def get_sel_examyear(message_header, messages, request):
+    # --- get selected examyear from usersetting # PR2021-06-26
+    # - get selected examyear from Usersetting
+    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+    selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+    examyear = None
+    if selected_examyear_pk:
+        examyear = sch_mod.Examyear.objects.get_or_none(
+            id=selected_examyear_pk,
+            country=request.user.country
+        )
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_sel_examyear ----- ')
+        logger.debug('examyear: ' + str(examyear))
+
+    # - exit when no examyear or examyear is locked
+    # note: subjects may be changed before publishing, therefore don't exit when examyear.published = False
+    if examyear is None:
+        messages.append({'class': "border_bg_warning",
+                         'header': str(message_header),
+                         'msg_list': [str(_('No exam year selected'))]})
+    elif examyear.locked:
+        messages.append({'class': "border_bg_warning",
+                         'header': str(message_header),
+                         'msg_list': [str(_("Exam year %(exyr)s is locked.") % {'exyr': str(examyear.code)})
+                                      ]})
+    return examyear
+
+
+def get_scheme_instance(examyear, scheme_pk, messages, message_header):
+    # --- get scheme instance # PR2021-06-26
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_scheme_instance ----- ')
+        logger.debug('scheme_pk: ' + str(scheme_pk))
+
+    scheme = None
+    if scheme_pk:
+        scheme = sbj_mod.Scheme.objects.get_or_none(
+            id=scheme_pk,
+            department__examyear=examyear
+        )
+    if logging_on:
+        logger.debug('scheme: ' + str(scheme))
+
+    if scheme is None:
+        messages.append({'class': "border_bg_invalid",
+                         'header': str(message_header),
+                         'msg_list': [str(_('Subject scheme not found.'))]})
+    return scheme
+
+
+def get_schemeitem_instance(scheme, si_pk, logging_on):
+    # --- get schemeitem instance # PR2021-06-26
+    schemeitem = None
+    if si_pk:
+        schemeitem = sbj_mod.Schemeitem.objects.get_or_none(
+            id=si_pk,
+            scheme=scheme
+        )
+    if logging_on:
+        logger.debug('schemeitem: ' + str(schemeitem))
+
+    return schemeitem
+
+
+def get_subjecttypebase_instance(sjtpbase_pk, messages, message_header, logging_on, request):
+    # --- get subjecttypebase instance # PR2021-06-26
+    subjecttypebase = None
+
+    if sjtpbase_pk:
+        subjecttypebase = sbj_mod.Subjecttypebase.objects.get_or_none(
+            id=sjtpbase_pk,
+            country=request.user.country
+        )
+
+    if logging_on:
+        logger.debug('subjecttypebase: ' + str(subjecttypebase))
+
+    if subjecttypebase is None:
+        messages.append({'class': "border_bg_invalid",
+                         'header': str(message_header),
+                         'msg_list': [str(_('Base subject type not found.'))]})
+
+    return subjecttypebase
+
+
+#############################
 
 
 # ========  EXAMS  =====================================
@@ -510,14 +762,15 @@ class ExamListView(View):  # PR2021-04-04
             logger.debug('  =====  ExamListView ===== ')
             logger.debug('params: ' + str(params))
 
-# - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
-        if request.user:
-            request.user.set_usersetting_dict('sel_page', {'page': page})
+# - save this page in Usersetting, so at next login this page will open.  Used in LoggedIn
+        #         # PR2021-06-22 moved to get_headerbar_param
 
         return render(request, 'exams.html', params)
 # - end of ExamListView
 
 # ============= ExamUploadView ============= PR2021-04-04
+
+
 @method_decorator([login_required], name='dispatch')
 class ExamUploadView(View):
 
@@ -540,7 +793,7 @@ class ExamUploadView(View):
         if req_usr and req_usr.country:
             permit_list = req_usr.permit_list('page_exams')
             if permit_list:
-                has_permit = 'crud_exam' in permit_list
+                has_permit = 'crud' in permit_list
             if logging_on:
                 logger.debug('permit_list: ' + str(permit_list))
                 logger.debug('has_permit: ' + str(has_permit))
@@ -570,7 +823,7 @@ class ExamUploadView(View):
                 subject_pk = upload_dict.get('subject_pk')
 
 # - check if examyear exists and equals selected examyear from Usersetting
-                selected_dict = req_usr.get_usersetting_dict(c.KEY_SELECTED_PK)
+                selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                 selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
                 examyear = None
                 if examyear_pk == selected_examyear_pk:
@@ -634,7 +887,7 @@ class ExamUploadView(View):
                             update_exam_instance(exam, upload_dict, error_list, examyear, request)
 
     # 6. create list of updated exam
-                    selected_dict = req_usr.get_usersetting_dict(c.KEY_SELECTED_PK)
+                    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                     s_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
 
                     setting_dict = {'sel_examyear_pk': examyear.pk,
@@ -1413,7 +1666,7 @@ def get_field_caption(table, field):
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-def delete_subject(subject, subject_rows, error_list, request):
+def delete_subject(subject, subject_rows, messages, request):
     # --- delete subject # PR2021-05-14
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -1425,8 +1678,27 @@ def delete_subject(subject, subject_rows, error_list, request):
                    'deleted': True}
     base_pk = subject.base.pk
 
-    this_text = _("Subject '%(tbl)s'") % {'tbl': subject.name}
-    deleted_ok = sch_mod.delete_instance(subject, error_list, request, this_text)
+    this_txt = _("Subject '%(tbl)s'") % {'tbl': subject.name}
+    header_txt = _("Delete subject")
+# check if there are students with this subject
+    students_with_this_subject_exist = stud_mod.Studentsubject.objects.filter(
+        schemeitem__subject=subject).exists()
+
+    if logging_on:
+        logger.debug('students_with_this_subject_exist: ' + str(students_with_this_subject_exist))
+
+    if students_with_this_subject_exist:
+        deleted_ok = False
+        msg_list = [
+            _('There are candidates with this subject.'),
+            _("%(cpt)s could not be deleted.") % {'cpt': this_txt}
+]
+        msg_dict = {'class': "border_bg_invalid", 'header': header_txt, 'msg_list': msg_list}
+        messages.append(msg_dict)
+
+    else:
+
+        deleted_ok = sch_mod.delete_instance(subject, messages, request, this_txt, header_txt)
 
     if deleted_ok:
         # check if this subject also exists in other examyears.
@@ -1441,13 +1713,14 @@ def delete_subject(subject, subject_rows, error_list, request):
 
     if logging_on:
         logger.debug('subject_rows' + str(subject_rows))
-        logger.debug('error_list' + str(error_list))
+        logger.debug('messages' + str(messages))
 
     return deleted_ok
+# - end of delete_subject
 
 
-def create_subject(examyear, upload_dict, subject_rows, error_list, request):
-    # --- create subject # PR2019-07-30 PR2020-10-11 PR2021-05-13
+def create_subject(examyear, upload_dict, messages, request):
+    # --- create subject # PR2019-07-30 PR2020-10-11 PR2021-05-13 PR2021-06-22
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_subject ----- ')
@@ -1468,58 +1741,59 @@ def create_subject(examyear, upload_dict, subject_rows, error_list, request):
             logger.debug('sequence: ' + str(sequence))
             logger.debug('depbases: ' + str(depbases) + str(type(depbases)))
 
-        if code and name:
-            has_error = False
+        msg_list = []
 # - validate code and name. Function checks null, max_len, exists
-            msg_list = av.validate_subject_code(code, subject)
-            if msg_list:
-                has_error = True
-                error_list.append({'msg_list': msg_list, 'class': 'alert-danger'})
+        msg_err = av.validate_notblank_maxlength(code, c.MAX_LENGTH_SCHOOLCODE, _('The abbreviation'))
+        if msg_err:
+            msg_list.append(msg_err)
+        msg_err = av.validate_notblank_maxlength(name, c.MAX_LENGTH_NAME, _('The name'))
+        if msg_err:
+            msg_list.append(msg_err)
+# - check if subject code already exists
+        msg_err = av.validate_subject_code_exists(code, subject)
+        if msg_err:
+            msg_list.append(msg_err)
+# - check if subject name already exists
+        msg_err = av.validate_subject_name_exists(name, subject)
+        if msg_err:
+            msg_list.append(msg_err)
 
-            msg_list = av.validate_subject_name(name, subject)
-            if msg_list:
-                has_error = True
-                error_list.append({'msg_list': msg_list, 'class': 'alert-danger'})
 # - create and save subject
-            if not has_error:
-                try:
-                    # First create base record. base.id is used in Subject. Create also saves new record
-                    base = sbj_mod.Subjectbase.objects.create(
-                        country=examyear.country,
-                        code=code
-                    )
+        if len(msg_list) > 0:
+            messages.append({'class': "border_bg_invalid", 'header': str(_('Create subject')), 'msg_list': msg_list})
+        else:
+            try:
+                # First create base record. base.id is used in Subject. Create also saves new record
+                base = sbj_mod.Subjectbase.objects.create(
+                    country=examyear.country,
+                    code=code
+                )
 
-                    subject = sbj_mod.Subject(
-                        base=base,
-                        examyear=examyear,
-                        name=name,
-                        sequence=sequence,
-                        depbases=depbases
-                    )
-                    subject.save(request=request)
+                subject = sbj_mod.Subject(
+                    base=base,
+                    examyear=examyear,
+                    name=name,
+                    sequence=sequence,
+                    depbases=depbases
+                )
+                subject.save(request=request)
 
-                except Exception as e:
-                    logger.error(getattr(e, 'message', str(e)))
-                    msg_list = [_('An error occurred.'),
-                                ''.join(('(', str(e), ')')),
-                                str(_("Subject '%(val)s' could not be added.") % {'val': name})]
-                    error_list.append({'msg_list': msg_list, 'class': 'alert-danger'})
-                else:
-                    if logging_on:
-                        logger.debug('created subject: ' + str(subject))
-
-    # - create subjectrow when create has failed
-        if subject is None:
-            # - add deleted_row to subject_rows
-            subject_rows.append({'name': name, 'created': False} )
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                msg_list = [': '.join((str(_('An error occurred')),str(e))),
+                            str(_("Subject '%(val)s' could not be added.") % {'val': name})]
+                messages.append(
+                    {'class': "border_bg_invalid", 'header': str(_('Create subject')), 'msg_list': msg_list})
 
     if logging_on:
-        logger.debug('error_list: ' + str(error_list))
+        logger.debug('subject: ' + str(subject))
+        logger.debug('messages: ' + str(messages))
 
     return subject
 
+# - end of create_subject
 
-#######################################################
+
 def update_subject_instance(instance, examyear, upload_dict, error_list, request):
     # --- update existing and new instance PR2019-06-06 PR2021-05-10
     logging_on = s.LOGGING_ON
@@ -1551,7 +1825,7 @@ def update_subject_instance(instance, examyear, upload_dict, error_list, request
                             logger.debug('new_value != saved_value')
         # - validate abbrev checks null, max_len, exists
                         #  msg_err = { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
-                        msg_list = av.validate_subject_code(
+                        msg_list = av.validate_subject_code_exists(
                             code=new_value,
                             cur_subject=instance
                         )
@@ -1570,7 +1844,7 @@ def update_subject_instance(instance, examyear, upload_dict, error_list, request
                     if new_value != saved_value:
         # - validate abbrev checks null, max_len, exists
                         #  msg_err = { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
-                        msg_list = av.validate_subject_name(
+                        msg_list = av.validate_subject_name_exists(
                             name=new_value,
                             examyear=examyear,
                             cur_subject=instance
@@ -1632,28 +1906,710 @@ def update_subject_instance(instance, examyear, upload_dict, error_list, request
                 error_list.append({'class': 'alert-danger', 'msg_list': msg_list})
 
 
+
+# >>>>>>>  SCHEMEITEM >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+def create_schemeitem(examyear, scheme, subj_pk, sjtp_pk, messages, request):
+    # --- create schemeitem # PR2021-06-23
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_schemeitem ----- ')
+
+    schemeitem = None
+
+    has_error = False
+    message_header = str(_('Create subject scheme subject'))
+    subject = subj_mod.Subject.objects.get_or_none(
+        pk=subj_pk,
+        examyear=examyear
+    )
+    if subject is None:
+        has_error = True
+        messages.append({'class': "border_bg_invalid",
+                         'header': message_header,
+                         'msg_list': [str(_('Subject not found.'))]})
+
+    subjecttype = subj_mod.Subjecttype.objects.get_or_none(
+        pk=sjtp_pk,
+        scheme=scheme
+    )
+    if subjecttype is None:
+        has_error = True
+        messages.append({'class': "border_bg_invalid",
+                         'header': message_header,
+                         'msg_list': [str(_('Subject type not found.'))]})
+    if not has_error:
+# - create and save schemeitem
+        try:
+            schemeitem = sbj_mod.Schemeitem(
+                scheme=scheme,
+                subject = subject,
+                subjecttype = subjecttype
+            )
+            schemeitem.save(request=request)
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            msg_list = [': '.join((str(_('An error occurred')),str(e))),
+                        str(_("Subject scheme subject '%(val)s' could not be created.") % {'val': subject.name})]
+            messages.append(
+                {'class': "border_bg_invalid", 'header': message_header, 'msg_list': msg_list})
+
+    if logging_on:
+        logger.debug('schemeitem: ' + str(schemeitem))
+        logger.debug('messages: ' + str(messages))
+
+    return schemeitem
+
+# - end of create_schemeitem
+
+
+def delete_schemeitem(schemeitem, messages, request):
+    # --- delete schemeitem # PR2021-06-25
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- delete_schemeitem ----- ')
+        logger.debug('subject: ' + str(schemeitem))
+
+    deleted_row = None
+    # get info from row before deleting it
+    row_tobe_deleted = {'pk': schemeitem.pk,
+                       'mapid': 'schemeitem_' + str(schemeitem.pk),
+                        'subj_name': schemeitem.subject.name,
+                       'deleted': True}
+    subject_name = schemeitem.subject.name
+    this_txt = _("Subject '%(tbl)s' of subject scheme '%(tbl)s'") % {'tbl': subject_name}
+    header_txt = _("Delete subject from subject scheme")
+
+# check if there are students with subjects with this schemeitem
+    students_with_this_schemeitem_exist = stud_mod.Studentsubject.objects.filter(
+        schemeitem=schemeitem
+    ).exists()
+
+    if logging_on:
+        logger.debug('students_with_this_schemeitem_exist: ' + str(students_with_this_schemeitem_exist))
+    students_with_this_schemeitem_exist = False
+    if students_with_this_schemeitem_exist:
+        deleted_ok = False
+        msg_list = [
+            _('There are candidates with subjects with this schemeitem.'),
+            _("%(cpt)s could not be deleted.") % {'cpt': this_txt}
+]
+        msg_dict = {'class': "border_bg_invalid", 'header': header_txt, 'msg_list': msg_list}
+        messages.append(msg_dict)
+
+    else:
+        deleted_ok = sch_mod.delete_instance(schemeitem, messages, request, this_txt, header_txt)
+
+   # - create deleted_row, to be returned to client
+        # if deleting failed, schemeitem still exists and wil be returned to client, together with error message
+        if deleted_ok:
+            deleted_row = row_tobe_deleted
+
+    if logging_on:
+        logger.debug('messages' + str(messages))
+
+    return deleted_ok, deleted_row
+# - end of delete_schemeitem
+
+
+def update_si_list(examyear, scheme, si_list, updated_rows, messages, error_list, request):
+    # --- delete schemeitem # PR2021-06-26
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- update_si_list ----- ')
+        logger.debug('si_list: ' + str(si_list))
+
+
+# ++++ loop through list of schemeitems:
+    for si_dict in si_list:
+        schemeitem = None
+        is_create = si_dict.get('create')
+        is_delete = si_dict.get('delete')
+        is_created = False
+
+        if is_create:
+            subj_pk = si_dict.get('subj_pk')
+            sjtp_pk = si_dict.get('sjtp_pk')
+            schemeitem = create_schemeitem(examyear, scheme, subj_pk, sjtp_pk, messages, request)
+            if schemeitem:
+                is_created = True
+
+        elif is_delete:
+
+# ++++ Delete schemeitem
+# - get existing scheme item
+            si_pk = si_dict.get('si_pk')
+            schemeitem = sbj_mod.Schemeitem.objects.get_or_none(
+                id=si_pk,
+                scheme=scheme
+            )
+
+            deleted_ok, deleted_row = delete_schemeitem(schemeitem, messages, request)
+            if deleted_ok:
+                schemeitem = None
+                updated_rows.append(deleted_row)
+
+# - create schemeitem_rows[0], also when deleting failed (when deleted ok there is no subject, subject_row is made above)
+        if schemeitem:
+            schemeitem_rows = create_schemeitem_rows(
+                examyear=examyear,
+                schemeitem=schemeitem
+            )
+# - add messages to row (there is only 1 row
+            if schemeitem_rows:
+                schemeitem_row = schemeitem_rows[0]
+
+                # - add error_list to subject_rows[0]
+                if error_list:
+                    # structure of error_list: [ { 'field': 'code', msg_list ['line 1', 'line 2'] } ]
+                    # or general error:        [ { 'class': 'alert-danger', msg_list ['line 1', 'line 2'] } ]
+                    schemeitem_row['error'] = error_list
+                if is_created:
+                    schemeitem_row['created'] = True
+
+                updated_rows.append(schemeitem_row)
+# - end of update_si_list
+
+
+def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, messages, request):
+    # --- update existing and new instance PR2021-06-26
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- update_schemeitem_instance -----')
+        logger.debug('upload_dict: ' + str(upload_dict))
+
+    if instance:
+        save_changes = False
+        for field, new_value in upload_dict.items():
+
+            if field in ("gradetype", "weight_se", "weight_ce", "is_mandatory", "is_combi", "is_core_subject", "is_mvt",
+                        "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
+                        "has_practexam",  "has_pws", "reex_se_allowed",  "reex_combi_allowed",
+                        "no_reex",  "no_thirdperiod",  "no_exemption_ce"):
+
+                saved_value = getattr(instance, field)
+                if logging_on:
+                    logger.debug('field: ' + str(field))
+                    logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
+                    logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
+
+                if new_value != saved_value:
+                    setattr(instance, field, new_value)
+                    save_changes = True
+
+                    if logging_on:
+                        logger.debug('save_changes: ' + str(save_changes))
+# --- end of for loop ---
+
+# 5. save changes
+        if save_changes:
+            try:
+                instance.save(request=request)
+                if logging_on:
+                    logger.debug('saved_value: ' + str(instance) + ' ' + str(type(instance)))
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+
+                header_txt = _("Update subject of subject scheme")
+                msg_list = [_('An error occurred: ') + str(e),
+                            _('The changes have not been saved.')]
+                msg_dict = {'class': "border_bg_invalid", 'header': header_txt, 'msg_list': msg_list}
+                messages.append(msg_dict)
+
+            else:
+# - create schemeitem_rows[0]
+                schemeitem_rows = create_schemeitem_rows(
+                    examyear=examyear,
+                    schemeitem=instance
+                )
+                if schemeitem_rows:
+                    updated_rows.append(schemeitem_rows[0])
+
+
+# - end of update_schemeitem_instance
+
+# >>>>>>>>  SCHEME >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_list, request):
+    # --- update existing and new instance PR2021-06-27
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- update_scheme_instance -----')
+        logger.debug('upload_dict: ' + str(upload_dict))
+
+    if instance:
+        save_changes_in_base = False
+        save_changes = False
+
+        msg_header_txt = _('Update scheme')
+
+        for field, new_value in upload_dict.items():
+
+            if logging_on:
+                logger.debug('field: ' + str(field))
+                logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
+
+            # - save changes in field 'name'
+            if field == 'name':
+                saved_value = getattr(instance, field)
+                if new_value != saved_value:
+                    # - validate abbrev checks null, max_len, exists
+                    has_error = av.validate_scheme_name_exists(new_value, examyear, error_list, instance)
+                    if not has_error:
+                        # - save field if changed and no_error
+                        setattr(instance, field, new_value)
+                        save_changes = True
+
+            elif field in ('minsubjects', 'maxsubjects', 'min_mvt', 'max_mvt'):
+                msg_html = None
+                new_value_int = None
+
+                if new_value:
+                    # - check if value is positive whole number
+                    if not new_value.isdecimal():
+                        msg_html = str(_("'%(val)s' is not a valid number.") % {'val': new_value})
+                    else:
+                        new_value_int = int(new_value)
+                        if field == 'minsubjects':
+                            maxsubjects = getattr(instance, 'maxsubjects')
+                            if maxsubjects and new_value_int > maxsubjects:
+                                msg_html = str(
+                                    _("Minimum amount of subjects cannot be greater than maximum (%(val)s).") % {
+                                        'val': maxsubjects})
+                        elif field == 'maxsubjects':
+                            minsubjects = getattr(instance, 'minsubjects')
+                            if minsubjects and new_value_int < minsubjects:
+                                msg_html = str(
+                                    _("Maximum amount of subjects cannot be fewer than minimum (%(val)s).") % {
+                                        'val': minsubjects})
+                if msg_html:
+                    msg_dict = {'field': field,
+                                'header': msg_header_txt,
+                                'class': 'border_bg_warning',
+                                'msg_html': msg_html}
+                    error_list.append(msg_dict)
+                else:
+                    # -note: value can be None
+                    saved_value = getattr(instance, field)
+                    if new_value_int != saved_value:
+                        setattr(instance, field, new_value_int)
+                        save_changes = True
+        # --- end of for loop ---
+
+        # 5. save changes
+        if save_changes or save_changes_in_base:
+            try:
+                if save_changes_in_base:
+                    # also save instance when base has changed, to update modifiedat and modifiedby
+                    instance.base.save()
+                instance.save(request=request)
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                msg_html = ''.join((str(_('An error occurred: ')), str(e), '<br>',
+                                    str(_('The changes have not been saved.'))))
+                error_list.append({'header': msg_header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html})
+            else:
+# - create schemeitem_rows[0]
+
+                scheme_rows = create_scheme_rows(examyear, None, {}, instance.pk, False)
+                if scheme_rows:
+                    updated_rows.append(scheme_rows[0])
+
+# - end of update_scheme_instance
+
+
+
+
+# >>>>>>>  SUBJECTTYPE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+def update_sjtp_list(examyear, scheme, sjtp_list, updated_rows, messages, request):
+    # --- update_sjtp_list # PR2021-06-26
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- update_sjtp_list ----- ')
+        logger.debug('sjtp_list: ' + str(sjtp_list))
+
+    msg_header = _('Update subject type')
+# ++++ loop through list of subjecttypes:
+    for sjtp_dict in sjtp_list:
+        subjecttype = None
+        is_create = sjtp_dict.get('create')
+        is_delete = sjtp_dict.get('delete')
+        is_created = False
+
+        if is_create:
+            sjtpbase_pk = sjtp_dict.get('sjtpbase_pk')
+            subjecttype = create_subjecttype(sjtpbase_pk, scheme, sjtp_dict, messages, msg_header, request)
+            if subjecttype:
+                is_created = True
+
+        elif is_delete:
+
+# ++++ Delete subjecttype
+# - get existing subjecttype
+            sjtp_pk = sjtp_dict.get('sjtp_pk')
+            subjecttype = sbj_mod.Subjecttype.objects.get_or_none(
+                id=sjtp_pk,
+                scheme=scheme
+            )
+            subjecttype_rows = []
+            deleted_ok = delete_subjecttype(subjecttype, subjecttype_rows, messages, request)
+            deleted_row = subjecttype_rows[0]
+            if deleted_ok:
+                subjecttype = None
+                updated_rows.append(deleted_row)
+
+        if logging_on:
+            logger.debug('subjecttype: ' + str(subjecttype))
+
+# - create schemeitem_rows[0], also when deleting failed (when deleted ok there is no subject, subject_row is made above)
+        if subjecttype:
+            subjecttype_rows = create_subjecttype_rows(
+                examyear=examyear,
+                sjtp_pk=subjecttype.pk,
+                cur_dep_only=False
+            )
+            if logging_on:
+                logger.debug('subjecttype_rows: ' + str(subjecttype_rows))
+
+# - messages will be attached to update_wrap, not to updated_rows
+            if subjecttype_rows:
+                subjecttype_row = subjecttype_rows[0]
+                if is_created:
+                    subjecttype_row['created'] = True
+
+                updated_rows.append(subjecttype_row)
+                if logging_on:
+                    logger.debug('updated_rows: ' + str(updated_rows))
+# - end of update_sjtp_list
+
+
+def create_subjecttype(sjtpbase_pk, scheme, upload_dict, messages, msg_header, request):
+    # --- create subjecttype # PR2021-06-23
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_subjecttype ----- ')
+
+    subjecttype = None
+    sjtpbase = None
+    if scheme:
+# - get sjtpbase
+        sjtpbase = get_subjecttypebase_instance(sjtpbase_pk, messages,
+                                        msg_header, logging_on, request)
+        if sjtpbase is None:
+            msg_html = str(_("Base subject type not found."))
+            msg_dict = {'class': 'border_bg_invalid', 'header': str(_('Create subject type')), 'msg_html': msg_html}
+            messages.append(msg_dict)
+        else:
+    # - get values
+                name = upload_dict.get ('name')
+                if logging_on:
+                    logger.debug('name: ' + str(name))
+
+                msg_list = []
+        # - validate code and name. Function checks null, max_len, exists
+                msg_html = av.validate_notblank_maxlength(name, c.MAX_LENGTH_NAME, _('The name'))
+                if msg_html:
+                    msg_dict = {'class': 'border_bg_invalid', 'header': msg_header, 'msg_html': msg_html}
+                    messages.append(msg_dict)
+
+        # - check if subjecttype name already exists
+                msg_err = av.validate_subjecttype_name_abbrev_exists('name', name, scheme, messages, subjecttype)
+                if msg_err:
+                    msg_list.append(msg_err)
+
+        # - create and save subjecttype
+                if len(msg_list) > 0:
+                    messages.append({'class': "border_bg_invalid", 'header': str(_('Create subject type')), 'msg_list': msg_list})
+                else:
+                    try:
+                        # Don't create base record. Only use the default base records
+                        subjecttype = sbj_mod.Subjecttype(
+                            base=sjtpbase,
+                            scheme=scheme,
+                            name=name
+                        )
+                        subjecttype.save(request=request)
+
+                    except Exception as e:
+                        logger.error(getattr(e, 'message', str(e)))
+                        msg_html = ''.join((str(_('An error occurred')), ': ', str(e), '<br>',
+                                    str(_("Subject type '%(val)s' could not be created.") % {'val': name})))
+                        msg_dict = {'class': 'border_bg_invalid', 'header': str(_('Create subject')), 'msg_html': msg_html}
+                        messages.append(msg_dict)
+
+
+    if logging_on:
+        logger.debug('subjecttype: ' + str(subjecttype))
+        logger.debug('messages: ' + str(messages))
+
+    return subjecttype
+# - end of create_subjecttype
+
+
+def delete_subjecttype(subjecttype, subjecttype_rows, messages, request):
+    # --- delete subjecttype # PR2021-06-23
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- delete_subjecttype ----- ')
+        logger.debug('subject: ' + str(subjecttype))
+
+    subjecttype_row = {'pk': subjecttype.pk,
+                       'mapid': 'subject_' + str(subjecttype.pk),
+                       'deleted': True}
+    if logging_on:
+        logger.debug('subjecttype_row: ' + str(subjecttype_row))
+
+    base_pk = subjecttype.base.pk
+
+    this_txt = _("Subject type '%(tbl)s'") % {'tbl': subjecttype.name}
+    header_txt = _("Remove subject type")
+
+# check if there are students with subjects with this subjecttype
+    students_with_this_subjecttype_exist = stud_mod.Studentsubject.objects.filter(
+        schemeitem__subjecttype=subjecttype
+    ).exists()
+
+    if logging_on:
+        logger.debug('students_with_this_subjecttype_exist: ' + str(students_with_this_subjecttype_exist))
+
+    if students_with_this_subjecttype_exist:
+        deleted_ok = False
+        msg_html = ''.join((str(_('There are candidates with subjects with this subjecttype.')), '<br>',
+                            str(_("%(cpt)s could not be deleted.") % {'cpt': this_txt})))
+        msg_dict = {'class': 'border_bg_invalid', 'header': header_txt, 'msg_html': msg_html}
+        messages.append(msg_dict)
+
+    else:
+        deleted_ok = sch_mod.delete_instance(subjecttype, messages, request, this_txt, header_txt)
+
+    if deleted_ok:
+    # - check if this subjecttype base has other child subjecttypes, delet if none found
+        # PR2021-06-27 debug: Don't delete base subjecttypes without children: they may be used another time
+
+   # - add deleted_row to subject_rows
+        subjecttype_rows.append(subjecttype_row)
+
+    if logging_on:
+        logger.debug('subjecttype_rows' + str(subjecttype_rows))
+        logger.debug('messages' + str(messages))
+
+    return deleted_ok
+# - end of delete_subjecttype
+
+
+def update_subjecttype_instance(instance, scheme, upload_dict, error_list, request):
+    # --- update existing and new instance PR2021-06-23
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- update_subjecttype_instance -----')
+        logger.debug('upload_dict: ' + str(upload_dict))
+
+    if instance:
+        save_changes_in_base = False
+        save_changes = False
+
+        msg_header_txt = _('Update subject type')
+
+        for field, new_value in upload_dict.items():
+
+            if logging_on:
+                logger.debug('field: ' + str(field))
+                logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
+
+# - save changes in field 'code'
+            if field == 'sjtpbase_pk':
+                base = None
+                if new_value:
+                    base = sbj_mod.Subjecttypebase.objects.get_or_none(
+                        id=new_value,
+                        country=request.user.country
+                    )
+                if logging_on:
+                    logger.debug('new_subjecttypebase: ' + str(base) + ' ' + str(type(base)))
+
+                if base.pk != instance.base.pk:
+                    if logging_on:
+                        logger.debug('new_value != saved_value')
+    # - validate abbrev checks null, max_len, exists
+                    #  msg_err = { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
+     # - save field if changed and no_error
+                    setattr(base, field, new_value)
+                    save_changes_in_base = True
+
+# - save changes in field 'name'
+            elif field in ('name', 'abbrev'):
+                saved_value = getattr(instance, field)
+                if new_value != saved_value:
+    # - validate abbrev checks null, max_len, exists
+                    has_error = av.validate_subjecttype_name_abbrev_exists(
+                        field, new_value, scheme, error_list, instance)
+                    if not has_error:
+                        # - save field if changed and no_error
+                        setattr(instance, field, new_value)
+                        save_changes = True
+
+            elif field in ('minsubjects', 'maxsubjects'):
+                msg_html = None
+                new_value_int = None
+
+                if new_value:
+    # - check if value is positive whole number
+                    if not new_value.isdecimal():
+                        msg_html = str(_("'%(val)s' is not a valid number.") % {'val': new_value})
+                    else:
+                        new_value_int = int(new_value)
+                        if field == 'minsubjects':
+                            maxsubjects = getattr(instance, 'maxsubjects')
+                            if maxsubjects and new_value_int > maxsubjects:
+                                msg_html = str(_("Minimum amount of subjects cannot be greater than maximum (%(val)s).") % {'val': maxsubjects})
+                        elif field == 'maxsubjects':
+                            minsubjects = getattr(instance, 'minsubjects')
+                            if minsubjects and new_value_int < minsubjects:
+                                msg_html = str(_("Maximum amount of subjects cannot be fewer than minimum (%(val)s).") % {'val': minsubjects})
+                if msg_html:
+                    msg_dict = {'field': field,
+                                'header': msg_header_txt,
+                                'class': 'border_bg_warning',
+                                'msg_html': msg_html}
+                    error_list.append(msg_dict)
+                else:
+                    # -note: value can be None
+                    saved_value = getattr(instance, field)
+                    if new_value_int != saved_value:
+                        setattr(instance, field, new_value_int)
+                        save_changes = True
+# --- end of for loop ---
+
+# 5. save changes
+        if save_changes or save_changes_in_base:
+            try:
+                if save_changes_in_base:
+                    # also save instance when base has changed, to update modifiedat and modifiedby
+                    instance.base.save()
+                instance.save(request=request)
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                msg_html = ''.join((str(_('An error occurred: ')), str(e), '<br>',
+                                    str(_('The changes have not been saved.'))))
+                error_list.append({'header': msg_header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html})
+# - end of update_subjecttype_instance
+
+
+def create_subjecttype_rows(examyear, depbase=None, cur_dep_only=True, sjtp_pk=None):
+    # --- create rows of all subjecttypes of this examyear / country  PR2021-06-24
+    logging_on = False  #s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_subjecttype_rows ============= ')
+        logger.debug('cur_dep_only: ' + str(cur_dep_only))
+        logger.debug('depbase: ' + str(depbase))
+
+    subjecttype_rows =[]
+    if examyear:
+        sql_keys = {'ey_id': examyear.pk}
+        sql_list = ["SELECT sjtp.id, sjtp.base_id, CONCAT('subjecttype_', sjtp.id::TEXT) AS mapid,",
+            "sjtpbase.id AS sjtpbase_id, sjtpbase.code AS sjtpbase_code, sjtpbase.name AS sjtpbase_name,",
+            "sjtpbase.sequence AS sjtpbase_sequence, ",
+            "sjtp.name, sjtp.abbrev, sjtp.minsubjects, sjtp.maxsubjects,",
+            "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev, sct.id AS sct_id, sct.abbrev AS sct_abbrev,",
+            "dep.id AS department_id, depbase.code AS depbase_code, sm.id AS scheme_id, sm.name AS scheme_name,",
+            "sjtp.modifiedby_id, sjtp.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+
+            "FROM subjects_subjecttype AS sjtp",
+            "INNER JOIN subjects_subjecttypebase AS sjtpbase ON (sjtpbase.id = sjtp.base_id)",
+            "INNER JOIN subjects_scheme AS sm ON (sm.id = sjtp.scheme_id)",
+            "LEFT JOIN subjects_level AS lvl ON (lvl.id = sm.level_id)",
+            "LEFT JOIN subjects_sector AS sct ON (sct.id = sm.sector_id)",
+            "INNER JOIN schools_department AS dep ON (dep.id = sm.department_id)",
+            "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
+
+            "LEFT JOIN accounts_user AS au ON (au.id = sjtp.modifiedby_id)",
+
+            "WHERE ey.id = %(ey_id)s::INT"]
+
+        if sjtp_pk:
+            sql_keys['sjtp_pk'] = sjtp_pk
+            sql_list.append("AND sjtp.id = %(sjtp_pk)s::INT")
+        elif cur_dep_only:
+            depbase_lookup = None
+            if depbase:
+                department = sch_mod.Department.objects.get_or_none(examyear=examyear, base=depbase)
+                if department:
+                    depbase_lookup = ''.join( ('%;', str(depbase.pk), ';%') )
+            if logging_on:
+                logger.debug('depbase_lookup: ' + str(depbase_lookup))
+
+            if depbase_lookup:
+                sql_keys['depbase_pk'] = depbase_lookup
+                sql_list.append("AND CONCAT(';', sct.depbases::TEXT, ';') LIKE %(depbase_pk)s::TEXT")
+            else:
+                sql_list.append("AND FALSE")
+
+        sql_list.append("ORDER BY sjtp.id::TEXT")
+        sql = ' '.join(sql_list)
+        if logging_on:
+            logger.debug('sql: ' + str(sql))
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            subjecttype_rows = af.dictfetchall(cursor)
+
+    return subjecttype_rows
+# --- end of create_subjecttype_rows
+
+
+def create_subjecttypebase_rows(country):
+    # --- create rows of all subjecttypes of this examyear / country  PR2021-06-22
+    #logger.debug(' =============== create_subjecttypebase_rows ============= ')
+    rows =[]
+    if country:
+        sql_keys = {'country_id': country.pk}
+
+        sql_list = ["SELECT sjtbase.id, CONCAT('subjecttypebase_', sjtbase.id::TEXT) AS mapid,",
+            "sjtbase.code, sjtbase.name, sjtbase.abbrev, sjtbase.sequence",
+            "FROM subjects_subjecttypebase AS sjtbase",
+            "WHERE sjtbase.country_id = %(country_id)s::INT",
+            "ORDER BY sjtbase.id::TEXT"]
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            rows = af.dictfetchall(cursor)
+
+    return rows
+# --- end of create_subjecttypebase_rows
+
+
+
+
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-#  =========== Ajax requests  ===========
 
+def create_scheme_rows(examyear, depbase, append_dict, scheme_pk, cur_dep_only):
+    # --- create rows of all schemes of this examyear PR2020-11-16 PR2021-06-24
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_scheme_rows ============= ')
+        logger.debug('cur_dep_only: ' + str(cur_dep_only))
+        logger.debug('scheme_pk: ' + str(scheme_pk))
 
-def create_scheme_rows(setting_dict, append_dict, scheme_pk):
-    # --- create rows of all schemes of this examyear PR2020-11-16
-    # logger.debug(' =============== create_scheme_rows ============= ')
     scheme_rows = []
-    examyear_pk = setting_dict.get('sel_examyear_pk')
-    depbase_pk = setting_dict.get('sel_depbase_pk')
-    if examyear_pk:
-        sql_keys = {'ey_id': examyear_pk}
+    if examyear:
+        sql_keys = {'ey_id': examyear.pk}
         sql_list = ["SELECT scheme.id, scheme.department_id, scheme.level_id, scheme.sector_id,",
             "CONCAT('scheme_', scheme.id::TEXT) AS mapid,",
-            "scheme.name, scheme.fields,",
+            "scheme.name AS scheme_name, scheme.minsubjects, scheme.maxsubjects, scheme.min_mvt, scheme.max_mvt,",
             "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
+            "depbase.code AS depbase_code,"
             "scheme.modifiedby_id, scheme.modifiedat,",
             "SUBSTRING(au.username, 7) AS modby_username",
 
             "FROM subjects_scheme AS scheme",
             "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+            "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
             "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
             "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
             "LEFT JOIN subjects_sector AS sct ON (sct.id = scheme.sector_id)",
@@ -1664,12 +2620,14 @@ def create_scheme_rows(setting_dict, append_dict, scheme_pk):
         if scheme_pk:
             sql_keys['scheme_id'] = scheme_pk
             sql_list.append('AND scheme.id = %(scheme_id)s::INT')
-        else:
-            if depbase_pk:
-                sql_keys['db_id'] = depbase_pk
+        elif cur_dep_only:
+            if depbase:
+                sql_keys['db_id'] = depbase.pk
                 sql_list.append('AND dep.base_id = %(db_id)s::INT')
-            sql_list.append('ORDER BY scheme.name')
+            else:
+                sql_list.append("AND FALSE")
 
+        sql_list.append("ORDER BY scheme.id::TEXT")
         sql = ' '.join(sql_list)
 
         newcursor = connection.cursor()
@@ -1688,24 +2646,36 @@ def create_scheme_rows(setting_dict, append_dict, scheme_pk):
 # --- end of create_scheme_rows
 
 
-def create_schemeitem_rows(setting_dict, append_dict, scheme_pk):
-    # --- create rows of all schemeitems of this examyear PR2020-11-17
-    logger.debug(' =============== create_schemeitem_rows ============= ')
+def create_schemeitem_rows(examyear, schemeitem=None, scheme=None, depbase=None):
+    # --- create rows of all schemeitems of this examyear PR2020-11-17 PR2021-06-25
+
+    logging_on = s.LOGGING_ON
+
+    if logging_on:
+        logger.debug(' =============== create_schemeitem_rows ============= ')
+        logger.debug('examyear: ' + str(examyear) + ' ' + str(type(examyear)))
+        logger.debug('schemeitem: ' + str(schemeitem) + ' ' + str(type(schemeitem)))
+        logger.debug('scheme: ' + str(scheme) + ' ' + str(type(scheme)))
+        logger.debug('depbase: ' + str(depbase) + ' ' + str(type(depbase)))
+
     schemeitem_rows = []
-    examyear_pk = setting_dict.get('sel_examyear_pk')
-    depbase_pk = setting_dict.get('sel_depbase_pk')
-    if examyear_pk and depbase_pk:
-        sql_keys = {'ey_id': examyear_pk, 'db_id': depbase_pk}
+
+    if examyear :
+        sql_keys = {'ey_id': examyear.pk}
         sql_list = ["SELECT si.id, si.scheme_id, scheme.department_id, scheme.level_id, scheme.sector_id,",
             "CONCAT('schemeitem_', si.id::TEXT) AS mapid,",
             "si.subject_id AS subj_id, subj.name AS subj_name, subjbase.code AS subj_code,",
-            "si.subjecttype_id AS sjt_id, subjtype.name AS sjt_name, subjtype.abbrev AS sjt_abbrev, subjtype.sequence AS sjt_sequence,",
-            "subjtype.has_prac AS sjt_has_prac, subjtype.has_pws AS sjt_has_pws, subjtype,",
-            "scheme.name, scheme.fields,",
-            "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
+            "sjtpbase.code AS sjtpbase_code, sjtpbase.sequence AS sjtpbase_sequence,",
+            "sjtp.id AS sjtp_id, sjtp.name AS sjtp_name, sjtp.abbrev AS sjtp_abbrev,",
+            "sjtp.has_prac AS sjtp_has_prac, sjtp.has_pws AS sjtp_has_pws, ",
+            "sjtp.minsubjects AS sjtp_minsubjects, sjtp.maxsubjects AS sjtp_maxsubjects, ",
+            "scheme.name AS scheme_name, scheme.fields AS scheme_fields,",
+            "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
 
             "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_combi,",
             "si.extra_count_allowed, si.extra_nocount_allowed, si.elective_combi_allowed, si.has_practexam,",
+            "si.has_pws, si.is_core_subject, si.is_mvt,",
+            "si.reex_se_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce,",
 
             "si.modifiedby_id, si.modifiedat,",
             "SUBSTRING(au.username, 7) AS modby_username",
@@ -1713,24 +2683,30 @@ def create_schemeitem_rows(setting_dict, append_dict, scheme_pk):
             "FROM subjects_schemeitem AS si",
             "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
             "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+            "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
             "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
             "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
             "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-            "INNER JOIN subjects_subjecttype AS subjtype ON (subjtype.id = si.subjecttype_id)",
+            "INNER JOIN subjects_subjecttype AS sjtp ON (sjtp.id = si.subjecttype_id)",
+            "INNER JOIN subjects_subjecttypebase AS sjtpbase ON (sjtpbase.id = sjtp.base_id)",
             "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
             "LEFT JOIN subjects_sector AS sct ON (sct.id = scheme.sector_id)",
             "LEFT JOIN accounts_user AS au ON (au.id = si.modifiedby_id)",
 
-            "WHERE dep.examyear_id = %(ey_id)s::INT",
-            "AND dep.base_id = %(db_id)s::INT"]
+            "WHERE dep.examyear_id = %(ey_id)s::INT"]
 
-        if scheme_pk:
-            # when employee_pk has value: skip other filters
-            sql_list.append('AND scheme.id = %(scheme_id)s::INT')
-            sql_keys['scheme_id'] = scheme_pk
-        else:
-            sql_list.append('ORDER BY subjbase.code, subjtype.sequence')
+        if schemeitem:
+            # when schemeitem_pk has value: skip other filters
+            sql_keys['si_pk'] = schemeitem.pk
+            sql_list.append('AND si.id = %(si_pk)s::INT')
+        elif scheme:
+            sql_keys['scheme_pk'] = scheme.pk
+            sql_list.append('AND scheme.id = %(scheme_pk)s::INT')
+        elif depbase:
+            sql_keys['depbase_pk'] = depbase.pk
+            sql_list.append('AND depbase.id = %(depbase_pk)s::INT')
 
+        sql_list.append('ORDER BY si.id::TEXT')
         sql = ' '.join(sql_list)
 
         newcursor = connection.cursor()
@@ -1775,7 +2751,7 @@ class ExamDownloadExamView(View):  # PR2021-05-06
 # - get selected examyear, school and department from usersettings
             sel_examyear, sel_school, sel_department, is_locked, \
                 examyear_published, school_activated, requsr_same_schoolNIU = \
-                    dl.get_selected_examyear_school_dep_from_usersetting(request)
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
 
             if logging_on:
                 logger.debug('sel_school: ' + str(sel_school))
@@ -1863,7 +2839,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
 # - get selected examyear, school and department from usersettings
             sel_examyear, sel_school, sel_department, is_locked, \
                 examyear_published, school_activated, requsr_same_schoolNIU = \
-                    dl.get_selected_examyear_school_dep_from_usersetting(request)
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
 
 # - get selected examperiod, examtype, subject_pk from usersettings
             sel_examperiod, sel_examtype, sel_subject_pkNIU = dl.get_selected_examperiod_examtype_from_usersetting(request)

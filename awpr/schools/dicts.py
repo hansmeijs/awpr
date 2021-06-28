@@ -91,52 +91,61 @@ def create_department_rows(examyear):
     return rows
 # --- end of create_department_rows
 
-def create_level_rows(examyear, depbase):
-    # --- create rows of all levels of this examyear / country PR2020-12-11 PR2021-03-08
+def create_level_rows(examyear, depbase, cur_dep_only):
+    # --- create rows of all levels of this examyear / country PR2020-12-11 PR2021-03-08  PR2021-06-24
     #logger.debug(' =============== create_level_rows ============= ')
 
     rows =[]
-    if examyear and depbase:
-        department = sch_mod.Department.objects.get_or_none(examyear=examyear, base=depbase)
-        if department:
-            if department.level_req:
-                depbase_lookup = ''.join( ('%;', str(depbase.pk), ';%') )
-                sql_keys = {'ey_id': examyear.pk, 'depbase_pk': depbase_lookup}
+    if examyear:
+        sql_keys = {'ey_id': examyear.pk}
 
-                sql_list = ["SELECT lvl.id, lvl.base_id, lvl.examyear_id, ey.code AS examyear_code, ey.country_id,",
-                    "CONCAT('level_', lvl.id::TEXT) AS mapid,",
-                    "lvl.name, lvl.abbrev, lvl.sequence, lvl.depbases,",
-                    "lvl.modifiedby_id, lvl.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+        sql_list = ["SELECT lvl.id, lvl.base_id, lvl.examyear_id, ey.code AS examyear_code, ey.country_id,",
+            "CONCAT('level_', lvl.id::TEXT) AS mapid,",
+            "lvl.name, lvl.abbrev, lvl.sequence, lvl.depbases,",
+            "lvl.modifiedby_id, lvl.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
 
-                    "FROM subjects_level AS lvl ",
-                    "INNER JOIN schools_examyear AS ey ON (ey.id = lvl.examyear_id)",
-                    "LEFT JOIN accounts_user AS au ON (au.id = lvl.modifiedby_id)",
+            "FROM subjects_level AS lvl ",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = lvl.examyear_id)",
+            "LEFT JOIN accounts_user AS au ON (au.id = lvl.modifiedby_id)",
 
-                    "WHERE ey.id = %(ey_id)s::INT",
-                    "AND CONCAT(';', lvl.depbases::TEXT, ';') LIKE %(depbase_pk)s::TEXT",
-                    "ORDER BY lvl.sequence"]
-                sql = ' '.join(sql_list)
+            "WHERE ey.id = %(ey_id)s::INT"
+            ]
 
-                with connection.cursor() as cursor:
-                    cursor.execute(sql, sql_keys)
-                    rows = af.dictfetchall(cursor)
+        if cur_dep_only:
+            depbase_lookup = None
+            if depbase:
+                department = sch_mod.Department.objects.get_or_none(examyear=examyear, base=depbase)
+                if department:
+                    if department.level_req:
+                        depbase_lookup = ''.join( ('%;', str(depbase.pk), ';%') )
+            if depbase_lookup:
+                sql_keys['depbase_pk'] = depbase_lookup
+                sql_list.append("AND CONCAT(';', lvl.depbases::TEXT, ';') LIKE %(depbase_pk)s::TEXT")
+            else:
+                sql_list.append("AND FALSE")
+        sql_list.append("ORDER BY lvl.sequence")
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            rows = af.dictfetchall(cursor)
 
     return rows
 # --- end of create_level_rows
 
 
-def create_sector_rows(examyear, depbase):
-    # --- create rows of all sectors of this examyear / country PR2020-12-11  PR2021-03-08
-    #logger.debug(' =============== create_sector_rows ============= ')
-    rows =[]
-    if examyear and depbase:
-        department = sch_mod.Department.objects.get_or_none(examyear=examyear, base=depbase)
-        if department:
-            if department.sector_req:
-                depbase_lookup = ''.join( ('%;', str(depbase.pk), ';%') )
-                sql_keys = {'ey_id': examyear.pk, 'depbase_pk': depbase_lookup}
+def create_sector_rows(examyear, depbase, cur_dep_only):
+    # --- create rows of all sectors of this examyear / country PR2020-12-11  PR2021-03-08  PR2021-06-24
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_sector_rows ============= ')
+        logger.debug('cur_dep_only: ' + str(cur_dep_only))
+        logger.debug('depbase: ' + str(depbase))
 
-                sql_list = ["SELECT sct.id, sct.base_id, sct.examyear_id, ey.code AS examyear_code, ey.country_id,",
+    rows =[]
+    if examyear:
+        sql_keys = {'ey_id': examyear.pk}
+        sql_list = ["SELECT sct.id, sct.base_id, sct.examyear_id, ey.code AS examyear_code, ey.country_id,",
                     "CONCAT('sector_', sct.id::TEXT) AS mapid,",
                     "sct.name, sct.abbrev, sct.sequence, sct.depbases,",
                     "sct.modifiedby_id, sct.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
@@ -145,19 +154,41 @@ def create_sector_rows(examyear, depbase):
                     "INNER JOIN schools_examyear AS ey ON (ey.id = sct.examyear_id)",
                     "LEFT JOIN accounts_user AS au ON (au.id = sct.modifiedby_id)",
 
-                    "WHERE ey.id = %(ey_id)s::INT",
-                    "AND CONCAT(';', sct.depbases::TEXT, ';') LIKE %(depbase_pk)s::TEXT",
-                    "ORDER BY sct.sequence"]
-                sql = ' '.join(sql_list)
+                    "WHERE ey.id = %(ey_id)s::INT"
+                    ]
 
-                with connection.cursor() as cursor:
-                    cursor.execute(sql, sql_keys)
-                    rows = af.dictfetchall(cursor)
+        if cur_dep_only:
+            depbase_lookup = None
+            if depbase:
+                department = sch_mod.Department.objects.get_or_none(examyear=examyear, base=depbase)
+                if department:
+                    if department.sector_req:
+                        depbase_lookup = ''.join( ('%;', str(depbase.pk), ';%') )
+
+            if depbase_lookup:
+                sql_keys['depbase_pk'] = depbase_lookup
+                sql_list.append("AND CONCAT(';', sct.depbases::TEXT, ';') LIKE %(depbase_pk)s::TEXT")
+            else:
+                sql_list.append("AND FALSE")
+
+        sql_list.append("ORDER BY sct.sequence")
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            rows = af.dictfetchall(cursor)
 
     return rows
 # --- end of create_sector_rows
 
-def create_school_rows(examyear, permit_dict, append_dict, school_pk):
+
+
+
+
+
+
+
+def create_school_rows(examyear, permit_dict, school_pk=None):
     # --- create rows of all schools of this examyear / country PR2020-09-18 PR2021-04-23
     logging_on = False  #s.LOGGING_ON
     if logging_on:
@@ -169,9 +200,11 @@ def create_school_rows(examyear, permit_dict, append_dict, school_pk):
 
     sql_keys = {'ey_id': examyear.pk, 'max_role': requsr_role}
 
+
     sql_list = ["SELECT sch.id, sch.base_id, sch.examyear_id, ey.code AS examyear_code, ey.country_id, c.name AS country,",
         "CONCAT('school_', sch.id::TEXT) AS mapid, sb.defaultrole,",
-        "sch.name, sch.abbrev, sch.article, sb.code AS sb_code, sch.activated, sch.locked, sch.depbases,",
+        "sch.name, sch.abbrev, sch.article, sb.code AS sb_code, sch.depbases,",
+        "sch.isdayschool, sch.iseveningschool, sch.islexschool, sch.activated, sch.locked,",
         "sch.modifiedby_id, sch.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
 
         "FROM schools_school AS sch",
@@ -201,14 +234,6 @@ def create_school_rows(examyear, permit_dict, append_dict, school_pk):
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
         school_rows = af.dictfetchall(cursor)
-
-    # - add messages to school_row, only after update
-    if school_pk and school_rows and append_dict:
-        # when school_pk has value there is only 1 row
-        row = school_rows[0]
-        if row:
-            for key, value in append_dict.items():
-                row[key] = value
 
     return school_rows
 # --- end of create_school_rows

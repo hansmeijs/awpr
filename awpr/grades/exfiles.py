@@ -214,9 +214,10 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
             activate(user_lang)
 
 # - get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, is_locked, \
-                examyear_published, school_activated, requsr_same_schoolNIU = \
-                    dl.get_selected_examyear_school_dep_from_usersetting(request)
+           # TODO was:  sel_examyear, sel_school, sel_department, is_locked, \
+                #examyear_published, school_activated, requsr_same_schoolNIU = \
+            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+            dl.get_selected_ey_school_dep_from_usersetting(request)
 
 # - get selected examperiod, examtype, subject_pk from usersettings
             sel_examperiod, sel_examtype, sel_subject_pk = dl.get_selected_examperiod_examtype_from_usersetting(request)
