@@ -37,6 +37,7 @@
             {% include 'includes/modconfirm.html' %}
             {% include 'subjects/modsubject.html' %}
             {% include 'subjects/modsubjecttype.html' %}
+            {% include 'subjects/modsubjecttypebase.html' %}
             {% include 'subjects/modschemeitem.html' %}
 
 
@@ -66,9 +67,7 @@
                 <button data-btn="btn_scheme" class="btn btn-secondary">{% trans 'Subject schemes' %}</button>
                 <button data-btn="btn_schemeitem" class="btn btn-secondary">{% trans 'Subject scheme items' %}</button>
                 <button data-btn="btn_subjecttype" class="btn btn-secondary">{% trans 'Subject types' %}</button>
-                <button data-btn="btn_department" class="btn btn-secondary display_hide">{% trans 'Departments' %}</button>
-                <button data-btn="btn_level" class="btn btn-secondary display_hide">{% trans 'Levels' %}</button>
-                <button data-btn="btn_sector" class="btn btn-secondary display_hide">{% trans 'Sectors' %}</button>
+                <button data-btn="btn_subjecttypebase" class="btn btn-secondary">{% trans 'Subject type bases' %}</button>
                 <button data-btn="btn_package" class="btn btn-secondary display_hide">{% trans 'Subject packages' %}</button>
             </div>
 
@@ -86,8 +85,10 @@
                 data-settings_upload_url="{% url 'settings_upload_url' %}"
                 data-subject_upload_url="{% url 'subject_upload_url' %}"
                 data-subjecttype_upload_url="{% url 'subjecttype_upload_url' %}"
+                data-subjecttypebase_upload_url="{% url 'subjecttypebase_upload_url' %}"
                 data-scheme_upload_url="{% url 'scheme_upload_url' %}"
                 data-schemeitem_upload_url="{% url 'schemeitem_upload_url' %}"
+                data-download_scheme_xlsx_url="{% url 'download_scheme_xlsx_url' %}"
             >
             </div>
         {% endif %}

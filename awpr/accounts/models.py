@@ -632,9 +632,10 @@ class Userpermit(sch_mod.AwpBaseModel):  # PR2021-03-18 PR2021-04-20
     description = CharField(db_index=True, max_length=c.MAX_LENGTH_NAME)
 
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
-    roles = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
-    pages = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
     usergroups = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+
+    # removed: roles = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+    # removed: pages = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
 
 
 class Usergroup(sch_mod.AwpBaseModel):  # PR2021-06-19

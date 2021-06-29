@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     # 'menu', # PR2018-05-08 simple_menu removed PR2018-10-07
     # 'sitetree',  # PR2018-10-07 removed PR2018-10-07
     'accounts',  # PR2018-03-16
+    'awpr',  # PR2021-06-28
     'schools',   # PR2018-04-13
     'subjects',  # PR2018-07-20
     'students',  # PR2018-07-20

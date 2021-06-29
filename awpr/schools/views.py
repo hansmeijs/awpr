@@ -163,8 +163,13 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
         if request.user is not None and request.user.country is not None:
             req_usr = request.user
             permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_examyear', req_usr)
-            has_permit = 'crud' in permit_list
+            has_permit = 'permit_crud' in permit_list
 
+            if logging_on:
+                logger.debug(' ')
+                logger.debug(' ============= ExamyearUploadView ============= ')
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit:  ' + str(has_permit))
         # - reset language
             user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
             activate(user_lang)
@@ -185,9 +190,8 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
                 if request.user.country and not request.user.country.locked:
                     country = request.user.country
                 if logging_on:
-                    logger.debug(' ')
-                    logger.debug(' ============= ExamyearUploadView ============= ')
-                    logger.debug('upload_dict' + str(upload_dict))
+                    # upload_dict: {'id': {'table': 'examyear', 'mode': 'delete', 'mapid': 'examyear_59'}}
+                    logger.debug('upload_dict: ' + str(upload_dict))
                     logger.debug('country: ' + str(country))
                     logger.debug('mode:    ' + str(mode))
 
@@ -383,22 +387,26 @@ def copy_tables_from_last_year(new_examyear_instance, request):
 
         sf.copy_exfilestext_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
         mapped_deps = sf.copy_deps_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
-        mapped_schools = sf.copy_schools_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
+        sf.copy_schools_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
+
+        mapped_levels = sf.copy_levels_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
+        mapped_sectors = sf.copy_sectors_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
+
+        mapped_schemes = sf.copy_schemes_from_prev_examyear(request, prev_examyear_instance, mapped_deps, mapped_levels, mapped_sectors)
+
+        mapped_subjecttypes = sf.copy_subjecttypes_from_prev_examyear(request, prev_examyear_instance, mapped_schemes)
+        mapped_subjects = sf.copy_subjects_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
+        mapped_schemeitems = sf.copy_schemeitems_from_prev_examyear(request, prev_examyear_instance, mapped_schemes, mapped_subjects, mapped_subjecttypes)
+        mapped_packages = sf.copy_packages_from_prev_examyear(request, prev_examyear_instance, mapped_schemes)
+        sf.copy_packageitems_from_prev_examyear(request, prev_examyear_instance, mapped_packages, mapped_schemeitems)
+
+        # Exam
+        # Norm
         # School_message
         # Published
         # PrivateDocument
         # Entrylist
         # Schoolsetting
-        mapped_levels = sf.copy_levels_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
-        mapped_sectors = sf.copy_sectors_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
-        mapped_subjecttypes = sf.copy_subjecttypes_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
-        # Norm
-        mapped_schemes = sf.copy_schemes_from_prev_examyear(request, prev_examyear_instance, mapped_deps, mapped_levels, mapped_sectors)
-        mapped_subjects = sf.copy_subjects_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
-        mapped_schemeitems = sf.copy_schemeitems_from_prev_examyear(request, prev_examyear_instance, mapped_schemes, mapped_subjects, mapped_subjecttypes)
-        # Exam
-        # Package
-        # Packageitem
         # Cluster
         # Birthcountry
         # Birthplace
@@ -449,7 +457,7 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                 logger.debug('permit_list: ' + str(permit_list))
 
             permit_create = 'create_school' in permit_list
-            permit_edit = 'crud' in permit_list
+            permit_edit = 'permit_crud' in permit_list
             permit_delete ='delete_school' in permit_list
 
             if permit_create or permit_edit or permit_delete:

@@ -333,7 +333,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  hide loader
                 el_loader.classList.add(cls_visible_hide);
                 console.log(msg + '\n' + xhr.responseText);
-                alert(msg + '\n' + xhr.responseText);
             }
         });
     }  // function DatalistDownload
@@ -698,7 +697,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
                     console.log(msg + '\n' + xhr.responseText);
-                    alert(msg + '\n' + xhr.responseText);
                 }  // error: function (xhr, msg) {
             });  // $.ajax({
         }  //  if(!!row_upload)

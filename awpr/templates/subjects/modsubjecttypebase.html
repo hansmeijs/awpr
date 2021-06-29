@@ -1,0 +1,90 @@
+ {% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL SUBJECT  =================== -->
+    <div class="modal" id="id_mod_subjecttypebase" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md " role="document">
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 id="id_MSJTBASE_header" class="modal-title mx-2" ></h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body py-2">
+                        <div id="id_MSJTBASE_form_controls" class="mx-">
+                            <div id="id_MSJTBASE_loader" class="image_container visibility_hide">
+                                <img  src="{% static 'img/loader.gif' %}" height="24" width="24">
+                            </div>
+
+                                    <div class="flex_container">
+                                         <div class="flex_1 mx-1 mt-2">
+                                            <label for="id_MSJTBASE_code" class="mx-2">{% trans 'Code' %}:</label>
+                                            <input id="id_MSJTBASE_code" type="text" data-field="code"
+                                            class="form-control awp_input_text"
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                        </div>
+                                        <div class="flex_3 mx-1 mt-2">
+                                            <label for="id_MSJTBASE_name" class="mx-2">{% trans 'Name' %}:</label>
+                                            <input id="id_MSJTBASE_name" type="text" data-field="name"
+                                            class="form-control awp_input_text"
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                        </div>
+
+                                    </div>
+
+                                    <div class="flex_container">
+                                         <div class="flex_1 mx-1 mt-2">
+                                            <label for="id_MSJTBASE_sequence" class="mx-2">{% trans 'Sequence' %}:</label>
+                                            <input id="id_MSJTBASE_sequence" type="text" data-field="sequence"
+                                            class="form-control awp_input_text"
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                        </div>
+                                        <div class="flex_3 mx-1 mt-2">
+                                            <label for="id_MSJTBASE_abbrev" class="mx-2">{% trans 'Abbreviation' %}:</label>
+                                            <input id="id_MSJTBASE_abbrev" type="text" data-field="abbrev"
+                                            class="form-control awp_input_text"
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                        </div>
+                                    </div>
+
+
+                                    <div class="flex_container">
+                                        <div class="flex_1 mx-2">
+                                            <small id="id_MSJTBASE_msg_code" class="text-danger "></small>
+                                        </div>
+                                        <div class="flex_1 mx-2">
+                                            <small id="id_MSJTBASE_msg_sequence" class="text-danger "></small>
+                                        </div>
+                                        <div class="flex_1 mx-2">
+                                            <small id="id_MSJTBASE_msg_etenorm" class="text-danger "></small>
+                                        </div>
+                                    </div>
+
+                            <div class="mx-3 mt-2">
+                                <small id="id_MSJTBASE_msg_modified"></small>
+                            </div>
+                        </div>
+
+                    <div id="id_MSJTBASE_message_container">
+                    </div>
+
+
+
+                    </div>
+
+                <div class="modal-footer">
+                    <div class="content_subheader_left mx-1 tab_show tab_update display_hideX">
+                        <button id="id_MSJTBASE_btn_delete" type="button" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete subject' %}</button>
+                        <button id="id_MSJTBASE_btn_log" class="btn btn-outline-secondary" >{% trans 'Show logfile' %}</button>
+                    </div>
+                    <div class="content_subheader_right">
+                        <button id="id_MSJTBASE_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MSJTBASE_btn_save" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>

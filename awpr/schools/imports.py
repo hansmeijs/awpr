@@ -133,7 +133,7 @@ class UploadImportDataView(View):  # PR2020-12-05 PR2021-02-23
             has_permit = False
             if request.user and request.user.country and request.user.schoolbase:
                 permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list('page_student', request.user)
-                has_permit = 'crud' in permit_list
+                has_permit = 'permit_crud' in permit_list
             if not has_permit:
                 err_html = _("You don't have permission to perform this action.")
                 update_dict['result'] = ''.join(("<p class='border_bg_invalid p-2'>", str(err_html), "</p>"))

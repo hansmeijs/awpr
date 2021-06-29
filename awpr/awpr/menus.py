@@ -71,6 +71,11 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 
         permit_list, usergroup_list = acc_view.get_userpermit_list(sel_page, req_user)
 
+# - PR2021-06-28 debug. Add permit 'permit_userpage' if role = system, to prevent you from locking out when no permits yet
+        if req_user.role == c.ROLE_128_SYSTEM:
+            if 'permit_userpage' not in permit_list:
+                permit_list.append('permit_list')
+
         if logging_on:
             logger.debug('sel_page:           ' + str(sel_page))
             logger.debug('req_user.role:  ' + str(req_user.role))

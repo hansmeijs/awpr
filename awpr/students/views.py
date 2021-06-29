@@ -189,7 +189,7 @@ class StudentUploadView(View):  # PR2020-10-01
         if req_usr and req_usr.country and req_usr.schoolbase:
             permit_list = req_usr.permit_list('page_student')
             if permit_list:
-                has_permit = 'crud' in permit_list
+                has_permit = 'permit_crud' in permit_list
             if logging_on:
                 logger.debug('permit_list: ' + str(permit_list))
                 logger.debug('has_permit: ' + str(has_permit))

@@ -269,7 +269,7 @@ console.log(studentsubjects);
                 FillTableRows("data", studentsubjects);
             },
             error: function (xhr, msg) {
-                alert(msg + '\n' + xhr.responseText);
+                console.log(msg + '\n' + xhr.responseText);
             }
         });
     }; // function SelectStudent
@@ -460,7 +460,7 @@ console.log("===  UploadStudsubj  =====") ;
                     }
                 },
                 error: function (xhr, msg) {
-                    alert(msg + '\n' + xhr.responseText);
+                    console.log(msg + '\n' + xhr.responseText);
                 }
             });
         };

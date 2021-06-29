@@ -302,7 +302,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['msg_info'] = {
         'create': [
                 str(_("The new exam year will be created now. The data of the schools and subjects will be copied from the previous exam year.")),
-                str(_("First go to the pages 'Schools' and 'Subjects' to update the data if necessary.")),
+                str(_("WHen the new exam year is created, you can go to the pages 'Schools' and 'Subjects' to update the data if necessary.")),
                 str(_("Then you can publish the new exam year by clicking the 'Publish' button.")),
                 str(_("Schools will not be able to view the new exam year until you have published it."))
         ],
@@ -336,6 +336,10 @@ def get_locale_dict(table_dict, user_lang):
         dict['Add_sector'] = _('Add sector')
         dict['Add_subjecttype'] = _('Add subject type')
         dict['to_subject_scheme'] = _(' to subject scheme')
+
+        dict['Subjecttypebase'] = _('Subject type base')
+        dict['Add_subjecttypebase'] = _('Add subject type base')
+        dict['Delete_subjecttypebase'] = _('Delete subject type base')
 
         dict['Subject_scheme'] = _('Subject scheme')
         dict['Add_subject_scheme'] = _('Add subject scheme')
@@ -386,7 +390,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Subjecttype_name'] = _('Subject type name')
 
         dict['Subject_scheme_name'] = _('Subject scheme name')
-
+        dict['Download_subject_scheme'] = _('Download subject scheme')
 
         dict['Schemeitem'] = _('Scheme item')
         dict['Package'] = _('Package')

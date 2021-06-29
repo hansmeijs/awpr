@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
         checkbox_hasheader.addEventListener("change", HandleCheckboxHasheaderChanged) //, false);
 
 // --- create EventListener for mod confirm
-    const el_confirm_btn_save = document.getElementById("id_confirm_btn_save")
+    const el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save")
         el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}, false )
 
     HandleBtnPrevNext()
@@ -1046,7 +1046,6 @@ console.log(" ========== HandleCheckboxHasheaderChanged ===========");
                         },
                         error: function (xhr, msg) {
                             console.log(msg + '\n' + xhr.responseText);
-                            //alert(msg + '\n' + xhr.responseText);
                         }  // error: function (xhr, msg) {
                     });
 
@@ -1346,10 +1345,10 @@ console.log(" ========== HandleCheckboxHasheaderChanged ===========");
     function ModConfirmOpen() {
         //console.log(" -----  ModConfirmOpen   ----")
 // ---  set text
-        document.getElementById("id_confirm_header").innerText = loc.Upload_subjects;
-        document.getElementById("id_confirm_msg01").innerText = loc.The_subject_data_will_be_uploaded;
-        document.getElementById("id_confirm_msg02").innerText = loc.Do_you_want_to_continue;
-        document.getElementById("id_confirm_msg03").classList.add(cls_hide);
+        document.getElementById("id_modconfirm_header").innerText = loc.Upload_subjects;
+        document.getElementById("id_modconfirm_msg01").innerText = loc.The_subject_data_will_be_uploaded;
+        document.getElementById("id_modconfirm_msg02").innerText = loc.Do_you_want_to_continue;
+        document.getElementById("id_modconfirm_msg03").classList.add(cls_hide);
 // ---  set focus on save button
         setTimeout(function() { el_confirm_btn_save.focus()}, 50);
 // ---  show modal

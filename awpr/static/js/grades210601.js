@@ -227,7 +227,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  MOD CONFIRM ------------------------------------
         const el_confirm_header = document.getElementById("id_confirm_header");
         const el_confirm_loader = document.getElementById("id_confirm_loader");
-        const el_confirm_msg_container = document.getElementById("id_confirm_msg_container");
+        const el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container");
         const el_confirm_msg01 = document.getElementById("id_confirm_msg01");
         const el_confirm_msg02 = document.getElementById("id_confirm_msg02");
         const el_confirm_msg03 = document.getElementById("id_confirm_msg03");
@@ -387,7 +387,6 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  hide loader
                 el_loader.classList.add(cls_visible_hide);
                 console.log(msg + '\n' + xhr.responseText);
-                alert(msg + '\n' + xhr.responseText);
             }
         });
     }  // function DatalistDownload
@@ -1332,7 +1331,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
                     console.log(msg + '\n' + xhr.responseText);
-                    alert(msg + '\n' + xhr.responseText);
                 }  // error: function (xhr, msg) {
             });  // $.ajax({
         }  //  if(!!row_upload)
@@ -1405,7 +1403,6 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  hide loader
                 el_loader.classList.add(cls_visible_hide);
                 console.log(msg + '\n' + xhr.responseText);
-                alert(msg + '\n' + xhr.responseText);
             }
         });
 
@@ -1585,7 +1582,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
                     console.log(msg + '\n' + xhr.responseText);
-                    alert(msg + '\n' + xhr.responseText);
                 }  // error: function (xhr, msg) {
             });  // $.ajax({
         }  //  if(!!row_upload)
@@ -2234,7 +2230,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 // ---  hide loader
                 el_loader.classList.add(cls_visible_hide)
                 console.log(msg + '\n' + xhr.responseText);
-                alert(msg + '\n' + xhr.responseText);
             },
             async: true,
             data: formData,
@@ -3095,8 +3090,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                     }
                 },
                 error: function (xhr, msg) {
-                    //console.log(msg + '\n' + xhr.responseText);
-                    alert(msg + '\n' + xhr.responseText);
+                    console.log(msg + '\n' + xhr.responseText);
                 }
             });
         }  //  if(!!new_item)

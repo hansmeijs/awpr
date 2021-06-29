@@ -100,12 +100,9 @@ class AwpBaseModel(Model):
         # when adding record: self.id=None, set force_insert=True; otherwise: set force_update=True PR2018-06-09
         super(AwpBaseModel, self).save(force_insert=not _is_update, force_update=_is_update)
 
-        save_to_log(self, _mode, _request)
-
-
     def delete(self, *args, **kwargs):
         _request = kwargs.pop('request')
-        save_to_log(self, 'delete', _request)
+        #save_to_log(self, 'delete', _request)
 
         super(AwpBaseModel, self).delete(*args, **kwargs)
 
@@ -210,12 +207,9 @@ class Examyear_log(AwpBaseModel):
     locked = BooleanField(default=False)
 
     no_practexam = BooleanField(default=False)
-    reex_se_allowed = BooleanField(default=False)  # herkansing schoolexamen
-    # deleted: reex_combi_allowed = BooleanField(default=False)
+    reex_se_allowed = BooleanField(default=False)
     no_centralexam = BooleanField(default=False)
-    # deleted: no_reex = BooleanField(default=False)
     no_thirdperiod = BooleanField(default=False)
-    # deleted: no_exemption_ce = BooleanField(default=False)
 
     createdat = DateTimeField(null=True)
     publishedat = DateTimeField(null=True)
@@ -237,7 +231,7 @@ class ExfilesText(AwpBaseModel):  # PR2021-01-
     # +++++++++++++++++++  get and set setting +++++++++++++++++++++++
     def get_setting_dict(cls, key_str, user):  # PR2019-03-09 PR2021-01-25
         # function returns value of setting row that match the filter
-        # logger.debug('---  get_setting_dict  ------- ')
+        #logger.debug('---  get_setting_dict  ------- ')
         setting_str = None
         if user and key_str:
             row = cls.objects.filter(user=user, key=key_str).order_by('-id').first()
@@ -248,9 +242,12 @@ class ExfilesText(AwpBaseModel):  # PR2021-01-
     @classmethod
     def set_setting(cls, key_str, setting_str, user):  # PR2019-03-09 PR2021-01-25
         # function saves setting in first row that matches the filter, adds new row when not found
-        logger.debug('---  set_setting  ------- ')
-        logger.debug('key_str: ' + str(key_str))
-        logger.debug('setting_str: ' + str(setting_str))
+
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('---  set_setting  ------- ')
+            logger.debug('key_str: ' + str(key_str))
+            logger.debug('setting_str: ' + str(setting_str))
         if user and key_str:
             row = cls.objects.filter(user=user, key=key_str).order_by('-id').first()
             if row:
@@ -260,7 +257,8 @@ class ExfilesText(AwpBaseModel):  # PR2021-01-
                 if setting_str:
                     row = cls(user=user, key=key_str, setting=setting_str)
             row.save()
-            logger.debug('row.setting: ' + str(row.setting))
+            if logging_on:
+                logger.debug('row.setting: ' + str(row.setting))
 
 
 # PR2021-04-25
@@ -323,6 +321,7 @@ class Department_log(AwpBaseModel):
 
     base = ForeignKey(Departmentbase, related_name='+', on_delete=PROTECT)
     examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=CASCADE)
+
     name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
     abbrev = CharField(max_length=c.MAX_LENGTH_10, null=True)
     sequence = PositiveSmallIntegerField(null=True)
@@ -417,7 +416,6 @@ class School(AwpBaseModel):  # PR2018-08-20 PR2018-11-11
     name = CharField(max_length=c.MAX_LENGTH_NAME)
     abbrev = CharField(max_length=c.MAX_LENGTH_SCHOOLABBREV)
     article = CharField(max_length=c.MAX_LENGTH_SCHOOLARTICLE, null=True)
-
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     isdayschool = BooleanField(default=False)
@@ -647,13 +645,13 @@ def delete_instance(instance, messages, request, this_txt=None, header_txt=None)
 
     if instance:
         try:
-            instance.delete(request=request)
+            instance.delete()
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
             caption = this_txt if this_txt else _('This item')
-            msg_html = ''.join((str(_('An error occurred')), ': ', str(e), '<br>',
-                        str(_("%(cpt)s could not be deleted.") % {'cpt': caption})))
-            msg_dict = {'class': 'border_bg_invalid', 'header': header_txt, 'msg_html': msg_html}
+            msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
+                        str(_("%(cpt)s could not be deleted.") % {'cpt': str(caption)})))
+            msg_dict = {'header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
             messages.append(msg_dict)
 
         else:
@@ -668,144 +666,6 @@ def delete_instance(instance, messages, request, this_txt=None, header_txt=None)
     return deleted_ok
 
 
-def save_to_log(instance, req_mode, request):
-    # PR2019-02-23 PR2020-10-23 PR2020-12-15 PR2021-05-11
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ----- save_to_log  ----- mode: ' + str(req_mode))
-        logger.debug('instance: ' + str(instance))
-
-    if instance:
-        model_name = str(instance.get_model_name())
-        if logging_on:
-            logger.debug('model_name: ' + str(model_name))
-        mode = req_mode[0:1] if req_mode else '-'
-
-        modby_id = None
-        mod_at = None
-
-        if mode in ('c', 'd'):
-            # when log create or delete: add req_user and now
-            if request and request.user:
-                modby_id = request.user.pk
-            mod_at = timezone.now()
-        else:
-            # when log save: add user and modat of saved record
-            if instance.modifiedby_id:
-                modby_id = instance.modifiedby_id
-            if instance.modifiedat:
-                mod_at = instance.modifiedat
-        pk_int = instance.pk
-
-        if model_name == 'Examyear':
-            copy_examyear_to_log(mode, instance, modby_id, mod_at)
-        elif model_name == 'ExfilesText':
-            pass
-        elif model_name == 'Department':
-            copy_department_to_log(mode, instance, modby_id, mod_at)
-        elif model_name == 'School':
-            pass
-        elif model_name == 'School_message':
-            pass
-        elif model_name == 'Published':
-            # no log yet
-            pass
-
-        elif model_name == 'Level':
-            pass
-        elif model_name == 'Sector':
-            pass
-        elif model_name == 'Subjecttype':
-            pass
-        elif model_name == 'Norm':
-            pass
-        elif model_name == 'Scheme':
-            pass
-        elif model_name == 'Subject':
-            pass
-        elif model_name == 'Schemeitem':
-            pass
-        elif model_name == 'Exam':
-            pass
-        elif model_name == 'Package':
-            pass
-        elif model_name == 'Packageitem':
-            pass
-        elif model_name == 'Cluster':
-            pass
-
-        elif model_name == 'Student':
-            pass
-        elif model_name == 'Result':
-            pass
-        elif model_name == 'Resultnote':
-            pass
-        elif model_name == 'Studentsubject':
-            pass
-        elif model_name == 'Studentsubjectnote':
-            pass
-        elif model_name == 'Noteattachment':
-            pass
-        elif model_name == 'Grade':
-            pass
-
-# - end of save_to_log
-
-def copy_examyear_to_log(mode, instance, modby_id, mod_at):
-    try:
-        examyear_log = Examyear_log(
-            examyear_id=instance.id,
-            country_id=instance.country_id,
-            code=instance.code,
-            published=instance.published,
-            locked=instance.locked,
-            createdat=instance.createdat,
-            publishedat=instance.publishedat,
-            modifiedby_id=modby_id,
-            modifiedat=mod_at,
-            mode=mode
-        )
-        examyear_log.save()
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
-
-
-def copy_department_to_log(mode, instance, modby_id, mod_at):
-    logger.debug(' ----- copy_department_to_log  -----')  # PR2021-04-25
-    logger.debug('mode: ' + str(mode) )
-    logger.debug('instance: ' + str(instance) + ' ' + str(type(instance)) )
-    logger.debug('modby_id: ' + str(modby_id) + ' ' + str(type(modby_id)) )
-    logger.debug('mod_at: ' + str(mod_at) + ' ' + str(type(mod_at)) )
-
-    try:
-        # get most recent examyear_log (with highest id)
-        examyear_log = Examyear_log.objects.filter(
-            examyear_id=instance.examyear_id
-        ).order_by('-pk').first()
-        logger.debug('examyear_log: ' + str(examyear_log) + ' ' + str(type(examyear_log)) )
-
-        if examyear_log:
-            department_log = Department_log(
-                department_id=instance.id,
-                base_id=instance.base_id,
-                examyear_log_id=examyear_log.id,
-
-                name=instance.name,
-                abbrev=instance.abbrev,
-                sequence=instance.sequence,
-                level_req=instance.level_req,
-                sector_req=instance.sector_req,
-                has_profiel=instance.has_profiel,
-
-                modifiedby_id=modby_id,
-                modifiedat=mod_at,
-                mode=mode
-            )
-            department_log.save()
-
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
-
 #######################################
 
 def get_country(country_abbrev):
@@ -818,56 +678,4 @@ def get_country(country_abbrev):
             abbrev__iexact=country_abbrev
         ).order_by('-pk').first()
     return country
-
-"""
-Old save_to_log with SQL, not in use PR2021-04-25
-
-elif model_name == 'Grade':
-    # this one not working, cannot get filter pc.id with LIMIT 1 in query, get info from pricecodelist instead
-    sub_ssl_list = ["SELECT id, studentsubject_id AS studsubj_id,",
-                    "FROM studentsubject_log",
-                    "ORDER BY id DESC NULLS LAST LIMIT 1"]
-    sub_ssl = ' '.join(sub_ssl_list)
-    # note: multiple WITH clause syntax:WITH cte1 AS (SELECT...), cte2 AS (SELECT...) SELECT * FROM ...
-    sql_keys = {'grade_id': pk_int,  'mode': mode, 'modby_id': modby_id, 'mod_at': mod_at}
-    sql_list = ["WITH sub_ssl AS (" + sub_ssl + ")",
-                "INSERT INTO students_grade_log (id,",
-                    "grade_id, studentsubject_log_id, examperiod,",
-                    "pescore, cescore, segrade, pegrade, cegrade, pecegrade, finalgrade,",
-                    "sepublished, pepublished, cepublished,",
-                    "mode, modifiedby_id, modifiedat)",
-                "SELECT nextval('students_grade_log_id_seq'),",
-                    "grade_id, sub_ssl.id, examperiod,",
-                    "pescore, cescore, segrade, pegrade, cegrade, pecegrade, finalgrade,",
-                    "sepublished, pepublished, cepublished,",
-                    "%(mode)s::TEXT, %(modby_id)s::INT, %(mod_at)s::DATE",
-                "FROM students_grade AS grade",
-                "INNER JOIN sub_ssl ON (sub_ssl.studsubj_id = grade.studentsubject_id)",
-                "WHERE (grade.id = %(grade_id)s::INT"]
-
-    sql_list = ["SELECT nextval('students_grade_log_id_seq') AS sgl_id,",
-                    "grade.id, grade.examperiod,",
-                    "%(mode)s::TEXT AS mode, %(modby_id)s::INT AS modby_id, %(mod_at)s::DATE AS mod_at",
-                "FROM students_grade AS grade",
-                "WHERE id = %(grade_id)s::INT"]
-    sql = ' '.join(sql_list)
-    #logger.debug('sql_keys: ' + str(sql_keys))
-    #logger.debug('sql: ' + str(sql))
-
-    #logger.debug('---------------------- ')
-    with connection.cursor() as cursor:
-        #logger.debug('================= ')
-        cursor.execute(sql, sql_keys)
-        #for qr in connection.queries:
-            #logger.debug('-----------------------------------------------------------------------------')
-            #logger.debug(str(qr))
-
-        #logger.debug('---------------------- ')
-        #rows = dictfetchall(cursor)
-        #logger.debug('---------------------- ')
-        #for row in rows:
-            #logger.debug('row: ' + str(row))
-    
-
-"""
 

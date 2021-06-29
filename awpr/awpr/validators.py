@@ -91,15 +91,17 @@ def validate_unique_useremail(value, country, schoolbase, cur_user_id=None):
     return msg_err
 
 
-# === validate_unique_username ========= PR2020-08-02
+# === validate_unique_username ========= PR2020-08-02 PR2021-06-29
 def validate_notblank_maxlength(value, max_length, caption):
     #logger.debug ('=== validate_notblank_maxlength ====')
-    msg_err = None
+    msg_html = None
     if not value:
-        msg_err = _('%(caption)s cannot be blank.') % {'caption': caption}
-    elif len(value) > max_length:
-        msg_err = _("%(caption)s '%(val)s' is too long, maximum %(max)s characters.") % {'caption': caption, 'val': value, 'max': max_length}
-    return msg_err
+        msg_html = _('%(cpt)s cannot be blank.') % {'cpt': caption}
+    elif max_length and len(value) > max_length:
+        msg_html = _("%(cpt)s '%(val)s' is too long.<br>Maximum %(max)s characters.") \
+                    % {'cpt': caption, 'val': value, 'max': max_length}
+        
+    return msg_html
 
 
 # === validate_unique_examyear ======== PR2020-10-05
@@ -185,12 +187,12 @@ def message_diff_exyr(examyear):  #PR2020-10-30
 
 # ============ SUBJECTS
 def validate_subject_code_exists(code, cur_subject=None):  # PR2020-12-11 PR2021-06-22
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug ('----- validate_subject_code_exists -----')
         logger.debug('code: ' + str(code))
 
-    msg_err = None
+    msg_html = None
 
 # - check if this code already exists
     value_exists = False
@@ -221,20 +223,20 @@ def validate_subject_code_exists(code, cur_subject=None):  # PR2020-12-11 PR2021
                 logger.debug('subjectbase deleted')
 
     if value_exists:
-        msg_err = str(_("Abbreviation '%(val)s' already exists.") % {'val': code})
+        msg_html = str(_("Abbreviation '%(val)s' already exists.") % {'val': code})
 
     if logging_on:
-        logger.debug('msg_err: ' + str(msg_err))
-    return msg_err
+        logger.debug('msg_err: ' + str(msg_html))
+    return msg_html
 
 
 def validate_subject_name_exists(name, examyear, cur_subject=None):  # PR2021-06-22
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug ('----- validate_subject_name_exists -----')
         logger.debug('name: ' + str(name))
 
-    msg_err = None
+    msg_html = None
 
     # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
     crit = Q(examyear=examyear)
@@ -248,9 +250,9 @@ def validate_subject_name_exists(name, examyear, cur_subject=None):  # PR2021-06
 
     if value_exists:
         field_caption = ' '.join((str(_('Subject')), str(_('name'))))
-        msg_err = str(_("%(fld)s '%(val)s' already exists.") % {'fld': field_caption, 'val': name})
+        msg_html = str(_("%(fld)s '%(val)s' already exists.") % {'fld': field_caption, 'val': name})
 
-    return msg_err
+    return msg_html
 
 
 def validate_code_name_identifier(table, field, new_value, is_absence, parent, update_dict, msg_dict, request, this_pk=None):
@@ -261,9 +263,9 @@ def validate_code_name_identifier(table, field, new_value, is_absence, parent, u
     # filter is_absence is only used in table 'order' PR2020-06-14
     # TODO function is from tsa, must change part of it
     # TODO update_dict to be deprecated, to be replaced by msg_dict
-    msg_err = None
+    msg_html = None
     if not parent:
-        msg_err = _("No parent record.")
+        msg_html = _("No parent record.")
     else:
         max_len = 0
         if field == 'code':
@@ -288,17 +290,15 @@ def validate_code_name_identifier(table, field, new_value, is_absence, parent, u
             blank_not_allowed = True
 
         if blank_not_allowed and length == 0:
-            msg_err = _('%(fld)s cannot be blank.') % {'fld': fld}
+            msg_html = _('%(fld)s cannot be blank.') % {'fld': fld}
         elif length > max_len:
-            # msg_err = _('%(fld)s is too long. %(max)s characters or fewer.') % {'fld': fld, 'max': max_len}
-            msg_err = _("%(fld)s '%(val)s' is too long, %(max)s characters or fewer.") % {'fld': fld, 'val': new_value, 'max': max_len}
-            # msg_err = _('%(fld)s cannot be blank.') % {'fld': fld}
-        if not msg_err:
+            msg_html = _("%(fld)s '%(val)s' is too long, %(max)s characters or fewer.") % {'fld': fld, 'val': new_value, 'max': max_len}
+        if not msg_html:
             crit = None
             if table in ('departmentbase', 'schoolbase', 'subjectbase', 'subjecttype'):
                 crit = Q(company=request.user.company)
             else:
-                msg_err = _("Model '%(mdl)s' not found.") % {'mdl': table}
+                msg_html = _("Model '%(mdl)s' not found.") % {'mdl': table}
 
     # filter code, name, identifier, not case sensitive
             if field == 'code':
@@ -317,33 +317,31 @@ def validate_code_name_identifier(table, field, new_value, is_absence, parent, u
                 #instance = m.Employee.objects.filter(crit).first()
 
             else:
-                msg_err = _("Model '%(mdl)s' not found.") % {'mdl': table}
-            # TODO msg not working yet
-            #logger.debug('instance: ' + str(instance))
+                msg_html = _("Model '%(mdl)s' not found.") % {'mdl': table}
+
             if instance:
                 exists = True
                 is_inactive = getattr(instance, 'inactive', False)
             if exists:
                 if is_inactive:
-                    msg_err = _("%(fld)s '%(val)s' exists, but is inactive.") % {'fld': fld, 'val': new_value}
+                    msg_html = _("%(fld)s '%(val)s' exists, but is inactive.") % {'fld': fld, 'val': new_value}
                 else:
-                    msg_err = _("%(fld)s '%(val)s' already exists.") % {'fld': fld, 'val': new_value}
+                    msg_html = _("%(fld)s '%(val)s' already exists.") % {'fld': fld, 'val': new_value}
 
-    #logger.debug('msg_err: ' + str(msg_err))
-    if msg_err:
+    if msg_html:
         # empty update_dict {} is Falsey
         if update_dict:
             if field not in update_dict:
                 update_dict[field] = {}
-            update_dict[field]['error'] = msg_err
+            update_dict[field]['error'] = msg_html
         elif msg_dict:
-            update_dict['err_' + field] = msg_err
+            update_dict['err_' + field] = msg_html
 
-    return msg_err
+    return msg_html
 
 # ============ SCHEME  ===========
 def validate_scheme_name_exists(lookup_value, examyear, error_list, cur_scheme=None):  # PR2021-06-27
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug ('----- validate_scheme_name_exists -----')
         logger.debug('lookup_value: ' + str(lookup_value))
@@ -352,7 +350,7 @@ def validate_scheme_name_exists(lookup_value, examyear, error_list, cur_scheme=N
 
     blank_not_allowed = True
     max_len = c.MAX_LENGTH_NAME
-    fld = _('Scheme name')
+    caption = _('Subject scheme name')
     length = 0
     if lookup_value:
         length = len(lookup_value)
@@ -361,11 +359,11 @@ def validate_scheme_name_exists(lookup_value, examyear, error_list, cur_scheme=N
     has_error = False
     if blank_not_allowed and length == 0:
         has_error = True
-        msg_html = _('%(fld)s cannot be blank.') % {'fld': fld}
+        msg_html = _('%(cpt)s cannot be blank.') % {'cpt': caption}
     elif length > max_len:
         has_error = True
-        msg_html = _("%(fld)s '%(val)s' is too long.<br>Maximum %(max)s characters.") \
-                    % {'fld': _("Scheme name"), 'val': lookup_value, 'max': max_len}
+        msg_html = _("%(cpt)s '%(val)s' is too long.<br>Maximum %(max)s characters.") \
+                    % {'cpt': caption, 'val': lookup_value, 'max': max_len}
 
     if not has_error:
         # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
@@ -378,27 +376,67 @@ def validate_scheme_name_exists(lookup_value, examyear, error_list, cur_scheme=N
     # - check if value exists
         has_error = subj_mod.Scheme.objects.filter(crit).exists()
         if has_error:
-            msg_html = str(_("Scheme name '%(val)s' already exists.") % {'val': lookup_value})
+            msg_html = str(_("%(cpt)s '%(val)s' already exists.") % {'cpt': caption, 'val': lookup_value})
 
     if has_error:
-        header_txt = _('Update scheme')
-        msg_dict = {'field': 'name', 'header': header_txt, 'class': 'border_bg_warning', 'msg_html': msg_html}
+        header_txt = _('Update subject scheme')
+        msg_dict = {'field': 'scheme_name', 'header': header_txt, 'class': 'border_bg_warning', 'msg_html': msg_html}
         error_list.append(msg_dict)
 
     return has_error
 # - end of validate_scheme_name_exists
 
+# ============ SUBJECT TYPE BASE
+
+def validate_subjecttypebase_code_name_abbrev_exists(field, lookup_value, country, cur_subjecttypebase=None):
+# - function checks if this name or abbrev already exists in this scheme  # PR2021-06-29
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug ('----- validate_subjecttypebase_code_name_abbrev_exists -----')
+        logger.debug('field: ' + str(field))
+        logger.debug('lookup_value: ' + str(lookup_value))
+
+    msg_html = None
+    caption = _('Subject type base')
+
+    # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
+    crit = Q(country=country)
+    if field == 'code':
+        crit.add(Q(code__iexact=lookup_value), crit.connector)
+    elif field == 'name':
+        crit.add(Q(name__iexact=lookup_value), crit.connector)
+    elif field == 'abbrev':
+        crit.add(Q(abbrev__iexact=lookup_value), crit.connector)
+
+# - exclude this subjecttype in case it is an existing subjecttype
+    if cur_subjecttypebase:
+        crit.add(~Q(pk=cur_subjecttypebase.pk), crit.connector)
+
+# - check if value exists
+    has_error = subj_mod.Subjecttypebase.objects.filter(crit).exists()
+    if has_error:
+        msg_html = str(_("%(cpt)s '%(val)s' already exists.") % {'cpt': caption, 'val': lookup_value})
+
+    return msg_html
+# - end of validate_subjecttypebase_code_name_abbrev_exists
+
+
 
 
 # ============ SUBJECT TYPES
-def validate_subjecttype_name_abbrev_exists(field, lookup_value, scheme, error_list, cur_subjecttype=None):  # PR2021-06-27
+
+def validate_subjecttype_name_abbrev_exists(field, lookup_value, scheme, cur_subjecttype=None):  # PR2021-06-27
 # - function checks if this name or abbrev already exists in this scheme
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug ('----- validate_subjecttype_name_abbrev_exists -----')
         logger.debug('field: ' + str(field))
         logger.debug('lookup_value: ' + str(lookup_value))
+
+    msg_html = None
+    caption = _('Subject type')
 
     # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
     crit = Q(scheme=scheme)
@@ -413,29 +451,19 @@ def validate_subjecttype_name_abbrev_exists(field, lookup_value, scheme, error_l
 
 # - check if value exists
     has_error = subj_mod.Subjecttype.objects.filter(crit).exists()
-
-    if logging_on:
-        rows = subj_mod.Subjecttype.objects.filter(crit)
-        for row in rows:
-            logger.debug('row.scheme_id: ' + str(row.scheme_id))
-
     if has_error:
-        header_txt = _('Update subject type')
-        msg_html = str(_("Subject type '%(val)s' already exists in this subject scheme.") % {'val': lookup_value})
-        msg_dict = {'field': field, 'header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
-        error_list.append(msg_dict)
+        msg_html = str(_("%(cpt)s '%(val)s' already exists in this subject scheme.") % {'cpt': caption, 'val': lookup_value})
 
-    return has_error
+    return msg_html
 # - end of validate_subjecttype_name_abbrev_exists
 
 
-
-def validate_subjecttype_base_exists(scheme, sjtpbase, error_list, cur_subjecttype=None):  # PR2021-06-27
+def validate_subjecttype_duplicate_base(scheme, sjtpbase, error_list, cur_subjecttype=None):  # PR2021-06-27
 # - function checks if this subjecttype_base already exists in this scheme
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug ('----- validate_subjecttype_name_abbrev_exists -----')
+        logger.debug ('----- validate_subjecttype_duplicate_base -----')
         logger.debug('sjtpbase: ' + str(sjtpbase))
 
     crit = Q(scheme=scheme) & Q(base=sjtpbase)
@@ -453,5 +481,5 @@ def validate_subjecttype_base_exists(scheme, sjtpbase, error_list, cur_subjectty
         error_list.append(msg_dict)
 
     return has_error
-# - end of validate_subjecttype_name_abbrev_exists
+# - end of validate_subjecttype_duplicate_base
 

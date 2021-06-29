@@ -1369,7 +1369,7 @@ console.log("---------  function UpdateDatatableHeader ---------");
                     data: settingsValue,
                     success: function (msg) { console.log (msg);},
                     error: function (xhr, msg) {
-                      alert(msg + '\n' + xhr.responseText);
+                      console.log(msg + '\n' + xhr.responseText);
                     }
                 });
             }; //if(stored_columns_length > 0)
@@ -1448,7 +1448,7 @@ console.log("========== response Upload Students ==>", typeof response,  respons
 //--------- hide loading gif
                     ShowLoadingGif(false);
 
-                    alert(msg + '\n' + xhr.responseText);
+                    console.log(msg + '\n' + xhr.responseText);
                 }
             });
         }; //if(rowLength > 0 && colLength > 0)

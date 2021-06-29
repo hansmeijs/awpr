@@ -10,7 +10,7 @@ from django.views.generic import View
 
 from datetime import date, datetime, timedelta
 
-from subjects import models as subj_mod
+from subjects import views as subj_vw
 from schools import functions as sch_fnc
 from awpr import constants as c
 from awpr import functions as af
@@ -22,6 +22,54 @@ import io
 import logging
 logger = logging.getLogger(__name__)
 
+
+@method_decorator([login_required], name='dispatch')
+class SchemeDownloadXlsxView(View):  # PR2021-06-28
+
+    def get(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= SchemeDownloadXlsxView ============= ')
+        # function creates, Ex1 xlsx file based on settings in usersetting
+        # TODO ex form prints colums twice, and totals are not correct,
+        # TODO text EINDEXAMEN missing the rest, school not showing PR2021-05-30
+        response = None
+        #try:
+        if True:
+            if request.user and request.user.country and request.user.schoolbase:
+                req_user = request.user
+
+    # - reset language
+                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+
+    # - get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+
+                if sel_examyear :
+    # get text from examyearsetting
+                    exform_text = af.get_exform_text(sel_examyear, ['exform'])
+                    if logging_on:
+                        logger.debug('exform_text: ' + str(exform_text))
+
+    # +++ get dict of subjects of these studsubj_rows
+                    scheme_rows = subj_vw.create_scheme_rows(sel_examyear, None, {})
+                    subjecttype_rows = subj_vw.create_subjecttype_rows(sel_examyear)
+                    schemeitem_rows = subj_vw.create_schemeitem_rows(sel_examyear)
+                    if schemeitem_rows:
+                        response = create_scheme_xlsx(sel_examyear, scheme_rows, subjecttype_rows, schemeitem_rows, exform_text, user_lang)
+
+        #except:
+        #    raise Http404("Error creating Ex2A file")
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+# - end of SchemeDownloadXlsxView
 
 @method_decorator([login_required], name='dispatch')
 class StudsubjDownloadEx1View(View):  # PR2021-01-24
@@ -44,20 +92,18 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24
                 activate(user_lang)
 
     # - get selected examyear, school and department from usersettings
-                # TODO was: examyear, school, department, is_locked, \
-                    # examyear_published, school_activated, requsr_same_schoolNIU = \
                 sel_examyear, sel_school, sel_department, may_edit, msg_list = \
                     dl.get_selected_ey_school_dep_from_usersetting(request)
 
-                if examyear and school and department :
+                if sel_examyear and sel_school and sel_department :
 
     # get text from examyearsetting
-                    settings = af.get_exform_text(examyear, ['exform', 'ex1'])
+                    settings = af.get_exform_text(sel_examyear, ['exform', 'ex1'])
                     if logging_on:
                         logger.debug('settings: ' + str(settings))
 
     # +++ get selected studsubj_rows
-                    subject_row_count, subject_pk_list, subject_code_list, level_pk_list = create_ex1_subject_rows(examyear, school, department)
+                    subject_row_count, subject_pk_list, subject_code_list, level_pk_list = create_ex1_subject_rows(sel_examyear, sel_school, sel_department)
                     #  subject_pk_dict: {34: 0, 29: 1, 4: 2, 36: 3, 31: 4, 27: 5, 33: 6, 35: 7, 1: 8, 15: 9, 3: 10}
                     #  subject_code_list: ['bw', 'cav', 'en', 'inst', 'lo', 'mm1', 'mt', 'mvt', 'ne', 'ns1', 'pa']
                     #  index = row_count
@@ -69,9 +115,9 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24
                         logger.debug('level_pk_list: ' + str(level_pk_list))
 
     # +++ get dict of subjects of these studsubj_rows
-                    studsubj_rows = create_ex1_rows(examyear, school, department)
+                    studsubj_rows = create_ex1_rows(sel_examyear, sel_school, sel_department)
                     if studsubj_rows:
-                        response = create_ex1_xlsx(examyear, school, department, settings, subject_row_count, subject_pk_list, subject_code_list, studsubj_rows, user_lang)
+                        response = create_ex1_xlsx(sel_examyear, sel_school, sel_department, settings, subject_row_count, subject_pk_list, subject_code_list, studsubj_rows, user_lang)
         #except:
         #    raise Http404("Error creating Ex2A file")
 
@@ -414,3 +460,153 @@ def create_ex1_subject_rows(examyear, school, department):
     return index, subject_pk_list, subject_code_list, level_pk_list
 # --- end of create_ex1_subject_rows
 
+# +++++++++++ Scheme list ++++++++++++
+
+def create_scheme_xlsx(examyear, scheme_rows, subjecttype_rows, schemeitem_rows, exform_text, user_lang):  # PR2021-06-28
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_scheme_xlsx -----')
+        for row in scheme_rows:
+            logger.debug('scheme_row: ' + str(row))
+        for row in subjecttype_rows:
+            logger.debug('subjecttype_row: ' + str(row))
+
+    # from https://stackoverflow.com/questions/16393242/xlsxwriter-object-save-as-http-response-to-create-download-in-django
+    # logger.debug('period_dict: ' + str(period_dict))
+
+    """
+
+        scheme_row: {'id': 193, 'department_id': 99, 'level_id': None, 'sector_id': 147, 'mapid': 'scheme_193', 
+        'scheme_name': 'Vwo - n&t', 'minsubjects': None, 'maxsubjects': None, 'min_mvt': None, 'max_mvt': None, 
+        'dep_abbrev': 'V.W.O.', 'lvl_abbrev': None, 'sct_abbrev': 'n&t', 'ey_code': 2021, 'depbase_code': 'Vwo', 
+        'modifiedby_id': 41, 'modifiedat': datetime.datetime(2021, 6, 28, 15, 14, 8, 446421, tzinfo=<UTC>), 
+        'modby_username': 'Ete'}
+
+    """
+
+    response = None
+
+    if scheme_rows:
+        # ---  create file Name and worksheet Name
+        today_dte = af.get_today_dateobj()
+        today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
+        title = ' '.join(('Ex1', str(examyear), today_dte.isoformat()))
+        file_name = title + ".xlsx"
+        worksheet_name = str(_('Ex1'))
+
+        # create the HttpResponse object ...
+        # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        # response['Content-Disposition'] = "attachment; filename=" + file_name
+
+        # Create an in-memory output file for the new workbook.
+        output = io.BytesIO()
+        # Even though the final file will be in memory the module uses temp
+        # files during assembly for efficiency. To avoid this on servers that
+        # don't allow temp files, for example the Google APP Engine, set the
+        # 'in_memory' Workbook() constructor option as shown in the docs.
+        #  book = xlsxwriter.Workbook(response, {'in_memory': True})
+        book = xlsxwriter.Workbook(output)
+
+        sheet = book.add_worksheet(worksheet_name)
+        sheet.hide_gridlines(2)  # 2 = Hide screen and printed gridlines
+
+        # cell_format = book.add_format({'bold': True, 'font_color': 'red'})
+        bold_format = book.add_format({'bold': True})
+
+        # th_format.set_bg_color('#d8d8d8') #   #d8d8d8;  /* light grey 218 218 218 100%
+        # or: th_format = book.add_format({'bg_color': '#d8d8d8'
+        th_align_center = book.add_format(
+            {'font_size': 8, 'border': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        th_rotate = book.add_format(
+            {'font_size': 8, 'border': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True, 'rotation': 90})
+
+        th_merge = book.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter'})
+        th_merge.set_left()
+        th_merge.set_bottom()
+
+        row_align_left = book.add_format({'font_size': 8, 'font_color': 'blue', 'valign': 'vcenter', 'border': True})
+        row_align_center = book.add_format(
+            {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True})
+
+        totalrow_align_center = book.add_format(
+            {'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
+        totalrow_number = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
+        totalrow_merge = book.add_format({'border': True, 'align': 'right', 'valign': 'vcenter'})
+
+        # get number of columns
+        col_count = 3  # add column exnr, idnumber, name and class
+        field_width = [10, 12, 35]
+        field_names = ['examnumber', 'idnumber', 'fullname']
+        field_captions = ['Ex.nr.', 'ID-nummer', 'Naam en voorletters van de kandidaat\n(in alfabetische volgorde)']
+        header_formats = [th_align_center, th_align_center, th_align_center]
+
+        # --- title row
+        # was: sheet.write(0, 0, str(_('Report')) + ':', bold)
+        sheet.write(0, 0, exform_text['minond'], bold_format)
+        sheet.write(1, 0, exform_text['title'], bold_format)
+
+        # ---  table header row
+        row_index = 9
+        for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
+            sheet.write(row_index, i, field_captions[i], header_formats[i])
+
+        if len(studsubj_rows):
+            totals = {}
+            for row in studsubj_rows:
+                logger.debug('row: ' + str(row))
+                # row: {'id': 155, 'idnumber': '1998092908', 'examnumber': '109', 'lastname': 'Castillo', 'firstname': 'Shurensly', 'prefix': None, 'classname': None,
+                # 'lvl_abbrev': 'PBL', 'sct_abbrev': 'tech',
+                # 'subj_id_arr': [3, 1, 10, 15, 27, 29, 31, 33, 46]}
+                row_index += 1
+                for i, field_name in enumerate(field_names):
+                    value = ''
+                    if isinstance(field_name, int):
+                        # in subject column 'field_name is the ph of the subject
+                        subj_id_list = row.get('subj_id_arr', [])
+                        if subj_id_list and field_name in subj_id_list:
+                            value = 'x'
+                            if field_name not in totals:
+                                totals[field_name] = 1
+                            else:
+                                totals[field_name] += 1
+                    elif field_name == 'fullname':
+                        prefix = row.get('prefix')
+                        lastname = row.get('lastname', '')
+                        firstname = row.get('firstname', '')
+                        if prefix:
+                            lastname = ' '.join((prefix, lastname))
+                        value = ''.join((lastname, ', ', firstname))
+                    else:
+                        value = row.get(field_name, '')
+                    sheet.write(row_index, i, value, row_formats[i])
+
+            # ---  table total row
+            row_index += 1
+            for i, field_name in enumerate(field_names):
+                logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
+                value = ''
+                if isinstance(field_name, int):
+                    if field_name in totals:
+                        value = totals[field_name]
+                    sheet.write(row_index, i, value, totalrow_formats[i])
+                    # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
+                elif field_name == 'examnumber':
+                    #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
+                    sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, 'TOTAAL', totalrow_merge)
+
+        book.close()
+
+        # Rewind the buffer.
+        output.seek(0)
+
+        # Set up the Http response.
+        response = HttpResponse(
+            output,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+        response['Content-Disposition'] = 'attachment; filename=%s' % file_name
+    # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    # response['Content-Disposition'] = "attachment; filename=" + file_name
+    return response
+# --- end of create_ex1_xlsx

@@ -63,12 +63,14 @@ def copy_deps_from_prev_examyear(request, prev_examyear, new_examyear):
             new_dep = sch_mod.Department(
                 base=prev_dep.base,
                 examyear=new_examyear,
+
                 name=prev_dep.name,
                 abbrev=prev_dep.abbrev,
                 sequence=prev_dep.sequence,
                 level_req=prev_dep.level_req,
                 sector_req=prev_dep.sector_req,
                 has_profiel=prev_dep.has_profiel,
+
                 modifiedby_id=modifiedby_id,
                 modifiedat=modifiedat
             )
@@ -101,10 +103,12 @@ def copy_levels_from_prev_examyear(request, prev_examyear, new_examyear):
             new_lvl = subj_mod.Level(
                 base=prev_lvl.base,
                 examyear=new_examyear,
+
                 name=prev_lvl.name,
                 abbrev=prev_lvl.abbrev,
                 sequence=prev_lvl.sequence,
                 depbases=prev_lvl.depbases,
+
                 modifiedby_id=modifiedby_id,
                 modifiedat=modifiedat
             )
@@ -138,10 +142,12 @@ def copy_sectors_from_prev_examyear(request, prev_examyear, new_examyear):
             new_sector = subj_mod.Sector(
                 base=prev_sct.base,
                 examyear=new_examyear,
+
                 name=prev_sct.name,
                 abbrev=prev_sct.abbrev,
                 sequence=prev_sct.sequence,
                 depbases=prev_sct.depbases,
+
                 modifiedby_id=modifiedby_id,
                 modifiedat=modifiedat
             )
@@ -175,6 +181,7 @@ def copy_schools_from_prev_examyear(request, prev_examyear, new_examyear):
             new_school = sch_mod.School(
                 base=prev_school.base,
                 examyear=new_examyear,
+
                 name=prev_school.name,
                 abbrev=prev_school.abbrev,
                 article=prev_school.article,
@@ -201,11 +208,10 @@ def copy_schools_from_prev_examyear(request, prev_examyear, new_examyear):
                 mapped_schools[prev_school.pk] = new_school.pk
 
     return mapped_schools
-
-
 # - end of copy_sectors_from_prev_examyear
 
-def copy_subjecttypes_from_prev_examyear(request, prev_examyear, new_examyear):
+
+def copy_subjecttypes_from_prev_examyear(request, prev_examyear, mapped_schemes):
     # copy subjecttypes from previous examyear PR2021-04-25
 
     mapped_subjecttypes = {}
@@ -215,14 +221,19 @@ def copy_subjecttypes_from_prev_examyear(request, prev_examyear, new_examyear):
 
 # - loop through subjecttypes of prev examyear
     prev_subjecttypes = subj_mod.Subjecttype.objects.filter(
-        examyear=prev_examyear
+        scheme__department__examyear=prev_examyear
     )
+    logger.debug('prev_subjecttypes: ' + str(prev_subjecttypes))
     for prev_sjt in prev_subjecttypes:
         try:
+
+# get mapped values of scheme
+            new_scheme_pk = mapped_schemes.get(prev_sjt.scheme_id)
+
 # - create new subjecttype
             new_subjecttype = subj_mod.Subjecttype(
                 base=prev_sjt.base,
-                scheme=prev_sjt.scheme,
+                scheme=new_scheme_pk,
 
                 name=prev_sjt.name,
                 abbrev=prev_sjt.abbrev,
@@ -237,12 +248,14 @@ def copy_subjecttypes_from_prev_examyear(request, prev_examyear, new_examyear):
             )
 # - copy new subjecttype to log happens in save(request=request)
             new_subjecttype.save(request=request)
+            logger.debug('new_subjecttype: ' + str(new_subjecttype))
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
         else:
             if new_subjecttype:
                 mapped_subjecttypes[prev_sjt.pk] = new_subjecttype.pk
 
+    logger.debug('mapped_subjecttypes: ' + str(mapped_subjecttypes))
     return mapped_subjecttypes
 # - end of copy_subjecttypes_from_prev_examyear
 
@@ -269,6 +282,9 @@ def copy_subjects_from_prev_examyear(request, prev_examyear, new_examyear):
                 name=prev_subject.name,
                 sequence=prev_subject.sequence,
                 depbases=prev_subject.depbases,
+
+                etenorm=prev_subject.etenorm,
+                addedbyschool=prev_subject.addedbyschool,
 
                 modifiedby_id=modifiedby_id,
                 modifiedat=modifiedat
@@ -313,6 +329,11 @@ def copy_schemes_from_prev_examyear(request, prev_examyear,
                 name=prev_scheme.name,
                 fields=prev_scheme.fields,
 
+                minsubjects=prev_scheme.minsubjects,
+                maxsubjects=prev_scheme.maxsubjects,
+                min_mvt=prev_scheme.min_mvt,
+                max_mvt=prev_scheme.max_mvt,
+
                 modifiedby_id=modifiedby_id,
                 modifiedat=modifiedat
             )
@@ -352,23 +373,24 @@ def copy_schemeitems_from_prev_examyear(request, prev_examyear, mapped_schemes, 
                 subject_id=new_subject_pk,
                 subjecttype_id=new_subjecttype_pk,
 
-                norm=None,
                 gradetype=prev_si.gradetype,
                 weight_se=prev_si.weight_se,
                 weight_ce=prev_si.weight_ce,
 
                 is_mandatory=prev_si.is_mandatory,
                 is_combi=prev_si.is_combi,
+
                 extra_count_allowed=prev_si.extra_count_allowed,
                 extra_nocount_allowed=prev_si.extra_nocount_allowed,
                 elective_combi_allowed=prev_si.elective_combi_allowed,
+
                 has_practexam=prev_si.has_practexam,
                 has_pws=prev_si.has_pws,
+                is_core_subject=prev_si.is_core_subject,
+                is_mvt=prev_si.is_mvt,
 
                 reex_se_allowed=prev_si.reex_se_allowed,
-                reex_combi_allowed=prev_si.reex_combi_allowed,
-                no_centralexam=prev_si.no_centralexam,
-                no_reex=prev_si.no_reex,
+                max_reex=prev_si.max_reex,
                 no_thirdperiod=prev_si.no_thirdperiod,
                 no_exemption_ce=prev_si.no_exemption_ce,
 
@@ -387,7 +409,7 @@ def copy_schemeitems_from_prev_examyear(request, prev_examyear, mapped_schemes, 
 # - end of copy_schemeitems_from_prev_examyear
 
 
-def copy_packages_from_prev_examyear(request, prev_examyear, mapped_schools, mapped_schemes):
+def copy_packages_from_prev_examyear(request, prev_examyear, mapped_schemes):
     # copy packages from previous examyear PR2021-04-25
 
     mapped_packages = {}
@@ -402,11 +424,9 @@ def copy_packages_from_prev_examyear(request, prev_examyear, mapped_schools, map
     for prev_package in prev_packages:
         try:
 # get mapped values of school and scheme
-            new_school_pk = mapped_schools.get(prev_package.school_id)
             new_scheme_pk = mapped_schemes.get(prev_package.scheme_id)
 # - create new package
             new_package = subj_mod.Package(
-                school_id=new_school_pk,
                 scheme_id=new_scheme_pk,
 
                 name=prev_package.name,
@@ -453,8 +473,6 @@ def copy_packageitems_from_prev_examyear(request, prev_examyear, mapped_packages
             new_pi.save(request=request)
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-
-    return mapped_schemeitems
 # - end of copy_packageitems_from_prev_examyear
 
 

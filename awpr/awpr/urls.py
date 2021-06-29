@@ -166,7 +166,12 @@ urlpatterns = [
 
         path('scheme_upload', subject_views.SchemeUploadView.as_view(), name='scheme_upload_url'),
         path('subjecttype_upload', subject_views.SubjecttypeUploadView.as_view(), name='subjecttype_upload_url'),
+        path('subjecttypebase_upload', subject_views.SubjecttypebaseUploadView.as_view(), name='subjecttypebase_upload_url'),
+
         path('schemeitem_upload', subject_views.SchemeitemUploadView.as_view(), name='schemeitem_upload_url'),
+
+        path('download_scheme_xlsx', grade_excel.SchemeDownloadXlsxView.as_view(), name='download_scheme_xlsx_url'),
+
     ])),
 
 

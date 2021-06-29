@@ -22,17 +22,25 @@ logger = logging.getLogger(__name__)
 # If, at any time, any of the methods raise ValidationError, the validation stops and that error is raised.
 # This method returns the clean data, which is then inserted into the cleaned_data dictionary of the form.
 
+# PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
+# AwpModelManager adds function get_or_none. Used in  Subjectbase to prevent DoesNotExist exception
+class AwpModelManager(Manager):
+    def get_or_none(self, **kwargs):
+        try:
+            return self.get(**kwargs)
+        except:
+            return None
 
 # === Level =====================================
 class Levelbase(Model):  # PR2018-10-17
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     country = ForeignKey(sch_mod.Country, related_name='+', on_delete=PROTECT)
 
 
 class Level(sch_mod.AwpBaseModel): # PR2018-08-12
     # AwpModelManager adds function get_or_none to prevent DoesNotExist exception
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     # base and examyear cannot be changed PR2018-10-17
     base = ForeignKey(Levelbase, related_name='levels', on_delete=PROTECT)
@@ -131,7 +139,7 @@ class Level(sch_mod.AwpBaseModel): # PR2018-08-12
 
 # PR2018-08-12
 class Level_log(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     level_id = IntegerField(db_index=True)
 
@@ -149,13 +157,13 @@ class Level_log(sch_mod.AwpBaseModel):
 
 # === Sector =====================================
 class Sectorbase(Model):  # PR2018-10-17
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     country = ForeignKey(sch_mod.Country, related_name='+', on_delete=PROTECT)
 
 
 class Sector(sch_mod.AwpBaseModel):  # PR2018-06-06
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     # levelbase and examyear cannot be changed PR2018-10-17
     base = ForeignKey(Sectorbase, related_name='sectors', on_delete=PROTECT)
@@ -207,7 +215,7 @@ class Sector(sch_mod.AwpBaseModel):  # PR2018-06-06
 
 # PR2018-06-06
 class Sector_log(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     sector_id = IntegerField(db_index=True)
 
@@ -225,13 +233,14 @@ class Sector_log(sch_mod.AwpBaseModel):
 
 # PR2018-06-06 There is one Scheme per department/level/sector per year per country
 class Scheme(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     # PR2018-11-07 blank=True is necessary otherwise blank field gives error 'Dit veld is verplicht.'
     # PR2019-02-16 scheme is linked with department, level and sector . get s examyear from department
     department = ForeignKey(sch_mod.Department, related_name='schemes', on_delete=CASCADE)
     level = ForeignKey(Level, null=True, blank=True, related_name='schemes', on_delete=CASCADE)
     sector = ForeignKey(Sector, null=True,  blank=True, related_name='schemes', on_delete=CASCADE)
+
     name = CharField(max_length=50)  # TODO set department+level+sector Unique per examyear True.
     fields = CharField(max_length=255, null=True, blank=True)
 
@@ -270,7 +279,7 @@ class Scheme(sch_mod.AwpBaseModel):
 
 
 class Scheme_log(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     scheme_id = IntegerField(db_index=True)
 
@@ -295,7 +304,7 @@ class Scheme_log(sch_mod.AwpBaseModel):
 
 # === Subjecttype =====================================
 class Subjecttypebase(Model):  # PR2018-10-17
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     country = ForeignKey(sch_mod.Country, related_name='+', on_delete=PROTECT)
 
@@ -308,10 +317,9 @@ class Subjecttypebase(Model):  # PR2018-10-17
 
 # PR2018-06-06
 class Subjecttype(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     base = ForeignKey(Subjecttypebase, related_name='characters', on_delete=CASCADE)
-
     scheme = ForeignKey(Scheme, related_name='+', on_delete=CASCADE)
 
     name = CharField(max_length=50)
@@ -320,7 +328,6 @@ class Subjecttype(sch_mod.AwpBaseModel):
     # has_prac only enables the has_practexam option of a schemeitem
     has_prac = BooleanField(default=False)  # has practical exam
     has_pws = BooleanField(default=False)  # has profielwerkstuk or sectorwerkstuk
-
     minsubjects = PositiveSmallIntegerField(null=True)
     maxsubjects = PositiveSmallIntegerField(null=True)
 
@@ -329,7 +336,7 @@ class Subjecttype(sch_mod.AwpBaseModel):
 
 
 class Subjecttype_log(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
     subjecttype_id = IntegerField(db_index=True)
 
     base = ForeignKey(Subjecttypebase, related_name='+', on_delete=CASCADE)
@@ -352,7 +359,7 @@ class Subjecttype_log(sch_mod.AwpBaseModel):
 
 # =============  Subject Model  =====================================
 class Subjectbase(Model):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     country = ForeignKey(sch_mod.Country, related_name='+', on_delete=PROTECT)
     code = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
@@ -363,7 +370,7 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
     # subject abbrev is stored as 'code' in Subjectbase
     # Subject has no country field: country is a field in examyear
 
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     # base and examyear cannot be changed PR2018-10-17
     base = ForeignKey(Subjectbase, related_name='subjects', on_delete=PROTECT)
@@ -402,7 +409,7 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
 
 # PR2018-06-05 Subject is the base Model of all subjects
 class Subject_log(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     subject_id = IntegerField(db_index=True)
 
@@ -422,7 +429,7 @@ class Subject_log(sch_mod.AwpBaseModel):
 
 class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     # PR2021-03-04 contains exam with possible answers per exam question
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     subject = ForeignKey(Subject, related_name='+', on_delete=PROTECT)
     department = ForeignKey(sch_mod.Department, related_name='+', on_delete=PROTECT)
@@ -455,7 +462,7 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     # subject abbrev is stored as 'code' in Subjectbase
     # Subject has no country field: country is a field in examyear
 
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     exam_id = IntegerField(db_index=True)
 
@@ -487,14 +494,14 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
 
 # PR2018-06-05
 class Schemeitem(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     scheme = ForeignKey(Scheme, related_name='+', on_delete=CASCADE)
     subject = ForeignKey(Subject, related_name='+', on_delete=CASCADE)
     subjecttype = ForeignKey(Subjecttype, related_name='+', on_delete=CASCADE)
 
-    # TODO delete exam from schemitem, is linked to grade
-    exam = ForeignKey(Exam, related_name='+', null=True, on_delete=SET_NULL)
+    # delete exam from schemitem, is linked to grade
+    # exam = ForeignKey(Exam, related_name='+', null=True, on_delete=SET_NULL)
 
     gradetype = PositiveSmallIntegerField(default=0)
     weight_se = PositiveSmallIntegerField(default=0)
@@ -595,7 +602,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
 
 # PR2018-06-08
 class Schemeitem_log(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     schemeitem_id = IntegerField(db_index=True)
 
@@ -632,9 +639,8 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
 
 # PR2018-06-06 # PR2019-02-17
 class Package(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
-    school = ForeignKey(sch_mod.School, related_name='packages', on_delete=CASCADE)
     scheme = ForeignKey(Scheme, related_name='packages', on_delete=CASCADE)
 
     name = CharField(max_length=50)
@@ -648,11 +654,10 @@ class Package(sch_mod.AwpBaseModel):
 
 # PR2018-06-06
 class Package_log(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     package_id = IntegerField(db_index=True)
 
-    school_log = ForeignKey(sch_mod.School_log, related_name='+', on_delete=CASCADE)
     scheme_log = ForeignKey(Scheme_log, null=True, related_name='+', on_delete=CASCADE)
 
     name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
@@ -666,14 +671,14 @@ class Package_log(sch_mod.AwpBaseModel):
 
 # PR2018-06-06
 class Packageitem(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     package = ForeignKey(Package, related_name='packageschemes', on_delete=CASCADE)
     schemeitem = ForeignKey(Schemeitem, related_name='packageschemes', on_delete=CASCADE)
 
 # PR2018-06-06
 class Cluster(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     school = ForeignKey(sch_mod.School, related_name='clusters', on_delete=CASCADE)
     department = ForeignKey(sch_mod.Department, related_name='clusters', on_delete=CASCADE)
@@ -686,7 +691,7 @@ class Cluster(sch_mod.AwpBaseModel):
 
 # PR2018-06-06
 class Cluster_log(sch_mod.AwpBaseModel):
-    objects = sch_mod.AwpModelManager()
+    objects = AwpModelManager()
 
     cluster_id = IntegerField(db_index=True)
 

@@ -137,17 +137,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if(el_MSCH_btn_save){el_MSCH_btn_save.addEventListener("click", function() {MSCH_Save("save")}, false );};
 
         const el_MSCH_div_form_controls = document.getElementById("id_MSCH_form_controls")
-        const form_elements = el_MSCH_div_form_controls.querySelectorAll(".form-control")
-        for (let i = 0, el; el = form_elements[i]; i++) {
-            if(el.tagName === "INPUT"){
-                el.addEventListener("keyup", function() {MSCH_InputKeyup(el)}, false )
-            } else if(el.tagName === "SELECT"){
-                el.addEventListener("change", function() {MSCH_InputSelect(el)}, false )
-            } else if(el.tagName === "DIV"){
-                el.addEventListener("click", function() {MSCH_InputToggle(el)}, false );
+        if(el_MSCH_div_form_controls){
+            const form_elements = el_MSCH_div_form_controls.querySelectorAll(".form-control")
+            for (let i = 0, el; el = form_elements[i]; i++) {
+                if(el.tagName === "INPUT"){
+                    el.addEventListener("keyup", function() {MSCH_InputKeyup(el)}, false )
+                } else if(el.tagName === "SELECT"){
+                    el.addEventListener("change", function() {MSCH_InputSelect(el)}, false )
+                } else if(el.tagName === "DIV"){
+                    el.addEventListener("click", function() {MSCH_InputToggle(el)}, false );
+                };
             };
         };
-
         const el_MSCH_defaultrole_container = document.getElementById("id_MSCH_defaultrole_container");
         const el_MSCH_select_defaultrole = document.getElementById("id_MSCH_defaultrole");
 
@@ -179,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_confirm_header");
         let el_confirm_loader = document.getElementById("id_confirm_loader");
-        let el_confirm_msg_container = document.getElementById("id_confirm_msg_container")
+        let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
         let el_confirm_msg01 = document.getElementById("id_confirm_msg01")
         let el_confirm_msg02 = document.getElementById("id_confirm_msg02")
         let el_confirm_msg03 = document.getElementById("id_confirm_msg03")
@@ -286,7 +287,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  hide loader
                 el_loader.classList.add(cls_visible_hide);
                 console.log(msg + '\n' + xhr.responseText);
-                alert(msg + '\n' + xhr.responseText);
             }
         });
     }  // function DatalistDownload
@@ -672,7 +672,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
                     console.log(msg + '\n' + xhr.responseText);
-                    alert(msg + '\n' + xhr.responseText);
                 }  // error: function (xhr, msg) {
             });  // $.ajax({
         }  //  if(!!row_upload)

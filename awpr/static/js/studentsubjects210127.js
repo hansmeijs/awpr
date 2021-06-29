@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_confirm_header");
         let el_confirm_loader = document.getElementById("id_confirm_loader");
-        let el_confirm_msg_container = document.getElementById("id_confirm_msg_container")
+        let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
         let el_confirm_msg01 = document.getElementById("id_confirm_msg01")
         let el_confirm_msg02 = document.getElementById("id_confirm_msg02")
         let el_confirm_msg03 = document.getElementById("id_confirm_msg03")
@@ -354,7 +354,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  hide loader
                 el_loader.classList.add(cls_visible_hide);
                 console.log(msg + '\n' + xhr.responseText);
-                alert(msg + '\n' + xhr.responseText);
             }
         });
     }  // function DatalistDownload
@@ -862,7 +861,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
                     console.log(msg + '\n' + xhr.responseText);
-                    alert(msg + '\n' + xhr.responseText);
                 }  // error: function (xhr, msg) {
             });  // $.ajax({
         }  //  if(!!row_upload)

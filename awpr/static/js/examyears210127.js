@@ -123,22 +123,26 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MEY_btn_save = document.getElementById("id_MEY_btn_save");
         const el_MEY_btn_cancel = document.getElementById("id_MEY_btn_cancel");
 
-        if(may_view_page){
+        if(el_MEY_btn_delete){
             el_MEY_btn_delete.addEventListener("click", function() {MEY_Save("undo")}, false );
+        };
+        if(el_MEY_btn_save){
             el_MEY_btn_save.addEventListener("click", function() {MEY_Save("save")}, false )
         };
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_confirm_header");
         let el_confirm_loader = document.getElementById("id_confirm_loader");
-        let el_confirm_msg_container = document.getElementById("id_confirm_msg_container")
+        let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
         let el_confirm_msg01 = document.getElementById("id_confirm_msg01")
         let el_confirm_msg02 = document.getElementById("id_confirm_msg02")
         let el_confirm_msg03 = document.getElementById("id_confirm_msg03")
 
         let el_confirm_btn_cancel = document.getElementById("id_confirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_confirm_btn_save");
-        if(may_view_page){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
+        if(el_confirm_btn_save){
+            el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()});
+        };
 
 // ---  set selected menu button active
     SetMenubuttonActive(document.getElementById("id_hdr_users"));
@@ -231,7 +235,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  hide loader
                 el_loader.classList.add(cls_visible_hide);
                 console.log(msg + '\n' + xhr.responseText);
-                alert(msg + '\n' + xhr.responseText);
             }
         });
     }  // function DatalistDownload
@@ -254,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Create_new_examyear, function() {MEY_Open("create")});
                 AddSubmenuButton(el_submenu, loc.Publish_examyear, function() {MEY_Open("publish")});
                 AddSubmenuButton(el_submenu, loc.Close_examyear, function() {MEY_Open("close_admin")});
-                AddSubmenuButton(el_submenu, loc.Delete_examyear, function() {ModConfirmOpen()});
+                AddSubmenuButton(el_submenu, loc.Delete_examyear, function() {ModConfirmOpen("delete")});
             }
 
          el_submenu.classList.remove(cls_hide);
@@ -339,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else  if(selected.btn === "sector"){
             header_text = loc.SectorenProfielen;
         }
-        document.getElementById("id_hdr_text").innerText = header_text;
+        document.getElementById("id_hdr_left").innerText = header_text;
 
     }   //  UpdateHeaderText
 
@@ -665,7 +668,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
                     console.log(msg + '\n' + xhr.responseText);
-                    alert(msg + '\n' + xhr.responseText);
                 }  // error: function (xhr, msg) {
             });  // $.ajax({
         }  //  if(!!row_upload)
@@ -678,6 +680,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  MEY_Open   ----")
         console.log("selected.examyear_pk", selected.examyear_pk)
         console.log("mode", mode)
+        console.log("permit_dict", permit_dict)
         // mode = 'create, 'publish', 'activate', 'close_admin', 'close_school', 'edit' (with el_input)
 
         console.log("permit_dict", permit_dict)
@@ -987,10 +990,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2020-11-22
-    function ModConfirmOpen() {
+//=========  ModConfirmOpen  ================ PR2020-11-22 PR2021-06-29
+    function ModConfirmOpen(mode) {
         console.log(" -----  ModConfirmOpen   ----")
         // called by el_MEY_btn_delete and submenu btn delete examyear
+        // mode is always 'delete' (for now?)
+        console.log("selected", selected)
 
         if(!!permit_dict.permit_crud){
             const tblName = "examyear";
@@ -1005,7 +1010,8 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("data_map", data_map)
             console.log("map_id", map_id)
             console.log("map_dict", map_dict)
-
+            // mode
+            /*
             let mode = null;
             if(has_selected_item){
                 if(map_dict.locked) {
@@ -1016,14 +1022,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     mode = "created"
                 }
             }
-
+            */
     // ---  create mod_dict
-            mod_dict = {mode: "delete"};
+            mod_dict = {mode: mode};
 
             if(has_selected_item){
-                mod_dict.pk = map_dict.id;
-                mod_dict.ppk = map_dict.country_id;
-                mod_dict.examyear = map_dict.examyear;
+                mod_dict.country_pk = map_dict.country_id;
+                mod_dict.examyear_pk = map_dict.examyear_id;
+                mod_dict.examyear_code = map_dict.examyear_code;
                 mod_dict.mapid = map_id;
             };
 
@@ -1032,8 +1038,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let header_text = "";
             const is_NL = (loc.user_lang === "nl");
             if(mode === "delete"){
-                header_text =  (is_NL) ? loc.Examyear + " " + loc.Delete.toLowerCase() :
-                                         loc.Delete + " " + + examyear_str;
+                header_text =  loc.Delete_examyear ;
             }
 // ---  put text in modal form
             const item = (tblName === "examyear") ? loc.Examyear : "";
@@ -1045,8 +1050,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 const username = (map_dict.username) ? map_dict.username  : "-";
                 if(mode === "delete"){
-                    msg_list[0] = loc.Examyear + " '" + mod_dict.examyear + "'" + loc.will_be_deleted
+                    msg_list[0] = loc.Examyear + " '" + mod_dict.examyear_code + "'" + loc.will_be_deleted
                     msg_list[1] = loc.Do_you_want_to_continue;
+
                 }
             }
 
@@ -1054,11 +1060,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_confirm_header.innerText = header_text;
                 el_confirm_loader.classList.add(cls_visible_hide)
 
-                const el_list = select_elements_in_containerId_byClass("id_confirm_msg_container");
-                for (let i = 0, el; el = el_list[i]; i++) {
-                    const index = get_attr_from_el_int(el, "data-index")
-                    el.innerText = (msg_list && msg_list[index]) ? msg_list[index] : null
-                }
+                const msg_html = msg_list.join("<br>");
+                el_confirm_msg_container.innerHTML = msg_html;
 
                 const caption_save = (mode === "delete") ? loc.Yes_delete : loc.OK;
                 el_confirm_btn_save.innerText = caption_save;
@@ -1112,11 +1115,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
     // ---  Upload Changes
-            let upload_dict = { id: {pk: mod_dict.pk,
-                                     ppk: mod_dict.ppk,
-                                     table: "examyear",
-                                     mode: mod_dict.mode,
-                                     mapid: mod_dict.mapid}};
+            let upload_dict = {mode: mod_dict.mode,
+                               mapid: mod_dict.mapid,
+                               examyear_pk: mod_dict.examyear_pk};
+
             if (mod_dict.mode === "inactive") {
                 upload_dict.is_active = {value: mod_dict.new_isactive, update: true}
             };
@@ -1149,22 +1151,18 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
         if ("msg_err" in response || "msg_ok" in response) {
-            let msg01_text = null, msg02_text = null, msg03_text = null;
+            let msg_html = "", msg01_text = "", msg02_text = "",  msg03_text = "";
             if ("msg_err" in response) {
                 msg01_text = get_dict_value(response, ["msg_err", "msg01"], "");
-                if (mod_dict.mode === "resend_activation_email") {
-                    msg02_text = loc.Activation_email_not_sent;
-                }
                 el_confirm_msg_container.classList.add("border_bg_invalid");
             } else if ("msg_ok" in response){
-                msg01_text  = get_dict_value(response, ["msg_ok", "msg01"]);
-                msg02_text = get_dict_value(response, ["msg_ok", "msg02"]);
-                msg03_text = get_dict_value(response, ["msg_ok", "msg03"]);
+                msg01_text  = get_dict_value(response, ["msg_ok", "msg01"], "");
+                msg02_text = get_dict_value(response, ["msg_ok", "msg02"], "");
+                msg03_text = get_dict_value(response, ["msg_ok", "msg03"], "");
+                msg_html = [msg01_text, msg02_text, msg03_text].join("<br>");
                 el_confirm_msg_container.classList.add("border_bg_valid");
             }
-            el_confirm_msg01.innerText = msg01_text;
-            el_confirm_msg02.innerText = msg02_text;
-            el_confirm_msg03.innerText = msg03_text;
+            el_confirm_msg_container.innerHTML = msg_html;
             el_confirm_btn_cancel.innerText = loc.Close;
             el_confirm_btn_save.classList.add(cls_hide);
         } else {

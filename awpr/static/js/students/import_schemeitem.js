@@ -450,7 +450,7 @@ console.log ("==========  UPLOAD DATA ==========");
                     alert (msg);
                 },
                 error: function (xhr, msg) {
-                    //console.log(msg + '\n' + xhr.responseText);
+                    console.log(msg + '\n' + xhr.responseText);
                 }
             });
         }; //if(rowLength > 0 && colLength > 0)

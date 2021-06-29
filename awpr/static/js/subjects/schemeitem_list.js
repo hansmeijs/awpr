@@ -252,7 +252,7 @@ console.log('gradetypes', gradetypes, typeof gradetypes);
                                     CreateTableSubjectsSsis ();
                             },
                             error: function (xhr, msg) {
-                                alert(msg + '\n' + xhr.responseText);
+                                console.log(msg + '\n' + xhr.responseText);
                             }
                         });
                     }
@@ -914,7 +914,7 @@ console.log("========== err_code ==<",typeof err_code, ">", err_code);
                     }
                 },
                 error: function (xhr, msg) {
-                    alert(msg + '\n' + xhr.responseText);
+                    console.log(msg + '\n' + xhr.responseText);
                 }
             });
 console.log("+++++++++ schemeitems ==>", schemeitems);

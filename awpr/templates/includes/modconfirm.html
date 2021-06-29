@@ -7,27 +7,27 @@
         <div class="modal-content">
 
             <div class="modal-header tsa_bc_lightlightgrey">
-                <h4 id="id_confirm_header" class="modal-title mx-2" >}</h4>
+                <h4 id="id_modconfirm_header" class="modal-title mx-2" >}</h4>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
 
-            <div id="id_confirm_loader" class="image_container mt-1 visibility_hide">
+            <div id="id_modconfirm_loader" class="image_container mt-1 visibility_hide">
                 <img src="{% static 'img/loader.gif' %}" height="24" width="24">
             </div>
 
             <div class="modal_container mx-2 mb-4">
-                <div id="id_confirm_msg_container" class="modal_body_left mx-2">
-                    <div id="id_confirm_msg01" data-index="0" class="m-2" ></div>
-                    <div id="id_confirm_msg02" data-index="1" class="m-2" ></div>
-                    <div id="id_confirm_msg03" data-index="2" class="m-2" ></div>
+                <div id="id_modconfirm_msg_container" class="modal_body_left mx-2">
+                    <div id="id_modconfirm_msg01" data-index="0" class="m-2" ></div>
+                    <div id="id_modconfirm_msg02" data-index="1" class="m-2" ></div>
+                    <div id="id_modconfirm_msg03" data-index="2" class="m-2" ></div>
                 </div>
             </div>
 
             <div class="modal-footer">
-                <button id="id_confirm_btn_cancel" type="button" class="btn btn-outline-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
-                <button id="id_confirm_btn_save" type="button" class="btn btn-primary">{% trans 'OK' %}</button>
+                <button id="id_modconfirm_btn_cancel" type="button" class="btn btn-outline-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                <button id="id_modconfirm_btn_save" type="button" class="btn btn-primary">{% trans 'OK' %}</button>
             </div>
 
         </div>
