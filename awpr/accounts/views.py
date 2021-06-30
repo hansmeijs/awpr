@@ -51,7 +51,7 @@ class UserListView(ListView):
 
     def get(self, request, *args, **kwargs):
 
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(" =====  UserListView  =====")
 
@@ -1527,7 +1527,7 @@ def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
 
 # - end of set_usersetting_from_uploaddict
 
-def set_usersetting_from_upload_subdict(key, new_setting_dict, request):  # PR2021-02-07
+def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # PR2021-02-07
     # logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
     # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
     # logger.debug('upload_dict: ' + str(upload_dict))
@@ -1536,26 +1536,34 @@ def set_usersetting_from_upload_subdict(key, new_setting_dict, request):  # PR20
     # - loop through keys of upload_dict
 
     # key = 'page_examyear', dict = {'sel_btn': 'examyears'}
-    saved_settings_dict = get_usersetting_dict(key, request)
+    saved_settings_dict = get_usersetting_dict(key_str, request)
     # logger.debug('new_setting_dict: ' + str(new_setting_dict))
     # logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
+
+    try:
     # - loop through subkeys of new settings
-    for subkey, value in new_setting_dict.items():
-        # new_setting_dict: {'sel_subject_pk': 46}
-        # - if subkey has value in saved_settings_dict: replace saved value with new value
-        if subkey in saved_settings_dict:
-            if value:
-                saved_settings_dict[subkey] = value
+        for subkey, value in new_setting_dict.items():
+            # new_setting_dict: {'sel_subject_pk': 46}
+            # - if subkey has value in saved_settings_dict: replace saved value with new value
+            if subkey in saved_settings_dict:
+                if value:
+                    saved_settings_dict[subkey] = value
+                else:
+                    # - if subkey has no value in saved_settings_dict: remove key from dict
+                    saved_settings_dict.pop(subkey)
             else:
-                # - if subkey has no value in saved_settings_dict: remove key from dict
-                saved_settings_dict.pop(subkey)
-        else:
-            # - if subkey not found in saved_settings_dict and value is not None: create subkey with value
-            if value:
-                saved_settings_dict[subkey] = value
-    # logger.debug('Usersetting.set_setting from UserSettingsUploadView')
-    # - save key in usersetting and return settings_dict
-    set_usersetting_dict(key, saved_settings_dict, request)
+                # - if subkey not found in saved_settings_dict and value is not None: create subkey with value
+                if value:
+                    saved_settings_dict[subkey] = value
+        # logger.debug('Usersetting.set_setting from UserSettingsUploadView')
+        # - save key in usersetting and return settings_dict
+        set_usersetting_dict(key_str, saved_settings_dict, request)
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+        logger.error('key_str: ', str(key_str))
+        logger.error('setting_dict: ', str(new_setting_dict))
+
     return saved_settings_dict
 # - end of set_usersetting_from_upload_subdict
 

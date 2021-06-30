@@ -20,11 +20,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let loc = {};  // locale_dict
 
     const selected = {
+        scheme_dict: null,
         subject_dict:  null,
         subjecttype_dict: null,
                     depbase_pk: null,
-                    level_pk: null,
-                    sector_pk: null,
                     scheme_pk: null,
                     package_pk: null
     };
@@ -122,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_names: ["select", "scheme_name", "sjtpbase_name", "name", "minsubjects",  "maxsubjects"],
                     field_tags: ["div", "div", "div", "input", "input", "input"],
                     filter_tags: ["select", "text", "text", "text", "number", "number"],
-                    field_width:  ["032", "180", "280", "240", "120", "120"],
+                    field_width:  ["032", "180", "280", "240", "100", "100"],
                     field_align: ["c", "l", "l", "l", "c", "c"]},
 
         scheme: {  field_caption: ["", "Subject_scheme_name", "Department", "Leerweg",  "SectorProfiel_twolines", "Minimum_subjects",  "Maximum_subjects", "Minimum_MVT_subjects", "Maximum_MVT_subjects"],
@@ -202,12 +201,12 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MODAL SUBJECT TYPE
         const el_MSJT_header = document.getElementById("id_MSJT_header")
 
-        const el_MSJT_department = document.getElementById("id_MSJT_department");
-        const el_MSJT_level = document.getElementById("id_MSJT_level");
-        const el_MSJT_sector = document.getElementById("id_MSJT_sector");
-        if(el_MSJT_department){el_MSJT_department.addEventListener("change", function() {MSJT_SelectChange(el_MSJT_department)}, false )}
-        if(el_MSJT_level){el_MSJT_level.addEventListener("change", function() {MSJT_SelectChange(el_MSJT_level)}, false )}
-        if(el_MSJT_sector){el_MSJT_sector.addEventListener("change", function() {MSJT_SelectChange(el_MSJT_sector)}, false )}
+        const el_MSJTP_department = document.getElementById("id_MSJT_department");
+        if(el_MSJTP_department){el_MSJTP_department.addEventListener("change", function() {MSJT_SelectChange(el_MSJTP_department)}, false )};
+        const el_MSJTP_level = document.getElementById("id_MSJT_level");
+        if(el_MSJTP_level){el_MSJTP_level.addEventListener("change", function() {MSJT_SelectChange(el_MSJTP_level)}, false )};
+        const el_MSJTP_sector = document.getElementById("id_MSJT_sector");
+        if(el_MSJTP_sector){el_MSJTP_sector.addEventListener("change", function() {MSJT_SelectChange(el_MSJTP_sector)}, false )};
 
         const el_MSJT_tblBody_sjtpbase = document.getElementById("id_MSJT_tblBody_sjtpbase");
         const el_MSJT_tblBody_subjecttype = document.getElementById("id_MSJT_tblBody_subjecttype");
@@ -403,7 +402,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             AddSubmenuButton(el_submenu, loc.Download_subject_scheme, null, ["tab_show", "tab_btn_schemeitem"], "id_submenu_download_schemexlsx", url_download_scheme_xlsx, false);  // true = download
 
-                AddSubmenuButton(el_submenu, loc.Add_subjecttype, function() {MSJT_Open()}, ["tab_show", "tab_btn_subjecttype"]);
+                AddSubmenuButton(el_submenu, loc.Change_subjecttypes_of_subject_scheme, function() {MSJTP_Open()}, ["tab_show", "tab_btn_subjecttype"]);
                 AddSubmenuButton(el_submenu, loc.Delete_subjecttype, function() {ModConfirmOpen("subjecttype", "delete")}, ["tab_show", "tab_btn_subjecttype"]);
 
                 AddSubmenuButton(el_submenu, loc.Add_subjecttypebase, function() {MSJTBASE_Open()}, ["tab_show", "tab_btn_subjecttypebase"]);
@@ -443,8 +442,6 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("=== HandleTableRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
-        selected.level_pk = null;
-        selected.sector_pk = null;
         selected.scheme_pk = null;
         selected.package_pk = null;
 
@@ -699,7 +696,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         el.addEventListener("change", function() {UploadInputChange(tblName, el)}, false)
 
                     } else if (field_name !== "select"){
-                        td.addEventListener("click", function() {MSJT_Open(el)}, false)
+                        td.addEventListener("click", function() {MSJTP_Open(el)}, false)
                         td.classList.add("pointer_show");
                         add_hover(td)
                     }
@@ -1329,6 +1326,12 @@ document.addEventListener('DOMContentLoaded', function() {
        //console.log( "===== ResetFilterRows  ========= ");
 
         selected.subject_pk = null;
+        selected.subject_dict = null;
+        selected.subjecttype_dict = null;
+        selected.depbase_pk = null;
+        selected.scheme_pk = null;
+        selected.scheme_dict = null;
+        selected.package_pk = null;
 
         filter_dict = {};
 
@@ -1657,49 +1660,39 @@ document.addEventListener('DOMContentLoaded', function() {
 //###########################################################################
 // +++++++++ MOD SUBJECTTYPE ++++++++++++++++ PR2021-06-22
 // --- also used for level, sector,
-    function MSJT_Open(el_input){
-        console.log(" -----  MSJT_Open   ----")
+    function MSJTP_Open(el_input){
+        console.log(" -----  MSJTP_Open   ----")
 
         if(permit_dict.permit_crud){
             const fldName = get_attr_from_el(el_input, "data-field");
-        console.log("el_input", el_input)
+
+            let tblName = "subjecttype";
+            let map_dict = {};
+            mod_MSJTP_dict = {};
 
             // el_input is undefined when called by submenu btn 'Add new'
-            const is_addnew = (!el_input);
-            mod_MSJTP_dict = {}
-            let tblName = "subjecttype";
-            if(is_addnew){
-                mod_MSJTP_dict = {is_addnew: is_addnew,
-                                    examyear_pk: setting_dict.sel_examyear_pk
-                } // {is_addnew: is_addnew, db_code: setting_dict.sel_depbase_code}
-                if(!isEmpty(selected.subjecttype_dict)){
-                    mod_MSJTP_dict.department_pk = selected.subjecttype_dict.department_id;
-                    mod_MSJTP_dict.lvl_pk = selected.subjecttype_dict.lvl_id;
-                    mod_MSJTP_dict.sct_pk = selected.subjecttype_dict.sct_id;
-                }
-            } else {
+            if(el_input){
                 const tblRow = get_tablerow_selected(el_input);
-                const map_id = tblRow.id;
-        console.log("map_id", map_id)
-                const map_dict = b_get_mapdict_from_datarows(subjecttype_rows, map_id, setting_dict.user_lang);
-        console.log("map_dict", map_dict)
+                map_dict = b_get_mapdict_from_datarows(subjecttype_rows, tblRow.id, setting_dict.user_lang);
+            } else {
+                map_dict = selected.subjecttype_dict;
+            }
+
+            const is_addnew = isEmpty(map_dict);
+            if(is_addnew){
+                mod_MSJTP_dict.is_addnew = true;
+            } else {
+                mod_MSJTP_dict.department_pk = map_dict.department_id;
+                mod_MSJTP_dict.lvl_pk = map_dict.lvl_id;
+                mod_MSJTP_dict.sct_pk = map_dict.sct_id;
+                mod_MSJTP_dict.scheme_pk = map_dict.scheme_id;
 
                 const scheme_dict = get_scheme_dict(map_dict.department_id, map_dict.lvl_id, map_dict.sct_id)
-        console.log("scheme_dict", scheme_dict)
-                mod_MSJTP_dict = {
-                    id: map_dict.id,
-                    mapid: map_dict.mapid,
-                    base_id: map_dict.base_id,
-                    sjtpbase_name: map_dict.sjtpbase_name,
-                    abbrev: map_dict.abbrev,
-                    name: map_dict.name,
-                    depbase_pk: map_dict.depbase_id,
-                    lvl_pk: map_dict.lvl_id,
-                    sct_pk: map_dict.sct_id,
-                    scheme_dict: scheme_dict
-                }
-        console.log("mod_MSJTP_dict", mod_MSJTP_dict)
+                if(scheme_dict){mod_MSJTP_dict.scheme_dict = scheme_dict}
             }
+
+            console.log("map_dict", map_dict)
+            console.log("mod_MSJTP_dict", mod_MSJTP_dict)
 
     // ---  set header text
             MSJT_set_headertext();
@@ -1707,11 +1700,17 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MSJT_tblBody_subjecttype.innerText = null;
             el_MSJT_tblBody_sjtpbase.innerText = null;
 
-            t_FillSelectOptions(el_MSJT_department, department_map, "id", "base_code", false, null, null, loc.No_departments_found, loc.Select_department);
-            el_MSJT_level.innerHTML = t_FillOptionLevelSectorFromMap("level", level_map, mod_MSJTP_dict.department_pk, mod_MSJTP_dict.lvl_pk);
-            el_MSJT_sector.innerHTML = t_FillOptionLevelSectorFromMap("sector", sector_map, mod_MSJTP_dict.department_pk, mod_MSJTP_dict.sct_pk);
+            t_FillSelectOptions(el_MSJTP_department, department_map, "id", "base_code", false, null, null, loc.No_departments_found, loc.Select_department);
+            el_MSJTP_level.innerHTML = t_FillOptionLevelSectorFromMap("level", level_map, mod_MSJTP_dict.department_pk, mod_MSJTP_dict.lvl_pk);
+            el_MSJTP_sector.innerHTML = t_FillOptionLevelSectorFromMap("sector", sector_map, mod_MSJTP_dict.department_pk, mod_MSJTP_dict.sct_pk);
 
-            mod_MSJTP_dict.scheme_dict = MSJT_get_scheme();
+            el_MSJTP_department.value = (mod_MSJTP_dict.department_pk) ? mod_MSJTP_dict.department_pk : null;
+            MSI_MSJT_set_selectbox_level_sector("MSJT", mod_MSJTP_dict.department_pk);
+            el_MSJTP_level.value = (mod_MSJTP_dict.lvl_pk) ? mod_MSJTP_dict.lvl_pk : null;
+            el_MSJTP_sector.value = (mod_MSJTP_dict.sct_pk) ? mod_MSJTP_dict.sct_pk : null;
+
+            MSJTP_FillDicts(mod_MSJTP_dict.scheme_pk);
+            MSJTP_FillTbls();
 
     // ---  disable btn submit, hide delete btn when is_addnew
             add_or_remove_class(el_MSJT_btn_delete, cls_hide, is_addnew )
@@ -1722,7 +1721,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  show modal
             $("#id_mod_subjecttype").modal({backdrop: true});
         }
-    };  // MSJT_Open
+    };  // MSJTP_Open
 
 //========= MSJT_Save  ============= PR2021-06-25
     function MSJT_Save(){
@@ -1760,7 +1759,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if(upload_sjtp_list && upload_sjtp_list.length){
                 const upload_dict = {
-                    scheme_pk: mod_MSJTP_dict.sel_scheme_pk,
+                    scheme_pk: mod_MSJTP_dict.scheme_pk,
                     sjtp_list: upload_sjtp_list
                 }
                 UploadChanges(upload_dict, url_subjecttype_upload);
@@ -1781,21 +1780,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(["department_pk", "lvl_pk", "sct_pk"].includes(fldName)){
             const fldValue = (Number(el_input.value)) ? Number(el_input.value) : null;
-            const department_pk = (Number(el_MSJT_department.value)) ? Number(el_MSJT_department.value) : null;
+            const department_pk = (Number(el_MSJTP_department.value)) ? Number(el_MSJTP_department.value) : null;
             const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", department_pk);
             const depbase_pk = get_dict_value(dep_dict, ["base_id"]);
-            const lvl_pk = (el_MSJT_level.value) ? Number(el_MSJT_level.value) : null
-            const sct_pk = (el_MSJT_sector.value) ? Number(el_MSJT_sector.value) : null
+            const lvl_pk = (el_MSJTP_level.value) ? Number(el_MSJTP_level.value) : null
+            const sct_pk = (el_MSJTP_sector.value) ? Number(el_MSJTP_sector.value) : null
 
             if (fldName === "department_pk"){
                 MSI_MSJT_set_selectbox_level_sector("MSJT", department_pk);
             }
             mod_MSJTP_dict.scheme_dict = get_scheme_dict(department_pk, lvl_pk, sct_pk);
-            mod_MSJTP_dict.sel_scheme_pk = (mod_MSJTP_dict.scheme_dict) ? mod_MSJTP_dict.scheme_dict.id : null;
+            mod_MSJTP_dict.scheme_pk = (mod_MSJTP_dict.scheme_dict) ? mod_MSJTP_dict.scheme_dict.id : null;
 
             //MSJT_set_headertext();
-            MSJT_FillDicts(mod_MSJTP_dict.sel_scheme_pk);
-            MSJT_FillTbls();
+            MSJTP_FillDicts(mod_MSJTP_dict.scheme_pk);
+            MSJTP_FillTbls();
 
         } else if (fldName === "base_id"){
             document.getElementById("id_MSJT_name").value = el_input.options[el_input.selectedIndex].text;
@@ -1822,7 +1821,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 MSI_MSJT_set_selectbox_level_sector("MSJT", fldValue);
             }
 
-            mod_MSJTP_dict.scheme_dict = MSJT_get_scheme();
+            mod_MSJTP_dict.scheme_dict = MSJTP_get_scheme_from_input();
         console.log("mod_MSJTP_dict.scheme_dict", mod_MSJTP_dict.scheme_dict)
             MSJT_set_headertext();
 
@@ -1875,9 +1874,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // MSI_MSJT_set_selectbox_level_sector
 
-//========= MSJT_FillDicts  ============= PR2021-06-26
-    function MSJT_FillDicts(scheme_pk) {
-        console.log("===== MSJT_FillDicts ===== ");
+//========= MSJTP_FillDicts  ============= PR2021-06-26
+    function MSJTP_FillDicts(scheme_pk) {
+        console.log("===== MSJTP_FillDicts ===== ");
         console.log("scheme_pk", scheme_pk);
 
         mod_MSJTP_dict.sjtp_dictlist = [];
@@ -1897,11 +1896,11 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
         console.log("mod_MSJTP_dict", mod_MSJTP_dict);
-    } // MSJT_FillDicts
+    } // MSJTP_FillDicts
 
-//========= MSJT_FillTbls  ============= PR2021-06-26
-    function MSJT_FillTbls() {
-        console.log("===== MSJT_FillTbls ===== ");
+//========= MSJTP_FillTbls  ============= PR2021-06-26
+    function MSJTP_FillTbls() {
+        console.log("===== MSJTP_FillTbls ===== ");
         console.log("mod_MSJTP_dict", mod_MSJTP_dict);
 
         el_MSJT_tblBody_subjecttype.innerText = null;
@@ -1912,32 +1911,37 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 0, sjtpbase_dict; sjtpbase_dict=subjecttypebase_rows[i]; i++) {
             const sjtpbase_pk = sjtpbase_dict.id
             // check if sjtp exists in mod_MSJTP_dict.sjtp_dictlist
+        console.log("sjtpbase_dict", sjtpbase_dict);
         console.log("sjtpbase_pk", sjtpbase_pk);
             const sjtp_dict = b_lookup_dict_in_dictlist(mod_MSJTP_dict.sjtp_dictlist, "sjtpbase_pk", sjtpbase_pk);
             const lookup_sjtpbase_pk = (sjtp_dict && sjtp_dict.sjtpbase_pk) ? sjtp_dict.sjtpbase_pk : null;
             const lookup_deleted =  (sjtp_dict && sjtp_dict.isdeleted) ? sjtp_dict.isdeleted : false;
+        console.log("sjtp_dict", sjtp_dict);
         console.log("lookup_sjtpbase_pk", lookup_sjtpbase_pk);
         console.log("lookup_deleted", lookup_deleted);
             if(lookup_sjtpbase_pk && !lookup_deleted){
-                MSI_MSJT_FillSelectRow("sjtp", el_MSJT_tblBody_subjecttype, sjtp_dict.sjtpbase_pk, sjtp_dict);
+                //MSI_MSJT_FillSelectRow("sjtp", el_MSJT_tblBody_subjecttype, sjtp_dict.sjtpbase_pk, sjtp_dict);
+                MSI_MSJT_FillSelectRow("sjtp", el_MSJT_tblBody_subjecttype, sjtp_dict.sjtpbase_pk, sjtpbase_dict);
             } else {
                 MSI_MSJT_FillSelectRow("subjecttypebase", el_MSJT_tblBody_sjtpbase, sjtpbase_pk, sjtpbase_dict);
             }
         }
-    } // MSJT_FillTbls
+    } // MSJTP_FillTbls
+
+
 
 //========= MSJT_SubjecttypebaseClicked  ============= PR2021-06-26
     function MSJT_SubjecttypebaseClicked(tr_clicked) {
-        console.log("===== MSJT_SubjecttypebaseClicked ===== ");
-        console.log("mod_MSJTP_dict", mod_MSJTP_dict);
-        console.log("mod_MSJTP_dict.sjtp_dictlist", mod_MSJTP_dict.sjtp_dictlist);
+        //console.log("===== MSJT_SubjecttypebaseClicked ===== ");
+        //console.log("mod_MSJTP_dict", mod_MSJTP_dict);
+        //console.log("mod_MSJTP_dict.sjtp_dictlist", mod_MSJTP_dict.sjtp_dictlist);
 
     // lookup sjtpbase in subjecttypebase_rows
         const sjtpbase_pk = get_attr_from_el_int(tr_clicked, "data-pk")
         const sjtpbase_dict = b_lookup_dict_in_dictlist(subjecttypebase_rows, "id", sjtpbase_pk);
 
-        console.log("sjtpbase_pk", sjtpbase_pk);
-        console.log("sjtpbase_dict", sjtpbase_dict);
+        //console.log("sjtpbase_pk", sjtpbase_pk);
+        //console.log("sjtpbase_dict", sjtpbase_dict);
 
         if(sjtpbase_dict){
     // check if sjtp exists in mod_MSJTP_dict.sjtp_dictlist
@@ -1946,9 +1950,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const lookup_base_pk = (sjtp_dict && sjtp_dict.sjtpbase_pk) ? sjtp_dict.sjtpbase_pk : null;
             const lookup_deleted =  (sjtp_dict && sjtp_dict.isdeleted) ? sjtp_dict.isdeleted : false;
 
-        console.log("sjtp_dict", sjtp_dict);
-        console.log("lookup_base_pk", lookup_base_pk);
-        console.log("lookup_deleted", lookup_deleted);
+        //console.log("sjtp_dict", sjtp_dict);
+        //console.log("lookup_base_pk", lookup_base_pk);
+        //console.log("lookup_deleted", lookup_deleted);
 
             if(sjtp_dict){
             //  sjtp already exists in sjtp_dictlist
@@ -1961,7 +1965,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 mod_MSJTP_dict.sjtp_dictlist.push( {
                     sjtp_pk: null,
                     sjtpbase_pk: sjtpbase_dict.id,
-                    scheme_pk: mod_MSJTP_dict.sel_scheme_pk,
+                    scheme_pk: mod_MSJTP_dict.scheme_pk,
                     name: sjtpbase_dict.name,
                     abbrev: sjtpbase_dict.abbrev,
                     sequence: sjtpbase_dict.sequence,
@@ -1970,27 +1974,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
         }
-        MSJT_FillTbls();
+        MSJTP_FillTbls();
     }  // MSJT_SubjecttypebaseClicked
 
 //========= MSJT_SjtpClicked  ============= PR2021-06-26
     function MSJT_SjtpClicked(tr_clicked) {
-        console.log("  =====  MSJT_SjtpClicked  =====");
+        //console.log("  =====  MSJT_SjtpClicked  =====");
 
         const sjtpbase_pk = get_attr_from_el_int(tr_clicked, "data-pk")
 
-        console.log("tr_clicked", tr_clicked);
-        console.log("sjtpbase_pk", sjtpbase_pk);
-        console.log("mod_MSJTP_dict", mod_MSJTP_dict);
+        //console.log("tr_clicked", tr_clicked);
+        //console.log("sjtpbase_pk", sjtpbase_pk);
+        //console.log("mod_MSJTP_dict", mod_MSJTP_dict);
 
 // lookup sjtp_dict in mod_MSJTP_dict.sjtp_dictlist,
 // Note: lookup by base_pk, because new rows dont have sjtp_pk
         const sjtp_dictlist = mod_MSJTP_dict.sjtp_dictlist;
-        console.log("sjtp_dictlist", sjtp_dictlist);
+        //console.log("sjtp_dictlist", sjtp_dictlist);
 
         const [index, sjtp_dict] = b_lookup_dict_with_index_in_dictlist(sjtp_dictlist, "sjtpbase_pk", sjtpbase_pk)
-        console.log("index", index);
-        console.log("sjtp_dict", sjtp_dict);
+        //console.log("index", index);
+        //console.log("sjtp_dict", sjtp_dict);
 
         // sjtp_dict = {si_pk: null, sjtp_pk: 202, subj_pk: 759 ,name: "Franse taal", iscreated: true }
         if (sjtp_dict){
@@ -2005,27 +2009,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
         }
-        MSJT_FillTbls()
+        MSJTP_FillTbls()
 
     }  // MSJT_SjtpClicked
 
 
-//=========  MSJT_get_scheme  ================  PR2021-06-24
-    function MSJT_get_scheme() {
-        console.log(" -----  MSJT_get_scheme   ----")
+//=========  MSJTP_get_scheme_from_input  ================  PR2021-06-24
+    function MSJTP_get_scheme_from_input() {
+        //console.log(" -----  MSJTP_get_scheme_from_input   ----")
         let scheme_dict = null;
-        const department_pk = (el_MSJT_department.value) ? Number(el_MSJT_department.value) : null
-        const lvl_pk = (el_MSJT_level.value) ? Number(el_MSJT_level.value) : null
-        const sct_pk = (el_MSJT_sector.value) ? Number(el_MSJT_sector.value) : null
+        const department_pk = (el_MSJTP_department.value) ? Number(el_MSJTP_department.value) : null
+        const lvl_pk = (el_MSJTP_level.value) ? Number(el_MSJTP_level.value) : null
+        const sct_pk = (el_MSJTP_sector.value) ? Number(el_MSJTP_sector.value) : null
 
         scheme_dict = get_scheme_dict(department_pk, lvl_pk, sct_pk);
 
         return scheme_dict;
-    }  // MSJT_get_scheme
+    }  // MSJTP_get_scheme_from_input
 
 //=========  get_scheme_dict  ================  PR2021-06-24
     function get_scheme_dict(department_pk, lvl_pk, sct_pk) {
-        console.log(" -----  get_scheme_dict   ----")
+        //console.log(" -----  get_scheme_dict   ----")
         let scheme_dict = null;
         const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", department_pk);
         if(!isEmpty(dep_dict)){
@@ -2061,7 +2065,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function MSJT_validate_and_disable() {
         console.log(" -----  MSJT_validate_and_disable   ----")
         let disable_save_btn = false;
-// ---  loop through input fields on MSJT_Open
+// ---  loop through input fields on  MSJTP_Open
         let input_elements = el_MSJT_form_controls.querySelectorAll(".form-control")
         for (let i = 0, el_input; el_input=input_elements[i]; i++) {
             const fldName = get_attr_from_el(el_input, "data-field");
@@ -3007,7 +3011,7 @@ el_tblBody_schemeitems.innerText = null;
 
 //========= MSI_FillTblSubjects  ============= PR2021-06-24
     function MSI_FillTblSubjects() {
-        console.log("===== MSI_FillTblSubjects ===== ");
+        //console.log("===== MSI_FillTblSubjects ===== ");
 
         el_tblBody_subjects.innerText = null;
 
@@ -3081,7 +3085,7 @@ el_tblBody_schemeitems.innerText = null;
 //========= MSI_MSJT_FillSelectRow  ============= PR2020--09-30
     function MSI_MSJT_FillSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk) {
         console.log("===== MSI_MSJT_FillSelectRow ===== ");
-        console.log("..........pk_int", pk_int);
+        //console.log("..........pk_int", pk_int);
         console.log("..........tblName", tblName);
         console.log("dict", dict);
 
@@ -3369,7 +3373,8 @@ el_tblBody_schemeitems.innerText = null;
             const has_selected_item = (!isEmpty(map_dict));
             if(has_selected_item){
                 mod_dict.id = map_dict.id;
-                mod_dict.examyear_id = map_dict.examyear_id;
+                // mod_dict.examyear_pk = map_dict.examyear_id;
+                mod_dict.scheme_pk = map_dict.scheme_id;
                 mod_dict.abbrev = map_dict.abbrev;
                 mod_dict.name = map_dict.name;
                 mod_dict.sequence = map_dict.sequence;
@@ -3408,9 +3413,6 @@ el_tblBody_schemeitems.innerText = null;
                 let item_name = (tblName === "subject") ? mod_dict.name :
                            (tblName === "subjecttype") ? mod_dict.name :
                            (tblName === "subjecttypebase") ? mod_dict.name :
-                           (tblName === "department") ? mod_dict.name :
-                           (tblName === "level") ? mod_dict.name :
-                           (tblName === "sector") ? mod_dict.name :
                            (tblName === "scheme") ? mod_dict.name :
                            (tblName === "package") ? mod_dict.name : "";
 
@@ -3475,6 +3477,7 @@ el_tblBody_schemeitems.innerText = null;
             if (selected_btn === "btn_subject"){
                 upload_dict.subject_pk = mod_dict.id;
             } else if (selected_btn === "btn_subjecttype"){
+                upload_dict.scheme_pk = mod_dict.scheme_pk;
                 upload_dict.subjecttype_pk = mod_dict.id;
             } else if (selected_btn === "btn_subjecttypebase"){
                 upload_dict.sjtbase_pk = mod_dict.id;

@@ -75,8 +75,12 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         # to prevent you from locking out when no permits yet
         if req_user.role == c.ROLE_128_SYSTEM:
             if 'permit_userpage' not in permit_list:
-                permit_list.append('permit_view')
-                permit_list.append('permit_crud')
+                permit_list.append('permit_userpage')
+            if sel_page == 'page_user':
+                if 'permit_crud' not in permit_list:
+                    permit_list.append('permit_crud')
+                if 'permit_view' not in permit_list:
+                    permit_list.append('permit_view')
 
         if logging_on:
             logger.debug('sel_page:           ' + str(sel_page))

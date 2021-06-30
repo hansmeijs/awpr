@@ -288,7 +288,7 @@ KEY_IMPORT_SUBJECT = 'import_subject'
 KEY_IMPORT_STUDENT = 'import_student'
 KEY_IMPORT_STUDENTSUBJECT = 'import_studentsubject'
 KEY_IMPORT_GRADE = 'import_grade'
-KEY_IMPORT_PERMITS = 'import_permits'
+KEY_IMPORT_PERMITS = 'import_permit'
 
 # PR2021-04-21
 # when one_unique_identifier =  True: only 1 of the linkfields can be the identifier (either exnr or idnr of the candidate)

@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class UploadImportSettingView(View):   # PR2020-12-05
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
     def post(self, request, *args, **kwargs):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= UploadImportSettingView ============= ')
 
@@ -53,7 +53,7 @@ class UploadImportSettingView(View):   # PR2020-12-05
 
                 """
                 new_setting_dict{
-                'importtable': 'import_permits', 
+                'importtable': 'import_permit', 
                 'sel_examyear_pk': None, 
                 'sel_schoolbase_pk': None, 
                 'sel_depbase_pk': None, 
@@ -117,43 +117,52 @@ class UploadImportSettingView(View):   # PR2020-12-05
 class UploadImportDataView(View):  # PR2020-12-05 PR2021-02-23
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
     def post(self, request, *args, **kwargs):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= UploadImportDataView ============= ')
 
         update_dict = {}
-        has_permit = False
-        if request.user is not None and request.user.schoolbase is not None:
 
-            # -  get user_lang
-            requsr_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(requsr_lang)
+        if request.user and request.user.country and request.user.schoolbase:
 
-            has_permit = False
-            if request.user and request.user.country and request.user.schoolbase:
-                permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list('page_student', request.user)
-                has_permit = 'permit_crud' in permit_list
-            if not has_permit:
-                err_html = _("You don't have permission to perform this action.")
-                update_dict['result'] = ''.join(("<p class='border_bg_invalid p-2'>", str(err_html), "</p>"))
-
-        if has_permit:
             if request.POST['upload']:
                 upload_dict = json.loads(request.POST['upload'])
 
-    # - Reset language
-                # PR2019-03-15 Debug: language gets lost, get request.user.lang again
-                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-                activate(user_lang)
-
                 importtable = upload_dict.get('importtable')
-                if importtable == 'import_student':
-                    update_dict = import_students(upload_dict, user_lang, request)
-                elif importtable == 'import_studentsubject':
-                    update_dict = import_studentsubjects(upload_dict, user_lang, logging_on, request)
-                elif importtable == 'import_permits':
-                    update_dict = import_permits(upload_dict, user_lang, logging_on, request)
+                page = importtable.replace('import', 'page')
+
+                permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list(page, request.user)
+
+            # to prevent you from locking out when no permits yet
+                if request.user.role == c.ROLE_128_SYSTEM:
+                    if 'permit_crud' not in permit_list:
+                        permit_list.append('permit_crud')
+
+                has_permit = 'permit_crud' in permit_list
+
+                if logging_on:
+                    logger.debug('request.user.role: ' + str(request.user.role) + ' ' + str(type(request.user.role)))
+                    logger.debug('permit_list: ' + str(permit_list) + ' ' + str(type(permit_list)))
+                    logger.debug('has_permit: ' + str(has_permit) + ' ' + str(type(has_permit)))
+
+                if not has_permit:
+                    err_html = _("You don't have permission to perform this action.")
+                    update_dict['result'] = ''.join(("<p class='border_bg_invalid p-2'>", str(err_html), "</p>"))
+                else:
+
+        # - Reset language
+                    # PR2019-03-15 Debug: language gets lost, get request.user.lang again
+                    user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                    activate(user_lang)
+
+                    if importtable == 'import_student':
+                        update_dict = import_students(upload_dict, user_lang, request)
+                    elif importtable == 'import_studentsubject':
+                        update_dict = import_studentsubjects(upload_dict, user_lang, logging_on, request)
+                    elif importtable == 'import_permit':
+                        update_dict = import_permits(upload_dict, user_lang, logging_on, request)
+
         if logging_on:
             logger.debug('update_dict: ' + str(update_dict) + ' ' + str(type(update_dict)))
 

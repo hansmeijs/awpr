@@ -407,7 +407,6 @@ class SubjecttypebaseUploadView(View):  # PR2021-06-29
                 # upload_dict = {'mapid': 'subjecttypebase_4', 'sjtbase_pk': 4, 'abbrev': 'w'}
                 # upload_dict{'create': True, 'code': 'a', 'name': 'a', 'sequence': 3, 'abbrev': '2'}
                 upload_dict = json.loads(upload_json)
-
                 if logging_on:
                     logger.debug('upload_dict' + str(upload_dict))
 
@@ -678,9 +677,10 @@ class SubjecttypeUploadView(View):  # PR2021-06-23
             logger.debug('')
             logger.debug(' ============= SubjecttypeUploadView ============= ')
 
-        update_wrap = {}
         # error_list is attached to updated row, messages is attached to update_wrap
         messages = []
+        update_wrap = {}
+
 # - get permit
         has_permit = get_permit_crud_page_subject(request)
         if has_permit:
@@ -692,16 +692,16 @@ class SubjecttypeUploadView(View):  # PR2021-06-23
 # - get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
             if upload_json:
-                upload_dict = json.loads(upload_json)
                 # upload_dict{'scheme_pk': 177,
                 #       'sjtp_list': [{'sjtpbase_pk': 5, 'scheme_pk': 177, 'create': True}]}
+                upload_dict = json.loads(upload_json)
                 if logging_on:
                     logger.debug('upload_dict' + str(upload_dict))
 
-                message_header = _('Update subject type')
+                msg_header = _('Update subject type')
 
 # - get selected examyear from Usersetting
-                examyear = get_sel_examyear(message_header, messages, request)
+                examyear = get_sel_examyear(msg_header, messages, request)
 
 # - exit when no examyear or examyear is locked
                 # note: subjects may be changed before publishing, therefore don't exit when examyear.published = False
@@ -709,7 +709,11 @@ class SubjecttypeUploadView(View):  # PR2021-06-23
 
 # - get scheme instance
                     scheme_pk = upload_dict.get('scheme_pk')
-                    scheme = get_scheme_instance(examyear, scheme_pk, messages, message_header)
+                    scheme = get_scheme_instance(examyear, scheme_pk, messages, msg_header)
+                    if logging_on:
+                        logger.debug('scheme_pk: ' + str(scheme_pk))
+                        logger.debug('scheme:    ' + str(scheme))
+
                     if scheme:
                         updated_rows = []
 
@@ -718,34 +722,42 @@ class SubjecttypeUploadView(View):  # PR2021-06-23
                         if sjtp_list:
                             update_sjtp_list(examyear, scheme, sjtp_list, updated_rows, messages, request)
                         else:
-
 # +++++++++++ update single sjtp
+    # - get  variables
+                            subjecttype_pk = upload_dict.get('subjecttype_pk')
+                            is_delete = upload_dict.get('delete', False)
+
 # if upload_dict does not have sjtp_list: it is single sjtp update - create, delete or update changes
 
 # ++++ Create new subjecttype:
             # is done in sjtp_list
                             error_list = []
 
-    # +++  get existing subjecttype
-                            sjtp_pk = upload_dict.get('sjtp_pk')
+# +++  get existing subjecttype
                             subjecttype = sbj_mod.Subjecttype.objects.get_or_none(
-                                id=sjtp_pk,
+                                id=subjecttype_pk,
                                 scheme=scheme
                             )
                             if logging_on:
-                                logger.debug('..... subjecttype: ' + str(subjecttype))
+                                logger.debug(' subjecttype: ' + str(subjecttype))
 
                             if subjecttype:
-    # ++++ Delete subjecttype
-            # is done in sjtp_list
+# ++++ Delete subjecttype
+                                if is_delete:
+                                    deleted_row = delete_subjecttype(subjecttype, messages, request)
+                                    # deleted_row has value when deleted = OK, will be retuurned to client
+                                    if deleted_row:
+                                        subjecttype = None
+                                        updated_rows.append(deleted_row)
 
-    # +++ Update subjecttype
-                                update_subjecttype_instance(subjecttype, scheme, upload_dict, error_list, request)
+# +++ Update subjecttype
+                                else:
+                                    update_subjecttype_instance(subjecttype, scheme, upload_dict, error_list, request)
             # - create subjecttype_rows
-                                updated_rows = create_subjecttype_rows(
-                                    examyear=examyear,
-                                    sjtp_pk=subjecttype.pk
-                                )
+                                    updated_rows = create_subjecttype_rows(
+                                        examyear=examyear,
+                                        sjtp_pk=subjecttype.pk
+                                    )
 
             # - add error_list to subject_row (there is only 1 subject_row, or none
                             # Note: error_list is attached to updated row, messages is attached to update_wrap
@@ -974,11 +986,12 @@ def get_sel_examyear(message_header, messages, request):
     return examyear
 
 
-def get_scheme_instance(examyear, scheme_pk, error_list, message_header):
+def get_scheme_instance(examyear, scheme_pk, error_list, msg_header):
     # --- get scheme instance # PR2021-06-26
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_scheme_instance ----- ')
+        logger.debug('examyear: ' + str(examyear))
         logger.debug('scheme_pk: ' + str(scheme_pk))
 
     scheme = None
@@ -991,7 +1004,7 @@ def get_scheme_instance(examyear, scheme_pk, error_list, message_header):
         logger.debug('scheme: ' + str(scheme))
 
     if scheme is None:
-        error_list.append({'header': str(message_header),
+        error_list.append({'header': str(msg_header),
                            'class': "border_bg_invalid",
                            'msg_html': str(_('Subject scheme not found.'))})
     return scheme
@@ -2668,23 +2681,20 @@ def create_subjecttype(sjtpbase_pk, scheme, upload_dict, messages, msg_header, r
 # - end of create_subjecttype
 
 
-def delete_subjecttype(subjecttype, subjecttype_rows, messages, request):
+def delete_subjecttype(subjecttype, messages, request):
     # --- delete subjecttype # PR2021-06-23
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_subjecttype ----- ')
-        logger.debug('subject: ' + str(subjecttype))
+        logger.debug('subjecttype: ' + str(subjecttype))
 
-    subjecttype_row = {'pk': subjecttype.pk,
-                       'mapid': 'subject_' + str(subjecttype.pk),
-                       'deleted': True}
-    if logging_on:
-        logger.debug('subjecttype_row: ' + str(subjecttype_row))
+    subjecttype_pk = subjecttype.pk
+    deleted_row = None
 
     scheme_pk = subjecttype.scheme.pk
 
     this_txt = _("Subject type '%(tbl)s'") % {'tbl': subjecttype.name}
-    header_txt = _("Remove subject type")
+    header_txt = _("Delete subject type")
 
 # check if there are students with subjects with this subjecttype
     students_with_this_subjecttype_exist = stud_mod.Studentsubject.objects.filter(
@@ -2708,8 +2718,10 @@ def delete_subjecttype(subjecttype, subjecttype_rows, messages, request):
     # - check if this subjecttype base has other child subjecttypes, delet if none found
         # PR2021-06-27 debug: Don't delete base subjecttypes without children: they may be used another time
 
-   # - add deleted_row to subject_rows
-        subjecttype_rows.append(subjecttype_row)
+   # - deleted_row gets value when deleted = ok, to be returnes to client
+        deleted_row = {'pk': subjecttype_pk,
+                       'mapid': 'subjecttype_' + str(subjecttype_pk),
+                       'deleted': True}
 
     # also update modified in scheme, otherwise it is difficult to find out if scheme has been changed
         try:
@@ -2719,10 +2731,10 @@ def delete_subjecttype(subjecttype, subjecttype_rows, messages, request):
             logger.error(getattr(e, 'message', str(e)))
 
     if logging_on:
-        logger.debug('subjecttype_rows' + str(subjecttype_rows))
+        logger.debug('deleted_row' + str(deleted_row))
         logger.debug('messages' + str(messages))
 
-    return deleted_ok
+    return deleted_row
 # - end of delete_subjecttype
 
 

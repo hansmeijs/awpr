@@ -542,7 +542,7 @@ def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_de
                                   'sel_depbase_pk': sel_depbase_pk}
             schoolsetting_dict[setting_key] = get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase)
         else:
-            schoolsetting_dict[setting_key] = sel_schoolbase.get_setting(setting_key)
+            schoolsetting_dict[setting_key] = sel_schoolbase.get_schoolsetting_dict(setting_key)
 
     if logging_on:
         logger.debug('setting_key: ' + str(setting_key) + ' ' + str(type(setting_key)))

@@ -70,11 +70,11 @@
             const header_text = (import_table === "import_student") ? mimp_loc.Upload_candidates :
                                 (["import_subject", "import_studentsubject"].includes(import_table)) ? mimp_loc.Upload_subjects :
                                 (import_table === "import_grade") ? mimp_loc.Upload_grades :
-                                (import_table === "import_permits") ? mimp_loc.Upload_permissions : null;
+                                (import_table === "import_permit") ? mimp_loc.Upload_permissions : null;
             const subheader_a = (import_table === "import_student") ? mimp_loc.Select_Excelfile_with_students :
                                 (["import_subject", "import_studentsubject"].includes(import_table)) ? mimp_loc.Select_Excelfile_with_subjects :
                                 (import_table === "import_grade") ? mimp_loc.Select_Excelfile_with_grades :
-                                (import_table === "import_permits") ? mimp_loc.Select_Excelfile_with_pemits : null;
+                                (import_table === "import_permit") ? mimp_loc.Select_Excelfile_with_pemits : null;
             document.getElementById("id_MIMP_header").innerText = header_text;
             document.getElementById("id_MIMP_filedialog_label").innerText = "A. " + subheader_a;
             // >>>>>>>>>document.getElementById("id_MIMP_upload_label").innerText = header_text;
@@ -120,7 +120,7 @@
         //console.log ("mode", mode);
         if(mimp.import_table === "import_studentsubject" && mimp.is_crosstab){
             upload_studentsubjects_crosstab(mode)
-        } else if(mimp.import_table === "import_permits"){
+        } else if(mimp.import_table === "import_permit"){
             //upload_permits();
             upload_others(mode);
         } else {
@@ -276,6 +276,10 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         let rowLength = 0, colLength = 0;
         if(mimp.curWorksheetData){rowLength = mimp.curWorksheetData.length;};
         if(mimp_stored.coldefs){colLength = mimp_stored.coldefs.length;};
+
+            console.log ("mimp.rowLength", rowLength);
+            console.log ("colLength", colLength);
+
         if(rowLength > 0 && colLength > 0){
 
             console.log ("mimp.excel_coldefs", deepcopy_dict(mimp.excel_coldefs));
@@ -1261,7 +1265,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 // ---  loop through list of tables that must be filled
         const awp_colNames_dict = {import_student: ["department", "level", "sector", "profiel"],
                                    import_studentsubject: ["subject", "subjecttype"],
-                                   import_permits: ["permits"],
+                                   import_permit: ["permits"],
                                    import_awp: ["awpdata"],
                                 // TODO
                                import_subject: [],
@@ -2160,8 +2164,8 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 import_table = "import_studentsubject";
             } else if("import_grade" in schoolsetting_dict ){
                 import_table = "import_grade";
-            } else if("import_permits" in schoolsetting_dict ){
-                import_table = "import_permits";
+            } else if("import_permit" in schoolsetting_dict ){
+                import_table = "import_permit";
             }
         };
         const import_table_dict = schoolsetting_dict[import_table];
@@ -2219,7 +2223,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                     const this_month_index = 1 + today.getMonth();
                     const date_str = today.getFullYear() + "-" + this_month_index + "-" + today.getDate();
                     let filename = "Log upload ";
-                    if (mimp_stored.import_table === "import_permits"){
+                    if (mimp_stored.import_table === "import_permit"){
                         filename += "permits dd " + date_str;
                     } else if (mimp_stored.import_table === "import_student"){
                         const schoolname = mimp_stored.sel_depbase_code + " " + mimp_stored.sel_school_abbrev;

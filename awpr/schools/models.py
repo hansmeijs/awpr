@@ -645,7 +645,7 @@ def delete_instance(instance, messages, request, this_txt=None, header_txt=None)
 
     if instance:
         try:
-            instance.delete()
+            instance.delete(request=request)
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
             caption = this_txt if this_txt else _('This item')

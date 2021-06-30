@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const datalist_request = {
                 setting: {page: "page_user"},
-                schoolsetting: {setting_key: "import_permits"},
+                schoolsetting: {setting_key: "import_permit"},
                 locale: {page: ["page_user", 'upload']},
                 user_rows: {get: true},
                 school_rows: {get: true}
@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function() {
             AddSubmenuButton(el_submenu, loc.Add_permission, function() {MUPM_Open("addnew")});
             //AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MUP_Open("addnew")});
             AddSubmenuButton(el_submenu, loc.Download_permissions, null, null, "id_submenu_download_perm", url_download_permits, false);  // true = download
-            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open("import_permits")}, null, "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open("import_permit")}, null, "id_submenu_import");
         //};
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
