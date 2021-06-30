@@ -625,7 +625,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (map_dict.sjtp_name) { ob3 = (map_dict.sjtp_name) };
         } else if (tblName === "scheme") {
             if (map_dict.scheme_name) { ob1 = map_dict.scheme_name.toLowerCase() };
-        } else if (["subjecttype", "subjecttypebase"].includes(tblName)) {
+        } else if (tblName === "subjecttype") {
+            if (map_dict.scheme_name) { ob1 = map_dict.scheme_name.toLowerCase() };
+            if (map_dict.sjtpbase_sequence) { ob2 = map_dict.sjtpbase_sequence.toString() };
+        } else if (tblName === "subjecttypebase") {
             if (map_dict.name) { ob1 = map_dict.name.toLowerCase() };
         }
         const row_index = b_recursive_tblRow_lookup(tblBody_datatable, ob1, ob2, ob3, setting_dict.user_lang);
@@ -993,7 +996,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
         console.log(" --- RefreshDatarowItem  ---");
-        console.log("tblName", tblName);
+        //console.log("tblName", tblName);
         console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
@@ -1004,6 +1007,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const is_created = (!!update_dict.created);
 
             const error_list = get_dict_value(update_dict, ["error"], []);
+        console.log("error_list", error_list);
 
             let updated_columns = [];
             let field_error_list = []
@@ -1100,7 +1104,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         // note: when updated_columns is empty, then updated_columns is still true.
                         // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
                         if(updated_columns.length || field_error_list.length){
-        //console.log("updated_columns", updated_columns);
+        console.log("updated_columns", updated_columns);
+        console.log("field_error_list", field_error_list);
 
 // --- get existing tblRow
                             let tblRow = document.getElementById(map_id);
@@ -1146,8 +1151,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // make field green when field name is in updated_columns
                                         if(updated_columns.includes(el_fldName)){
                                             ShowOkElement(el);
-                                        }
-
+                                        };
                                     }  //  if (el){
                                 };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
                             };  // if(tblRow){

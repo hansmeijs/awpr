@@ -402,7 +402,7 @@ class SubjecttypebaseUploadView(View):  # PR2021-06-29
             activate(user_lang)
 
 # - get upload_dict from request.POST
-            upload_json = request.POST.get('upload', None)
+            upload_json = request.POST.get('upload')
             if upload_json:
                 # upload_dict = {'mapid': 'subjecttypebase_4', 'sjtbase_pk': 4, 'abbrev': 'w'}
                 # upload_dict{'create': True, 'code': 'a', 'name': 'a', 'sequence': 3, 'abbrev': '2'}
@@ -464,8 +464,6 @@ class SubjecttypebaseUploadView(View):  # PR2021-06-29
                             updated_rows[0]['created'] = True
                 update_wrap['updated_subjecttypebase_rows'] = updated_rows
 
-                if messages:
-                    update_wrap['messages'] = updated_rows
         if len(messages):
             update_wrap['messages'] = messages
 # - return update_wrap
@@ -775,6 +773,8 @@ class SchemeUploadView(View):  # PR2021-06-27
             logger.debug('')
             logger.debug(' ============= SchemeUploadView ============= ')
 
+# error_list is attached to updated row, messages is attached to update_wrap
+        messages = []
         update_wrap = {}
 
 # - get permit
@@ -786,37 +786,61 @@ class SchemeUploadView(View):  # PR2021-06-27
             activate(user_lang)
 
 # - get upload_dict from request.POST
-            upload_json = request.POST.get('upload', None)
+            upload_json = request.POST.get('upload')
             if upload_json:
+                # upload_dict = {mapid: "scheme_191", name: "Vwo - e&m2", scheme_pk: 191}
                 upload_dict = json.loads(upload_json)
 
-                messages = []
-
-# - get  variables
-                message_header = _('Update subject scheme')
-
                 if logging_on:
-                    logger.debug('upload_dict' + str(upload_dict))
+                    logger.debug('upload_dict: ' + str(upload_dict))
+# - get  variables
+                scheme_pk = upload_dict.get('scheme_pk')
+                # not in use: is_create = upload_dict.get('create', False)
+                # not in use: is_delete = upload_dict.get('delete', False)
 
+                updated_rows = []
                 error_list = []
+                # not in use: is_created = False
+                msg_header = _('Update subject scheme')
 
 # - get selected examyear from Usersetting
-                examyear = get_sel_examyear(message_header, messages, request)
+                examyear = get_sel_examyear(msg_header, messages, request)
 
 # - exit when no examyear or examyear is locked
                 # note: subjects may be changed before publishing, therefore don't exit when examyear.published = False
                 if examyear:
 
-                    updated_rows = []
+# ++++ Create new scheme
+                # not in use
 
-# - get scheme instance
-                    scheme_pk = upload_dict.get('scheme_pk')
-                    scheme = get_scheme_instance(examyear, scheme_pk, messages, message_header)
+# +++  get existing scheme
+                    scheme = get_scheme_instance(examyear, scheme_pk, messages, msg_header)
+                    if logging_on:
+                        logger.debug('scheme: ' + str(scheme))
 
                     if scheme:
-                        update_scheme_instance(scheme, examyear, upload_dict, updated_rows, messages, request)
+# ++++ Delete scheme
+                # not in use
+# +++ Update scheme
+                        update_scheme_instance(scheme, examyear, upload_dict, updated_rows, error_list, request)
 
-                    update_wrap['updated_scheme_rows'] = updated_rows
+# - create scheme_rows
+                        updated_rows = create_scheme_rows(
+                            examyear=examyear,
+                            scheme_pk=scheme.pk
+                        )
+
+                        # - add error_list to subject_row (there is only 1 subject_row, or none
+                        # Note: error_list is attached to updated row, messages is attached to update_wrap
+                        # key 'field' is needed to restore old value when updating item
+                        # 'messages' is needed when cerating goes wrong, then there is no item
+                        # 'created' is needed to add item to data_rows and make tblRow green
+                        if updated_rows:
+                            if error_list:
+                                updated_rows[0]['error'] = error_list
+
+
+                update_wrap['updated_scheme_rows'] = updated_rows
 
             # - add messages to update_wrap, if any
                 if len(messages):
@@ -2496,8 +2520,10 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
                 error_list.append({'header': msg_header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html})
             else:
 # - create schemeitem_rows[0]
-
-                scheme_rows = create_scheme_rows(examyear, None, {}, instance.pk, False)
+                scheme_rows = create_scheme_rows(
+                    examyear=examyear,
+                    scheme_pk=instance.pk
+                )
                 if scheme_rows:
                     updated_rows.append(scheme_rows[0])
 
@@ -2906,7 +2932,7 @@ def create_subjecttypebase_rows(country, sjtbase_pk=None):
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-def create_scheme_rows(examyear, depbase, append_dict, scheme_pk=None, cur_dep_only=False):
+def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=None):
     # --- create rows of all schemes of this examyear PR2020-11-16 PR2021-06-24
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -2948,19 +2974,11 @@ def create_scheme_rows(examyear, depbase, append_dict, scheme_pk=None, cur_dep_o
         sql_list.append("ORDER BY scheme.id::TEXT")
         sql = ' '.join(sql_list)
 
-        newcursor = connection.cursor()
-        newcursor.execute(sql, sql_keys)
-        scheme_rows = af.dictfetchall(newcursor)
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            rows = af.dictfetchall(cursor)
 
-        # - add messages to subject_row
-        if scheme_pk and scheme_rows:
-            # when subject_pk has value there is only 1 row
-            row = scheme_rows[0]
-            if row:
-                for key, value in append_dict.items():
-                    row[key] = value
-
-    return scheme_rows
+    return rows
 # --- end of create_scheme_rows
 
 
