@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_width:  ["020", "090", "180", "240", "090", "120",  "090", "090", "090", "090"],
                     field_align: ["c", "c", "l", "l", "c", "l", "l", "l", "l", "c"]},
         studsubj: { field_caption: ["", "Examnumber_twolines", "Candidate", "Abbreviation", "Subject", "Character"],
-                    field_names: ["select", "examnumber", "fullname", "subj_code", "subj_name", "sjt_abbrev"],
+                    field_names: ["select", "examnumber", "fullname", "subj_code", "subj_name", "sjtp_abbrev"],
                     filter_tags: ["select", "text", "text", "text", "text", "text", "text", "text", "text", "text"],
                     field_width:  ["032", "075", "360", "100", "240", "120"],
                     field_align: ["c", "r", "l", "l", "l"]}
@@ -219,15 +219,15 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
 // ---  MOD CONFIRM ------------------------------------
-        let el_confirm_header = document.getElementById("id_confirm_header");
-        let el_confirm_loader = document.getElementById("id_confirm_loader");
-        let el_confirm_msg_container = document.getElementById("id_confirm_msg_container")
+        let el_confirm_header = document.getElementById("id_modconfirm_header");
+        let el_confirm_loader = document.getElementById("id_modconfirm_loader");
+        let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
         let el_confirm_msg01 = document.getElementById("id_confirm_msg01")
         let el_confirm_msg02 = document.getElementById("id_confirm_msg02")
         let el_confirm_msg03 = document.getElementById("id_confirm_msg03")
 
-        let el_confirm_btn_cancel = document.getElementById("id_confirm_btn_cancel");
-        let el_confirm_btn_save = document.getElementById("id_confirm_btn_save");
+        let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
+        let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if(el_confirm_btn_save){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
 
 // ---  set selected menu button active
@@ -368,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
         highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
 
 // ---  show only the elements that are used in this tab
-        show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
+        b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
 // ---  fill sidebar selecttable students
         SBR_FillSelectTable();
@@ -598,7 +598,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- add EventListener to td
                 if (["examnumber", "lastname", "firstname", "gender", "idnumber", "db_code", "lvl_abbrev", "sct_abbrev", "classname",
-                            "fullname", "subj_code", "subj_name", "sjt_abbrev", "bis_exam"].includes(field_name)){
+                            "fullname", "subj_code", "subj_name", "sjtp_abbrev", "bis_exam"].includes(field_name)){
                     td.addEventListener("click", function() {MSTUD_Open(el)}, false)
                     td.classList.add("pointer_show");
                     add_hover(td);
@@ -639,7 +639,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_div.className = (map_dict.bis_exam) ? "tickmark_2_2" : "tickmark_0_0";
                     filter_value = (map_dict.bis_exam) ? "1" : "0";
                 } else if (["examnumber", "lastname", "firstname", "prefix", "gender", "idnumber", "db_code", "lvl_abbrev", "sct_abbrev", "classname",
-                            "fullname", "subj_code", "subj_name", "sjt_abbrev"].includes(field_name)){
+                            "fullname", "subj_code", "subj_name", "sjtp_abbrev"].includes(field_name)){
                     // put hard return in el_div, otherwise green border doesnt show in update PR2021-06-16
                     el_div.innerText = (fld_value) ? fld_value : "\n";
                     filter_value = (fld_value) ? fld_value.toLowerCase() : null;
@@ -1043,7 +1043,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_msg_container.classList.add("border_bg_valid");
 
 // ---  show only the elements that are used in this tab
-            show_hide_selected_elements_byClass("tab_show", "tab_ok");
+            b_show_hide_selected_elements_byClass("tab_show", "tab_ok");
 
         } else {
             // --- loop through input elements
@@ -1057,7 +1057,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_msg_container.classList.remove("border_bg_valid");
                 el_msg_container.classList.add("border_bg_invalid");
 // ---  show only the elements that are used in this tab
-                show_hide_selected_elements_byClass("tab_show", "tab_ok");
+                b_show_hide_selected_elements_byClass("tab_show", "tab_ok");
 
             } else {
                 const fields = ["username", "last_name", "email"]
@@ -1729,7 +1729,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (map_dict.stud_id === student_pk) {
                     const subject_pk = map_dict.subj_id;
                     const subj_name = (map_dict.subj_name) ? map_dict.subj_name : "---";
-                    const sjt_abbrev = (map_dict.sjt_abbrev) ? map_dict.sjt_abbrev : "";
+                    const sjtp_abbrev = (map_dict.sjtp_abbrev) ? map_dict.sjtp_abbrev : "";
                     console.log( "subj_name", subj_name);
                     if (new_scheme_pk == null) {
                         // delete studsub when no scheme
@@ -1774,7 +1774,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (map_dict.scheme_id === scheme_pk && map_dict.subj_id === subject_pk) {
                     count += 1;
                     count1_schemeitem_pk = (count === 1) ? map_dict.id : null;
-                    if (subjecttype_pk && map_dict.sjt_id === subjecttype_pk) {
+                    if (subjecttype_pk && map_dict.sjtp_id === subjecttype_pk) {
                         count_same_subjecttype += 1;
                         samesubjecttype_schemeitem_pk = (count_same_subjecttype === 1) ? map_dict.id : null;
                     }

@@ -299,8 +299,8 @@
         return dict
     }  // get_dict_value
 
-//========= show_hide_selected_elements_byClass  ====  PR2020-02-19  PR2020-06-20
-    function show_hide_selected_elements_byClass(container_classname, contains_classname, container_element) {
+//========= b_show_hide_selected_elements_byClass  ====  PR2020-02-19  PR2020-06-20
+    function b_show_hide_selected_elements_byClass(container_classname, contains_classname, container_element) {
         // this function shows / hides elements in container_element or (if null) on page,
         // based on classnames: example: <div class="tab_show tab_shift tab_team display_hide">
         // - all elements with class 'container_classname' will be checked. example:'tab_show' is the container_classname.
@@ -312,7 +312,7 @@
             const is_show = el.classList.contains(contains_classname)
             show_hide_element(el, is_show)
         }
-    }  // show_hide_selected_elements_byClass
+    }  // b_show_hide_selected_elements_byClass
 
 //========= function show_hide_element_by_id  ====  PR2019-12-13
     function show_hide_element_by_id(el_id, is_show) {

@@ -428,7 +428,7 @@ document.addEventListener('DOMContentLoaded', function() {
         highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
 
 // ---  show only the elements that are used in this tab
-        show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
+        b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
 // ---  fill datatable
         FillTblRows();
@@ -479,16 +479,16 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ FILL TABLE ROWS ++++++++++++++++++++++++++++++++++++++++
 //========= FillTblRows  ===================== PR2021-06-21
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
+        //console.log( "===== FillTblRows  === ");
 
         const tblName = get_tblName_from_selectedBtn();
-        console.log( "tblName", tblName);
         const field_setting = field_settings[tblName];
 
         const data_rows = get_datarows_from_selBtn();
-        console.log( "tblName", tblName);
-        console.log( "field_setting", field_setting);
-        console.log( "data_rows", data_rows);
+
+        //console.log( "tblName", tblName);
+        //console.log( "field_setting", field_setting);
+        //console.log( "data_rows", data_rows);
 
 // --- set_columns_hidden
         set_columns_hidden();
@@ -500,7 +500,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- create table header
         CreateTblHeader(field_setting);
 
-// --- loop through data_rows
+// --- create table rows
         if(data_rows && data_rows.length){
             for (let i = 0, map_dict; map_dict = data_rows[i]; i++) {
                 const map_id = map_dict.mapid;
@@ -517,7 +517,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict)
                 };
           };
-        }  // if(!!data_map)
+        }  // if(data_rows)
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-05-10
@@ -606,7 +606,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-05-10  PR2021-06-21
     function CreateTblRow(tblName, field_setting, map_id, map_dict) {
         //console.log("=========  CreateTblRow =========", tblName);
-       // console.log("map_dict", map_dict);
+        //console.log("map_dict", map_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -616,12 +616,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  lookup index where this row must be inserted
         let ob1 = "", ob2 = "", ob3 = "";
-        if (tblName === "schemeitem") {
+        if (tblName === "scheme") {
+            if (map_dict.name) { ob1 = map_dict.name.toLowerCase() };
+        } else if (tblName === "schemeitem") {
             if (map_dict.subj_name) { ob1 = map_dict.subj_name.toLowerCase() };
             if (map_dict.scheme_name) { ob2 = map_dict.scheme_name.toLowerCase() };
             if (map_dict.sjtp_name) { ob3 = (map_dict.sjtp_name) };
-        } else if (tblName === "scheme") {
-            if (map_dict.scheme_name) { ob1 = map_dict.scheme_name.toLowerCase() };
         } else if (tblName === "subjecttype") {
             if (map_dict.scheme_name) { ob1 = map_dict.scheme_name.toLowerCase() };
             if (map_dict.sjtpbase_sequence) { ob2 = map_dict.sjtpbase_sequence.toString() };
@@ -654,10 +654,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const field_tag = field_tags[j];
                 const class_width = "tw_" + field_width[j];
                 const class_align = "ta_" + field_align[j];
+                //console.log("tblName", tblName);
+                //console.log("field_name", field_name);
+                //console.log("field_tag", field_tag);
 
-       //console.log("tblName", tblName);
-       //console.log("field_name", field_name);
-       //console.log("field_tag", field_tag);
         // --- insert td element,
                 let td = tblRow.insertCell(-1);
 
@@ -765,9 +765,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
-            const fld_value = map_dict[field_name];
-        //console.log("field_name", field_name);
-        //console.log("fld_value", fld_value);
+            const fld_value = (map_dict[field_name]) ? map_dict[field_name] : null;
 
             if(field_name){
                 let inner_text = null, title_text = null, filter_value = null;
@@ -776,7 +774,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (["scheme_name", "abbrev", "sjtpbase_name", "code", "name", "subj_code", "subj_name", "depbase_code", "lvl_abbrev", "sct_abbrev"].includes(field_name)){
                     inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
-                } else if (["minsubjects", "maxsubjects", "sequence", "gradetype", "weight_se", "weight_ce"].includes(field_name)){
+                } else if (["minsubjects", "maxsubjects", "min_mvt", "max_mvt", "sequence", "gradetype", "weight_se", "weight_ce"].includes(field_name)){
                     inner_text = fld_value;
                     filter_value =(inner_text) ? inner_text : null;
                 } else if ( field_name === "depbases") {
@@ -1036,7 +1034,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  add new item in data_rows at end
                 data_rows.push(update_dict);
 
-        console.log("data_rows", data_rows);
     // ---  create row in table., insert in alphabetical order
                 const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
 
@@ -2685,7 +2682,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_msg_container.classList.add("border_bg_valid");
 
 // ---  show only the elements that are used in this tab
-            show_hide_selected_elements_byClass("tab_show", "tab_ok");
+            b_show_hide_selected_elements_byClass("tab_show", "tab_ok");
 
         } else {
             // --- loop through input elements
@@ -2699,7 +2696,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_msg_container.classList.remove("border_bg_valid");
                 el_msg_container.classList.add("border_bg_invalid");
 // ---  show only the elements that are used in this tab
-                show_hide_selected_elements_byClass("tab_show", "tab_ok");
+                b_show_hide_selected_elements_byClass("tab_show", "tab_ok");
 
             } else {
                 // TODO
@@ -3017,8 +3014,8 @@ el_tblBody_schemeitems.innerText = null;
 
 // ---  fill subjects list with rows of mod_MSI_dict.subject_dict
         for (const [subject_pk_str, dict] of Object.entries(mod_MSI_dict.subject_dict)) {
-        console.log("..........dict", dict);
-        console.log("..........dict.subj_pk", dict.subj_pk);
+        //console.log("dict", dict);
+        //console.log("dict.subj_pk", dict.subj_pk);
             MSI_MSJT_FillSelectRow("subject", el_tblBody_subjects, dict.subj_pk, dict);
         }
 
@@ -3036,64 +3033,79 @@ el_tblBody_schemeitems.innerText = null;
 
         el_tblBody_schemeitems.innerText = null;
 
-            console.log("mod_MSI_dict.sjtp_dictlist", mod_MSI_dict.sjtp_dictlist);
+    console.log("mod_MSI_dict", mod_MSI_dict);
+    console.log("mod_MSI_dict.sjtp_dictlist", mod_MSI_dict.sjtp_dictlist);
+
 // ---  loop through the subjecttype dictlist (mod_MSI_dict.sjtp_dictlist)
         // mod_MSI_dict.sjtp_dictlist contains list of subjecttype dicts
         // each subjecttype dict contains list of schemitem dicts
-        for (let i = 0, sjtp_dict; sjtp_dict = mod_MSI_dict.sjtp_dictlist[i]; i++) {
+        if(mod_MSI_dict.sjtp_dictlist && mod_MSI_dict.sjtp_dictlist.length){
+            for (let i = 0, sjtp_dict; sjtp_dict = mod_MSI_dict.sjtp_dictlist[i]; i++) {
 
-// ---  add subjecttypes as subheader to list of schemeitems
-            console.log("sjtp_dict", sjtp_dict);
-            console.log("sjtp_dict.sjtp_pk", sjtp_dict.sjtp_pk);
-            MSI_MSJT_FillSelectRow("subjecttype", el_tblBody_schemeitems, sjtp_dict.sjtp_pk, sjtp_dict);
+    // ---  add subjecttypes as subheader to list of schemeitems
+                console.log("sjtp_dict", sjtp_dict);
+                console.log("sjtp_dict.sjtp_pk", sjtp_dict.sjtp_pk);
+                MSI_MSJT_FillSelectRow("subjecttype", el_tblBody_schemeitems, sjtp_dict.sjtp_pk, sjtp_dict);
 
-// ---  add subjects of this subjecttype
-            const si_list = sjtp_dict.si_list;
-            console.log("############ si_list", si_list);
-            if (sjtp_dict.si_list && sjtp_dict.si_list.length){
-                for (let i = 0, si_dict; si_dict = sjtp_dict.si_list[i]; i++) {
-                    console.log("############", si_dict);
-                    console.log("si_dict", si_dict);
-                    // skip when si_dict isdeleted
-                    if(!si_dict.isdeleted){
-                        MSI_MSJT_FillSelectRow("schemeitem", el_tblBody_schemeitems, si_dict.subj_pk, si_dict, sjtp_dict.sjtp_pk);
+    // ---  add subjects of this subjecttype
+                const si_list = sjtp_dict.si_list;
+                console.log("############ si_list", si_list);
+                if (sjtp_dict.si_list && sjtp_dict.si_list.length){
+                    for (let i = 0, si_dict; si_dict = sjtp_dict.si_list[i]; i++) {
+                        console.log("############", si_dict);
+                        console.log("si_dict", si_dict);
+                        // skip when si_dict isdeleted
+                        if(!si_dict.isdeleted){
+                            MSI_MSJT_FillSelectRow("schemeitem", el_tblBody_schemeitems, si_dict.subj_pk, si_dict, sjtp_dict.sjtp_pk);
+                        }
                     }
                 }
+            };
+
+    // ---  loop through mod_MSI_dict.schemeitem_dict
+            // studsubj_si_list is list of schemeitem_id's of subjects of this student, that are not deleted
+            const studsubj_si_list = [];
+            let has_rows = false;
+
+            for (const [studsubj_pk_str, dict] of Object.entries(mod_MSI_dict.schemeitem_dict)) {
+                const studsubj_pk = Number(studsubj_pk_str);
+            //console.log("studsubj_pk", studsubj_pk);
+            //console.log("dict", dict);
+                if (!dict.isdeleted) {
+            // - add schemeitem_pk of  studsubj to studsubj_si_list
+                    const schemeitem_pk = dict.schemeitem_id;
+                    studsubj_si_list.push({si_pk: schemeitem_pk} )
+
+                    MSI_MSJT_FillSelectRow("schemeitem", el_tblBody_schemeitems, schemeitem_pk, dict);
+                    has_rows = true;
+                }
             }
+        } else if(!isEmpty(mod_MSI_dict.scheme_dict)) {
+            // show message when scheme does not have subjecttypes
+            const html_list = ["<p>", loc.Scheme_doesnthave_subjecttypes, "</p><p>",
+                            loc.Close_window,
+                            " <i>", loc.Subjecttypes, "</i>,<br>",
+                            loc.then_click,
+                            " <i>", loc.Change_subjecttypes_of_subject_scheme, "</i><br>",
+                            loc.Enter_subject_types, "</p>"]
+            const html_str = html_list.join('')
+        console.log("html_str", html_str);
+            el_tblBody_schemeitems.innerHTML = html_list.join('')
         };
-
-// ---  loop through mod_MSI_dict.schemeitem_dict
-        // studsubj_si_list is list of schemeitem_id's of subjects of this student, that are not deleted
-        const studsubj_si_list = [];
-        let has_rows = false;
-
-        for (const [studsubj_pk_str, dict] of Object.entries(mod_MSI_dict.schemeitem_dict)) {
-            const studsubj_pk = Number(studsubj_pk_str);
-        //console.log("studsubj_pk", studsubj_pk);
-        //console.log("dict", dict);
-            if (!dict.isdeleted) {
-        // - add schemeitem_pk of  studsubj to studsubj_si_list
-                const schemeitem_pk = dict.schemeitem_id;
-                studsubj_si_list.push({si_pk: schemeitem_pk} )
-
-                MSI_MSJT_FillSelectRow("schemeitem", el_tblBody_schemeitems, schemeitem_pk, dict);
-                has_rows = true;
-            }
-        }
     } // MSI_FillTblSchemeitems
 
 //========= MSI_MSJT_FillSelectRow  ============= PR2020--09-30
     function MSI_MSJT_FillSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk) {
-        console.log("===== MSI_MSJT_FillSelectRow ===== ");
+        //console.log("===== MSI_MSJT_FillSelectRow ===== ");
         //console.log("..........pk_int", pk_int);
-        console.log("..........tblName", tblName);
-        console.log("dict", dict);
+        //console.log("..........tblName", tblName);
+        //console.log("dict", dict);
 
         if (!isEmpty(dict)){
             let subj_code = (dict.code) ? dict.code : "";
             if(dict.is_combi) { subj_code += " *" }
             let display_txt = (dict.name) ? dict.name : null;
-            const sjt_abbrev = (dict.sjt_abbrev) ? dict.sjt_abbrev : null;
+            const sjtp_abbrev = (dict.sjtp_abbrev) ? dict.sjtp_abbrev : null;
 
             const tblRow = tblBody_select.insertRow(-1);
             tblRow.setAttribute("data-pk", pk_int);
@@ -3176,7 +3188,7 @@ el_tblBody_schemeitems.innerText = null;
             pwstitle = null, pwssubjects = null,
             extra_count_allowed = false, extra_nocount_allowed = false, elective_combi_allowed = false;
 
-        let sjt_has_prac = false, sjt_has_pws = false;
+        let sjtp_has_prac = false, sjtp_has_pws = false;
 
         let map_dict = {};
 
@@ -3191,8 +3203,8 @@ el_tblBody_schemeitems.innerText = null;
                 is_extra_counts = map_dict.is_extra_counts,
                 is_extra_nocount = map_dict.is_extra_nocount,
                 is_elective_combi = map_dict.is_elective_combi,
-                sjt_has_prac = map_dict.sjt_has_prac,
-                sjt_has_pws = map_dict.sjt_has_pws,
+                sjtp_has_prac = map_dict.sjtp_has_prac,
+                sjtp_has_pws = map_dict.sjtp_has_pws,
                 pwstitle = map_dict.pws_title,
                 pwssubjects = map_dict.pws_subjects;
 

@@ -226,14 +226,14 @@ document.addEventListener
         if (el_MAG_btn_save){el_MAG_btn_save.addEventListener("click", function() {MAG_Save("save")}, false )}
 
 // ---  MOD CONFIRM ------------------------------------
-        const el_confirm_header = document.getElementById("id_confirm_header");
-        const el_confirm_loader = document.getElementById("id_confirm_loader");
+        const el_confirm_header = document.getElementById("id_modconfirm_header");
+        const el_confirm_loader = document.getElementById("id_modconfirm_loader");
         const el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container");
         const el_confirm_msg01 = document.getElementById("id_confirm_msg01");
         const el_confirm_msg02 = document.getElementById("id_confirm_msg02");
         const el_confirm_msg03 = document.getElementById("id_confirm_msg03");
-        const el_confirm_btn_cancel = document.getElementById("id_confirm_btn_cancel");
-        const el_confirm_btn_save = document.getElementById("id_confirm_btn_save");
+        const el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
+        const el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if(el_confirm_btn_save){
             el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()})
         };
@@ -2336,7 +2336,7 @@ document.addEventListener
         }
         mod_MEX_dict.is_keys_mode = (mod_MEX_dict.sel_tab === "tab_keys");
 
-        show_hide_selected_elements_byClass("tab_show", tab_show);
+        b_show_hide_selected_elements_byClass("tab_show", tab_show);
 
         if (["tab_assign", "tab_keys", "tab_minscore", "tab_answers"].includes(tab_show)) {
            MEX_BtnPageClicked()

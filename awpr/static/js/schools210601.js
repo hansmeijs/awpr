@@ -178,15 +178,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el_MUP_btn_upload){el_MUP_btn_upload.addEventListener("click", function() {MIMP_Save("save")}, false)};
 
 // ---  MOD CONFIRM ------------------------------------
-        let el_confirm_header = document.getElementById("id_confirm_header");
-        let el_confirm_loader = document.getElementById("id_confirm_loader");
+        let el_confirm_header = document.getElementById("id_modconfirm_header");
+        let el_confirm_loader = document.getElementById("id_modconfirm_loader");
         let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
         let el_confirm_msg01 = document.getElementById("id_confirm_msg01")
         let el_confirm_msg02 = document.getElementById("id_confirm_msg02")
         let el_confirm_msg03 = document.getElementById("id_confirm_msg03")
 
-        let el_confirm_btn_cancel = document.getElementById("id_confirm_btn_cancel");
-        let el_confirm_btn_save = document.getElementById("id_confirm_btn_save");
+        let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
+        let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if (el_confirm_btn_save){el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}, false)};
 
 // ---  MOD UPLOAD AWP-upload FILE ------------------------------------
@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
         highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
 
 // ---  show only the elements that are used in this tab
-        //show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
+        //b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
 // ---  fill datatable
         FillTblRows();
@@ -1177,7 +1177,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_msg_container.classList.add("border_bg_valid");
 
 // ---  show only the elements that are used in this tab
-            show_hide_selected_elements_byClass("tab_show", "tab_ok");
+            b_show_hide_selected_elements_byClass("tab_show", "tab_ok");
 
         } else {
             // --- loop through input elements
@@ -1191,7 +1191,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_msg_container.classList.remove("border_bg_valid");
                 el_msg_container.classList.add("border_bg_invalid");
 // ---  show only the elements that are used in this tab
-                show_hide_selected_elements_byClass("tab_show", "tab_ok");
+                b_show_hide_selected_elements_byClass("tab_show", "tab_ok");
 
             } else {
                 const fields = ["username", "last_name", "email"]

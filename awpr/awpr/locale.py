@@ -226,6 +226,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Sequence_2lines'] = TXT_Sequence_2lines
 
         dict['Add_permission'] = _('Add permission')
+        dict['Delete_permission'] = _('Delete permission')
         dict['Upload_permissions'] = _('Upload permissions')
         dict['Download_permissions'] = _('Download permissions')
 
@@ -388,6 +389,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Upload_subjects'] = _('Upload subjects')
 
         dict['Subjecttype'] = _('Subject type')
+        dict['Subjecttypes'] = _('Subject types')
         dict['Subjecttype_name'] = _('Subject type name')
 
         dict['Subject_scheme_name'] = _('Subject scheme name')
@@ -402,6 +404,12 @@ def get_locale_dict(table_dict, user_lang):
         dict['Maximum_subjects'] = _('Maximum amount of subjects')
         dict['Minimum_MVT_subjects'] = _('Minimum amount of MVT subjects')
         dict['Maximum_MVT_subjects'] = _('Maximum amount of MVT subjects')
+
+        dict['Scheme_doesnthave_subjecttypes'] = _('This subject scheme does not have subject types yet.')
+        dict['Close_window'] = _("Close this window, click the tab")
+        dict['then_click'] = _("then click the menu button")
+        dict['Enter_subject_types'] = _('and enter the subject types of this subject scheme.')
+
 
         dict['Sequence'] = TXT_Sequence
         dict['Upload_subjects'] = _('Upload subjects')

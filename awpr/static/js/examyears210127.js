@@ -131,15 +131,15 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
 // ---  MOD CONFIRM ------------------------------------
-        let el_confirm_header = document.getElementById("id_confirm_header");
-        let el_confirm_loader = document.getElementById("id_confirm_loader");
+        let el_confirm_header = document.getElementById("id_modconfirm_header");
+        let el_confirm_loader = document.getElementById("id_modconfirm_loader");
         let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
         let el_confirm_msg01 = document.getElementById("id_confirm_msg01")
         let el_confirm_msg02 = document.getElementById("id_confirm_msg02")
         let el_confirm_msg03 = document.getElementById("id_confirm_msg03")
 
-        let el_confirm_btn_cancel = document.getElementById("id_confirm_btn_cancel");
-        let el_confirm_btn_save = document.getElementById("id_confirm_btn_save");
+        let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
+        let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if(el_confirm_btn_save){
             el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()});
         };
@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // NIU highlight_BtnSelect(document.getElementById("id_btn_container"), selected.btn)
 
 // ---  show only the elements that are used in this tab
-        //show_hide_selected_elements_byClass("tab_show", "tab_" + selected.btn);
+        //b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected.btn);
 
 // ---  fill datatable
         CreateTblHeader();

@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUA_email.addEventListener("keyup", function() {MUA_InputKeyup(el_MUA_email, event.key)}, false);
         }
         if (el_MUA_btn_delete){
-            el_MUA_btn_delete.addEventListener("click", function() {ModConfirmOpen("delete")}, false);
+            el_MUA_btn_delete.addEventListener("click", function() {ModConfirmOpen("user", "delete")}, false);
         }
         if (el_MUA_btn_submit){
             el_MUA_btn_submit.addEventListener("click", function() {MUA_Save("save")}, false);
@@ -224,14 +224,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // ---  MOD CONFIRM ------------------------------------
-        let el_confirm_header = document.getElementById("id_confirm_header");
-        let el_confirm_loader = document.getElementById("id_confirm_loader");
+        let el_confirm_header = document.getElementById("id_modconfirm_header");
+        let el_confirm_loader = document.getElementById("id_modconfirm_loader");
         let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
-        let el_confirm_msg01 = document.getElementById("id_confirm_msg01")
-        let el_confirm_msg02 = document.getElementById("id_confirm_msg02")
-        let el_confirm_msg03 = document.getElementById("id_confirm_msg03")
-        let el_confirm_btn_cancel = document.getElementById("id_confirm_btn_cancel");
-        let el_confirm_btn_save = document.getElementById("id_confirm_btn_save");
+        let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
+        let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if (el_confirm_btn_save){el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}, false)};
 
     if(may_view_page){
@@ -324,15 +321,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // hardcode access of system admin, to get access before action 'crud' is added to permits
         //const permit_system_admin = (permit_dict.requsr_role_system && permit_dict.usergroup_list.includes("admin"));
         //if (permit_dict.permit_crud || permit_system_admin){
-            AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")});
-            AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("delete")});
+            AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")}, ["tab_show", "tab_btn_user_list", "tab_btn_usergroups"]);
+            AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, ["tab_show", "tab_btn_user_list", "tab_btn_usergroups"]);
         //}
         // hardcode access of system admin
         //if (permit_dict.permit_crud || permit_system_admin){
-            AddSubmenuButton(el_submenu, loc.Add_permission, function() {MUPM_Open("addnew")});
-            //AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MUP_Open("addnew")});
-            AddSubmenuButton(el_submenu, loc.Download_permissions, null, null, "id_submenu_download_perm", url_download_permits, false);  // true = download
-            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open("import_permit")}, null, "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Add_permission, function() {MUPM_Open("addnew")}, ["tab_show", "tab_btn_grouppermits"]);;
+            AddSubmenuButton(el_submenu, loc.Delete_permission, function() {ModConfirmOpen("permit","delete")}, ["tab_show", "tab_btn_grouppermits"]);;
+            AddSubmenuButton(el_submenu, loc.Download_permissions, null, ["tab_show", "tab_btn_grouppermits"], "id_submenu_download_perm", url_download_permits, false);  // true = download
+            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open("import_permit")}, ["tab_show", "tab_btn_grouppermits"], "id_submenu_import");
         //};
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
@@ -341,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
 //=========  HandleBtnSelect  ================ PR2020-09-19
     function HandleBtnSelect(data_btn, skip_upload) {
-        //console.log( "===== HandleBtnSelect ========= ");
+        console.log( "===== HandleBtnSelect ========= ");
         selected_btn = data_btn
         if(!selected_btn){selected_btn = "btn_user_list"}
 
@@ -354,8 +351,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  highlight selected button
         highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
 
+        console.log( ">>>>>>>selected_btn: ", selected_btn);
 // ---  show only the elements that are used in this tab
-        //show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
+        b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
 // ---  fill datatable
         FillTblRows();
@@ -575,9 +573,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             td.addEventListener("click", function() {UploadToggle(el)}, false)
                             add_hover(td);
                         } else if ( field_name === "activated") {
-                            el.addEventListener("click", function() {ModConfirmOpen("resend_activation_email", el)}, false )
+                            el.addEventListener("click", function() {ModConfirmOpen("user", "resend_activation_email", el)}, false )
                         } else if (field_name === "is_active") {
-                            el.addEventListener("click", function() {ModConfirmOpen("is_active", el)}, false )
+                            el.addEventListener("click", function() {ModConfirmOpen("user", "is_active", el)}, false )
                             el.classList.add("inactive_0_2")
                             add_hover(el);
                         } else if ( field_name === "last_login") {
@@ -658,7 +656,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  add EventListener
                 if(!is_activated){
-                    el_div.addEventListener("click", function() {ModConfirmOpen("resend_activation_email", el_div)}, false )
+                    el_div.addEventListener("click", function() {ModConfirmOpen("user", "resend_activation_email", el_div)}, false )
                 }
 // ---  add title
                 title_text = (is_expired) ? loc.Activationlink_expired + "\n" + loc.Resend_activationlink : null
@@ -731,7 +729,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // show message when sysadmin tries to delete sysadmin permit
                     const is_request_user = (permit_dict.requsr_pk && permit_dict.requsr_pk === map_dict.id);
                     if(fldName === "group_admin" && is_request_user && permit_bool ){
-                        ModConfirmOpen("permission_admin", el_input)
+                        ModConfirmOpen("uergroup", "permission_admin", el_input)
                     } else {
 
             // ---  toggle permission el_input
@@ -812,7 +810,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // mode = 'addnew' when called by SubmenuButton
         // mode = 'update' when called by tblRow event
 
-        if(permit_dict.permit_crud){
+        if(permit_dict.permit_crud || permit_dict.permit_crud_otherschool){
             let user_dict = {}, user_pk = null;
             let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null;
             const fldName = get_attr_from_el(el_input, "data-field");
@@ -847,10 +845,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         if(user_schoolbase_pk === dict.base_id ) {
                             if (dict.abbrev) {user_schoolname += " - " + dict.abbrev};
                             break;
-            }
-            }
-            }
-            };
+            }}}};
 
             mod_MUA_dict = {
                 mode: mode, // modes are: addnew, update
@@ -871,7 +866,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  show only the elements that are used in this tab
             const container_element = document.getElementById("id_mod_user");
             let tab_str = (is_addnew) ? (permit_dict.permit_crud_otherschool) ? "tab_addnew_may_select_school" : "tab_addnew_noschool" : "tab_update";
-            show_hide_selected_elements_byClass("tab_show", tab_str, container_element)
+            b_show_hide_selected_elements_byClass("tab_show", tab_str, container_element)
 
     // ---  set header text
             const header_text = (is_addnew) ? loc.Add_user : loc.User + ":  " + mod_MUA_dict.username;
@@ -912,9 +907,7 @@ document.addEventListener('DOMContentLoaded', function() {
             add_or_remove_class(el_MUA_btn_delete, cls_hide, is_addnew)
 
     // ---  disable btn submit
-            const disable_btn_save = (!el_MUA_username.value || !el_MUA_last_name.value || !el_MUA_email.value )
-            el_MUA_btn_submit.disabled = disable_btn_save;
-            el_MUA_btn_submit.innerText = (mode === "update") ? loc.Save : loc.Submit;
+            MUA_DisableBtnSave()
 
     // ---  show modal
             $("#id_mod_user").modal({backdrop: true});
@@ -922,10 +915,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }  //  if(permit_dict.permit_crud)
     };  // MUA_Open
 
-//========= MUA_Save  ============= PR2020-08-02 PR2020-08-15
+//========= MUA_Save  ============= PR2021-06-30
+   function MUA_DisableBtnSave(){
+// ---  disable btn submit
+
+        const disable_btn_save = (!mod_MUA_dict.user_schoolbase_pk || !el_MUA_username.value ||
+                                  !el_MUA_last_name.value || !el_MUA_email.value )
+        el_MUA_btn_submit.disabled = disable_btn_save;
+        el_MUA_btn_submit.innerText = (mod_MUA_dict.mode === "update") ? loc.Save : loc.Submit;
+   }
+
+//========= MUA_Save  ============= PR2020-08-02 PR2020-08-15 PR2021-06-30
    function MUA_Save(args) {
         console.log("=== MUA_Save === ");
-        //console.log("args: ", args);
+        console.log("args: ", args);
         // args contains 'save when clicked on save button, otherwise it contains a time_stamp
         //  args = 'save'     when called by el_MUA_btn_submit
         //  args = time_stamp when called by MUA_InputKeyup
@@ -1140,7 +1143,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_msg_container.classList.remove("border_bg_invalid");
             el_msg_container.classList.add("border_bg_valid");
 // ---  show only the elements that are used in this tab
-            show_hide_selected_elements_byClass("tab_show", "tab_ok");
+            b_show_hide_selected_elements_byClass("tab_show", "tab_ok");
 
         } else {
             // --- loop through input elements
@@ -1154,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_msg_container.classList.remove("border_bg_valid");
                 el_msg_container.classList.add("border_bg_invalid");
 // ---  show only the elements that are used in this tab
-                show_hide_selected_elements_byClass("tab_show", "tab_ok");
+                b_show_hide_selected_elements_byClass("tab_show", "tab_ok");
 
             } else {
                 const fields = ["username", "last_name", "email"]
@@ -1273,8 +1276,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 // send schoolbase, username and email to server after 1000 ms
                 // abort if within that period a new value is entered.
                 // checked by comparing the timestamp
-                time_stamp = Number(Date.now())
-                setTimeout(MUA_Save, 1500, time_stamp);  // time_stamp is an argument passed to the function  MUA_Save.
+                //time_stamp = Number(Date.now())
+                //setTimeout(MUA_Save, 1500, time_stamp);  // time_stamp is an argument passed to the function  MUA_Save.
+
+                MUA_DisableBtnSave()
+
             }
         }
     }; // MUA_InputKeyup
@@ -1618,10 +1624,13 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // HandleInputChange
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2020-08-03
-    function ModConfirmOpen(mode, el_input) {
+//=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-30
+    function ModConfirmOpen(tblName, mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "delete", "is_active" or "resend_activation_email", "permission_admin"
+
+        console.log("mode", mode )
+        console.log("tblName", tblName )
 
 // ---  get selected_pk
         let selected_pk = null;
@@ -1662,48 +1671,46 @@ document.addEventListener('DOMContentLoaded', function() {
                             (mode === "is_active") ? inactive_txt :
                             (is_mode_resend_activation_email) ? loc.Resend_activation_email :
                             (is_mode_permission_admin) ? loc.Set_permissions : "";
-        let msg_01_txt = null, msg_02_txt = null, msg_03_txt = null;
+
+        let msg_list = [];
         let hide_save_btn = false;
         if(!has_selected_item){
-            msg_01_txt = loc.No_user_selected;
+            msg_list = [loc.No_user_selected];
             hide_save_btn = true;
         } else {
             const username = (map_dict.username) ? map_dict.username  : "-";
             if(mode === "delete"){
                 if(is_request_user){
-                    msg_01_txt = loc.Sysadm_cannot_delete_own_account;
+                    msg_list = [loc.Sysadm_cannot_delete_own_account];
                     hide_save_btn = true;
                 } else {
-                    msg_01_txt = loc.User + " '" + username + "'" + loc.will_be_deleted
-                    msg_02_txt = loc.Do_you_want_to_continue;
+                    msg_list = [loc.User + " '" + username + "'" + loc.will_be_deleted,
+                                loc.Do_you_want_to_continue];
                 }
             } else if(mode === "is_active"){
                 if(is_request_user && mod_dict.current_isactive){
-                    msg_01_txt = loc.Sysadm_cannot_set_inactive;
+                    msg_list = [loc.Sysadm_cannot_set_inactive];
                     hide_save_btn = true;
                 } else {
                     const inactive_txt = (mod_dict.current_isactive) ? loc.will_be_made_inactive : loc.will_be_made_active
-                    msg_01_txt = loc.User + " '" + username + "'" + inactive_txt
-                    msg_02_txt = loc.Do_you_want_to_continue;
+                    msg_list = [loc.User + " '" + username + "'" + inactive_txt,
+                                loc.Do_you_want_to_continue];
                 }
             } else if(is_mode_permission_admin){
                 hide_save_btn = true;
                 const fldName = get_attr_from_el(el_input, "data-field")
                 if (fldName === "group_admin") {
-                    msg_01_txt = loc.Sysadm_cannot_remove_sysadm_perm
+                    msg_list = [loc.Sysadm_cannot_remove_sysadm_perm]
                 }
             } else if (is_mode_resend_activation_email) {
                 const is_expired = activationlink_is_expired(map_dict.date_joined);
                 dont_show_modal = (map_dict.activated);
                 if(!dont_show_modal){
                     if(is_expired) {
-                        msg_01_txt = loc.Activationlink_expired
-                        msg_02_txt = loc.We_will_resend_an_email_to_user + " '" + username + "'."
-                        msg_03_txt = loc.Do_you_want_to_continue;
-                    } else {
-                        msg_01_txt = loc.We_will_resend_an_email_to_user + " '" + username + "'."
-                        msg_02_txt = loc.Do_you_want_to_continue;
-                    }
+                        msg_list.append(loc.Activationlink_expired);
+                    };
+                    msg_list.append(loc.We_will_resend_an_email_to_user + " '" + username + "'.");
+                    msg_list.append(loc.Do_you_want_to_continue);
                 }
             }
         }
@@ -1711,9 +1718,9 @@ document.addEventListener('DOMContentLoaded', function() {
             el_confirm_header.innerText = header_text;
             el_confirm_loader.classList.add(cls_visible_hide)
             el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
-            el_confirm_msg01.innerText = msg_01_txt;
-            el_confirm_msg02.innerText = msg_02_txt;
-            el_confirm_msg03.innerText = msg_03_txt;
+
+            const msg_html = (msg_list.length) ? msg_list.join("<br>") : null;
+            el_confirm_msg_container.innerHTML = msg_html;
 
             const caption_save = (mode === "delete") ? loc.Yes_delete :
                             (mode === "is_active") ? ( (mod_dict.current_isactive) ? loc.Yes_make_inactive : loc.Yes_make_active ) :
@@ -1806,22 +1813,22 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
         if ("msg_err" in response || "msg_ok" in response) {
-            let msg01_text = null, msg02_text = null, msg03_text = null;
+            let msg_list = [];
             if ("msg_err" in response) {
-                msg01_text = get_dict_value(response, ["msg_err", "msg01"], "");
+                msg_list.push(get_dict_value(response, ["msg_err", "msg01"], ""));
                 if (mod_dict.mode === "resend_activation_email") {
-                    msg02_text = loc.Activation_email_not_sent;
+                     msg_list.push(loc.Activation_email_not_sent);
                 }
                 el_confirm_msg_container.classList.add("border_bg_invalid");
             } else if ("msg_ok" in response){
-                msg01_text  = get_dict_value(response, ["msg_ok", "msg01"]);
-                msg02_text = get_dict_value(response, ["msg_ok", "msg02"]);
-                msg03_text = get_dict_value(response, ["msg_ok", "msg03"]);
+                msg_list.push(get_dict_value(response, ["msg_ok", "msg01"]));
+                msg_list.push(get_dict_value(response, ["msg_ok", "msg02"]));
+                msg_list.push(get_dict_value(response, ["msg_ok", "msg03"]));
                 el_confirm_msg_container.classList.add("border_bg_valid");
             }
-            el_confirm_msg01.innerText = msg01_text;
-            el_confirm_msg02.innerText = msg02_text;
-            el_confirm_msg03.innerText = msg03_text;
+
+            const msg_html = (msg_list.length()) ? msg_list.join("<br>") : null;
+            el_confirm_msg_container.innerHTML = msg_html;
             el_confirm_btn_cancel.innerText = loc.Close
             el_confirm_btn_save.classList.add(cls_hide);
         } else {

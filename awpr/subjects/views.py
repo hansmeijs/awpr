@@ -927,7 +927,7 @@ class SchemeitemUploadView(View):  # PR2021-06-25
        # - create schemeitem_rows
                                 updated_rows = create_schemeitem_rows(
                                     examyear=examyear,
-                                    schemeitem=schemeitem
+                                    schemeitem_pk=schemeitem.pk
                                 )
                         update_wrap['updated_schemeitem_rows'] = updated_rows
 
@@ -2381,8 +2381,9 @@ def update_si_list(examyear, scheme, si_list, updated_rows, messages, error_list
         if schemeitem:
             schemeitem_rows = create_schemeitem_rows(
                 examyear=examyear,
-                schemeitem=schemeitem
+                schemeitem_pk=schemeitem.pk
             )
+
 # - add messages to row (there is only 1 row
             if schemeitem_rows:
                 schemeitem_row = schemeitem_rows[0]
@@ -2473,14 +2474,14 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
                 logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
 
             # - save changes in field 'name'
-            if field == 'scheme_name':
-                saved_value = getattr(instance, 'name')
+            if field == 'name':
+                saved_value = getattr(instance, field)
                 if new_value != saved_value:
                     # - validate abbrev checks null, max_len, exists
                     has_error = av.validate_scheme_name_exists(new_value, examyear, error_list, instance)
                     if not has_error:
                         # - save field if changed and no_error
-                        setattr(instance, 'name', new_value)
+                        setattr(instance, field, new_value)
                         save_changes = True
 
             elif field in ('minsubjects', 'maxsubjects', 'min_mvt', 'max_mvt'):
@@ -2493,18 +2494,21 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
                         msg_html = str(_("'%(val)s' is not a valid number.") % {'val': new_value})
                     else:
                         new_value_int = int(new_value)
-                        if field == 'minsubjects':
-                            maxsubjects = getattr(instance, 'maxsubjects')
+                        if field in ('minsubjects', 'min_mvt'):
+                            max_field = 'max_mvt' if field == 'min_mvt' else 'maxsubjects'
+                            maxsubjects = getattr(instance, max_field)
                             if maxsubjects and new_value_int > maxsubjects:
                                 msg_html = str(
                                     _("Minimum amount of subjects cannot be greater than maximum (%(val)s).") % {
                                         'val': maxsubjects})
-                        elif field == 'maxsubjects':
-                            minsubjects = getattr(instance, 'minsubjects')
+                        elif field in ('maxsubjects', 'max_mvt'):
+                            min_field = 'min_mvt' if field == 'max_mvt' else 'minsubjects'
+                            minsubjects = getattr(instance, min_field)
                             if minsubjects and new_value_int < minsubjects:
                                 msg_html = str(
                                     _("Maximum amount of subjects cannot be fewer than minimum (%(val)s).") % {
                                         'val': minsubjects})
+
                 if msg_html:
                     msg_dict = {'field': field,
                                 'header': msg_header_txt,
@@ -2994,16 +2998,15 @@ def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=Non
 # --- end of create_scheme_rows
 
 
-def create_schemeitem_rows(examyear, schemeitem=None, scheme=None, depbase=None):
-    # --- create rows of all schemeitems of this examyear PR2020-11-17 PR2021-06-25
+def create_schemeitem_rows(examyear, schemeitem_pk=None, cur_dep_only=False, depbase=None):
+    # --- create rows of all schemeitems of this examyear PR2020-11-17 PR2021-07-01
 
     logging_on = s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_schemeitem_rows ============= ')
         logger.debug('examyear: ' + str(examyear) + ' ' + str(type(examyear)))
-        logger.debug('schemeitem: ' + str(schemeitem) + ' ' + str(type(schemeitem)))
-        logger.debug('scheme: ' + str(scheme) + ' ' + str(type(scheme)))
+        logger.debug('schemeitem: ' + str(schemeitem_pk) + ' ' + str(type(schemeitem_pk)))
         logger.debug('depbase: ' + str(depbase) + ' ' + str(type(depbase)))
 
     schemeitem_rows = []
@@ -3043,20 +3046,22 @@ def create_schemeitem_rows(examyear, schemeitem=None, scheme=None, depbase=None)
 
             "WHERE dep.examyear_id = %(ey_id)s::INT"]
 
-        if schemeitem:
+        if schemeitem_pk:
             # when schemeitem_pk has value: skip other filters
-            sql_keys['si_pk'] = schemeitem.pk
+            sql_keys['si_pk'] = schemeitem_pk
             sql_list.append('AND si.id = %(si_pk)s::INT')
-        elif scheme:
-            sql_keys['scheme_pk'] = scheme.pk
-            sql_list.append('AND scheme.id = %(scheme_pk)s::INT')
-        elif depbase:
-            sql_keys['depbase_pk'] = depbase.pk
-            sql_list.append('AND depbase.id = %(depbase_pk)s::INT')
+        elif cur_dep_only:
+            if depbase:
+                sql_keys['depbase_pk'] = depbase.pk
+                sql_list.append('AND depbase.id = %(depbase_pk)s::INT')
+            else:
+                sql_list.append("AND FALSE")
 
         sql_list.append('ORDER BY si.id::TEXT')
         sql = ' '.join(sql_list)
 
+        if logging_on:
+            logger.debug('sql: ' + str(sql))
         newcursor = connection.cursor()
         newcursor.execute(sql, sql_keys)
         schemeitem_rows = af.dictfetchall(newcursor)

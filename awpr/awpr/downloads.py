@@ -133,7 +133,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- schemeitems
                 if datalist_request.get('schemeitem_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('schemeitem_rows', 'cur_dep_only'), False)
-                    datalists['schemeitem_rows'] = sj_vw.create_schemeitem_rows(sel_examyear, None, None, cur_dep_only)
+                    datalists['schemeitem_rows'] = sj_vw.create_schemeitem_rows(
+                        examyear=sel_examyear, cur_dep_only=cur_dep_only, depbase=sel_depbase)
 # ----- exams
                 if datalist_request.get('exam_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)

@@ -29,13 +29,18 @@ document.addEventListener('DOMContentLoaded', function() {
     case "main":
         html_list = [
         "<div class='my-4'>",
+        "<div class='mfc mb-4'>",
+            "<div class='mfl'><p></p></div>",
+            "<div class='mfr'>",
+                "<h3 class='px-2'>Gegevens uploaden</h3>",
+            "</div>",
+        "</div>",
         "<div class='mfc mb-0'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
                 "<h4 class='px-2'>Inleiding</h4>",
             "</div>",
         "</div>",
-
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
@@ -89,10 +94,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 "<li>de lijst <i>Gekoppelde kolommen</i>.</li></ul>",
 
                 "<p class='mt-2'>Het <b>koppelen van kolommen</b> gaat als volgt:</br>",
-                "Selecteer een regel in de lijst met AWP-kolommen, bijvoorbeeld ‘Achternaam’. Klik vervolgens in de lijst met Excel-kolommen op de naam van de kolom waarin de achternamen staan. Beide namen worden nu verplaatst naar de lijst <i>Gekoppelde kolommen</i>.</p>",
+                "Selecteer een regel in de lijst met AWP-kolommen, bijvoorbeeld ‘Achternaam’.",
+                "Klik vervolgens in de lijst met Excel-kolommen op de naam van de kolom waarin de achternamen staan. Beide namen worden nu verplaatst naar de lijst <i>Gekoppelde kolommen</i>.</p>",
                 "<p>Klik op een regel in de lijst met gekoppelde kolommen om kolommen te <b>ontkoppelen</b>.</p>",
                 "<p>AWP koppelt automatisch kolommen met dezelfde naam. Je kunt ze zo nodig ontkoppelen.<br>AWP onthoudt de gekoppelde velden, zodat je ze een volgende keer niet opnieuw hoeft te koppelen.</p>",
-                "<p>Er zijn een paar <b>verplichte velden</b> die altijd gekoppeld moeten worden. Het zijn: <i>ID-nummer</i>, <i>Achternaam</i> en <i>Voornamen</i>.</p>",
+                "<p>Er zijn een paar <b>verplichte velden</b> die altijd gekoppeld moeten worden.",
+                "Het veld <i>ID-nummer</i> is altijd verplicht, bij het uploaden van kandidaten zijn ook <i>Achternaam</i> en <i>Voornamen</i> verplicht.</p>",
                 "<p>Klik op <i>Volgende stap</i> als je de gewenste kolommen hebt gekoppeld. Dit gaat alleen als je alle verplichte velden hebt gekoppeld.</p>",
 
             "</div>",
@@ -119,11 +126,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 "<li>de lijst <i>Gekoppelde kolommen</i>.</li></ul>",
 
                 "<p class='mt-2'>Het <b>koppelen van kolommen</b> gaat als volgt:</br>",
-                "Selecteer een regel in de lijst met AWP-kolommen, bijvoorbeeld ‘Achternaam’. Klik vervolgens in de lijst met Excel-kolommen op de naam van de kolom waarin de achternamen staan. Beide namen worden nu verplaatst naar de lijst <i>Gekoppelde kolommen</i>.</p>",
+                "Selecteer een regel in de lijst met AWP-kolommen, bijvoorbeeld ‘Achternaam’.",
+                "Klik vervolgens in de lijst met Excel-kolommen op de naam van de kolom waarin de achternamen staan.",
+                "Beide namen worden nu verplaatst naar de lijst <i>Gekoppelde kolommen</i>.</p>",
                 "<p>Klik op een regel in de lijst met gekoppelde kolommen om kolommen te <b>ontkoppelen</b>.</p>",
-                "<p>AWP koppelt automatisch kolommen met dezelfde naam. Je kunt ze zo nodig ontkoppelen.<br>AWP onthoudt de gekoppelde velden, zodat je ze een volgende keer niet opnieuw hoeft te koppelen.</p>",
-                "<p>Er zijn een paar <b>verplichte velden</b> die altijd gekoppeld moeten worden. Het zijn: <i>ID-nummer</i>, <i>Achternaam</i> en <i>Voornamen</i>.</p>",
-                "<p>Klik op <i>Volgende stap</i> als je de gewenste kolommen hebt gekoppeld. Dit gaat alleen als je alle verplichte velden hebt gekoppeld.</p>",
+                "<p>AWP koppelt automatisch kolommen met dezelfde naam. Je kunt ze zo nodig ontkoppelen.<br>",
+                "AWP onthoudt de gekoppelde velden, zodat je ze een volgende keer niet opnieuw hoeft te koppelen.</p>",
+                "<p>Er zijn een paar <b>verplichte velden</b> die altijd gekoppeld moeten worden.",
+                "Het zijn: <i>ID-nummer</i>, <i>Achternaam</i> en <i>Voornamen</i>.</p>",
+                "<p>Klik op <i>Volgende stap</i> als je de gewenste kolommen hebt gekoppeld.",
+                "Dit gaat alleen als je alle verplichte velden hebt gekoppeld.</p>",
 
             "</div>",
         "</div>",
@@ -140,10 +152,8 @@ document.addEventListener('DOMContentLoaded', function() {
         html_str = "<h1> CONTENT TEST </h1>"
         break;
     };
+    html_str = html_list.join('');
 
-    for (let i = 0, html; html = html_list[i]; i++) {
-        html_str += html;
-    }
     document.getElementById("id_content").innerHTML = html_str;
 
 })  // document.addEventListener('DOMContentLoaded', function()

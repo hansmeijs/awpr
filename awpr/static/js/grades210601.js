@@ -225,14 +225,14 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
 // ---  MOD CONFIRM ------------------------------------
-        const el_confirm_header = document.getElementById("id_confirm_header");
-        const el_confirm_loader = document.getElementById("id_confirm_loader");
+        const el_confirm_header = document.getElementById("id_modconfirm_header");
+        const el_confirm_loader = document.getElementById("id_modconfirm_loader");
         const el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container");
         const el_confirm_msg01 = document.getElementById("id_confirm_msg01");
         const el_confirm_msg02 = document.getElementById("id_confirm_msg02");
         const el_confirm_msg03 = document.getElementById("id_confirm_msg03");
-        const el_confirm_btn_cancel = document.getElementById("id_confirm_btn_cancel");
-        const el_confirm_btn_save = document.getElementById("id_confirm_btn_save");
+        const el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
+        const el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if(el_confirm_btn_save){
             el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()})
         };
@@ -443,7 +443,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  show only the elements that are used in this tab
         // PR2021-02-08this page does not contain tab_show yet.
         // modapprovegrade does. Make sure they have different names
-        //show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
+        //b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
 // --- update header text
         MSSSS_display_in_sbr();
@@ -1898,7 +1898,7 @@ document.addEventListener("DOMContentLoaded", function() {
             add_or_remove_class(el_MAG_loader, cls_hide, false)
 
     // ---  hide info box and msg box
-            show_hide_selected_elements_byClass("tab_show", "-", el_mod_approve_grade);
+            b_show_hide_selected_elements_byClass("tab_show", "-", el_mod_approve_grade);
 
     // ---  hide delete btn
             add_or_remove_class(el_MAG_btn_delete, cls_hide, true);
@@ -2043,7 +2043,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  show only the elements that are used in this tab
         let show_class = "tab_step_" + step;
 
-        show_hide_selected_elements_byClass("tab_show", show_class, el_mod_approve_grade);
+        b_show_hide_selected_elements_byClass("tab_show", show_class, el_mod_approve_grade);
 
 // ---  hide delete btn when reset or publish mode
         let show_delete_btn = false;
@@ -2986,7 +2986,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
             } else {
 
 // ---  show modal confirm with message 'First select employee'
-                document.getElementById("id_confirm_header").innerText = loc.Confirm + " " + loc.Shift.toLowerCase();
+                document.getElementById("id_modconfirm_header").innerText = loc.Confirm + " " + loc.Shift.toLowerCase();
                 document.getElementById("id_confirm_msg01").innerText = msg01_text;
                 document.getElementById("id_confirm_msg02").innerText = null;
                 document.getElementById("id_confirm_msg03").innerText = null;
