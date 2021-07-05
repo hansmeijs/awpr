@@ -225,7 +225,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     #   - key 'selected_pk' saves selected values that are used in different pages (like examyear, schoolbase, depbase)
     #       - selected_pk: {sel_examyear_pk: 1, sel_schoolbase_pk: 13 etc
     #   - usersetting key 'sel_page' saves current page (to be opened at next login)  and kery 'page_user' etc  with key 'sel_btn'  that is different for every page:
-    #       - sel_page: ( page: 'page_grade', page_user: {sel_btn: 'btn_grouppermits' }
+    #       - sel_page: ( page: 'page_grade', page_user: {sel_btn: 'btn_userpermit' }
 
     req_user = request.user
 

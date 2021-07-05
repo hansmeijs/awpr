@@ -1,8 +1,7 @@
-from django.contrib.auth import login, get_user_model
+from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required  # PR2018-04-01
 from django.contrib.auth.mixins import UserPassesTestMixin  # PR2018-11-03
 from django.contrib.sites.shortcuts import get_current_site
-from django.contrib import messages
 from django.core.mail import send_mail
 
 from django.db import connection
@@ -60,16 +59,16 @@ class UserListView(ListView):
         # - when role is inspection: all users with role 'inspection' and country == request_user.country
         # - else (role is school): all users with role 'school' and schoolcode == request_user.schooldefault
 
-        show_btn_grouppermits = False
+        show_btn_userpermit = False
 
         if request.user.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
             if request.user.is_role_system:
-                show_btn_grouppermits = True
+                show_btn_userpermit = True
 
         # get_headerbar_param(request, page, param=None):  # PR2021-03-25
-        headerbar_param = awpr_menu.get_headerbar_param(request, 'page_user', {'show_btn_grouppermits': show_btn_grouppermits} )
+        headerbar_param = awpr_menu.get_headerbar_param(request, 'page_user', {'show_btn_userpermit': show_btn_userpermit} )
         if logging_on:
-            logger.debug("show_btn_grouppermits: " + str(show_btn_grouppermits))
+            logger.debug("show_btn_userpermit: " + str(show_btn_userpermit))
             logger.debug("headerbar_param: " + str(headerbar_param))
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'users.html', headerbar_param)
@@ -103,15 +102,18 @@ class UserUploadView(View):
 
             # requsr_permitlist: ['view_page', 'crud_otherschool', 'crud', 'crud', 'permit_userpage']
             requsr_permitlist = req_user.permit_list('page_user')
+
+            has_permit_same_school, has_permit_all_schools = False, False
+            if requsr_permitlist:
+                has_permit_all_schools = 'permit_crud_otherschool' in requsr_permitlist
+                has_permit_same_school = 'permit_crud_sameschool' in requsr_permitlist
+
             if logging_on:
                 logger.debug('requsr_permitlist: ' + str(requsr_permitlist))
+                logger.debug('has_permit_all_schools: ' + str(has_permit_all_schools))
+                logger.debug('has_permit_same_school: ' + str(has_permit_same_school))
 
-            has_permit_this_school, has_permit_all_schools = False, False
-            if requsr_permitlist:
-                has_permit_all_schools = 'crud_otherschool' in requsr_permitlist
-                has_permit_this_school = 'crud' in requsr_permitlist
-
-            if has_permit_this_school or has_permit_all_schools:
+            if has_permit_same_school or has_permit_all_schools:
 # - get upload_dict from request.POST
                 upload_json = request.POST.get("upload")
                 if upload_json:
@@ -170,7 +172,7 @@ class UserUploadView(View):
                         if user_schoolbase_defaultrole <= req_user.role:
                             if has_permit_all_schools:
                                 has_permit = True
-                            elif has_permit_this_school:
+                            elif has_permit_same_school:
                                 has_permit = is_same_schoolbase
 
                     if not has_permit:
@@ -269,7 +271,7 @@ class UserUploadView(View):
                             instance = None
                             if has_permit_all_schools:
                                 instance = acc_mod.User.objects.get_or_none(id=user_pk, country=req_user.country)
-                            elif has_permit_this_school:
+                            elif has_permit_same_school:
                                 instance = acc_mod.User.objects.get_or_none(
                                     id=user_pk,
                                     country=req_user.country,
@@ -433,17 +435,17 @@ def create_permits_xlsx(permits_rows, user_lang, request):  # PR2021-04-20
 
 
 ########################################################################
-# === UserGroupPermitUploadView ===================================== PR2021-03-18
+# === UserpermitUploadView ===================================== PR2021-03-18
 @method_decorator([login_required], name='dispatch')
-class UserGroupPermitUploadView(View):
-    #  UserGroupPermitUploadView is called from Users form
+class UserpermitUploadView(View):
+    #  UserpermitUploadView is called from Users form
     #  it returns a HttpResponse, with ok_msg or err-msg
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
-            logger.debug(' ========== UserGroupPermitUploadView ===============')
+            logger.debug(' ========== UserpermitUploadView ===============')
 
         update_wrap = {}
 # -  get permit -- don't use requsr_usergroups_list, you might lock yourself out PR2021-05-20
@@ -460,10 +462,12 @@ class UserGroupPermitUploadView(View):
                 upload_json = request.POST.get("upload")
                 if upload_json:
                     upload_dict = json.loads(upload_json)
+                    if logging_on:
+                        logger.debug('upload_dict:     ' + str(upload_dict))
 
 # - get selected mode. Modes are  'create"  'update' 'delete'
                     mode = upload_dict.get('mode')
-                    permit_pk = upload_dict.get('permit_pk')
+                    userpermit_pk = upload_dict.get('userpermit_pk')
 
                     role = upload_dict.get('role')
                     page = upload_dict.get('page')
@@ -481,7 +485,7 @@ class UserGroupPermitUploadView(View):
 
 # +++  get current permit - when mode is 'create': permit is None. It will be created at "elif mode == 'create'"
                     instance = acc_mod.Userpermit.objects.get_or_none(
-                        pk=permit_pk
+                        pk=userpermit_pk
                     )
                     if logging_on:
                         logger.debug('instance: ' + str(instance))
@@ -492,8 +496,8 @@ class UserGroupPermitUploadView(View):
                             try:
                                 instance.delete(request=request)
                                 # - add deleted_row to updated_permit_rows
-                                updated_permit_rows.append({'permit_pk': permit_pk,
-                                                  'mapid': 'permit_' + str(permit_pk),
+                                updated_permit_rows.append({'userpermit_pk': userpermit_pk,
+                                                  'mapid': 'userpermit_' + str(userpermit_pk),
                                                   'deleted': True})
                                 if logging_on:
                                     logger.debug('instance: ' + str(instance))
@@ -537,13 +541,14 @@ class UserGroupPermitUploadView(View):
                             append_dict['error'] = error_dict
 
                # - add update_dict to update_wrap
-                        permit_row = create_permit_list(instance.pk)
-                        if permit_row:
-                            update_wrap['updated_permit_rows'] = permit_row
+                        if instance.pk:
+                            permit_row = create_permit_list(instance.pk)
+                            if permit_row:
+                                update_wrap['updated_permit_rows'] = permit_row
 
 # F. return update_wrap
             return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# - end of UserGroupPermitUploadView
+# - end of UserpermitUploadView
 
 
 def update_grouppermit(instance, upload_dict, msg_dict, request):
@@ -1277,7 +1282,7 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
 
 # === update_usergroups ===================================== PR2021-03-24
 def update_usergroups(instance, field_dict, validate, request):
-    # called by UserUploadView.update_user_instance and UserGroupPermitUploadView.update_grouppermit
+    # called by UserUploadView.update_user_instance and UserpermitUploadView.update_grouppermit
     # validate only when called by update_user_instance
     # usergroups: {auth2: false}
     logging_on = s.LOGGING_ON

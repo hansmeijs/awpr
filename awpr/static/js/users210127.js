@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  id of selected customer and selected order
     let selected_btn = "btn_user_list";
     let selected_user_pk = null;
+    let selected_userpermit_pk = null;
     let selected_period = {};
     let setting_dict = {};
     let permit_dict = {};
@@ -48,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const url_datalist_download = get_attr_from_el(el_data, "data-datalist_download_url");
     const url_settings_upload = get_attr_from_el(el_data, "data-settings_upload_url");
     const url_user_upload = get_attr_from_el(el_data, "data-user_upload_url");
-    const url_group_permit_upload = get_attr_from_el(el_data, "data-group_permit_upload_url");
+    const url_userpermit_upload = get_attr_from_el(el_data, "data-userpermit_upload_url");
     const url_download_permits = get_attr_from_el(el_data, "data-user_download_permits_url");
 
     // importdata_upload_url is stored in id_MIMP_data of modimport.html
@@ -56,12 +57,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     const field_settings = {
-        users: { field_caption: ["", "School", "User", "Name", "Email_address",  "Activated", "Last_loggedin", "Inactive"],
-                    field_names: ["select", "sb_code", "username", "last_name", "email",  "activated", "last_login", "is_active"],
-                    field_tags: ["div", "div", "div", "div", "div",  "div", "div", "div"],
-                    filter_tags: ["select", "text","text",  "text", "text",  "toggle", "text", "toggle"],
-                    field_width:  ["020", "075", "150",  "180", "240",  "100", "180", "090"],
-                    field_align: ["c", "l", "l", "l",  "l",  "c", "l", "c"]},
+        users: { field_caption: ["", "School_code", "School", "User", "Name", "Email_address",  "Activated", "Last_loggedin", "Inactive"],
+                    field_names: ["select", "sb_code", "school_abbrev", "username", "last_name", "email",  "activated", "last_login", "is_active"],
+                    field_tags: ["div", "div", "div", "div", "div",  "div", "div","div", "div"],
+                    filter_tags: ["select", "text", "text",  "text",  "text", "text",  "toggle", "text", "toggle"],
+                    field_width:  ["020", "090", "150", "150",  "180", "240",  "100", "180", "090"],
+                    field_align: ["c", "l", "l", "l","l",  "l",  "c", "l", "c"]},
         usergroups: {
                     field_caption: ["", "School", "User", "Read_only_2lines", "Edit",
                                     "President", "Secretary", "Commissioner_2lines",
@@ -80,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_align: ["c", "l", "l", "c", "c",
                      "c", "c", "c",
                      "c", "c"]},
-        grouppermits: {
+        userpermit: {
                     field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
                                     "President", "Secretary", "Commissioner_2lines",
                                     "Analyze", "System_manager_2lines"],
@@ -184,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUA_btn_delete.addEventListener("click", function() {ModConfirmOpen("user", "delete")}, false);
         }
         if (el_MUA_btn_submit){
-            el_MUA_btn_submit.addEventListener("click", function() {MUA_Save("save")}, false);
+            el_MUA_btn_submit.addEventListener("click", function() {MUA_Save("validate")}, false);
         };
 
 // ---  MODAL GROUP PERMISSION
@@ -326,10 +327,10 @@ document.addEventListener('DOMContentLoaded', function() {
         //}
         // hardcode access of system admin
         //if (permit_dict.permit_crud || permit_system_admin){
-            AddSubmenuButton(el_submenu, loc.Add_permission, function() {MUPM_Open("addnew")}, ["tab_show", "tab_btn_grouppermits"]);;
-            AddSubmenuButton(el_submenu, loc.Delete_permission, function() {ModConfirmOpen("permit","delete")}, ["tab_show", "tab_btn_grouppermits"]);;
-            AddSubmenuButton(el_submenu, loc.Download_permissions, null, ["tab_show", "tab_btn_grouppermits"], "id_submenu_download_perm", url_download_permits, false);  // true = download
-            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open("import_permit")}, ["tab_show", "tab_btn_grouppermits"], "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Add_permission, function() {MUPM_Open("addnew")}, ["tab_show", "tab_btn_userpermit"]);;
+            AddSubmenuButton(el_submenu, loc.Delete_permission, function() {ModConfirmOpen("userpermit","delete")}, ["tab_show", "tab_btn_userpermit"]);;
+            AddSubmenuButton(el_submenu, loc.Download_permissions, null, ["tab_show", "tab_btn_userpermit"], "id_submenu_download_perm", url_download_permits, false);  // true = download
+            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open("import_permit")}, ["tab_show", "tab_btn_userpermit"], "id_submenu_import");
         //};
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
@@ -366,18 +367,19 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
         selected_user_pk = null;
+        selected_userpermit_pk = null;
 
 // ---  deselect all highlighted rows - also tblFoot , highlight selected row
         DeselectHighlightedRows(tr_clicked, cls_selected);
         tr_clicked.classList.add(cls_selected)
 
 // ---  update selected_user_pk
-        // only select employee from select table
-        const row_id = tr_clicked.id
-
-        //console.log( "row_id: ", row_id, typeof row_id);
-        if(row_id){
-            const map_dict = get_mapdict_from_datamap_by_id(user_map, row_id)
+        const tblName = get_attr_from_el(tr_clicked, "data-table")
+        if(tblName === "userpermit"){
+            const map_dict = get_mapdict_from_datamap_by_id(permit_map, tr_clicked.id)
+            selected_userpermit_pk = map_dict.id;
+        } else {
+            const map_dict = get_mapdict_from_datamap_by_id(user_map, tr_clicked.id)
             selected_user_pk = map_dict.id;
         }
         //console.log( "selected_user_pk: ", selected_user_pk, typeof selected_user_pk);
@@ -624,6 +626,17 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (["sb_code", "username", "last_name", "email", "employee_code", "page"].includes(field_name)){
                 inner_text = map_dict[field_name];
                 filter_value = (inner_text) ? inner_text.toLowerCase() : null;
+            } else if (field_name === "school_abbrev") {
+                // schoolname cannot be put in user table, because it has no examyear PR2021-07-05
+                // lookup schoolname in school_rows instead
+                if(map_dict.schoolbase_id){
+                    for (const [map_id, dict] of school_map.entries()) {
+                        if(dict.base_id && dict.base_id ===  map_dict.schoolbase_id){
+                            inner_text = (dict.abbrev)  ? dict.abbrev : role;
+                            filter_value = (inner_text) ? inner_text.toLowerCase() : null;
+                        }
+                    }
+                }
             } else if (field_name === "role") {
                 const role = map_dict[field_name];
                 inner_text = (loc.role_caption && loc.role_caption[role])  ? loc.role_caption[role] : role;
@@ -742,9 +755,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
            console.log( "tblName", tblName);
            console.log( "fldName", fldName);
-                        const url_str = (tblName === "grouppermits") ? url_group_permit_upload : url_user_upload;
+                        const url_str = (tblName === "userpermit") ? url_userpermit_upload : url_user_upload;
                         const upload_dict = {mode: "update", mapid: map_id};
-                        if (tblName === "grouppermits"){
+                        if (tblName === "userpermit"){
                             upload_dict.permit_pk = map_dict.id;
                         } else if (tblName === "usergroups"){
                             upload_dict.user_pk = map_dict.id,
@@ -898,7 +911,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  set text and hide info footer
             //el_MUA_footer01.innerText = loc.Click_to_register_new_user;
             //el_MUA_footer02.innerText = loc.We_will_send_an_email_to_the_new_user;
-            el_MUA_footer_container.classList.add(cls_hide);
+            //el_MUA_footer_container.classList.add(cls_hide);
 
     // ---  hide loader
             el_MUA_loader.classList.add(cls_hide);
@@ -915,7 +928,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }  //  if(permit_dict.permit_crud)
     };  // MUA_Open
 
-//========= MUA_Save  ============= PR2021-06-30
+//========= MUA_DisableBtnSave  ============= PR2021-06-30
    function MUA_DisableBtnSave(){
 // ---  disable btn submit
 
@@ -923,18 +936,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                   !el_MUA_last_name.value || !el_MUA_email.value )
         el_MUA_btn_submit.disabled = disable_btn_save;
         el_MUA_btn_submit.innerText = (mod_MUA_dict.mode === "update") ? loc.Save : loc.Submit;
-   }
+   }  // MUA_DisableBtnSave
 
 //========= MUA_Save  ============= PR2020-08-02 PR2020-08-15 PR2021-06-30
-   function MUA_Save(args) {
+   function MUA_Save(mode) {
         console.log("=== MUA_Save === ");
-        console.log("args: ", args);
-        // args contains 'save when clicked on save button, otherwise it contains a time_stamp
-        //  args = 'save'     when called by el_MUA_btn_submit
-        //  args = time_stamp when called by MUA_InputKeyup
+        console.log("mode: ", mode);
+        //  mode = 'validate' when called by el_MUA_btn_submit
+        //  mode = "save" after response OK
 
-        let mode = "validate", skip = false;
-
+        // NOT IN USE:
         // send schoolbase, username and email to server after 1500 ms
         // abort if within that period a new value is entered.
         // checked by comparing the timestamp
@@ -944,17 +955,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // parameter 'args' (init_time_stamp) contains the value of time_stamp at the time this 'keyup' event occurred
         // when time_stamp = init_time_stamp, it means that there are no new keyup events within the time-out period
 
-        if(Number(args)){
-// ---  skip if a new key is entered within the elapsed period of 1500 ms
-            const init_time_stamp = Number(args)
-            skip = (time_stamp !== init_time_stamp)
-        } else if (args === "save") {
-            mode = "save"; // 'value of parameter 'args' can only be 'save' or timeastamp
-        }
-        if(!skip) {
 // ---  skip if one of the fields is blank
-            skip = !(el_MUA_username.value && el_MUA_last_name.value && el_MUA_email.value)
-        }
+        let skip = !(el_MUA_username.value && el_MUA_last_name.value && el_MUA_email.value)
         if(!skip){
             // mod_MUA_dict. modes are: 'addnew', 'update'
 
@@ -1021,6 +1023,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ("updated_userlist" in response){
                         refresh_user_map(response.updated_userlist);
                     }
+                    if ("validation_ok" in response){
+
+        console.log("validation_ok ");
+                        if(response.validation_ok){
+        console.log("MUA_Create ");
+                        MUA_Create()
+                        }
+                        ;
+                    }
 
                 },  // success: function (response) {
                 error: function (xhr, msg) {
@@ -1029,6 +1040,64 @@ document.addEventListener('DOMContentLoaded', function() {
             });  // $.ajax({
         }
     };  // MUA_Save
+
+
+//========= MUA_Save  ============= PR2021-07-05
+   function MUA_Create() {
+        console.log("=== MUA_Save === ");
+        //  mode = 'validate' when called by el_MUA_btn_submit
+        //  mode = "save" after response OK
+        // create new user
+
+// ---  skip if one of the fields is blank
+        let skip = !(el_MUA_username.value && el_MUA_last_name.value && el_MUA_email.value)
+        if(!skip){
+            console.log("mod_MUA_dict.mode", mod_MUA_dict.mode);
+   // ---  create upload_dict
+            const upload_dict = { mode:  "create",
+                                schoolbase_pk: mod_MUA_dict.user_schoolbase_pk,
+                                username: el_MUA_username.value,
+                                last_name: el_MUA_last_name.value,
+                                email: el_MUA_email.value
+                              };
+            console.log("upload_dict: ", upload_dict);
+
+            // must lose focus, otherwise green / red border won't show
+            //el_input.blur();
+            // show loader, hide msg_info
+            el_MUA_loader.classList.remove(cls_hide);
+            el_MUA_footer_container.classList.add(cls_hide);
+
+            const parameters = {"upload": JSON.stringify (upload_dict)}
+            let response = "";
+            $.ajax({
+                type: "POST",
+                url: url_user_upload,
+                data: parameters,
+                dataType:'json',
+                success: function (response) {
+                    console.log( "response");
+                    console.log( response);
+
+                    // hide loader
+                    el_MUA_loader.classList.add(cls_hide);
+
+                    MUA_SetMsgElements(response);
+
+                    if ("updated_userlist" in response){
+                        refresh_user_map(response.updated_userlist);
+                    }
+
+                },  // success: function (response) {
+                error: function (xhr, msg) {
+                    console.log(msg + '\n' + xhr.responseText);
+                }  // error: function (xhr, msg) {
+            });  // $.ajax({
+        }
+    };  // MUA_Save
+
+
+
 
 //========= MUA_FillSelectTableSchool  ============= PR2020--09-17
     function MUA_FillSelectTableSchool() {
@@ -1356,23 +1425,22 @@ document.addEventListener('DOMContentLoaded', function() {
         mod_MUPM_dict = {is_addnew: (is_addnew) ? "create" : "update" };
         mod_MUPM_dict = {mode: mode};
 
-        let permit_pk = null, permit_role = null, permit_page = null, permit_action = null, permit_sequence = null;
+        let userpermit_pk = null, role = null, permit_page = null, permit_action = null, permit_sequence = null;
         if(el_input){
             const tblRow = get_tablerow_selected(el_input);
             const map_dict = get_mapdict_from_datamap_by_id(permit_map, tblRow.id);
         //console.log("user_mapid", user_mapid)
         console.log("map_dict", map_dict)
             if(!isEmpty(map_dict)){
-                permit_pk = map_dict.id;
-                permit_role = map_dict.role;
+                userpermit_pk = map_dict.id;
+                role = map_dict.role;
                 permit_page = map_dict.page;
                 permit_action = map_dict.action;
                 permit_sequence = map_dict.sequence;
             }
         }
-        mod_MUPM_dict.permit_pk = permit_pk;
-        //document.getElementById("id_MUPM_role").value = permit_role;
-        //document.getElementById("id_MUPM_page").value = permit_page;
+        mod_MUPM_dict.userpermit_pk = userpermit_pk;
+
         document.getElementById("id_MUPM_action").value = permit_action;
 
     // ---  show modal
@@ -1386,16 +1454,16 @@ document.addEventListener('DOMContentLoaded', function() {
                             (mod_MUPM_dict.mode === "addnew") ? "create" : "update";
 
         const el_MUPM_role = document.getElementById("id_MUPM_role")
-        const permit_role = (el_MUPM_role && el_MUPM_role.value) ? el_MUPM_role.value : null;
+        const role = (el_MUPM_role && el_MUPM_role.value) ? el_MUPM_role.value : null;
         const permit_page = document.getElementById("id_MUPM_page").value;
         const permit_action = document.getElementById("id_MUPM_action").value;
         const sequence_value = true; //document.getElementById("id_MUPM_sequence").value;
         const permit_sequence_int = 0; //(Number(sequence_value)) ? Number(sequence_value) : 1;
 // ---  create mod_dict
-        const url_str = url_group_permit_upload;
+        const url_str = url_userpermit_upload;
         const upload_dict = {mode: upload_mode,
-                            permit_pk: mod_MUPM_dict.permit_pk,
-                            role: permit_role,
+                            userpermit_pk: mod_MUPM_dict.userpermit_pk,
+                            role: role,
                             page: permit_page,
                             action: permit_action,
                             sequence: permit_sequence_int};
@@ -1611,7 +1679,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if(new_value !== map_value){
         // ---  create mod_dict
-                const url_str = url_group_permit_upload;
+                const url_str = url_userpermit_upload;
                 const upload_dict = {mode: "update",
                                     permit_pk: permit_pk};
                 upload_dict[fldName] = new_value;
@@ -1639,23 +1707,39 @@ document.addEventListener('DOMContentLoaded', function() {
         if(tblRow){
             selected_pk = get_attr_from_el(tblRow, "data-pk")
         } else {
-            selected_pk = selected_user_pk
+            if (tblName === "userpermit"){
+                selected_pk = selected_userpermit_pk
+            } else {
+                selected_pk = selected_user_pk
+            }
         }
-        //console.log("selected_pk", selected_pk )
+        console.log("tblRow", tblRow )
+        console.log("selected_pk", selected_pk )
 
 // ---  get info from user_map
-        const map_id = "user_" + selected_pk;
-        const map_dict = get_mapdict_from_datamap_by_id(user_map, map_id)
-        const is_request_user = (permit_dict.requsr_pk && permit_dict.requsr_pk === map_dict.id)
+        let map_id = null, map_dict = null, is_request_user = false;
+        if(tblName === "userpermit"){
+            map_id = "userpermit_" + selected_userpermit_pk;
+            map_dict = get_mapdict_from_datamap_by_id(permit_map, map_id)
+        } else {
+            map_id = "user_" + selected_pk;
+            map_dict = get_mapdict_from_datamap_by_id(user_map, map_id)
+            is_request_user = (permit_dict.requsr_pk && permit_dict.requsr_pk === map_dict.id)
+        }
+        console.log("permit_map", permit_map)
+        console.log("map_dict", map_dict)
 
-        //console.log("map_dict", map_dict)
 // ---  create mod_dict
-        mod_dict = {mode: mode};
+        mod_dict = {mode: mode, table: tblName};
         const has_selected_item = (!isEmpty(map_dict));
         if(has_selected_item){
-            mod_dict.user_pk = map_dict.id;
-            mod_dict.user_ppk = map_dict.schoolbase_id;
             mod_dict.mapid = map_id;
+            if (tblName === "userpermit"){
+                mod_dict.userpermit_pk = selected_userpermit_pk
+            } else {
+                mod_dict.user_pk = map_dict.id;
+                mod_dict.user_ppk = map_dict.schoolbase_id;
+            }
         };
         if (mode === "is_active") {
               mod_dict.current_isactive = map_dict.is_active;
@@ -1667,7 +1751,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const is_mode_resend_activation_email = (mode === "resend_activation_email");
         //console.log("mode", mode)
         const inactive_txt = (mod_dict.current_isactive) ? loc.Make_user_inactive : loc.Make_user_active;
-        const header_text = (mode === "delete") ? loc.Delete_user :
+        const header_text = (mode === "delete") ? (tblName === "userpermit") ? loc.Delete_permission : loc.Delete_user :
                             (mode === "is_active") ? inactive_txt :
                             (is_mode_resend_activation_email) ? loc.Resend_activation_email :
                             (is_mode_permission_admin) ? loc.Set_permissions : "";
@@ -1678,40 +1762,52 @@ document.addEventListener('DOMContentLoaded', function() {
             msg_list = [loc.No_user_selected];
             hide_save_btn = true;
         } else {
-            const username = (map_dict.username) ? map_dict.username  : "-";
-            if(mode === "delete"){
-                if(is_request_user){
-                    msg_list = [loc.Sysadm_cannot_delete_own_account];
+            if(tblName === "userpermit"){
+                const action = (map_dict.action) ? map_dict.action  : "-";
+                const page = (map_dict.page) ? map_dict.page  : "-";
+                const msg_txt = [loc.Action, " '", action, "'", loc.on_page, "'",page, "'", loc.will_be_deleted].join("");
+                msg_list = [msg_txt, loc.Do_you_want_to_continue];
+
+            } else {
+
+                const username = (map_dict.username) ? map_dict.username  : "-";
+                if(mode === "delete"){
+                    if(is_request_user){
+                        msg_list = [loc.Sysadm_cannot_delete_own_account];
+                        hide_save_btn = true;
+                    } else {
+                        msg_list = [loc.User + " '" + username + "'" + loc.will_be_deleted,
+                                    loc.Do_you_want_to_continue];
+                    }
+                } else if(mode === "is_active"){
+                    if(is_request_user && mod_dict.current_isactive){
+                        msg_list = [loc.Sysadm_cannot_set_inactive];
+                        hide_save_btn = true;
+                    } else {
+                        const inactive_txt = (mod_dict.current_isactive) ? loc.will_be_made_inactive : loc.will_be_made_active
+                        msg_list = [loc.User + " '" + username + "'" + inactive_txt,
+                                    loc.Do_you_want_to_continue];
+                    }
+                } else if(is_mode_permission_admin){
                     hide_save_btn = true;
-                } else {
-                    msg_list = [loc.User + " '" + username + "'" + loc.will_be_deleted,
-                                loc.Do_you_want_to_continue];
+                    const fldName = get_attr_from_el(el_input, "data-field")
+                    if (fldName === "group_admin") {
+                        msg_list = [loc.Sysadm_cannot_remove_sysadm_perm]
+                    }
+                } else if (is_mode_resend_activation_email) {
+                    const is_expired = activationlink_is_expired(map_dict.date_joined);
+                    dont_show_modal = (map_dict.activated);
+                    if(!dont_show_modal){
+                        if(is_expired) {
+                            msg_list.append(loc.Activationlink_expired);
+                        };
+                        msg_list.append(loc.We_will_resend_an_email_to_user + " '" + username + "'.");
+                        msg_list.append(loc.Do_you_want_to_continue);
+                    }
                 }
-            } else if(mode === "is_active"){
-                if(is_request_user && mod_dict.current_isactive){
-                    msg_list = [loc.Sysadm_cannot_set_inactive];
-                    hide_save_btn = true;
-                } else {
-                    const inactive_txt = (mod_dict.current_isactive) ? loc.will_be_made_inactive : loc.will_be_made_active
-                    msg_list = [loc.User + " '" + username + "'" + inactive_txt,
-                                loc.Do_you_want_to_continue];
-                }
-            } else if(is_mode_permission_admin){
-                hide_save_btn = true;
-                const fldName = get_attr_from_el(el_input, "data-field")
-                if (fldName === "group_admin") {
-                    msg_list = [loc.Sysadm_cannot_remove_sysadm_perm]
-                }
-            } else if (is_mode_resend_activation_email) {
-                const is_expired = activationlink_is_expired(map_dict.date_joined);
-                dont_show_modal = (map_dict.activated);
-                if(!dont_show_modal){
-                    if(is_expired) {
-                        msg_list.append(loc.Activationlink_expired);
-                    };
-                    msg_list.append(loc.We_will_resend_an_email_to_user + " '" + username + "'.");
-                    msg_list.append(loc.Do_you_want_to_continue);
-                }
+
+
+
             }
         }
         if(!dont_show_modal){
@@ -1747,9 +1843,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  ModConfirmSave  ================ PR2019-06-23
     function ModConfirmSave() {
-        //console.log(" --- ModConfirmSave --- ");
-        //console.log("mod_dict: ", mod_dict);
-        let close_modal = false;
+        console.log(" --- ModConfirmSave --- ");
+        console.log("mod_dict: ", mod_dict);
         let tblRow = document.getElementById(mod_dict.mapid);
 
 // ---  when delete: make tblRow red, before uploading
@@ -1757,37 +1852,44 @@ document.addEventListener('DOMContentLoaded', function() {
             ShowClassWithTimeout(tblRow, "tsa_tr_error");
         }
 
-        if(["delete", 'resend_activation_email'].includes(mod_dict.mode)) {
-// show loader
-            el_confirm_loader.classList.remove(cls_visible_hide)
-        } else if (mod_dict.mode === "is_active") {
-            mod_dict.new_isactive = !mod_dict.current_isactive
-            close_modal = true;
-            // change inactive icon, before uploading, not when new_inactive = true
-            const el_input = document.getElementById(mod_dict.mapid)
-            for (let i = 0, cell, el; cell = tblRow.cells[i]; i++) {
-                const cell_fldName = get_attr_from_el(cell, "data-field")
-                if (cell_fldName === "is_active"){
-// ---  change icon, before uploading
-                    let el_icon = cell.children[0];
-                    if(el_icon){add_or_remove_class (el_icon, "inactive_1_3", !mod_dict.new_isactive,"inactive_0_2" )};
-                    break;
+        let close_modal = false, url_str = null;
+        const upload_dict = {mode: mod_dict.mode, mapid: mod_dict.mapid};
+
+        if(mod_dict.table === "userpermit"){
+            if (mod_dict.mode === "delete"){
+                url_str = url_userpermit_upload;
+                upload_dict.userpermit_pk = mod_dict.userpermit_pk;
+            }
+        } else {
+            if(["delete", 'resend_activation_email'].includes(mod_dict.mode)) {
+    // show loader
+                el_confirm_loader.classList.remove(cls_visible_hide)
+            } else if (mod_dict.mode === "is_active") {
+                mod_dict.new_isactive = !mod_dict.current_isactive
+                close_modal = true;
+                // change inactive icon, before uploading, not when new_inactive = true
+                const el_input = document.getElementById(mod_dict.mapid)
+                for (let i = 0, cell, el; cell = tblRow.cells[i]; i++) {
+                    const cell_fldName = get_attr_from_el(cell, "data-field")
+                    if (cell_fldName === "is_active"){
+    // ---  change icon, before uploading
+                        let el_icon = cell.children[0];
+                        if(el_icon){add_or_remove_class (el_icon, "inactive_1_3", !mod_dict.new_isactive,"inactive_0_2" )};
+                        break;
+                    }
                 }
             }
-        }
 
-// ---  Upload Changes
-        let upload_dict = { user_pk: mod_dict.user_pk,
-                             schoolbase_pk: mod_dict.user_ppk,
-                             mode: mod_dict.mode,
-                             mapid: mod_dict.mapid};
-        if (mod_dict.mode === "is_active") {
-            upload_dict.is_active = {value: mod_dict.new_isactive, update: true}
+    // ---  Upload Changes
+            url_str = url_user_upload;
+            upload_dict.user_pk = mod_dict.user_pk;
+            upload_dict.schoolbase_pk = mod_dict.user_ppk;
+            if (mod_dict.mode === "is_active") {
+                upload_dict.is_active = {value: mod_dict.new_isactive, update: true}
+            };
         };
-
-        //console.log("upload_dict: ", upload_dict);
-        UploadChanges(upload_dict, url_user_upload);
-
+// ---  Upload changes
+        UploadChanges(upload_dict, url_str);
 // ---  hide modal
         if(close_modal) {
             $("#id_mod_confirm").modal("hide");
@@ -1966,10 +2068,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function get_tblName_from_selectedBtn() {
         return  (selected_btn === "btn_usergroups") ? "usergroups" :
-                (selected_btn === "btn_grouppermits") ? "grouppermits" : "users";
+                (selected_btn === "btn_userpermit") ? "userpermit" : "users";
     }
     function get_data_map() {
-        return (selected_btn === "btn_grouppermits") ? permit_map : user_map;
+        return (selected_btn === "btn_userpermit") ? permit_map : user_map;
     }
 
 

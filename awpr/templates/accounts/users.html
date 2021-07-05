@@ -59,10 +59,10 @@
 
 <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="btn_user_list" class="btn btn-secondary ">{% trans 'User list' %}</button>
+                    <button data-btn="btn_user_list" class="btn btn-secondary ">{% trans 'Users' %}</button>
                     <button data-btn="btn_usergroups" class="btn btn-secondary ">{% trans 'User groups' %}</button>
-                    {% if show_btn_grouppermits %}
-                        <button data-btn="btn_grouppermits" class="btn btn-secondary ">{% trans 'Group permissions' %}</button>
+                    {% if show_btn_userpermit %}
+                        <button data-btn="btn_userpermit" class="btn btn-secondary ">{% trans 'Permissions' %}</button>
                     {% endif %}
                 </div>
 <!-- end BUTTON GROUP -->
@@ -83,7 +83,7 @@
                 data-settings_upload_url="{% url 'settings_upload_url' %}"
 
                 data-user_upload_url="{% url 'user_upload_url' %}"
-                data-group_permit_upload_url="{% url 'group_permit_upload_url' %}"
+                data-userpermit_upload_url="{% url 'userpermit_upload_url' %}"
                 data-user_download_permits_url="{% url 'user_download_permits_url' %}"
             >
         </div>

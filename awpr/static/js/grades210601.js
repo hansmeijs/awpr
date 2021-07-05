@@ -2067,7 +2067,7 @@ document.addEventListener("DOMContentLoaded", function() {
         //console.log("el_input", el_input) ;
 
     // get has_note from grade_map
-        let grade_dict = get_itemdict_from_datamap_by_el(el_input, grade_map)
+        let grade_dict = b_get_itemdict_from_datamap_by_el(el_input, grade_map)
         const has_note = !!get_dict_value(grade_dict, ["note_status"])
 
 // reset notes_container
@@ -2842,7 +2842,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         //console.log("fldName", fldName) ;
 
 // get status from field status, not from confirm start/end
-        let grade_dict = get_itemdict_from_datamap_by_el(el_input, grade_map)
+        let grade_dict = b_get_itemdict_from_datamap_by_el(el_input, grade_map)
         //console.log("grade_dict", grade_dict) ;
 
         const status_sum = grade_dict.ispublished_ce;

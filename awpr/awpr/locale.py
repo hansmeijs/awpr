@@ -197,6 +197,9 @@ def get_locale_dict(table_dict, user_lang):
         dict['Organization'] = TXT_Organization
         dict['Action'] = _('Action')
         dict['Page'] = _('Page')
+        dict['on_page'] = _(' on page ')
+        dict['Delete_permission'] = _('Delete permission')
+
         dict['Commissioner_2lines'] =  pgettext_lazy('2 lines', 'Commis-\nsioner')
         dict['Analyze'] = _('Analyze')
         dict['Administrator'] = _('Administrator')
@@ -208,6 +211,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Sysadm_cannot_remove_sysadm_perm'] = _("System administrators cannot remove their own 'system administrator' permission.")
         dict['Sysadm_cannot_set_inactive'] = _("System administrators cannot make their own account inactive.")
 
+        dict['School_code'] = TXT_School_code
         dict['Username'] = _('Username')
         dict['Name'] = _('Name')
         dict['Email_address'] = TXT_Email_address

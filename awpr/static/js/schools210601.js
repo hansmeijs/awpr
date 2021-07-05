@@ -2120,7 +2120,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             error: function (error) {
                 $("#id_mod_uploadawp").modal("hide");
-                alert(error)
+                console.log(error)
             },
             async: true,
             data: formData,

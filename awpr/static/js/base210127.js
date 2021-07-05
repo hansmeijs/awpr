@@ -609,8 +609,8 @@
         return map_dict
     }
 
-//========= get_itemdict_from_datamap_by_el  ============= PR2019-10-12 PR2020-09-13 PR2021-01-014
-    function get_itemdict_from_datamap_by_el(el, data_map) {
+//========= b_get_itemdict_from_datamap_by_el  ============= PR2019-10-12 PR2020-09-13 PR2021-01-014
+    function b_get_itemdict_from_datamap_by_el(el, data_map) {
         // function gets map_id form 'data-map_id' of tblRow, looks up 'map_id' in data_map
         let item_dict = {};
         const tblRow = get_tablerow_selected(el);
@@ -619,7 +619,7 @@
             item_dict = get_mapdict_from_datamap_by_id(data_map, tblRow.id);
         }
         return item_dict
-    }
+    }  // b_get_itemdict_from_datamap_by_el
 
 //========= b_get_status_bool_at_index  ============= PR2021-01-15 PR2021-02-05
     function b_get_status_bool_at_index(status_sum, index) {
