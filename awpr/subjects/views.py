@@ -226,7 +226,7 @@ def create_subject_rows(setting_dict, subject_pk, etenorm_only=False, cur_dep_on
         sql_keys = {'ey_id': sel_examyear_pk}
         sql_list = ["SELECT sj.id, sj.base_id, sj.examyear_id,",
             "CONCAT('subject_', sj.id::TEXT) AS mapid,",
-            "sj.name, sb.code, sj.sequence, sj.depbases, sj.etenorm, sj.addedbyschool,",
+            "sj.name, sb.code, sj.sequence, sj.depbases, sj.otherlang, sj.etenorm, sj.addedbyschool,",
             "sj.modifiedby_id, sj.modifiedat,",
             "ey.code AS examyear_code,",
             "SUBSTRING(au.username, 7) AS modby_username",
@@ -378,6 +378,8 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14
             update_wrap['messages'] = messages
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of SubjectUploadView
+
 
 ##########################
 @method_decorator([login_required], name='dispatch')
@@ -943,12 +945,16 @@ class SchemeitemUploadView(View):  # PR2021-06-25
 
 def get_permit_crud_page_subject(request):
     # --- get crud permit for page subject # PR2021-06-26
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
+
+    if logging_on:
+        logger.debug(' ----- get_permit_crud_page_subject ----- ')
+
     has_permit = False
     if request.user and request.user.country:
         permit_list = request.user.permit_list('page_subject')
         if permit_list:
-            has_permit = 'crud' in permit_list
+            has_permit = 'permit_crud' in permit_list
         if logging_on:
             logger.debug('permit_list: ' + str(permit_list))
             logger.debug('has_permit: ' + str(has_permit))
@@ -2115,85 +2121,88 @@ def update_subject_instance(instance, examyear, upload_dict, error_list, request
         save_changes = False
         save_changes_in_base = False
 
-        caption =  _('Subject')
+        caption = _('Subject')
         for field, new_value in upload_dict.items():
-        # --- skip fields that don't contain new values
-            if field not in ('mode', 'table', 'mapid', 'examyear_pk', 'subject_pk'):
-                if logging_on:
-                    logger.debug('field: ' + str(field))
-                    logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
-
-# a. get saved_value
+            if logging_on:
+                logger.debug('field: ' + str(field))
+                logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
 
 # - save changes in field 'code'
-                if field == 'code':
-                    base = instance.base
-                    saved_value = getattr(base, field)
-                    if logging_on:
-                        logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
+            if field == 'code':
+                base = instance.base
+                saved_value = getattr(base, field)
+                if logging_on:
+                    logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
 
-                    if new_value != saved_value:
-                        if logging_on:
-                            logger.debug('new_value != saved_value')
-        # - validate abbrev checks null, max_len, exists
-                        #  msg_err = { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
-                        msg_html = av.validate_subject_code_exists(
-                            code=new_value,
-                            cur_subject=instance
-                        )
-                        if msg_html:
-                            error_list.append({'header': str(caption), 'class': 'alert-danger', 'msg_html': msg_html})
-                        else:
-         # - save field if changed and no_error
-                            setattr(base, field, new_value)
-                            save_changes_in_base = True
+                if new_value != saved_value:
+                    if logging_on:
+                        logger.debug('new_value != saved_value')
+    # - validate abbrev checks null, max_len, exists
+                    #  msg_err = { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
+                    msg_html = av.validate_subject_code_exists(
+                        code=new_value,
+                        cur_subject=instance
+                    )
+                    if msg_html:
+                        error_list.append({'header': str(caption), 'class': 'alert-danger', 'msg_html': msg_html})
+                    else:
+     # - save field if changed and no_error
+                        setattr(base, field, new_value)
+                        save_changes_in_base = True
 
 # - save changes in field 'name'
-                if field == 'name':
-                    saved_value = getattr(instance, field)
-                    if new_value != saved_value:
-        # - validate abbrev checks null, max_len, exists
-                        msg_html = av.validate_subject_name_exists(
-                            name=new_value,
-                            examyear=examyear,
-                            cur_subject=instance
+            elif field == 'name':
+                saved_value = getattr(instance, field)
+                if new_value != saved_value:
+    # - validate abbrev checks null, max_len, exists
+                    msg_html = av.validate_subject_name_exists(
+                        name=new_value,
+                        examyear=examyear,
+                        cur_subject=instance
+                    )
+                    if msg_html:
+                        error_list.append({'msg_html': msg_html, 'class': 'alert-danger'})
+                    else:
+                        # - save field if changed and no_error
+                        setattr(instance, field, new_value)
+                        save_changes = True
+
+# - save changes in field 'otherlang'
+            elif field == 'otherlang':
+                saved_value = getattr(instance, field)
+                if new_value != saved_value:
+                    setattr(instance, field, new_value)
+                    save_changes = True
+
+# 3. save changes in depbases
+            elif field == 'depbases':
+                saved_value = getattr(instance, field)
+                uploaded_field_arr = new_value.split(';') if new_value else []
+
+                checked_field_arr = []
+                checked_field_str = None
+                if uploaded_field_arr:
+                    for base_pk_str in uploaded_field_arr:
+                        base_pk_int = int(base_pk_str)
+                        base_instance = sch_mod.Department.objects.get_or_none(
+                            base=base_pk_int,
+                            examyear=examyear
                         )
-                        if msg_html:
-                            error_list.append({'msg_html': msg_html, 'class': 'alert-danger'})
-                        else:
-                            # - save field if changed and no_error
-                            setattr(instance, field, new_value)
-                            save_changes = True
+                        if base_instance:
+                            checked_field_arr.append(base_pk_str)
 
-    # 3. save changes in depbases
-                elif field == 'depbases':
-                    saved_value = getattr(instance, field)
-                    uploaded_field_arr = new_value.split(';') if new_value else []
+                    if checked_field_arr:
+                        checked_field_arr.sort()
+                        checked_field_str = ';'.join(checked_field_arr)
+                if checked_field_str != saved_value:
+                    setattr(instance, field, new_value)
+                    save_changes = True
 
-                    checked_field_arr = []
-                    checked_field_str = None
-                    if uploaded_field_arr:
-                        for base_pk_str in uploaded_field_arr:
-                            base_pk_int = int(base_pk_str)
-                            base_instance = sch_mod.Department.objects.get_or_none(
-                                base=base_pk_int,
-                                examyear=examyear
-                            )
-                            if base_instance:
-                                checked_field_arr.append(base_pk_str)
-
-                        if checked_field_arr:
-                            checked_field_arr.sort()
-                            checked_field_str = ';'.join(checked_field_arr)
-                    if checked_field_str != saved_value:
-                        setattr(instance, field, new_value)
-                        save_changes = True
-
-                elif field in ('sequence', 'etenorm', 'addedbyschool'):
-                    saved_value = getattr(instance, field)
-                    if new_value != saved_value:
-                        setattr(instance, field, new_value)
-                        save_changes = True
+            elif field in ('sequence', 'etenorm', 'addedbyschool'):
+                saved_value = getattr(instance, field)
+                if new_value != saved_value:
+                    setattr(instance, field, new_value)
+                    save_changes = True
 # --- end of for loop ---
 
 # 5. save changes

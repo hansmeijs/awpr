@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load i18n %} {% load l10n %}
+{% load static %}
+
+{% block title %}{% trans 'Orderlists' %}{% endblock %}
+
+{% block script %}
+    <script src="{% static 'js/orderlistst210704.js' %}"></script>
+{% endblock %}
+
+<!-- SIDE BAR -->
+{% block sidebar %}
+    <nav id="id_sidebar" class="awp_sidebar">
+        <div class="content_subheader_left tab_show tab_init mx-2 my-4">
+            <h5>{% trans 'Orderlists' %}</h5>
+        </div>
+        {% if not no_access %}
+            <div id="id_SBR_container_level" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Leerweg' %}:</h6>
+                <select id="id_SBR_select_level" class="tw_200 border_none px-1"
+                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+               ></select>
+            </div>
+
+            <div id="id_SBR_container_sector" class="tw_200 m-2 display_hide">
+                <h6 id="id_SBR_select_sector_label" class="tw_200 line_height_normal px-2"></h6>
+                <select id="id_SBR_select_sector" class="tw_200 border_none px-1"
+                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+               ></select>
+            </div>
+
+            <div id="id_SBR_container_subject" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Subject' %}:</h6>
+                <input id="id_SBR_select_subject" type="text"
+                    class="tw_200 border_none pointer_show px-2" readonly>
+            </div>
+
+            <div id="id_SBR_container_cluster" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
+               <input id="id_SBR_select_cluster" type="text"
+                    class="tw_200 border_none pointer_show px-2" readonly>
+            </div>
+
+            <div id="id_SBR_container_student" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Candidate' %}:</h6>
+                <input id="id_SBR_select_student" type="text"
+                    class="tw_200 border_none pointer_show px-1" readonly>
+            </div>
+
+            <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
+                <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all from this period' %}</h6>
+            </div>
+        {% endif %}
+    </nav>
+{% endblock %}
+<!-- END SIDE BAR -->
+
+{% block content %}
+    <div id="id_content">
+        {% if no_access %}
+            {% include 'includes/message_noaccess.html' %}
+        {% else %}
+            {% include 'includes/modselectexamyearordepbase.html' %}
+            {% include 'includes/modconfirm.html' %}
+
+            <div class="content_margin_top78">
+    <!-- CONTENT HEADER - LOADER -->
+            <!-- content_header -->
+                {% include 'includes/messages.html' %}
+        <!-- submenu -->
+                <div class="content_header flex_container">
+                    <div id="id_submenu" class="awp_navbar_submenuXX mt-5">
+                </div>
+        <!-- header_text -->
+                    <div class="flex_4 mx-4 visibility_hide">
+                        <h5 id="id_hdr_left"></h5>
+                    </div>
+        <!-- loader -->
+                    <div class="flex_1">
+                        <div id="id_loader" class="image_container visibility_hide">
+                            <img src="{% static 'img/loader.gif' %}" class="icon_24">
+                        </div>
+                    </div>
+        <!-- header_text -->
+                    <div class="flex_2 mx-4 visibility_hide">
+                        <h5 id="id_hdr_textright1"></h5>
+                    </div>
+                    <div class="flex_2 mx-4 visibility_hide">
+                        <h5 id="id_hdr_textright2"></h5>
+                    </div>
+                </div>
+            <!-- end content_header -->
+    <!-- BUTTON GROUP -->
+                <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
+                    <button data-btn="btn_orderlist01" class="btn btn-secondary ">{% trans 'Orderlist first period' %}</button>
+                    <button data-btn="btn_orderlist02" class="btn btn-secondary ">{% trans 'Orderlist second period' %}</button>
+                    <button data-btn="btn_orderlist03" class="btn btn-secondary ">{% trans 'Orderlist third period' %}</button>
+                </div>
+    <!-- end BUTTON GROUP -->
+    <!-- END OF CONTENT HEADER -->
+
+    <!-- CONTENT BODY -->
+    <!-- =================== DATA TABLE  =================== -->
+            <div class="content_body mx-2 mt-2 pr-4">
+                <table class="table tsa_tbl">
+                    <thead id="id_tblHead_datatable"></thead>
+                    <tbody id="id_tblBody_datatable"></tbody>
+                </table>
+            </div>
+    <!-- =================== STUDENT SUBJECTS  =================== -->
+
+    <!-- END OF CONTENT BODY -->
+            </div>
+            <div id="id_data"
+                data-datalist_download_url="{% url 'datalist_download_url' %}"
+                data-settings_upload_url="{% url 'settings_upload_url' %}"
+                data-orderlist_download_url="{% url 'orderlist_download_url' %}"
+            >
+            </div>
+        {% endif %}
+    </div>
+
+{% endblock %}

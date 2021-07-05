@@ -489,12 +489,25 @@ PAGE_LIST = {
 }
 
 
+MENUS_ITEMS = {
+    ROLE_128_SYSTEM: ['page_examyear', 'page_school', 'page_student', 'page_exams', 'page_grade', 'page_result',
+                      'page_report', 'page_analysis'],
+    ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_exams', 'page_grade',
+                     'page_result', 'page_report', 'page_analysis'],
+    ROLE_032_INSP: ['page_examyear', 'page_school', 'page_student', 'page_exams', 'page_grade', 'page_result',
+                    'page_report', 'page_analysis'],
+    ROLE_016_COMM: ['page_examyear', 'page_school', 'page_student', 'page_grade', 'page_result'],
+    ROLE_008_SCHOOL: ['page_examyear', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result',
+                      'page_report']
+}
+
 MENUS_DICT = {
     'page_examyear': {'caption': _('Exam year'), 'href': 'examyears_url', 'width': 100},
     'page_school': {'caption': _('School'), 'href': 'schools_url', 'width': 90},
     'page_subject': {'caption': _('Subjects'), 'href': 'subjects_url', 'width': 100},
     'page_student': {'caption': _('Students'), 'href': 'students_url', 'width': 120},
     'page_studsubj': {'caption': _('Subjects'), 'href': 'studentsubjects_url', 'width': 100},
+    'page_orderlist': {'caption': _('Orderlist'), 'href': 'orderlists_url', 'width': 130},
     'page_exams': {'caption': _('Exam questions'), 'href': 'exams_url', 'width': 130},
     'page_grade': {'caption': _('Grades'), 'href': 'grades_url', 'width': 120},
     'page_result': {'caption': _('Results'), 'href': 'subjects_url', 'width': 120},

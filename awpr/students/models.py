@@ -109,6 +109,7 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     firstname= CharField(db_index=True, max_length=c.MAX_LENGTH_FIRSTLASTNAME)
     prefix= CharField(null=True, blank=True, max_length=c.MAX_LENGTH_10)
     gender= CharField(null=True, blank=True, max_length=c.MAX_LENGTH_01)
+
     idnumber= CharField(db_index=True, null=True, blank=True, max_length=c.MAX_LENGTH_IDNUMBER)
     birthdate= DateField(null=True, blank=True)
     birthcountry= CharField(max_length=c.USER_LASTNAME_MAX_LENGTH, null=True, blank=True)
@@ -120,14 +121,33 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     diplomanumber = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_10)
     gradelistnumber = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_10)
 
+    has_dyslexie = BooleanField(default=False)
     iseveningstudent = BooleanField(default=False)
     islexstudent = BooleanField(default=False)
     islinked = BooleanField(default=False)
+    bis_exam = BooleanField(default=False)
+
+    has_reex = BooleanField(default=False)
+    has_reex3 = BooleanField(default=False)
+    has_sere = BooleanField(default=False)
+    withdrawn = BooleanField(default=False)
+
+    grade_ce_avg = DecimalField(max_digits=5, decimal_places=2, default = 0)
+    grade_ce_avg_text = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    grade_combi_avg_text = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    endgrade_avg = DecimalField(max_digits=5, decimal_places=2, default = 0)
+    endgrade_avg_text = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+
+    result = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    resultid_tv01 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    resultid_tv02 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    resultid_tv03 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    resultid_final = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    result_info = CharField(db_index=True, max_length=80, null=True, blank=True)
+    result_status = CharField(max_length=c.MAX_LENGTH_12, null=True, blank=True)
 
     locked = BooleanField(default=False)
-    has_reex = BooleanField(default=False)
-    bis_exam = BooleanField(default=False)
-    withdrawn = BooleanField(default=False)
+
 
     class Meta:
         ordering = [Lower('lastname'), Lower('firstname')]
@@ -198,6 +218,8 @@ class Student_log(sch_mod.AwpBaseModel):
 
     student_id = IntegerField(db_index=True)
 
+
+
     base = ForeignKey(Studentbase, related_name='+', on_delete=PROTECT)
 
     school_log = ForeignKey(sch_mod.School_log, related_name='+', on_delete=CASCADE)
@@ -222,14 +244,32 @@ class Student_log(sch_mod.AwpBaseModel):
     diplomanumber = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
     gradelistnumber = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
 
+    has_dyslexie = BooleanField(default=False)
     iseveningstudent = BooleanField(default=False)
     islexstudent = BooleanField(default=False)
     islinked = BooleanField(default=False)
+    bis_exam = BooleanField(default=False)
+
+    has_reex = BooleanField(default=False)
+    has_reex3 = BooleanField(default=False)
+    has_sere = BooleanField(default=False)
+    withdrawn = BooleanField(default=False)
+
+    grade_ce_avg = DecimalField(max_digits=5, decimal_places=2, default=0)
+    grade_ce_avg_text = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    grade_combi_avg_text = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    endgrade_avg = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    endgrade_avg_text = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
+
+    result = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    resultid_tv01 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    resultid_tv02 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    resultid_tv03 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    resultid_final = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    result_info = CharField(max_length=80, null=True, blank=True)
+    result_status = CharField(max_length=c.MAX_LENGTH_12, null=True)
 
     locked = BooleanField(default=False)
-    has_reex = BooleanField(default=False)
-    bis_exam = BooleanField(default=False)
-    withdrawn = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -239,90 +279,39 @@ class Student_log(sch_mod.AwpBaseModel):
 
 ##########################################################################
 
-# ====Result=============
-class Result(sch_mod.AwpBaseModel):# PR2018-11-10
-    objects = CustomManager()
 
-    student = ForeignKey(Student, related_name='results', on_delete=CASCADE)
-    examperiod = PositiveSmallIntegerField(db_index=True, default=1) # 1 = period 1, 2 = period 2, 3 = period 3
-
-    grade_ce_avg = DecimalField(max_digits=5, decimal_places=2, default = 0)
-    grade_ce_avg_text = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
-    grade_combi_avg_text = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
-
-    endgrade_sum = PositiveSmallIntegerField(default=0)
-    endgrade_count = PositiveSmallIntegerField(default=0)
-    endgrade_avg = DecimalField(max_digits=5, decimal_places=2, default = 0)
-    endgrade_avg_text = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
-
-    result = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    result_info = CharField(db_index=True, max_length=80, null=True, blank=True)
-    result_status = CharField(max_length=c.MAX_LENGTH_12, null=True, blank=True)
-
-
-# PR2018-06-08
-class Result_log(sch_mod.AwpBaseModel):
-    objects = CustomManager()
-    # TODO bind to student
-    result_id = IntegerField(db_index=True)
-
-    grade_ce_avg = DecimalField(max_digits=5, decimal_places=2, default=0)
-    grade_ce_avg_text = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
-    grade_combi_avg_text = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
-
-    endgrade_sum = PositiveSmallIntegerField(default=0)
-    endgrade_count = PositiveSmallIntegerField(default=0)
-    endgrade_avg = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
-    endgrade_avg_text = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
-
-    result = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    result_info = CharField(max_length=80, null=True, blank=True)
-
-    result_status = CharField(max_length=c.MAX_LENGTH_12, null=True)
-
-    # mod variables
-    grade_ce_avg_mod = BooleanField(default=False)
-    grade_ce_avg_text_mod = BooleanField(default=False)
-    grade_combi_avg_text_mod = BooleanField(default=False)
-
-    endgrade_sum_mod = BooleanField(default=False)
-    endgrade_count_mod = BooleanField(default=False)
-    endgrade_avg_mod = BooleanField(default=False)
-    endgrade_avg_text_mod = BooleanField(default=False)
-
-    result_mod = BooleanField(default=False)
-    result_info_mod = BooleanField(default=False)
-    result_status_mod = BooleanField(default=False)
-
-    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
-
-
-# PR2018-106-17
-class Resultnote(sch_mod.AwpBaseModel):
+# PR2018-106-17 PR2021-07-02
+class Studentnote(sch_mod.AwpBaseModel):
     objects = CustomManager()
 
     # PR2019-02-14 changed: refer to log table student_log instead of student, to prevent ref_int with table student
     student = ForeignKey(Student, null=True, related_name='+', on_delete=CASCADE)
 
-    resultnote =  CharField(max_length=2048, null=True, blank=True)
+    # intern_schoolbase only has value when it is an intern memo.
+    # It has the value of the school of the user, NOT the school of the student
+    intern_schoolbase = ForeignKey(sch_mod.Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
+
+    note = CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
+    note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
-    is_insp = BooleanField(default=False)
 
-
-# PR2018-106-17
-class Resultnote_log(sch_mod.AwpBaseModel):
+# PR2018-106-17 PR2021-07-02
+class Studentnote_log(sch_mod.AwpBaseModel):
     objects = CustomManager()
 
-    resultnote_id = IntegerField(db_index=True)
-    # TODO: refer to log table
+    studentnote_id = IntegerField(db_index=True)
+
     # PR2019-02-14 changed: refer to log table student_log instead of student, to prevent ref_int with table student
     student_log = ForeignKey(Student_log, null=True, related_name='+', on_delete=CASCADE)
 
-    resultnote = CharField(max_length=2048, null=True, blank=True)
-    mailto_user = CharField(max_length=2048, null=True, blank=True)
+    # intern_schoolbase only has value when it is an intern memo.
+    # It has the value of the school of the user, NOT the school of the student
+    intern_schoolbase = ForeignKey(sch_mod.Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
 
-    is_insp = BooleanField(default=False)
+    note = CharField(max_length=2048, null=True, blank=True)
+    mailto_user = CharField(max_length=2048, null=True, blank=True)
+    note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -508,6 +497,7 @@ class Grade(sch_mod.AwpBaseModel):
     segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     srgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     sesrgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+
     pegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     cegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)

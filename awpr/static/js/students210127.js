@@ -420,8 +420,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= FillTblRows  ============== PR2021-06-16
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
-        console.log( "student_rows", student_rows);
+        //console.log( "===== FillTblRows  === ");
+        //console.log( "student_rows", student_rows);
 
         const tblName = "student";
         const field_setting = field_settings[tblName];
@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- reset table
         tblHead_datatable.innerText = null;
-        tblBody_datatable.innerText = null
+        tblBody_datatable.innerText = null;
 
 // --- create table header
         CreateTblHeader(field_setting);
@@ -441,8 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(data_rows && data_rows.length){
             for (let i = 0, map_dict; map_dict = data_rows[i]; i++) {
                 const map_id = map_dict.mapid;
-                //console.log( "map_dict ", map_dict);
-                let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict)
+                let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict);
             };
         };
     }  // FillTblRows
@@ -551,11 +550,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const column_count = field_names.length;
 
 // ---  lookup index where this row must be inserted
-        const orderby_lastname = (map_dict.lastname) ? map_dict.lastname : "";
-        const orderby_firstname = (map_dict.firstname) ? map_dict.firstname : "";
+        const ob1 = (map_dict.lastname) ? map_dict.lastname : "";
+        const ob2 = (map_dict.firstname) ? map_dict.firstname : "";
+        // NIU:  const ob3 = (map_dict.firstname) ? map_dict.firstname : "";
 
         const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
-                                     orderby_lastname, orderby_firstname, "", setting_dict.user_lang);
+                                     ob1, ob2, "", setting_dict.user_lang);
 
 // --- insert tblRow into tblBody at row_index
         let tblRow = tblBody_datatable.insertRow(row_index);
@@ -565,8 +565,8 @@ document.addEventListener('DOMContentLoaded', function() {
         tblRow.setAttribute("data-pk", map_dict.id);
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
-        tblRow.setAttribute("data-ob1", orderby_lastname);
-        tblRow.setAttribute("data-ob2", orderby_firstname);
+        tblRow.setAttribute("data-ob1", ob1);
+        tblRow.setAttribute("data-ob2", ob2);
         // NIU: tblRow.setAttribute("data-ob3", ---);
 
 // --- add EventListener to tblRow
@@ -682,6 +682,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ("updated_student_rows" in response) {
                         const el_MSTUD_loader = document.getElementById("id_MSTUD_loader");
                         if(el_MSTUD_loader){ el_MSTUD_loader.classList.add(cls_visible_hide)};
+
                         const tblName = "student";
                         RefreshDataRows(tblName, response.updated_student_rows, student_rows, true)  // true = update
                     };
@@ -704,6 +705,144 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
 
+//###########################################################################
+// +++++++++++++++++ REFRESH DATA ROWS ++++++++++++++++++++++++++++++++++++++++++++++++++
+
+//=========  RefreshDataRows  ================ PR2020-08-16 PR2021-06-16
+    function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
+        //console.log(" --- RefreshDataRows  ---");
+        // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
+        if (update_rows && update_rows.length ) {
+            const field_setting = field_settings[tblName];
+            for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
+                RefreshDatarowItem(tblName, field_setting, update_dict, data_rows);
+            }
+        } else if (!is_update) {
+            // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
+            // PR2021-03-13 debug. Don't empty de data_rows when is update. Returns [] when no changes made
+           data_rows = [];
+        }
+    }  //  RefreshDataRows
+
+//=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-16
+    function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
+        console.log(" --- RefreshDatarowItem  ---");
+        console.log("update_dict", update_dict);
+
+        if(!isEmpty(update_dict)){
+            const field_names = field_setting.field_names;
+
+            const map_id = update_dict.mapid;
+            const is_deleted = (!!update_dict.deleted);
+            const is_created = (!!update_dict.created);
+
+// ++++ created ++++
+            // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
+            //arr.splice(index, 0, item); will insert item into arr at the specified index
+            // (deleting 0 items first, that is, it's just an insert).
+
+            if(is_created){
+    // ---  first remove key 'created' from update_dict
+                delete update_dict.created;
+
+    // --- lookup index where new row must be inserted in data_rows
+                const [index, dict, compare] = b_recursive_lookup(student_rows, map_id, setting_dict.user_lang);
+                const map_index = index;
+                console.log("map_index", map_index, typeof map_index);
+
+    // ---  insert new item in data_rows at proper index (data_rows is ordered by mapid)
+                // insert new row in data_rows. Splice inserts row at index, 0 means deleting zero rows
+                data_rows.splice(map_index, 0, update_dict);
+
+    // ---  create row in table., insert in alphabetical order
+                const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
+
+    // ---  scrollIntoView,
+                if(new_tblRow){
+                    new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
+    // ---  make new row green for 2 seconds,
+                    ShowOkElement(new_tblRow);
+                }
+            } else {
+
+// --- get existing map_dict from data_rows
+                const [index, dict, compare] = b_recursive_lookup(student_rows, map_id, setting_dict.user_lang);
+                const map_dict = dict;
+                const row_index = index;
+
+// ++++ deleted ++++
+                if(is_deleted){
+                    // delete row from data_rows. Splice returns array of deleted rows
+                    const deleted_row_arr = data_rows.splice(row_index, 1)
+                    const deleted_row_dict = deleted_row_arr[0];
+
+        //--- delete tblRow
+                    const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
+                    if (tblRow_tobe_deleted ){tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)};
+
+                } else {
+
+// +++++++++++ updated row +++++++++++
+    // ---  check which fields are updated, add to list 'updated_columns'
+                    if(!isEmpty(map_dict) && field_names){
+
+                        let updated_columns = [];
+                        // skip first column (is margin)
+                        for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
+                            if (col_field in map_dict && col_field in update_dict){
+                                if (map_dict[col_field] !== update_dict[col_field] ) {
+        // ---  add field to updated_columns list
+                                    updated_columns.push(col_field)
+        // ---  update field in data_row
+                                    map_dict[col_field] = update_dict[col_field];
+                                }}
+                        };
+
+        // ---  update field in tblRow
+                        // note: when updated_columns is empty, then updated_columns is still true.
+                        // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
+                        if(updated_columns.length){
+        console.log("updated_columns", updated_columns);
+
+// --- get existing tblRow
+                            let tblRow = document.getElementById(map_id);
+                            if(tblRow){
+                                // to make it perfect: move row when first or last name have changed
+                                if (updated_columns.includes("lastname") || updated_columns.includes("firstname")){
+                                //--- delete current tblRow
+                                    tblRow.parentNode.removeChild(tblRow);
+                                //--- insert row new at new position
+                                    tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
+                                }
+
+        console.log("tblRow", tblRow);
+                // loop through cells of row
+                                for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
+                                    el = td.children[0];
+                                    if (el){
+        console.log("el", el);
+                                        el_fldName = get_attr_from_el(el, "data-field")
+            console.log("el_fldName", el_fldName);
+                                        UpdateField(el, update_dict);
+
+                // make field green when field name is in updated_columns
+                                        if(updated_columns.includes(el_fldName)){
+                                            ShowOkElement(el);
+                                        }
+                                    }
+                                };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
+                            };  // if(tblRow){
+                        }; //  if(updated_columns.length){
+
+
+                    };  //  if(!isEmpty(map_dict) && field_names){
+                };  // if(is_deleted){
+            };  // if(is_created)
+
+        }  // if(!isEmpty(update_dict)){
+    }  // RefreshDatarowItem
+
+
 // +++++++++ MOD STUDENT ++++++++++++++++ PR2020-09-30
 // --- also used for level, sector,
     function MSTUD_Open(el_input){
@@ -724,8 +863,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     db_code: setting_dict.sel_depbase_code}
             } else {
                 const tblRow = get_tablerow_selected(el_input);
-                // const map_dict = get_selected_student_dict_from_mapid(tblRow.id);
-                const map_dict = b_get_mapdict_from_datarows(student_rows, map_id, setting_dict.user_lang);
+                const map_dict = b_get_mapdict_from_datarows(student_rows, tblRow.id, setting_dict.user_lang);
                 mod_MSTUD_dict = deepcopy_dict(map_dict);
             }
 
@@ -1232,144 +1370,6 @@ document.addEventListener('DOMContentLoaded', function() {
             $("#id_mod_confirm").modal("hide");
         }
     }  // ModConfirmResponse
-
-//###########################################################################
-// +++++++++++++++++ REFRESH DATA ROWS ++++++++++++++++++++++++++++++++++++++++++++++++++
-
-//=========  RefreshDataRows  ================ PR2020-08-16 PR2021-06-16
-    function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
-        //console.log(" --- RefreshDataRows  ---");
-        // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
-        if (update_rows && update_rows.length ) {
-            const field_setting = field_settings[tblName];
-            for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
-                RefreshDatarowItem(tblName, field_setting, update_dict, data_rows);
-            }
-        } else if (!is_update) {
-            // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
-            // PR2021-03-13 debug. Don't empty de data_rows when is update. Returns [] when no changes made
-           data_rows = [];
-        }
-    }  //  RefreshDataRows
-
-//=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-16
-    function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
-        console.log(" --- RefreshDatarowItem  ---");
-        console.log("update_dict", update_dict);
-
-        if(!isEmpty(update_dict)){
-            const field_names = field_setting.field_names;
-
-            const map_id = update_dict.mapid;
-            const is_deleted = (!!update_dict.deleted);
-            const is_created = (!!update_dict.created);
-
-// ++++ created ++++
-            // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
-            //arr.splice(index, 0, item); will insert item into arr at the specified index
-            // (deleting 0 items first, that is, it's just an insert).
-
-            if(is_created){
-    // ---  first remove key 'created' from update_dict
-                delete update_dict.created;
-
-    // --- lookup index where new row must be inserted in data_rows
-                const [index, dict, compare] = b_recursive_lookup(student_rows, map_id, setting_dict.user_lang);
-                const map_index = index;
-                console.log("map_index", map_index, typeof map_index);
-
-    // ---  insert new item in data_rows at proper index (data_rows is ordered by mapid)
-                // insert new row in data_rows. Splice inserts row at index, 0 means deleting zero rows
-                data_rows.splice(map_index, 0, update_dict);
-
-    // ---  create row in table., insert in alphabetical order
-                const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
-
-    // ---  scrollIntoView,
-                if(new_tblRow){
-                    new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
-    // ---  make new row green for 2 seconds,
-                    ShowOkElement(new_tblRow);
-                }
-            } else {
-
-// --- get existing map_dict from data_rows
-                const [index, dict, compare] = b_recursive_lookup(student_rows, map_id, setting_dict.user_lang);
-                const map_dict = dict;
-                const row_index = index;
-
-// ++++ deleted ++++
-                if(is_deleted){
-                    // delete row from data_rows. Splice returns array of deleted rows
-                    const deleted_row_arr = data_rows.splice(row_index, 1)
-                    const deleted_row_dict = deleted_row_arr[0];
-
-        //--- delete tblRow
-                    const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
-                    if (tblRow_tobe_deleted ){tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)};
-
-                } else {
-
-// +++++++++++ updated row +++++++++++
-    // ---  check which fields are updated, add to list 'updated_columns'
-                    if(!isEmpty(map_dict) && field_names){
-
-                        let updated_columns = [];
-                        // skip first column (is margin)
-                        for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
-                            if (col_field in map_dict && col_field in update_dict){
-                                if (map_dict[col_field] !== update_dict[col_field] ) {
-        // ---  add field to updated_columns list
-                                    updated_columns.push(col_field)
-        // ---  update field in data_row
-                                    map_dict[col_field] = update_dict[col_field];
-                                }}
-                        };
-
-        // ---  update field in tblRow
-                        // note: when updated_columns is empty, then updated_columns is still true.
-                        // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
-                        if(updated_columns.length){
-        console.log("updated_columns", updated_columns);
-
-// --- get existing tblRow
-                            let tblRow = document.getElementById(map_id);
-                            if(tblRow){
-                                // to make it perfect: move row when first or last name have changed
-                                if (updated_columns.includes("lastname") || updated_columns.includes("firstname")){
-                                //--- delete current tblRow
-                                    tblRow.parentNode.removeChild(tblRow);
-                                //--- insert row new at new position
-                                    tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
-                                }
-
-        console.log("tblRow", tblRow);
-                // loop through cells of row
-                                for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
-                                    el = td.children[0];
-                                    if (el){
-        console.log("el", el);
-                                        el_fldName = get_attr_from_el(el, "data-field")
-            console.log("el_fldName", el_fldName);
-                                        UpdateField(el, update_dict);
-
-                // make field green when field name is in updated_columns
-                                        if(updated_columns.includes(el_fldName)){
-                                            ShowOkElement(el);
-                                        }
-                                    }
-                                };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
-                            };  // if(tblRow){
-                        }; //  if(updated_columns.length){
-
-
-                    };  //  if(!isEmpty(map_dict) && field_names){
-                };  // if(is_deleted){
-            };  // if(is_created)
-
-        }  // if(!isEmpty(update_dict)){
-    }  // RefreshDatarowItem
-
 
 //###########################################################################
 

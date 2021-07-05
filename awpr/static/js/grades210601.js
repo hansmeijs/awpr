@@ -587,20 +587,21 @@ document.addEventListener("DOMContentLoaded", function() {
 //=========  FillOptionsExamperiodExamtype  ================ PR2021-03-08
     function FillOptionsExamperiodExamtype() {
         //console.log("=== FillOptionsExamperiodExamtype");
-
-        const sel_examperiod = setting_dict.sel_examperiod;
-        t_FillOptionsFromList(el_SBR_select_examperiod, loc.options_examperiod, "value", "caption",
-            loc.Select_examperiod + "...", loc.No_examperiods_found, sel_examperiod);
-        //document.getElementById("id_hdr_textright1").innerText = setting_dict.sel_examperiod_caption
-        document.getElementById("id_SBR_container_examperiod").classList.remove(cls_hide);
-
-        const filter_value = sel_examperiod;
-        t_FillOptionsFromList(el_SBR_select_examtype, loc.options_examtype, "value", "caption",
-            loc.Select_examtype + "...", loc.No_examtypes_found, setting_dict.sel_examtype, "filter", filter_value);
-        document.getElementById("id_SBR_container_examtype").classList.remove(cls_hide);
-
-        document.getElementById("id_SBR_container_showall").classList.remove(cls_hide);
-
+        if (el_SBR_select_examperiod){
+            const sel_examperiod = setting_dict.sel_examperiod;
+            t_FillOptionsFromList(el_SBR_select_examperiod, loc.options_examperiod, "value", "caption",
+                loc.Select_examperiod + "...", loc.No_examperiods_found, sel_examperiod);
+            //document.getElementById("id_hdr_textright1").innerText = setting_dict.sel_examperiod_caption
+            document.getElementById("id_SBR_container_examperiod").classList.remove(cls_hide);
+        };
+        if (el_SBR_select_examtype) {
+            const filter_value = setting_dict.sel_examperiod;
+            t_FillOptionsFromList(el_SBR_select_examtype, loc.options_examtype, "value", "caption",
+                loc.Select_examtype + "...", loc.No_examtypes_found, setting_dict.sel_examtype, "filter", filter_value);
+            document.getElementById("id_SBR_container_examtype").classList.remove(cls_hide);
+        };
+        const el_SBR_container_showall = document.getElementById("id_SBR_container_showall")
+        if (el_SBR_container_showall){el_SBR_container_showall.classList.remove(cls_hide)};
     }  // FillOptionsExamperiodExamtype
 
 //=========  FillOptionsSelectLevelSector  ================ PR2021-03-06
@@ -632,15 +633,17 @@ document.addEventListener("DOMContentLoaded", function() {
 
             const selected_pk = (tblName === "level") ? setting_dict.sel_level_pk : (tblName === "sector") ? setting_dict.sel_sector_pk : null;
             const el_SBR_select = (tblName === "level") ? el_SBR_select_level : (tblName === "sector") ? el_SBR_select_sector : null;
-            t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
+            if (el_SBR_select){
+                t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
 
             // put displayed text in setting_dict
-            const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].text : null;
-            if (tblName === "level"){
-                setting_dict.sel_level_abbrev = sel_abbrev;
-            } else if (tblName === "sector"){
-                setting_dict.sel_sector_abbrev = sel_abbrev;
-            }
+                const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].text : null;
+                if (tblName === "level"){
+                    setting_dict.sel_level_abbrev = sel_abbrev;
+                } else if (tblName === "sector"){
+                    setting_dict.sel_sector_abbrev = sel_abbrev;
+                };
+            };
         }
         // hide select level when department has no levels
         if (tblName === "level"){
@@ -648,8 +651,10 @@ document.addEventListener("DOMContentLoaded", function() {
         // set label of profiel
          } else if (tblName === "sector"){
             add_or_remove_class(document.getElementById("id_SBR_container_sector"), cls_hide, false);
-
-            document.getElementById("id_SBR_select_sector_label").innerText = ( (has_profiel) ? loc.Profiel : loc.Sector ) + ":";
+            const el_SBR_select_sector_label = document.getElementById("id_SBR_select_sector_label");
+            if (el_SBR_select_sector_label) {
+                el_SBR_select_sector_label.innerText = ( (has_profiel) ? loc.Profiel : loc.Sector ) + ":";
+            };
         }
     }  // FillOptionsSelectLevelSector
 
@@ -1027,6 +1032,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 let title_text = null, filter_value = null;
                 if (el_div.nodeName === "INPUT"){
                     el_div.value = (fld_value) ? fld_value : null;
+                    console.log("fld_value", fld_value, typeof fld_value)
                     filter_value = (fld_value) ? fld_value.toLowerCase() : null;
                 } else if (field_name === "se_status"){
                     let class_str = "appr_0_0";
@@ -2793,9 +2799,10 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         }
         setting_dict.sel_subject_txt = (subject_text) ? subject_text : null;
 
-        el_SBR_select_subject.value = subject_text;
-        el_MAG_subject.innerText = subject_text
-        document.getElementById("id_SBR_container_subject").classList.remove(cls_hide);
+        if (el_SBR_select_subject){el_SBR_select_subject.value = subject_text};
+        if (el_MAG_subject){el_MAG_subject.innerText = subject_text};
+        const el_SBR_container_subject = document.getElementById("id_SBR_container_subject");
+        if (el_SBR_container_subject){el_SBR_container_subject.classList.remove(cls_hide)};
 
 // ---  put student_text in el_SBR_select_subject and el_MAG_subject
         let student_name = "";
@@ -2808,8 +2815,10 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
             student_name = "<" + loc.All_candidates + ">";
             setting_dict.sel_student_name = null;
         }
-        el_SBR_select_student.value = student_name;
-        document.getElementById("id_SBR_container_student").classList.remove(cls_hide);
+        if (el_SBR_select_student){el_SBR_select_student.value = student_name};
+
+        const el_SBR_container_student = document.getElementById("id_SBR_container_student");
+        if (el_SBR_container_student){el_SBR_container_student.classList.remove(cls_hide)};
 
     }; // MSSSS_display_in_sbr
 

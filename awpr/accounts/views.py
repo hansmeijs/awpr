@@ -953,7 +953,7 @@ def create_permit_list(permit_pk=None):
     return rows
 # - end of create_permit_list
 
-
+# TODO to be replaced by req_usr.permit_list('page_xxx') PR2021-07-03
 def get_userpermit_list(page, req_user):
     # --- create list of all permits and usergroups of req_usr PR2021-03-19
     logging_on = False  # s.LOGGING_ON

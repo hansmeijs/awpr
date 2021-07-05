@@ -244,7 +244,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
             el_submenu.innerHTML = null;
-            if (permit_dict.requsr_role <= 8) {
+            if (permit_dict.requsr_role_school && permit_dict.requsr_same_school) {
                 // may activate and lock own school (filter is in download create_examyear_rows)
                 AddSubmenuButton(el_submenu, loc.Activate_examyear, function() {MEY_Open("activate")});
                 AddSubmenuButton(el_submenu, loc.Close_examyear, function() {MEY_Open("close_school")});
@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // no permit to view this page
             } else if (permit_dict.requsr_role_insp){
                 // view permit only
-            } else if (permit_dict.requsr_role_admin || permit_dict.requsr_role_system){
+            } else if (permit_dict.requsr_role_admin){
                 // may create, publish, lock exam year
                 AddSubmenuButton(el_submenu, loc.Create_new_examyear, function() {MEY_Open("create")});
                 AddSubmenuButton(el_submenu, loc.Publish_examyear, function() {MEY_Open("publish")});
@@ -684,38 +684,56 @@ document.addEventListener('DOMContentLoaded', function() {
         // mode = 'create, 'publish', 'activate', 'close_admin', 'close_school', 'edit' (with el_input)
 
         console.log("permit_dict", permit_dict)
-        const is_addnew = (mode === "create")
-        //console.log("permit_dict", permit_dict)
-        if(permit_dict.permit_crud){
-            let selected_pk = null, map_id = null;
-            const fldName = get_attr_from_el(el_input, "data-field");
-            const tblName = "examyear";
+        const is_addnew = (mode === "create");
+        let has_permit = false, msg_no_permit = null;
+        if (permit_dict.requsr_role_school && permit_dict.requsr_same_school) {
+            has_permit = (mode === "activate" && !!permit_dict.permit_activate);
+            if(!has_permit){msg_no_permit = loc.msg_info.activate_nopermit[0]}
+        } else if (permit_dict.requsr_role_comm){
+                // no permit to view this page
+        } else if (permit_dict.requsr_role_insp){
+                // view permit only
+        } else if (permit_dict.requsr_role_admin){
 
-        console.log("fldName", fldName)
-            // el_input is undefined when called by submenu buttons
-            if(el_input){
-                const tblRow = get_tablerow_selected(el_input);
-                selected_pk = get_attr_from_el(tblRow, "data-pk")
-                map_id = tblRow.id;
-            } else if (!is_addnew) {
-                selected_pk = selected.examyear_pk;
-                map_id = (selected_pk) ? "examyear_" + selected_pk : null;
+        }
+        console.log("has_permit", has_permit)
+        console.log("msg_no_permit", msg_no_permit)
+        if(msg_no_permit){
+             b_show_mod_message(msg_no_permit)
+        } else {
+
+            //console.log("permit_dict", permit_dict)
+            if(permit_dict.permit_crud){
+                let selected_pk = null, map_id = null;
+                const fldName = get_attr_from_el(el_input, "data-field");
+                const tblName = "examyear";
+
+            console.log("fldName", fldName)
+                // el_input is undefined when called by submenu buttons
+                if(el_input){
+                    const tblRow = get_tablerow_selected(el_input);
+                    selected_pk = get_attr_from_el(tblRow, "data-pk")
+                    map_id = tblRow.id;
+                } else if (!is_addnew) {
+                    selected_pk = selected.examyear_pk;
+                    map_id = (selected_pk) ? "examyear_" + selected_pk : null;
+                }
+                const map_dict = get_mapdict_from_datamap_by_id(examyear_map, map_id)
+                mod_MEY_dict = {}
+                if(!isEmpty(map_dict)){mod_MEY_dict = deepcopy_dict(map_dict)}
+                mod_MEY_dict.mode = mode;
+                mod_MEY_dict.is_addnew = is_addnew;
+                if(is_addnew){
+                    mod_MEY_dict.country_id = permit_dict.requsr_country_pk;
+                    mod_MEY_dict.examyear_code = MEY_get_next_examyear()
+                }
+
+    // ---  set header text, input element and info box
+                MEY_SetMsgElements()
+
+        // ---  show modal
+                $("#id_mod_examyear").modal({backdrop: true});
             }
-            const map_dict = get_mapdict_from_datamap_by_id(examyear_map, map_id)
-            mod_MEY_dict = {}
-            if(!isEmpty(map_dict)){mod_MEY_dict = deepcopy_dict(map_dict)}
-            mod_MEY_dict.mode = mode;
-            mod_MEY_dict.is_addnew = is_addnew;
-            if(is_addnew){
-                mod_MEY_dict.country_id = permit_dict.requsr_country_pk;
-                mod_MEY_dict.examyear_code = MEY_get_next_examyear()
-            }
-
-// ---  set header text, input element and info box
-            MEY_SetMsgElements()
-
-    // ---  show modal
-            $("#id_mod_examyear").modal({backdrop: true});
         }
     };  // MEY_Open
 

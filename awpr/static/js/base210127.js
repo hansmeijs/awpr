@@ -1049,7 +1049,7 @@
                             // value not found, next lookup
                             if (compare < 0) {
                                 if (middle_index === min_index){
-                                    // exit if middle_index equals min_index and comapre is neagtive: means that value is not found
+                                    // exit if middle_index equals min_index and comapre is negative: means that value is not found
 
         //console.log( "compare < 0, middle_index === max_index");
                                     break;
@@ -1244,12 +1244,19 @@
 //#########################################################################
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++
 
-    function b_show_mod_message(msg_html, header_text){  // PR2021-01-26 PR2021-03-25
+    function b_show_mod_message(msg_html, header_text){  // PR2021-01-26 PR2021-03-25 PR2021-07-03
         // TODO header, set focus after closing messagebox
-        document.getElementById("id_mod_message_header").innerText = (header_text) ? header_text : null;
-        document.getElementById("id_mod_message_text").innerHTML = (msg_html) ? msg_html : null;
+
+        const el_msg_header = document.getElementById("id_mod_message_header");
+        if(el_msg_header){el_msg_header.innerText = (header_text) ? header_text : null};
+
+        const el_msg_container = document.getElementById("id_mod_message_container");
+        if(el_msg_container){el_msg_container.innerHTML = (msg_html) ? msg_html : null};
+
+        const el_msg_btn_cancel = document.getElementById("id_modmessage_btn_cancel");
+        if(el_msg_btn_cancel){set_focus_on_el_with_timeout(document.getElementById("id_modmessage_btn_cancel"), 150 )};
+
         $("#id_mod_message").modal({backdrop: false});
-        set_focus_on_el_with_timeout(document.getElementById("id_modmessage_btn_cancel"), 150 )
     }  // show_mod_message
 
 //========= b_render_awp_messages  =================
@@ -1325,7 +1332,7 @@
     }  // b_render_msg_box
 
 
-//=========  ShowModMessages  ================ PR2021-06-27
+//=========  ShowModMessages  ================ PR2021-06-27  PR2021-07-03
     function b_ShowModMessages(msg_dictlist) {
         console.log("==== ShowModMessages  ======")
         console.log("msg_dictlist", msg_dictlist)

@@ -150,6 +150,10 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 #if request_item:
                 #    datalists['studentsubjectnote_rows'] = st_vw.create_studentsubjectnote_rows(request_item, request)
 
+# ----- orderlists
+                if datalist_request.get('orderlist_rows'):
+                    datalists['orderlist_rows'] = st_vw.create_orderlist_rows(new_setting_dict, {})
+
 # ----- grade_with_exam_rows
                 if datalist_request.get('grade_with_exam_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:

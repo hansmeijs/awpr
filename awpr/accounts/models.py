@@ -139,44 +139,52 @@ class User(AbstractUser):
 
 
     def permit_list(self, page):
-        # --- create list of all permits  of this user PR2021-04-22
-        logging_on = False  # s.LOGGING_ON
+        # --- create list of all permits  of this user PR2021-04-22  PR2021-07-03
+        logging_on = False  #s.LOGGING_ON
         if logging_on:
             logger.debug(' =============== permit_list ============= ')
             logger.debug('page: ' + str(page) + ' ' + str(type(page)))
 
-        _role = getattr(self, 'role')
-        _usergroups = getattr(self, 'usergroups')
+        requsr_role = getattr(self, 'role')
+        requsr_usergroups = getattr(self, 'usergroups')
         if logging_on:
-            logger.debug('_usergroups: ' + str(_usergroups) + ' ' + str(type(_usergroups)))
+            logger.debug('requsr_usergroups: ' + str(requsr_usergroups) + ' ' + str(type(requsr_usergroups)))
+            logger.debug('requsr_role: ' + str(requsr_role) + ' ' + str(type(requsr_role)))
         # requsr_usergroups_list: ['admin', 'auth2', 'edit'] <class 'list'>
         permit_list = []
-        if page and _role and _usergroups:
-            requsr_usergroups_list = _usergroups.split(';')
+        if page and requsr_role and requsr_usergroups:
+            requsr_usergroups_list = requsr_usergroups.split(';')
+            if logging_on:
+                logger.debug('requsr_usergroups_list: ' + str(requsr_usergroups_list) + ' ' + str(type(requsr_usergroups_list)))
             sql_filter = ""
             for usergroup in requsr_usergroups_list:
                 sql_filter += " OR (POSITION('" + usergroup + "' IN p.usergroups) > 0)"
 
             if sql_filter:
+                # remove first 'OR ' from sql_filter
                 sql_filter = "AND (" + sql_filter[4:] + ")"
 
-                sql_keys = {'page': page, 'role': _role}
+                sql_keys = {'page': page, 'role': requsr_role}
                 sql_list = ["SELECT p.action FROM accounts_userpermit AS p",
-                            "WHERE (p.page = %(page)s OR p.page = 'page_all') AND p.role = %(role)s::INT",
-                            sql_filter
-                            ]
+                            "WHERE (p.page = %(page)s OR p.page = 'page_all')",
+                            "AND p.role = %(role)s::INT",
+                            sql_filter]
                 sql = ' '.join(sql_list)
 
                 with connection.cursor() as cursor:
                     cursor.execute(sql, sql_keys)
                     for row in cursor.fetchall():
-                        if row[0] not in permit_list:
-                            permit_list.append(row[0])
+                        if logging_on:
+                            logger.debug('row: ' + str(row) + ' ' + str(type(row)))
+                        if row[0]:
+                            permit = 'permit_' + row[0]
+                            if permit not in permit_list:
+                                permit_list.append(permit)
 
         if logging_on:
-            logger.debug('permit_list: ' + str(permit_list))
+            logger.debug('permit_list: ' + str(permit_list) + ' ' + str(type(permit_list)))
         return permit_list
-
+    # - end of permit_list
 
     # PR2018-05-30 list of permits that user can be assigned to:
     # - System users can only have permits: 'Admin' and 'Read'

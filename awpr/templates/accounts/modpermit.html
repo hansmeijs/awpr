@@ -2,7 +2,7 @@
 {% load static %}
 
  <!-- =================== MODAL USER PERMIT  =================== -->
-    <div class="modal" id="id_mod_juserpermit" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+    <div class="modal" id="id_mod_userpermit" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header tsa_bc_lightlightgrey">
@@ -15,15 +15,7 @@
                 <div class="modal-body">
                         <div id="id_div_form_controls" class="modal_body_right mx-2 my-2">
 
-                            <div class="content_header">
-                                <div class="content_subheader_left mx-1 mb-2">
-                                    <label for="id_MUPM_action" class="label_margin_top_m2">{% trans 'Action' %}:</label>
-                                    <input id="id_MUPM_action" type="text" data-field="action"
-                                    autocomplete="off" ondragstart="return false;" ondrop="return false;" class="form-control">
-                                </div>
-                            </div>
-
-                            <div class="flex_container border_bg_invalid">
+                            <div class="flex_container">
                                 <div class="flex_1 mx-2">
                                     <label for="id_MUPM_role" class="label_margin_top_m2">{% trans 'Organization' %}:</label>
                                     <select id="id_MUPM_role" data-field= "role" class="form-control"
@@ -36,7 +28,7 @@
                                          <option value="128">{% trans 'System manager' %}</option>
                                      </select>
                                 </div>
-                                <div class="flex_1 mx-2 border_bg_valid">
+                                <div class="flex_1 mx-2">
                                     <label for="id_MUPM_page" class="label_margin_top_m2">{% trans 'Page' %}:</label>
                                     <select id="id_MUPM_page" data-field= "page" class="form-control"
                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
@@ -48,6 +40,7 @@
                                          <option value="page_subject">page_subject</option>
                                          <option value="page_student">page_student</option>
                                          <option value="page_studsubj">page_studsubj</option>
+                                         <option value="page_orderlist">page_orderlist</option>
                                          <option value="page_exams">page_exams</option>
                                          <option value="page_grade">page_grade</option>
                                      </select>
@@ -60,6 +53,14 @@
                                             </tbody>
                                         </table>
                                     </div>
+                                </div>
+                            </div>
+
+                            <div class="content_header">
+                                <div class="content_subheader_left mx-1 mb-2">
+                                    <label for="id_MUPM_action" class="label_margin_top_m2">{% trans 'Action' %}:</label>
+                                    <input id="id_MUPM_action" type="text" data-field="action"
+                                    autocomplete="off" ondragstart="return false;" ondrop="return false;" class="form-control">
                                 </div>
                             </div>
 

@@ -1376,7 +1376,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById("id_MUPM_action").value = permit_action;
 
     // ---  show modal
-        $("#id_mod_juserpermit").modal({backdrop: true});
+        $("#id_mod_userpermit").modal({backdrop: true});
     };  // MUPM_Open
 
     function MUPM_Save(mode){ //PR2021-03-20
@@ -1426,7 +1426,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }  // error: function (xhr, msg) {
         });  // $.ajax({
 
-        $("#id_mod_juserpermit").modal("hide");
+        $("#id_mod_userpermit").modal("hide");
     }  // MUPM_Save
 
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

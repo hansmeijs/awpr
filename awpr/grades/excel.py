@@ -71,6 +71,7 @@ class SchemeDownloadXlsxView(View):  # PR2021-06-28
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of SchemeDownloadXlsxView
 
+
 @method_decorator([login_required], name='dispatch')
 class StudsubjDownloadEx1View(View):  # PR2021-01-24
 
@@ -610,3 +611,63 @@ def create_scheme_xlsx(examyear, scheme_rows, subjecttype_rows, schemeitem_rows,
     # response['Content-Disposition'] = "attachment; filename=" + file_name
     return response
 # --- end of create_ex1_xlsx
+
+
+############ ORDER LIST ##########################
+
+@method_decorator([login_required], name='dispatch')
+class OrderlistDownloadView(View):  # PR2021-07-04
+
+    def get(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= OrderlistDownloadView ============= ')
+        # function creates, Ex1 xlsx file based on settings in usersetting
+        # TODO ex form prints colums twice, and totals are not correct,
+        # TODO text EINDEXAMEN missing the rest, school not showing PR2021-05-30
+        response = None
+        #try:
+        if True:
+            if request.user and request.user.country and request.user.schoolbase:
+                req_user = request.user
+
+    # - reset language
+                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+    # - get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+
+                if sel_examyear and sel_school and sel_department :
+
+    # get text from examyearsetting
+                    settings = af.get_exform_text(sel_examyear, ['exform', 'ex1'])
+                    if logging_on:
+                        logger.debug('settings: ' + str(settings))
+
+    # +++ get selected studsubj_rows
+                    subject_row_count, subject_pk_list, subject_code_list, level_pk_list = create_ex1_subject_rows(sel_examyear, sel_school, sel_department)
+                    #  subject_pk_dict: {34: 0, 29: 1, 4: 2, 36: 3, 31: 4, 27: 5, 33: 6, 35: 7, 1: 8, 15: 9, 3: 10}
+                    #  subject_code_list: ['bw', 'cav', 'en', 'inst', 'lo', 'mm1', 'mt', 'mvt', 'ne', 'ns1', 'pa']
+                    #  index = row_count
+
+                    if logging_on:
+                        logger.debug('subject_row_count: ' + str(subject_row_count))
+                        logger.debug('subject_pk_list: ' + str(subject_pk_list))
+                        logger.debug('subject_code_list: ' + str(subject_code_list))
+                        logger.debug('level_pk_list: ' + str(level_pk_list))
+
+    # +++ get dict of subjects of these studsubj_rows
+                    studsubj_rows = create_ex1_rows(sel_examyear, sel_school, sel_department)
+                    if studsubj_rows:
+                        response = create_ex1_xlsx(sel_examyear, sel_school, sel_department, settings, subject_row_count, subject_pk_list, subject_code_list, studsubj_rows, user_lang)
+        #except:
+        #    raise Http404("Error creating Ex2A file")
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+# - end of OrderlistDownloadView

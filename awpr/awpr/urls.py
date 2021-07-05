@@ -193,6 +193,9 @@ urlpatterns = [
         path('download_ex1', grade_excel.StudsubjDownloadEx1View.as_view(), name='grade_download_ex1_url'),
 
         path('uploadsetting', student_views.StudentImportUploadSetting.as_view(), name='student_uploadsetting_url'),
+
+        path('orderlists', student_views.OrederlistsListView.as_view(), name='orderlists_url'),
+
     ])),
 
 # ===== EXAMS ========================== PR2021-04-04
@@ -219,12 +222,18 @@ urlpatterns = [
     path('downloads/', report_views.download, name='downloads_url'),
 
 
-# ===== GRADES ========================== PR2021-06-11
+# ===== UPLOAD FROM AWP ========================== PR2021-06-11
     path('uploads/', include([
         path('upload', upload_views.UploadListView.as_view(), name='upload_url'),
     ])),
 
-# ajax PR2018-12-02
+
+# ===== ORDERLIST ========================== PR2021-07-04
+    path('orderlist/', include([
+        path('upload', grade_excel.OrderlistDownloadView.as_view(), name='orderlist_download_url'),
+    ])),
+
+    # ajax PR2018-12-02
     path('ajax/', include([
         #path('import_student_load/', student_views.StudentImportUploadDataView.as_view(), name='import_student_load_url'),
         path('importsettings_upload/', school_imports.UploadImportSettingView.as_view(), name='importsettings_upload_url'),

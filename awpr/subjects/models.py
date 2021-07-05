@@ -314,6 +314,9 @@ class Subjecttypebase(Model):  # PR2018-10-17
 
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
 
+    def __str__(self):
+        return self.name
+
 
 # PR2018-06-06
 class Subjecttype(sch_mod.AwpBaseModel):
@@ -379,6 +382,7 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
     name = CharField(max_length=c.MAX_LENGTH_NAME)
     sequence = PositiveSmallIntegerField(default=9999)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     etenorm = BooleanField(default=False)
 
@@ -421,6 +425,7 @@ class Subject_log(sch_mod.AwpBaseModel):
     code = CharField(max_length=c.MAX_LENGTH_10, null=True)  # stored in subjectbase PR2020-12-11
     sequence = PositiveSmallIntegerField(null=True)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     etenorm = BooleanField(default=False)
     addedbyschool = BooleanField(default=False)
 

@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let department_map = new Map();
 
     let school_map = new Map();
+    let school_rows = [];
 
     let filter_dict = {};
 
@@ -42,13 +43,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const url_school_import = get_attr_from_el(el_data, "data-school_import_url");
     const url_school_awpupload = get_attr_from_el(el_data, "data-school_awpupload_url");
 
+    let columns_hidden = {};
+
 // --- get field_settings
     const field_settings = {
-        school: {field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments", "Day_Evening_LEXschool",  "Activated",  "Locked"],
-                 field_names: ["select", "sb_code", "article", "name", "abbrev", "depbases", "dayevelex", "activated", "locked"],
-                 filter_tags: ["select", "text", "text",  "text", "text",  "text", "text", "toggle", "toggle"],
-                 field_width:  ["020", "075", "075", "360", "180", "120","120","100","100"],
-                 field_align: ["c", "l", "l", "l","l", "l", "l", "c",  "c"]}
+        school: {field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments", "Day_Evening_LEXschool",  "Other_language",  "Activated",  "Locked"],
+                 field_names: ["select", "sb_code", "article", "name", "abbrev", "depbases", "dayevelex", "otherlang", "activated", "locked"],
+                 filter_tags: ["select", "text", "text",  "text", "text",  "text", "text", "text","toggle", "toggle"],
+                 field_width:  ["020", "075", "075", "360", "180", "120","120", "090","100","100"],
+                 field_align: ["c", "l", "l", "l","l", "l", "l", "l", "c", "c"]}
         };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -151,6 +154,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         const el_MSCH_defaultrole_container = document.getElementById("id_MSCH_defaultrole_container");
         const el_MSCH_select_defaultrole = document.getElementById("id_MSCH_defaultrole");
+        const el_MSCH_select_otherlang = document.getElementById("id_MSCH_otherlang");
+
 
 // ---  MODAL UPLOAD PERMITS
     // --- create EventListener for buttons in btn_container
@@ -208,8 +213,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         DatalistDownload(datalist_request, "DOMContentLoaded");
     }
-//  #############################################################################################################
 
+//######################################################################################################
 //========= DatalistDownload  ===================== PR2020-07-31
     function DatalistDownload(datalist_request, called_by) {
         console.log( "=== DatalistDownload ", called_by)
@@ -250,6 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     permit_dict = response.permit_dict;
                     // get_permits must come before CreateSubmenu and FiLLTbl
                     b_get_permits_from_permitlist(permit_dict);
+                    set_columns_hidden();
                     must_update_headerbar = true;
                 }
 
@@ -276,9 +282,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     RefreshDataMap(tblName, field_names, response.department_rows, department_map)
                     }
                 if ("school_rows" in response) {
-                    const tblName = "school";
-                    const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                    RefreshDataMap(tblName, field_names, response.school_rows, school_map)
+                    school_rows = response.school_rows;
+                    //const tblName = "school";
+                    //const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
+                    //RefreshDataMap(tblName, field_names, response.school_rows, school_map)
                 }
 
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
@@ -291,11 +298,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }  // function DatalistDownload
 
-
 //=========  CreateSubmenu  ===  PR2020-07-31 PR2021-06-20
     function CreateSubmenu() {
-        console.log("===  CreateSubmenu == ");
-        console.log("permit_dict:", permit_dict);
+        //console.log("===  CreateSubmenu == ");
+        //console.log("permit_dict:", permit_dict);
 
         let el_submenu = document.getElementById("id_submenu")
         if(el_submenu){
@@ -303,10 +309,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Add_school, function() {MSCH_Open()});
                 AddSubmenuButton(el_submenu, loc.Delete_school, function() {ModConfirmOpen("delete")});
             };
-            if (permit_dict.upload_awpfile){
+            if (permit_dict.permit_upload_awpfile){
                 AddSubmenuButton(el_submenu, loc.Upload_awpdata, function() {ModUploadAwp_open()}, null, "id_submenu_importawp");
             };
-            const hide_submenu =  (!permit_dict.permit_crud && !permit_dict.upload_awpfile);
+            const hide_submenu =  (!permit_dict.permit_crud && !permit_dict.permit_upload_awpfile);
             add_or_remove_class(el_submenu, cls_hide, hide_submenu);
         };
     };//function CreateSubmenu
@@ -315,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
 //=========  HandleBtnSelect  ================ PR2020-09-19
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ", data_btn);
+        //console.log( "===== HandleBtnSelect ========= ", data_btn);
         selected_btn = data_btn
         if(!selected_btn){selected_btn = "btn_school"}
 
@@ -362,8 +368,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function FillTblRows() {
         console.log( "===== FillTblRows  === ");
 
-        const tblName = get_tblName_from_selectedBtn()
+        const tblName = "school" //  tblName = get_tblName_from_selectedBtn()
         const field_setting = field_settings[tblName]
+        const data_rows = school_rows;
+
+// --- show columns
+        set_columns_hidden();
 
 // --- get data_map
         const data_map = get_datamap_from_tblName(tblName);
@@ -376,17 +386,18 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- create table header
         CreateTblHeader(field_setting);
 
-        if(data_map){
-// --- loop through data_map
-          for (const [map_id, map_dict] of data_map.entries()) {
-                let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict)
+// --- loop through data_rows
+        if(data_rows && data_rows.length){
+            for (let i = 0, map_dict; map_dict = data_rows[i]; i++) {
+                const map_id = map_dict.mapid;
+                let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict);
           };
         }  // if(!!data_map)
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-05-10
     function CreateTblHeader(field_setting) {
-        console.log("===========  CreateTblHeader ======== ");
+        //console.log("===========  CreateTblHeader ======== ");
 
         const column_count = field_setting.field_names.length;
 
@@ -471,13 +482,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const field_width = field_setting.field_width;
         const column_count = field_names.length;
 
-// ---  NOT YET IMPLEMENTED lookup index where this row must be inserted
-        //const orderby_lastname = (map_dict.lastname) ? map_dict.lastname : "";
-        //const orderby_firstname = (map_dict.firstname) ? map_dict.firstname : "";
+// ---  lookup index where this row must be inserted
+        const ob1 = (map_dict.sb_code) ? map_dict.sb_code : "";
+        // NIU:  const ob2 = (map_dict.firstname) ? map_dict.firstname : "";
+        // NIU:  const ob3 = (map_dict.firstname) ? map_dict.firstname : "";
 
-        //const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
-        //                             orderby_lastname, orderby_firstname, "", setting_dict.user_lang);
-        const row_index = -1
+        const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
+                                     ob1, "", "", setting_dict.user_lang);
 
 // --- insert tblRow into tblBody at row_index
         let tblRow = tblBody_datatable.insertRow(row_index);
@@ -487,8 +498,8 @@ document.addEventListener('DOMContentLoaded', function() {
         tblRow.setAttribute("data-pk", map_dict.id);
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
-        //tblRow.setAttribute("data-ob1", orderby_lastname);
-        //tblRow.setAttribute("data-ob2", orderby_firstname);
+        tblRow.setAttribute("data-ob1", ob1);
+        // NIU: tblRow.setAttribute("data-ob2", ob2);
         // NIU: tblRow.setAttribute("data-ob3", ---);
 
 // --- add EventListener to tblRow
@@ -517,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
             td.appendChild(el);
 
     // --- add EventListener to td
-            if (["code", "abbrev", "name", "last_name", "depbases", "dayevelex"].includes(field_name)){
+            if (["code", "abbrev", "name", "last_name", "depbases", "dayevelex", "otherlang"].includes(field_name)){
                 td.addEventListener("click", function() {MSCH_Open(el)}, false)
                 td.classList.add("pointer_show");
                 add_hover(td);
@@ -559,6 +570,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (["sb_code", "article", "name", "abbrev"].indexOf(field_name) > -1){
                     el_div.innerText = map_dict[field_name];
                     filter_value = (fld_value) ? fld_value.toLowerCase() : null;
+                } else if ( field_name === "otherlang") {
+                    display_txt = (fld_value === "pa") ? loc.Papiamentu : (fld_value === "en") ? loc.English : fld_value;
+                    el_div.innerText = display_txt;
+                    filter_value = (display_txt) ? display_txt.toLowerCase() : null;
                 } else if ( field_name === "depbases") {
                     display_txt = b_get_depbases_display(department_map, "base_code", fld_value);
                     el_div.innerText = display_txt;
@@ -573,6 +588,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }  // if(field_name)
         }  // if(el_div)
     };  // UpdateField
+
+
+//========= set_columns_hidden  ====== PR2021-07-05
+    function set_columns_hidden() {
+        //console.log( "===== set_columns_hidden  === ");
+        //console.log("setting_dict.sel_dep_level_req", setting_dict.sel_dep_level_req);
+        //columns_hidden.lvl_abbrev = (!setting_dict.sel_dep_level_req);
+    }  // set_columns_hidden
+
+
 
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
 
@@ -660,10 +685,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( response);
 
                     if ("updated_school_rows" in response) {
-                        document.getElementById("id_MSCH_loader").classList.add(cls_visible_hide)
+                        const el_MSCH_loader = document.getElementById("id_MSCH_loader");
+                        if(el_MSCH_loader){ el_MSCH_loader.classList.add(cls_visible_hide)};
+
                         const tblName = "school";
                         const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                        RefreshDataMap(tblName, field_names, response.updated_school_rows, school_map);
+                        //RefreshDataMap(tblName, field_names, response.updated_school_rows, school_map);
+                        RefreshDataRows(tblName, response.updated_school_rows, school_rows, true)  // true = update
                     };
                     $("#id_mod_school").modal("hide");
 
@@ -677,9 +705,157 @@ document.addEventListener('DOMContentLoaded', function() {
         }  //  if(!!row_upload)
     };  // UploadChanges
 
-//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+//###########################################################################
+// +++++++++++++++++ REFRESH DATA ROWS ++++++++++++++++++++++++++++++++++++++++++++++++++
 
-// +++++++++ MOD SCHOOL ++++++++++++++++ PR2020-09-30
+//=========  RefreshDataRows  ================ PR2021-07-05
+    function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
+        //console.log(" --- RefreshDataRows  ---");
+        // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
+        if (update_rows && update_rows.length ) {
+            const field_setting = field_settings[tblName];
+            for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
+                RefreshDatarowItem(tblName, field_setting, update_dict, data_rows);
+            }
+        } else if (!is_update) {
+            // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
+            // PR2021-03-13 debug. Don't empty de data_rows when is update. Returns [] when no changes made
+           data_rows = [];
+        }
+    }  //  RefreshDataRows
+
+//=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-16
+    function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
+        console.log(" --- RefreshDatarowItem  ---");
+        console.log("update_dict", update_dict);
+
+        if(!isEmpty(update_dict)){
+            const field_names = field_setting.field_names;
+
+            const map_id = update_dict.mapid;
+            const is_deleted = (!!update_dict.deleted);
+            const is_created = (!!update_dict.created);
+
+            const error_list = get_dict_value(update_dict, ["error"], []);
+        console.log("error_list", error_list);
+
+            let updated_columns = [];
+            let field_error_list = []
+            if(error_list && error_list.length){
+
+    // - show modal messages
+                b_ShowModMessages(error_list);
+
+    // - add fields with error in updated_columns, to put old value back in field
+                for (let i = 0, msg_dict ; msg_dict = error_list[i]; i++) {
+                    if ("field" in msg_dict){field_error_list.push(msg_dict.field)};
+                };
+
+            //} else {
+            // close modal MSJ when no error --- already done in modal
+                //$("#id_mod_subject").modal("hide");
+            }
+
+// ++++ created ++++
+            // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
+            //arr.splice(index, 0, item); will insert item into arr at the specified index
+            // (deleting 0 items first, that is, it's just an insert).
+
+            if(is_created){
+    // ---  first remove key 'created' from update_dict
+                delete update_dict.created;
+
+    // --- lookup index where new row must be inserted in data_rows
+                // PR2021-06-21 not necessary, new row has always pk higher than existing. Add at end of rows
+    // ---  add new item in data_rows at end
+                data_rows.push(update_dict);
+
+    // ---  create row in table., insert in alphabetical order
+                const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
+
+    // ---  scrollIntoView,
+                if(new_tblRow){
+                    new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
+    // ---  make new row green for 2 seconds,
+                    ShowOkElement(new_tblRow);
+                }
+            } else {
+
+// --- get existing map_dict from data_rows
+                const [index, dict, compare] = b_recursive_lookup(school_rows, map_id, setting_dict.user_lang);
+                const map_dict = dict;
+                const datarow_index = index;
+
+// ++++ deleted ++++
+                if(is_deleted){
+                    // delete row from data_rows. Splice returns array of deleted rows
+                    const deleted_row_arr = data_rows.splice(datarow_index, 1)
+                    const deleted_row_dict = deleted_row_arr[0];
+
+        //--- delete tblRow
+                    const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
+    // ---  when delete: make tblRow red for 2 seconds, before uploading
+                    if (tblRow_tobe_deleted ){tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)};
+
+                } else {
+
+// +++++++++++ updated row +++++++++++
+    // ---  check which fields are updated, add to list 'updated_columns'
+                    if(!isEmpty(map_dict) && field_names){
+
+                        // skip first column (is margin)
+                        for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
+                            if (col_field in map_dict && col_field in update_dict){
+                                if (map_dict[col_field] !== update_dict[col_field] ) {
+        // ---  add field to updated_columns list
+                                    updated_columns.push(col_field)
+        // ---  update field in data_row
+                                    map_dict[col_field] = update_dict[col_field];
+                       }}};
+
+                console.log("updated_columns", updated_columns, typeof updated_columns);
+
+        // ---  update field in tblRow
+                        // note: when updated_columns is empty, then updated_columns is still true.
+                        // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
+                        if(updated_columns.length || field_error_list.length){
+        console.log("updated_columns", updated_columns);
+        console.log("field_error_list", field_error_list);
+
+// --- get existing tblRow
+                            let tblRow = document.getElementById(map_id);
+                            if(tblRow){
+                                // to make it perfect: move row when school code changed
+                                if (updated_columns.includes("sb_code")){
+                                //--- delete current tblRow
+                                    tblRow.parentNode.removeChild(tblRow);
+                                //--- insert row new at new position
+                                    tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
+                                }
+
+                // loop through cells of row
+                                for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
+                                    el = td.children[0];
+                                    if (el){
+        //console.log("el", el);
+                                        el_fldName = get_attr_from_el(el, "data-field")
+        //console.log("el_fldName", el_fldName);
+                                        UpdateField(el, update_dict);
+                                    }
+                                };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
+                            };  // if(tblRow){
+                        }; //  if(updated_columns.length){
+
+
+                    };  //  if(!isEmpty(map_dict) && field_names){
+                };  // if(is_deleted){
+            };  // if(is_created)
+
+        }  // if(!isEmpty(update_dict)){
+    }  // RefreshDatarowItem
+
+
+// +++++++++++++++++++++++++++ MOD SCHOOL +++++++++++++++++++++++++ PR2020-09-30
 // --- also used for level, sector,
     function MSCH_Open(el_input){
         console.log(" -----  MSCH_Open   ----")
@@ -707,11 +883,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tblRow = get_tablerow_selected(el_input);
                 //tblName = get_attr_from_el(tblRow, "data-table")
                 tblName = "school"
-                const data_map = get_datamap_from_tblName(tblName);
-                const map_dict = get_mapdict_from_datamap_by_id(data_map, tblRow.id);
-            //console.log("tblName", tblName)
-            //console.log("data_map", data_map)
-            //console.log("map_dict", map_dict)
+                const map_dict = b_get_mapdict_from_datarows(school_rows, tblRow.id, setting_dict.user_lang);
+                mod_MSCH_dict = deepcopy_dict(map_dict);
+
+            console.log("tblName", tblName)
+            console.log("school_rows", school_rows)
+            console.log("map_dict", map_dict)
                 if(!isEmpty(map_dict)){
 
                     mod_MSCH_dict.id = map_dict.id;
@@ -724,6 +901,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     mod_MSCH_dict.article = map_dict.article;
                     mod_MSCH_dict.name = map_dict.name;
                     mod_MSCH_dict.depbases = map_dict.depbases;
+                    mod_MSCH_dict.otherlang = map_dict.otherlang;
                     mod_MSCH_dict.defaultrole = map_dict.defaultrole,
 
                     mod_MSCH_dict.isdayschool = map_dict.isdayschool,
@@ -743,11 +921,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  remove value from el_mod_employee_input, set focus to selected field
             MSCH_SetElements(fldName);
 
+            //if(permit_dict.requsr_role_system){
+                t_FillOptionsFromList(el_MSCH_select_defaultrole, loc.options_role, "value", "caption",
+                            loc.Select_organization + "...", loc.No_organizations_found, mod_MSCH_dict.defaultrole);
+            //};
+            //add_or_remove_class(el_MSCH_defaultrole_container, cls_hide, !permit_dict.requsr_role_system);
+            el_MSCH_select_defaultrole.disabled = !permit_dict.requsr_role_system
+        console.log("mod_MSCH_dict", mod_MSCH_dict)
             if (!is_addnew){
                 el_MSCH_code.value = (mod_MSCH_dict.code) ? mod_MSCH_dict.code : null;
                 el_MSCH_abbrev.value = (mod_MSCH_dict.abbrev) ? mod_MSCH_dict.abbrev : null;
                 el_MSCH_name.value = (mod_MSCH_dict.name) ? mod_MSCH_dict.name : null;
                 el_MSCH_article.value = (mod_MSCH_dict.article) ? mod_MSCH_dict.article : null;
+                el_MSCH_select_defaultrole.value = (mod_MSCH_dict.defaultrole) ? mod_MSCH_dict.defaultrole : null;
+                el_MSCH_select_otherlang.value = (mod_MSCH_dict.otherlang) ? mod_MSCH_dict.otherlang : null;
 
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSCH_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
@@ -757,12 +944,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             MSCH_FillSelectTableDepartment();
-
-            if(permit_dict.requsr_role_system){
-                t_FillOptionsFromList(el_MSCH_select_defaultrole, loc.options_role, "value", "caption",
-                            loc.Select_organization + "...", loc.No_organizations_found, mod_MSCH_dict.defaultrole);
-            };
-            add_or_remove_class(el_MSCH_defaultrole_container, cls_hide, !permit_dict.requsr_role_system);
 
     // ---  set focus to el_MSCH_code
             setTimeout(function (){el_MSCH_code.focus()}, 50);
@@ -830,8 +1011,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // modal is closed by data-dismiss="modal"
             UploadChanges(upload_dict, url_school_upload);
         };
+        $("#id_mod_school").modal("hide");
     }  // MSCH_Save
-
 
 //========= MSCH_FillSelectTableDepartment  ============= PR2020--09-30
     function MSCH_FillSelectTableDepartment() {
@@ -1016,7 +1197,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MSCH_validate_and_disable  ================  PR2020-10-01
     function MSCH_validate_and_disable() {
-        //console.log(" -----  MSCH_validate_and_disable   ----")
+        console.log(" -----  MSCH_validate_and_disable   ----")
         let disable_save_btn = false;
 // ---  loop through input fields on MSCH_Open
         let form_elements = el_MSCH_div_form_controls.querySelectorAll(".form-control")
@@ -1024,6 +1205,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const fldName = get_attr_from_el(el_input, "data-field")
             const msg_err = MSCH_validate_field(el_input, fldName)
+        console.log("msg_err", msg_err)
 // ---  show / hide error message
             const el_msg = document.getElementById("id_MSCH_msg_" + fldName);
             if(el_msg){
@@ -1033,13 +1215,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (msg_err){ disable_save_btn = true};
         };
 
+        console.log("disable_save_btn", disable_save_btn)
 // ---  disable save button on error
         el_MSCH_btn_save.disabled = disable_save_btn;
     }  // MSCH_validate_and_disable
 
 //=========  MSCH_validate_field  ================  PR2020-10-01
     function MSCH_validate_field(el_input, fldName) {
-        //console.log(" -----  MSCH_validate_field   ----")
+        console.log(" -----  MSCH_validate_field   ----")
         let msg_err = null;
         if (el_input){
             const value = el_input.value;
@@ -1047,6 +1230,10 @@ document.addEventListener('DOMContentLoaded', function() {
                              (fldName === "abbrev") ? loc.Short_name :
                              (fldName === "name") ? loc.Name  :
                              (fldName === "defaultrole") ? loc.Organization  : loc.This_field;
+
+
+        console.log("fldName", fldName)
+        console.log("value", value)
             if (["sb_code", "abbrev", "name", "defaultrole"].indexOf(fldName) > -1 && !value) {
                 msg_err = caption + loc.cannot_be_blank;
             } else if (fldName === "abbrev" && value.length > 30) {
@@ -1771,7 +1958,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // also retrieve the tables that have been changed because of the change in examyear / dep
         const datalist_request = {
                 setting: new_setting,
-                student_rows: {get: true},
+                school_rows: {get: true},
                 studentsubject_rows: {get: true},
                 grade_rows: {get: true},
                 schemeitem_rows: {get: true}
@@ -1822,13 +2009,12 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MOD NOTE Open====================================
     function ModUploadAwp_open () {
         console.log("===  ModUploadAwp_open  =====") ;
+// reset filedialog
+        el_ModUploadAwp_filedialog.value = null;
+// hide loader
+        const el_ModUploadAwp_loader = document.getElementById("id_ModUploadAwp_loader");
+        add_or_remove_class(el_ModUploadAwp_loader, cls_hide, true);
 
-
-// download existing studentsubjectnote_rows of this studsubj
-            // will be filled in ModNote_FillNotes
-
-
-// get info from grade_map
         $("#id_mod_uploadawp").modal({backdrop: true});
 
     }  // ModUploadAwp_open
@@ -1962,7 +2148,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //?????????????????????????????????????????????????????????????????
 
-//========= get_tblName_from_selectedBtn  ======== // PR2021-06-20
+//========= get_dayevelex_display  ======== // PR2021-06-20
     function get_dayevelex_display(dict) {
         let display_txt = null;
         if(!isEmpty(dict)){

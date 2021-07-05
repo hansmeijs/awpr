@@ -417,6 +417,7 @@ class School(AwpBaseModel):  # PR2018-08-20 PR2018-11-11
     abbrev = CharField(max_length=c.MAX_LENGTH_SCHOOLABBREV)
     article = CharField(max_length=c.MAX_LENGTH_SCHOOLARTICLE, null=True)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     isdayschool = BooleanField(default=False)
     iseveningschool = BooleanField(default=False)
@@ -460,6 +461,7 @@ class School_log(AwpBaseModel):
     article = CharField(max_length=c.MAX_LENGTH_SCHOOLARTICLE, null=True)
 
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     isdayschool = BooleanField(default=False)
     iseveningschool = BooleanField(default=False)
@@ -473,28 +475,31 @@ class School_log(AwpBaseModel):
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
-# PR2018-106-17
-class School_message(AwpBaseModel):
+class Schoolnote(AwpBaseModel):
     objects = AwpModelManager()
 
     school = ForeignKey(School, related_name='+', on_delete=CASCADE)
-    sent_to = CharField(max_length=2048, null=True, blank=True)
-    title = CharField(max_length=80, null=True, blank=True)
-    note = CharField(max_length=4096, null=True, blank=True)
-    is_insp = BooleanField(default=False)
-    is_unread = BooleanField(default=False)
+
+    # intern_schoolbase only has value when it is an intern memo.
+    # It has the value of the school of the user, NOT the school of the student
+    intern_schoolbase = ForeignKey(Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
+
+    note = CharField(max_length=2048, null=True, blank=True)
+    mailto_user = CharField(max_length=2048, null=True, blank=True)
+    note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
 
-# PR2018-106-17
-class School_message_log(AwpBaseModel):
+class Schoolnote_log(AwpBaseModel):
     objects = AwpModelManager()
 
-    school_message_id = IntegerField(db_index=True)
-    sent_to = CharField(max_length=2048, null=True, blank=True)
-    title = CharField(max_length=80, null=True, blank=True)
-    note = CharField(max_length=4096, null=True, blank=True)
-    is_insp = BooleanField(default=False)
-    is_unread = BooleanField(default=False)
+    studentsubjectnote_id = IntegerField(db_index=True)
+
+    school_log = ForeignKey(School_log, related_name='+', on_delete=CASCADE)
+    intern_schoolbase = ForeignKey(Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
+
+    note = CharField(max_length=2048, null=True, blank=True)
+    mailto_user = CharField(max_length=2048, null=True, blank=True)
+    note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 

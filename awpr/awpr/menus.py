@@ -184,8 +184,8 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         # get selected menu_key and selected_button_key from request.GET, settings or default, check viewpermit
         menu_items = set_menu_items(sel_page, _class_bg_color, request)
 
-# ------- set no_access -------- PR2021-04-27
-        no_access = ('permit_view' not in permit_list)
+# ------- set no_access -------- PR2021-04-27 PR2021-07-03
+        no_access = ('permit_view' not in permit_list and 'permit_crud' not in permit_list)
 
 # ------- set message -------- PR2021-03-25
         if no_examyears:
@@ -277,18 +277,7 @@ def set_menu_items(sel_page, _class_bg_color, request):
     menu_item_tags = []
 
     # list of menuitems to be shown in page
-    menu_items = []
-    if request.user.role == c.ROLE_128_SYSTEM:
-        menu_items = ['page_examyear', 'page_school', 'page_student', 'page_exams', 'page_grade', 'page_result', 'page_report', 'page_analysis']
-    elif request.user.role == c.ROLE_064_ADMIN:
-        menu_items = ['page_examyear', 'page_subject', 'page_school', 'page_student', 'page_exams', 'page_grade', 'page_result', 'page_report', 'page_analysis']
-    elif request.user.role == c.ROLE_032_INSP:
-        menu_items = ['page_examyear', 'page_school', 'page_student', 'page_exams', 'page_grade', 'page_result', 'page_report', 'page_analysis']
-    elif request.user.role == c.ROLE_016_COMM:
-        menu_items = ['page_examyear', 'page_school', 'page_student', 'page_grade', 'page_result']
-    elif request.user.role == c.ROLE_008_SCHOOL:
-        menu_items = ['page_examyear', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_report']
-
+    menu_items = c.MENUS_ITEMS.get(request.user.role)
 
     # loop through all menus in menus, to retrieve href from all menu-buttons
     # from https://treyhunner.com/2016/04/how-to-loop-with-indexes-in-python/

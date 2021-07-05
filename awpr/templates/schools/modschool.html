@@ -56,7 +56,7 @@
 
                             <div class="flex_container">
                                 <div class="flex_1 mx-1">
-                                    <label for="id_MSCH_article" class="mx-2">{% trans 'Article' %}:</label>
+                                    <label for="id_MSCH_article" class="label_margin_top_m2">{% trans 'Article' %}:</label>
                                     <select id="id_MSCH_article" data-field="article" class="form-control">
                                         <option value="">-</option>
                                         <option value="de">de</option>
@@ -64,7 +64,7 @@
                                     </select>
                                 </div>
                                 <div class="flex_4 mx-1">
-                                    <label for="id_MSCH_name" class="mx-2">{% trans 'Name' %}:</label>
+                                    <label for="id_MSCH_name" class="label_margin_top_m2">{% trans 'Name' %}:</label>
                                     <input id="id_MSCH_name" type="text" data-field="name"
                                     class="form-control"
                                     autocomplete="off" ondragstart="return false;" ondrop="return false;">
@@ -92,9 +92,9 @@
                         </div>
                     </div>
 
-                    <div class="mx-2" >
-                        <div>
-                            <label class="mx-2">{% trans 'Day school' %} / {% trans 'Evening school' %} / {% trans 'Landsexamen' %} / </label>
+                    <div class="flex_container">
+                        <div class="flex_3 mx-1 mt-2">
+                            <label class="label_margin_top_m2">{% trans 'Day school' %} / {% trans 'Evening school' %} / {% trans 'Landsexamen' %} / </label>
                             <select data-field="dayevelex" class="form-control">
                                 <option value="day">{% trans 'Day school' %}</option>
                                 <option value="eve"> {% trans 'Evening school' %}</option>
@@ -102,11 +102,15 @@
                                 <option value="lex"> {% trans 'Landsexamen' %}</option>
                             </select>
                         </div>
-                        <div class="mx-2">
-                             <small id="id_MSCH_msg_dayeveninglex" class="text-danger"></small>
+                        <div class="flex_2 mx-1 mt-2">
+                            <label for="id_MSCH_otherlang" class="label_margin_top_m2">{% trans 'Other language' %}:</label>
+                            <select id="id_MSCH_otherlang" data-field="otherlang" class="form-control">
+                                <option value="">-</option>
+                                <option value="en">{% trans 'English' %}</option>
+                                <option value="pa">{% trans 'Papiamentu' %}</option>
+                            </select>
                         </div>
                     </div>
-
                     <div class="mx-3 mt-2">
                         <small id="id_MSCH_msg_modified"></small>
                     </div>

@@ -49,9 +49,6 @@ class GradeListView(View):  # PR2020-12-03 PR2021-03-25
         page = 'page_grade'
         headerbar_param = awpr_menu.get_headerbar_param(request, page)
 
-# - save this page in Usersetting, so at next login this page will open. Used in LoggedIn
-        # PR2021-06-22 moved to get_headerbar_param
-
         return render(request, 'grades.html', headerbar_param)
 
 

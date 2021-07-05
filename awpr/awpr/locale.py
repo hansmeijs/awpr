@@ -316,6 +316,9 @@ def get_locale_dict(table_dict, user_lang):
             str(_("The exam year will be activated now.")),
             str(_("After you have activated the examyear, you will be able to enter data."))
         ],
+        'activate_nopermit': [
+            str(_("You don't have permission to activate the examyear."))
+        ],
         'close': [
             str(_("The exam year will be closed now.")),
             str(_("After you have closed the examyear, it it no longer possible to add, change or delete data.")),
@@ -359,7 +362,6 @@ def get_locale_dict(table_dict, user_lang):
         dict['No_subjecttypes_found'] = _("No subject types found")
         dict['Select_subjecttypes'] = _("Select subject types")
         dict['Base_subjecttype'] = _("Base subject type")
-
 
         dict['Grade_type'] = _('Grade type')
 
@@ -410,8 +412,12 @@ def get_locale_dict(table_dict, user_lang):
         dict['then_click'] = _("then click the menu button")
         dict['Enter_subject_types'] = _('and enter the subject types of this subject scheme.')
 
-
         dict['Sequence'] = TXT_Sequence
+        dict['Other_languages'] = _('Other languages')
+        dict['Papiamentu'] = _('Papiamentu')
+        dict['English'] = _('English')
+        dict['English_and_Papiamentu'] = _('English, Papiamentu')
+
         dict['Upload_subjects'] = _('Upload subjects')
 
         dict['this_subject'] = _('this subject')
@@ -451,10 +457,13 @@ def get_locale_dict(table_dict, user_lang):
         dict['Evening_school'] = _('Evening school')
         dict['Landsexamen'] = _('Landsexamen')
 
+        dict['Other_language'] = _('Other language')
+        dict['Papiamentu'] = _('Papiamentu')
+        dict['English'] = _('English')
 
         #dict['Departments_of_this_school'] = _('Departments of this school')
         dict['All_departments'] = _('All departments')
-        dict['School_code'] = _('School code')
+        dict['School_code'] = TXT_School_code
         dict['is_too_long_max_schoolcode'] = _(" is too long. Maximum is %(max)s characters.") % {'max': c.MAX_LENGTH_SCHOOLCODE}
         dict['is_too_long_max_article'] = _(" is too long. Maximum is %(max)s characters.") % {'max': c.MAX_LENGTH_SCHOOLABBREV}
         dict['is_too_long_max_name'] = _(" is too long. Maximum is %(max)s characters.") % {'max': c.MAX_LENGTH_NAME}
@@ -499,7 +508,6 @@ def get_locale_dict(table_dict, user_lang):
         dict['_of_'] = TXT__of_
         dict['_or_'] = TXT__or_
 
-
         dict['Submit_Ex1_form'] = _('Submit Ex2A form')
         dict['Approve_grades'] = _('Approve grades')
         dict['Submit_Ex1_form'] = _('Submit Ex2A form')
@@ -520,7 +528,6 @@ def get_locale_dict(table_dict, user_lang):
             'submit_2': _("After the grades are submitted, you can only change them with permission of the Inpsection."),
 
             'submit_ok_01': _("The Ex2A form is succesfully created."),
-
         }
 
 # ====== PAGE EXAM ========================= PR2021-04-04
@@ -747,9 +754,19 @@ def get_locale_dict(table_dict, user_lang):
 
 
                                 }
+
+    if 'page_orderlist' in page_list:
+        dict['School_code'] = TXT_School_code
+        dict['School_name'] = _('School name')
+        dict['Subject'] = _('Subject')
+        dict['Amount'] = _('Amount')
+        dict['Submitted'] = _('Submitted')
+        dict['Download_orderlist'] = _('Download orderlist')
+
     return dict
 
 
+TXT_School_code = _('School code')
 TXT_Organization = _('Organization')
 
 TXT_Examnumber_twolines = _('Exam\nnumber')

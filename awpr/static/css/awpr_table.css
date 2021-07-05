@@ -1012,7 +1012,8 @@ aXX:hover{
 .tbl_studsubj_h390_w_auto {
     overflow-x: hidden;
     overflow-y: auto;
-    height: 240px;
+    /*height: 240px;*/
+    height: 390px;
     /*width: 320px;*/
     width: auto
 }

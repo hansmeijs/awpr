@@ -48,7 +48,7 @@ class UploadListView(View):  # PR2021-06-11
 
 
 @method_decorator([login_required], name='dispatch')
-class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03
+class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
 
     def post(self,request):
         logging_on = s.LOGGING_ON
@@ -81,7 +81,7 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03
                     examyear=sel_examyear
                 ).order_by('-pk').first()
             if logging_on:
-                logger.debug('sel_school: ' + str(sel_school) + ' ' + str(type(sel_school)))
+                logger.debug('sel_school  : ' + str(sel_school) + ' ' + str(type(sel_school)))
 
             if sel_school:
                 # you may put validations here to check extension or file size
@@ -121,7 +121,6 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03
                             row_count = 0
                             for row in worksheet.iter_rows():
                                 row_count += 1
-                            logger.debug('-----  ws_name: ' + str(ws_name) + ' row_count: ' + str(row_count))
 
                         row_count = 0
                         for row in worksheet.iter_rows():
@@ -157,7 +156,7 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03
                                     elif ws_name == 'schemeitem':
                                         ImportSchemeitem(ws_name, row_data, logfile, mapped, sel_examyear, request)
                                     elif ws_name == 'package':
-                                        ImportPackage(ws_name, row_data, logfile, mapped, sel_examyear, sel_school, request)
+                                        ImportPackage(ws_name, row_data, logfile, mapped, sel_examyear, request)
                                     elif ws_name == 'packageitem':
                                         ImportPackageitem(ws_name, row_data, logfile, mapped, sel_examyear, request)
                                     elif ws_name == 'cluster':
@@ -169,8 +168,6 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03
 
                             is_first_row = False
 
-                        if logging_on:
-                            logger.debug('-----  ws_name: ' + str(ws_name) + ' row_count: ' + str(row_count))
 
         header_text = _('Upload') + ' ' + str(_('All').lower())
         update_wrap = {"logfile": logfile, 'header': header_text}
@@ -179,7 +176,7 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 
 def ImportData(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR2020-12-13
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     #try:
     if True:
@@ -463,11 +460,11 @@ def ImportSector(ws_name, row_data, logfile, mapped, sel_examyear, request):  #P
 
 def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR2021-05-03
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if ws_name == 'subjecttype' and row_data:
         try:
             requsr_country = request.user.country
-            #  row_data: {'subjecttype_id': 1, 'name': 'Gemeenschappelijk deel'}
+            #  row_data: {'subjecttype_id': 1, 'department_id': 1, 'name': 'Gemeenschappelijk deel'}
 
             if logging_on:
                 logger.debug('-------------------  subjecttype ----------------- ')
@@ -477,113 +474,166 @@ def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
             if awp_name:
                 awp_name_sliced_lc = awp_name.lower()[0:8]
 
-                subjecttype_base = None
+                code_dict = {'gemeensc': 'gmd', 'sectorde': 'spd', 'profield': 'spd', 'overig v': 'vrd',
+                             'vrije de': 'vrd', 'sectorpr': 'spr', 'sectorwe': 'wst', 'profielw': 'wst', 'stage': 'stg'}
+                name_dict = {'gemeensc': 'Gemeenschappelijk deel', 'sectorde': 'Sectordeel', 'profield': 'Profieldeel',
+                             'overig v': 'Overig vak', 'vrije de': 'Vrije deel', 'sectorpr': 'Sectorprogramma',
+                             'sectorwe': 'Sectorwerkstuk', 'profielw': 'Profielwerkstuk', 'stage': 'Stage'}
+                abbrev_dict = {'gemeensc': 'Gemeensch.', 'sectorde': 'Sectordeel', 'profield': 'Profieldeel',
+                               'overig v': 'Overig vak', 'vrije de': 'Vrije deel', 'sectorpr': 'Sectorprog.',
+                               'sectorwe': 'Werkstuk', 'profielw': 'Werkstuk', 'stage': 'Stage'}
+                sequence_dict = {'gemeensc': 1, 'sectorde': 2, 'profield': 2, 'overig v': 3, 'vrije de': 3,
+                                 'sectorpr': 4, 'sectorwe': 5, 'profielw': 5, 'stage': 6}
+
+                code = code_dict.get(awp_name_sliced_lc)
+                name = name_dict.get(awp_name_sliced_lc)
+                abbrev = abbrev_dict.get(awp_name_sliced_lc)
+                sequence = sequence_dict.get(awp_name_sliced_lc, 1)
 
                 if logging_on:
                     logger.debug('awp_name: ' + str(awp_name))
                     logger.debug('awp_name_sliced_lc: ' + str(awp_name_sliced_lc))
+                    logger.debug('code: ' + str(code))
+                    logger.debug('name: ' + str(name))
+                    logger.debug('abbrev: ' + str(abbrev))
+                    logger.debug('sequence: ' + str(sequence))
 
-    # - check if subjecttype with this name already exists in this examyear.
-                    # PR2021-05-24 don't create new base_record
-                subjecttype = subj_mod.Subjecttype.objects.filter(
-                    examyear=sel_examyear,
-                    name__istartswith=awp_name_sliced_lc
-                ).order_by('-pk').first()
-
-    # - get subjecttype_base if subjecttype is found
-                if subjecttype:
-                    subjecttype_base = subjecttype.base
-                else:
-                    if logging_on:
-                        logger.debug('subjecttype with this name does not exist in this examyear: ' + str(awp_name))
-    # - is not found: check if subjecttype with this name already exists in any examyear in this country, to retrieve base_id
-                    subjecttype = subj_mod.Subjecttype.objects.filter(
-                        base__country=requsr_country,
-                        name__istartswith=awp_name_sliced_lc
-                    ).order_by('-examyear__code', '-pk').first()
-
-                    if subjecttype:
-                        subjecttype_base = subjecttype.base
-
-                if subjecttype_base is None:
-        # - first create new base record. Create also saves new record
-                    subjecttype_base = subj_mod.Subjecttypebase.objects.create(country=requsr_country)
-
-                    code_dict = {'gemeensc': 'gmd', 'sectorde': 'spd', 'profield': 'spd', 'overig v': 'vrd', 'vrije de': 'vrd',
-                                'sectorpr': 'spr', 'sectorwe': 'wst', 'profielw': 'wst', 'stage': 'stg'}
-                    name_dict = {'gemeensc': 'Gemeenschappelijk deel.', 'sectorde': 'Sectordeel', 'profield': 'Profieldeel',
-                                   'overig v': 'Overig vak', 'vrije de': 'Vrije deel', 'sectorpr': 'Sectorprogramma.',
-                                   'sectorwe': 'Sectorwerkstuk', 'profielw': 'Profielwerkstuk', 'stage': 'Stage'}
-                    abbrev_dict = {'gemeensc': 'Gemeensch.', 'sectorde': 'Sectordeel', 'profield': 'Profieldeel',
-                                   'overig v': 'Overig vak', 'vrije de': 'Vrije deel', 'sectorpr': 'Sectorpr.',
-                                   'sectorwe': 'Werkstuk', 'profielw': 'Werkstuk', 'stage': 'Stage'}
-                    sequence_dict = {'gemeensc': 1, 'sectorde': 2, 'profield': 3, 'overig v': 4, 'vrije de': 5,
-                                     'sectorpr': 6, 'sectorwe': 7, 'profielw': 8, 'stage': 9}
-
-                    awp_AfdelingIdReeks_dict = {'gemeensc': [1,2,3], 'sectorde': [1], 'profield': [2,3], 'overig v': [1], 'vrije de': [2,3],
-                         'sectorpr': [1], 'sectorwe': [1], 'profielw': [2,3], 'stage': [1]}
-                    code = code_dict.get(awp_name_sliced_lc)
-                    name = name_dict.get(awp_name_sliced_lc)
-                    abbrev = abbrev_dict.get(awp_name_sliced_lc)
-                    sequence = sequence_dict.get(awp_name_sliced_lc, 1)
+                sjtpbase = None
+                if code:
+    # - check if subjecttypebase with this name already exists in this examyear.
+                    sjtpbase = subj_mod.Subjecttypebase.objects.filter(
+                        country=requsr_country,
+                        code=code
+                    ).order_by('-pk').first()
 
                     if logging_on:
-                        logger.debug('subjecttype_base: ' + str(subjecttype_base))
-                        logger.debug('code: ' + str(code))
-                        logger.debug('name: ' + str(name))
-                        logger.debug('abbrev: ' + str(abbrev))
-                        logger.debug('sequence: ' + str(sequence))
-                        logger.debug('awp_AfdelingIdReeks_dict: ' + str(awp_AfdelingIdReeks_dict))
+                        logger.debug('existing sjtpbase: ' + str(sjtpbase))
 
-                    depbases_list = []
-                    awp_AfdelingIdReeks_list = awp_AfdelingIdReeks_dict.get(awp_name_sliced_lc)
-                    if awp_AfdelingIdReeks_list:
-                        for awp_AfdelingId in awp_AfdelingIdReeks_list:
-                            awpr_department_id = mapped['department'][awp_AfdelingId]
-                            department = sch_mod.Department.objects.get_or_none(pk=awpr_department_id)
-                            if department:
-                                depbases_list.append(str(department.base.pk))
-                    depbases = None
-                    if depbases_list:
-                        depbases_list.sort()
-                        depbases = ';'.join(depbases_list)
-                    if logging_on:
-                        logger.debug('depbases: ' + str(depbases))
+    # - create subjecttypebase if subjecttypebase is found
+                    if sjtpbase is None:
+                        if name and abbrev:
+    # fields of Subjecttypebase are: country, code, name, abbrev, sequence
+                            sjtpbase = subj_mod.Subjecttypebase.objects.create(
+                                country=requsr_country,
+                                code=code,
+                                name=name,
+                                abbrev=abbrev,
+                                sequence=sequence
+                            )
+                            if logging_on:
+                                logger.debug('created sjtpbase: ' + str(sjtpbase))
 
-                    has_prac = True if awp_name_sliced_lc == 'sectorpr' else False  # has practical exam
-                    has_pws = True if awp_name_sliced_lc in ('sectorwe', 'profielw') else False  # has profielwerkstuk or sectorwerkstuk
-                    # removed: one_allowed = True if awp_name_sliced_lc in ('sectorpr', 'sectorwe', 'profielw', 'stage') else False  # if true: only one subject with this Subjecttype allowed per student
-                    if name and abbrev and code and sequence and depbases:
-                        subjecttype = subj_mod.Subjecttype(
-                            base=subjecttype_base,
-                            examyear=sel_examyear,
-                            name=name,
-                            abbrev=abbrev,
-                            code=code,
-                            sequence=sequence,
-                            has_prac=has_prac,
-                            has_pws=has_pws,
-                            # removed: one_allowed=one_allowed,
-                            depbases=depbases
-                        )
-                        subjecttype.save(request=request)
+# - create subjecttype for each scheme, if it doesn't already exist
+                if sjtpbase:
+                    schemes = subj_mod.Scheme.objects.filter(
+                        department__examyear=sel_examyear
+                    )
+                    for scheme in schemes:
+                        if logging_on:
+                            logger.debug('scheme: ' + str(scheme))
 
-                    if logging_on:
-                        logger.debug ('subjecttype created = ' + str(subjecttype))
+                        subjecttype = subj_mod.Subjecttype.objects.filter(
+                            base=sjtpbase,
+                            scheme=scheme
+                        ).order_by('-pk').first()
 
-                if subjecttype:
-                    awp_subjecttype_id = row_data.get('subjecttype_id', '')
-                    awp_department_id = row_data.get('department_id', '')
-                    awp_id = str(awp_subjecttype_id) + '_' + str(awp_department_id)
-                    if 'subjecttype' not in mapped:
-                        mapped['subjecttype'] = {}
-                    mapped['subjecttype'][awp_id] = subjecttype.pk
+                        if logging_on:
+                            logger.debug('existing subjecttype: ' + str(subjecttype))
 
+                        if subjecttype is None:
+                            subjecttype = create_upload_subjecttype(sjtpbase, scheme)
+                            if logging_on:
+                                logger.debug ('created subjecttype: ' + str(subjecttype))
+
+                    if sjtpbase:
+                        awp_id = row_data.get('subjecttype_id', '')
+                        if 'sjtpbase' not in mapped:
+                            mapped['sjtpbase'] = {}
+                        mapped['sjtpbase'][awp_id] = sjtpbase.pk
+                        if logging_on:
+                            logger.debug('mapped sjtpbase: ' + str( mapped['sjtpbase']))
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
             logfile.append('Error subjecttype: ' + str(e))
 
 # - end of ImportSubjecttype
+
+
+def create_upload_subjecttype(sjtpbase, scheme):
+    # create a new subjecttype when uploading from awp PR2021-07-03
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('------  create_upload_subjecttype ----------')
+        logger.debug('   sjtpbase: ' + str(sjtpbase))
+        logger.debug('   scheme: ' + str(scheme))
+
+    subjecttype = None
+
+    depbase_code = scheme.department.base.code
+    if logging_on:
+        logger.debug('depbase_code: ' + str(depbase_code))
+
+    lvl_abbrev = None
+    if scheme.level:
+        lvl_abbrev = scheme.level.abbrev
+
+    if logging_on:
+        logger.debug('lvl_abbrev: ' + str(lvl_abbrev))
+        logger.debug('sjtpbase.code: ' + str(sjtpbase.code))
+    # stage only in Vsbo - pbl pkl
+    # werkstuk only in and Havo, Vwo and Vsbo tkl
+    # sectorprog only in Vsbo
+
+
+    skip = False
+    if sjtpbase.code == 'stg':
+        skip = lvl_abbrev is None or lvl_abbrev == 'TKL'
+    elif sjtpbase.code == 'wst':
+        skip = lvl_abbrev and lvl_abbrev in ('PBL', 'PKL')
+    elif sjtpbase.code == 'spr':
+        skip = depbase_code in ('Havo', 'Vwo')
+    if not skip:
+        name = None
+        abbrev = None
+        has_prac = False
+        has_pws = False
+        if sjtpbase.code == 'gmd':
+            name = 'Gemeenschappelijk deel'
+            abbrev = 'Gemeensch.'
+        if sjtpbase.code == 'spd':
+            name = 'Sectordeel' if depbase_code == 'Vsbo' else 'Profieldeel'
+            abbrev = name
+        elif sjtpbase.code == 'vrd':
+            name = 'Overig vak' if depbase_code == 'Vsbo' else 'Vrije deel'
+            abbrev = name
+        elif sjtpbase.code == 'spr':
+            name = 'Sectorprogramma'
+            abbrev = 'Sectorprog.'
+            has_prac = True
+        elif sjtpbase.code == 'wst':
+            name = 'Sectorwerkstuk' if depbase_code == 'Vsbo' else 'Profielwerkstuk'
+            abbrev = 'Werkstuk'
+            has_pws = True
+        elif sjtpbase.code == 'stg':
+            name = 'Stage'
+            abbrev = name
+
+        if logging_on:
+            logger.debug('name: ' + str(name))
+            logger.debug('abbrev: ' + str(abbrev))
+            logger.debug('has_prac: ' + str(has_prac))
+            logger.debug('has_pws: ' + str(has_pws))
+        # create function also saves the new instance
+        subjecttype = subj_mod.Subjecttype.objects.create(
+            base=sjtpbase,
+            scheme=scheme,
+            name=name,
+            abbrev=abbrev,
+            has_prac=has_prac,
+            has_pws=has_pws
+        )
+    return subjecttype
 
 
 def ImportScheme(ws_name, row_data, logfile, mapped, examyear, request):  #PR2021-05-04
@@ -764,7 +814,7 @@ def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, requ
             if logging_on:
                 logger.debug('subject: ' + str(subject))
 
-            subjecttype = get_subjecttype_from_mapped(row_data, examyear_instance, mapped)
+            subjecttype = get_subjecttype_from_mapped(row_data, scheme, request.user.country, mapped)
             if logging_on:
                 logger.debug('subjecttype: ' + str(subjecttype))
 
@@ -825,10 +875,13 @@ def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, requ
             logfile.append('Error schemeitem: ' + str(e))
             if logging_on:
                 logger.debug(getattr(e, 'message', str(e)))
+
+        if logging_on:
+            logger.debug('mapped: ' + str(mapped))
 # - end of Importschemeitem
 
 
-def ImportPackage(ws_name, row_data, logfile, mapped, examyear, sel_school, request):  #PR2021-05-05
+def ImportPackage(ws_name, row_data, logfile, mapped, examyear, request):  #PR2021-05-05
 
     logging_on = False  #s.LOGGING_ON
 
@@ -844,11 +897,10 @@ def ImportPackage(ws_name, row_data, logfile, mapped, examyear, sel_school, requ
                 logger.debug('scheme: ' + str(scheme))
                 logger.debug('name: ' + str(name))
 
-            if sel_school and scheme and name:
+            if scheme and name:
 
     # - check if package already exists in this examyear. If not: create
                 package = subj_mod.Package.objects.filter(
-                    school=sel_school,
                     scheme=scheme,
                     name__iexact=name
                 ).order_by('-pk').first()
@@ -856,7 +908,6 @@ def ImportPackage(ws_name, row_data, logfile, mapped, examyear, sel_school, requ
     # - create new package record
                 if package is None:
                     package = subj_mod.Package(
-                        school=sel_school,
                         scheme=scheme,
                         name=name
                     )
@@ -884,7 +935,7 @@ def ImportPackage(ws_name, row_data, logfile, mapped, examyear, sel_school, requ
 
 def ImportPackageitem(ws_name, row_data, logfile, mapped, examyear, request):  #PR2021-05-04
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('-------------------  packageitem ----------------- sel_examyear: ' + str(examyear))
         logger.debug('row_data: ' + str(row_data))
@@ -893,7 +944,7 @@ def ImportPackageitem(ws_name, row_data, logfile, mapped, examyear, request):  #
 
     if ws_name == 'packageitem' and row_data:
         try:
-            package = get_package_from_mapped(row_data, examyear, mapped)
+            package = get_package_from_mapped(row_data, mapped)
             if logging_on:
                 logger.debug('package: ' + str(package))
             schemeitem = get_schemeitem_from_mapped(row_data, examyear, mapped)
@@ -1090,10 +1141,9 @@ def ImportCluster(ws_name, row_data, logfile, mapped, examyear, school, request)
 # - end of ImportCluster
 
 
-
 def ImportStudent(ws_name, row_data, logfile, mapped, examyear, school, request):  #PR2021-05-19
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-------------------  student ----------------- sel_examyear: ' + str(examyear))
         logger.debug('row_data: ' + str(row_data))
@@ -1116,97 +1166,127 @@ def ImportStudent(ws_name, row_data, logfile, mapped, examyear, school, request)
                 level = get_level_from_mapped(row_data, examyear_instance, department, mapped)
                 sector = get_sector_from_mapped(row_data, examyear_instance, department, mapped)
                 scheme = get_scheme_from_mapped(row_data, examyear_instance, mapped)
-                package = get_package_from_mapped(row_data, examyear_instance, mapped)
+                package = get_package_from_mapped(row_data, mapped)
+
+                if logging_on:
+                    logger.debug('scheme: ' + str(scheme) + ' ' + str(type(scheme)))
+                    logger.debug('package: ' + str(package) + ' ' + str(type(package)))
 
                 idnumber = row_data.get('idnumber')
-                exnr = row_data.get('exnr')
 
-    # - check if student already exists in this school and department
-                student = stud_mod.Student.objects.filter(
-                    school=school,
-                    department=department,
-                    idnumber__iexact=idnumber
-                ).order_by('-pk').first()
-
-    # check if department, level and sector of scheme are the same as those of the student
-                is_ok = False
-                if scheme and sector:  #  Havo/Vwo don't have level
-                    if department.pk == scheme.department.pk:
-                        if sector.pk == scheme.sector.pk:
-                            if level is None:
-                                is_ok = (scheme.level is None)
-                            else:
-                                is_ok = (level.pk == scheme.level.pk)
-                if not is_ok:
-                    msg_str = 'department: ' + str(department) + ', level: ' + str(level) + \
-                                   ' and sector: ' + str(sector) + \
-                                   ' are not corresponding with scheme: ' + str(scheme)
+                if idnumber is None:
+                    msg_str = 'idnumber is blank'
                     logfile.append(msg_str)
-                    logger.debug(msg_str)
+                    if logging_on:
+                        logger.debug(msg_str)
                 else:
+    # - check if student already exists in this school and department
+                    student = stud_mod.Student.objects.filter(
+                        school=school,
+                        department=department,
+                        idnumber__iexact=idnumber
+                    ).order_by('-pk').first()
 
-    # - create new student record if not already exists
-                    if student is None:
-                # - first create new base record.
-                        base = stud_mod.Studentbase(
-                            country=request.user.country
-                        )
-                        base.save()
+        # check if department, level and sector of scheme are the same as those of the student
+                    is_ok = False
+                    if scheme and sector:  #  Havo/Vwo don't have level
+                        if department.pk == scheme.department.pk:
+                            if sector.pk == scheme.sector.pk:
+                                if level is None:
+                                    is_ok = (scheme.level is None)
+                                else:
+                                    is_ok = (level.pk == scheme.level.pk)
+                    if not is_ok:
+                        msg_str = 'department: ' + str(department) + ', level: ' + str(level) + \
+                                       ' and sector: ' + str(sector) + \
+                                       ' are not corresponding with scheme: ' + str(scheme)
+                        logfile.append(msg_str)
+                        if logging_on:
+                            logger.debug(msg_str)
+                    else:
+        # - create new student record if not already exists
+                        if student is None:
+                    # - first create new base record.
+                            base = stud_mod.Studentbase(
+                                country=request.user.country
+                            )
+                            base.save()
 
-                # - create new student record
-                        student = stud_mod.Student(
-                            base=base,
-                            school=school,
-                            department=department,
-                        )
-                        student.save(request=request)
-                        logfile.append(ws_name + ' created: ' + str(student))
+                    # - create new student record
+                            student = stud_mod.Student(
+                                base=base,
+                                school=school,
+                                department=department,
+                                idnumber=idnumber
+                            )
+                            student.save(request=request)
+                            logfile.append(ws_name + ' created: ' + str(student))
+                            if logging_on:
+                                logger.debug('student: ' + str(student) + ' ' + str(type(student)))
+
+        # - add info to student instance, update if it is an existing student
+                        if student:
+                            student.level = level
+                            student.sector = sector
+                            student.scheme = scheme
+                            student.package = package
+
+                            student.lastname = row_data.get('lastname')
+                            student.firstname = row_data.get('firstname')
+                            student.prefix = row_data.get('prefix')
+                            student.gender = row_data.get('gender').upper() if row_data.get('gender') else None
+
+                            student.birthdate = af.get_date_from_ISO(row_data.get('dob'))
+                            student.birthcountry = row_data.get('cob')
+                            student.birthcity = row_data.get('pob')
+
+                            student.classname = row_data.get('class')
+                            student.examnumber = row_data.get('exnr')
+                            student.regnumber = row_data.get('regnr')
+                            student.diplomanumber = row_data.get('dipnr')
+                            student.gradelistnumber = row_data.get('gradelistnr')
+
+                            #student.has_dyslexie
+                            student.iseveningstudent = school.iseveningschool
+                            student.islexstudent = school.islexschool
+                            student.bis_exam = True if row_data.get('bis_exam') == 1 else False
+
+                            student.has_reex = True if row_data.get('has_reex') == 1 else False
+                            student.has_reex3 = True if row_data.get('has_reex3') == 1 else False
+                            student.has_sere = True if row_data.get('has_sere') == 1 else False
+                            student.withdrawn = True if row_data.get('withdrawn') == 1 else False
+
+                            student.grade_ce_avg_text = row_data.get('grade_ce_avg_text')
+                            student.grade_combi_avg_text = row_data.get('grade_combi_avg_text')
+                            student.endgrade_avg_text = row_data.get('endgrade_avg_text')
+
+                            student.resultid_tv01 = row_data.get('resultid_tv01', 0)
+                            student.resultid_tv02 = row_data.get('resultid_tv02', 0)
+                            student.resultid_tv03 = row_data.get('resultid_tv03', 0)
+                            student.resultid_final = row_data.get('resultid_final', 0)
+                            student.result_info = row_data.get('result_info', 0)
+
+                            student.save(request=request)
+
+                    if student:
+                        awp_student_id = row_data.get('student_id')
+
+                        pws_title = row_data.get('pws_title')
+                        pws_subjects = row_data.get('pws_subjects')
 
                         if logging_on:
-                            logger.debug('student: ' + str(student) + ' ' + str(type(student)))
+                            logger.debug (pws_title + ': ' + str(pws_title) + ' ' + str(type(pws_title)))
+                            logger.debug (pws_subjects + ': ' + str(pws_subjects) + ' ' + str(type(pws_subjects)))
 
-    # - add info to student instance, update if it is an existing student
-                    if student:
-                        student.level = level
-                        student.sector = sector
-                        student.scheme = scheme
-                        student.package = package
-                        student.idnumber = idnumber
-                        student.examnumber = exnr
-                        student.lastname = row_data.get('lastname')
-                        student.firstname = row_data.get('firstname')
-                        student.prefix = row_data.get('prefix')
-                        student.gender = row_data.get('gender').upper() if row_data.get('gender') else None
-                        student.birthdate = af.get_date_from_ISO(row_data.get('dob'))
-                        student.birthcountry = row_data.get('cob')
-                        student.birthcity = row_data.get('pob')
-                        student.classname = row_data.get('class')
-                        student.regnumber = row_data.get('idnumber')
-                        student.diplomanumber = row_data.get('dipnr')
-                        student.gradelistnumber = row_data.get('gradelistnr')
+                        if ws_name not in mapped:
+                            mapped[ws_name] = {}
 
-                        #student.iseveningstudent = row_data.get('idnumber')
-
-                        #student.islexstudent = row_data.get('idnumber')
-
-                        #student.locked = row_data.get('idnumber')
-                        #student.has_reex = row_data.get('idnumber')
-                        #student.bis_exam = row_data.get('idnumber')
-                        #student.withdrawn = row_data.get('withdrawn')
-
-                        student.save(request=request)
-
-                if student:
-                    if logging_on:
-                        logger.debug (ws_name + ': ' + str(student))
-                    awp_student_id = row_data.get('student_id')
-
-                    pws_title = row_data.get('pws_title'),
-                    pws_subjects = row_data.get('pws_subjects'),
-
-                    if ws_name not in mapped:
-                        mapped[ws_name] = {}
-                    mapped[ws_name][awp_student_id] = { 'pk': student.pk, 'pws_title': pws_title, 'pws_subjects': pws_subjects, 'student': student }
+                        mapped[ws_name][awp_student_id] = {
+                            'pk': student.pk,
+                            'pws_title': pws_title,
+                            'pws_subjects': pws_subjects,
+                            'student': student
+                        }
 
         except Exception as e:
             logfile.append('Error student: ' + str(e))
@@ -1224,7 +1304,6 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
         logger.debug('ws_name: ' + str(ws_name))
         logger.debug('examyear_instance: ' + str(examyear_instance) + ' ' + str(type(examyear_instance)))
         logger.debug('school_instance: ' + str(school_instance) + ' ' + str(type(school_instance)))
-        # row_data: {'package_id': 1, 'subject_id': 2, 'schemeitem_id': 134}
 
     if ws_name == 'studsubj' and row_data:
         studentsubject = None
@@ -1277,6 +1356,7 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                     studentsubject.has_reex03 = True if row_data.get('has_reex03') == 1 else False
                     studentsubject.has_pok = True if row_data.get('has_pok') == 1 else False
                     studentsubject.has_pex = True if row_data.get('has_pex') == 1 else False
+
                     studentsubject.save(request=request)
 
         except Exception as e:
@@ -1383,7 +1463,6 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                                 examperiod=c.EXAMPERIOD_EXEMPTION
                             )
                         if grade_tvexem:
-                            grade_tvexem.cescore = row_data.get('tvvrst_segrade')
                             grade_tvexem.cegrade = row_data.get('tvvrst_cegrade')
                             grade_tvexem.pecegrade = row_data.get('tvvrst_cegrade')
                             grade_tvexem.finalgrade = row_data.get('tvvrst_finalgrade')
@@ -1590,37 +1669,39 @@ def get_subject_from_mapped(row_data, examyear_instance, mapped):  # PR2021-05-0
 # - end of get_subject_from_mapped
 
 
-def get_subjecttype_from_mapped(row_data, examyear_instance, mapped):  # PR2021-05-04
-    logging_on = False  # s.LOGGING_ON
+def get_subjecttype_from_mapped(row_data, scheme, country, mapped):  # PR2021-05-04
+    logging_on = False  #s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_subjecttype_from_mapped -----')
         logger.debug('row_data: ' + str(row_data))
-        logger.debug('examyear_instance: ' + str(examyear_instance))
+        logger.debug('country: ' + str(country))
 
     subjecttype = None
     if row_data and mapped:
-        mapped_subjecttypes = mapped.get('subjecttype')
-        awp_afdeling_aid = row_data.get('department_id')
+        mapped_sjtpbase = mapped.get('sjtpbase')
         awp_vaktype_aid = row_data.get('subjecttype_id')
 
-        if mapped_subjecttypes and awp_vaktype_aid and awp_vaktype_aid:
-            # key '6_3': = vaktypeAId + '_' + afdelingAID
-            key_str = '_'.join((str(awp_vaktype_aid), str(awp_afdeling_aid)))
-            if logging_on:
-                logger.debug('mapped_subjecttypes: ' + str(mapped_subjecttypes))
-                logger.debug('awp_vaktype_aid: ' + str(awp_vaktype_aid) + ' ' + str(type(awp_vaktype_aid)))
-                logger.debug('awp_afdeling_aid: ' + str(awp_afdeling_aid) + ' ' + str(type(awp_afdeling_aid)))
-                logger.debug('key_str: ' + str(key_str) + ' ' + str(type(key_str)))
+        if logging_on:
+            logger.debug('mapped_subjecttypes: ' + str(mapped_sjtpbase))
+            logger.debug('awp_vaktype_aid: ' + str(awp_vaktype_aid) + ' ' + str(type(awp_vaktype_aid)))
 
-            subjecttype_pk = mapped_subjecttypes.get(key_str)
+        if mapped_sjtpbase and awp_vaktype_aid:
+            sjtpbase_pk = mapped_sjtpbase.get(awp_vaktype_aid)
             if logging_on:
-                logger.debug('subjecttype_pk: ' + str(subjecttype_pk))
+                logger.debug('sjtpbase_pk: ' + str(sjtpbase_pk))
 
-            if subjecttype_pk:
-                subjecttype = subj_mod.Subjecttype.objects.get_or_none(
-                    pk=subjecttype_pk,
-                    examyear=examyear_instance
-            )
+            if sjtpbase_pk:
+                subjecttypebase = subj_mod.Subjecttypebase.objects.get_or_none(
+                    pk=sjtpbase_pk,
+                    country=country)
+                if logging_on:
+                    logger.debug('subjecttypebase: ' + str(subjecttypebase))
+                if subjecttypebase:
+                    subjecttype = subj_mod.Subjecttype.objects.filter(
+                        base=subjecttypebase,
+                        scheme=scheme
+                    ).order_by('-pk').first()
+
     if logging_on:
         logger.debug('subjecttype: ' + str(subjecttype))
         logger.debug(' ----- end of get_subjecttype_from_mapped -----')
@@ -1629,12 +1710,11 @@ def get_subjecttype_from_mapped(row_data, examyear_instance, mapped):  # PR2021-
 # - end of get_subjecttype_from_mapped
 
 
-def get_package_from_mapped(row_data, examyear_instance, mapped):  # PR2021-05-05
-    logging_on = False  #s.LOGGING_ON
+def get_package_from_mapped(row_data, mapped):  # PR2021-05-05
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_package_from_mapped -----')
         logger.debug('row_data: ' + str(row_data))
-        logger.debug('examyear_instance: ' + str(examyear_instance))
 
     # mapped[package]: {1: 1, 2: 1, 3: 2, 4: 2, 5: 2, 6: 2, 7: 2, 8: 2, 9: 3, 10: 3, ...
     # row_data: {'package_id': 1, 'subject_id': 2, 'schemeitem_id': 134}
@@ -1652,9 +1732,8 @@ def get_package_from_mapped(row_data, examyear_instance, mapped):  # PR2021-05-0
 
             if package_pk:
                 package = subj_mod.Package.objects.get_or_none(
-                    pk=package_pk,
-                    school__examyear=examyear_instance
-            )
+                    pk=package_pk
+                )
     if logging_on:
         logger.debug('package: ' + str(package))
         logger.debug(' ----- end of get_package_from_mapped -----')
@@ -1664,7 +1743,7 @@ def get_package_from_mapped(row_data, examyear_instance, mapped):  # PR2021-05-0
 
 
 def get_schemeitem_from_mapped(row_data, examyear_instance, mapped):  # PR2021-05-05
-    logging_on = False  #s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_schemeitem_from_mapped -----')
         logger.debug('row_data: ' + str(row_data))
@@ -1745,13 +1824,16 @@ def get_student_from_mapped(row_data, school_instance, mapped):  # PR2021-05-20
             logger.debug('awp_kandidaat_aid: ' + str(awp_kandidaat_aid))
 
         if mapped_students and awp_kandidaat_aid:
-            mapped_student =  mapped_students.get(awp_kandidaat_aid)
+            mapped_student = mapped_students.get(awp_kandidaat_aid)
             if mapped_student:
+                if logging_on:
+                    logger.debug('mapped_student: ' + str(mapped_student))
                 student = mapped_student.get('student')
                 pws_title = mapped_student.get('pws_title')
                 pws_subjects = mapped_student.get('pws_subjects')
 
     if logging_on:
+        logger.debug('student: ' + str(student))
         logger.debug('student: ' + str(student))
         logger.debug(' ----- end of get_student_from_mapped -----')
 
@@ -1778,21 +1860,6 @@ def get_depbase_id_list_from_nameslist(names_list, mapped):  # PR2018-12-12  PR2
                         base_id_list.append(base_id)
     return base_id_list
 
-
-def get_depbase_from_mappedXXX(depbase_code_lc, examyear, mapped):  # PR2020-12-13
-    depbase = None
-    if depbase_code_lc:
-        depbase_id = af.get_dict_value(mapped, ('depbase', depbase_code_lc))
-        if depbase_id:
-            depbase = sch_mod.Departmentbase.objects.get_or_none(id=depbase_id)
-            if depbase:
-                department = sch_mod.Department.objects.get_or_none(
-                    base=depbase,
-                    examyear=examyear
-                )
-                if department:
-                    depbase = department.base
-    return depbase
 
 def create_scheme_name(depbase_code, level_abbrev, sector_abbrev ):
     # PR2018-11-09 create scheme-name i.e.: 'vsbo - tkl - tech' PR2020-12-13

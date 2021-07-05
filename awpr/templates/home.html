@@ -24,10 +24,13 @@
 <div class="awp_content_container_home tsa_margin_top48_left24">
 
 {% if user.is_authenticated or not user.is_authenticated %}
+    <div>
+        <img src="{% static 'img/ETE_logo.png' %}" height="240" width="480"  >
+    </div>
     <table class="table">
       <thead >
         <tr>
-          <th><h3>{% trans 'AWP versie 2021.03 is nu beschikbaar' %}</h3></th>
+          <th><h3>{% trans 'Welkom bij AWP-online' %}</h3></th>
         </tr>
       </thead>
       <tbody>
@@ -38,23 +41,11 @@
         </tr>
         <tr>
             <td class="align-left">
-              <a href="{% static 'data/AWPinstall_2021_03_20210607.exe' %}" class="btn btn-secondary py-2 px-4 ">{% trans 'Downloaden' %}</a>
+
             </td>
         </tr>
-        <tr>
-            <td class="align-left"> <h6 class="my-2">{% trans "Als het 'Windows Defender' scherm verschijnt: klik op 'More info'." %}</h6> </td>
-            <td class="align-left"> <img src="{% static 'img/WindowsDefender1.png' %}" height="112" width="240">  </td>
-        </tr>
-        <tr>
-            <td class="align-left"> <h6 class="my-2">{% trans "Klik daarna op 'Run anyway'." %}</h6> </td>
-            <td class="align-left"> <img src="{% static 'img/WindowsDefender2.png' %}" height="112" width="240"> </td>
-        </tr>
-        <tr>
-            <td class="align-left"> <h6 class="my-2">{% trans "Als het 'User Account Control' scherm verschijnt klikt u op 'Yes'." %}</h6> </td>
-            <td class="align-left">
-                   <img src="{% static 'img/UserAccountControl.jpg' %}" height="180" width="240">
-            </td>
-        </tr>
+
+
       </tbody>
     </table>
     </div>

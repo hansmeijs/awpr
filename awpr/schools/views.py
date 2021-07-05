@@ -450,15 +450,21 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
 
         update_wrap = {}
         if request.user and request.user.country and request.user.schoolbase:
+
+# - get permit
+            has_permit = False
             req_usr = request.user
+            if req_usr and req_usr.country and req_usr.schoolbase:
+                permit_list = req_usr.permit_list('page_school')
+                if permit_list:
+                    has_permit = 'permit_crud' in permit_list
+                if logging_on:
+                    logger.debug('permit_list: ' + str(permit_list))
+                    logger.debug('has_permit: ' + str(has_permit))
 
-            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_school', req_usr)
-            if logging_on:
-                logger.debug('permit_list: ' + str(permit_list))
-
-            permit_create = 'create_school' in permit_list
-            permit_edit = 'permit_crud' in permit_list
-            permit_delete ='delete_school' in permit_list
+            permit_create = has_permit
+            permit_edit = has_permit
+            permit_delete = has_permit
 
             if permit_create or permit_edit or permit_delete:
     # -  get user_lang
@@ -890,9 +896,9 @@ def update_school_instance(instance, upload_dict, err_dict, request):
                     else:
                         err_dict[field] = [err_msg]
 
-            elif field == 'article':
+            elif field in('article', 'otherlang'):
                 saved_value = getattr(instance, field)
-                # article can be None
+                # article / otherlang can be None
                 if new_value != saved_value:
                     setattr(instance, field, new_value)
                     save_changes = True

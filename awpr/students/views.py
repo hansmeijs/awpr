@@ -90,6 +90,27 @@ class StudentsubjectListView(View): # PR2020-09-29 PR2021-03-25
          # PR2021-06-22 moved to get_headerbar_param
 
         return render(request, 'studentsubjects.html', params)
+
+
+# ========  OrederlistsListView  =======
+@method_decorator([login_required], name='dispatch')
+class OrederlistsListView(View): # PR2021-07-04
+
+    def get(self, request):
+        #logger.debug(" =====  OrederlistsListView  =====")
+
+# -  get user_lang
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get headerbar parameters
+        params = awpr_menu.get_headerbar_param(request, 'page_orderlist')
+
+        return render(request, 'orderlists.html', params)
+# - end of OrederlistsListView
+
+
+
 #/////////////////////////////////////////////////////////////////
 
 def create_student_rows(setting_dict, append_dict, student_pk):
@@ -116,10 +137,19 @@ def create_student_rows(setting_dict, append_dict, student_pk):
         "dep.sector_req AS sct_req, sct.abbrev AS sct_abbrev,",
         "dep.has_profiel AS dep_has_profiel, sct.abbrev AS sct_abbrev,",
         "CONCAT('student_', st.id::TEXT) AS mapid,",
+
         "st.lastname, st.firstname, st.prefix, st.gender,",
         "st.idnumber, st.birthdate, st.birthcountry, st.birthcity,",
+
         "st.classname, st.examnumber, st.regnumber, st.diplomanumber, st.gradelistnumber,",
-        "st.iseveningstudent, st.locked, st.has_reex, st.bis_exam, st.withdrawn,",
+        "st.has_dyslexie, st.iseveningstudent, st.islexstudent, st.islinked, st.bis_exam,",
+
+        "st.has_reex, st.has_reex3, st.has_sere, st.withdrawn,",
+        "st.grade_ce_avg, st.grade_ce_avg_text, st.grade_combi_avg_text, st.endgrade_avg, st.endgrade_avg_text,",
+
+        "st.result, st.resultid_tv01, st.resultid_tv02, st.resultid_tv03, st.resultid_final,",
+        "st.result_info, st.result_status, st.locked,",
+
         "st.modifiedby_id, st.modifiedat,",
         "SUBSTRING(au.username, 7) AS modby_username",
 
@@ -139,7 +169,6 @@ def create_student_rows(setting_dict, append_dict, student_pk):
     else:
         # PR2021-06-16
         # order by id necessary to make sure that lookup function on client gets the right row
-        #sql_list.append("ORDER BY LOWER(st.lastname), LOWER(st.firstname), CONCAT('student_', st.id::TEXT)")
         sql_list.append("ORDER BY st.id::TEXT")
     sql = ' '.join(sql_list)
 
@@ -169,6 +198,7 @@ def create_student_rows(setting_dict, append_dict, student_pk):
 
     return student_rows
 # --- end of create_student_rows
+
 
 
 @method_decorator([login_required], name='dispatch')
@@ -1398,6 +1428,7 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
         "si.elective_combi_allowed, si.has_practexam,",
 
         "sjt.id AS sjtp_id, sjt.abbrev AS sjtp_abbrev, sjt.has_prac AS sjtp_has_prac, sjt.has_pws AS sjtp_has_pws,",
+        "sjtbase.sequence AS sjtbase_sequence,",
 
         "studsubj.subj_auth1by_id AS subj_auth1_id, SUBSTRING(subj_auth1.username, 7) AS subj_auth1_usr, subj_auth1.modified_at AS subj_auth1_modat,",
         "studsubj.subj_auth2by_id AS subj_auth2_id, SUBSTRING(subj_auth2.username, 7) AS subj_auth2_usr, subj_auth2.modified_at AS subj_auth2_modat,",
@@ -1427,6 +1458,7 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
         "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
         "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
         "LEFT JOIN subjects_subjecttype AS sjt ON (sjt.id = si.subjecttype_id)",
+        "INNER JOIN subjects_subjecttypebase AS sjtbase ON (sjtbase.id = sjt.base_id)",
 
         "LEFT JOIN accounts_user AS au ON (au.id = studsubj.modifiedby_id)",
 
@@ -1655,7 +1687,93 @@ def create_ssnote_attachment_rows(upload_dict, request):  # PR2021-03-17
     return note_rows
 # - end of create_studentsubjectnote_rows
 
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#/////////////////////////////////////////////////////////////////
 
+def create_orderlist_rows(setting_dict, append_dict, student_pk=None, studsubj_pk=None):
+    # --- create rows of all schools with submeitted subjects PR2021-07-04
+    #logger.debug(' =============== create_orderlist_rows ============= ')
+    #logger.debug('append_dict: ' + str(append_dict))
+    #logger.debug('setting_dict: ' + str(setting_dict))
+    # create list of students of this school / examyear, possibly with filter student_pk or studsubj_pk
+    # with left join of studentsubjects with deleted=False
+    sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
+    sel_schoolbase_pk = af.get_dict_value(setting_dict, ('sel_schoolbase_pk',))
+    sel_depbase_pk = af.get_dict_value(setting_dict, ('sel_depbase_pk',))
+    #logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
+    #logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
+    #logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
+
+
+#CASE WHEN  POSITION(';" + sch.otherlang + ";' IN CONCAT(';', subj.otherlang, ';')) > 0 THEN ELSE END
+
+    """
+    "CASE WHEN subj.otherlang IS NULL OR sch.otherlang THEN 'ne' ELSE", 
+    "CASE WHEN  POSITION('" + sch.otherlang + "' IN subj.otherlang) > 0 THEN sch.otherlang ELSE 'ne' END",
+    "END AS lang,",
+    
+    """
+    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
+    sql_sublist = ["SELECT sch.id AS school_id,",
+                "dep.id AS dep_id, dep.base_id AS depbase_id, depbase.code AS depbase_code, lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev,",
+                "studsubj.subj_published_id,",
+                "subj.id AS subj_id, subjbase.code AS subjbase_code, subj.name AS subj_name,",
+                "CASE WHEN subj.otherlang IS NULL OR sch.otherlang IS NULL THEN 'ne' ELSE",
+                "CASE WHEN  POSITION(sch.otherlang IN subj.otherlang) > 0 THEN sch.otherlang ELSE 'ne' END END AS lang",
+
+                "FROM students_studentsubject AS studsubj",
+
+                "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+                "INNER JOIN subjects_scheme AS sm ON (sm.id = si.scheme_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = sm.department_id)",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = sm.level_id)",
+
+                "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+                "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+                "INNER JOIN schools_schoolbase AS schbase ON (schbase.id = sch.base_id)",
+
+                "WHERE NOT studsubj.deleted",
+                # "AND studsubj.subj_published_id IS NOT NULL"
+
+                ]
+    sub_sql = ' '.join(sql_sublist)
+
+    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
+    sql_list = ["SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.name AS school_name,",
+        "sub.dep_id, sub.depbase_code, sub.lvl_id, sub.lvl_abbrev,",
+        "sub.subj_id, sub.subjbase_code, sub.subj_name,",
+        "ARRAY_AGG(DISTINCT sub.subj_published_id) AS subj_published_arr,",
+        "sub.lang,",
+        "count(*) AS count",
+
+        "FROM (" + sub_sql + ") AS sub",
+
+        "INNER JOIN schools_school AS sch ON (sch.id = sub.school_id)",
+        "INNER JOIN schools_schoolbase AS schbase ON (schbase.id = sch.base_id)",
+
+        "GROUP BY sch.id, schbase.code, sch.name, sub.dep_id, sub.depbase_id, sub.depbase_code,",
+                "sub.lvl_id, sub.lvl_abbrev, sub.lang, ",
+                "sub.subj_id, sub.subjbase_code, sub.subj_name",
+        "ORDER BY LOWER(schbase.code), sub.depbase_id"
+        ]
+    sql = ' '.join(sql_list)
+
+    #logger.debug('sql: ' + str(sql))
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        rows = af.dictfetchall(cursor)
+
+    return rows
+# --- end of create_orderlist_rows
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 # OLD VERSION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def upload_student(student_list, student_dict, lookup_field, awpKey_list,

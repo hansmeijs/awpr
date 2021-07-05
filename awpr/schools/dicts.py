@@ -203,7 +203,7 @@ def create_school_rows(examyear, permit_dict, school_pk=None):
 
     sql_list = ["SELECT sch.id, sch.base_id, sch.examyear_id, ey.code AS examyear_code, ey.country_id, c.name AS country,",
         "CONCAT('school_', sch.id::TEXT) AS mapid, sb.defaultrole,",
-        "sch.name, sch.abbrev, sch.article, sb.code AS sb_code, sch.depbases,",
+        "sch.name, sch.abbrev, sch.article, sb.code AS sb_code, sch.depbases, sch.otherlang,",
         "sch.isdayschool, sch.iseveningschool, sch.islexschool, sch.activated, sch.locked,",
         "sch.modifiedby_id, sch.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
 
@@ -226,7 +226,8 @@ def create_school_rows(examyear, permit_dict, school_pk=None):
         sql_keys['sb_id'] = requsr_schoolbase_pk
         sql_list.append("AND sb.id = %(sb_id)s::INT")
 
-    sql_list.append('ORDER BY sb.code')
+    # order by id necessary to make sure that lookup function on client gets the right row
+    sql_list.append("ORDER BY sch.id::TEXT")
     sql = ' '.join(sql_list)
     if logging_on:
         logger.debug('sql_keys' + str(sql_keys))

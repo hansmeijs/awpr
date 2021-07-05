@@ -70,12 +70,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     const field_settings = {
-        subject: {  field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence", "ETE_exam", "Added_by_school"],
-                    field_names: ["select", "code", "name", "depbases", "sequence", "etenorm", "addedbyschool"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text",  "text", "number", "toggle",  "toggle"],
-                    field_width:  ["032", "120", "300", "150", "120",  "120", "120",  "120"],
-                    field_align: ["c", "l", "l", "l",  "r", "c", "c"]},
+        subject: {  field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence", "Other_languages", "ETE_exam", "Added_by_school"],
+                    field_names: ["select", "code", "name", "depbases", "sequence", "otherlang", "etenorm", "addedbyschool"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["select", "text", "text",  "text", "number", "text", "toggle",  "toggle"],
+                    field_width:  ["032", "120", "300", "150", "120",  "120", "180",  "120",  "120"],
+                    field_align: ["c", "l", "l", "l",  "r", "l","c", "c"]},
 
         // 22 fields
         schemeitem: {  field_caption: ["", "Subject_scheme", "Department", "Leerweg", "Sector", "Code", "Subject",
@@ -227,16 +227,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if(el_MSJTBASE_btn_save){ el_MSJTBASE_btn_save.addEventListener("click", function() {MSJTBASE_Save()}, false )}
 
 // ---  MODAL SUBJECT
+        const el_MSUBJ_loader = document.getElementById("id_MSUBJ_loader");
         const el_MSUBJ_div_form_controls = document.getElementById("id_MSUBJ_form_controls")
         if(el_MSUBJ_div_form_controls){
             const input_elements = el_MSUBJ_div_form_controls.querySelectorAll(".awp_input_text")
             for (let i = 0, el; el=input_elements[i]; i++) {
-                el.addEventListener("keyup", function() {MSUBJ_InputKeyup(el)}, false );
+                const event_str = (el.tagName === "SELECT") ? "change" : "keyup";
+                el.addEventListener(event_str, function() {MSUBJ_InputKeyup(el)}, false );
             }
         }
         const el_MSUBJ_code = document.getElementById("id_MSUBJ_code");
         const el_MSUBJ_name = document.getElementById("id_MSUBJ_name");
         const el_MSUBJ_sequence = document.getElementById("id_MSUBJ_sequence");
+        const el_MSUBJ_otherlang = document.getElementById("id_MSUBJ_otherlang");
         const el_MSUBJ_etenorm = document.getElementById("id_MSUBJ_etenorm");
         if(el_MSUBJ_etenorm){el_MSUBJ_etenorm.addEventListener("click", function() {MSUBJ_Toggle(el_MSUBJ_etenorm)}, false )}
 
@@ -759,7 +762,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  UpdateField  ================ PR2020-08-16 PR2021-05-10
     function UpdateField(el_div, map_dict) {
-        //console.log("=========  UpdateField =========");
+        console.log("=========  UpdateField =========");
         //console.log("el_div", el_div);
         //console.log("map_dict", map_dict);
 
@@ -776,7 +779,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
                 } else if (["minsubjects", "maxsubjects", "min_mvt", "max_mvt", "sequence", "gradetype", "weight_se", "weight_ce"].includes(field_name)){
                     inner_text = fld_value;
-                    filter_value =(inner_text) ? inner_text : null;
+                    filter_value = (inner_text) ? inner_text : null;
+                } else if ( field_name === "otherlang") {
+                    inner_text = (fld_value === "en;pa") ? loc.English_and_Papiamentu :
+                                (fld_value === "pa") ? loc.Papiamentu :
+                                (fld_value === "en") ? loc.English : null;
+                    filter_value = (inner_text) ? inner_text.toLowerCase() : null;
+        console.log("field_name", field_name);
+        console.log("fld_value", fld_value);
+        console.log("inner_text", inner_text);
                 } else if ( field_name === "depbases") {
                     inner_text = b_get_depbases_display(department_map, "base_code", fld_value);
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
@@ -933,8 +944,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( response);
 
                     if ("updated_subject_rows" in response) {
-                        const el__MSUBJ_loader = document.getElementById("id_MSUBJ_loader");
-                        if(el__MSUBJ_loader){ el__MSUBJ_loader.classList.add(cls_visible_hide)};
+                        if(el_MSUBJ_loader){ el_MSUBJ_loader.classList.add(cls_visible_hide)};
                         const tblName = "subject";
                         RefreshDataRows(tblName, response.updated_subject_rows, subject_rows, true)  // true = update
                     };
@@ -1020,6 +1030,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // close modal MSJ when no error --- already done in modal
                 //$("#id_mod_subject").modal("hide");
             }
+
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
             //arr.splice(index, 0, item); will insert item into arr at the specified index
@@ -1053,11 +1064,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const [index, dict, compare] = b_recursive_lookup(map_rows, map_id, setting_dict.user_lang);
                 const map_dict = dict;
                 const datarow_index = index;
-            console.log("map_rows", map_rows);
-            console.log("map_id", map_id);
-            console.log("datarow_index", datarow_index);
-            console.log("map_dict", map_dict);
-            console.log("compare", compare);
 
 // ++++ deleted ++++
                 if(is_deleted){
@@ -1065,14 +1071,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     const deleted_row_arr = data_rows.splice(datarow_index, 1)
                     const deleted_row_dict = deleted_row_arr[0];
 
-            console.log("deleted_row_dict", deleted_row_dict);
     //--- delete tblRow
-
-            console.log("deleted_row_dict.mapid", update_dict.mapid);
                     const tblRow_tobe_deleted = document.getElementById(update_dict.mapid);
     // ---  when delete: make tblRow red for 2 seconds, before uploading
-            console.log("tblRow_tobe_deleted", tblRow_tobe_deleted);
-                    //ShowClassWithTimeout(tblRow_tobe_deleted, "tsa_tr_error");
                     tblRow_tobe_deleted.classList.add("tsa_tr_error")
                     setTimeout(function() {
                         tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)
@@ -1091,8 +1092,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     updated_columns.push(col_field)
         // ---  update field in data_row
                                     map_dict[col_field] = update_dict[col_field];
-                                }}
-                        };
+                        }}};
 
         // ---  update field in tblRow
                         // note: when updated_columns is empty, then updated_columns is still true.
@@ -2218,9 +2218,10 @@ document.addEventListener('DOMContentLoaded', function() {
         $("#id_mod_subjecttypebase").modal("hide");
 
     }  // MSJTBASE_Save
+
 //========= MSJTBASE_ResetElements  ============= PR2021-06-29
     function MSJTBASE_ResetElements(also_remove_values){
-        console.log( "===== MSUBJ_ResetElements  ========= ");
+        console.log( "===== MSJTBASE_ResetElements  ========= ");
 
 // ---  loop through input fields
         const el_form_controls = document.getElementById("id_MSJTBASE_form_controls")
@@ -2277,19 +2278,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById("id_MSUBJ_msg_modified").innerText = display_txt;
             }
 
-    // ---  set header text
+// ---  set header text
             document.getElementById("id_MSUBJ_header").innerText = mod_headertext(is_addnew, tblName, mod_MSUBJ_dict.name);
 
-    // ---  remove value from input elements
+// ---  remove value from input elements
             MSUBJ_ResetElements(true);  // true = also_remove_values
 
-    // - sequence has value 5000 or max_sequence + 1 when  is_addnew
-            console.log("is_addnew", is_addnew)
+// - sequence has value 5000 or max_sequence + 1 when  is_addnew
             el_MSUBJ_sequence.value = (mod_MSUBJ_dict.sequence) ? mod_MSUBJ_dict.sequence : null;
 
             if (!is_addnew){
                 el_MSUBJ_code.value = (mod_MSUBJ_dict.code) ? mod_MSUBJ_dict.code : null;
                 el_MSUBJ_name.value = (mod_MSUBJ_dict.name) ? mod_MSUBJ_dict.name : null;
+                el_MSUBJ_sequence.value = (mod_MSUBJ_dict.sequence) ? mod_MSUBJ_dict.sequence : null;
+                el_MSUBJ_otherlang.value = (mod_MSUBJ_dict.otherlang) ? mod_MSUBJ_dict.otherlang : null;
 
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSUBJ_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
@@ -2316,13 +2318,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
             el_MSUBJ_message_container.innerHTML = null;
 
-    // ---  disable btn submit, hide delete btn when is_addnew
+// ---  hide loader
+            if(el_MSUBJ_loader){ el_MSUBJ_loader.classList.add(cls_visible_hide)};
+
+// ---  disable btn submit, hide delete btn when is_addnew
             add_or_remove_class(el_MSUBJ_btn_delete, cls_hide, is_addnew )
             add_or_remove_class(el_MSUBJ_btn_log, cls_hide, is_addnew )
 
             el_MSUBJ_btn_save.disabled = true;
 
-    // ---  show modal
+// ---  show modal
             $("#id_mod_subject").modal({backdrop: true});
         }
     };  // MSUBJ_Open
@@ -2358,13 +2363,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (new_value !== old_value) {
                     upload_dict[fldName] = new_value;
                     has_changes = true;
-
-    // put changed new value in tblRow before uploading
-                    const tblRow = document.getElementById(mod_MSUBJ_dict.mapid);
-                    if(tblRow){
-                        const el_tblRow = tblRow.querySelector("[data-field=" + fldName + "]");
-                        if(el_tblRow){el_tblRow.innerText = new_value };
-                    }
                 };
             };
     // ---  get selected departments
@@ -2372,8 +2370,6 @@ document.addEventListener('DOMContentLoaded', function() {
             //upload_dict['depbases'] = {value: dep_list, update: true}
             let new_depbases = MSUBJ_GetDepartmentsSelected();
             let old_depbases = (mod_MSUBJ_dict.depbases) ? mod_MSUBJ_dict.depbases : null;
-        console.log("new_depbases", new_depbases);
-        console.log("old_depbases", old_depbases);
             if (new_depbases !== old_depbases) {
                 upload_dict['depbases'] = new_depbases;
                 has_changes = true;
@@ -2386,9 +2382,7 @@ document.addEventListener('DOMContentLoaded', function() {
             has_changes = true;
         }
         if(has_changes){
-            console.log("upload_dict", upload_dict);
-                document.getElementById("id_MSUBJ_loader").classList.remove(cls_visible_hide)
-// modal is closed by data-dismiss="modal"
+                if(el_MSUBJ_loader){ el_MSUBJ_loader.classList.remove(cls_visible_hide)};
                 UploadChanges(upload_dict, url_subject_upload);
             } else {
                 $("#id_mod_subject").modal("hide");
@@ -2581,6 +2575,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(el_img){
             add_or_remove_class(el_img, "tickmark_2_2", !!new_data_value, "tickmark_0_0")
         }
+        MSUBJ_validate_and_disable();
     }; // MSUBJ_Toggle
 
 //=========  MSUBJ_validate_and_disable  ================  PR2020-10-01
@@ -2636,7 +2631,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function MSUBJ_ResetElements(also_remove_values){
         //console.log( "===== MSUBJ_ResetElements  ========= ");
         // --- loop through input elements
-        const fields = ["code", "sequence", "name", "department", "modified"]
+        const fields = ["code", "sequence", "name", "otherlang",  "department", "modified"]
         for (let i = 0, field, el_input, el_msg; field = fields[i]; i++) {
             el_input = document.getElementById("id_MSUBJ_" + field);
             if(el_input){
