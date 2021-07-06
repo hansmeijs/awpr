@@ -59,12 +59,12 @@
                     }
                 }  //  if (!item.classList.contains("display_none")) {
             }
-            // doc.output('datauri) not wortking, blocked by browser PR2010-01-02
+            // doc.output('datauri) not wortking, blocked by browser PR2020-01-02
             // if (printtoscreen){
             //     doc.output('datauri');
             // } else {
                 doc.save(file_name);
-                    //console.log("doc.save(file_name: ", file_name)
+                    console.log("doc.save(file_name: ", file_name)
             // }  // if (printtoscreen){
         }  // if (len > 0){
     }  // function printPDFlogfile

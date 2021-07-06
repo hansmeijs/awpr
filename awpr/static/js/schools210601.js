@@ -2115,8 +2115,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return myXhr;
             },
             success: function (response) {
-                console.log(response)
                 $("#id_mod_uploadawp").modal("hide");
+                console.log(response)
+
+                const log_list = get_dict_value(response, ["logfile"]);
+                if (!!log_list && log_list.length > 0) {
+                    printPDFlogfile(log_list, "log_AWP_upload");
+                }
+
             },
             error: function (error) {
                 $("#id_mod_uploadawp").modal("hide");

@@ -823,7 +823,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             el_header.classList.add("appr_0_1")
                         } else if(field_name === "note_status"){
                              // dont show note icon when user has no permit_read_note
-                            const class_str = (permit_dict.read_note) ? "note_0_1" : "note_0_0"
+                            const class_str = (permit_dict.permit_read_note) ? "note_0_1" : "note_0_0"
                             el_header.classList.add(class_str)
                         }
                     th_header.appendChild(el_header)
@@ -996,7 +996,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     td.addEventListener("click", function() {UploadToggle(el)}, false)
                     add_hover(td);
                 } else if (field_name === "note_status"){
-                    if(permit_dict.read_note){
+                    if(permit_dict.permit_read_note){
                         td.addEventListener("click", function() {ModNote_Open(el)}, false)
                         add_hover(td);
                     }
@@ -1030,9 +1030,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
             if(field_name){
                 let title_text = null, filter_value = null;
-                if (el_div.nodeName === "INPUT"){
+                if (["cescore", "pescore"].includes(field_name)){
                     el_div.value = (fld_value) ? fld_value : null;
-                    console.log("fld_value", fld_value, typeof fld_value)
+                    filter_value = (fld_value) ? fld_value : null;
+                } else if (el_div.nodeName === "INPUT"){
+                    el_div.value = (fld_value) ? fld_value : null;
+                    //console.log("field_name", field_name, typeof field_name)
+                    //console.log("fld_value", fld_value, typeof fld_value)
                     filter_value = (fld_value) ? fld_value.toLowerCase() : null;
                 } else if (field_name === "se_status"){
                     let class_str = "appr_0_0";
@@ -1044,7 +1048,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     el_div.className = get_status_class(fld_value)
                 } else if (field_name === "note_status"){
                     // dont show note icon when user has no permit_read_note
-                    el_div.className = "note_" + ( (permit_dict.read_note && fld_value && fld_value !== "0") ?
+                    el_div.className = "note_" + ( (permit_dict.permit_read_note && fld_value && fld_value !== "0") ?
                         (fld_value.length === 3) ? fld_value : "0_1" : "0_0" )
                  } else if (field_name === "filename"){
                     //el_div.innerHTML = "&#8681;";
@@ -2077,15 +2081,13 @@ document.addEventListener("DOMContentLoaded", function() {
         el_ModNote_input_note.value = null;
 
 // --- show input element for note, only when user has permit
-        // TODO permit_dict.write_note_extern
-
-        const has_permit_intern_extern = (permit_dict.write_note_intern || permit_dict.write_note_extern)
-        let may_open_modnote = has_permit_intern_extern || (permit_dict.read_note && has_note);
+        const has_permit_intern_extern = (permit_dict.permit_write_note_intern || permit_dict.permit_write_note_extern)
+        let may_open_modnote = has_permit_intern_extern || (permit_dict.permit_read_note && has_note);
         if(may_open_modnote){
             // only show input block when  has_permit_intern_extern
             add_or_remove_class(el_ModNote_input_container, cls_hide, !has_permit_intern_extern)
             // hide external note if no permit write_note_extern
-            add_or_remove_class(el_ModNote_external, cls_hide, !permit_dict.write_note_extern)
+            add_or_remove_class(el_ModNote_external, cls_hide, !permit_dict.permit_write_note_extern)
 
             // hide 'x' option when not inspection
             const el_ModNote_memo_icon4 = document.getElementById("id_ModNote_memo_icon4")
@@ -2119,7 +2121,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // get info from grade_map
                 $("#id_mod_note").modal({backdrop: true});
             }
-        }  // if(permit_dict.read_note)
+        }  // if(permit_dict.permit_read_note)
     }  // ModNote_Open
 
 //========= ModNote_Save============== PR2020-10-15
@@ -2127,7 +2129,7 @@ document.addEventListener("DOMContentLoaded", function() {
         //console.log("===  ModNote_Save  =====");
         const filename = document.getElementById("id_ModNote_filedialog").value;
 
-        if(permit_dict.write_note_intern || permit_dict.write_note_extern){
+        if(permit_dict.permit_write_note_intern || permit_dict.permit_permit_write_note_extern){
             const note = el_ModNote_input_note.value;
             const note_status = (!mod_note_dict.is_internal) ? "1_" + mod_note_dict.sel_icon : "0_1";
 

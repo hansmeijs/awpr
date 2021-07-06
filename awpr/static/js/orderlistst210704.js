@@ -128,17 +128,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
-            el_SBR_select_level.addEventListener("change", function() {HandleSbrLevelSector("level", el_SBR_select_level)}, false )
+        if(el_SBR_select_level){el_SBR_select_level.addEventListener("change", function() {HandleSbrLevelSector("level", el_SBR_select_level)}, false )};
         const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");
-            el_SBR_select_sector.addEventListener("change", function() {HandleSbrLevelSector("sector", el_SBR_select_sector)}, false )
+        if(el_SBR_select_sector){el_SBR_select_sector.addEventListener("change", function() {HandleSbrLevelSector("sector", el_SBR_select_sector)}, false)};
         const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
-            el_SBR_select_subject.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "subject", subject_map, true, setting_dict, permit_dict, MSSSS_Response)}, false )
+        if(el_SBR_select_subject){el_SBR_select_subject.addEventListener("click",
+                function() {t_MSSSS_Open(loc, "subject", subject_map, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
-            el_SBR_select_student.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "student", student_map, true, setting_dict, permit_dict, MSSSS_Response)}, false )
+        if(el_SBR_select_student){el_SBR_select_student.addEventListener("click",
+                function() {t_MSSSS_Open(loc, "student", student_map, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
-            el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false )
+        if(el_SBR_select_showall){el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false)};
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");

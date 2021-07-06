@@ -758,7 +758,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const url_str = (tblName === "userpermit") ? url_userpermit_upload : url_user_upload;
                         const upload_dict = {mode: "update", mapid: map_id};
                         if (tblName === "userpermit"){
-                            upload_dict.permit_pk = map_dict.id;
+                            upload_dict.userpermit_pk = map_dict.id;
                         } else if (tblName === "usergroups"){
                             upload_dict.user_pk = map_dict.id,
                             upload_dict.schoolbase_pk = map_dict.schoolbase_id;
@@ -1670,7 +1670,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const map_dict = get_mapdict_from_datamap_by_id(permit_map, map_id)
         console.log("map_dict", map_dict)
             const fldName = get_attr_from_el(el_input, "data-field")
-            const permit_pk = map_dict.id;
+            const userpermit_pk = map_dict.id;
             const map_value = map_dict[fldName];
             let new_value = el_input.value;
             if(fldName === "sequence"){
@@ -1681,7 +1681,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // ---  create mod_dict
                 const url_str = url_userpermit_upload;
                 const upload_dict = {mode: "update",
-                                    permit_pk: permit_pk};
+                                    userpermit_pk: userpermit_pk};
                 upload_dict[fldName] = new_value;
                 console.log("upload_dict: ", upload_dict);
 

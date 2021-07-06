@@ -478,6 +478,7 @@ class UserpermitUploadView(View):
                         logger.debug('role:     ' + str(role) + ' ' + str(type(role)))
                         logger.debug('page:     ' + str(page))
                         logger.debug('action:   ' + str(action))
+                        logger.debug('userpermit_pk:   ' + str(userpermit_pk))
 
                     append_dict = {}
                     error_dict = {}
@@ -1501,7 +1502,8 @@ def set_usersetting_dict(key_str, setting_dict, request):  # PR2019-03-09 PR2021
     #  json.loads retrieves a dict (or other type) from a json object
 
     try:
-        if request.user and key_str:
+        #PR2021-07-05 debug: is_authenticated added to prevent error: 'AnonymousUser' object is not iterable
+        if request.user and request.user.is_authenticated and key_str:
             setting_str = json.dumps(setting_dict)
             row = Usersetting.objects.filter(user=request.user, key=key_str).order_by('-id').first()
             if row:
