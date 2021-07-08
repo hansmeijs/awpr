@@ -1240,6 +1240,27 @@
         return [lookup_index, lookup_dict];
     };  // b_lookup_dict_in_dictlist
 
+//=========  b_remove_item_from_array  ================ PR2021-07-07
+    function b_remove_item_from_array(array, item){
+        // PR2021-07-07 remove item from array used in mod select columsn
+        // from https://stackoverflow.com/questions/3954438/how-to-remove-item-from-array-by-value
+        for(let i in array){
+            if(array[i]==item){
+                array.splice(i,1);
+                break;
+            }
+        }
+    }  // b_remove_item_from_array
+
+//=========  b_remove_item_from_array  ================ PR2021-07-07
+    function b_clear_array(array){
+       // clear the array. from https://love2dev.com/blog/javascript-remove-from-array/
+        if(array){
+            while (array.length) {
+                array.pop();
+            };
+        };
+    };  // b_clear_array
 
 //#########################################################################
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++

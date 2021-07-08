@@ -31,6 +31,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let mod_dict = {};
     let mod_MSTUD_dict = {};
+    let mod_MCOL_dict = {};
+
 // mod_MSTUDSUBJ_dict stores available studsubj for selected candidate in MSTUDSUBJ
     let mod_MSTUDSUBJ_dict = {
         schemeitem_dict: {}, // stores available studsubj for selected candidate in MSTUDSUBJ
@@ -61,22 +63,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const url_settings_upload = get_attr_from_el(el_data, "data-settings_upload_url");
     const url_orderlist_download = get_attr_from_el(el_data, "data-orderlist_download_url");
 
-    // importdata_upload_url is stored in id_MIMP_data of modimport.html
-    const columns_hidden = {}
+    const columns_hidden = {};
+
 // --- get field_settings
     const field_settings = {
-        orderlist: {  field_caption: ["", "School_code", "School_name", "Department", "Leerweg", "Subject", "Language",
-                                "Amount", "Submitted"],
-                    field_names: ["", "schbase_code", "school_name", "depbase_code", "lvl_abbrev", "subj_name", "lang",
-                                "count", "subj_published_arr"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
-                                "div", "div"],
-                    filter_tags: ["select", "text", "text", "text", "text", "text", "text",
-                                 "number", "text"],
-                    field_width:  ["020", "090", "280", "090", "090", "280", "090",
-                                    "120", "150"],
-                    field_align: ["c", "l", "l", "l", "l", "l",  "l",
-                                   "c", "l"]}
+        orderlist: {  field_caption: ["", "School_code", "School_name", "Department", "Leerweg", "Subject",
+                                "Language", "ETE_exam", "Amount", "Submitted"],
+                    field_names: ["", "schbase_code", "school_name", "depbase_code", "lvl_abbrev", "subj_name",
+                                "lang", "subj_etenorm", "count", "subj_published_arr"],
+                    field_tags: ["div", "div", "div", "div", "div", "div",
+                                "div","div", "div", "div"],
+                    filter_tags: ["select", "text", "text", "text", "text", "text",
+                                  "text", "toggle", "number", "text"],
+                    field_width:  ["020", "090", "280", "090", "090", "280",
+                                    "090", "120", "120", "150"],
+                    field_align: ["c", "l", "l", "l", "l", "l",
+                                    "l", "c", "r", "l"]}
 
         };
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -140,6 +142,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if(el_SBR_select_showall){el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false)};
 
+// ---  MOD SELECT COLUMNS  ------------------------------------
+        let el_MCOL_tblBody_available = document.getElementById("id_MCOL_tblBody_available");
+        let el_MCOL_tblBody_show = document.getElementById("id_MCOL_tblBody_show");
+
+        const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save");
+            el_MCOL_btn_save.addEventListener("click", function() {ModColumns_Save()}, false );
+
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");
         let el_confirm_loader = document.getElementById("id_modconfirm_loader");
@@ -157,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(may_view_page){
         // period also returns emplhour_list
         const datalist_request = {
-                setting: {page: "page_studsubj"},
+                setting: {page: "page_orderlist"},
                 schoolsetting: {setting_key: "import_studentsubject"},
                 locale: {page: ["page_studsubj", "page_subject", "page_student", "upload", "page_orderlist"]},
                 examyear_rows: {get: true},
@@ -211,22 +220,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     selected_btn = (setting_dict.sel_btn)
                     must_update_headerbar = true;
 
+// ---  fill col_hidden
+                    if("col_hidden" in setting_dict){
+                       // clear the array columns_hidden
+                        b_clear_array(columns_hidden);
+                       // fill the array columns_hidden
+                        for (const [key, value] of Object.entries(setting_dict.col_hidden)) {
+                            columns_hidden[key] = value;
+                        }
+                    }
+                    console.log("setting_dict", setting_dict)
+                    console.log("columns_hidden", columns_hidden)
 
-
-                    // <PERMIT> PR2021-10-20
-                    // TODO
-                    //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-                    //  - can add/delete/edit only 'role_school' + same_school plus 'perm_edit'
-                    //  - cannot edit when country, examyear or schoolis locked
-                    //  - can only edit when school is published
-                   // permit_dict.permit_crud = (setting_dict.requsr_role_admin && setting_dict.usergroup_edit) ||
-                    //                  (setting_dict.requsr_role_system && setting_dict.usergroup_edit);
-                    // <PERMIT> PR2020-10-27
-                    // - every user may change examyear and department
-                    // -- only insp, admin and system may change school
-                   // has_permit_select_school = (setting_dict.requsr_role_insp ||
-                   //                             setting_dict.requsr_role_admin ||
-                   //                             setting_dict.requsr_role_system);
                 };
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
@@ -273,8 +278,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function CreateSubmenu() {
         //console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
-            AddSubmenuButton(el_submenu, loc.Download_orderlist, null, null, "id_submenu_download_orderlist", url_orderlist_download, false);  // true = download
-         el_submenu.classList.remove(cls_hide);
+            AddSubmenuButton(el_submenu, loc.Download_orderlist_ETE, null, null, "id_submenu_download_orderlist", url_orderlist_download, false);  // true = download
+            AddSubmenuButton(el_submenu, loc.Download_orderlist_DUO, null, null, "id_submenu_download_orderlist", url_orderlist_download, false);  // true = download
+            AddSubmenuButton(el_submenu, loc.Show_hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
+
+
+        el_submenu.classList.remove(cls_hide);
 
     };//function CreateSubmenu
 
@@ -348,60 +357,50 @@ document.addEventListener('DOMContentLoaded', function() {
         const tblName = "orderlist";
         const field_setting = field_settings[tblName]
         const data_rows = orderlist_rows;
+        console.log( "data_rows", data_rows);
 
-// --- show columns
-        set_columns_hidden();
+// --- set_columns_hidden
+        const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
 
 // --- reset table
         tblHead_datatable.innerText = null;
         tblBody_datatable.innerText = null;
 
 // --- create table header
-        CreateTblHeader(field_setting);
+        CreateTblHeader(field_setting, col_hidden);
 
 // --- create table rows
         if(data_rows && data_rows.length){
             for (let i = 0, map_dict; map_dict = data_rows[i]; i++) {
                 const map_id = map_dict.mapid;
-                let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict)
+                let tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_id, map_dict)
           };
         }  // if(data_rows)
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-07-31
-    function CreateTblHeader(field_setting) {
-        console.log("===  CreateTblHeader ===== ");
-
-        console.log("field_setting", field_setting);
+    function CreateTblHeader(field_setting, col_hidden) {
+        //console.log("===  CreateTblHeader ===== ");
+        //console.log("field_setting", field_setting);
 
         const column_count = field_setting.field_names.length;
 
-//--- insert table rows
+// +++  insert header and filter row ++++++++++++++++++++++++++++++++
         let tblRow_header = tblHead_datatable.insertRow (-1);
         let tblRow_filter = tblHead_datatable.insertRow (-1);
 
-//--- insert th's to tblHead_datatable
+    // --- loop through columns
         for (let j = 0; j < column_count; j++) {
-
             const field_name = field_setting.field_names[j];
+            const field_caption = (loc[field_setting.field_caption[j]]) ? loc[field_setting.field_caption[j]] : field_setting.field_caption[j] ;
+            const field_tag = field_setting.field_tags[j];
             const filter_tag = field_setting.filter_tags[j];
             const class_width = "tw_" + field_setting.field_width[j] ;
             const class_align = "ta_" + field_setting.field_align[j];
 
-            const key = field_setting.field_caption[j];
-            let caption = (loc[key]) ? loc[key] : key;
-        //console.log("field_name", field_name);
-        //console.log("key", key);
-        //console.log("setting_dict.sel_dep_has_profiel", setting_dict.sel_dep_has_profiel);
-        //console.log("loc.Sector", loc.Sector);
-        //console.log("loc.Profiel", loc.Profiel);
-            if (field_name === "sct_abbrev") {
-                caption = (setting_dict.sel_dep_has_profiel) ? loc.Profiel : loc.Sector;
-            }
-        //console.log("caption", caption);
+    // - skip columns if in columns_hidden
+            if (!col_hidden.includes(field_name)){
 
-            // skip columns if in columns_hidden
-            if (!columns_hidden[field_name]){
 // ++++++++++ create header row +++++++++++++++
 // --- add th to tblRow.
                 let th_header = document.createElement("th");
@@ -417,8 +416,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         } else {
 // --- add innerText to el_div
-                            if(caption) {el_header.innerText = caption};
-                            if(field_name === "examnumber"){el_header.classList.add("pr-2")}
+                            if(field_caption) {el_header.innerText = field_caption};
+                            if(filter_tag === "number"){el_header.classList.add("pr-2")}
                         };
 // --- add width, text_align
                         el_header.classList.add(class_width, class_align);
@@ -426,17 +425,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 tblRow_header.appendChild(th_header);
 
 // ++++++++++ create filter row +++++++++++++++
-// --- add th to tblRow_filter.
+        // --- add th to tblRow_filter.
                 const th_filter = document.createElement("th");
-// --- create element with tag from field_tags
-                const el_tag = (filter_tag === "text") ? "input" : "div";
-                const el_filter = document.createElement(el_tag);
-// --- add EventListener to el_filter
-                    const event_str = (filter_tag === "text") ? "keyup" : "click";
-                    el_filter.addEventListener(event_str, function(event){HandleFilterField(el_filter, j, event)});
-// --- add data-field Attribute.
+        // --- create element with tag from field_tags
+                const filter_field_tag = (["text", "number"].includes(filter_tag)) ? "input" : "div";
+                const el_filter = document.createElement(filter_field_tag);
+
+        // --- add data-field Attribute.
                     el_filter.setAttribute("data-field", field_name);
                     el_filter.setAttribute("data-filtertag", filter_tag);
+
+        // --- add EventListener to el_filter
+                    if (["text", "number"].includes(filter_tag)) {
+                        el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
+                        add_hover(th_filter);
+                    } else if (filter_tag === "toggle") {
+                        // add EventListener for icon to th_filter, not el_filter
+                        th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
+                        th_filter.classList.add("pointer_show");
+
+                        el_filter.classList.add("tickmark_0_0");
+                        add_hover(th_filter);
+                    }
+
 // --- add other attributes
                     if (filter_tag === "text") {
                         el_filter.setAttribute("type", "text")
@@ -445,10 +456,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         el_filter.setAttribute("autocomplete", "off");
                         el_filter.setAttribute("ondragstart", "return false;");
                         el_filter.setAttribute("ondrop", "return false;");
-                    } else if (["toggle"].includes(filter_tag)) {
-                        // default empty icon necessary to set pointer_show
-                        // default empty icon necessary to set pointer_show
-                        append_background_class(el_filter,"tickmark_1_2");
                     }
 
 // --- add width, text_align
@@ -457,16 +464,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 tblRow_filter.appendChild(th_filter);
             }  //  if (columns_hidden.inludes(field_name))
         }  // for (let j = 0; j < column_count; j++)
-
     };  //  CreateTblHeader
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-03-15
-    function CreateTblRow(tblName, field_setting, map_id, map_dict) {
+    function CreateTblRow(tblName, field_setting, col_hidden, map_id, map_dict) {
         //console.log("=========  CreateTblRow =========", tblName);
         //console.log("map_dict", map_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
+        const filter_tags = field_setting.filter_tags;
         const field_align = field_setting.field_align;
         const field_width = field_setting.field_width;
         const column_count = field_names.length;
@@ -490,8 +497,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const field_name = field_names[j];
 
 // skip columns if in columns_hidden
-            if (!columns_hidden[field_name]){
+            if (!col_hidden.includes(field_name)){
                 const field_tag = field_tags[j];
+                const filter_tag = filter_tags[j];
                 const class_width = "tw_" + field_width[j];
                 const class_align = "ta_" + field_align[j];
 
@@ -511,17 +519,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         td.classList.add("pointer_show");
                         add_hover(td);
                     }
-                    if(field_name === "examnumber"){
-                        td.classList.add("pr-4")
-                    } else if (field_name.includes("has_")){
+                    if (field_name.includes("has_")){
                         el.classList.add("tickmark_0_0")
 
                     } else  if (field_name.includes("_status")){
                         el.classList.add("stat_0_1")
                     };
                 };
-
-                td.appendChild(el);
 
         // --- add width, text_align, right padding in examnumber
                 // not necessary: td.classList.add(class_width, class_align);
@@ -532,7 +536,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     el.classList.add(class_width, class_align);
                 }
-                if(field_name === "examnumber"){el.classList.add("pr-2")}
+
+                if(filter_tag === "number"){el.classList.add("pr-3")}
+                td.appendChild(el);
 
 // --- put value in field
                UpdateField(el, map_dict)
@@ -580,9 +586,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (field_name.includes("subj_published_arr")){
                     inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text : 0;
+
                 } else if (field_name.includes("has_")){
                     filter_value = (fld_value) ? "1" : "0";
                     el_div.className = (is_etenorm) ? "tickmark_1_2" : "tickmark_0_0";
+
+                } else if (field_name.includes("subj_etenorm")){
+                    filter_value = (fld_value) ? "1" : "0";
+                    el_div.className = (fld_value) ? "tickmark_1_2" : "tickmark_0_0";
+
                 } else if (field_name.includes("_status")){
                     const prefix_mapped = {btn_studsubj: "subj_", btn_exemption: "exem_", btn_reex: "reex_", btn_reex3: "reex3_", btn_pok: "pok_", }
                     const field_auth_id = prefix_mapped[selected_btn] + field_name + "_id" // exem_auth1_id
@@ -619,15 +631,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }  // if(el_div)
     };  // UpdateField
 
-//========= set_columns_hidden  ====== PR2021-03-15
-    function set_columns_hidden() {
-        //console.log( "===== set_columns_hidden  === ");
-        //console.log( "tblName", tblName);
-        //console.log( "selected_btn", selected_btn);
-        //console.log("setting_dict.sel_dep_level_req", setting_dict.sel_dep_level_req);
-    };  // set_columns_hidden
-
-
+//###########################################################################
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
 
 //========= UploadChanges  ============= PR2020-08-03
@@ -674,7 +678,111 @@ document.addEventListener('DOMContentLoaded', function() {
         }  //  if(!!row_upload)
     };  // UploadChanges
 
-// +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
+// +++++++++++++++++ MODAL SELECT COLUMNS ++++++++++++++++++++++++++++++++++++++++++
+//=========  MCOL_Open  ================ PR2021-07-07
+    function MCOL_Open() {
+       //console.log(" -----  MCOL_Open   ----")
+        mod_MCOL_dict = {col_hidden: []}
+
+        const tblName = "orderlist";
+        const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
+        for (let i = 0, field; field = col_hidden[i]; i++) {
+            mod_MCOL_dict.col_hidden.push(field);
+        };
+
+        MCOL_FillSelectTable();
+
+        el_MCOL_btn_save.disabled = true
+// ---  show modal, set focus on save button
+       $("#id_mod_select_columns").modal({backdrop: true});
+    }  // MCOL_Open
+
+//=========  ModColumns_Save  ================ PR2021-07-07
+    function ModColumns_Save() {
+        console.log(" -----  ModColumns_Save   ----")
+
+// ---  get hidden columns from mod_MCOL_dict.col_hidden and put them  in columns_hidden[tblName]
+        const tblName = "orderlist";
+        if (!(tblName in columns_hidden)){
+            columns_hidden[tblName] = [];
+        }
+        const col_hidden = columns_hidden[tblName];
+        console.log("col_hidden", col_hidden)
+   // clear the array
+        b_clear_array(col_hidden);
+   // add hidden columns to col_hidden
+        for (let i = 0, field; field = mod_MCOL_dict.col_hidden[i]; i++) {
+            col_hidden.push(field);
+        };
+// upload the new list of hidden columns
+        const page_dict = {};
+        page_dict[tblName] = col_hidden;
+        const upload_dict = {page_orderlist: {col_hidden: page_dict }};
+        console.log("upload_dict", upload_dict)
+        UploadSettings (upload_dict, url_settings_upload);
+
+        HandleBtnSelect(selected_btn, true)  // true = skip_upload
+
+// hide modal
+        // in HTML: data-dismiss="modal"
+    }  // ModColumns_Save
+
+//=========  MCOL_FillSelectTable  ================ PR2021-07-07
+    function MCOL_FillSelectTable() {
+        console.log("===  MCOL_FillSelectTable == ");
+
+        el_MCOL_tblBody_available.innerHTML = null;
+        el_MCOL_tblBody_show.innerHTML = null;
+
+        const tblName = "orderlist";
+        const field_names = field_settings[tblName].field_names;
+        const field_captions = field_settings[tblName].field_caption;
+
+//+++ loop through list of field_names
+        if(field_names && field_names.length){
+            const len = field_names.length;
+            for (let j = 0; j < len; j++) {
+                const field_name = field_names[j];
+                const field_caption = (field_captions[j]) ? loc[field_captions[j]]: null
+                const is_hidden = (field_name && mod_MCOL_dict.col_hidden.includes(field_name));
+                const tBody = (is_hidden) ? el_MCOL_tblBody_available : el_MCOL_tblBody_show;
+
+    //+++ insert tblRow into tBody
+                const tblRow = tBody.insertRow(-1);
+                tblRow.setAttribute("data-field", field_name);
+
+        // --- add EventListener to tblRow.
+                tblRow.addEventListener("click", function() {MCOL_SelectItem(tblRow);}, false )
+        //- add hover to tableBody row
+                add_hover(tblRow)
+
+                const td = tblRow.insertCell(-1);
+                td.innerText = field_caption;
+        //- add data-tag  to tblRow
+                td.classList.add("tw_240")
+
+                tblRow.setAttribute("data-field", field_name);
+            }
+        }  // if(field_captions && field_captions.length)
+    } // MCOL_FillSelectTable
+
+//=========  MCOL_SelectItem  ================ PR2021-07-07
+    function MCOL_SelectItem(tr_clicked) {
+        console.log("===  MCOL_SelectItem == ");
+        if(!!tr_clicked) {
+            const field_name = get_attr_from_el(tr_clicked, "data-field")
+            const is_hidden = (field_name && mod_MCOL_dict.col_hidden.includes(field_name));
+            if (is_hidden){
+                b_remove_item_from_array(mod_MCOL_dict.col_hidden, field_name);
+            } else {
+                mod_MCOL_dict.col_hidden.push(field_name)
+            }
+            MCOL_FillSelectTable();
+            // enable sasave btn
+            el_MCOL_btn_save.disabled = false;
+        }
+    }  // MCOL_SelectItem
+
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03
@@ -927,6 +1035,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // close modal MSJ when no error --- already done in modal
                 //$("#id_mod_subject").modal("hide");
             }
+
+            const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
             //arr.splice(index, 0, item); will insert item into arr at the specified index
@@ -943,7 +1053,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         console.log("data_rows", data_rows);
     // ---  create row in table., insert in alphabetical order
-                const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
+                const new_tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_id, update_dict)
 
     // ---  scrollIntoView,
                 if(new_tblRow){
@@ -1017,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 //--- delete current tblRow
                                     tblRow.parentNode.removeChild(tblRow);
                                 //--- insert row new at new position
-                                    tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
+                                    tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_id, update_dict)
                                 };
 
         //console.log("tblRow", tblRow);
@@ -1103,7 +1213,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 data_map.set(map_id, update_dict);
                 updated_columns.push("created")
     // ---  create row in table., insert in alphabetical order
-                tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
+                tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_id, update_dict)
     // ---  scrollIntoView,
                 if(tblRow){
                     tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
@@ -1197,13 +1307,73 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }  //  make_studsubjrow_empty
 
-
 //###########################################################################
-// +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++++++++++++++ FILTER TABLE ROWS ++++++++++++++++++++++++++++++++++++++
+
+//========= HandleFilterKeyup  ================= PR2021-05-12
+    function HandleFilterKeyup(el, event) {
+        //console.log( "===== HandleFilterKeyup  ========= ");
+        // skip filter if filter value has not changed, update variable filter_text
+
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el.parentNode.cellIndex;
+    //console.log( "col_index", col_index, "event.key", event.key);
+
+        const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
+    //console.log( "filter_dict", filter_dict);
+
+        if (!skip_filter) {
+            Filter_TableRows();
+        }
+    }; // function HandleFilterKeyup
+
+//========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23
+    function HandleFilterToggle(el_input) {
+        console.log( "===== HandleFilterToggle  ========= ");
+
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el_input.parentNode.cellIndex;
+    //console.log( "col_index", col_index, "event.key", event.key);
+
+    // - get filter_tag from  el_input
+        const filter_tag = get_attr_from_el(el_input, "data-filtertag")
+        const field_name = get_attr_from_el(el_input, "data-field")
+    //console.log( "col_index", col_index);
+    //console.log( "filter_tag", filter_tag);
+    //console.log( "field_name", field_name);
+
+    // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
+        const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
+        const filter_value = (filter_array[1]) ? filter_array[1] : "0";
+    //console.log( "filter_array", filter_array);
+    //console.log( "filter_value", field_name);
+        let new_value = "0", icon_class = "tickmark_0_0"
+        if(filter_tag === "toggle") {
+            // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+    // - toggle filter value
+            new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
+    // - get new icon_class
+            icon_class =  (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "tickmark_2_2" : "tickmark_0_0";
+        }
+    // - put new filter value in filter_dict
+        filter_dict[col_index] = [filter_tag, new_value]
+    console.log( "filter_dict", filter_dict);
+        el_input.className = icon_class;
+        Filter_TableRows();
+
+    };  // HandleFilterToggle
+
+
+
+
 
 //========= HandleFilterField  ====================================
     function HandleFilterField(el_filter, col_index, event) {
-        //console.log( "===== HandleFilterField  ========= ");
+        console.log( "===== HandleFilterField  ========= ");
         // skip filter if filter value has not changed, update variable filter_text
 
         //console.log( "el_filter", el_filter);
@@ -1213,15 +1383,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get filter tblRow and tblBody
         const tblRow = get_tablerow_selected(el_filter);
-        const tblName = get_attr_from_el(tblRow, "data-table")
+        const tblName = "orderlist"  // tblName = get_attr_from_el(tblRow, "data-table")
+        console.log( "tblName", tblName);
 
 // --- reset filter row when clicked on 'Escape'
         const skip_filter = t_SetExtendedFilterDict(el_filter, col_index, filter_dict, event.key);
+        console.log( "filter_dict", filter_dict);
         console.log( "skip_filter", skip_filter);
+
+        let new_value = "0", icon_class = "tickmark_0_0"
+        if(filter_tag === "toggle") {
+            // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+    // - toggle filter value
+            new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
+    // - get new icon_class
+            icon_class =  (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "tickmark_2_2" : "tickmark_0_0";
+        }
+
+
+
+
 
         if (filter_tag === "toggle") {
 // ---  toggle filter_checked
             let filter_checked = (col_index in filter_dict) ? filter_dict[col_index] : 0;
+
+        console.log( "filter_checked", filter_checked);
     // ---  change icon
             let el_icon = el_filter.children[0];
             if(el_icon){
@@ -1252,94 +1439,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        Filter_TableRows(tblBody_datatable);
+        Filter_TableRows();
     }; // HandleFilterField
 
-//========= Filter_TableRows  ==================================== PR2020-08-17
-    function Filter_TableRows(tblBody) {
-        //console.log( "===== Filter_TableRows  ========= ");
+//========= Filter_TableRows  ==================================== PR2021-07-08
+    function Filter_TableRows() {
+        console.log( "===== Filter_TableRows  ========= ");
 
-        const tblName_settings = (selected_btn === "btn_studsubj") ? "studsubj" :
-                                (selected_btn === "btn_exemption") ? "studsubj" :
-                                (selected_btn === "btn_reex") ? "studsubj" :
-                                (selected_btn === "btn_reex3") ? "studsubj" :
-                                (selected_btn === "btn_pok") ? "studsubj" : null;
-
-// ---  loop through tblBody.rows
-        for (let i = 0, tblRow, show_row; tblRow = tblBody.rows[i]; i++) {
-            show_row = ShowTableRow(tblRow, tblName_settings)
+        for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
+            tblRow = tblBody_datatable.rows[i]
+            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row)
         }
+
     }; // Filter_TableRows
-
-//========= ShowTableRow  ==================================== PR2020-08-17
-    function ShowTableRow(tblRow, tblName_settings) {
-        // only called by Filter_TableRows
-        //console.log( "===== ShowTableRow  ========= ");
-        //console.log( "filter_dict", filter_dict);
-        let hide_row = false;
-        if (tblRow){
-// show all rows if filter_name = ""
-            if (!isEmpty(filter_dict)){
-                for (const [col_index, item_arr] of Object.entries(filter_dict)) {
-                    if (item_arr && item_arr.length){
-                        const el = tblRow.cells[col_index];
-                        const filter_tag = item_arr[0];
-                        const filter_text = item_arr[1];
-                    // skip if no filter on this colums
-                        if(filter_text){
-                            if(filter_tag === "text"){
-                                const blank_only = (filter_text === "#")
-                                const non_blank_only = (filter_text === "@" || filter_text === "!")
-                    // get value from el.value, innerText or data-value
-                                // PR2020-06-13 debug: don't use: "hide_row = (!el_value)", once hide_row = true it must stay like that
-                                let el_value = el.innerText;
-                                if (blank_only){
-                                    // empty value gets '\n', therefore filter asc code 10
-                                    if(el_value && el_value !== "\n" ){
-                                        hide_row = true
-                                    };
-                                } else if (non_blank_only){
-                                    // empty value gets '\n', therefore filter asc code 10
-                                    if(!el_value || el_value === "\n" ){
-                                        hide = true
-                                    }
-                                } else {
-                                    el_value = el_value.toLowerCase();
-                                    // hide row if filter_text not found or el_value is empty
-                                    // empty value gets '\n', therefore filter asc code 10
-                                    if(!el_value || el_value === "\n" ){
-                                        hide_row = true;
-                                    } else if(!el_value.includes(filter_text)){
-                                        hide_row = true;
-                                    }
-                                }
-                            } else if(filter_tag === "toggle"){
-                                const el_value = get_attr_from_el_int(el, "data-value")
-                                if (filter_text === 1){
-                                    if (!el_value ) {hide_row = true};
-                                } else  if (filter_text === -1){
-                                    if (el_value) {hide_row = true};
-                                }
-                            } else if(filter_tag === "inactive"){
-                                const el_value = get_attr_from_el_int(el, "data-value")
-                                if (filter_text === 1){
-                                    if (!el_value ) {hide_row = true};
-                                } else  if (filter_text === -1){
-                                    if (el_value) {hide_row = true};
-                                }
-                            } else if(filter_tag === "activated"){
-                                const el_value = get_attr_from_el_int(el, "data-value")
-                                if (filter_text && el_value !== filter_text ) {hide_row = true};
-                            }
-                        }  //  if(!!filter_text)
-
-                    }  //  if (item_dict){
-                } // for (const [ key, value ] of Object.entries(filter_dict))
-            }  // if if (!isEmpty(filter_dict))
-        }  // if (!!tblRow)
-        return !hide_row
-    }; // ShowTableRow
 
 //========= ResetFilterRows  ====================================
     function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20
@@ -1352,7 +1465,7 @@ document.addEventListener('DOMContentLoaded', function() {
         filter_dict = {};
         filter_mod_employee = false;
 
-        Filter_TableRows(tblBody_datatable);
+        Filter_TableRows();
 
         let filterRow = tblHead_datatable.rows[1];
         if(!!filterRow){
@@ -1400,4 +1513,5 @@ document.addEventListener('DOMContentLoaded', function() {
         DatalistDownload(datalist_request);
 
     }  // MSED_Response
+
 })  // document.addEventListener('DOMContentLoaded', function()

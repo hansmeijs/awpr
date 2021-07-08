@@ -281,6 +281,7 @@ KEY_SEL_STUDENT_PK = 'sel_student_pk'
 KEY_SEL_LEVEL_PK = 'sel_level_pk'
 KEY_SEL_SECTOR_PK = 'sel_sector_pk'
 KEY_SEL_BTN = 'sel_btn'
+KEY_COL_HIDDEN = 'col_hidden'
 
 # SCHOOL SETTING KEYS PR2018-12-03  PR2020-12-04
 
@@ -487,7 +488,6 @@ PAGE_LIST = {
     'studentsubjects': _('Subjects of students'),
     'grades': _('Grades')
 }
-
 
 MENUS_ITEMS = {
     ROLE_128_SYSTEM: ['page_examyear', 'page_subject', 'page_school', 'page_student', 'page_studsubj', 'page_exams', 'page_grade',

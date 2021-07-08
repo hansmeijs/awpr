@@ -413,7 +413,7 @@ class SubjecttypebaseUploadView(View):  # PR2021-06-29
                     logger.debug('upload_dict' + str(upload_dict))
 
 # - get  variables
-                sjtbase_pk = upload_dict.get('sjtbase_pk')
+                sjtpbase_pk = upload_dict.get('sjtpbase_pk')
                 is_create = upload_dict.get('create', False)
                 is_delete = upload_dict.get('delete', False)
 
@@ -430,7 +430,7 @@ class SubjecttypebaseUploadView(View):  # PR2021-06-29
 
 # +++  get existing subjecttypebase
                     subjecttypebase = sbj_mod.Subjecttypebase.objects.get_or_none(
-                        id=sjtbase_pk
+                        id=sjtpbase_pk
                     )
                 if logging_on:
                     logger.debug('subjecttypebase: ' + str(subjecttypebase))
@@ -478,7 +478,7 @@ def create_subjecttypebase(upload_dict, error_list, request):
     if logging_on:
         logger.debug(' ----- create_subjecttypebase ----- ')
 
-    msg_header = _('Create subject type base')
+    msg_header = _('Create base character')
 
     code = upload_dict.get ('code')
     name = upload_dict.get ('name')
@@ -517,7 +517,6 @@ def create_subjecttypebase(upload_dict, error_list, request):
         msg_list.append(msg_html)
 # - create and save subjecttype
     if len(msg_list) > 0:
-        msg_header = _('Create subject type base')
         msg_html = '<br>'.join(msg_list)
         error_list.append({'header': str(msg_header), 'class': "border_bg_invalid", 'msg_html': msg_html})
     else:
@@ -534,7 +533,7 @@ def create_subjecttypebase(upload_dict, error_list, request):
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-            caption = _('Subject type base')
+            caption = _('Base character')
             msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
                         str(_("%(cpt)s '%(val)s' could not be created.") % {'cpt': caption, 'val': name})))
             error_list.append({'header': str(msg_header), 'class': 'border_bg_invalid', 'msg_html': msg_html})
@@ -558,8 +557,8 @@ def delete_subjecttypebase(subjecttypebase, subjecttypebase_rows, messages, requ
                        'mapid': 'subjecttypebase_' + str(subjecttypebase.pk),
                        'deleted': True}
 
-    this_txt = _("Subject type base '%(tbl)s'") % {'tbl': subjecttypebase.name}
-    header_txt = _("Delete subject type base")
+    this_txt = _("Base character '%(tbl)s'") % {'tbl': subjecttypebase.name}
+    header_txt = _("Delete base character")
 
 # check if there are students with subjects with this subjecttypebase
     students_with_this_subjecttypebase_exist = stud_mod.Studentsubject.objects.filter(
@@ -571,7 +570,7 @@ def delete_subjecttypebase(subjecttypebase, subjecttypebase_rows, messages, requ
 
     if students_with_this_subjecttypebase_exist:
         deleted_ok = False
-        msg_html = ''.join((str(_('There are candidates with subjects with this subject type base.')), '<br>',
+        msg_html = ''.join((str(_('There are candidates with subjects with this base character.')), '<br>',
                             str(_("%(cpt)s could not be deleted.") % {'cpt': this_txt})))
         msg_dict = {'class': 'border_bg_invalid', 'header': header_txt, 'msg_html': msg_html}
         messages.append(msg_dict)
@@ -601,7 +600,7 @@ def update_subjecttypebase_instance(instance, upload_dict, error_list, request):
     if instance:
         save_changes = False
 
-        msg_header = _('Update subject type base')
+        msg_header = _('Update base character')
 
         for field, new_value in upload_dict.items():
 
@@ -700,7 +699,7 @@ class SubjecttypeUploadView(View):  # PR2021-06-23
                 if logging_on:
                     logger.debug('upload_dict' + str(upload_dict))
 
-                msg_header = _('Update subject type')
+                msg_header = _('Update character')
 
 # - get selected examyear from Usersetting
                 examyear = get_sel_examyear(msg_header, messages, request)
@@ -2567,7 +2566,7 @@ def update_sjtp_list(examyear, scheme, sjtp_list, updated_rows, messages, reques
         logger.debug(' ----- update_sjtp_list ----- ')
         logger.debug('sjtp_list: ' + str(sjtp_list))
 
-    msg_header = _('Update subject type')
+    msg_header = _('Update character')
 # ++++ loop through list of subjecttypes:
     for sjtp_dict in sjtp_list:
         subjecttype = None
@@ -2630,14 +2629,14 @@ def create_subjecttype(sjtpbase_pk, scheme, upload_dict, messages, msg_header, r
 
     subjecttype = None
     sjtpbase = None
-    msg_header = _('Create subject type')
+    msg_header = _('Create character')
 
     if scheme:
 # - get sjtpbase
         sjtpbase = get_subjecttypebase_instance(sjtpbase_pk, messages,
                                         msg_header, logging_on, request)
         if sjtpbase is None:
-            msg_html = str(_("Base subject type not found."))
+            msg_html = str(_("Base character not found."))
             msg_dict = {'header': str(msg_header), 'class': 'border_bg_invalid', 'msg_html': msg_html}
             messages.append(msg_dict)
         else:
@@ -2675,7 +2674,7 @@ def create_subjecttype(sjtpbase_pk, scheme, upload_dict, messages, msg_header, r
 
                     except Exception as e:
                         logger.error(getattr(e, 'message', str(e)))
-                        caption = _('Subject type')
+                        caption = _('Character')
                         msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
                                     str(_("%(cpt)s '%(val)s' could not be created.") % {'cpt': caption, 'val': name})))
                         messages.append({'header': str(msg_header), 'class': 'border_bg_invalid', 'msg_html': msg_html})
@@ -2706,8 +2705,8 @@ def delete_subjecttype(subjecttype, messages, request):
 
     scheme_pk = subjecttype.scheme.pk
 
-    this_txt = _("Subject type '%(tbl)s'") % {'tbl': subjecttype.name}
-    header_txt = _("Delete subject type")
+    this_txt = _("Character '%(tbl)s'") % {'tbl': subjecttype.name}
+    header_txt = _("Delete character")
 
 # check if there are students with subjects with this subjecttype
     students_with_this_subjecttype_exist = stud_mod.Studentsubject.objects.filter(
@@ -2719,7 +2718,7 @@ def delete_subjecttype(subjecttype, messages, request):
 
     if students_with_this_subjecttype_exist:
         deleted_ok = False
-        msg_html = ''.join((str(_('There are candidates with subjects with this subjecttype.')), '<br>',
+        msg_html = ''.join((str(_('There are candidates with subjects with this character.')), '<br>',
                             str(_("%(cpt)s could not be deleted.") % {'cpt': this_txt})))
         msg_dict = {'class': 'border_bg_invalid', 'header': header_txt, 'msg_html': msg_html}
         messages.append(msg_dict)
@@ -2762,7 +2761,7 @@ def update_subjecttype_instance(instance, scheme, upload_dict, error_list, reque
         save_changes_in_base = False
         save_changes = False
 
-        msg_header = _('Update subject type')
+        msg_header = _('Update character')
 
         for field, new_value in upload_dict.items():
 
@@ -3030,7 +3029,8 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, cur_dep_only=False, dep
             "sjtp.has_prac AS sjtp_has_prac, sjtp.has_pws AS sjtp_has_pws, ",
             "sjtp.minsubjects AS sjtp_minsubjects, sjtp.maxsubjects AS sjtp_maxsubjects, ",
             "scheme.name AS scheme_name, scheme.fields AS scheme_fields,",
-            "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
+            "depbase.id AS depbase_id, depbase.code AS depbase_code,",
+            "lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
 
             "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_combi,",
             "si.extra_count_allowed, si.extra_nocount_allowed, si.elective_combi_allowed, si.has_practexam,",

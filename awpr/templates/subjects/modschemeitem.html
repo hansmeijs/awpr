@@ -14,24 +14,26 @@
                 </div>
 
                 <div class="modal-body">
-                    <div class="flex_container px-3 mb-3">
-                        <div class="flex_1 mx-1">
-                            <label for="id_MSI_department" class="mx-2">{% trans 'Department' %}:</label>
-                            <select id="id_MSI_department" data-field="department_pk" class="form-control"
-                                   autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                            </select>
-                        </div>
-                        <div id="id_MSI_level_container" class="flex_1 mx-1 ">
-                            <label for="id_MSI_level" class="mx-2">{% trans 'Leeerweg' %}:</label>
-                            <select id="id_MSI_level" data-field="lvl_pk" class="form-control"
-                                   autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                            </select>
-                        </div>
-                        <div id="id_MSI_sector_container" class="flex_1 mx-1 ">
-                            <label id="id_MSI_sector_label" for="id_MSI_sector" class="mx-2">{% trans 'Sector' %}:</label>
-                            <select id="id_MSI_sector" data-field="sct_pk" class="form-control"
-                                   autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                            </select>
+                    <div id="id_MSI_deplvlsct_container">
+                        <div class="flex_container px-3 mb-3">
+                            <div class="flex_1 mx-1">
+                                <label for="id_MSI_department" class="mx-2">{% trans 'Department' %}:</label>
+                                <select id="id_MSI_department" data-field="department_pk" class="form-control"
+                                       autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                </select>
+                            </div>
+                            <div id="id_MSI_level_container" class="flex_1 mx-1 ">
+                                <label for="id_MSI_level" class="mx-2">{% trans 'Leeerweg' %}:</label>
+                                <select id="id_MSI_level" data-field="lvl_pk" class="form-control"
+                                       autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                </select>
+                            </div>
+                            <div id="id_MSI_sector_container" class="flex_1 mx-1 ">
+                                <label id="id_MSI_sector_label" for="id_MSI_sector" class="mx-2">{% trans 'Sector' %}:</label>
+                                <select id="id_MSI_sector" data-field="sct_pk" class="form-control"
+                                       autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                </select>
+                            </div>
                         </div>
                     </div>
 

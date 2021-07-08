@@ -104,7 +104,9 @@ class OrederlistsListView(View): # PR2021-07-04
         activate(user_lang)
 
 # - get headerbar parameters
-        params = awpr_menu.get_headerbar_param(request, 'page_orderlist')
+        page = 'page_orderlist'
+        param = {'display_school': False, 'display_department': False}
+        params = awpr_menu.get_headerbar_param(request, page, param)
 
         return render(request, 'orderlists.html', params)
 # - end of OrederlistsListView
@@ -1690,16 +1692,14 @@ def create_ssnote_attachment_rows(upload_dict, request):  # PR2021-03-17
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 #/////////////////////////////////////////////////////////////////
 
-def create_orderlist_rows(setting_dict, append_dict, student_pk=None, studsubj_pk=None):
+def create_orderlist_rows(sel_examyear_pk):
     # --- create rows of all schools with submeitted subjects PR2021-07-04
     #logger.debug(' =============== create_orderlist_rows ============= ')
     #logger.debug('append_dict: ' + str(append_dict))
     #logger.debug('setting_dict: ' + str(setting_dict))
     # create list of students of this school / examyear, possibly with filter student_pk or studsubj_pk
     # with left join of studentsubjects with deleted=False
-    sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
-    sel_schoolbase_pk = af.get_dict_value(setting_dict, ('sel_schoolbase_pk',))
-    sel_depbase_pk = af.get_dict_value(setting_dict, ('sel_depbase_pk',))
+
     #logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
     #logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
     #logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
@@ -1713,13 +1713,13 @@ def create_orderlist_rows(setting_dict, append_dict, student_pk=None, studsubj_p
     "END AS lang,",
     
     """
-    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
+    sql_keys = {'ey_id': sel_examyear_pk}
     sql_sublist = ["SELECT sch.id AS school_id,",
                 "dep.id AS dep_id, dep.base_id AS depbase_id, depbase.code AS depbase_code, lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev,",
                 "studsubj.subj_published_id,",
-                "subj.id AS subj_id, subjbase.code AS subjbase_code, subj.name AS subj_name,",
+                "subj.id AS subj_id, subjbase.code AS subjbase_code, subj.name AS subj_name, subj.etenorm AS subj_etenorm,",
                 "CASE WHEN subj.otherlang IS NULL OR sch.otherlang IS NULL THEN 'ne' ELSE",
-                "CASE WHEN  POSITION(sch.otherlang IN subj.otherlang) > 0 THEN sch.otherlang ELSE 'ne' END END AS lang",
+                "CASE WHEN POSITION(sch.otherlang IN subj.otherlang) > 0 THEN sch.otherlang ELSE 'ne' END END AS lang",
 
                 "FROM students_studentsubject AS studsubj",
 
@@ -1743,10 +1743,10 @@ def create_orderlist_rows(setting_dict, append_dict, student_pk=None, studsubj_p
                 ]
     sub_sql = ' '.join(sql_sublist)
 
-    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
+    sql_keys = {'ey_id': sel_examyear_pk}
     sql_list = ["SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.name AS school_name,",
         "sub.dep_id, sub.depbase_code, sub.lvl_id, sub.lvl_abbrev,",
-        "sub.subj_id, sub.subjbase_code, sub.subj_name,",
+        "sub.subj_id, sub.subjbase_code, sub.subj_name, sub.subj_etenorm,",
         "ARRAY_AGG(DISTINCT sub.subj_published_id) AS subj_published_arr,",
         "sub.lang,",
         "count(*) AS count",
@@ -1758,7 +1758,7 @@ def create_orderlist_rows(setting_dict, append_dict, student_pk=None, studsubj_p
 
         "GROUP BY sch.id, schbase.code, sch.name, sub.dep_id, sub.depbase_id, sub.depbase_code,",
                 "sub.lvl_id, sub.lvl_abbrev, sub.lang, ",
-                "sub.subj_id, sub.subjbase_code, sub.subj_name",
+                "sub.subj_id, sub.subjbase_code, sub.subj_name, sub.subj_etenorm",
         "ORDER BY LOWER(schbase.code), sub.depbase_id"
         ]
     sql = ' '.join(sql_list)

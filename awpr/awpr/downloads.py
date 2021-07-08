@@ -152,7 +152,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- orderlists
                 if datalist_request.get('orderlist_rows'):
-                    datalists['orderlist_rows'] = st_vw.create_orderlist_rows(new_setting_dict, {})
+                    datalists['orderlist_rows'] = st_vw.create_orderlist_rows(sel_examyear)
 
 # ----- grade_with_exam_rows
                 if datalist_request.get('grade_with_exam_rows'):
@@ -286,7 +286,6 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
     # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Comm can not neter grades
     permit_dict['requsr_same_school'] = (req_user.role == c.ROLE_008_SCHOOL and requsr_schoolbase.pk == sel_schoolbase_instance.pk)
-
 
 # ===== EXAMYEAR =======================
     # every user can change examyear, is stored in Usersetting.
@@ -527,6 +526,8 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
 # ===== PAGE SETTINGS ======================= PR2021-06-22
 # these settings can not be changed by calling download, are changes by UploadSettings
 # value of key 'sel_page' is set and retrieved in get_headerbar_param
+
+    logger.debug('...........page: ' + str(page))
     # get page settings - keys starting with 'page_'
     if page:
         page_dict = acc_view.get_usersetting_dict(page, request)
@@ -537,7 +538,10 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
             if sel_btn:
                 setting_dict[c.KEY_SEL_BTN] = sel_btn
 
-
+# - add list of hidde ncolumns PR2021-07-07
+            col_hidden = page_dict.get(c.KEY_COL_HIDDEN)
+            if col_hidden:
+                setting_dict[c.KEY_COL_HIDDEN] = col_hidden
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
     """

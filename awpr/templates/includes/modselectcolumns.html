@@ -1,0 +1,44 @@
+ {% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL SELECT COLUMNS  =================== -->
+    <div class="modal" id="id_mod_select_columns" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl " role="document">
+
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 id="id_MCOL_header" class="modal-title mx-2" >{% trans 'Show or hide columns' %}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div id="id_MCOL_form_controls"  class="flex_container ml-2 mr-0">
+                         <div class="flex_1 p-2 ">
+                             <h6 class="px-2">{% trans 'Columns that will be hidden' %}:</h6>
+                             <table class="tableX tsa_tbl border_bg_message tbl_studsubj_h390_w_auto">
+                                <tbody id="id_MCOL_tblBody_available"></tbody>
+                             </table>
+                         </div>
+                         <div class="flex_1 p-2">
+                             <h6 class="px-2">{% trans 'Columns that will be shown' %}:</h6>
+                              <table class="tableX tsa_tbl border_bg_lightblue tbl_studsubj_h390_w_auto">
+                                <tbody id="id_MCOL_tblBody_show"></tbody>
+                              </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <div class="content_subheader_left mx-1 tab_show tab_update display_hideX">
+                     </div>
+                    <div class="content_subheader_right">
+                        <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MCOL_btn_save" data-dismiss="modal" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>

@@ -33,13 +33,13 @@
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
+            {% include 'includes/modselectcolumns.html' %}
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'subjects/modsubject.html' %}
             {% include 'subjects/modsubjecttype.html' %}
             {% include 'subjects/modsubjecttypebase.html' %}
             {% include 'subjects/modschemeitem.html' %}
-
 
 
             <div class="content_margin_top78">
@@ -66,9 +66,9 @@
                 <button data-btn="btn_subject" class="btn btn-secondary ">{% trans 'Subjects' %}</button>
                 <button data-btn="btn_scheme" class="btn btn-secondary">{% trans 'Subject schemes' %}</button>
                 <button data-btn="btn_schemeitem" class="btn btn-secondary">{% trans 'Subject scheme subjects' %}</button>
-                <button data-btn="btn_subjecttype" class="btn btn-secondary">{% trans 'Subject types' %}</button>
-                <button data-btn="btn_subjecttypebase" class="btn btn-secondary">{% trans 'Subject type bases' %}</button>
-                <button data-btn="btn_package" class="btn btn-secondary display_hide">{% trans 'Subject packages' %}</button>
+                <button data-btn="btn_subjecttype" class="btn btn-secondary">{% trans 'Characters' %}</button>
+                <button data-btn="btn_subjecttypebase" class="btn btn-secondary">{% trans 'Base characters' %}</button>
+                <button data-btn="btn_package" class="btn btn-secondary">{% trans 'Subject packages' %}</button>
             </div>
 
     <!-- CONTENT BODY -->

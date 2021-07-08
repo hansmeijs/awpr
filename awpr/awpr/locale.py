@@ -338,6 +338,7 @@ def get_locale_dict(table_dict, user_lang):
 # ====== PAGE SUBJECTS ========================= PR2020-09-30
     if 'page_subject' in page_list:
 
+        dict['Show_hide_columns'] = _('Show or hide columns')
         dict['Add_subject'] = _('Add subject')
         dict['Add_department'] = _('Add department')
         dict['Add_level'] = _('Add level')
@@ -363,11 +364,12 @@ def get_locale_dict(table_dict, user_lang):
         dict['No_levels_found'] = _("No levels found")
         dict['Select_sector'] = _("Select sector")
         dict['No_sectors_found'] = _("No sectors found")
-        dict['No_subjecttypes_found'] = _("No subject types found")
-        dict['Select_subjecttypes'] = _("Select subject types")
-        dict['Base_subjecttype'] = _("Base subject type")
+
+        dict['Base_character'] = _("Base character")
+        dict['Character_name'] = _("Character name")
 
         dict['Grade_type'] = _('Grade type')
+        dict['Grade'] = _('Grade')
 
         dict['SE_weighing'] = _('SE weighing')
         dict['CE_weighing'] = _('CE weighing')
@@ -765,7 +767,10 @@ def get_locale_dict(table_dict, user_lang):
         dict['Subject'] = _('Subject')
         dict['Amount'] = _('Amount')
         dict['Submitted'] = _('Submitted')
-        dict['Download_orderlist'] = _('Download orderlist')
+        dict['Download_orderlist_ETE'] = _('Download ETE orderlist')
+        dict['Download_orderlist_DUO'] = _('Download DUO orderlist')
+
+        dict['Language'] = _('Language')
 
     return dict
 

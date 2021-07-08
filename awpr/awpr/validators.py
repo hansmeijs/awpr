@@ -398,7 +398,7 @@ def validate_subjecttypebase_code_name_abbrev_exists(field, lookup_value, countr
         logger.debug('lookup_value: ' + str(lookup_value))
 
     msg_html = None
-    caption = _('Subject type base')
+    caption = _('Base character')
 
     # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
     crit = Q(country=country)
@@ -422,10 +422,7 @@ def validate_subjecttypebase_code_name_abbrev_exists(field, lookup_value, countr
 # - end of validate_subjecttypebase_code_name_abbrev_exists
 
 
-
-
 # ============ SUBJECT TYPES
-
 def validate_subjecttype_name_abbrev_exists(field, lookup_value, scheme, cur_subjecttype=None):  # PR2021-06-27
 # - function checks if this name or abbrev already exists in this scheme
 
@@ -436,7 +433,7 @@ def validate_subjecttype_name_abbrev_exists(field, lookup_value, scheme, cur_sub
         logger.debug('lookup_value: ' + str(lookup_value))
 
     msg_html = None
-    caption = _('Subject type')
+    caption = _('Character')
 
     # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
     crit = Q(scheme=scheme)
@@ -475,8 +472,9 @@ def validate_subjecttype_duplicate_base(scheme, sjtpbase, error_list, cur_subjec
 # - check if value exists
     has_error = subj_mod.Subjecttype.objects.filter(crit).exists()
     if has_error:
-        header_txt = _('Update subject type')
-        msg_html = str(_("Subject type '%(val)s' already exists in this subject scheme.") % {'val': sjtpbase.name})
+        header_txt = _('Update character')
+        caption = _('Character')
+        msg_html = str(_("%(cpt)s '%(val)s' already exists in this subject scheme.") % {'cpt': caption, 'val': sjtpbase.name})
         msg_dict = {'field': 'sjtpbase_pk', 'header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
         error_list.append(msg_dict)
 
