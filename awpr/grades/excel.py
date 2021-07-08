@@ -104,10 +104,11 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24
                     if logging_on:
                         logger.debug('settings: ' + str(settings))
 
-    # +++ get selected studsubj_rows
-                    subject_row_count, subject_pk_list, subject_code_list, level_pk_list = create_ex1_subject_rows(sel_examyear, sel_school, sel_department)
-                    #  subject_pk_dict: {34: 0, 29: 1, 4: 2, 36: 3, 31: 4, 27: 5, 33: 6, 35: 7, 1: 8, 15: 9, 3: 10}
-                    #  subject_code_list: ['bw', 'cav', 'en', 'inst', 'lo', 'mm1', 'mt', 'mvt', 'ne', 'ns1', 'pa']
+    # +++ get mapped_subject_rows
+                    subject_row_count, subject_pk_list, subject_code_list, level_pk_list = \
+                        create_ex1_mapped_subject_rows(sel_examyear, sel_school, sel_department)
+                    #  subject_pk_dict: {34: 0, 29: 1, ...} ( subject_pk: index)
+                    #  subject_code_list: ['bw', 'cav', ]
                     #  index = row_count
 
                     if logging_on:
@@ -160,7 +161,8 @@ def create_ex1_xlsx(examyear, school, department, settings, subject_col_count,
     response = None
 
     if settings and studsubj_rows:
-    # ---  create file Name and worksheet Name
+
+# ---  create file Name and worksheet Name
         today_dte = af.get_today_dateobj()
         today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
         title = ' '.join( ('Ex1', str(examyear), school.base.code, today_dte.isoformat() ) )
@@ -171,7 +173,7 @@ def create_ex1_xlsx(examyear, school, department, settings, subject_col_count,
         #response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         #response['Content-Disposition'] = "attachment; filename=" + file_name
 
-    # Create an in-memory output file for the new workbook.
+# Create an in-memory output file for the new workbook.
         output = io.BytesIO()
         # Even though the final file will be in memory the module uses temp
         # files during assembly for efficiency. To avoid this on servers that
@@ -202,7 +204,7 @@ def create_ex1_xlsx(examyear, school, department, settings, subject_col_count,
         totalrow_number = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
         totalrow_merge = book.add_format({'border': True, 'align': 'right', 'valign': 'vcenter'})
 
-    # get number of columns
+# get number of columns
         # columns are (0: 'exnumber', 1: idnumber, 2: name 3: 'class' 4: level "
         # columns 5 thru 19 are subject columns. Extend number when more than 15 subjects
         is_lexschool = school.islexschool
@@ -419,7 +421,7 @@ def create_ex1_rows(examyear, school, department):
 # --- end of create_ex1_rows
 
 
-def create_ex1_subject_rows(examyear, school, department):
+def create_ex1_mapped_subject_rows(examyear, school, department):
     # function returns:
     #  subject_pk_dict: {34: 0, 29: 1, 4: 2, 36: 3, 31: 4, 27: 5, 33: 6, 35: 7, 1: 8, 15: 9, 3: 10}
     #  subject_code_list: ['bw', 'cav', 'en', 'inst', 'lo', 'mm1', 'mt', 'mvt', 'ne', 'ns1', 'pa']
@@ -460,7 +462,7 @@ def create_ex1_subject_rows(examyear, school, department):
             index += 1
 
     return index, subject_pk_list, subject_code_list, level_pk_list
-# --- end of create_ex1_subject_rows
+# --- end of create_ex1_mapped_subject_rows
 
 # +++++++++++ Scheme list ++++++++++++
 
@@ -619,10 +621,11 @@ def create_scheme_xlsx(examyear, scheme_rows, subjecttype_rows, schemeitem_rows,
 @method_decorator([login_required], name='dispatch')
 class OrderlistDownloadView(View):  # PR2021-07-04
 
-    def get(self, request):
+    def get(self, request, list):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= OrderlistDownloadView ============= ')
+            logger.debug('list: ' + str(list) + ' ' + str(type(list)))
         # function creates, Ex1 xlsx file based on settings in usersetting
         # TODO ex form prints colums twice, and totals are not correct,
         # TODO text EINDEXAMEN missing the rest, school not showing PR2021-05-30
@@ -641,23 +644,29 @@ class OrderlistDownloadView(View):  # PR2021-07-04
             if logging_on:
                 logger.debug('sel_examyear: ' + str(sel_examyear))
 
-
             if sel_examyear:
+                is_ete_exam = True if list == 'ete' else False
 # get text from examyearsetting
                 settings = af.get_exform_text(sel_examyear, ['exform', 'ex1'])
                 if logging_on:
                     logger.debug('settings: ' + str(settings))
 
-# +++ get selected studsubj_rows
-                orderlist_rows = stud_vw.create_orderlist_rows(sel_examyear.pk)
-
+# +++ get mapped_subject_rows
+                subject_row_count, mapped_subject_pk_dict, subject_pk_list, subject_code_list, subject_name_list = \
+                    create_orderlist_mapped_subject_rows(sel_examyear, is_ete_exam)
                 if logging_on:
-                    for row in orderlist_rows:
+                    logger.debug('mapped_subject_pk_dict: ' + str(mapped_subject_pk_dict))
+                    logger.debug('subject_pk_list: ' + str(subject_pk_list))
+                    logger.debug('subject_code_list: ' + str(subject_code_list))
+                    logger.debug('subject_name_list: ' + str(subject_name_list))
+                #  subject_pk_dict: {34: 0, 29: 1, ...} ( subject_pk: index)
+                #  subject_code_list: ['bw', 'cav', ]
+                #  index = row_count
 
-                        logger.debug('row: ' + str(row))
-
+# +++ get dict of subjects of these studsubj_rows
+                orderlist_rows = create_orderlist_rows(sel_examyear, is_ete_exam)
                 if orderlist_rows:
-                    response = create_orderlist_xlsx(orderlist_rows, sel_examyear.code, settings, user_lang)
+                    response = create_orderlist_xlsx(orderlist_rows, sel_examyear.code, settings, subject_pk_list, subject_code_list, is_ete_exam, user_lang)
 
         if response is None:
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER') ) )
@@ -667,7 +676,7 @@ class OrderlistDownloadView(View):  # PR2021-07-04
 # - end of OrderlistDownloadView
 
 
-def create_orderlist_xlsx(orderlist_rows, examyear_code, settings, user_lang):  # PR2021-07-07
+def create_orderlist_xlsx(orderlist_rows, examyear_code, settings, subject_pk_list, subject_code_list, is_ete_exam, user_lang):  # PR2021-07-07
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_orderlist_xlsx -----')
@@ -678,18 +687,20 @@ def create_orderlist_xlsx(orderlist_rows, examyear_code, settings, user_lang):  
     response = None
 
     if orderlist_rows:
-    # ---  create file Name and worksheet Name
+
+# ---  create file Name and worksheet Name
         today_dte = af.get_today_dateobj()
         today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
-        title = ' '.join( ('Ex1', str(examyear_code), today_dte.isoformat() ) )
-        file_name = title + ".xlsx"
+        ete_duo = ' ETE ' if is_ete_exam else "DUO"
+        title = ' '.join((str(_('Orderlist')), ete_duo, str(_('exams')), str(examyear_code)))
+        file_name = title + ' dd ' + today_dte.isoformat() + ".xlsx"
         worksheet_name = str(_('Orderlist'))
 
     # create the HttpResponse object ...
         #response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         #response['Content-Disposition'] = "attachment; filename=" + file_name
 
-    # Create an in-memory output file for the new workbook.
+# Create an in-memory output file for the new workbook.
         output = io.BytesIO()
         # Even though the final file will be in memory the module uses temp
         # files during assembly for efficiency. To avoid this on servers that
@@ -720,24 +731,24 @@ def create_orderlist_xlsx(orderlist_rows, examyear_code, settings, user_lang):  
         totalrow_number = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
         totalrow_merge = book.add_format({'border': True, 'align': 'right', 'valign': 'vcenter'})
 
-    # get number of columns
+# get number of columns
         # columns are (0: 'exnumber', 1: idnumber, 2: name 3: 'class' 4: level "
         # columns 5 thru 19 are subject columns. Extend number when more than 15 subjects
+        # columns schoolcode schoolname, dep, lvl, lang, name
 
+        col_count = 5  # add column exnr, idnumber, name and class
+        field_width = [10, 25, 8, 8, 35]
+        field_names = ['sbase_code', 'school_name', 'depbase_code', 'lvl_abbrev',  'fullname']
+        field_captions = [ str(_('School code')), str(_('School')), str(_('Department')), str(_('Level')),  str(_('Candidate')) ]
+        header_formats = [th_align_center, th_align_center, th_align_center, th_align_center,  th_align_center]
+        row_formats = [row_align_center, row_align_left, row_align_center, row_align_center,  row_align_left]
+        totalrow_formats = [totalrow_merge, totalrow_align_center, totalrow_align_center,  totalrow_align_center, totalrow_align_center]
 
-        col_count = 3  # add column exnr, idnumber, name and class
-        field_width = [10, 12, 35]
-        field_names = ['examnumber', 'idnumber', 'fullname']
-        field_captions = ['Ex.nr.', 'ID-nummer', 'Naam en voorletters van de kandidaat\n(in alfabetische volgorde)']
-        header_formats = [th_align_center, th_align_center, th_align_center]
-        row_formats = [row_align_center, row_align_center, row_align_left]
-        totalrow_formats = [totalrow_merge, totalrow_align_center, totalrow_align_center]
-
-        subject_pk_list = []
-        subject_code_list = []
         first_subject_column = col_count
         subject_length = len(subject_code_list)
         subject_col_width = 2.14
+
+
         for x in range(0, subject_length):  # range(start_value, end_value, step), end_value is not included!
             field_width.append(subject_col_width)
             subject_code = subject_code_list[x] if subject_code_list[x] else ''
@@ -750,26 +761,13 @@ def create_orderlist_xlsx(orderlist_rows, examyear_code, settings, user_lang):  
 
             col_count += 1
 
-        if subject_length < 15:
-            for x in range(subject_length, 15):  # range(start_value, end_value, step), end_value is not included!
-                field_width.append(subject_col_width)
-                subject_code = ''
-                subject_pk = 0
-                field_captions.append(subject_code)
-                field_names.append(subject_pk)
-                header_formats.append(th_rotate)
-                row_formats.append(row_align_center)
-                totalrow_formats.append(totalrow_number)
-
-            col_count += 1
-
         for i, width in enumerate(field_width):
             sheet.set_column(i, i, width)
 
     # --- title row
         # was: sheet.write(0, 0, str(_('Report')) + ':', bold)
         sheet.write(0, 0, settings['minond'], bold_format)
-        sheet.write(1, 0, settings['title'], bold_format)
+        sheet.write(2, 0, title, bold_format)
 
 
 # ---  table header row
@@ -791,7 +789,7 @@ def create_orderlist_xlsx(orderlist_rows, examyear_code, settings, user_lang):  
                         # in subject column 'field_name is the pk of the subject
                         subj_id_list = row.get('subj_id_arr', [])
                         if subj_id_list and field_name in subj_id_list:
-                            value = 'x'
+                            value = '1'
                             if field_name not in totals:
                                 totals[field_name] = 1
                             else:
@@ -830,6 +828,7 @@ def create_orderlist_xlsx(orderlist_rows, examyear_code, settings, user_lang):  
                     sheet.write(row_index, i, field_captions[i], header_formats[i])
 
 # ---  footnote row
+            """
             row_index += 2
             sheet.write(row_index, 0, settings['footnote01'], bold_format)
             row_index += 1
@@ -843,6 +842,7 @@ def create_orderlist_xlsx(orderlist_rows, examyear_code, settings, user_lang):  
             row_index += 1
             sheet.write(row_index, 0, settings['footnote06'], bold_format)
             row_index += 1
+            """
         book.close()
 
     # Rewind the buffer.
@@ -858,5 +858,99 @@ def create_orderlist_xlsx(orderlist_rows, examyear_code, settings, user_lang):  
     # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     # response['Content-Disposition'] = "attachment; filename=" + file_name
     return response
-
 # - end of create_orderlist_xlsx
+
+
+def create_orderlist_mapped_subject_rows(examyear, is_ete_exam):
+    # PR2021-07-08 functions creates mapped dict and lists of all subjects
+    # function returns:
+    #  subject_pk_dict: {34: 0, 29: 1, }  (subj_pk: index)
+    #  subject_code_list: ['bw', 'cav', 'en', 'inst', 'lo', 'mm1', 'mt', 'mvt', 'ne', 'ns1', 'pa']
+    #  subject_name_list: ['Bouw', ...]
+    #  index = row_count
+
+    ete_clause = 'TRUE' if  is_ete_exam else 'FALSE'
+
+    mapped_subject_pk_dict = {}
+    subject_pk_list = []
+    subject_code_list = []
+    subject_name_list = []
+
+    sql_keys = {'ey_id': examyear.pk}
+    sql_list = [
+        "SELECT subj.id, subjbase.code, subj.name",
+
+        "FROM subjects_schemeitem AS si",
+        "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+        "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+        "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
+        "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
+
+        "WHERE ey.id = %(ey_id)s::INT",
+        "AND subj.etenorm = " + ete_clause,
+        "GROUP BY subj.id, subjbase.code, subj.name",
+        "ORDER BY LOWER(subj.name)"
+    ]
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        index = 0
+        subject_rows = cursor.fetchall()
+        for subject_row in subject_rows:
+            mapped_subject_pk_dict[subject_row[0]] = index
+            subject_pk_list.append(subject_row[0])
+            subject_code_list.append(subject_row[1])
+            subject_name_list.append(subject_row[2])
+
+            index += 1
+
+    return index, mapped_subject_pk_dict, subject_pk_list, subject_code_list, subject_name_list
+# --- end of create_orderlist_subject_rows
+
+
+def create_orderlist_rows(examyear, is_ete_exam):
+
+    ete_clause = 'TRUE' if  is_ete_exam else 'FALSE'
+    sql_studsubj_agg_list = [
+        "SELECT studsubj.student_id AS student_id,",
+        "ARRAY_AGG(si.subject_id) AS subj_id_arr",
+        "FROM students_studentsubject AS studsubj",
+        "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+        "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+        "WHERE subj.etenorm = " + ete_clause,
+        "GROUP BY studsubj.student_id"]
+    sql_studsubj_agg = ' '.join(sql_studsubj_agg_list)
+    # Note: use examyear.code (integer field) to filter on examyear. This way schools from SXM and CUR are added to list
+    sql_keys = {'ey_int': examyear.code , 'ete': is_ete_exam}
+    sql_list = [
+        "SELECT st.id, st.idnumber, st.examnumber, st.lastname, st.firstname, st.prefix, st.classname,",
+        "sbase.code AS sbase_code, school.name AS school_name, depbase.code AS depbase_code,",
+        "st.level_id, st.sector_id, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, studsubj.subj_id_arr",
+
+        "FROM students_student AS st",
+        "INNER JOIN (" + sql_studsubj_agg + ") AS studsubj ON (studsubj.student_id = st.id)",
+        "INNER JOIN schools_school AS school ON (school.id = st.school_id)",
+        "INNER JOIN schools_schoolbase AS sbase ON (sbase.id = school.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+
+        "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
+        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+        "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
+        "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
+
+        "WHERE ey.code = %(ey_int)s::INT"
+    ]
+    sql_list.append("ORDER BY LOWER(st.lastname), LOWER(st.firstname)")
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        rows = af.dictfetchall(cursor)
+
+    return rows
+# --- end of create_orderlist_rows
+

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-07-07 21:27-0400\n"
+"POT-Creation-Date: 2021-07-08 11:52-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1020,7 +1020,7 @@ msgstr "Cijfers"
 msgid "Exam year"
 msgstr "Examenjaar"
 
-#: .\awpr\constants.py:510 .\grades\excel.py:686
+#: .\awpr\constants.py:510 .\grades\excel.py:695 .\grades\excel.py:697
 msgid "Orderlist"
 msgstr "Bestellijst"
 
@@ -1040,57 +1040,57 @@ msgstr "Rapportages"
 msgid "Analysis"
 msgstr "Analyse"
 
-#: .\awpr\downloads.py:617
+#: .\awpr\downloads.py:619
 msgid "This country is locked."
 msgstr "Dit land is vergrendeld."
 
-#: .\awpr\downloads.py:636
+#: .\awpr\downloads.py:638
 msgid "User has no school."
 msgstr "De gebruiker heeft geen school."
 
-#: .\awpr\downloads.py:642 .\grades\views.py:739
+#: .\awpr\downloads.py:644 .\grades\views.py:739
 msgid "Only users of this school are allowed to make changes."
 msgstr "Alleen gebruikers van deze school mogen wijzigingen aanbrengen."
 
-#: .\awpr\downloads.py:654
+#: .\awpr\downloads.py:656
 msgid "No exam year selected."
 msgstr "Geen examenjaar geselecteerd."
 
-#: .\awpr\downloads.py:656
+#: .\awpr\downloads.py:658
 msgid "This exam year is not published yet."
 msgstr "Dit examenjaar is nog niet gepubliceerd."
 
-#: .\awpr\downloads.py:658
+#: .\awpr\downloads.py:660
 msgid "This exam year is locked."
 msgstr "Dit examenjaar is afgesloten."
 
-#: .\awpr\downloads.py:669
+#: .\awpr\downloads.py:671
 msgid "School not found in this exam year."
 msgstr "School niet gevonden in dit examenjaar."
 
-#: .\awpr\downloads.py:672
+#: .\awpr\downloads.py:674
 msgid "This school has not activated this exam year yet."
 msgstr "Deze school heeft dit examenjaar nog niet geactiveerd."
 
-#: .\awpr\downloads.py:674
+#: .\awpr\downloads.py:676
 msgid "This school is locked this exam year."
 msgstr "Deze school is dit examenjaar vergrendeld."
 
-#: .\awpr\downloads.py:688
+#: .\awpr\downloads.py:690
 msgid "No department selected."
 msgstr "Geen afdeling geselecteerd."
 
-#: .\awpr\downloads.py:691
+#: .\awpr\downloads.py:693
 #, python-format
 msgid "You don't have permission to view department %(val)s."
 msgstr "Je hebt geen permissie om afdeling %(val)s te bekijken."
 
-#: .\awpr\downloads.py:694
+#: .\awpr\downloads.py:696
 #, python-format
 msgid "This school does not have department %(val)s."
 msgstr "De school heeft afdeling %(val)s niet."
 
-#: .\awpr\downloads.py:706
+#: .\awpr\downloads.py:708
 #, python-format
 msgid "Department %(val)s not found in this examyear."
 msgstr "Afdeling %(val)s niet gevonden in dit examenjaar."
@@ -3392,9 +3392,13 @@ msgstr "De score moet een geheel getal zijn tussen 0 en %(max)s."
 msgid "is not allowed."
 msgstr "is niet toegestaan."
 
-#: .\grades\excel.py:168 .\grades\excel.py:497
+#: .\grades\excel.py:170 .\grades\excel.py:499
 msgid "Ex1"
 msgstr ""
+
+#: .\grades\excel.py:695
+msgid "exams"
+msgstr "examens"
 
 #: .\grades\validators.py:147
 msgid "Score practical exam"
@@ -5125,15 +5129,15 @@ msgstr "Vakken, waarop het werkstuk betrekking heeft"
 msgid "Orderlists"
 msgstr "Bestellijsten"
 
-#: .\templates\students\orderlists.html:95
+#: .\templates\students\orderlists.html:96
 msgid "Orderlist first period"
 msgstr "Bestellijst eerste tijdvak"
 
-#: .\templates\students\orderlists.html:96
+#: .\templates\students\orderlists.html:97
 msgid "Orderlist second period"
 msgstr "Bestellijst tweede tijdvak"
 
-#: .\templates\students\orderlists.html:97
+#: .\templates\students\orderlists.html:98
 msgid "Orderlist third period"
 msgstr "Bestellijst derde tijdvak"
 

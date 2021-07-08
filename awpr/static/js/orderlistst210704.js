@@ -276,10 +276,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
-        //console.log("===  CreateSubmenu == ");
+        console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
-            AddSubmenuButton(el_submenu, loc.Download_orderlist_ETE, null, null, "id_submenu_download_orderlist", url_orderlist_download, false);  // true = download
-            AddSubmenuButton(el_submenu, loc.Download_orderlist_DUO, null, null, "id_submenu_download_orderlist", url_orderlist_download, false);  // true = download
+            const href_ETE = (url_orderlist_download) ? url_orderlist_download.replace("-", "ete") : url_orderlist_download;
+            const href_DUO = (url_orderlist_download) ? url_orderlist_download.replace("-", "duo") : url_orderlist_download;
+
+        console.log("url_orderlist_download", url_orderlist_download);
+        console.log("href_ETE", href_ETE);
+        console.log("href_DUO", href_DUO);
+            AddSubmenuButton(el_submenu, loc.Download_orderlist_ETE, null, null, "id_submenu_download_orderlist", href_ETE, true);  // true = download
+            AddSubmenuButton(el_submenu, loc.Download_orderlist_DUO, null, null, "id_submenu_download_orderlist", href_DUO, true);  // true = download
             AddSubmenuButton(el_submenu, loc.Show_hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
 
 
