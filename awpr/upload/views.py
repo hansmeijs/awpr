@@ -274,9 +274,8 @@ def ImportDepartment(ws_name, row_data, logfile, mapped, sel_examyear, request):
             code = row_data.get('code')
             if code:
 
-    # - check if depbase with this code already exists in this country. If not: create
+    # - check if depbase with this code already exists . If not: create
                 depbase = sch_mod.Departmentbase.objects.filter(
-                    country=requsr_country,
                     code__iexact=code
                 ).order_by('-pk').first()
 
@@ -284,7 +283,6 @@ def ImportDepartment(ws_name, row_data, logfile, mapped, sel_examyear, request):
                     # 'vsbo' becomes 'Vsbo'
                     code_capitalized = code.capitalize()
                     depbase = sch_mod.Departmentbase(
-                        country=requsr_country,
                         code=code_capitalized)
                     depbase.save()
                     logfile.append('depbase created: ' + str(depbase))
@@ -359,7 +357,7 @@ def ImportLevel(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR
     # - create new level record
                 if level is None:
         # - first create new base record. Create also saves new record
-                    base = subj_mod.Levelbase.objects.create(country=requsr_country)
+                    base = subj_mod.Levelbase.objects.create()
 
                     name = row_data.get('name')
                     sequence = 1 if (abbrev == 'PBL') else 2 if (abbrev == 'PKL') else 3 if (abbrev == 'TKL') else 4
@@ -420,7 +418,7 @@ def ImportSector(ws_name, row_data, logfile, mapped, sel_examyear, request):  #P
     # - create new sector record
                 if sector is None:
         # - first create new base record. Create also saves new record
-                    base = subj_mod.Sectorbase.objects.create(country=requsr_country)
+                    base = subj_mod.Sectorbase.objects.create()
 
                     name = row_data.get('name')
                     sequence = 1 if (abbrev == 'PBL') else 2 if (abbrev == 'PKL') else 3 if (abbrev == 'TKL') else 4
@@ -502,8 +500,7 @@ def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
                 if code:
     # - check if subjecttypebase with this name already exists in this examyear.
                     sjtpbase = subj_mod.Subjecttypebase.objects.filter(
-                        country=requsr_country,
-                        code=code
+                        code__iexact=code
                     ).order_by('-pk').first()
 
                     if logging_on:
@@ -514,7 +511,6 @@ def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
                         if name and abbrev:
     # fields of Subjecttypebase are: country, code, name, abbrev, sequence
                             sjtpbase = subj_mod.Subjecttypebase.objects.create(
-                                country=requsr_country,
                                 code=code,
                                 name=name,
                                 abbrev=abbrev,

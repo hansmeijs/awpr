@@ -206,10 +206,12 @@ def copy_scheme_to_log(mode, instance, modby_id, mod_at):  # PR2021-06-28
             name=instance.name,
             fields=instance.fields,
 
-            minsubjects=instance.minsubjects,
-            maxsubjects=instance.maxsubjects,
+            min_subjects=instance.min_subjects,
+            max_subjects=instance.max_subjects,
             min_mvt=instance.min_mvt,
             max_mvt=instance.max_mvt,
+            min_combi=instance.min_combi,
+            max_combi=instance.max_combi,
 
             modifiedby_id=modby_id,
             modifiedat=mod_at,

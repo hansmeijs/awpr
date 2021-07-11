@@ -14,7 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xls/0.7.4-a/xls.core.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.11.8/xlsx.core.min.js"></script>
 
-    <script src="{% static 'js/import210127.js' %}"></script>
+    <script src="{% static 'js/import210711.js' %}"></script>
 {% endblock %}
 
 {% block sidebar %}
@@ -186,8 +186,8 @@
 
 <!-- DIV ID DATA -->
             <div id="id_data"
-                data-datalist_download_url="{% url 'datalist_download_url' %}"
-                data-settings_upload_url="{% url 'settings_upload_url' %}"
+                data-url_datalist_download="{% url 'url_datalist_download' %}"
+                data-url_settings_upload="{% url 'url_settings_upload' %}"
                 data-subject_uploadsetting_url= "{% url 'subject_uploadsetting_url' %}"
                 data-subject_uploaddata_url= "{% url 'subject_uploaddata_url' %}"
             ></div>

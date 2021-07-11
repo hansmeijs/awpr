@@ -1009,6 +1009,12 @@ aXX:hover{
 .line_height_normal {
     line-height: normal;
 }
+.tbl_studsubj_h_w_auto {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: auto;
+    width: auto
+}
 .tbl_studsubj_h390_w_auto {
     overflow-x: hidden;
     overflow-y: auto;
@@ -1017,7 +1023,6 @@ aXX:hover{
     /*width: 320px;*/
     width: auto
 }
-
 .tbl_h180_w360 {
     overflow-x: hidden;
     overflow-y: auto;
@@ -1191,6 +1196,12 @@ aXX:hover{
      -webkit-transition: all 150ms ease;
      -o-transition: all 150ms ease;
 */
+}
+
+.msg_bullet li {
+    list-style: inside;
+    list-style-type: disc;
+    padding-left: 2rem;
 }
 
 

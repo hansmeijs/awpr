@@ -58,8 +58,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
-    const url_datalist_download = get_attr_from_el(el_data, "data-datalist_download_url");
-    const url_settings_upload = get_attr_from_el(el_data, "data-settings_upload_url");
+    const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+    const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
     const url_subject_upload = get_attr_from_el(el_data, "data-subject_upload_url");
     const url_subject_import = get_attr_from_el(el_data, "data-subject_import_url");
     const url_subjecttype_upload = get_attr_from_el(el_data, "data-subjecttype_upload_url");
@@ -79,14 +79,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_width:  ["032", "120", "300", "150", "120",  "120", "180",  "120",  "120"],
                     field_align: ["c", "l", "l", "l",  "r", "l","c", "c"]},
 
-        scheme: {  field_caption: ["", "Subject_scheme_name", "Department", "Leerweg",  "SectorProfiel_twolines", "Minimum_subjects",  "Maximum_subjects", "Minimum_MVT_subjects", "Maximum_MVT_subjects"],
-                    field_names: ["select", "name", "depbase_code", "lvl_abbrev", "sct_abbrev", "minsubjects", "maxsubjects", "min_mvt", "max_mvt" ],
-                    field_tags: ["div", "input", "div", "div", "div", "input", "input", "input", "input"],
-                    filter_tags: ["select", "text", "text", "text", "text", "number", "number", "number", "number"],
-                    field_width:  ["032", "280", "120", "120",  "120",  "150",  "150",  "150",  "150"],
-                    field_align: ["c", "l", "l", "l",  "l", "c", "c", "c", "c"]},
+        scheme: {   field_caption: ["", "Subject_scheme_name", "Department", "Leerweg",  "SectorProfiel_twolines", "Minimum_subjects",  "Maximum_subjects", "Minimum_MVT_subjects", "Maximum_MVT_subjects", "Minimum_combi_subjects", "Maximum_combi_subjects"],
+                    field_names: ["select", "name", "depbase_code", "lvl_abbrev", "sct_abbrev", "min_subjects", "max_subjects", "min_mvt", "max_mvt", "min_combi", "max_combi" ],
+                    field_tags: ["div", "input", "div", "div", "div", "input", "input", "input", "input", "input", "input"],
+                    filter_tags: ["select", "text", "text", "text", "text", "number", "number", "number", "number", "number", "number"],
+                    field_width:  ["032", "280", "120", "120",  "120",  "150",  "150",  "150",  "150",  "150",  "150"],
+                    field_align: ["c", "l", "l", "l",  "l", "c", "c", "c", "c", "c", "c"]},
 
-        schemeitem: {  field_caption: ["", "Subject_scheme", "Code", "Subject", "Character",
+        schemeitem: { field_caption: ["", "Subject_scheme", "Abbreviation", "Subject", "Character",
                             "Grade_type", "SE_weighing",  "CE_weighing", "Mandatory",  "Combination_subject",  "Is_core_subject",  "Is_MVT_subject",
                             "Extra_count_allowed",  "Extra_nocount_allowed",  "Elective_combi_allowed",
                             "Has_practical_exam",  "Has_assignment", "Herkansing_SE_allowed",
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             "gradetype", "weight_se", "weight_ce", "is_mandatory", "is_combi", "is_core_subject", "is_mvt",
                             "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
                             "has_practexam",  "has_pws", "reex_se_allowed",  "reex_combi_allowed",
-                            "no_reex",  "no_thirdperiod",  "no_exemption_ce"],
+                            "max_reex",  "no_thirdperiod",  "no_exemption_ce"],
                     field_tags: ["div", "div", "div", "div", "div",
                                 "div", "div", "div", "div", "div", "div", "div",
                                 "div", "div", "div",
@@ -119,12 +119,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
 
 
-        subjecttype: {field_caption: ["", "Subject_scheme", "Base_character", "Character_name", "Minimum_subjects",  "Maximum_subjects"],
-                    field_names: ["select", "scheme_name", "sjtpbase_name", "name", "minsubjects",  "maxsubjects"],
-                    field_tags: ["div", "div", "div", "input", "input", "input"],
-                    filter_tags: ["select", "text", "text", "text", "number", "number"],
-                    field_width:  ["032", "280", "280", "240", "100", "100"],
-                    field_align: ["c", "l", "l", "l", "c", "c"]},
+        subjecttype: {field_caption: ["", "Subject_scheme", "Base_character", "Character_name",
+                    "Minimum_subjects",  "Maximum_subjects",
+                    "Minimum_extra_nocount",  "Maximum_extra_nocount",
+                    "Minimum_extra_counts",  "Maximum_extra_counts",
+                    "Minimum_elective_combi",  "Maximum_elective_combi"
+                    ],
+                    field_names: ["select", "scheme_name", "sjtpbase_name", "name",
+                                "min_subjects",  "max_subjects",
+                                "min_extra_nocount" , "max_extra_nocount",
+                                "min_extra_counts", "max_extra_counts",
+                                "min_elective_combi", "max_elective_combi"
+                    ],
+                    field_tags: ["div", "div", "div", "input", "input", "input", "input", "input", "input", "input", "input", "input"],
+                    filter_tags: ["select", "text", "text", "text", "number", "number", "number", "number", "number", "number", "number", "number"],
+                    field_width:  ["032", "280", "280", "240", "100", "100", "100", "100", "100", "100", "100", "100"],
+                    field_align: ["c", "l", "l", "l", "c", "c", "c", "c", "c", "c", "c", "c"]},
 
         subjecttypebase: {field_caption: ["", "Code", "Name", "Abbrev",  "Sequence"],
                     field_names: ["select", "code", "name", "abbrev", "sequence"],
@@ -558,8 +568,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-05-10
     function CreateTblHeader(field_setting, col_hidden) {
-        //console.log("===  CreateTblHeader ===== ");
-        //console.log("field_setting", field_setting);
+        console.log("===  CreateTblHeader ===== ");
+        console.log("field_setting", field_setting);
 
         const column_count = field_setting.field_names.length;
 
@@ -810,7 +820,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (["scheme_name", "abbrev", "sjtpbase_name", "code", "name", "subj_code", "subj_name", "sjtp_abbrev", "depbase_code", "lvl_abbrev", "sct_abbrev"].includes(field_name)){
                     inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
-                } else if (["minsubjects", "maxsubjects", "min_mvt", "max_mvt", "sequence", "weight_se", "weight_ce"].includes(field_name)){
+                } else if (["min_subjects", "max_subjects",
+                            "min_extra_nocount" , "max_extra_nocount",
+                            "min_extra_counts", "max_extra_counts",
+                            "min_elective_combi", "max_elective_combi",
+                            "min_mvt", "max_mvt",  "min_combi", "max_combi", "sequence", "weight_se", "weight_ce"
+                ].includes(field_name)){
                     inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text : null;
                 } else if ( field_name === "gradetype") {
@@ -992,7 +1007,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                     if("messages" in response){
                         b_ShowModMessages(response.messages);
-                    }
+                    };
                     $("#id_mod_subject").modal("hide");
 
                 },  // success: function (response) {
@@ -1779,8 +1794,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             sjtpbase_pk: sjtp_dict.sjtpbase_pk,
                             scheme_pk: sjtp_dict.scheme_pk,
                             name: sjtp_dict.name,
-                            minsubjects: sjtp_dict.minsubjects,
-                            maxsubjects: sjtp_dict.maxsubjects
+                            min_subjects: sjtp_dict.min_subjects,
+                            max_subjects: sjtp_dict.max_subjects
                         };
                         if(sjtp_dict.iscreated){
                             upload_dict.create = true;
@@ -1924,8 +1939,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     scheme_pk: sjtp_dict.scheme_id,
                     name: sjtp_dict.name,
                     abbrev: sjtp_dict.abbrev,
-                    minsubjects: sjtp_dict.minsubjects,
-                    maxsubjects: sjtp_dict.maxsubjects
+                    min_subjects: sjtp_dict.min_subjects,
+                    max_subjects: sjtp_dict.max_subjects
                     } );
             };
         }

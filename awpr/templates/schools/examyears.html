@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exam years' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/examyears210127.js' %}"></script>
+    <script src="{% static 'js/examyears210711.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -80,8 +80,8 @@
             </div>
     <!-- END OF CONTENT BODY -->
             <div id="id_data"
-                data-datalist_download_url="{% url 'datalist_download_url' %}"
-                data-settings_upload_url="{% url 'settings_upload_url' %}"
+                data-url_datalist_download="{% url 'url_datalist_download' %}"
+                data-url_settings_upload="{% url 'url_settings_upload' %}"
                 data-examyear_upload_url="{% url 'examyear_upload_url' %}"
                 data-school_upload_url="{% url 'school_upload_url' %}"
             >

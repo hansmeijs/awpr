@@ -1328,15 +1328,15 @@
 
 //========= b_render_msg_box  ================= PR2021-05-13
     function b_render_msg_box(id_el_msg, msg_list) {
-        //console.log( "===== b_render_msg_box -----")
-        //console.log( "id_el_msg", id_el_msg)
-        //console.log( "msg_list", msg_list)
+        console.log( "===== b_render_msg_box -----")
+        console.log( "id_el_msg", id_el_msg)
+        console.log( "msg_list", msg_list)
 
         const el_msg = document.getElementById(id_el_msg);
-        //console.log("el_msg", el_msg)
+        console.log("el_msg", el_msg)
         if (el_msg){
             const has_msg = (!!msg_list && !!msg_list.length)
-        //console.log("has_msg", has_msg)
+        console.log("has_msg", has_msg)
     // put msg in el_msg
             let msg_html = ""
             if (has_msg){
@@ -1345,7 +1345,7 @@
                     if(msg){msg_html +=msg};
                 }
             }
-        //console.log("msg_html", msg_html)
+        console.log("msg_html", msg_html)
             el_msg.innerHTML = msg_html;
     // show el_msg when has_msg
             add_or_remove_class(el_msg, cls_hide, !has_msg)

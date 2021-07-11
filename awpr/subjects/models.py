@@ -35,8 +35,6 @@ class AwpModelManager(Manager):
 class Levelbase(Model):  # PR2018-10-17
     objects = AwpModelManager()
 
-    country = ForeignKey(sch_mod.Country, related_name='+', on_delete=PROTECT)
-
 
 class Level(sch_mod.AwpBaseModel): # PR2018-08-12
     # AwpModelManager adds function get_or_none to prevent DoesNotExist exception
@@ -159,8 +157,6 @@ class Level_log(sch_mod.AwpBaseModel):
 class Sectorbase(Model):  # PR2018-10-17
     objects = AwpModelManager()
 
-    country = ForeignKey(sch_mod.Country, related_name='+', on_delete=PROTECT)
-
 
 class Sector(sch_mod.AwpBaseModel):  # PR2018-06-06
     objects = AwpModelManager()
@@ -244,10 +240,12 @@ class Scheme(sch_mod.AwpBaseModel):
     name = CharField(max_length=50)  # TODO set department+level+sector Unique per examyear True.
     fields = CharField(max_length=255, null=True, blank=True)
 
-    minsubjects = PositiveSmallIntegerField(null=True)
-    maxsubjects = PositiveSmallIntegerField(null=True)
+    min_subjects = PositiveSmallIntegerField(null=True)
+    max_subjects = PositiveSmallIntegerField(null=True)
     min_mvt = PositiveSmallIntegerField(null=True)
     max_mvt = PositiveSmallIntegerField(null=True)
+    min_combi = PositiveSmallIntegerField(null=True)
+    max_combi = PositiveSmallIntegerField(null=True)
 
     class Meta:
         ordering = ['name',]
@@ -290,10 +288,12 @@ class Scheme_log(sch_mod.AwpBaseModel):
     name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
     fields = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
 
-    minsubjects = PositiveSmallIntegerField(null=True)
-    maxsubjects = PositiveSmallIntegerField(null=True)
+    min_subjects = PositiveSmallIntegerField(null=True)
+    max_subjects = PositiveSmallIntegerField(null=True)
     min_mvt = PositiveSmallIntegerField(null=True)
     max_mvt = PositiveSmallIntegerField(null=True)
+    min_combi = PositiveSmallIntegerField(null=True)
+    max_combi = PositiveSmallIntegerField(null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -305,8 +305,6 @@ class Scheme_log(sch_mod.AwpBaseModel):
 # === Subjecttype =====================================
 class Subjecttypebase(Model):  # PR2018-10-17
     objects = AwpModelManager()
-
-    country = ForeignKey(sch_mod.Country, related_name='+', on_delete=PROTECT)
 
     code = CharField(db_index=True, max_length=c.MAX_LENGTH_04)
     name = CharField(max_length=50)
@@ -331,8 +329,18 @@ class Subjecttype(sch_mod.AwpBaseModel):
     # has_prac only enables the has_practexam option of a schemeitem
     has_prac = BooleanField(default=False)  # has practical exam
     has_pws = BooleanField(default=False)  # has profielwerkstuk or sectorwerkstuk
-    minsubjects = PositiveSmallIntegerField(null=True)
-    maxsubjects = PositiveSmallIntegerField(null=True)
+
+    min_subjects = PositiveSmallIntegerField(null=True)
+    max_subjects = PositiveSmallIntegerField(null=True)
+
+    min_extra_nocount = PositiveSmallIntegerField(null=True)
+    max_extra_nocount = PositiveSmallIntegerField(null=True)
+
+    min_extra_counts = PositiveSmallIntegerField(null=True)
+    max_extra_counts = PositiveSmallIntegerField(null=True)
+
+    min_elective_combi = PositiveSmallIntegerField(null=True)
+    max_elective_combi = PositiveSmallIntegerField(null=True)
 
     def __str__(self):
         return self.name
@@ -354,8 +362,17 @@ class Subjecttype_log(sch_mod.AwpBaseModel):
     has_prac = BooleanField(default=False)
     has_pws = BooleanField(default=False)
 
-    minsubjects = PositiveSmallIntegerField(null=True)
-    maxsubjects = PositiveSmallIntegerField(null=True)
+    min_subjects = PositiveSmallIntegerField(null=True)
+    max_subjects = PositiveSmallIntegerField(null=True)
+
+    min_extra_nocount = PositiveSmallIntegerField(null=True)
+    max_extra_nocount = PositiveSmallIntegerField(null=True)
+
+    min_extra_counts = PositiveSmallIntegerField(null=True)
+    max_extra_counts = PositiveSmallIntegerField(null=True)
+
+    min_elective_combi = PositiveSmallIntegerField(null=True)
+    max_elective_combi = PositiveSmallIntegerField(null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 

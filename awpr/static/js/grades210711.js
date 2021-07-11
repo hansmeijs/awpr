@@ -58,8 +58,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
-    const url_datalist_download = get_attr_from_el(el_data, "data-datalist_download_url");
-    const url_settings_upload = get_attr_from_el(el_data, "data-settings_upload_url");
+    const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+    const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
     const url_subject_upload = get_attr_from_el(el_data, "data-subject_upload_url");
     const url_grade_upload = get_attr_from_el(el_data, "data-grade_upload_url");
 

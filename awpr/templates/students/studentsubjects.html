@@ -5,8 +5,8 @@
 {% block title %}{% trans 'Subjects of candidates' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import210127.js' %}"></script>
-    <script src="{% static 'js/studentsubjects210127.js' %}"></script>
+    <script src="{% static 'js/import210711.js' %}"></script>
+    <script src="{% static 'js/studentsubjects210711.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -63,6 +63,7 @@
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
+            {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'students/modstudent.html' %}
             {% include 'students/modstudentsubject.html' %}
@@ -119,11 +120,13 @@
     <!-- END OF CONTENT BODY -->
             </div>
             <div id="id_data"
-                data-datalist_download_url="{% url 'datalist_download_url' %}"
-                data-settings_upload_url="{% url 'settings_upload_url' %}"
-                data-student_upload_url="{% url 'student_upload_url' %}"
-                data-studsubj_upload_url="{% url 'studsubj_upload_url' %}"
-                data-grade_download_ex1_url="{% url 'grade_download_ex1_url' %}"
+                data-url_datalist_download="{% url 'url_datalist_download' %}"
+                data-url_settings_upload="{% url 'url_settings_upload' %}"
+                data-url_student_upload="{% url 'url_student_upload' %}"
+                data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
+                data-url_studsubj_validate="{% url 'url_studsubj_validate' %}"
+
+                data-url_grade_download_ex1="{% url 'url_grade_download_ex1' %}"
             >
             </div>
         {% endif %}

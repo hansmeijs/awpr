@@ -367,6 +367,7 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['Base_character'] = _("Base character")
         dict['Character_name'] = _("Character name")
+        dict['Character'] = pgettext_lazy('karakter', 'Character')
 
         dict['Grade_type'] = _('Grade type')
         dict['Grade'] = _('Grade')
@@ -410,8 +411,18 @@ def get_locale_dict(table_dict, user_lang):
         dict['Added_by_school'] = _('Added by school')
         dict['Minimum_subjects'] = _('Minimum amount of subjects')
         dict['Maximum_subjects'] = _('Maximum amount of subjects')
+
         dict['Minimum_MVT_subjects'] = _('Minimum amount of MVT subjects')
         dict['Maximum_MVT_subjects'] = _('Maximum amount of MVT subjects')
+        dict['Minimum_combi_subjects'] = _('Minimum amount of combination subjects')
+        dict['Maximum_combi_subjects'] = _('Maximum amount of combination subjects')
+
+        dict['Minimum_extra_nocount'] = _("Minimum extra subject, doesn't count")
+        dict['Maximum_extra_nocount'] = _("Maximum extra subject, doesn't count")
+        dict['Minimum_extra_counts'] = _("Minimum extra subject, counts")
+        dict['Maximum_extra_counts'] = _("Maximum extra subject, counts")
+        dict['Minimum_elective_combi'] = _("Minimum elective combi subject")
+        dict['Maximum_elective_combi'] = _("Maximum elective combi subject")
 
         dict['Scheme_doesnthave_subjecttypes'] = _('This subject scheme does not have subject types yet.')
         dict['Close_window'] = _("Close this window, click the tab")
@@ -627,7 +638,8 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['Abbrev'] = _('Abbrev.')
 
-        dict['Character'] = _('Character')
+        dict['Character'] = pgettext_lazy('karakter', 'Character')
+
         dict['_of_'] = TXT__of_
 
         dict['Name_ex_form'] = _('Name Ex form')

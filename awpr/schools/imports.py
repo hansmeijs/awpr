@@ -1192,10 +1192,8 @@ def update_student(instance, parent, upload_dict, msg_dict, request):
             except:
                 msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
 
+
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-
 def import_studentsubjects(upload_dict, user_lang, logging_on, request):  # PR2021-02-26
     if logging_on:
         logger.debug(' ============= import_studentsubjects ============= ')
@@ -1259,7 +1257,7 @@ def import_studentsubjects(upload_dict, user_lang, logging_on, request):  # PR20
             school_name = school.base.code + ' ' + school.name
 
 # - get department from sel_depbase_pk and sel_examyear_pk
-            depbase = sch_mod.Departmentbase.objects.get_or_none(pk=sel_depbase_pk, country=request.user.country)
+            depbase = sch_mod.Departmentbase.objects.get_or_none(pk=sel_depbase_pk)
             department = sch_mod.Department.objects.get_or_none(base=depbase, examyear=examyear)
 
         if logging_on:
@@ -1552,7 +1550,9 @@ def upload_studentsubject(data_dict, lookup_field, lookup_value, occurrences_in_
                                                       % {'subj': subject_code, 'subjtype': subjecttype_abbrev}
                                         else:
                     # - add studentsubject if upload- and lookup- subjecttype are the same or if no upload_subjecttype given
-                                            studsubj, msg_err = stud_view.create_studsubj(student, schemeitem, request)
+                                            # TODO implement messages
+                                            messages = []
+                                            studsubj, msg_err = stud_view.create_studsubj(student, schemeitem, messages, request)
                                 if msg_err:
                                     logfile.append(' '.join((caption_txt, msg_err)))
                                     logfile.append(' '.join((caption_txt, not_added_str, str(_('An error occurred.')) )))

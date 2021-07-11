@@ -49,7 +49,7 @@
 
     //=========  t_MSED_Save  ================ PR2021-05-10
     function t_MSED_Save(MSED_Response, tblRow) {
-        //console.log("===  t_MSED_Save =========");
+        console.log("===  t_MSED_Save =========");
     // --- put tblName, sel_pk and value in MSED_Response, MSED_Response handles uploading
 
         const el_MSED_input = document.getElementById("id_MSED_input");
@@ -71,6 +71,7 @@
             selected_pk_dict.sel_depbase_pk = selected_pk_int;
         }
         const new_setting = {page: sel_page, selected_pk: selected_pk_dict};
+        console.log("new_setting", new_setting);
         MSED_Response(new_setting)
 
 // hide modal
@@ -175,8 +176,8 @@
         let td = tblRow.insertCell(-1);
 
 // --- add a element to td., necessary to get same structure as item_table, used for filtering
-        const col_width = (tblName === "examyear") ? "tw_240" :
-                          (tblName === "department") ? "tw_280" : null;
+        const col_width = (tblName === "examyear") ? "tw_120" :
+                          (tblName === "department") ? "tw_120" : null;
         let el_div = document.createElement("div");
             el_div.innerText = code_value;
             el_div.classList.add(col_width, "px-2")

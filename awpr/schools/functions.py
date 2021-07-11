@@ -240,8 +240,8 @@ def copy_subjecttypes_from_prev_examyear(request, prev_examyear, mapped_schemes)
 
                 has_prac=prev_sjt.has_prac,
                 has_pws=prev_sjt.has_pws,
-                minsubjects=prev_sjt.minsubjects,
-                maxsubjects=prev_sjt.maxsubjects,
+                min_subjects=prev_sjt.min_subjects,
+                max_subjects=prev_sjt.max_subjects,
 
                 modifiedby_id=modifiedby_id,
                 modifiedat=modifiedat
@@ -329,10 +329,12 @@ def copy_schemes_from_prev_examyear(request, prev_examyear,
                 name=prev_scheme.name,
                 fields=prev_scheme.fields,
 
-                minsubjects=prev_scheme.minsubjects,
-                maxsubjects=prev_scheme.maxsubjects,
+                min_subjects=prev_scheme.min_subjects,
+                max_subjects=prev_scheme.max_subjects,
                 min_mvt=prev_scheme.min_mvt,
                 max_mvt=prev_scheme.max_mvt,
+                min_combi=prev_scheme.min_combi,
+                max_combi=prev_scheme.max_combi,
 
                 modifiedby_id=modifiedby_id,
                 modifiedat=modifiedat

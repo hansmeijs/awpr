@@ -449,7 +449,6 @@ class SubjecttypebaseUploadView(View):  # PR2021-06-29
 # - create subjecttype_rows
                     if subjecttypebase:
                         updated_rows = create_subjecttypebase_rows(
-                            country=request.user.country,
                             sjtbase_pk=subjecttypebase.pk
                         )
 
@@ -2492,7 +2491,7 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
                         setattr(instance, field, new_value)
                         save_changes = True
 
-            elif field in ('minsubjects', 'maxsubjects', 'min_mvt', 'max_mvt'):
+            elif field in ('min_subjects', 'max_subjects', 'min_mvt', 'max_mvt', 'min_combi', 'max_combi'):
                 msg_html = None
                 new_value_int = None
 
@@ -2502,20 +2501,20 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
                         msg_html = str(_("'%(val)s' is not a valid number.") % {'val': new_value})
                     else:
                         new_value_int = int(new_value)
-                        if field in ('minsubjects', 'min_mvt'):
-                            max_field = 'max_mvt' if field == 'min_mvt' else 'maxsubjects'
-                            maxsubjects = getattr(instance, max_field)
-                            if maxsubjects and new_value_int > maxsubjects:
+                        if field in ('min_subjects', 'min_mvt', 'min_combi'):
+                            max_field = 'max_mvt' if field == 'min_mvt' else 'max_combi' if field == 'min_combi' else 'max_subjects'
+                            max_subjects = getattr(instance, max_field)
+                            if max_subjects and new_value_int > max_subjects:
                                 msg_html = str(
                                     _("Minimum amount of subjects cannot be greater than maximum (%(val)s).") % {
-                                        'val': maxsubjects})
-                        elif field in ('maxsubjects', 'max_mvt'):
-                            min_field = 'min_mvt' if field == 'max_mvt' else 'minsubjects'
-                            minsubjects = getattr(instance, min_field)
-                            if minsubjects and new_value_int < minsubjects:
+                                        'val': max_subjects})
+                        elif field in ('max_subjects', 'max_mvt', 'max_combi'):
+                            min_field = 'min_mvt' if field == 'max_mvt' else 'min_combi' if field == 'max_combi' else 'min_subjects'
+                            min_subjects = getattr(instance, min_field)
+                            if min_subjects and new_value_int < min_subjects:
                                 msg_html = str(
                                     _("Maximum amount of subjects cannot be fewer than minimum (%(val)s).") % {
-                                        'val': minsubjects})
+                                        'val': min_subjects})
 
                 if msg_html:
                     msg_dict = {'field': field,
@@ -2804,31 +2803,81 @@ def update_subjecttype_instance(instance, scheme, upload_dict, error_list, reque
                         setattr(instance, field, new_value)
                         save_changes = True
 
-            elif field in ('minsubjects', 'maxsubjects'):
+            elif field in ('min_subjects', 'max_subjects',
+                           'min_extra_nocount', 'max_extra_nocount',
+                           'min_extra_counts', 'max_extra_counts',
+                           'min_elective_combi', 'max_elective_combi'
+                           ):
                 msg_html = None
                 new_value_int = None
 
                 if new_value:
+                    if logging_on:
+                        logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
+                        logger.debug('new_value.isdecimal: ' + str(new_value.isdecimal()))
     # - check if value is positive whole number
                     if not new_value.isdecimal():
                         msg_html = str(_("'%(val)s' is not a valid number.") % {'val': new_value})
                     else:
+                        # TODO simplify code, also check for min max subjects when checking min_extra_nocount etc
                         new_value_int = int(new_value)
-                        if field == 'minsubjects':
-                            maxsubjects = getattr(instance, 'maxsubjects')
-                            if maxsubjects and new_value_int > maxsubjects:
-                                msg_html = str(_("Minimum amount of subjects cannot be greater than maximum (%(val)s).") % {'val': maxsubjects})
-                        elif field == 'maxsubjects':
-                            minsubjects = getattr(instance, 'minsubjects')
-                            if minsubjects and new_value_int < minsubjects:
-                                msg_html = str(_("Maximum amount of subjects cannot be fewer than minimum (%(val)s).") % {'val': minsubjects})
+                        if logging_on:
+                            logger.debug('new_value_int: <' + str(new_value_int) + '> ' + str(type(new_value_int)))
+                        if field == 'min_subjects':
+                            max_subjects = getattr(instance, 'max_subjects')
+                            if max_subjects and new_value_int > max_subjects:
+                                msg_html = str(_("Minimum amount of %(cpt)s cannot be greater than maximum (%(val)s).") \
+                                               % {'cpt': _('subjects'), 'val': max_subjects})
+                        elif field == 'max_subjects':
+                            min_subjects = getattr(instance, 'min_subjects')
+                            if min_subjects and new_value_int < min_subjects:
+                                msg_html = str(_("Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s).") \
+                                               % {'cpt': _('subjects'), 'val': min_subjects})
+
+                        elif field == 'min_extra_nocount':
+                            max_extra_nocount = getattr(instance, 'max_extra_nocount')
+                            if max_extra_nocount and new_value_int > max_extra_nocount:
+                                msg_html = str(_("Minimum amount of %(cpt)s cannot be greater than maximum (%(val)s).") \
+                                               % {'cpt': _('subjects'), 'val': max_extra_nocount})
+                        elif field == 'max_extra_nocount':
+                            min_extra_nocount = getattr(instance, 'min_extra_nocount')
+                            if min_extra_nocount and new_value_int < min_extra_nocount:
+                                msg_html = str(_("Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s).") \
+                                               % {'cpt': _('subjects'), 'val': min_extra_nocount})
+
+                        elif field == 'min_extra_counts':
+                            max_extra_counts = getattr(instance, 'max_extra_counts')
+                            if max_extra_counts and new_value_int > max_extra_counts:
+                                msg_html = str(_("Minimum amount of %(cpt)s cannot be greater than maximum (%(val)s).") \
+                                               % {'cpt': _('subjects'), 'val': max_extra_counts})
+                        elif field == 'max_extra_counts':
+                            min_extra_counts = getattr(instance, 'min_extra_counts')
+                            if min_extra_counts and new_value_int < min_extra_counts:
+                                msg_html = str(_("Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s).") \
+                                               % {'cpt': _('subjects'), 'val': min_extra_counts})
+
+                        elif field == 'min_elective_combi':
+                            max_elective_combi = getattr(instance, 'max_elective_combi')
+                            if max_elective_combi and new_value_int > max_elective_combi:
+                                msg_html = str(_("Minimum amount of %(cpt)s cannot be greater than maximum (%(val)s).") \
+                                               % {'cpt': _('subjects'), 'val': max_elective_combi})
+                        elif field == 'max_elective_combi':
+                            min_elective_combi = getattr(instance, 'min_elective_combi')
+                            if min_elective_combi and new_value_int < min_elective_combi:
+                                msg_html = str(_("Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s).") \
+                                               % {'cpt': _('subjects'), 'val': min_elective_combi})
+
                 if msg_html:
+                    if logging_on:
+                        logger.debug('msg_html: <' + str(msg_html) + '> ' + str(type(msg_html)))
                     # add 'field' in error_list, to put old value back in field
                     # error_list will show mod_messages in RefreshDatarowItem
                     error_list.append({'field': field,'header': msg_header,'class': 'border_bg_warning', 'msg_html': msg_html})
                 else:
                     # -note: value can be None
                     saved_value = getattr(instance, field)
+                    if logging_on:
+                        logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
                     if new_value_int != saved_value:
                         setattr(instance, field, new_value_int)
                         save_changes = True
@@ -2872,8 +2921,9 @@ def create_subjecttype_rows(examyear, depbase=None, cur_dep_only=False, sjtp_pk=
         sql_keys = {'ey_id': examyear.pk}
         sql_list = ["SELECT sjtp.id, sjtp.base_id, CONCAT('subjecttype_', sjtp.id::TEXT) AS mapid,",
             "sjtpbase.id AS sjtpbase_id, sjtpbase.code AS sjtpbase_code, sjtpbase.name AS sjtpbase_name,",
-            "sjtpbase.sequence AS sjtpbase_sequence, ",
-            "sjtp.name, sjtp.abbrev, sjtp.minsubjects, sjtp.maxsubjects,",
+            "sjtpbase.sequence AS sjtpbase_sequence, sjtp.name, sjtp.abbrev,",
+            "sjtp.min_subjects, sjtp.max_subjects, sjtp.min_extra_nocount, sjtp.max_extra_nocount,",
+            "sjtp.min_extra_counts, sjtp.max_extra_counts, sjtp.min_elective_combi, sjtp.max_elective_combi,",
             "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev, sct.id AS sct_id, sct.abbrev AS sct_abbrev,",
             "ey.code AS ey_code,",
             "dep.id AS department_id, depbase.code AS depbase_code, sm.id AS scheme_id, sm.name AS scheme_name,",
@@ -2923,29 +2973,28 @@ def create_subjecttype_rows(examyear, depbase=None, cur_dep_only=False, sjtp_pk=
 # --- end of create_subjecttype_rows
 
 
-def create_subjecttypebase_rows(country, sjtbase_pk=None):
+def create_subjecttypebase_rows(sjtbase_pk=None):
     # --- create rows of all subjecttypes of this examyear / country  PR2021-06-22
     #logger.debug(' =============== create_subjecttypebase_rows ============= ')
     rows =[]
-    if country:
-        sql_keys = {'country_id': country.pk}
 
-        sql_list = ["SELECT sjtbase.id, CONCAT('subjecttypebase_', sjtbase.id::TEXT) AS mapid,",
-            "sjtbase.code, sjtbase.name, sjtbase.abbrev, sjtbase.sequence",
-            "FROM subjects_subjecttypebase AS sjtbase",
-            "WHERE sjtbase.country_id = %(country_id)s::INT"]
+    sql_keys = {}
 
-        if sjtbase_pk:
-            sql_keys['sjtbase_pk'] = sjtbase_pk
-            sql_list.append("AND sjtbase.id = %(sjtbase_pk)s::INT")
+    sql_list = ["SELECT sjtbase.id, CONCAT('subjecttypebase_', sjtbase.id::TEXT) AS mapid,",
+        "sjtbase.code, sjtbase.name, sjtbase.abbrev, sjtbase.sequence",
+        "FROM subjects_subjecttypebase AS sjtbase"]
 
-        sql_list.append("ORDER BY sjtbase.id::TEXT")
+    if sjtbase_pk:
+        sql_keys['sjtbase_pk'] = sjtbase_pk
+        sql_list.append("WHERE sjtbase.id = %(sjtbase_pk)s::INT")
 
-        sql = ' '.join(sql_list)
+    sql_list.append("ORDER BY sjtbase.id::TEXT")
 
-        with connection.cursor() as cursor:
-            cursor.execute(sql, sql_keys)
-            rows = af.dictfetchall(cursor)
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        rows = af.dictfetchall(cursor)
 
     return rows
 # --- end of create_subjecttypebase_rows
@@ -2969,7 +3018,7 @@ def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=Non
         sql_keys = {'ey_id': examyear.pk}
         sql_list = ["SELECT scheme.id, scheme.department_id, scheme.level_id, scheme.sector_id,",
             "CONCAT('scheme_', scheme.id::TEXT) AS mapid,",
-            "scheme.name, scheme.minsubjects, scheme.maxsubjects, scheme.min_mvt, scheme.max_mvt,",
+            "scheme.name, scheme.min_subjects, scheme.max_subjects, scheme.min_mvt, scheme.max_mvt, scheme.min_combi, scheme.max_combi,",
             "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code AS ey_code,",
             "depbase.code AS depbase_code,"
             "scheme.modifiedby_id, scheme.modifiedat,",
@@ -3009,7 +3058,7 @@ def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=Non
 def create_schemeitem_rows(examyear, schemeitem_pk=None, cur_dep_only=False, depbase=None):
     # --- create rows of all schemeitems of this examyear PR2020-11-17 PR2021-07-01
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_schemeitem_rows ============= ')
@@ -3027,7 +3076,7 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, cur_dep_only=False, dep
             "sjtpbase.code AS sjtpbase_code, sjtpbase.sequence AS sjtpbase_sequence,",
             "sjtp.id AS sjtp_id, sjtp.name AS sjtp_name, sjtp.abbrev AS sjtp_abbrev,",
             "sjtp.has_prac AS sjtp_has_prac, sjtp.has_pws AS sjtp_has_pws, ",
-            "sjtp.minsubjects AS sjtp_minsubjects, sjtp.maxsubjects AS sjtp_maxsubjects, ",
+            "sjtp.min_subjects AS sjtp_min_subjects, sjtp.max_subjects AS sjtp_max_subjects, ",
             "scheme.name AS scheme_name, scheme.fields AS scheme_fields,",
             "depbase.id AS depbase_id, depbase.code AS depbase_code,",
             "lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",

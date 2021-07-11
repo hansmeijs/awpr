@@ -218,8 +218,6 @@ class Student_log(sch_mod.AwpBaseModel):
 
     student_id = IntegerField(db_index=True)
 
-
-
     base = ForeignKey(Studentbase, related_name='+', on_delete=PROTECT)
 
     school_log = ForeignKey(sch_mod.School_log, related_name='+', on_delete=CASCADE)

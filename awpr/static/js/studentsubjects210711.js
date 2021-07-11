@@ -56,14 +56,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
-    const url_datalist_download = get_attr_from_el(el_data, "data-datalist_download_url");
-    const url_settings_upload = get_attr_from_el(el_data, "data-settings_upload_url");
-    const url_student_upload = get_attr_from_el(el_data, "data-student_upload_url");
-    const url_studsubj_upload = get_attr_from_el(el_data, "data-studsubj_upload_url");
+    const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+    const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    const url_student_upload = get_attr_from_el(el_data, "data-url_student_upload");
+    const url_studsubj_upload = get_attr_from_el(el_data, "data-url_studsubj_upload");
+    const url_studsubj_validate = get_attr_from_el(el_data, "data-url_studsubj_validate");
+    const url_grade_download_ex1 = get_attr_from_el(el_data, "data-url_grade_download_ex1");
 
-    const url_grade_download_ex1 = get_attr_from_el(el_data, "data-grade_download_ex1_url");
-
-    // importdata_upload_url is stored in id_MIMP_data of modimport.html
+    // url_importdata_upload is stored in id_MIMP_data of modimport.html
     const columns_hidden = {lvl_abbrev: true, has_exemption: true, exm_status: true, has_reex: true, re2_status: true,
                             has_reex03: true, re3_status: true, has_pok: true, pok_status: true
                           }
@@ -193,6 +193,8 @@ document.addEventListener('DOMContentLoaded', function() {
             el.addEventListener(key_str, function() {MSTUDSUBJ_InputboxEdit(el)}, false)
         }
 
+        const el_MSTUDSUBJ_msg_container = document.getElementById("id_MSTUDSUBJ_msg_container");
+        const el_MSTUDSUBJ_loader = document.getElementById("id_MSTUDSUBJ_loader");
         const el_MSTUDSUBJ_btn_save = document.getElementById("id_MSTUDSUBJ_btn_save")
             el_MSTUDSUBJ_btn_save.addEventListener("click", function() {MSTUDSUBJ_Save()}, false);
 
@@ -868,17 +870,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
                         RefreshDataMap(tblName, field_names, response.updated_student_rows, student_map);
                     };
+
                     $("#id_mod_student").modal("hide");
 
-                    if ("updated_studsubj_rows" in response) {
-                        const tblName = "studsubj";
-                        RefreshDataRows(tblName, response.updated_studsubj_rows, studentsubject_rows, true)  // true = update
+                    if ("updated_studsubj_rows" in response || "validate_studsubj_html" in response) {
+                         MSTUDSUBJ_Response(response)
+                    };
+
+                    if ("messages" in response){
+                        b_ShowModMessages(response.messages);
+                        $("#id_mod_studentsubject").modal("hide");
                     }
 
                 },  // success: function (response) {
                 error: function (xhr, msg) {
                     // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
+
                     console.log(msg + '\n' + xhr.responseText);
                 }  // error: function (xhr, msg) {
             });  // $.ajax({
@@ -1308,10 +1316,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 //document.getElementById("id_MSTUDSUBJ_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
 
-                MSTUDSUBJ_FillDicts();
+                const has_studentsubject_rows = MSTUDSUBJ_FillDicts();
                 MSTUDSUBJ_FillTbls();
 
                 MSTUDSUBJ_SetInputFields(null, false);
+        // hide loader and msg_box
+                el_MSTUDSUBJ_msg_container.innerHTML = null
+                add_or_remove_class(el_MSTUDSUBJ_msg_container, cls_hide, true)
+                add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, true);
 
         // ---  set focus to el_MSTUD_abbrev
                 //setTimeout(function (){el_MSTUD_abbrev.focus()}, 50);
@@ -1322,6 +1334,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 //el_MSTUD_btn_save.disabled = disable_btn_save;
 
                 //MSTUD_validate_and_disable();
+        // validate student_subjects
+                if(has_studentsubject_rows){
+                    const upload_dict = {student_pk: mod_MSTUDSUBJ_dict.stud_id};
+                    UploadChanges(upload_dict, url_studsubj_validate);
+                    add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, false);
+                }
+
 
         // ---  show modal
                 $("#id_mod_studentsubject").modal({backdrop: true});
@@ -1338,11 +1357,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(permit_dict.permit_crud && mod_MSTUDSUBJ_dict.stud_id){
             const upload_dict = {
-            table: 'studentsubject',
-            sel_examyear_pk: setting_dict.sel_examyear_pk,
-            sel_schoolbase_pk: setting_dict.sel_schoolbase_pk,
-            sel_depbase_pk: setting_dict.sel_depbase_pk,
-            student_pk: mod_MSTUDSUBJ_dict.stud_id
+                table: 'studentsubject',
+                sel_examyear_pk: setting_dict.sel_examyear_pk,
+                sel_schoolbase_pk: setting_dict.sel_schoolbase_pk,
+                sel_depbase_pk: setting_dict.sel_depbase_pk,
+                student_pk: mod_MSTUDSUBJ_dict.stud_id
             }
             const studsubj_list = []
 // ---  loop through mod_MSTUDSUBJ_dict.studentsubject_dict
@@ -1384,13 +1403,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 upload_dict.studsubj_list = studsubj_list;
                 console.log("upload_dict: ", upload_dict)
                 UploadChanges(upload_dict, url_studsubj_upload);
+                // show laoder
+                add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, false);
             }
         };  // if(permit_dict.permit_crud && mod_MSTUDSUBJ_dict.stud_id){
 
 // ---  hide modal
-        $("#id_mod_studentsubject").modal("hide");
+        //$("#id_mod_studentsubject").modal("hide");
 
     }  // MSTUDSUBJ_Save
+
+
+//========= MSTUDSUBJ_Response  ============= PR2021-07-09
+    function MSTUDSUBJ_Response(response) {
+        console.log("===== MSTUDSUBJ_Response ===== ");
+
+        const validate_studsubj_html = response.validate_studsubj_html;
+        if ("updated_studsubj_rows" in response) {
+            const tblName = "studsubj";
+            RefreshDataRows(tblName, response.updated_studsubj_rows, studentsubject_rows, true)  // true = update
+        }
+
+        // validate_studsubj_html comes after updated_studsubj_rows, to refresh datarows before filling lists
+        if (validate_studsubj_html){
+
+            el_MSTUDSUBJ_msg_container.innerHTML = validate_studsubj_html
+            add_or_remove_class(el_MSTUDSUBJ_msg_container, cls_hide, false)
+            add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, true )
+
+            MSTUDSUBJ_FillDicts();
+            MSTUDSUBJ_FillTbls();
+
+        } else {
+             $("#id_mod_studentsubject").modal("hide");
+        };
+
+    };
+
 
 //========= MSTUDSUBJ_FillDicts  ============= PR2020-11-17
     function MSTUDSUBJ_FillDicts() {
@@ -1406,11 +1455,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const scheme_pk = mod_MSTUDSUBJ_dict.scheme_id
 
 // ---  loop through studentsubject_map
+        let has_studentsubject_rows = false;
         for (let i = 0, row_dict; row_dict = studentsubject_rows[i]; i++) {
             const map_id = row_dict.mapid;
         // add only studsubj from this student
             if (student_pk === row_dict.stud_id) {
                 const item = deepcopy_dict(row_dict);
+                has_studentsubject_rows = true;
         // add dict of subject (schemeitem_id) to mod_MSTUDSUBJ_dict.studentsubject_dict
                 if(item.schemeitem_id){
                     mod_MSTUDSUBJ_dict.studentsubject_dict[item.schemeitem_id] = item;
@@ -1418,7 +1469,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        console.log("mod_MSTUDSUBJ_dict.studentsubject_dict:", mod_MSTUDSUBJ_dict.studentsubject_dict);
 // ---  loop through schemeitem_rows add schemeitems from scheme of this student to mod_MSTUDSUBJ_dict.schemeitem_dict
         el_tblBody_schemeitems.innerText = null;
         if (schemeitem_rows && schemeitem_rows.length ) {
@@ -1434,6 +1484,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("mod_MSTUDSUBJ_dict.studentsubject_dict:", mod_MSTUDSUBJ_dict.studentsubject_dict);
         console.log("mod_MSTUDSUBJ_dict.schemeitem_dict:", mod_MSTUDSUBJ_dict.schemeitem_dict);
         console.log("..................");
+        return has_studentsubject_rows;
     } // MSTUDSUBJ_FillDicts
 
 //========= MSTUDSUBJ_FillTbls  ============= PR2020-11-17
@@ -1441,8 +1492,10 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("===== MSTUDSUBJ_FillTbls ===== ");
         // function fills table el_tblBody_studsubjects and el_tblBody_schemeitems
         // with items of mod_MSTUDSUBJ_dict.studentsubject_dict and mod_MSTUDSUBJ_dict.schemeitem_dict
-        // mod_MSTUDSUBJ_dict.studentsubject_dict also contains deleted suubjects of student, with tag 'isdeleted'
+        // mod_MSTUDSUBJ_dict.studentsubject_dict also contains deleted subjects of student, with tag 'deleted'
         // sel_schemeitem_pk_list is a list of selected schemeitem_pk's, filled by MSTUDSUBJ_AddRemoveSubject
+
+        // TODO also show deleted subjects in studsubject list, create undelete option PR2021-07-11
 
 // ---  loop through studentsubjects
         el_tblBody_studsubjects.innerText = null;
@@ -1458,14 +1511,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 studsubj_si_list.push(dict.schemeitem_id)
                 studsubj_subj_list.push(dict.subj_id)
 
-
                 MSTUDSUBJ_CreateSelectRow("studsubj", el_tblBody_studsubjects, dict.schemeitem_id, dict, true, false);  // true = enabled
                 has_rows = true;
             }
         }
 
-        console.log(">>>>>>>> studsubj_si_list", studsubj_si_list);
-        console.log(">>>>>>>> studsubj_subj_list", studsubj_subj_list);
+        //console.log("studsubj_si_list", studsubj_si_list);
+        //console.log("studsubj_subj_list", studsubj_subj_list);
 // --- addrow 'This_candidate_has_nosubjects_yet' if student has no subjects
         if(!has_rows){
             const tblRow = el_tblBody_studsubjects.insertRow(-1);
@@ -1488,9 +1540,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!skip_row ) {
     // - disable subject if subject is already in table of subjects of this student
                 const enabled = !(studsubj_subj_list.includes(dict.subj_id));
-        console.log("........studsubj_subj_list", studsubj_subj_list);
-        console.log("........ dict", dict);
-        console.log("........enabled", enabled);
                 MSTUDSUBJ_CreateSelectRow("schemeitem", el_tblBody_schemeitems, schemeitem_pk, dict, enabled, false);
             }
         }
@@ -1683,6 +1732,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MSTUDSUBJ_AddRemoveSubject  ============= PR2020-11-18
     function MSTUDSUBJ_AddRemoveSubject(mode) {
         console.log("  =====  MSTUDSUBJ_AddRemoveSubject  =====");
+        console.log("mode", mode);
         const tblBody = (mode === "add") ? el_tblBody_schemeitems : el_tblBody_studsubjects;
         const sel_schemeitem_pk_list = []
 
@@ -1742,9 +1792,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---  check if schemeitem_pk already exists in mod_MSTUDSUBJ_dict.studentsubject_dict
                 const ss_map_dict = (mod_MSTUDSUBJ_dict.studentsubject_dict[pk_int]) ? mod_MSTUDSUBJ_dict.studentsubject_dict[pk_int] : {};
-        console.log("ss_map_dict", ss_map_dict);
-        console.log("ss_map_dict", deepcopy_dict(ss_map_dict));
-
+                console.log("ss_map_dict", deepcopy_dict(ss_map_dict));
 
                 if (!isEmpty(ss_map_dict)) {
     // set 'isdeleted' = true
@@ -2034,8 +2082,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  RefreshDataRows  ================  PR2021-06-21
     function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
-        console.log(" --- RefreshDataRows  ---");
-        console.log("tblName", tblName);
+        //console.log(" --- RefreshDataRows  ---");
+        //console.log("tblName", tblName);
 
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
         if (update_rows && update_rows.length ) {
@@ -2053,9 +2101,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
-        console.log(" --- RefreshDatarowItem  ---");
+        //console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
-        console.log("update_dict", update_dict);
+        //console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -2065,7 +2113,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const is_created = (!!update_dict.created);
 
             const error_list = get_dict_value(update_dict, ["error"], []);
-        console.log("error_list", error_list);
+        //console.log("error_list", error_list);
 
             let updated_columns = [];
             let field_error_list = []
@@ -2117,11 +2165,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const [index, dict, compare] = b_recursive_lookup(map_rows, map_id, setting_dict.user_lang);
                 const map_dict = dict;
                 const datarow_index = index;
-            console.log("map_rows", map_rows);
-            console.log("map_id", map_id);
-            console.log("datarow_index", datarow_index);
-            console.log("map_dict", map_dict);
-            console.log("compare", compare);
+            //console.log("map_rows", map_rows);
+            //console.log("map_id", map_id);
+            //console.log("datarow_index", datarow_index);
+            //console.log("map_dict", map_dict);
+            //console.log("compare", compare);
 
 // ++++ deleted ++++
                 if(is_deleted){
@@ -2129,13 +2177,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     const deleted_row_arr = data_rows.splice(datarow_index, 1)
                     const deleted_row_dict = deleted_row_arr[0];
 
-            console.log("deleted_row_dict", deleted_row_dict);
+            //console.log("deleted_row_dict", deleted_row_dict);
     //--- delete tblRow
 
-            console.log("deleted_row_dict.mapid", update_dict.mapid);
+            //console.log("deleted_row_dict.mapid", update_dict.mapid);
                     const tblRow_tobe_deleted = document.getElementById(update_dict.mapid);
     // ---  when delete: make tblRow red for 2 seconds, before uploading
-            console.log("tblRow_tobe_deleted", tblRow_tobe_deleted);
+            //console.log("tblRow_tobe_deleted", tblRow_tobe_deleted);
                     //ShowClassWithTimeout(tblRow_tobe_deleted, "tsa_tr_error");
                     tblRow_tobe_deleted.classList.add("tsa_tr_error")
                     setTimeout(function() {
@@ -2162,8 +2210,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         // note: when updated_columns is empty, then updated_columns is still true.
                         // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
                         if(updated_columns.length || field_error_list.length){
-        console.log("updated_columns", updated_columns);
-        console.log("field_error_list", field_error_list);
+        //console.log("updated_columns", updated_columns);
+        //console.log("field_error_list", field_error_list);
 
 // --- get existing tblRow
                             let tblRow = document.getElementById(map_id);
@@ -2504,7 +2552,7 @@ document.addEventListener('DOMContentLoaded', function() {
         selected.studentsubject_dict = null;
         selected.student_pk = null;
         selected.subject_pk = null;
-        selected_school_depbases = [];
+
         filter_dict = {};
         filter_mod_employee = false;
 
@@ -2554,7 +2602,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10
     function MSED_Response(new_setting) {
-        //console.log( "===== MSED_Response ========= ");
+        console.log( "===== MSED_Response ========= ");
 
 // ---  upload new selected_pk
 // also retrieve the tables that have been changed because of the change in examyear / dep

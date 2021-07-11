@@ -5,8 +5,8 @@
 {% block title %}{% trans 'Users' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import210127.js' %}"></script>
-    <script src="{% static 'js/users210127.js' %}"></script>
+    <script src="{% static 'js/import210711.js' %}"></script>
+    <script src="{% static 'js/users210711.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -79,8 +79,8 @@
             </div>
 
             <div id="id_data"
-                data-datalist_download_url="{% url 'datalist_download_url' %}"
-                data-settings_upload_url="{% url 'settings_upload_url' %}"
+                data-url_datalist_download="{% url 'url_datalist_download' %}"
+                data-url_settings_upload="{% url 'url_settings_upload' %}"
 
                 data-user_upload_url="{% url 'user_upload_url' %}"
                 data-userpermit_upload_url="{% url 'userpermit_upload_url' %}"

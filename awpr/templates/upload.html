@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Upload' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import210127.js' %}"></script>
+    <script src="{% static 'js/import210711.js' %}"></script>
     <script src="{% static 'js/download210306.js' %}"></script>
 {% endblock %}
 
@@ -503,10 +503,10 @@
                     </div>
                 </div>
                 <div id="id_MIMP_data"
-                    data-datalist_download_url="{% url 'datalist_download_url' %}"
-                    data-settings_upload_url="{% url 'settings_upload_url' %}"
-                     data-importsettings_upload_url="{% url 'importsettings_upload_url' %}"
-                     data-importdata_upload_url="{% url 'importdata_upload_url' %}"
+                    data-url_datalist_download="{% url 'url_datalist_download' %}"
+                    data-url_settings_upload="{% url 'url_settings_upload' %}"
+                     data-url_import_settings_upload="{% url 'url_import_settings_upload' %}"
+                     data-url_importdata_upload="{% url 'url_importdata_upload' %}"
                 ></div>
 
             </div>

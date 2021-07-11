@@ -476,7 +476,7 @@ def get_sel_schoolbase_instance(request, request_setting=None):  # PR2020-12-25 
 
 
 def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR2020-12-26 PR2021-05-07
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_sel_depbase_instance  -----')
         logger.debug('sel_school: ' + str(sel_school))
@@ -485,7 +485,7 @@ def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR20
     sel_depbase_instance = None
     save_sel_depbase = False
     allowed_depbases = []
-
+    # PR2021-07-11 depbase has not a field 'country' any more
     if request.user and request.user.country:
         req_user = request.user
         requsr_country = req_user.country
@@ -513,7 +513,7 @@ def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR20
     # check if it is in allowed_depbases,
             if r_depbase_pk in allowed_depbases:
     # check if request_depbase exists
-                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=r_depbase_pk, country=requsr_country)
+                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=r_depbase_pk)
                 if sel_depbase_instance is not None:
                     save_sel_depbase = True
         if logging_on:
@@ -527,7 +527,7 @@ def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR20
     # check if saved_depbase is in allowed_depbases,
             if s_depbase_pk in allowed_depbases:
     # check if saved_depbase exists
-                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=s_depbase_pk, country=requsr_country)
+                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=s_depbase_pk)
         if logging_on:
             logger.debug('saved_depbase instance: ' + str(sel_depbase_instance))
 
@@ -535,7 +535,7 @@ def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR20
         if sel_depbase_instance is None:
             if allowed_depbases and len(allowed_depbases):
                 a_depbase_pk = allowed_depbases[0]
-                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=a_depbase_pk, country=requsr_country)
+                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=a_depbase_pk)
                 if sel_depbase_instance is not None:
                     save_sel_depbase = True
     if logging_on:
@@ -625,6 +625,7 @@ def get_saved_sel_depbase_instance(request):  # PR2020-12-24
             s_db_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
     # - get selected examyear
             if s_db_pk:
+                #TODO XXXXXXXXXXXXXXXXXXXXXXXXXXX wrong : country=request.user.country
                 sel_depbase_instance = sch_mod.Department.objects.get_or_none(pk=s_db_pk, country=request.user.country)
     return sel_depbase_instance
 

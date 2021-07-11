@@ -180,7 +180,7 @@ def message_diff_exyr(examyear):  #PR2020-10-30
             msg = str(_(
                 'Please note: the selected exam year %(exyr)s is different from the current exam year.') % {
                           'exyr': str(examyear.code)})
-            awp_message = {'msg_list': [msg], 'class': 'alert-warning'}
+            awp_message = {'msg_list': [msg], 'class': 'border_bg_warning'}
 
     return awp_message
 
@@ -250,7 +250,7 @@ def validate_subject_name_exists(name, examyear, cur_subject=None):  # PR2021-06
 
     if value_exists:
         field_caption = ' '.join((str(_('Subject')), str(_('name'))))
-        msg_html = str(_("%(fld)s '%(val)s' already exists.") % {'fld': field_caption, 'val': name})
+        msg_html = str(_("%(cpt)s '%(val)s' already exists.") % {'cpt': field_caption, 'val': name})
 
     return msg_html
 
@@ -326,7 +326,7 @@ def validate_code_name_identifier(table, field, new_value, is_absence, parent, u
                 if is_inactive:
                     msg_html = _("%(fld)s '%(val)s' exists, but is inactive.") % {'fld': fld, 'val': new_value}
                 else:
-                    msg_html = _("%(fld)s '%(val)s' already exists.") % {'fld': fld, 'val': new_value}
+                    msg_html = _("%(cpt)s '%(val)s' already exists.") % {'cpt': fld, 'val': new_value}
 
     if msg_html:
         # empty update_dict {} is Falsey

@@ -25,6 +25,7 @@ from accounts import models as acc_mod
 from schools import models as sch_mod
 from students import models as stud_mod
 from subjects import models as subj_mod
+from students import validators as stud_val
 
 import boto3
 from boto3 import session
@@ -269,7 +270,7 @@ class StudentUploadView(View):  # PR2020-10-01
                     logger.debug('msg_list:       ' + str(msg_list))
 
                 if len(msg_list):
-                    messages.append({'class': "alert-warning", 'msg_list': [msg_list]})
+                    messages.append({'class': "border_bg_warning", 'msg_list': [msg_list]})
                 else:
 # +++  Create new student
                     if is_create:
@@ -373,30 +374,117 @@ class NoteAttachmentDownloadView(View): # PR2021-03-17
 # - end of DownloadPublishedFile
 
 
-#################################################################################
 
+#################################################################################
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectUploadView(View):  # PR2020-11-20
+class StudentsubjectValidateView(View):
 
     def post(self, request):
         logging_on = False
         if logging_on:
+            logger.debug(' ============= StudentsubjectValidateView ============= ')
+
+        # function validates studentsubject records of current student PR2021-07-10
+        update_wrap = {}
+        messages = []
+
+# - get permit
+        has_permit = False
+        req_usr = request.user
+        if req_usr and req_usr.country and req_usr.schoolbase:
+            permit_list = req_usr.permit_list('page_studsubj')
+            if permit_list:
+                has_permit = 'permit_crud' in permit_list
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
+        if has_permit:
+
+    # - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+    # - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+
+                messages = []
+    # ----- get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+
+                if logging_on:
+                    logger.debug('upload_dict' + str(upload_dict))
+                    logger.debug('sel_examyear: ' + str(sel_examyear))
+                    logger.debug('sel_school: ' + str(sel_school))
+                    logger.debug('sel_department: ' + str(sel_department))
+                    logger.debug('may_edit: ' + str(may_edit))
+                    logger.debug('msg_list: ' + str(msg_list))
+
+
+# - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
+                student = None
+
+                if len(msg_list):
+                    messages.append({'class': "border_bg_warning", 'msg_list': [msg_list]})
+                elif may_edit:
+                    student_pk = upload_dict.get('student_pk')
+                    student = stud_mod.Student.objects.get_or_none(
+                        id=student_pk,
+                        school=sel_school,
+                        department=sel_department,
+                        locked=False
+                    )
+                if logging_on:
+                    logger.debug('msg_list: ' + str(msg_list))
+                    logger.debug('may_edit: ' + str(may_edit))
+                    logger.debug('student: ' + str(student))
+
+                if student:
+
+                    # +++ validate subjects of student
+                    msg_html = stud_val.validate_studentsubjects(student)
+                    if msg_html:
+                        update_wrap['validate_studsubj_html'] = msg_html
+
+                if len(messages):
+                    update_wrap['messages'] = messages
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+
+# - end of StudentsubjectValidateView
+#################################################################################
+@method_decorator([login_required], name='dispatch')
+class StudentsubjectUploadView(View):  # PR2020-11-20
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
             logger.debug(' ============= StudentsubjectUploadView ============= ')
 
         # function creates, deletes and updates studentsubject records of current student PR2020-11-21
         update_wrap = {}
+        messages = []
 
-        #<PERMIT>
-        # only users with role > student and perm_edit can change student data
-        # only school that is requsr_school can be changed
-        #   current schoolbase can be different from request.user.schoolbase (when role is insp, admin, system)
-        # only if country/examyear/school/student not locked, examyear is published and school is activated
+# - get permit
         has_permit = False
-        if request.user and request.user.country and request.user.schoolbase:
-            has_permit = True # (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
+        req_usr = request.user
+        if req_usr and req_usr.country and req_usr.schoolbase:
+            permit_list = req_usr.permit_list('page_studsubj')
+            if permit_list:
+                has_permit = 'permit_crud' in permit_list
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
         if has_permit:
 
-        # - TODO check for double subjects, double subjects are ot allowed
+        # - check for double subjects, double subjects are not allowed -> happens in create_studsubj PR2021-07-11
         # - TODO when deleting: return warning when subject grades have values
 
 # - reset language
@@ -423,7 +511,10 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                 student = None
                 # TODO : may_edit = examyear_published and school_activated and requsr_same_school and sel_department and not is_locked
-                if may_edit:
+
+                if len(msg_list):
+                    messages.append({'class': "border_bg_warning", 'msg_list': [msg_list]})
+                elif may_edit:
                     student_pk = upload_dict.get('student_pk')
                     student = stud_mod.Student.objects.get_or_none(
                         id=student_pk,
@@ -432,6 +523,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                         locked=False
                     )
                 if logging_on:
+                    logger.debug('msg_list: ' + str(msg_list))
                     logger.debug('may_edit: ' + str(may_edit))
                     logger.debug('student: ' + str(student))
 
@@ -441,7 +533,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                     studsubj_list = upload_dict.get('studsubj_list')
                 if studsubj_list:
                     studsubj_rows = []
-
+# -------------------------------------------------
 # - loop through list of uploaded studentsubjects
                     for studsubj_dict in studsubj_list:
                         # values of mode are: 'delete', 'create', 'update'
@@ -487,7 +579,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                                     studsubj.reex_published or \
                                     studsubj.reex3_published or \
                                     studsubj.pok_published:
-                                    # if published: set deleted=True, so its remains in the Ex1 form
+                    # - if published: set deleted=True, so its remains in the Ex1 form
                                     setattr(studsubj, 'deleted', True)
                                     studsubj.save(request=request)
                                     if logging_on:
@@ -501,9 +593,8 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                                             if logging_on:
                                                 logger.debug('grade.deleted: ' + str(grade.deleted))
                                 else:
-                                    #TODO implement error_list like in upload subject
-                                    error_list = []
-                                    deleted_ok = sch_mod.delete_instance(studsubj, error_list, request, this_text)
+                    # - if not yet published: delete Grades, Studentsubjectnote, Noteattachment will also be deleted with cascade_delete
+                                    deleted_ok = sch_mod.delete_instance(studsubj, messages, request, this_text)
                                     if logging_on:
                                         logger.debug('deleted_ok: ' + str(deleted_ok))
                                     if deleted_ok:
@@ -520,7 +611,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                         elif mode == 'create':
                             schemeitem = subj_mod.Schemeitem.objects.get_or_none(id=schemeitem_pk)
 
-                            studsubj, msg_err = create_studsubj(student, schemeitem, request)
+                            studsubj, msg_err = create_studsubj(student, schemeitem, messages, request)
 
                             if studsubj:
                                 append_dict['created'] = True
@@ -557,9 +648,17 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                                 studsubj_row = rows[0]
                                 if studsubj_row:
                                     studsubj_rows.append(studsubj_row)
+# - end of loop
+# -------------------------------------------------
                     if studsubj_rows:
                         update_wrap['updated_studsubj_rows'] = studsubj_rows
 
+# +++ validate subjects of student
+                        msg_html = stud_val.validate_studentsubjects(student)
+                        if msg_html:
+                            update_wrap['validate_studsubj_html'] = msg_html
+        if len(messages):
+            update_wrap['messages'] = messages
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of StudentsubjectUploadView
@@ -1145,7 +1244,7 @@ def create_student(country, school, department, upload_dict, messages, request):
             msg_list.append(msg_err)
         #TODO validate if student already exists
         if len(msg_list) > 0:
-            messages.append({'class': "alert-warning", 'msg_list': msg_list})
+            messages.append({'class': "border_bg_warning", 'msg_list': msg_list})
         else:
 # - create and save student
             try:
@@ -1242,7 +1341,7 @@ def update_student(instance, upload_dict, messages, request):
     # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
                     msg_list = []
                     if len(msg_list):
-                        messages.append({'class': "alert-warning", 'msg_list': msg_list})
+                        messages.append({'class': "border_bg_warning", 'msg_list': msg_list})
                     else:
                         setattr(instance, field, new_value)
                         save_changes = True
@@ -1368,20 +1467,76 @@ def update_scheme_in_studsubj(student, request):
                             studsubj.save(request=request)
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def create_studsubj(student, schemeitem, request, is_test=False):
+def create_studsubj(student, schemeitem, messages, request, is_test=False):
     # --- create student subject # PR2020-11-21
-    logger.debug(' ----- create_studsubj ----- ')
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_studsubj ----- ')
 
     studsubj = None
     msg_err = None
 
     if student and schemeitem:
-        # - TODO check if student already has this subject, if subject is allowed
+        subject_name = schemeitem.subject.name if schemeitem.subject and schemeitem.subject.name else '---'
+
+# - check if student already has this subject, with same or different schemeitem
         msg_err = None
-# - create and save student
+        studsubjects = stud_mod.Studentsubject.objects.filter(
+            student=student,
+            schemeitem__subject=schemeitem.subject
+        )
+        if studsubjects is not None:
+            doubles_found = False
+            undelete_studsubj = False
+            row_count, deleted_count = 0, 0
+            for studsubj in studsubjects:
+                row_count += 1
+                if studsubj.deleted:
+                    deleted_count += 1
+
+            if row_count:
+        # - doubles_found = True when non-deleted records found:
+                if row_count > deleted_count:
+                    doubles_found = True
+                elif deleted_count > 1:
+        # - doubles_found = True when multiple deleted records found:
+                    doubles_found = True
+                else:
+        # - when only 1 deleted found:: undelete, also undelete grades
+                    undelete_studsubj = True
+
+            if doubles_found:
+                msg_err = str(_("%(cpt)s '%(val)s' already exists.") % {'cpt': _('Subject'), 'val': subject_name})
+                # this one closes modal and shows modmessage with msg_html
+                header_txt = _('Add subject')
+                msg_html = str(_("%(cpt)s '%(val)s' already exists.") % {'cpt': _('Subject'), 'val': subject_name})
+                msg_dict = {'header': header_txt, 'class': 'border_bg_warning', 'msg_html': msg_html}
+                messages.append(msg_dict)
+
+            elif undelete_studsubj:
+                # TODO this undelete feature is not tested yet PR2021-07-11
+                deleted_studsubj = stud_mod.Studentsubject.objects.get_or_none(
+                    student=student,
+                    deleted=True
+                )
+                if not is_test:
+                    if deleted_studsubj:
+                        setattr(deleted_studsubj, 'deleted', False)
+                        setattr(deleted_studsubj, 'schemeitem', schemeitem)
+                        deleted_studsubj.save(request=request)
+                        # also undelete grades
+                        deleted_grades = stud_mod.Grade.objects.filter(
+                            deleted_studsubj=deleted_studsubj,
+                            deleted=True
+                        )
+                        if deleted_grades:
+                            for deleted_grade in deleted_grades:
+                                setattr(deleted_grade, 'deleted', False)
+                                deleted_grade.save(request=request)
+
+# - create and save Studentsubject
         if not msg_err:
             try:
-                #a = 1 / 0
                 studsubj = stud_mod.Studentsubject(
                     student=student,
                     schemeitem=schemeitem
@@ -1395,9 +1550,20 @@ def create_studsubj(student, schemeitem, request, is_test=False):
                 )
                 if not is_test:
                     grade.save(request=request)
-            except:
-                name = schemeitem.subject.name if schemeitem.subject and schemeitem.subject.name else '---'
-                msg_err = str(_("An error occurred. Subject '%(val)s' could not be added.") % {'val': name})
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                # this one closes modal and shows modmessage with msg_html
+                header_txt = _('Add subject')
+                msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
+                                    str(_("%(cpt)s '%(val)s' could not be added.") \
+                                        % {'cpt': str(_('Subject')), 'val':subject_name })))
+                msg_dict = {'header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
+                messages.append(msg_dict)
+
+                msg_err = [str(_('An error occurred.')),
+                            'Error: ' + str(e),
+                            str(_("%(cpt)s '%(val)s' could not be added.") % {'cpt': str(_('Subject')), 'val': subject_name})]
+
 
     return studsubj, msg_err
 

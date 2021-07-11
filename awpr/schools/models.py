@@ -281,7 +281,6 @@ class ExfilesText_log(AwpBaseModel):
 class Departmentbase(Model):# PR2018-10-17
     objects = AwpModelManager()
 
-    country = ForeignKey(Country, related_name='+', on_delete=PROTECT)
     code = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
 
     def __str__(self):

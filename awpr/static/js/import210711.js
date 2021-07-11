@@ -252,7 +252,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 } else {
     // --- Upload Data
                     const el_data = document.getElementById("id_MIMP_data");
-                    const url_str = get_attr_from_el(el_data, "data-importdata_upload_url");
+                    const url_str = get_attr_from_el(el_data, "data-url_importdata_upload");
                     const upload_dict = {
                         importtable: mimp.import_table,
                         test: is_test_upload,
@@ -344,7 +344,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 } else {
 // --- Upload Data
                     const el_data = document.getElementById("id_MIMP_data");
-                    const url_str = get_attr_from_el(el_data, "data-importdata_upload_url");
+                    const url_str = get_attr_from_el(el_data, "data-url_importdata_upload");
                     const upload_dict = {sel_examyear_pk: mimp_stored.sel_examyear_pk,
                                     sel_schoolbase_pk: mimp_stored.sel_schoolbase_pk,
                                     sel_depbase_pk: mimp_stored.sel_depbase_pk,
@@ -2125,7 +2125,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         if (!isEmpty(upload_dict)){
             const parameters = {"upload": JSON.stringify (upload_dict)};
             const el_data = document.getElementById("id_MIMP_data")
-            const url_str = get_attr_from_el(el_data, "data-importsettings_upload_url");
+            const url_str = get_attr_from_el(el_data, "data-url_import_settings_upload");
 
             console.log("url_str", url_str)
             console.log("upload_dict", upload_dict)

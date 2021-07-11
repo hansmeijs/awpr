@@ -46,11 +46,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
-    const url_datalist_download = get_attr_from_el(el_data, "data-datalist_download_url");
-    const url_settings_upload = get_attr_from_el(el_data, "data-settings_upload_url");
-    const url_student_upload = get_attr_from_el(el_data, "data-student_upload_url");
-    const url_studsubj_upload = get_attr_from_el(el_data, "data-studsubj_upload_url");
-    // importdata_upload_url is stored in id_MIMP_data of modimport.html
+    const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+    const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    const url_student_upload = get_attr_from_el(el_data, "data-url_student_upload");
+    //const url_studsubj_upload = get_attr_from_el(el_data, "data-url_studsubj_upload");
+    // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
 
     let columns_hidden = {lvl_abbrev: true};

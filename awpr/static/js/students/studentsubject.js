@@ -437,10 +437,10 @@ console.log("===  UploadStudsubj  =====") ;
             response = "";
             msg_txt = "";
 
-    console.log('----ajax_studsubj_upload_url');
+    console.log('----ajax_url_studsubj_upload');
             $.ajax({
                 type: "POST",
-                url: $("#id_data").data("ajax_studsubj_upload_url"),
+                url: $("#id_data").data("ajax_url_studsubj_upload"),
                 data: parameters,
                 dataType:'json',
                 success: function (response) {

@@ -37,7 +37,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
     logging.disable(logging.NOTSET)  # logging.NOTSET re-enables logging
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ++++++++++++++++++++ DatalistDownloadView ++++++++++++++++++++ ')
@@ -118,7 +118,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if datalist_request.get('subjecttype_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('subjecttype_rows', 'cur_dep_only'), False)
                     datalists['subjecttype_rows'] = sj_vw.create_subjecttype_rows(sel_examyear, sel_depbase, cur_dep_only)
-                    datalists['subjecttypebase_rows'] = sj_vw.create_subjecttypebase_rows(request.user.country)
+                    datalists['subjecttypebase_rows'] = sj_vw.create_subjecttypebase_rows()
 
 # ----- subjects
                 if datalist_request.get('subject_rows'):
@@ -209,7 +209,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     if request_setting is None:
         request_setting = {}
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- download_setting ----- ')
         logger.debug('request_setting: ' + str(request_setting) )
@@ -587,6 +587,26 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
 
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+def get_selected_examyear_examperiod_from_usersetting(request):  # PR2021-07-08
+    # - get selected examyear.code and examperiod from usersettings
+    # used in OrderlistDownloadView
+    # note: examyear.code is integer '2021'
+    sel_examyear, sel_examperiod = None, None
+    req_user = request.user
+    if req_user:
+        selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        if selected_pk_dict:
+            sel_examyear = sch_mod.Examyear.objects.get_or_none(
+                pk=selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK),
+                country=request.user.country
+            )
+
+        sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+
+    return sel_examyear, sel_examperiod
+
+
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def get_selected_examperiod_examtype_from_usersetting(request):  # PR2021-01-20
 # - get selected examperiod and examtype from usersettings
     sel_examperiod, sel_examtype, sel_subject_pk = None, None, None
@@ -679,8 +699,7 @@ def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-
                     logger.debug('sel_school: ' + str(sel_school))
 # ===== DEPBASE =======================
                 sel_depbase = sch_mod.Departmentbase.objects.get_or_none(
-                    pk=selected_dict.get(c.KEY_SEL_DEPBASE_PK),
-                    country=requsr_country
+                    pk=selected_dict.get(c.KEY_SEL_DEPBASE_PK)
                 )
 
                 if logging_on:

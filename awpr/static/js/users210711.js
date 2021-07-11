@@ -46,13 +46,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
-    const url_datalist_download = get_attr_from_el(el_data, "data-datalist_download_url");
-    const url_settings_upload = get_attr_from_el(el_data, "data-settings_upload_url");
+    const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+    const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
     const url_user_upload = get_attr_from_el(el_data, "data-user_upload_url");
     const url_userpermit_upload = get_attr_from_el(el_data, "data-userpermit_upload_url");
     const url_download_permits = get_attr_from_el(el_data, "data-user_download_permits_url");
 
-    // importdata_upload_url is stored in id_MIMP_data of modimport.html
+    // url_importdata_upload is stored in id_MIMP_data of modimport.html
     let columns_hidden = [];
 
 // --- get field_settings

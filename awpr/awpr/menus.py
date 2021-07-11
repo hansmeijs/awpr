@@ -442,7 +442,7 @@ def get_depbase_list(request, requsr_school):  # PR2018-08-24  PR2018-11-23 PR20
     # if there is only 1 allowed dep: set user_dep = this dep
             if allowed_dep_count == 1:
                 sel_depbase_pk = depbase_pk_list[0]
-                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=sel_depbase_pk, country=req_user.country)
+                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=sel_depbase_pk)
             elif allowed_dep_count > 1:
 # - get saved sel_depbase: if multiple exist in depbase_pk_list
                 saved_sel_depbase_instance = af.get_saved_sel_depbase_instance(request)

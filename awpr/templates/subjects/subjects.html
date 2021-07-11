@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Subjects' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/subjects210127.js' %}"></script>
+    <script src="{% static 'js/subjects210711.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -68,7 +68,7 @@
                 <button data-btn="btn_schemeitem" class="btn btn-secondary">{% trans 'Subject scheme subjects' %}</button>
                 <button data-btn="btn_subjecttype" class="btn btn-secondary">{% trans 'Characters' %}</button>
                 <button data-btn="btn_subjecttypebase" class="btn btn-secondary">{% trans 'Base characters' %}</button>
-                <button data-btn="btn_package" class="btn btn-secondary">{% trans 'Subject packages' %}</button>
+                <button data-btn="btn_package" class="btn btn-secondary display_hide">{% trans 'Subject packages' %}</button>
             </div>
 
     <!-- CONTENT BODY -->
@@ -81,8 +81,8 @@
             </div>
 <!-- END OF CONTENT BODY -->
             <div id="id_data"
-                data-datalist_download_url="{% url 'datalist_download_url' %}"
-                data-settings_upload_url="{% url 'settings_upload_url' %}"
+                data-url_datalist_download="{% url 'url_datalist_download' %}"
+                data-url_settings_upload="{% url 'url_settings_upload' %}"
                 data-subject_upload_url="{% url 'subject_upload_url' %}"
                 data-subjecttype_upload_url="{% url 'subjecttype_upload_url' %}"
                 data-subjecttypebase_upload_url="{% url 'subjecttypebase_upload_url' %}"

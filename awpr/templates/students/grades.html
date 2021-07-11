@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Grades' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/grades210601.js' %}"></script>
+    <script src="{% static 'js/grades210711.js' %}"></script>
     <script src="{% static 'js/download210306.js' %}"></script>
 {% endblock %}
 
@@ -127,10 +127,10 @@
     <!-- =================== END DATA TABLE  =================== -->
     <!-- END OF CONTENT BODY -->
                 <div id="id_data"
-                    data-datalist_download_url="{% url 'datalist_download_url' %}"
-                    data-settings_upload_url="{% url 'settings_upload_url' %}"
-                    data-student_upload_url="{% url 'student_upload_url' %}"
-                    data-studsubj_upload_url="{% url 'studsubj_upload_url' %}"
+                    data-url_datalist_download="{% url 'url_datalist_download' %}"
+                    data-url_settings_upload="{% url 'url_settings_upload' %}"
+                    data-url_student_upload="{% url 'url_student_upload' %}"
+                    data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
                     data-grade_upload_url="{% url 'grade_upload_url' %}"
                     data-grade_approve_url="{% url 'grade_approve_url' %}"
                     data-download_grade_icons_url="{% url 'download_grade_icons_url' %}"

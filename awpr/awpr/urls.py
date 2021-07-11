@@ -110,7 +110,7 @@ urlpatterns = [
         path('user', account_views.UserListView.as_view(), name='users_url'),
         path('user_upload', account_views.UserUploadView.as_view(), name='user_upload_url'),
         path('userpermit_upload', account_views.UserpermitUploadView.as_view(), name='userpermit_upload_url'),
-        path('settings_upload', account_views.UserSettingsUploadView.as_view(), name='settings_upload_url'),
+        path('settings_upload', account_views.UserSettingsUploadView.as_view(), name='url_settings_upload'),
         path('permits_download', account_views.UserDownloadPermitsView.as_view(), name='user_download_permits_url'),
 
         #url(r'^users/(?P<pk>\d+)/log$', account_views.UserLogView.as_view(), name='user_log_url'),
@@ -121,7 +121,7 @@ urlpatterns = [
     url(r'^users/language/(?P<lang>[A-Za-z]{2})/$', account_views.UserLanguageView.as_view(), name='language_set_url'),
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-    path('datalist_download', awpr_downloads.DatalistDownloadView.as_view(), name='datalist_download_url'),
+    path('datalist_download', awpr_downloads.DatalistDownloadView.as_view(), name='url_datalist_download'),
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
     # PR2018-03-11
@@ -179,18 +179,19 @@ urlpatterns = [
     path('students/', include([
         path('student', student_views.StudentListView.as_view(), name='students_url'),
 
-        path('student_upload', student_views.StudentUploadView.as_view(), name='student_upload_url'),
+        path('student_upload', student_views.StudentUploadView.as_view(), name='url_student_upload'),
         #path('student_import', student_views.StudentImportView.as_view(), name='student_import_url'),
         #path('uploaddata', student_views.StudentImportUploadData.as_view(), name='student_uploaddata_url'),
 
         path('studentsubject', student_views.StudentsubjectListView.as_view(), name='studentsubjects_url'),
-        path('studentsubject_upload', student_views.StudentsubjectUploadView.as_view(), name='studsubj_upload_url'),
+        path('studentsubject_upload', student_views.StudentsubjectUploadView.as_view(), name='url_studsubj_upload'),
+        path('studentsubject_validate', student_views.StudentsubjectValidateView.as_view(), name='url_studsubj_validate'),
 
         path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='studentsubjectnote_upload_url'),
         path('studentsubjectnote_download', student_views.StudentsubjectnoteDownloadView.as_view(), name='studentsubjectnote_download_url'),
         path('noteattachment_download/<int:pk_int>/', student_views.NoteAttachmentDownloadView.as_view(), name='noteattachment_download_url'),
 
-        path('download_ex1', grade_excel.StudsubjDownloadEx1View.as_view(), name='grade_download_ex1_url'),
+        path('download_ex1', grade_excel.StudsubjDownloadEx1View.as_view(), name='url_grade_download_ex1'),
 
         path('uploadsetting', student_views.StudentImportUploadSetting.as_view(), name='student_uploadsetting_url'),
     ])),
@@ -234,8 +235,8 @@ urlpatterns = [
     # ajax PR2018-12-02
     path('ajax/', include([
         #path('import_student_load/', student_views.StudentImportUploadDataView.as_view(), name='import_student_load_url'),
-        path('importsettings_upload/', school_imports.UploadImportSettingView.as_view(), name='importsettings_upload_url'),
-        path('importdata_upload/', school_imports.UploadImportDataView.as_view(), name='importdata_upload_url'),
+        path('importsettings_upload/', school_imports.UploadImportSettingView.as_view(), name='url_import_settings_upload'),
+        path('importdata_upload/', school_imports.UploadImportDataView.as_view(), name='url_importdata_upload'),
         path('ajax_schemeitems_download/', subject_views.SchemeitemsDownloadView.as_view(), name='ajax_schemeitems_download_url'),
     ])),
 ]

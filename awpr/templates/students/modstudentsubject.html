@@ -15,6 +15,14 @@
 
                 <div class="modal-body">
 
+                    <div id="id_MSTUDSUBJ_msg_container" class="mx-3 my-2 p-2 display_hide border_bg_invalid">
+                    </div>
+                    <div id="id_MSTUDSUBJ_loader" class="display_hideX mx-4 mt-2 ">
+                        <div class="image_container">
+                            <img src="{% static 'img/loader.gif' %}" class="icon_24">
+                        </div>
+                    </div>
+
                     <div class="content_header ml-2 mr-0">
                          <div class="flex_4 p-2 ">
                              <h6 class="px-2">{% trans 'Available subjects' %}:</h6>
@@ -105,23 +113,7 @@
                         </div>
                     </div>
 
-                    <div class="content_header ml-2 mr-0">
-                        <div class="mx-3 mt-2 mb-0">
-                            <small>* : {% trans 'Combination subject' %}</small>
-                        </div>
-                        <div class="mx-3 mt-2 mb-0">
-                            <small>** : {% trans 'Elective combination subject' %}</small>
-                        </div>
-                        <div class="mx-3 mt-2 mb-0">
-                            <small>+ : {% trans 'Extra subject, does not count towards the result.' %}</small>
-                        </div>
-                        <div class="mx-3 mt-2 mb-0">
-                            <small>++ : {% trans 'Extra subject, counts towards the result.' %}</small>
-                        </div>
-                    </div>
-
                 </div>
-
 
                 <div class="modal-footer">
                     <div class="content_subheader_left mx-1 tab_show tab_update display_hideX">
