@@ -144,29 +144,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
-            el_SBR_select_level.addEventListener("change", function() {HandleSbrLevelSector("level", el_SBR_select_level)}, false )
+        if(el_SBR_select_level){
+            el_SBR_select_level.addEventListener("change", function() {HandleSbrLevelSector("level", el_SBR_select_level)}, false)}
         const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");
-            el_SBR_select_sector.addEventListener("change", function() {HandleSbrLevelSector("sector", el_SBR_select_sector)}, false )
+        if(el_SBR_select_sector){
+            el_SBR_select_sector.addEventListener("change", function() {HandleSbrLevelSector("sector", el_SBR_select_sector)}, false)};
         const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
-            el_SBR_select_subject.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "subject", subject_map, true, setting_dict, permit_dict, MSSSS_Response)}, false )
+        if(el_SBR_select_subject){
+            el_SBR_select_subject.addEventListener("click", function() {t_MSSSS_Open(loc, "subject", subject_map, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
-            el_SBR_select_student.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "student", student_map, true, setting_dict, permit_dict, MSSSS_Response)}, false )
+        if(el_SBR_select_student){
+            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_map, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
-            el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false )
+        if(el_SBR_select_showall){
+            el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false)};
+        }
 
 // ---  MODAL STUDENT
         const el_MSTUD_div_form_controls = document.getElementById("id_MSTUD_div_form_controls")
         let form_elements = el_MSTUD_div_form_controls.querySelectorAll(".awp_input_text")
-        for (let i = 0, el, len = form_elements.length; i < len; i++) {
-            el = form_elements[i];
-            if(el){el.addEventListener("keyup", function() {MSTUD_InputKeyup(el)}, false )};
-        }
+        if(form_elements){
+            for (let i = 0, el, len = form_elements.length; i < len; i++) {
+                el = form_elements[i];
+                if(el){el.addEventListener("keyup", function() {MSTUD_InputKeyup(el)}, false )};
+            }};
         form_elements = el_MSTUD_div_form_controls.querySelectorAll(".awp_input_select")
-        for (let i = 0, el, len = form_elements.length; i < len; i++) {
-            el = form_elements[i];
-            if(el){el.addEventListener("change", function() {MSTUD_InputSelect(el)}, false )};
+        if(form_elements){
+            for (let i = 0, el, len = form_elements.length; i < len; i++) {
+                el = form_elements[i];
+                if(el){el.addEventListener("change", function() {MSTUD_InputSelect(el)}, false )};
+            }
         }
         const el_MSTUD_abbrev = document.getElementById("id_MSTUD_abbrev")
         const el_MSTUD_name = document.getElementById("id_MSTUD_name")
@@ -174,18 +181,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_MSTUD_tbody_select = document.getElementById("id_MSTUD_tblBody_department")
         const el_MSTUD_btn_delete = document.getElementById("id_MSTUD_btn_delete");
-        if(el_MSTUD_btn_delete){el_MSTUD_btn_delete.addEventListener("click", function() {MSTUD_Save("delete")}, false)}
+        if(el_MSTUD_btn_delete){
+            el_MSTUD_btn_delete.addEventListener("click", function() {MSTUD_Save("delete")}, false)}
         const el_MSTUD_btn_save = document.getElementById("id_MSTUD_btn_save");
-        if(el_MSTUD_btn_save){ el_MSTUD_btn_save.addEventListener("click", function() {MSTUD_Save("save")}, false)}
+        if(el_MSTUD_btn_save){
+            el_MSTUD_btn_save.addEventListener("click", function() {MSTUD_Save("save")}, false)}
 
 // ---  MODAL STUDENT SUBJECTS
         const el_MSTUDSUBJ_hdr = document.getElementById("id_MSTUDSUBJ_hdr")
         const el_MSTUDSUBJ_btn_add_selected = document.getElementById("id_MSTUDSUBJ_btn_add_selected")
-            el_MSTUDSUBJ_btn_add_selected.addEventListener("click", function() {MSTUDSUBJ_AddRemoveSubject("add")}, false);
+        if(el_MSTUDSUBJ_btn_add_selected){
+            el_MSTUDSUBJ_btn_add_selected.addEventListener("click", function() {MSTUDSUBJ_AddRemoveSubject("add")}, false)};
         const el_MSTUDSUBJ_btn_remove_selected = document.getElementById("id_MSTUDSUBJ_btn_remove_selected")
-            el_MSTUDSUBJ_btn_remove_selected.addEventListener("click", function() {MSTUDSUBJ_AddRemoveSubject("remove")}, false);
+        if(el_MSTUDSUBJ_btn_remove_selected){
+            el_MSTUDSUBJ_btn_remove_selected.addEventListener("click", function() {MSTUDSUBJ_AddRemoveSubject("remove")}, false)};
         const el_MSTUDSUBJ_btn_add_package = document.getElementById("id_MSTUDSUBJ_btn_add_package")
-            el_MSTUDSUBJ_btn_add_package.addEventListener("click", function() {MSTUDSUBJ_AddPackage()}, false);
+        if(el_MSTUDSUBJ_btn_add_package){
+            el_MSTUDSUBJ_btn_add_package.addEventListener("click", function() {MSTUDSUBJ_AddPackage()}, false)};
 
         const el_input_controls = document.getElementById("id_MSTUDSUBJ_div_form_controls").querySelectorAll(".awp_input_text, .awp_input_checkbox")
         for (let i = 0, el; el = el_input_controls[i]; i++) {

@@ -85,7 +85,7 @@ def validate_studentsubjects(student):
     msg_html = None
     if len(msg_list):
 
-        msg_str = ''.join(( '<h6>', str(_('The composition of the subjects is not correct:')), '</h5>', "<ul class='manual_bullet'>" ))
+        msg_str = ''.join(( '<h6>', str(_('The composition of the subjects is not correct:')), '</h6>', "<ul class='msg_bullet'>" ))
         msg_list.insert(0, msg_str)
         msg_list.append("</ul>")
         msg_html = ''.join(msg_list)
