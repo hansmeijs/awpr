@@ -70,107 +70,91 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
         if sel_examyear is not None and request.user.country is not None and \
                 sel_examyear.country.id == request.user.country.id:
 
-# get instance of schoolbase from settings
-            sel_schoolbase, sel_schoolbase_save_NIU = af.get_sel_schoolbase_instance(request)
+            wb = openpyxl.load_workbook(uploadedfile)
+            # PR2018-04-27 debug: DeprecationWarning: Call to deprecated function get_sheet_names (Use wb.sheetnames). Was:  ws_names = wb.get_sheet_names()
 
-# get sel_school
-            # sel school may be imported, but schoolbase must exist
-            sel_school = None
-            if sel_schoolbase is not None:
-                sel_school = sch_mod.School.objects.filter(
-                    base=sel_schoolbase,
-                    examyear=sel_examyear
-                ).order_by('-pk').first()
-            if logging_on:
-                logger.debug('sel_school  : ' + str(sel_school) + ' ' + str(type(sel_school)))
+            mapped = {}
 
-            if sel_school:
-                # you may put validations here to check extension or file size
-                wb = openpyxl.load_workbook(uploadedfile)
-                # PR2018-04-27 debug: DeprecationWarning: Call to deprecated function get_sheet_names (Use wb.sheetnames). Was:  ws_names = wb.get_sheet_names()
+            # school instance is retrieved when ws_name = 'school', It keeps value in the rest of the worksheets
+            school = None
 
-                mapped = {}
-
-                # school instance is retrieved when ws_name = 'school', It keeps value in the rest of the worksheets
-                school = None
-
-                # school must be first in list, checks if examyear and country equal selected examyear and country
-                ws_list = ('school', 'department', 'level', 'sector', 'subjecttype', 'scheme',
-                            'subject', 'schemeitem', 'package', 'packageitem', 'cluster', 'student', 'studsubj')
+            # school must be first in list, checks if examyear and country equal selected examyear and country
+            ws_list = ('school', 'department', 'level', 'sector', 'subjecttype', 'scheme',
+                        'subject', 'schemeitem', 'package', 'packageitem', 'cluster', 'student', 'studsubj')
 # -------------------------------------------------------------------------------
 # - iterate through ws_list to make sure the data are imported in the right order
-                for ws_name in ws_list:
+            for ws_name in ws_list:
 
-    # - lookup worksheet
-                    index = -1
-                    for wb_index, wb_sheetname in enumerate(wb.sheetnames):
-                        if wb_sheetname == ws_name:
-                            index = wb_index
-                            break
-                    worksheet = None
-                    if index > -1:
-                        worksheet = wb.worksheets[index]
+# - lookup worksheet
+                index = -1
+                for wb_index, wb_sheetname in enumerate(wb.sheetnames):
+                    if wb_sheetname == ws_name:
+                        index = wb_index
+                        break
+                worksheet = None
+                if index > -1:
+                    worksheet = wb.worksheets[index]
 
-                    if worksheet:
+                if worksheet:
 
 # ----------------------------------------------------------------------------------
 # - iterate over the rows of this worksheet and get the  value from each cell in row
 
-    # first row contains column names, put them in list 'column_names'
-                        is_first_row = True
-                        column_names = list()
+# first row contains column names, put them in list 'column_names'
+                    is_first_row = True
+                    column_names = list()
 
-                        if logging_on:
-                            row_count = 0
-                            for row in worksheet.iter_rows():
-                                row_count += 1
-                            logger.debug('ws_name  : ' + str(ws_name) + ' row_count : ' + str(row_count))
-
+                    if logging_on:
                         row_count = 0
                         for row in worksheet.iter_rows():
                             row_count += 1
-                            row_data = {}
-                            for i, cell in enumerate(row):
-                                if is_first_row:
-                                    column_names.append(str(cell.value))
-                                else:
-                                    col_name = column_names[i]
-    # - put cell value in dict 'row_data', with key = col_name
-                                    if cell.value:
-                                        row_data[col_name] = cell.value
-                            # column_names: ['scheme_id', 'dep_id', 'dep', 'sct_id', 'sct', 'lvl_id', 'lvl']
-                            # row_data: {'scheme_id': 1, 'dep_id': 1, 'dep': 'vsbo', 'sct_id': 1, 'sct': 'tech', 'lvl_id': 1, 'lvl': 'tkl'}
+                        logger.debug('ws_name  : ' + str(ws_name) + ' row_count : ' + str(row_count))
 
-                            if row_data and not is_first_row:
-                                if ws_name == 'school':
-                                    school = ImportSchool(ws_name, row_data, logfile, mapped, sel_examyear, request)
-                                elif school:
-                                    if ws_name == 'department':
-                                        ImportDepartment(ws_name, row_data, logfile, mapped, sel_examyear, request)
-                                    elif ws_name == 'level':
-                                        ImportLevel(ws_name, row_data, logfile, mapped, sel_examyear, request)
-                                    elif ws_name == 'sector':
-                                        ImportSector(ws_name, row_data, logfile, mapped, sel_examyear, request)
-                                    elif ws_name == 'subjecttype':
-                                        ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
-                                    elif ws_name == 'scheme':
-                                        ImportScheme(ws_name, row_data, logfile, mapped, sel_examyear, request)
-                                    elif ws_name == 'subject':
-                                        ImportSubject(ws_name, row_data, logfile, mapped, sel_examyear, request)
-                                    elif ws_name == 'schemeitem':
-                                        ImportSchemeitem(ws_name, row_data, logfile, mapped, sel_examyear, request)
-                                    elif ws_name == 'package':
-                                        ImportPackage(ws_name, row_data, logfile, mapped, sel_examyear, request)
-                                    elif ws_name == 'packageitem':
-                                        ImportPackageitem(ws_name, row_data, logfile, mapped, sel_examyear, request)
-                                    elif ws_name == 'cluster':
-                                        ImportCluster(ws_name, row_data, logfile, mapped, sel_examyear, school, request)
-                                    elif ws_name == 'student':
-                                        ImportStudent(ws_name, row_data, logfile, mapped, sel_examyear, school, request)
-                                    elif ws_name == 'studsubj':
-                                        ImportStudentsubject(ws_name, row_data, logfile, mapped, sel_examyear, school, request)
+                    row_count = 0
+                    for row in worksheet.iter_rows():
+                        row_count += 1
+                        row_data = {}
+                        for i, cell in enumerate(row):
+                            if is_first_row:
+                                column_names.append(str(cell.value))
+                            else:
+                                col_name = column_names[i]
+# - put cell value in dict 'row_data', with key = col_name
+                                if cell.value:
+                                    row_data[col_name] = cell.value
+                        # column_names: ['scheme_id', 'dep_id', 'dep', 'sct_id', 'sct', 'lvl_id', 'lvl']
+                        # row_data: {'scheme_id': 1, 'dep_id': 1, 'dep': 'vsbo', 'sct_id': 1, 'sct': 'tech', 'lvl_id': 1, 'lvl': 'tkl'}
 
-                            is_first_row = False
+                        if row_data and not is_first_row:
+                            if ws_name == 'school':
+                                school = ImportSchool(ws_name, row_data, logfile, mapped, sel_examyear, request)
+                            elif school:
+                                if ws_name == 'department':
+                                    ImportDepartment(ws_name, row_data, logfile, mapped, sel_examyear, request)
+                                elif ws_name == 'level':
+                                    ImportLevel(ws_name, row_data, logfile, mapped, sel_examyear, request)
+                                elif ws_name == 'sector':
+                                    ImportSector(ws_name, row_data, logfile, mapped, sel_examyear, request)
+                                elif ws_name == 'subjecttype':
+                                    ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
+                                elif ws_name == 'scheme':
+                                    ImportScheme(ws_name, row_data, logfile, mapped, sel_examyear, request)
+                                elif ws_name == 'subject':
+                                    ImportSubject(ws_name, row_data, logfile, mapped, sel_examyear, request)
+                                elif ws_name == 'schemeitem':
+                                    ImportSchemeitem(ws_name, row_data, logfile, mapped, sel_examyear, request)
+                                elif ws_name == 'package':
+                                    ImportPackage(ws_name, row_data, logfile, mapped, sel_examyear, request)
+                                elif ws_name == 'packageitem':
+                                    ImportPackageitem(ws_name, row_data, logfile, mapped, sel_examyear, request)
+                                elif ws_name == 'cluster':
+                                    ImportCluster(ws_name, row_data, logfile, mapped, sel_examyear, school, request)
+                                elif ws_name == 'student':
+                                    ImportStudent(ws_name, row_data, logfile, mapped, sel_examyear, school, request)
+                                elif ws_name == 'studsubj':
+                                    ImportStudentsubject(ws_name, row_data, logfile, mapped, sel_examyear, school, request)
+
+                        is_first_row = False
 # - end of loop
 # -------------------------------------------------------------------------------
 
@@ -1033,72 +1017,82 @@ def ImportSchool(ws_name, row_data, logfile, mapped, examyear, request):  #PR202
                 #        logger.debug('AWP examyear: ' + str(exyr) + ' different fro selected examyear: ' + str(examyear.code))
                 # else:
                 else:
-        # - check if school with this code already exists in this examyear. If not: create
-                    school = sch_mod.School.objects.filter(
-                        examyear=examyear,
-                        base__code__iexact=code
+
+        # - check if schoolbase with this code already exists. If not: create
+                    schoolbase = sch_mod.Schoolbase.objects.filter(
+                        country=requsr_country,
+                        code__iexact=code
                     ).order_by('-pk').first()
                     if logging_on:
-                        logger.debug('school exists: ' + str(school))
-        # - create new school record
-                    if school is None:
-            # - first create new base record.
-                        base = sch_mod.Schoolbase(
+                        logger.debug('schoolbase exists: ' + str(schoolbase))
+        # - create new schoolbase record
+                    if schoolbase is None:
+            # - first create new schoolbase record.
+                        schoolbase = sch_mod.Schoolbase(
                             country=requsr_country,
                             code=code
                         )
-                        base.save()
+
+                    if schoolbase:
+             # - check if school with this schoolbase already exists in this examyear. If not: create
+                        school = sch_mod.School.objects.filter(
+                            base=schoolbase,
+                            examyear=examyear
+                        ).order_by('-pk').first()
                         if logging_on:
-                            logger.debug('new schoolbase saved: ' + str(base))
+                            logger.debug('school exists: ' + str(school))
 
-                        name = row_data.get('name')
-                        abbrev = name[0:c.MAX_LENGTH_SCHOOLABBREV]
+            # - create new school record
+                        if school is None:
+                # - create new school record.
+                            name = row_data.get('name')
+                            abbrev = name[0:c.MAX_LENGTH_SCHOOLABBREV]
 
-                        depbases = None
-                        awp_depbases = row_data.get('depbases')
-                        if awp_depbases:
-                            awp_depbases_list = awp_depbases.split(';')
-                            if awp_depbases_list:
-                                depbases_list = []
+                            depbases = None
+                            awp_depbases = row_data.get('depbases')
+                            if awp_depbases:
+                                awp_depbases_list = awp_depbases.split(';')
+                                if awp_depbases_list:
+                                    depbases_list = []
 
-                                for depbase_str in awp_depbases_list:
-                                    if depbase_str:
-                                        depbases_list.append(depbase_str)
-                                if depbases_list:
-                                    depbases = ';'.join(depbases_list)
+                                    for depbase_str in awp_depbases_list:
+                                        if depbase_str:
+                                            depbases_list.append(depbase_str)
+                                    if depbases_list:
+                                        depbases = ';'.join(depbases_list)
 
-                        school = sch_mod.School(
-                            base=base,
-                            examyear=examyear,
-                            name=name,
-                            abbrev=abbrev,
-                            # article=article,
-                            depbases=depbases
-                            #isdayschool
-                            #iseveningschool
-                            #islexschool
-                            #activated
-                            #locked
-                            #activatedat
-                            #lockedat
-                        )
-                        school.save(request=request)
-                        logfile.append(ws_name + ' created: ' + str(school))
+                            school = sch_mod.School(
+                                base=schoolbase,
+                                examyear=examyear,
+                                name=name,
+                                abbrev=abbrev,
+                                # article=article,
+                                depbases=depbases
+                                #isdayschool
+                                #iseveningschool
+                                #islexschool
+                                #activated
+                                #locked
+                                #activatedat
+                                #lockedat
+                            )
+                            school.save(request=request)
+                            logfile.append(ws_name + ' created: ' + str(school))
 
-                        if logging_on:
-                            logger.debug(ws_name + ' created school = ' + str(school))
+                            if logging_on:
+                                logger.debug(ws_name + ' created school = ' + str(school))
 
-                    if school:
-                        if logging_on:
-                            logger.debug(ws_name + ': ' + str(school))
-                        awp_school_id = row_data.get('school_id')
+                        if school:
+                            if logging_on:
+                                logger.debug(ws_name + ': ' + str(school))
+                            awp_school_id = row_data.get('school_id')
 
-                        if ws_name not in mapped:
-                            mapped[ws_name] = {}
-                        mapped[ws_name][awp_school_id] = school.pk
-                        if logging_on:
-                            logger.debug('mapped[ws_name]: ' + str(mapped[ws_name]))
-                            
+                            if ws_name not in mapped:
+                                mapped[ws_name] = {}
+                            mapped[ws_name][awp_school_id] = school.pk
+                            if logging_on:
+                                logger.debug('mapped[ws_name]: ' + str(mapped[ws_name]))
+
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
             logfile.append('Error school: ' + str(e))

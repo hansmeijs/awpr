@@ -412,7 +412,7 @@ class StudentsubjectValidateView(View):
 
                 messages = []
     # ----- get selected examyear, school and department from usersettings
-                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                sel_examyear, sel_school, sel_department, may_editNIU, msg_listNIU = \
                     dl.get_selected_ey_school_dep_from_usersetting(request)
 
                 if logging_on:
@@ -420,21 +420,22 @@ class StudentsubjectValidateView(View):
                     logger.debug('sel_examyear: ' + str(sel_examyear))
                     logger.debug('sel_school: ' + str(sel_school))
                     logger.debug('sel_department: ' + str(sel_department))
-                    logger.debug('may_edit: ' + str(may_edit))
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
-                student = None
 
-                if len(msg_list):
-                    messages.append({'class': "border_bg_warning", 'msg_list': [msg_list]})
-                elif may_edit:
-                    student_pk = upload_dict.get('student_pk')
-                    student = stud_mod.Student.objects.get_or_none(
-                        id=student_pk,
-                        school=sel_school,
-                        department=sel_department,
-                        locked=False
-                    )
+                #if len(msg_list):
+                #    msg_html = ''
+                #    for msg in msg_list:
+                #        msg_html += ''.join(( '<p>', str(msg), '</p>'))
+                #    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
+
+                student_pk = upload_dict.get('student_pk')
+                student = stud_mod.Student.objects.get_or_none(
+                    id=student_pk,
+                    school=sel_school,
+                    department=sel_department,
+                    locked=False
+                )
                 if logging_on:
                     logger.debug('student: ' + str(student))
 

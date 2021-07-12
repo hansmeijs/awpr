@@ -158,7 +158,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if(el_SBR_select_showall){
             el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false)};
-        }
 
 // ---  MODAL STUDENT
         const el_MSTUD_div_form_controls = document.getElementById("id_MSTUD_div_form_controls")
@@ -471,9 +470,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const data_rows = get_datarows_from_selBtn();
 
-        console.log( "tblName", tblName);
-        console.log( "field_setting", field_setting);
-        console.log( "data_rows", data_rows);
+        //console.log( "tblName", tblName);
+        //console.log( "field_setting", field_setting);
+        //console.log( "data_rows", data_rows);
 
 // --- show columns
         set_columns_hidden();
