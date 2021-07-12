@@ -476,7 +476,7 @@ def get_sel_schoolbase_instance(request, request_setting=None):  # PR2020-12-25 
 
 
 def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR2020-12-26 PR2021-05-07
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_sel_depbase_instance  -----')
         logger.debug('sel_school: ' + str(sel_school))

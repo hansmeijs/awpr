@@ -246,16 +246,17 @@
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23
     function t_MSSSS_Open (loc, tblName, data_map, add_all, setting_dict, permit_dict, MSSSS_Response) {
-        //console.log(" ===  t_MSSSS_Open  =====", tblName) ;
-        //console.log( "setting_dict", setting_dict);
-        //console.log( "permit_dict", permit_dict);
+        console.log(" ===  t_MSSSS_Open  =====", tblName) ;
+        console.log( "setting_dict", setting_dict);
+        console.log( "permit_dict", permit_dict);
+        console.log( "data_map", data_map);
         // tblNames are: "school", "subject", "student"
 
         // PR2021-04-27 debug: opening modal before loc and setting_dict are loaded gives 'NaN' on modal.
         // allow opening only when loc has value
         if(!isEmpty(permit_dict)){
             const may_select = (tblName === "school") ? !!permit_dict.may_select_school : true;
-            //console.log( "may_select", may_select);
+            console.log( "may_select", may_select);
             if (may_select){
                 const selected_pk = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_pk : null;
 

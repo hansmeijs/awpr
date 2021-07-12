@@ -35,6 +35,11 @@ class AwpModelManager(Manager):
 class Levelbase(Model):  # PR2018-10-17
     objects = AwpModelManager()
 
+    code = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
+
+    def __str__(self):
+        return str(self.code)
+
 
 class Level(sch_mod.AwpBaseModel): # PR2018-08-12
     # AwpModelManager adds function get_or_none to prevent DoesNotExist exception
@@ -44,10 +49,8 @@ class Level(sch_mod.AwpBaseModel): # PR2018-08-12
     base = ForeignKey(Levelbase, related_name='levels', on_delete=PROTECT)
     examyear = ForeignKey(sch_mod.Examyear, related_name='levels', on_delete=CASCADE)
 
-    name = CharField(max_length=c.MAX_LENGTH_NAME, # PR2018-10-20 set Unique per Examyear True.
-        help_text=_('Required. {} characters or fewer.'.format('50')),)
-    abbrev = CharField(max_length=8, # PR2018-10-20 set Unique per Examyear True.
-        help_text=_('Required. {} characters or fewer.'.format('8')),)
+    name = CharField(max_length=c.MAX_LENGTH_NAME)
+    abbrev = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
@@ -157,6 +160,11 @@ class Level_log(sch_mod.AwpBaseModel):
 class Sectorbase(Model):  # PR2018-10-17
     objects = AwpModelManager()
 
+    code = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
+
+    def __str__(self):
+        return str(self.code)
+
 
 class Sector(sch_mod.AwpBaseModel):  # PR2018-06-06
     objects = AwpModelManager()
@@ -165,10 +173,8 @@ class Sector(sch_mod.AwpBaseModel):  # PR2018-06-06
     base = ForeignKey(Sectorbase, related_name='sectors', on_delete=PROTECT)
     examyear = ForeignKey(sch_mod.Examyear, related_name='sectors', on_delete=CASCADE)
 
-    name = CharField(max_length=c.MAX_LENGTH_NAME, # PR2018-10-20 set Unique per Examyear True.
-        help_text=_('Required. {} characters or fewer.'.format('50')),)
-    abbrev = CharField(max_length=8, # PR2018-10-20 set Unique per Examyear True.
-        help_text=_('Required. {} characters or fewer.'.format('8')),)
+    name = CharField(max_length=c.MAX_LENGTH_NAME)
+    abbrev = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
@@ -303,7 +309,7 @@ class Scheme_log(sch_mod.AwpBaseModel):
 
 
 # === Subjecttype =====================================
-class Subjecttypebase(Model):  # PR2018-10-17
+class Subjecttypebase(Model):  # PR2018-10-17 PR2021-07-11
     objects = AwpModelManager()
 
     code = CharField(db_index=True, max_length=c.MAX_LENGTH_04)

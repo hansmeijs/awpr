@@ -380,7 +380,7 @@ class NoteAttachmentDownloadView(View): # PR2021-03-17
 class StudentsubjectValidateView(View):
 
     def post(self, request):
-        logging_on = False
+        logging_on = True
         if logging_on:
             logger.debug(' ============= StudentsubjectValidateView ============= ')
 
@@ -421,8 +421,6 @@ class StudentsubjectValidateView(View):
                     logger.debug('sel_school: ' + str(sel_school))
                     logger.debug('sel_department: ' + str(sel_department))
                     logger.debug('may_edit: ' + str(may_edit))
-                    logger.debug('msg_list: ' + str(msg_list))
-
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                 student = None
@@ -438,13 +436,11 @@ class StudentsubjectValidateView(View):
                         locked=False
                     )
                 if logging_on:
-                    logger.debug('msg_list: ' + str(msg_list))
-                    logger.debug('may_edit: ' + str(may_edit))
                     logger.debug('student: ' + str(student))
 
                 if student:
 
-                    # +++ validate subjects of student
+# +++ validate subjects of student
                     msg_html = stud_val.validate_studentsubjects(student)
                     if msg_html:
                         update_wrap['validate_studsubj_html'] = msg_html

@@ -60,6 +60,7 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
         sel_examyear, selected_dict_has_changed_NIU, may_select_examyear_NIU = af.get_sel_examyear_instance(request)
 
         if logging_on:
+            logger.debug(' ')
             logger.debug(' ============= UploadAwpView ============= ')
             logger.debug('file: ' + str(uploadedfile) + ' ' + str(type(uploadedfile)))
             logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
@@ -96,7 +97,7 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
                 # school must be first in list, checks if examyear and country equal selected examyear and country
                 ws_list = ('school', 'department', 'level', 'sector', 'subjecttype', 'scheme',
                             'subject', 'schemeitem', 'package', 'packageitem', 'cluster', 'student', 'studsubj')
-
+# -------------------------------------------------------------------------------
 # - iterate through ws_list to make sure the data are imported in the right order
                 for ws_name in ws_list:
 
@@ -111,6 +112,8 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
                         worksheet = wb.worksheets[index]
 
                     if worksheet:
+
+# ----------------------------------------------------------------------------------
 # - iterate over the rows of this worksheet and get the  value from each cell in row
 
     # first row contains column names, put them in list 'column_names'
@@ -121,6 +124,7 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
                             row_count = 0
                             for row in worksheet.iter_rows():
                                 row_count += 1
+                            logger.debug('ws_name  : ' + str(ws_name) + ' row_count : ' + str(row_count))
 
                         row_count = 0
                         for row in worksheet.iter_rows():
@@ -167,7 +171,8 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
                                         ImportStudentsubject(ws_name, row_data, logfile, mapped, sel_examyear, school, request)
 
                             is_first_row = False
-
+# - end of loop
+# -------------------------------------------------------------------------------
 
         header_text = _('Upload') + ' ' + str(_('All').lower())
         update_wrap = {"logfile": logfile, 'header': header_text}
@@ -178,8 +183,7 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
 def ImportData(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR2020-12-13
     logging_on = False  # s.LOGGING_ON
 
-    #try:
-    if True:
+    try:
         requsr_country = request.user.country
 
         if ws_name == 'birthcountry':
@@ -254,18 +258,18 @@ def ImportData(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR2
                     logger.debug('school: ' + str(school))
                     school.save(request=request)
                 logfile.append(row_data)
-    #except:
-    #    row_data[0] = _("An error occurred. '%(fld)s' is not saved.") % {'fld': ws_name}
-    #    logfile.append(row_data)
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+        row_data[0] = _("An error occurred. '%(fld)s' is not saved.") % {'fld': ws_name}
+        logfile.append(row_data)
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
-def ImportDepartment(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR2021-05-03
+def ImportDepartment(ws_name, row_data, logfile, mapped, sel_examyear, request):  # PR2021-05-03 PR021-07-11
+
     logging_on = False  # s.LOGGING_ON
     if ws_name == 'department' and row_data:
         try:
-            requsr_country = request.user.country
-
             if logging_on:
                 logger.debug ('-------------------  department ----------------- sel_examyear: ' + str(sel_examyear))
                 logger.debug ('row_data: ' + str(row_data))
@@ -274,11 +278,11 @@ def ImportDepartment(ws_name, row_data, logfile, mapped, sel_examyear, request):
             code = row_data.get('code')
             if code:
 
-    # - check if depbase with this code already exists . If not: create
+    # - check if depbase with this code already exists .
                 depbase = sch_mod.Departmentbase.objects.filter(
                     code__iexact=code
                 ).order_by('-pk').first()
-
+            # - create depbase if it does not exist
                 if depbase is None:
                     # 'vsbo' becomes 'Vsbo'
                     code_capitalized = code.capitalize()
@@ -326,9 +330,8 @@ def ImportDepartment(ws_name, row_data, logfile, mapped, sel_examyear, request):
                     mapped['department'][awp_department_id] = department.pk
 
         except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
             logfile.append('Error department: ' + str(e))
-            if logging_on:
-                logger.debug(getattr(e, 'message', str(e)))
 
 
 def ImportLevel(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR2021-05-03
@@ -336,37 +339,49 @@ def ImportLevel(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR
     logging_on = False  # s.LOGGING_ON
     if ws_name == 'level' and row_data:
         try:
-            requsr_country = request.user.country
+            # AWP table 'Studierichting' also contains profielen. Is filtered out in AWP
+            if logging_on:
+                logger.debug('-------------------  level ----------------- sel_examyear: ' + str(sel_examyear))
+                logger.debug('row_data: ' + str(row_data))
+                #  row_data: {'level_id': 1, 'abbrev': 'TKL', 'name': 'Theoretisch Kadergerichte Leerweg', 'depbases': '1;'}
 
             abbrev = row_data.get('abbrev')
             depbases = row_data.get('depbases')
+
             if abbrev and depbases:
-
-    # AWP table 'Studierichting' also contains profielen. Is filtered out in AWP
-                if logging_on:
-                    logger.debug('-------------------  level ----------------- sel_examyear: ' + str(sel_examyear))
-                    logger.debug('row_data: ' + str(row_data))
-                    #  row_data: {'level_id': 1, 'abbrev': 'TKL', 'name': 'Theoretisch Kadergerichte Leerweg', 'depbases': '1;'}
-
-    # - check if level with this abbrev already exists in this examyear. If not: create
-                level = subj_mod.Level.objects.filter(
-                    examyear=sel_examyear,
-                    abbrev__iexact=abbrev
+    # - check if lvlbase with this code (abbrev) already exists
+                lvlbase = subj_mod.Levelbase.objects.filter(
+                    code__iexact=abbrev
                 ).order_by('-pk').first()
 
-    # - create new level record
-                if level is None:
-        # - first create new base record. Create also saves new record
-                    base = subj_mod.Levelbase.objects.create()
+        # - create lvlbase if it does not exist
+                if lvlbase is None:
+                    # 'pkl' becomes 'PKL'
+                    code_uc = abbrev.upper()
+                    lvlbase = subj_mod.Levelbase(
+                        code=code_uc
+                    )
+                    lvlbase.save()
+                    logfile.append('lvlbase created: ' + str(lvlbase))
+                    if logging_on:
+                        logger.debug('lvlbase created: ' + str(lvlbase))
 
+    # - check if level with this lvlbase already exists in this examyear.
+                level = subj_mod.Level.objects.filter(
+                    base=lvlbase,
+                    examyear=sel_examyear
+                ).order_by('-pk').first()
+
+    # - if levelbase does not exist: create new level record
+                if level is None:
                     name = row_data.get('name')
                     sequence = 1 if (abbrev == 'PBL') else 2 if (abbrev == 'PKL') else 3 if (abbrev == 'TKL') else 4
 
                     level = subj_mod.Level(
-                        base=base,
+                        base=lvlbase,
                         examyear=sel_examyear,
                         name=name,
-                        abbrev=abbrev,
+                        abbrev=lvlbase.code,
                         sequence=sequence,
                         depbases=depbases
                     )
@@ -386,9 +401,8 @@ def ImportLevel(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR
                     mapped[ws_name][awp_level_id] = level.pk
 
         except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
             logfile.append('Error level: ' + str(e))
-            if logging_on:
-                logger.debug(getattr(e, 'message', str(e)))
 # - end of ImportLevel
 
 
@@ -397,34 +411,45 @@ def ImportSector(ws_name, row_data, logfile, mapped, sel_examyear, request):  #P
     logging_on = False  # s.LOGGING_ON
     if ws_name == 'sector' and row_data:
         try:
-            requsr_country = request.user.country
+            if logging_on:
+                logger.debug('-------------------  sector ----------------- sel_examyear: ' + str(sel_examyear))
+                logger.debug('row_data: ' + str(row_data))
+                # row_data: {'level_id': 1, 'abbrev': 'TKL', 'name': 'Theoretisch Kadergerichte Leerweg', 'depbases': '1;'}
 
             abbrev = row_data.get('abbrev')
             depbases = row_data.get('depbases')
+
             if abbrev and depbases:
-
     # AWP table 'Studierichting' also contains profielen. Is filtered out in AWP
-                if logging_on:
-                    logger.debug('-------------------  sector ----------------- ')
-                    logger.debug('row_data: ' + str(row_data))
-                    #  row_data: {'level_id': 1, 'abbrev': 'TKL', 'name': 'Theoretisch Kadergerichte Leerweg', 'depbases': '1;'}
 
-    # - check if sector with this abbrev already exists in this examyear. If not: create
+    # - check if sctbase with this code (abbrev) already exists
+                sctbase = subj_mod.Sectorbase.objects.filter(
+                    code__iexact=abbrev
+                ).order_by('-pk').first()
+
+    # - create sctbase if it does not exist
+                if sctbase is None:
+                    sctbase = subj_mod.Sectorbase(
+                        code=abbrev
+                    )
+                    sctbase.save()
+                    logfile.append('sctbase created: ' + str(sctbase))
+                    if logging_on:
+                        logger.debug('sctbase created: ' + str(sctbase))
+
+    # - check if sector with this sctbase already exists in this examyear.
                 sector = subj_mod.Sector.objects.filter(
-                    examyear=sel_examyear,
-                    abbrev__iexact=abbrev
+                    base=sctbase,
+                    examyear=sel_examyear
                 ).order_by('-pk').first()
 
     # - create new sector record
                 if sector is None:
-        # - first create new base record. Create also saves new record
-                    base = subj_mod.Sectorbase.objects.create()
-
                     name = row_data.get('name')
                     sequence = 1 if (abbrev == 'PBL') else 2 if (abbrev == 'PKL') else 3 if (abbrev == 'TKL') else 4
 
                     sector = subj_mod.Sector(
-                        base=base,
+                        base=sctbase,
                         examyear=sel_examyear,
                         name=name,
                         abbrev=abbrev,
@@ -450,23 +475,20 @@ def ImportSector(ws_name, row_data, logfile, mapped, sel_examyear, request):  #P
                     logger.debug ('mapped: ' + str(mapped))
 
         except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
             logfile.append('Error sector: ' + str(e))
-            if logging_on:
-                logger.debug(getattr(e, 'message', str(e)))
 # - end of ImportSector
 
 
 def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR2021-05-03
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if ws_name == 'subjecttype' and row_data:
         try:
-            requsr_country = request.user.country
-            #  row_data: {'subjecttype_id': 1, 'department_id': 1, 'name': 'Gemeenschappelijk deel'}
-
             if logging_on:
-                logger.debug('-------------------  subjecttype ----------------- ')
+                logger.debug('-------------------  subjecttype ----------------- sel_examyear: ' + str(sel_examyear))
                 logger.debug('row_data: ' + str(row_data))
+            #  row_data: {'subjecttype_id': 1, 'department_id': 1, 'name': 'Gemeenschappelijk deel'}
 
             awp_name = row_data.get('name')
             if awp_name:
@@ -498,7 +520,7 @@ def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
 
                 sjtpbase = None
                 if code:
-    # - check if subjecttypebase with this name already exists in this examyear.
+    # - check if subjecttypebase with this code already exists
                     sjtpbase = subj_mod.Subjecttypebase.objects.filter(
                         code__iexact=code
                     ).order_by('-pk').first()
@@ -506,10 +528,9 @@ def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
                     if logging_on:
                         logger.debug('existing sjtpbase: ' + str(sjtpbase))
 
-    # - create subjecttypebase if subjecttypebase is found
+        # - create subjecttypebase if it does not exist
                     if sjtpbase is None:
                         if name and abbrev:
-    # fields of Subjecttypebase are: country, code, name, abbrev, sequence
                             sjtpbase = subj_mod.Subjecttypebase.objects.create(
                                 code=code,
                                 name=name,
@@ -566,69 +587,74 @@ def create_upload_subjecttype(sjtpbase, scheme):
 
     subjecttype = None
 
-    depbase_code = scheme.department.base.code
-    if logging_on:
-        logger.debug('depbase_code: ' + str(depbase_code))
+    try:
+        depbase_code = scheme.department.base.code
+        if logging_on:
+            logger.debug('depbase_code: ' + str(depbase_code))
 
-    lvl_abbrev = None
-    if scheme.level:
-        lvl_abbrev = scheme.level.abbrev
-
-    if logging_on:
-        logger.debug('lvl_abbrev: ' + str(lvl_abbrev))
-        logger.debug('sjtpbase.code: ' + str(sjtpbase.code))
-    # stage only in Vsbo - pbl pkl
-    # werkstuk only in and Havo, Vwo and Vsbo tkl
-    # sectorprog only in Vsbo
-
-
-    skip = False
-    if sjtpbase.code == 'stg':
-        skip = lvl_abbrev is None or lvl_abbrev == 'TKL'
-    elif sjtpbase.code == 'wst':
-        skip = lvl_abbrev and lvl_abbrev in ('PBL', 'PKL')
-    elif sjtpbase.code == 'spr':
-        skip = depbase_code in ('Havo', 'Vwo')
-    if not skip:
-        name = None
-        abbrev = None
-        has_prac = False
-        has_pws = False
-        if sjtpbase.code == 'gmd':
-            name = 'Gemeenschappelijk deel'
-            abbrev = 'Gemeensch.'
-        if sjtpbase.code == 'spd':
-            name = 'Sectordeel' if depbase_code == 'Vsbo' else 'Profieldeel'
-            abbrev = name
-        elif sjtpbase.code == 'vrd':
-            name = 'Overig vak' if depbase_code == 'Vsbo' else 'Vrije deel'
-            abbrev = name
-        elif sjtpbase.code == 'spr':
-            name = 'Sectorprogramma'
-            abbrev = 'Sectorprog.'
-            has_prac = True
-        elif sjtpbase.code == 'wst':
-            name = 'Sectorwerkstuk' if depbase_code == 'Vsbo' else 'Profielwerkstuk'
-            abbrev = 'Werkstuk'
-            has_pws = True
-        elif sjtpbase.code == 'stg':
-            name = 'Stage'
-            abbrev = name
+        lvl_abbrev = None
+        if scheme.level:
+            lvl_abbrev = scheme.level.abbrev
 
         if logging_on:
-            logger.debug('name: ' + str(name))
-            logger.debug('abbrev: ' + str(abbrev))
-            logger.debug('has_prac: ' + str(has_prac))
-            logger.debug('has_pws: ' + str(has_pws))
-        # create function also saves the new instance
-        subjecttype = subj_mod.Subjecttype.objects.create(
-            base=sjtpbase,
-            scheme=scheme,
-            name=name,
-            abbrev=abbrev,
-            has_prac=has_prac,
-            has_pws=has_pws
-        )
+            logger.debug('lvl_abbrev: ' + str(lvl_abbrev))
+            logger.debug('sjtpbase.code: ' + str(sjtpbase.code))
+        # stage only in Vsbo - pbl pkl
+        # werkstuk only in and Havo, Vwo and Vsbo tkl
+        # sectorprog only in Vsbo
+
+
+        skip = False
+        if sjtpbase.code == 'stg':
+            skip = lvl_abbrev is None or lvl_abbrev == 'TKL'
+        elif sjtpbase.code == 'wst':
+            skip = lvl_abbrev and lvl_abbrev in ('PBL', 'PKL')
+        elif sjtpbase.code == 'spr':
+            skip = depbase_code in ('Havo', 'Vwo')
+        if not skip:
+            name = None
+            abbrev = None
+            has_prac = False
+            has_pws = False
+            if sjtpbase.code == 'gmd':
+                name = 'Gemeenschappelijk deel'
+                abbrev = 'Gemeensch.'
+            if sjtpbase.code == 'spd':
+                name = 'Sectordeel' if depbase_code == 'Vsbo' else 'Profieldeel'
+                abbrev = name
+            elif sjtpbase.code == 'vrd':
+                name = 'Overig vak' if depbase_code == 'Vsbo' else 'Vrije deel'
+                abbrev = name
+            elif sjtpbase.code == 'spr':
+                name = 'Sectorprogramma'
+                abbrev = 'Sectorprog.'
+                has_prac = True
+            elif sjtpbase.code == 'wst':
+                name = 'Sectorwerkstuk' if depbase_code == 'Vsbo' else 'Profielwerkstuk'
+                abbrev = 'Werkstuk'
+                has_pws = True
+            elif sjtpbase.code == 'stg':
+                name = 'Stage'
+                abbrev = name
+
+            if logging_on:
+                logger.debug('name: ' + str(name))
+                logger.debug('abbrev: ' + str(abbrev))
+                logger.debug('has_prac: ' + str(has_prac))
+                logger.debug('has_pws: ' + str(has_pws))
+            # create function also saves the new instance
+            subjecttype = subj_mod.Subjecttype.objects.create(
+                base=sjtpbase,
+                scheme=scheme,
+                name=name,
+                abbrev=abbrev,
+                has_prac=has_prac,
+                has_pws=has_pws
+            )
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
     return subjecttype
 
 
@@ -704,9 +730,8 @@ def ImportScheme(ws_name, row_data, logfile, mapped, examyear, request):  #PR202
                     mapped[ws_name][awp_scheme_id] = scheme.pk
 
         except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
             logfile.append('Error scheme: ' + str(e))
-            if logging_on:
-                logger.debug(getattr(e, 'message', str(e)))
 # - end of ImportScheme
 
 
@@ -778,15 +803,15 @@ def ImportSubject(ws_name, row_data, logfile, mapped, examyear, request):  #PR20
                     logger.debug('mapped: ' + str(mapped))
 
         except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
             logfile.append('Error subject: ' + str(e))
-            if logging_on:
-                logger.debug(getattr(e, 'message', str(e)))
+
 # - end of ImportSubject
 
 
 def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, request):  #PR2021-05-04
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('-------------------  schemeitem ----------------- sel_examyear: ' + str(examyear_instance))
         logger.debug('row_data: ' + str(row_data))
@@ -806,11 +831,12 @@ def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, requ
             scheme = get_scheme_from_mapped(row_data, examyear_instance, mapped)
             if logging_on:
                 logger.debug('scheme: ' + str(scheme))
+
             subject = get_subject_from_mapped(row_data, examyear_instance, mapped)
             if logging_on:
                 logger.debug('subject: ' + str(subject))
 
-            subjecttype = get_subjecttype_from_mapped(row_data, scheme, request.user.country, mapped)
+            subjecttype = get_subjecttype_from_mapped(row_data, scheme, mapped)
             if logging_on:
                 logger.debug('subjecttype: ' + str(subjecttype))
 
@@ -868,9 +894,8 @@ def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, requ
                     mapped[ws_name][awp_schemeitem_id] = schemeitem.pk
 
         except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
             logfile.append('Error schemeitem: ' + str(e))
-            if logging_on:
-                logger.debug(getattr(e, 'message', str(e)))
 
         if logging_on:
             logger.debug('mapped: ' + str(mapped))
@@ -879,7 +904,7 @@ def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, requ
 
 def ImportPackage(ws_name, row_data, logfile, mapped, examyear, request):  #PR2021-05-05
 
-    logging_on = False  #s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     # row_data: {'scheme_id': 9, 'department_id': 1, 'sector_id': 3, 'level_id': 3}
     if ws_name == 'package' and row_data:
@@ -923,15 +948,14 @@ def ImportPackage(ws_name, row_data, logfile, mapped, examyear, request):  #PR20
                     mapped[ws_name][awp_package_id] = package.pk
 
         except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
             logfile.append('Error package: ' + str(e))
-            if logging_on:
-                logger.debug(getattr(e, 'message', str(e)))
 # - end of ImportPackage
 
 
 def ImportPackageitem(ws_name, row_data, logfile, mapped, examyear, request):  #PR2021-05-04
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-------------------  packageitem ----------------- sel_examyear: ' + str(examyear))
         logger.debug('row_data: ' + str(row_data))
@@ -968,13 +992,13 @@ def ImportPackageitem(ws_name, row_data, logfile, mapped, examyear, request):  #
                         logger.debug (ws_name + ' created = ' + str(packageitem))
 
         except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
             logfile.append('Error packageitem: ' + str(e))
-            if logging_on:
-                logger.debug(getattr(e, 'message', str(e)))
 # - end of Importpackageitem
 
 
 def ImportSchool(ws_name, row_data, logfile, mapped, examyear, request):  #PR2021-05-05
+
     logging_on = False  # s.LOGGING_ON
 
     school = None
@@ -1071,16 +1095,16 @@ def ImportSchool(ws_name, row_data, logfile, mapped, examyear, request):  #PR202
                         mapped[ws_name][awp_school_id] = school.pk
 
         except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
             logfile.append('Error school: ' + str(e))
-            if logging_on:
-                logger.debug(getattr(e, 'message', str(e)))
+
     return school
 # - end of Importschool
 
 
 def ImportCluster(ws_name, row_data, logfile, mapped, examyear, school, request):  #PR2021-05-19
 
-    logging_on = False # s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-------------------  cluster ----------------- sel_examyear: ' + str(examyear))
         logger.debug('row_data: ' + str(row_data))
@@ -1131,9 +1155,8 @@ def ImportCluster(ws_name, row_data, logfile, mapped, examyear, school, request)
                     mapped[ws_name][awp_cluster_id] = cluster
 
         except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
             logfile.append('Error cluster: ' + str(e))
-            if logging_on:
-                logger.debug(getattr(e, 'message', str(e)))
 # - end of ImportCluster
 
 
@@ -1285,9 +1308,8 @@ def ImportStudent(ws_name, row_data, logfile, mapped, examyear, school, request)
                         }
 
         except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
             logfile.append('Error student: ' + str(e))
-            if logging_on:
-                logger.debug(getattr(e, 'message', str(e)))
 # - end of ImportStudent
 
 
@@ -1320,10 +1342,11 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                     student=student,
                     schemeitem=schemeitem
                 ).order_by('-pk').first()
+
                 if logging_on:
                     logger.debug('studentsubject: ' + str(studentsubject))
 
-    # - create new studentsubject record
+    # - if not: create new studentsubject record
                 if studentsubject is None:
                     studentsubject = stud_mod.Studentsubject(
                         student=student,
@@ -1665,12 +1688,11 @@ def get_subject_from_mapped(row_data, examyear_instance, mapped):  # PR2021-05-0
 # - end of get_subject_from_mapped
 
 
-def get_subjecttype_from_mapped(row_data, scheme, country, mapped):  # PR2021-05-04
-    logging_on = False  #s.LOGGING_ON
+def get_subjecttype_from_mapped(row_data, scheme, mapped):  # PR2021-05-04
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_subjecttype_from_mapped -----')
         logger.debug('row_data: ' + str(row_data))
-        logger.debug('country: ' + str(country))
 
     subjecttype = None
     if row_data and mapped:
@@ -1688,10 +1710,10 @@ def get_subjecttype_from_mapped(row_data, scheme, country, mapped):  # PR2021-05
 
             if sjtpbase_pk:
                 subjecttypebase = subj_mod.Subjecttypebase.objects.get_or_none(
-                    pk=sjtpbase_pk,
-                    country=country)
+                    pk=sjtpbase_pk)
                 if logging_on:
                     logger.debug('subjecttypebase: ' + str(subjecttypebase))
+
                 if subjecttypebase:
                     subjecttype = subj_mod.Subjecttype.objects.filter(
                         base=subjecttypebase,
@@ -1707,7 +1729,7 @@ def get_subjecttype_from_mapped(row_data, scheme, country, mapped):  # PR2021-05
 
 
 def get_package_from_mapped(row_data, mapped):  # PR2021-05-05
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_package_from_mapped -----')
         logger.debug('row_data: ' + str(row_data))

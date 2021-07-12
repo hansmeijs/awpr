@@ -140,7 +140,7 @@ class ExamyearListView(View):
         # Note: set display_school / display_dep also in download_setting
         display_school = (request and request.user and request.user.role <= c.ROLE_008_SCHOOL)
         display_department = False
-        param = {'display_school': display_school, 'display_dep': display_department}
+        param = {'display_school': display_school, 'display_department': display_department}
         headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
 
 # - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
@@ -432,12 +432,12 @@ class SchoolListView(View):  # PR2018-08-25 PR2020-10-21 PR2021-03-25
 
 # - get headerbar parameters
         page = 'page_school'
-        params = awpr_menu.get_headerbar_param(request, page)
+        display_school = (request and request.user and request.user.role <= c.ROLE_008_SCHOOL)
+        display_department = False
+        param = {'display_school': display_school, 'display_department': display_department}
+        headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
 
-# - save this page in Usersetting, so at next login this page will open. Used in LoggedIn
-        #         # PR2021-06-22 moved to get_headerbar_param
-
-        return render(request, 'schools.html', params)
+        return render(request, 'schools.html', headerbar_param)
 
 
 @method_decorator([login_required], name='dispatch')

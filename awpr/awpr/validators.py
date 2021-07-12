@@ -388,7 +388,7 @@ def validate_scheme_name_exists(lookup_value, examyear, error_list, cur_scheme=N
 
 # ============ SUBJECT TYPE BASE
 
-def validate_subjecttypebase_code_name_abbrev_exists(field, lookup_value, country, cur_subjecttypebase=None):
+def validate_subjecttypebase_code_name_abbrev_exists(field, lookup_value, cur_subjecttypebase=None):
 # - function checks if this name or abbrev already exists in this scheme  # PR2021-06-29
 
     logging_on = s.LOGGING_ON
@@ -401,13 +401,13 @@ def validate_subjecttypebase_code_name_abbrev_exists(field, lookup_value, countr
     caption = _('Base character')
 
     # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
-    crit = Q(country=country)
+    crit = None
     if field == 'code':
-        crit.add(Q(code__iexact=lookup_value), crit.connector)
+        crit = Q(code__iexact=lookup_value)
     elif field == 'name':
-        crit.add(Q(name__iexact=lookup_value), crit.connector)
+        crit = Q(name__iexact=lookup_value)
     elif field == 'abbrev':
-        crit.add(Q(abbrev__iexact=lookup_value), crit.connector)
+        crit = Q(abbrev__iexact=lookup_value)
 
 # - exclude this subjecttype in case it is an existing subjecttype
     if cur_subjecttypebase:

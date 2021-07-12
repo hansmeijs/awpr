@@ -505,13 +505,13 @@ def create_subjecttypebase(upload_dict, error_list, request):
         msg_list.append(msg_html)
 
 # - check if subjecttypebase code, name, abbrev already exists
-    msg_html = av.validate_subjecttypebase_code_name_abbrev_exists('code', code, request.user.country)
+    msg_html = av.validate_subjecttypebase_code_name_abbrev_exists('code', code)
     if msg_html:
         msg_list.append(msg_html)
-    msg_html = av.validate_subjecttypebase_code_name_abbrev_exists('name', name, request.user.country)
+    msg_html = av.validate_subjecttypebase_code_name_abbrev_exists('name', name)
     if msg_html:
         msg_list.append(msg_html)
-    msg_html = av.validate_subjecttypebase_code_name_abbrev_exists('abbrev', abbrev, request.user.country)
+    msg_html = av.validate_subjecttypebase_code_name_abbrev_exists('abbrev', abbrev)
     if msg_html:
         msg_list.append(msg_html)
 # - create and save subjecttype
@@ -616,7 +616,7 @@ def update_subjecttypebase_instance(instance, upload_dict, error_list, request):
                     max_length = c.MAX_LENGTH_04 if field == 'code' else c.MAX_LENGTH_20 if field == 'abbrev' else c.MAX_LENGTH_NAME
                     msg_html = av.validate_notblank_maxlength(new_value, max_length, caption)
                     if msg_html is None:
-                        msg_html = av.validate_subjecttypebase_code_name_abbrev_exists(field, new_value, request.user.country, instance)
+                        msg_html = av.validate_subjecttypebase_code_name_abbrev_exists(field, new_value, instance)
                     if msg_html:
                         # add 'field' in error_list, to put old value back in field
                         # error_list will show mod_messages in RefreshDatarowItem

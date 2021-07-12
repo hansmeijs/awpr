@@ -37,7 +37,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
     logging.disable(logging.NOTSET)  # logging.NOTSET re-enables logging
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ++++++++++++++++++++ DatalistDownloadView ++++++++++++++++++++ ')
@@ -209,7 +209,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     if request_setting is None:
         request_setting = {}
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- download_setting ----- ')
         logger.debug('request_setting: ' + str(request_setting) )

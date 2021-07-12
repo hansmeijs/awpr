@@ -873,6 +873,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     $("#id_mod_student").modal("hide");
 
+                    add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, true);
                     if ("updated_studsubj_rows" in response || "validate_studsubj_html" in response) {
                          MSTUDSUBJ_Response(response)
                     };
@@ -1429,7 +1430,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             el_MSTUDSUBJ_msg_container.innerHTML = validate_studsubj_html
             add_or_remove_class(el_MSTUDSUBJ_msg_container, cls_hide, false)
-            add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, true )
 
             MSTUDSUBJ_FillDicts();
             MSTUDSUBJ_FillTbls();
@@ -2593,7 +2593,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= get_tblName_from_selectedBtn  ======== // PR2021-07-01
     function get_tblName_from_selectedBtn() {
-        const data_rows = (selected_btn === "btn_studsubj") ? "studsubj" : studsubj;
+        const data_rows = (selected_btn === "btn_studsubj") ? "studsubj" : "studsubj";
         return data_rows;
     }
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@

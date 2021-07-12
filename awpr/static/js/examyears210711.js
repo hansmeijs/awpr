@@ -226,7 +226,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
                     RefreshDataMap(tblName, field_names, response.examyear_rows, examyear_map)
                 }
-                if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows)};
+                if ("school_rows" in response) {
+
+                console.log("response.school_rows", response.school_rows)
+                    b_fill_datamap(school_map, response.school_rows)
+                console.log("school_map", school_map)
+                };
                 if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows)};
 
                 HandleBtnSelect(selected.btn, true)  // true = skip_upload
@@ -252,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // no permit to view this page
             } else if (permit_dict.requsr_role_insp){
                 // view permit only
-            } else if (permit_dict.requsr_role_admin){
+            } else if (permit_dict.requsr_role_admin || permit_dict.requsr_role_system){
                 // may create, publish, lock exam year
                 AddSubmenuButton(el_submenu, loc.Create_new_examyear, function() {MEY_Open("create")});
                 AddSubmenuButton(el_submenu, loc.Publish_examyear, function() {MEY_Open("publish")});
@@ -693,8 +698,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // no permit to view this page
         } else if (permit_dict.requsr_role_insp){
                 // view permit only
-        } else if (permit_dict.requsr_role_admin){
-
+        } else if (permit_dict.requsr_role_admin || permit_dict.requsr_role_system){
+            has_permit  =permit_dict.permit_crud;
         }
         console.log("has_permit", has_permit)
         console.log("msg_no_permit", msg_no_permit)

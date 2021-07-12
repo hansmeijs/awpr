@@ -278,7 +278,7 @@ class ExfilesText_log(AwpBaseModel):
 
 # === Department Model =====================================
 # PR2018-09-15 moved from Subjects to School because of circulair refrence when trying to import subjects.Department
-class Departmentbase(Model):# PR2018-10-17
+class Departmentbase(Model): # PR2018-10-17 PR2021-07-11
     objects = AwpModelManager()
 
     code = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
