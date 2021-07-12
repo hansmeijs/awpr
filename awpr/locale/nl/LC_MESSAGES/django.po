@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-07-12 10:09-0400\n"
+"POT-Creation-Date: 2021-07-12 10:58-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -364,11 +364,11 @@ msgstr "Activeer je AWP-online account"
 
 #: .\accounts\templates\signup_setpassword.html:45
 msgid "Another user is already logged in on this computer."
-msgstr ""
+msgstr "Een andere gebruiker is al ingelogd op deze computer"
 
 #: .\accounts\templates\signup_setpassword.html:46
 msgid "Logout that user first and try again."
-msgstr ""
+msgstr "Laat die gebruiker eerst uitloggen en probeer het dan opnieuw."
 
 #: .\accounts\templates\signup_setpassword.html:50
 msgid "Congratulations."
@@ -923,7 +923,7 @@ msgstr "AWP-kolommen"
 msgid "Linked columns"
 msgstr "Gekoppelde kolommen"
 
-#: .\awpr\constants.py:446 .\awpr\constants.py:455 .\awpr\constants.py:506
+#: .\awpr\constants.py:446 .\awpr\constants.py:455 .\awpr\constants.py:504
 #: .\awpr\locale.py:75 .\grades\excel.py:685 .\students\forms.py:53
 #: .\students\forms.py:134 .\templates\accounts\modpermit.html:24
 #: .\templates\accounts\moduser.html:35
@@ -983,7 +983,7 @@ msgstr "Administrateur"
 msgid "Exam years"
 msgstr "Examenjaren"
 
-#: .\awpr\constants.py:485 .\awpr\constants.py:507 .\awpr\constants.py:509
+#: .\awpr\constants.py:485 .\awpr\constants.py:505 .\awpr\constants.py:507
 #: .\awpr\locale.py:79 .\templates\manual.html:80
 #: .\templates\students\students.html:75
 #: .\templates\students\studentsubjects.html:101
@@ -998,7 +998,7 @@ msgstr "Vakken"
 msgid "Schools"
 msgstr "Scholen"
 
-#: .\awpr\constants.py:487 .\awpr\constants.py:508
+#: .\awpr\constants.py:487 .\awpr\constants.py:506
 #: .\templates\students\students.html:16
 msgid "Students"
 msgstr "Kandidaten"
@@ -1007,12 +1007,12 @@ msgstr "Kandidaten"
 msgid "Subjects of students"
 msgstr "Vakken van kandidaten"
 
-#: .\awpr\constants.py:489 .\awpr\constants.py:512 .\templates\manual.html:84
+#: .\awpr\constants.py:489 .\awpr\constants.py:510 .\templates\manual.html:84
 #: .\templates\students\grades.html:5 .\templates\students\grades.html:16
 msgid "Grades"
 msgstr "Cijfers"
 
-#: .\awpr\constants.py:505 .\awpr\locale.py:73 .\awpr\menus.py:116
+#: .\awpr\constants.py:503 .\awpr\locale.py:73 .\awpr\menus.py:116
 #: .\awpr\validators.py:113 .\schools\views.py:304 .\subjects\forms.py:79
 #: .\subjects\forms.py:172 .\subjects\forms.py:213 .\subjects\forms.py:261
 #: .\subjects\forms.py:453 .\subjects\forms.py:505
@@ -1020,23 +1020,23 @@ msgstr "Cijfers"
 msgid "Exam year"
 msgstr "Examenjaar"
 
-#: .\awpr\constants.py:510 .\grades\excel.py:634 .\grades\excel.py:636
+#: .\awpr\constants.py:508 .\grades\excel.py:634 .\grades\excel.py:636
 msgid "Orderlist"
 msgstr "Bestellijst"
 
-#: .\awpr\constants.py:511
+#: .\awpr\constants.py:509
 msgid "Exam questions"
 msgstr "Examenvragen"
 
-#: .\awpr\constants.py:513 .\templates\manual.html:99
+#: .\awpr\constants.py:511 .\templates\manual.html:99
 msgid "Results"
 msgstr "Uitslagen"
 
-#: .\awpr\constants.py:514
+#: .\awpr\constants.py:512
 msgid "Reports"
 msgstr "Rapportages"
 
-#: .\awpr\constants.py:515
+#: .\awpr\constants.py:513
 msgid "Analysis"
 msgstr "Analyse"
 
@@ -5568,3 +5568,7 @@ msgstr "Basiskarakters"
 #: .\upload\views.py:161
 msgid "All"
 msgstr "Alle"
+
+#: .\upload\views.py:247
+msgid "An error occurred. '%(fld)s' is not saved."
+msgstr "Er is een fout opgetreden. '%(fld)s' is niet opgeslagen."
