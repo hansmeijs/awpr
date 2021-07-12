@@ -355,6 +355,8 @@ def get_locale_dict(table_dict, user_lang):
         dict['Change_subjects_of_subject_scheme'] = _('Change subjects of subject scheme')
         dict['Copy_subject_scheme'] = _('Copy subject scheme')
 
+        dict['All_subject_schemes'] = _('All subject schemes')
+
         dict['Change_subjecttypes_of_subject_scheme'] = _('Change subject types of subject scheme')
         dict['Delete_subject_scheme'] = _('Delete subject scheme')
         dict['Add_package'] = _('Add package')

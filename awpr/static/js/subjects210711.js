@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let subject_rows = [];
     let schemeitem_rows = [];
     let scheme_rows = [];
+    let scheme_map = new Map();
 
     let examyear_map = new Map();
     let department_map = new Map();
@@ -205,10 +206,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
 // ---  SIDE BAR ------------------------------------
-        const el_SBR_select_department = document.getElementById("id_SBR_select_department");
-        if (el_SBR_select_department){
-            el_SBR_select_department.addEventListener("click",
-                function() {SBR_SelectDepartment(el_SBR_select_department)}, false );
+        const el_SBR_select_scheme = document.getElementById("id_SBR_select_scheme");
+        if (el_SBR_select_scheme){
+            el_SBR_select_scheme.addEventListener("click",
+                function() {SBR_SelectScheme(el_SBR_select_scheme)}, false );
         }
 
 // ---  MODAL SUBJECT TYPE
@@ -398,13 +399,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("subjecttypebase_rows" in response) {subjecttypebase_rows = response.subjecttypebase_rows};
                 if ("subject_rows" in response) {subject_rows = response.subject_rows};
                 if ("schemeitem_rows" in response) {schemeitem_rows = response.schemeitem_rows};
-                if ("scheme_rows" in response) {scheme_rows = response.scheme_rows};
+
+                if ("scheme_rows" in response) {
+                    scheme_rows = response.scheme_rows
+                    b_fill_datamap(scheme_map, scheme_rows)
+                    SBR_FillOptionsScheme();
+                };
+
+
                 if ("examyear_rows" in response) {
                     b_fill_datamap(examyear_map, response.examyear_rows)
                 };
                 if ("department_rows" in response) {
                     b_fill_datamap(department_map, response.department_rows)
-                    SBR_FillOptionsDepartment();
                 };
                 if ("level_rows" in response) {
                     b_fill_datamap(level_map, response.level_rows)
@@ -550,15 +557,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if(data_rows && data_rows.length){
             for (let i = 0, map_dict; map_dict = data_rows[i]; i++) {
                 const map_id = map_dict.mapid;
-        // only show rows of selected selected.depbase_pk
-                let show_row = true  // TODO  (!selected.depbase_pk || map_dict.base_id === selected.depbase_pk)
-                if (!selected.depbase_pk){
-                    show_row = true;
-                } else if (map_dict.depbases) {
-                    const lookup_depbase_pk = ";" + selected.depbase_pk + ";"
-                    const depbase_str = ";" + map_dict.depbases + ";"
-                    show_row = (depbase_str.includes(lookup_depbase_pk))
-                }
+        // only show rows of selected selected.scheme_pk
+                const lookup_value = (tblName ==="scheme") ? map_dict.id :
+                                     (["schemeitem", "subjecttype"].includes(tblName)) ? map_dict.scheme_id : null;
+                const show_row = (!lookup_value || !selected.scheme_pk || selected.scheme_pk === lookup_value);
                 if(show_row){
                     let tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_id, map_dict)
                 };
@@ -1415,32 +1417,32 @@ document.addEventListener('DOMContentLoaded', function() {
 //###########################################################################
 // +++++++++++++++++ SIDE BAR +++++++++++++++++++++++++++++++++++++++++++++++
 
-//=========  SBR_FillOptionsDepartment  ================ PR2021-05-14
-    function SBR_FillOptionsDepartment() {
-        //console.log("=== SBR_FillOptionsDepartment");
-        //console.log("tblName", tblName);
+//=========  SBR_FillOptionsScheme ================ PR2021-05-14
+    function SBR_FillOptionsScheme() {
+        console.log("=== SBR_FillOptionsScheme");
+        console.log("scheme_map", scheme_map);
 
-        const selectall_text = "&#60" + loc.All_departments + "&#62";
+        const selectall_text = "&#60" + loc.All_subject_schemes + "&#62";
         const select_text_none = loc.No_departments_found;
         const select_text = loc.Select_department;
-        const id_field = "id", display_field = "base_code";
-        t_FillSelectOptions(el_SBR_select_department, department_map, id_field, display_field, false,
+        const id_field = "id", display_field = "name";
+        t_FillSelectOptions(el_SBR_select_scheme, scheme_map, id_field, display_field, false,
                         null, selectall_text, select_text_none, select_text);
 
-    }  // SBR_FillOptionsDepartment
+    }  // SBR_FillOptionsScheme
 
-//=========  SBR_FillOptionsDepartment  ================ PR2021-05-14
-    function SBR_SelectDepartment(el_select) {
-        console.log("=== SBR_SelectDepartment");
+//=========  SBR_SelectScheme  ================ PR2021-05-14
+    function SBR_SelectScheme(el_select) {
+        console.log("=== SBR_SelectScheme ===");
         console.log( "el_select.value: ", el_select.value, typeof el_select.value)
-        selected.depbase_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
+        selected.scheme_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
 
-        console.log( "selected.depbase_pk: ", selected.depbase_pk)
+        console.log( "selected.scheme_pk: ", selected.scheme_pk)
 
         //UpdateHeaderRight();
 
         FillTblRows();
-    }  // SBR_FillOptionsDepartment
+    }  // SBR_SelectScheme
 
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
