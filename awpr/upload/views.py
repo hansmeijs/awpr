@@ -482,7 +482,7 @@ def ImportSector(ws_name, row_data, logfile, mapped, sel_examyear, request):  #P
 
 def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR2021-05-03
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if ws_name == 'subjecttype' and row_data:
         try:
             if logging_on:
@@ -811,7 +811,7 @@ def ImportSubject(ws_name, row_data, logfile, mapped, examyear, request):  #PR20
 
 def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, request):  #PR2021-05-04
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-------------------  schemeitem ----------------- sel_examyear: ' + str(examyear_instance))
         logger.debug('row_data: ' + str(row_data))
@@ -999,7 +999,7 @@ def ImportPackageitem(ws_name, row_data, logfile, mapped, examyear, request):  #
 
 def ImportSchool(ws_name, row_data, logfile, mapped, examyear, request):  #PR2021-05-05
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
 
     school = None
     if ws_name == 'school' and row_data:
@@ -1038,7 +1038,8 @@ def ImportSchool(ws_name, row_data, logfile, mapped, examyear, request):  #PR202
                         examyear=examyear,
                         base__code__iexact=code
                     ).order_by('-pk').first()
-
+                    if logging_on:
+                        logger.debug('school exists: ' + str(school))
         # - create new school record
                     if school is None:
             # - first create new base record.
@@ -1047,6 +1048,8 @@ def ImportSchool(ws_name, row_data, logfile, mapped, examyear, request):  #PR202
                             code=code
                         )
                         base.save()
+                        if logging_on:
+                            logger.debug('new schoolbase saved: ' + str(base))
 
                         name = row_data.get('name')
                         abbrev = name[0:c.MAX_LENGTH_SCHOOLABBREV]
@@ -1083,7 +1086,7 @@ def ImportSchool(ws_name, row_data, logfile, mapped, examyear, request):  #PR202
                         logfile.append(ws_name + ' created: ' + str(school))
 
                         if logging_on:
-                            logger.debug(ws_name + ' created = ' + str(school))
+                            logger.debug(ws_name + ' created school = ' + str(school))
 
                     if school:
                         if logging_on:
@@ -1093,7 +1096,9 @@ def ImportSchool(ws_name, row_data, logfile, mapped, examyear, request):  #PR202
                         if ws_name not in mapped:
                             mapped[ws_name] = {}
                         mapped[ws_name][awp_school_id] = school.pk
-
+                        if logging_on:
+                            logger.debug('mapped[ws_name]: ' + str(mapped[ws_name]))
+                            
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
             logfile.append('Error school: ' + str(e))
@@ -1689,7 +1694,7 @@ def get_subject_from_mapped(row_data, examyear_instance, mapped):  # PR2021-05-0
 
 
 def get_subjecttype_from_mapped(row_data, scheme, mapped):  # PR2021-05-04
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_subjecttype_from_mapped -----')
         logger.debug('row_data: ' + str(row_data))
