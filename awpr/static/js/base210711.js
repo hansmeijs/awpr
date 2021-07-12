@@ -744,16 +744,16 @@
 
 //=========  b_fill_datamap  ================ PR2020-09-06
     function b_fill_datamap(data_map, rows) {
-        console.log(" --- b_fill_datamap  ---");
-        console.log("rows", rows);
+        //console.log(" --- b_fill_datamap  ---");
+        //console.log("rows", rows);
         data_map.clear();
         if (rows && rows.length) {
             for (let i = 0, dict; dict = rows[i]; i++) {
                 data_map.set(dict.mapid, dict);
             }
         }
-        console.log("data_map", data_map);
-        console.log("data_map.size", data_map.size)
+        //console.log("data_map", data_map);
+        //console.log("data_map.size", data_map.size)
     };  // b_fill_datamap
 
 

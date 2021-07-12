@@ -2809,61 +2809,62 @@ def update_subjecttype_instance(instance, scheme, upload_dict, error_list, reque
                            'min_elective_combi', 'max_elective_combi'
                            ):
                 msg_html = None
-                new_value_int = None
 
-                if new_value:
-                    if logging_on:
-                        logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
-                        logger.debug('new_value.isdecimal: ' + str(new_value.isdecimal()))
-    # - check if value is positive whole number
+                if logging_on:
+                    logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
+                    logger.debug('new_value.isdecimal: ' + str(new_value.isdecimal()))
+
+# - check if value is positive whole number
+                if new_value == '':
+                    new_value = None
+
+                if new_value is not None:
                     if not new_value.isdecimal():
                         msg_html = str(_("'%(val)s' is not a valid number.") % {'val': new_value})
                     else:
                         # TODO simplify code, also check for min max subjects when checking min_extra_nocount etc
-                        new_value_int = int(new_value)
-                        if logging_on:
-                            logger.debug('new_value_int: <' + str(new_value_int) + '> ' + str(type(new_value_int)))
+                        new_value = int(new_value)
                         if field == 'min_subjects':
                             max_subjects = getattr(instance, 'max_subjects')
-                            if max_subjects and new_value_int > max_subjects:
+                            if max_subjects is not None and new_value > max_subjects:
                                 msg_html = str(_("Minimum amount of %(cpt)s cannot be greater than maximum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': max_subjects})
                         elif field == 'max_subjects':
                             min_subjects = getattr(instance, 'min_subjects')
-                            if min_subjects and new_value_int < min_subjects:
+                            if min_subjects is not None and new_value < min_subjects:
                                 msg_html = str(_("Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': min_subjects})
 
                         elif field == 'min_extra_nocount':
                             max_extra_nocount = getattr(instance, 'max_extra_nocount')
-                            if max_extra_nocount and new_value_int > max_extra_nocount:
+                            if max_extra_nocount is not None and new_value > max_extra_nocount:
                                 msg_html = str(_("Minimum amount of %(cpt)s cannot be greater than maximum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': max_extra_nocount})
                         elif field == 'max_extra_nocount':
                             min_extra_nocount = getattr(instance, 'min_extra_nocount')
-                            if min_extra_nocount and new_value_int < min_extra_nocount:
+                            if min_extra_nocount is not None and new_value < min_extra_nocount:
                                 msg_html = str(_("Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': min_extra_nocount})
 
                         elif field == 'min_extra_counts':
                             max_extra_counts = getattr(instance, 'max_extra_counts')
-                            if max_extra_counts and new_value_int > max_extra_counts:
+                            if max_extra_counts is not None and new_value > max_extra_counts:
                                 msg_html = str(_("Minimum amount of %(cpt)s cannot be greater than maximum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': max_extra_counts})
                         elif field == 'max_extra_counts':
                             min_extra_counts = getattr(instance, 'min_extra_counts')
-                            if min_extra_counts and new_value_int < min_extra_counts:
+                            if min_extra_counts is not None and new_value < min_extra_counts:
                                 msg_html = str(_("Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': min_extra_counts})
 
                         elif field == 'min_elective_combi':
                             max_elective_combi = getattr(instance, 'max_elective_combi')
-                            if max_elective_combi and new_value_int > max_elective_combi:
+                            if max_elective_combi is not None and new_value > max_elective_combi:
                                 msg_html = str(_("Minimum amount of %(cpt)s cannot be greater than maximum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': max_elective_combi})
                         elif field == 'max_elective_combi':
                             min_elective_combi = getattr(instance, 'min_elective_combi')
-                            if min_elective_combi and new_value_int < min_elective_combi:
+                            if min_elective_combi is not None and new_value < min_elective_combi:
                                 msg_html = str(_("Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': min_elective_combi})
 
@@ -2877,9 +2878,10 @@ def update_subjecttype_instance(instance, scheme, upload_dict, error_list, reque
                     # -note: value can be None
                     saved_value = getattr(instance, field)
                     if logging_on:
+                        logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
                         logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
-                    if new_value_int != saved_value:
-                        setattr(instance, field, new_value_int)
+                    if new_value != saved_value:
+                        setattr(instance, field, new_value)
                         save_changes = True
 # --- end of for loop ---
 

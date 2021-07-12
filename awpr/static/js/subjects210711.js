@@ -813,7 +813,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
-            const fld_value = (map_dict[field_name]) ? map_dict[field_name] : null;
+            // '0' is a valid value, must be shown
+            const fld_value = map_dict[field_name];
 
             if(field_name){
                 let inner_text = null, title_text = null, filter_value = null;
@@ -828,6 +829,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             "min_elective_combi", "max_elective_combi",
                             "min_mvt", "max_mvt",  "min_combi", "max_combi", "sequence", "weight_se", "weight_ce"
                 ].includes(field_name)){
+
                     inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text : null;
                 } else if ( field_name === "gradetype") {
@@ -892,11 +894,11 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("map_dict: ", map_dict);
             if(!isEmpty(map_dict)){
                 const fldName = get_attr_from_el(el_input, "data-field");
-                const old_value = (map_dict[fldName]) ? map_dict[fldName] : false;
-                const new_value = el_input.value;
+
+                // note: el_input.value is a astrng, tharefore "0" is not falsy
+                const new_value = el_input.value
         console.log("fldName: ", fldName);
-        console.log("old_value: ", old_value);
-        console.log("new_value: ", new_value);
+        console.log("new_value: ", new_value, typeof new_value);
 
 // ---  upload changes
                 const upload_dict = {
@@ -1149,8 +1151,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         // note: when updated_columns is empty, then updated_columns is still true.
                         // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
                         if(updated_columns.length || field_error_list.length){
-        console.log("updated_columns", updated_columns);
-        console.log("field_error_list", field_error_list);
+        //console.log("updated_columns", updated_columns);
+        //console.log("field_error_list", field_error_list);
 
 // --- get existing tblRow
                             let tblRow = document.getElementById(map_id);
@@ -1194,9 +1196,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                         }
     */
                 // make field green when field name is in updated_columns
-        console.log("el_fldName", el_fldName);
+        //console.log("el_fldName", el_fldName);
                                         if(updated_columns.includes(el_fldName)){
-        console.log("el", el);
+        //console.log("el", el);
                                             ShowOkElement(el);
                                         };
                                     }  //  if (el){
@@ -1433,11 +1435,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  SBR_SelectScheme  ================ PR2021-05-14
     function SBR_SelectScheme(el_select) {
-        console.log("=== SBR_SelectScheme ===");
-        console.log( "el_select.value: ", el_select.value, typeof el_select.value)
+        //console.log("=== SBR_SelectScheme ===");
+        //console.log( "el_select.value: ", el_select.value, typeof el_select.value)
         selected.scheme_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
 
-        console.log( "selected.scheme_pk: ", selected.scheme_pk)
+        //console.log( "selected.scheme_pk: ", selected.scheme_pk)
 
         //UpdateHeaderRight();
 
