@@ -23,6 +23,11 @@ document.addEventListener('DOMContentLoaded', function() {
     let setting_dict = {};
     let permit_dict = {};
 
+    const selected = {
+        school_pk: null,
+        school_dict: {}
+    }
+
     let loc = {};  // locale_dict
     let mod_dict = {};
     let mod_MSCH_dict = {};
@@ -186,9 +191,9 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_confirm_header = document.getElementById("id_modconfirm_header");
         let el_confirm_loader = document.getElementById("id_modconfirm_loader");
         let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
-        let el_confirm_msg01 = document.getElementById("id_confirm_msg01")
-        let el_confirm_msg02 = document.getElementById("id_confirm_msg02")
-        let el_confirm_msg03 = document.getElementById("id_confirm_msg03")
+        let el_confirm_msg01 = document.getElementById("id_modconfirm_msg01")
+        let el_confirm_msg02 = document.getElementById("id_modconfirm_msg02")
+        let el_confirm_msg03 = document.getElementById("id_modconfirm_msg03")
 
         let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
@@ -344,8 +349,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  HandleTableRowClicked  ================ PR2020-08-03
     function HandleTableRowClicked(tr_clicked) {
-        //console.log("=== HandleTableRowClicked");
-        //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
+        console.log("=== HandleTableRowClicked");
+        console.log( "school_rows: ", school_rows);
 
         selected_school_pk = null;
 
@@ -353,15 +358,16 @@ document.addEventListener('DOMContentLoaded', function() {
         DeselectHighlightedRows(tr_clicked, cls_selected);
         tr_clicked.classList.add(cls_selected)
 
-// ---  update selected_school_pk
-        // only select employee from select table
-        const row_id = tr_clicked.id
-        if(row_id){
-            const arr = row_id.split("_");
-            const tblName = arr[0];
-            const map_dict = get_mapdict_from_datamap_by_id(school_map, row_id)
-            if (tblName === "school") { selected_school_pk = map_dict.id }
-        }
+        console.log( "tr_clicked.id: ", tr_clicked.id, typeof tr_clicked.id);
+// ---  update selected_pk
+        const map_dict = b_get_mapdict_from_datarows(school_rows, tr_clicked.id, setting_dict.user_lang);
+        selected_school_pk = (map_dict.id) ?  map_dict.id : null;
+
+        selected.school_dict = (map_dict) ?  map_dict : {};
+
+        console.log( "map_dict: ", map_dict, typeof map_dict);
+        console.log( "selected_school_pk: ", selected_school_pk, typeof selected_school_pk);
+
     }  // HandleTableRowClicked
 
 //========= FillTblRows  ====================================
@@ -688,6 +694,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         const el_MSCH_loader = document.getElementById("id_MSCH_loader");
                         if(el_MSCH_loader){ el_MSCH_loader.classList.add(cls_visible_hide)};
 
+                        $("#id_mod_confirm").modal("hide");
+
                         const tblName = "school";
                         const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
                         //RefreshDataMap(tblName, field_names, response.updated_school_rows, school_map);
@@ -710,7 +718,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  RefreshDataRows  ================ PR2021-07-05
     function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
-        //console.log(" --- RefreshDataRows  ---");
+        console.log(" --- RefreshDataRows  ---");
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
         if (update_rows && update_rows.length ) {
             const field_setting = field_settings[tblName];
@@ -761,15 +769,20 @@ document.addEventListener('DOMContentLoaded', function() {
             //arr.splice(index, 0, item); will insert item into arr at the specified index
             // (deleting 0 items first, that is, it's just an insert).
 
+        console.log("is_created", is_created);
             if(is_created){
     // ---  first remove key 'created' from update_dict
                 delete update_dict.created;
 
+        console.log("update_dict", update_dict);
+        console.log("data_rows old len: " + data_rows.length);
     // --- lookup index where new row must be inserted in data_rows
                 // PR2021-06-21 not necessary, new row has always pk higher than existing. Add at end of rows
     // ---  add new item in data_rows at end
                 data_rows.push(update_dict);
 
+        console.log("data_rows new len: " + data_rows.length);
+        console.log("data_rows", data_rows);
     // ---  create row in table., insert in alphabetical order
                 const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
 
@@ -971,11 +984,11 @@ document.addEventListener('DOMContentLoaded', function() {
             let upload_dict = {table: 'school', examyear_pk: setting_dict.sel_examyear_pk}
 
             if(mod_MSCH_dict.is_addnew) {
-                upload_dict.create = true;
+                upload_dict.mode = "create";
             } else {
                 upload_dict.school_pk = mod_MSCH_dict.id;
                 upload_dict.mapid = mod_MSCH_dict.mapid;
-                if(is_delete) {upload_dict.delete = true}
+                if(is_delete) {upload_dict.mode = "delete"}
             }
     // ---  put changed values of input elements in upload_dict
             let form_elements = el_MSCH_div_form_controls.querySelectorAll(".form-control")
@@ -1036,7 +1049,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSCH_FillSelectRow  ============= PR2020--09-30
     function MSCH_FillSelectRow(tblBody_select, dict, select_all_text) {
-        console.log("===== MSCH_FillSelectRowDepartment ===== ");
+        //console.log("===== MSCH_FillSelectRowDepartment ===== ");
         // add_select_all when not isEmpty(dict)
         //console.log("dict", dict);
         let pk_int = null, map_id = null, abbrev = null
@@ -1088,7 +1101,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSCH_SelectDepartment  ============= PR2020-10-01
     function MSCH_SelectDepartment(tblRow){
-        console.log( "===== MSCH_SelectDepartment  ========= ");
+        //console.log( "===== MSCH_SelectDepartment  ========= ");
         //console.log( "event_key", event_key);
 
         if(tblRow){
@@ -1154,7 +1167,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSCH_get_selected_depbases  ============= PR2020-10-07
     function MSCH_get_selected_depbases(){
-        console.log( "  ---  MSCH_get_selected_depbases  --- ")
+        //console.log( "  ---  MSCH_get_selected_depbases  --- ")
         const tblBody_select = document.getElementById("id_MSCH_tbody_select");
         let dep_list_arr = [];
         for (let i = 0, row; row = tblBody_select.rows[i]; i++) {
@@ -1168,13 +1181,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         dep_list_arr.sort((a, b) => a - b);
         const dep_list_str = dep_list_arr.join(";");
-        console.log( "dep_list_str", dep_list_str)
+        //console.log( "dep_list_str", dep_list_str)
         return dep_list_str;
     }  // MSCH_get_selected_depbases
 
 //========= MSCH_InputKeyup  ============= PR2020-10-01
     function MSCH_InputKeyup(el_input){
-        console.log( "===== MSCH_InputKeyup  ========= ");
+        //console.log( "===== MSCH_InputKeyup  ========= ");
         MSCH_validate_and_disable();
     }; // MSCH_InputKeyup
 
@@ -1187,7 +1200,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSCH_InputToggle  ============= PR2021-06-15
     function MSCH_InputToggle(el_input){
-        console.log( "===== MSCH_InputToggle  ========= ");
+        //console.log( "===== MSCH_InputToggle  ========= ");
         const data_value = get_attr_from_el(el_input, "data-value")
         const new_data_value = (data_value === "1") ? "0" : "1";
         el_input.setAttribute("data-value", new_data_value);
@@ -1197,7 +1210,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MSCH_validate_and_disable  ================  PR2020-10-01
     function MSCH_validate_and_disable() {
-        console.log(" -----  MSCH_validate_and_disable   ----")
+        //console.log(" -----  MSCH_validate_and_disable   ----")
         let disable_save_btn = false;
 // ---  loop through input fields on MSCH_Open
         let form_elements = el_MSCH_div_form_controls.querySelectorAll(".form-control")
@@ -1205,7 +1218,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const fldName = get_attr_from_el(el_input, "data-field")
             const msg_err = MSCH_validate_field(el_input, fldName)
-        console.log("msg_err", msg_err)
+        //console.log("msg_err", msg_err)
 // ---  show / hide error message
             const el_msg = document.getElementById("id_MSCH_msg_" + fldName);
             if(el_msg){
@@ -1215,14 +1228,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (msg_err){ disable_save_btn = true};
         };
 
-        console.log("disable_save_btn", disable_save_btn)
+        //console.log("disable_save_btn", disable_save_btn)
 // ---  disable save button on error
         el_MSCH_btn_save.disabled = disable_save_btn;
     }  // MSCH_validate_and_disable
 
 //=========  MSCH_validate_field  ================  PR2020-10-01
     function MSCH_validate_field(el_input, fldName) {
-        console.log(" -----  MSCH_validate_field   ----")
+        //console.log(" -----  MSCH_validate_field   ----")
         let msg_err = null;
         if (el_input){
             const value = el_input.value;
@@ -1232,8 +1245,8 @@ document.addEventListener('DOMContentLoaded', function() {
                              (fldName === "defaultrole") ? loc.Organization  : loc.This_field;
 
 
-        console.log("fldName", fldName)
-        console.log("value", value)
+        //console.log("fldName", fldName)
+        //console.log("value", value)
             if (["sb_code", "abbrev", "name", "defaultrole"].indexOf(fldName) > -1 && !value) {
                 msg_err = caption + loc.cannot_be_blank;
             } else if (fldName === "abbrev" && value.length > 30) {
@@ -1307,9 +1320,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSCH_SetElements  ============= PR2021-06-20
     function MSCH_SetElements(focus_field){
-        console.log( "===== MSCH_SetElements  ========= ");
-        console.log( "mod_MSCH_dict", mod_MSCH_dict);
-        console.log( "focus_field", focus_field);
+        //console.log( "===== MSCH_SetElements  ========= ");
+        //console.log( "mod_MSCH_dict", mod_MSCH_dict);
+        //console.log( "focus_field", focus_field);
 // --- loop through input elements
         let form_elements = el_MSCH_div_form_controls.querySelectorAll(".form-control")
         for (let i = 0, el, fldName, fldValue; el = form_elements[i]; i++) {
@@ -1323,7 +1336,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 el.value = fldValue;
             }
-        console.log( "fldName", fldName);
+        //console.log( "fldName", fldName);
             if(focus_field ){
                 if( (fldName === focus_field) ||
                     (fldName === "lvl_id" && focus_field === "lvl_abbrev") ||
@@ -1342,13 +1355,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSCH_SetMsgElements  ============= PR2020-08-02
     function MSCH_SetMsgElements(response){
-        console.log( "===== MSCH_SetMsgElements  ========= ");
+        //console.log( "===== MSCH_SetMsgElements  ========= ");
 
         const err_dict = ("msg_err" in response) ? response.msg_err : {}
         const validation_ok = get_dict_value(response, ["validation_ok"], false);
 
-        console.log( "err_dict", err_dict);
-        console.log( "validation_ok", validation_ok);
+        //console.log( "err_dict", err_dict);
+        //console.log( "validation_ok", validation_ok);
 
         const el_msg_container = document.getElementById("id_msg_container")
         let err_save = false;
@@ -1433,14 +1446,19 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  ModConfirmOpen  ================ PR2020-08-03  PR2020-10-23
     function ModConfirmOpen(mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
+        console.log("mode", mode)
         // values of mode are : "delete", "inactive" or "resend_activation_email", "permission_sysadm"
 
         if(permit_dict.permit_crud){
+            el_confirm_msg01.innerText = null;
+            el_confirm_msg02.innerText = null;
+            el_confirm_msg03.innerText = null;
 
     // ---  get selected_pk
             let tblName = null, selected_pk = null;
             // tblRow is undefined when clicked on delete btn in submenu btn or form (no inactive btn)
             const tblRow = get_tablerow_selected(el_input);
+        console.log("tblRow", tblRow)
             if(tblRow){
                 tblName = get_attr_from_el(tblRow, "data-table")
                 selected_pk = get_attr_from_el(tblRow, "data-pk")
@@ -1448,14 +1466,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 tblName = get_tblName_from_selectedBtn()
                 selected_pk = (tblName === "school") ? selected_school_pk : null;
             }
+            console.log("tblName", tblName )
             console.log("selected_pk", selected_pk )
-
+            // TODO change to selected.school_dict
     // ---  get info from data_map
-            const data_map = get_datamap_from_tblName(tblName)
             const map_id =  tblName + "_" + selected_pk;
-            const map_dict = get_mapdict_from_datamap_by_id(school_map, map_id)
-
-            console.log("data_map", data_map)
+            const map_dict = b_get_mapdict_from_datarows(school_rows, map_id, setting_dict.user_lang);
             console.log("map_id", map_id)
             console.log("map_dict", map_dict)
 
@@ -1532,15 +1548,16 @@ document.addEventListener('DOMContentLoaded', function() {
             let upload_dict = {};
 
             if(mod_dict.mode === "delete") {
-                upload_dict = { id: {pk: mod_dict.id,
-                                    table: "school",
-                                    delete: true,
-                                    mapid: mod_dict.mapid}
+                upload_dict = { school_pk: mod_dict.id,
+                                table: "school",
+                                mode: "delete",
+                                mapid: mod_dict.mapid
                                 };
 // ---  show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
-// ---  when delete: make tblRow red, before uploading
+// ---  when delete: make tblRow red, before uploading, close moadl
                 ShowClassWithTimeout(tblRow, "tsa_tr_error");
+                close_modal = true;
 
             } else if (mod_dict.mode === "inactive") {
                 const new_isactive = !mod_dict.is_active

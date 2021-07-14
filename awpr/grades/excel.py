@@ -1044,7 +1044,7 @@ def create_subjecttype_paragraph_xlsx(row_index, sheet, subjecttype_rows, scheme
                    'min_extra_counts', 'max_extra_counts',
                    'min_elective_combi', 'max_elective_combi',
                    'modifiedat', 'modby_username']
-    field_captions = [str(_('Subject type')), str(_('Abbreviation')),
+    field_captions = [str(_('Character')), str(_('Abbreviation')),
                       str(_('Minimum amount of subjects')),
                       str(_('Maximum amount of subjects')),
                       str(_("Minimum extra subject, doesn't count")),

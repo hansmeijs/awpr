@@ -3568,7 +3568,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03
     function ModConfirmOpen(tblName, mode) {
-        console.log(" -----  ModConfirmOpen   ----")
+        //console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "delete"
         console.log("mode", mode)
 

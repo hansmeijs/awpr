@@ -222,9 +222,9 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_confirm_header = document.getElementById("id_modconfirm_header");
         let el_confirm_loader = document.getElementById("id_modconfirm_loader");
         let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
-        let el_confirm_msg01 = document.getElementById("id_confirm_msg01")
-        let el_confirm_msg02 = document.getElementById("id_confirm_msg02")
-        let el_confirm_msg03 = document.getElementById("id_confirm_msg03")
+        let el_confirm_msg01 = document.getElementById("id_modconfirm_msg01")
+        let el_confirm_msg02 = document.getElementById("id_modconfirm_msg02")
+        let el_confirm_msg03 = document.getElementById("id_modconfirm_msg03")
 
         let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");

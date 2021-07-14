@@ -448,6 +448,7 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
         if logging_on:
             logger.debug(' ============= SchoolUploadView ============= ')
 
+        messages = []
         update_wrap = {}
         if request.user and request.user.country and request.user.schoolbase:
 
@@ -462,29 +463,28 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                     logger.debug('permit_list: ' + str(permit_list))
                     logger.debug('has_permit: ' + str(has_permit))
 
-            permit_create = has_permit
-            permit_edit = has_permit
-            permit_delete = has_permit
+            if has_permit:
 
-            if permit_create or permit_edit or permit_delete:
-    # -  get user_lang
-                requsr_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
-                activate(requsr_lang)
+# - reset language
+                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                activate(user_lang)
 
-    # --- get upload_dict from request.POST
+# --- get upload_dict from request.POST
                 upload_json = request.POST.get('upload', None)
                 if upload_json:
                     upload_dict = json.loads(upload_json)
 
-    # --- get variables from upload_dict PR2020-12-25
-                    examyear_pk = upload_dict.get('examyear_pk')
+# --- get variables from upload_dict PR2020-12-25
                     school_pk = upload_dict.get('school_pk')
-                    is_create = upload_dict.get('create', False)
-                    is_delete = upload_dict.get('delete', False)
+                    mode = upload_dict.get('mode')
+                    is_create = (mode == 'create')
+                    is_delete = (mode == 'delete')
+
+                    message_header = _('Delete school') if is_delete \
+                                else _('Create school') if is_create \
+                                else _('Update school')
 
                     school_dict = {}
-                    append_dict = {}
-                    error_list = []
                     error_dict = {}
 
                     if logging_on:
@@ -493,76 +493,90 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                         logger.debug('is_create: ' + str(is_create))
                         logger.debug('is_delete: ' + str(is_delete))
 
-    # --- get examyear (examyear is parent of school)
-                    examyear = sch_mod.Examyear.objects.get_or_none(pk=examyear_pk)
-                    if examyear is None:
-                        error_dict['general'] = [str(_("Exam year not found."))]
-                    else:
-                        school = None
+# - get selected examyear from Usersetting
+                    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+                    examyear = None
+                    if selected_examyear_pk:
+                        examyear = sch_mod.Examyear.objects.get_or_none(
+                            id=selected_examyear_pk,
+                            country=request.user.country
+                        )
 
+# - exit when no examyear or examyear is locked
+                    # note: subjects may be changed before publishing, therefore don't exit on examyear.published
+                    if examyear is None:
+                        messages.append({'class': "border_bg_warning",
+                                         'header': str(message_header),
+                                         'msg_html': str(_('No exam year selected'))})
+                    elif examyear.locked:
+                        messages.append({'class': "border_bg_warning",
+                                         'header': str(message_header),
+                                         'msg_html': str(
+                                             _("Exam year %(exyr)s is locked.") % {'exyr': str(examyear.code)})
+                                         })
+                    else:
 # +++ Delete school
                         if is_delete:
-                            if permit_delete:
-                                school = sch_mod.School.objects.get_or_none(id=school_pk)
-                                if logging_on:
-                                    logger.debug('school: ' + str(school))
+                            school = sch_mod.School.objects.get_or_none(id=school_pk)
+                            if logging_on:
+                                logger.debug('school: ' + str(school))
 
-                                if school:
-                                    this_text = _("School '%(tbl)s' ") % {'tbl': school.name}
-                                    # a. TODO check if school has child rows, put msg_err in update_dict when error
-                                    msg_err = None  # validate_employee_has_emplhours(employee)
-                                    if msg_err:
-                                        # error_dict['error'] = msg_err
-                                        pass
-                                    else:
-                                        # b. check if there are teammembers with this employee: absence teammembers, remove employee from shift teammembers
-                                        # delete_employee_from_teammember(employee, request)
-                                        # c. delete school
-                                        # format of error_list: [err_str1, err_str2]
-                                        deleted_ok = sch_mod.delete_instance(school, error_dict, request, this_text)
-                                        if deleted_ok:
-                                            # - add deleted_row to school_rows
-                                            school_dict.update({'pk': school_pk,
-                                                                'table': 'school',
-                                                                'mapid': 'school_' + str(school_pk),
-                                                                'deleted': True})
-                                            school = None
+                            if school:
+                                this_text = _("School '%(tbl)s' ") % {'tbl': school.name}
+                                # a. TODO check if school has child rows, put msg_err in update_dict when error
+                                msg_err = None  # validate_employee_has_emplhours(employee)
+                                if msg_err:
+                                    # error_dict['error'] = msg_err
+                                    pass
+                                else:
+                                    # b. check if there are teammembers with this employee: absence teammembers, remove employee from shift teammembers
+                                    # delete_employee_from_teammember(employee, request)
+                                    # c. delete school
+                                    # format of error_list: [err_str1, err_str2]
+                                    deleted_ok = sch_mod.delete_instance(school, error_dict, request, this_text)
+                                    if deleted_ok:
+                                        # - add deleted_row to school_rows
+                                        school_dict.update({'pk': school_pk,
+                                                            'table': 'school',
+                                                            'mapid': 'school_' + str(school_pk),
+                                                            'deleted': True})
+                                        school = None
 
 # +++ Create new school
                         if is_create:
-                            if permit_create:
-                                school = create_school_instance(examyear, upload_dict, error_dict, request)
-                                if school:
-                                    school_dict['created'] = True
 
-                                if logging_on:
-                                    logger.debug('school: ' + str(school))
+                            school = create_school_instance(examyear, upload_dict, error_dict, request)
+                            if school:
+                                school_dict['created'] = True
+
+                            if logging_on:
+                                logger.debug('school: ' + str(school))
 
     # --- get existing school
                         else:
                             school = sch_mod.School.objects.get_or_none(id=school_pk)
 
                         if school:
-                            if permit_create or permit_edit:
-    # --- Update school, also when it is created. When deleted: school is None
-                            #  Not necessary when created. Most fields are required. All fields are saved in create_school_instance
+# --- Update school, also when it is created. When deleted: school is None
+                        #  Not necessary when created. Most fields are required. All fields are saved in create_school_instance
 
-                                saved_ok = update_school_instance(school, upload_dict, error_dict, request)
-                                if saved_ok:
-                                    school_dict['updated'] = True
+                            saved_ok = update_school_instance(school, upload_dict, error_dict, request)
+                            if saved_ok:
+                                school_dict['updated'] = True
 
-                                permit_dict = {
-                                    'requsr_role': req_usr.role,
-                                    'requsr_schoolbase_pk': req_usr.schoolbase_id
-                                }
-                                school_rows = sd.create_school_rows(
-                                    examyear=examyear,
-                                    permit_dict=permit_dict,
-                                    school_pk=school.pk
-                                )
-                                if school_rows:
-                                    # update appends dict to dict. school_row may have value like 'created = True
-                                    school_dict.update(school_rows[0])
+                            permit_dict = {
+                                'requsr_role': req_usr.role,
+                                'requsr_schoolbase_pk': req_usr.schoolbase_id
+                            }
+                            school_rows = sd.create_school_rows(
+                                examyear=examyear,
+                                permit_dict=permit_dict,
+                                school_pk=school.pk
+                            )
+                            if school_rows:
+                                # update appends dict to dict. school_row may have value like 'created = True
+                                school_dict.update(school_rows[0])
                     if error_dict:
                         school_dict['error'] = error_dict
                     update_wrap['updated_school_rows'] = [school_dict]

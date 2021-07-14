@@ -229,9 +229,9 @@ document.addEventListener
         const el_confirm_header = document.getElementById("id_modconfirm_header");
         const el_confirm_loader = document.getElementById("id_modconfirm_loader");
         const el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container");
-        const el_confirm_msg01 = document.getElementById("id_confirm_msg01");
-        const el_confirm_msg02 = document.getElementById("id_confirm_msg02");
-        const el_confirm_msg03 = document.getElementById("id_confirm_msg03");
+        const el_confirm_msg01 = document.getElementById("id_modconfirm_msg01");
+        const el_confirm_msg02 = document.getElementById("id_modconfirm_msg02");
+        const el_confirm_msg03 = document.getElementById("id_modconfirm_msg03");
         const el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         const el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if(el_confirm_btn_save){

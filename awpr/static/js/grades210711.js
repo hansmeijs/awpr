@@ -228,9 +228,9 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_confirm_header = document.getElementById("id_modconfirm_header");
         const el_confirm_loader = document.getElementById("id_modconfirm_loader");
         const el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container");
-        const el_confirm_msg01 = document.getElementById("id_confirm_msg01");
-        const el_confirm_msg02 = document.getElementById("id_confirm_msg02");
-        const el_confirm_msg03 = document.getElementById("id_confirm_msg03");
+        const el_confirm_msg01 = document.getElementById("id_modconfirm_msg01");
+        const el_confirm_msg02 = document.getElementById("id_modconfirm_msg02");
+        const el_confirm_msg03 = document.getElementById("id_modconfirm_msg03");
         const el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         const el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if(el_confirm_btn_save){
@@ -3002,9 +3002,9 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 // ---  show modal confirm with message 'First select employee'
                 document.getElementById("id_modconfirm_header").innerText = loc.Confirm + " " + loc.Shift.toLowerCase();
-                document.getElementById("id_confirm_msg01").innerText = msg01_text;
-                document.getElementById("id_confirm_msg02").innerText = null;
-                document.getElementById("id_confirm_msg03").innerText = null;
+                document.getElementById("id_modconfirm_msg01").innerText = msg01_text;
+                document.getElementById("id_modconfirm_msg02").innerText = null;
+                document.getElementById("id_modconfirm_msg03").innerText = null;
 
                 add_or_remove_class (el_confirm_btn_save, cls_hide, true) // args: el, classname, is_add
                 el_confirm_btn_cancel.innerText = loc.Close;

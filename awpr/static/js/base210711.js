@@ -978,6 +978,86 @@
 //######### IT WORKS !!! #################################################################
 // +++++++++++++++++ LOOKUP dict in ordered dictlist +++++++++++++++++++++++++++ PR2021-06-16
 
+//========= b_get_mapdict_by_integer_from_datarows  ================== PR2021-07-14
+    function b_get_mapdict_by_integer_from_datarows(data_rows, search_int, user_lang){
+        const found_dict = b_recursive_integer_lookup(data_rows, search_int);
+        const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
+        return selected_dict;
+    }
+
+//========= b_recursive_integer_lookup  ========== PR2020-07-14
+    function b_recursive_integer_lookup(dict_list, search_int){
+        //console.log( " ----- b_recursive_integer_lookup -----");
+        // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
+        // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
+        // function returns rowindex of searched value, or rowindex of row to be inserted
+        // dict_list must be ordered by id (as text field), done by server
+
+        let compare = null, middle_index = null, found_dict = null;
+        if (dict_list && dict_list.length){
+            const lookup_field = "id";
+            const last_index = dict_list.length - 1;
+            let min_index = 0;
+            let max_index = last_index;
+            middle_index =  Math.floor( (min_index + max_index) / 2);
+
+            if(!search_int){search_int = ""};
+        console.log( "search_int: ", search_int);
+        //console.log( "lookup_field: ", lookup_field);
+
+            const max_loop = 25;
+            for (let i = 0; i < max_loop; i++) {
+                if (i > 23) {
+                // exit when loop not breaked (should not be possible), put index at end of list
+                    compare = 1;
+                    middle_index = last_index;
+                    break;
+                } else {
+                    const middle_dict = dict_list[middle_index];
+                    const middle_value = middle_dict[lookup_field];
+                    compare = (search_value === middle_value) ? 0 :
+                              (search_value > middle_value) ? 1 : -1;
+        console.log( i, "LOOP : ", min_index, " - ", max_index, " > ", middle_index);
+        console.log( "middle_value: ", middle_value);
+        console.log( "compare : ", compare);
+        console.log( "min_index : ", min_index);
+        console.log( "max_index : ", max_index);
+                    if (!compare) {
+                        found_dict = middle_dict;
+                        break;
+                    } else {
+                        if (min_index === max_index){
+                            break;
+                        } else {
+                            if (compare < 0) {
+                                if (middle_index === min_index){
+                                    break;
+                                } else {
+                                    max_index = middle_index - 1;
+                                    middle_index =  Math.floor( (min_index + max_index) / 2);
+                                }
+                            } else if (compare > 0) {
+                                if (middle_index === max_index){
+                                    break;
+                                } else {
+                                    min_index = middle_index + 1;
+                                    middle_index =  Math.ceil( (min_index + max_index) / 2);
+                                }
+                            }
+        //console.log( "GOTO NEXT LOOP 2 : ", min_index, " - ", max_index, " >< ", middle_index);
+                        }
+                    }
+                };  // if (i > 23)
+            };  // for (let i = 0,
+        };  //  if (dict_list && dict_list.length){
+
+        //console.log( "found_dict: ", found_dict);
+        //console.log( "compare: ", compare);
+        return found_dict;
+    };  // b_recursive_integer_lookup
+
+
+
 //========= b_get_mapdict_from_datarows  ================== PR2021-06-21
     function b_get_mapdict_from_datarows(data_rows, map_id, user_lang){
         const [middle_index, found_dict, compare] = b_recursive_lookup(data_rows, map_id, user_lang);
@@ -1092,6 +1172,10 @@
         //console.log( "compare: ", compare);
         return [middle_index, found_dict, compare];
     };  // b_recursive_lookup
+
+
+
+
 
 //========= b_recursive_tblRow_lookup  ========== PR2020-06-16
     function b_recursive_tblRow_lookup(tblBody, search_value_1, search_value_2, search_value_3, user_lang){
