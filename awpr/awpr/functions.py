@@ -323,6 +323,26 @@ def format_HM_from_dt_local(datetime_local, use24insteadof00, use_suffix, timefo
     return display_txt
 
 
+
+
+def format_modified_at(modifiedat, user_lang):
+    # PR2021-07-13
+
+    datetime_formatted = ''
+    if modifiedat:
+        # local timezone is set to 'America/Curacao' by default
+        datetime_local = get_datetimelocal_from_datetime_utc(modifiedat)
+        last_modified_date = datetime_local.date()
+        date_formatted = format_DMY_from_dte(last_modified_date, user_lang)
+        time_formatted = format_HM_from_dt_local(datetime_local, True, True, '24h', user_lang)
+        datetime_formatted = date_formatted + ', ' + time_formatted
+
+    return datetime_formatted
+
+
+
+
+
 def get_modifiedby_formatted(instance, user_lang):
     # Function returns 'Laatst gewijzigd door Hans Meijs op 6 mei 2021, 15.55 u'  PR2021-05-09
     last_modified_text, date_formatted, time_formatted = '', '', ''

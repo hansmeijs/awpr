@@ -380,7 +380,7 @@ class NoteAttachmentDownloadView(View): # PR2021-03-17
 class StudentsubjectValidateView(View):
 
     def post(self, request):
-        logging_on = True
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= StudentsubjectValidateView ============= ')
 

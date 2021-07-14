@@ -2717,7 +2717,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 //=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05
     function MSSSS_Response(tblName, selected_pk, selected_code, selected_name) {
-        //console.log( "===== MSSSS_Response ========= ");
+        console.log( "===== MSSSS_Response ========= ");
         //console.log( "selected_pk", selected_pk);
         //console.log( "selected_code", selected_code);
         //console.log( "selected_name", selected_name);
@@ -2728,20 +2728,26 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         const selected_pk_dict = {sel_student_pk: selected_pk};
         selected_pk_dict["sel_" + tblName + "_pk"] = selected_pk;
         let new_selected_btn = null;
+
         if (tblName === "school") {
-// ---  put new selected_pk in setting_dict
-            setting_dict.sel_schoolbase_pk = selected_pk;
-    // reset selected student and subject is selected, in setting_dict and upload_dict
-            if(selected_pk){
-                selected_pk_dict.sel_student_pk = null;
-                setting_dict.sel_student_pk = null;
-                setting_dict.sel_student_name = null;
 
-                selected_pk_dict.sel_subject_pk = null;
-                setting_dict.sel_subject_pk = null;
+// ---  upload new setting and refresh page
+        const datalist_request = {
+                setting: {page: "page_grade",
+                        sel_schoolbase_pk: selected_pk
+                    },
+                school_rows: {get: true},
+                department_rows: {get: true},
+                subject_rows: {get: true},
+                student_rows: {get: true},
+                studentsubject_rows: {get: true},
+                grade_rows: {get: true},
+                published_rows: {get: true},
+                level_rows: {cur_dep_only: true},
+                sector_rows: {cur_dep_only: true}
+            };
 
-                new_selected_btn = "grade_by_subject";
-            }
+            DatalistDownload(datalist_request);
 
         } else if (tblName === "subject") {
             setting_dict.sel_subject_pk = selected_pk;
@@ -2765,9 +2771,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         }
 
         if (tblName === "school") {
-// ---  upload new setting and refresh page
-            let datalist_request = {setting: {page: "page_grade", sel_schoolbase_pk: selected_pk}};
-            DatalistDownload(datalist_request);
+
         } else {
             UploadSettings ({selected_pk: selected_pk_dict}, url_settings_upload);
             if (new_selected_btn) {

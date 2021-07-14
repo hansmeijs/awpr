@@ -531,9 +531,9 @@ class Schemeitem(sch_mod.AwpBaseModel):
     # delete exam from schemitem, is linked to grade
     # exam = ForeignKey(Exam, related_name='+', null=True, on_delete=SET_NULL)
 
-    gradetype = PositiveSmallIntegerField(default=0)
-    weight_se = PositiveSmallIntegerField(default=0)
-    weight_ce = PositiveSmallIntegerField(default=0)
+    gradetype = PositiveSmallIntegerField(default=1)
+    weight_se = PositiveSmallIntegerField(default=1)
+    weight_ce = PositiveSmallIntegerField(default=1)
 
     is_mandatory = BooleanField(default=False)
     is_combi = BooleanField(default=False)

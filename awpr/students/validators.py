@@ -341,7 +341,7 @@ def validate_amount_subjects(field, scheme_dict, studsubj_dict, msg_list):
 
 def validate_minmax_count(field, scheme_dict, subject_count, caption, captions, sjtp_name, min_subj, max_subj, msg_list):
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  validate_minmax_count  -----')
         logger.debug('subject_count: ' + str(subject_count))
@@ -362,13 +362,14 @@ def validate_minmax_count(field, scheme_dict, subject_count, caption, captions, 
         logger.debug('msg_count: ' + str(msg_count))
 
     msg_txt, msg_available = '', ''
-    if min_subj and max_subj and min_subj == max_subj:
+    # note: min_subj and max_subj can be None (no restrictions) or zero (amount = 0)
+    if min_subj is not None and max_subj is not None and min_subj == max_subj:
         if subject_count != min_subj:
             msg_txt = _("The amount of %(cpt)s must be %(max)s.") % {'cpt': captions, 'max': max_subj}
-    elif min_subj or max_subj:
+    elif min_subj is not None or max_subj is not None:
         minmax_txt = None
         minmax_val = None
-        if min_subj and subject_count < min_subj:
+        if min_subj is not None and subject_count < min_subj:
             minmax_txt = pgettext_lazy('NL_minimale', 'minimum')
             minmax_val = min_subj
             # - add available list , not when field = 'subject'
@@ -408,7 +409,7 @@ def validate_minmax_count(field, scheme_dict, subject_count, caption, captions, 
                             logger.debug('list_str: ' + str(list_str))
                             logger.debug('msg_available: ' + str(msg_available))
 
-        if max_subj and subject_count > max_subj:
+        if max_subj is not None and subject_count > max_subj:
             minmax_txt = pgettext_lazy('NL_maximale', 'maximum')
             minmax_val = max_subj
 

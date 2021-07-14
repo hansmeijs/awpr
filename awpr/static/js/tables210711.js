@@ -49,7 +49,7 @@
 
     //=========  t_MSED_Save  ================ PR2021-05-10
     function t_MSED_Save(MSED_Response, tblRow) {
-        console.log("===  t_MSED_Save =========");
+        //console.log("===  t_MSED_Save =========");
     // --- put tblName, sel_pk and value in MSED_Response, MSED_Response handles uploading
 
         const el_MSED_input = document.getElementById("id_MSED_input");
@@ -71,7 +71,7 @@
             selected_pk_dict.sel_depbase_pk = selected_pk_int;
         }
         const new_setting = {page: sel_page, selected_pk: selected_pk_dict};
-        console.log("new_setting", new_setting);
+        //console.log("new_setting", new_setting);
         MSED_Response(new_setting)
 
 // hide modal
@@ -246,17 +246,17 @@
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23
     function t_MSSSS_Open (loc, tblName, data_map, add_all, setting_dict, permit_dict, MSSSS_Response) {
-        console.log(" ===  t_MSSSS_Open  =====", tblName) ;
-        console.log( "setting_dict", setting_dict);
-        console.log( "permit_dict", permit_dict);
-        console.log( "data_map", data_map);
+        //console.log(" ===  t_MSSSS_Open  =====", tblName) ;
+        //console.log( "setting_dict", setting_dict);
+        //console.log( "permit_dict", permit_dict);
+        //console.log( "data_map", data_map);
         // tblNames are: "school", "subject", "student"
 
         // PR2021-04-27 debug: opening modal before loc and setting_dict are loaded gives 'NaN' on modal.
         // allow opening only when loc has value
         if(!isEmpty(permit_dict)){
             const may_select = (tblName === "school") ? !!permit_dict.may_select_school : true;
-            console.log( "may_select", may_select);
+            //console.log( "may_select", may_select);
             if (may_select){
                 const selected_pk = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_pk : null;
 
@@ -336,34 +336,56 @@
         }
     } // t_MSSSS_Fill_SelectTable
 
-//========= t_MSSSS_Create_SelectRow  ============= PR2020-12-18
-    function t_MSSSS_Create_SelectRow(loc, tblName, tblBody_select, dict, selected_pk, el_input, MSSSS_Response) {
-        //console.log("===== t_MSSSS_Create_SelectRow ===== ", tblName);
-        //console.log("map_dict", dict);
-//--- get info from dict
+//========= t_MSSSS_Create_SelectRow  ============= PR2020-12-18 PR2020-07-14
+    function t_MSSSS_Create_SelectRow(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
+        //console.log("===== t_MSSSS_Create_SelectRow ===== ");
+        //console.log("..........tblName", tblName);
+        //console.log("map_dict", map_dict);
+        //console.log("map_dict", map_dict);
+
+//--- get info from map_dict
         // when tblName = school: pk_int = schoolbase_pk
-        const pk_int = (tblName === "student") ? dict.id :
-                    (tblName === "subject") ? dict.id :
-                    (tblName === "school") ? dict.base_id : "";
+        const pk_int = (tblName === "student") ? map_dict.id :
+                    (tblName === "subject") ? map_dict.id :
+                    (tblName === "school") ? map_dict.base_id : "";
 
-        const code = (tblName === "student") ? dict.examnumber :
-                    (tblName === "subject") ? dict.code :
-                    (tblName === "school") ? dict.sb_code : "";
+        const code = (tblName === "student") ? map_dict.examnumber :
+                    (tblName === "subject") ? map_dict.code :
+                    (tblName === "school") ? map_dict.sb_code : "";
 
-        const name = (tblName === "student") ? dict.fullname :
-                    (tblName === "subject") ? dict.name :
-                    (tblName === "school") ? dict.abbrev : "";
+        const name = (tblName === "student") ? map_dict.fullname :
+                    (tblName === "subject") ? map_dict.name :
+                    (tblName === "school") ? map_dict.abbrev : "";
         const is_selected_row = (pk_int === selected_pk);
+
+// ---  lookup index where this row must be inserted
+        let ob1 = "", row_index = -1;
+        if(tblName === "student"){
+            if (name) { ob1 = name.toLowerCase()};
+            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", loc.user_lang);
+        } else if(tblName === "subject"){
+            if (name) { ob1 = name.toLowerCase()};
+            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", loc.user_lang);
+        } else if(tblName === "school"){
+            if (code) { ob1 = code.toLowerCase()};
+            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", loc.user_lang);
+        }
 
 //--------- insert tblBody_select row at end
         const map_id = "sel_" + tblName + "_" + pk_int
-        const tblRow = tblBody_select.insertRow(-1);
+        const tblRow = tblBody_select.insertRow(row_index);
 
         tblRow.id = map_id;
         tblRow.setAttribute("data-pk", pk_int);
         tblRow.setAttribute("data-code", code);
         tblRow.setAttribute("data-name", name);
         tblRow.setAttribute("data-table", tblName);
+
+// ---  add data-sortby attribute to tblRow, for ordering new rows
+        tblRow.setAttribute("data-ob1", ob1);
+        //tblRow.setAttribute("data-ob2", ob2);
+        //tblRow.setAttribute("data-ob3", ob3);
+
         const class_selected = (is_selected_row) ? cls_selected: cls_bc_transparent;
         tblRow.classList.add(class_selected);
 
@@ -391,8 +413,8 @@
 
 // --- add second td to tblRow with icon locked, published or activated.
         if (tblName === "school") {
-            const locked = (dict.locked) ? dict.locked : false;
-            const activated = (dict.activated) ? dict.activated : false;
+            const locked = (map_dict.locked) ? map_dict.locked : false;
+            const activated = (map_dict.activated) ? map_dict.activated : false;
             td = tblRow.insertCell(-1);
             el_div = document.createElement("div");
                 const class_locked = (locked) ? "appr_2_6" : (activated) ? "appr_0_1" : "appr_0_0";
@@ -433,7 +455,7 @@
         }
     }  // t_MSSSS_SelectItem
 
-//=========  t_MSSSS_InputKeyup  ================ PR2020-09-19
+//=========  t_MSSSS_InputKeyup  ================ PR2020-09-19  PR2021-07-14
     function t_MSSSS_InputKeyup(el_input) {
         //console.log( "===== t_MSSSS_InputKeyup  ========= ");
 
@@ -443,9 +465,10 @@
         const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tblBody_select");
         let tblBody = el_MSSSS_tblBody;
         const len = tblBody.rows.length;
-        if (new_filter && len){
+        if (len){
 // ---  filter rows in table select_employee
             const filter_dict = t_Filter_SelectRows(tblBody, new_filter);
+        //console.log( "filter_dict", filter_dict);
 
 // ---  if filter results have only one item: put selected item in el_input
             const selected_pk = (filter_dict.selected_pk) ? filter_dict.selected_pk : null;
@@ -944,8 +967,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
     function t_FillSelectOptions(el_select, data_map, id_field, display_field, hide_none,
                 selected_pk, selectall_text, select_text_none, select_text) {
         //console.log( "===== t_FillSelectOptions  ===== ");
-        // only called by page exam MEXQ_FillSelectTableLevel
-        // and page SUbject SBR select department
+        // called by page exam MEXQ_FillSelectTableLevel  and page_subject SBR_Select_scheme
         //console.log( "selected_pk", selected_pk, typeof selected_pk);
 
 // ---  fill options of select box

@@ -117,24 +117,36 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- subjecttypes
                 if datalist_request.get('subjecttype_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('subjecttype_rows', 'cur_dep_only'), False)
-                    datalists['subjecttype_rows'] = sj_vw.create_subjecttype_rows(sel_examyear, sel_depbase, cur_dep_only)
+                    datalists['subjecttype_rows'] = sj_vw.create_subjecttype_rows(
+                        examyear=sel_examyear,
+                        depbase=sel_depbase,
+                        cur_dep_only=cur_dep_only)
                     datalists['subjecttypebase_rows'] = sj_vw.create_subjecttypebase_rows()
 
 # ----- subjects
                 if datalist_request.get('subject_rows'):
                     etenorm_only = af.get_dict_value(datalist_request, ('subject_rows', 'etenorm_only'), False)
                     cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
-                    datalists['subject_rows'] = sj_vw.create_subject_rows(new_setting_dict, None, etenorm_only, cur_dep_only)
+                    datalists['subject_rows'] = sj_vw.create_subject_rows(
+                        setting_dict=new_setting_dict,
+                        subject_pk=None,
+                        etenorm_only=etenorm_only,
+                        cur_dep_only=cur_dep_only)
+
 # ----- schemes
                 if datalist_request.get('scheme_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('scheme_rows', 'cur_dep_only'), False)
                     datalists['scheme_rows'] = sj_vw.create_scheme_rows(
-                        examyear=sel_examyear, depbase=sel_depbase, cur_dep_only=cur_dep_only)
+                        examyear=sel_examyear,
+                        depbase=sel_depbase,
+                        cur_dep_only=cur_dep_only)
 # ----- schemeitems
                 if datalist_request.get('schemeitem_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('schemeitem_rows', 'cur_dep_only'), False)
                     datalists['schemeitem_rows'] = sj_vw.create_schemeitem_rows(
-                        examyear=sel_examyear, cur_dep_only=cur_dep_only, depbase=sel_depbase)
+                        examyear=sel_examyear,
+                        cur_dep_only=cur_dep_only,
+                        depbase=sel_depbase)
 # ----- exams
                 if datalist_request.get('exam_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
@@ -250,6 +262,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
         logger.debug('permit_list: ' + str(permit_list) )
         logger.debug('usergroup_list: ' + str(usergroup_list) )
         logger.debug('permit_dict: ' + str(permit_dict) )
+
 # - selected_pk_dict contains saved selected_pk's from Usersetting, key: selected_pk
     # changes are stored in this dict, saved at the end when
     selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
@@ -484,7 +497,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
         logger.debug('setting_dict[c.sel_examtype_caption]: ' + str(setting_dict['sel_examtype_caption']))
 
 # ===== SUBJECT, STUDENT, LEVEL,SECTOR ======================= PR2021-01-23 PR2021-03-14
-    for key_str in (c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK, c.KEY_SEL_LEVEL_PK, c.KEY_SEL_SECTOR_PK):
+    for key_str in (c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK, c.KEY_SEL_LEVEL_PK, c.KEY_SEL_SECTOR_PK, c.KEY_SEL_SCHEME_PK):
     # - get saved_pk_str
         saved_pk_str = selected_pk_dict.get(key_str)
     # - check if there is a new pk_str in request_setting
@@ -518,6 +531,10 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
                 sector = subj_mod.Sector.objects.get_or_none(pk=pk_int)
                 if sector:
                     setting_dict['sel_sector_abbrev'] = sector.abbrev
+            elif key_str == c.KEY_SEL_SCHEME_PK:
+                scheme = subj_mod.Scheme.objects.get_or_none(pk=pk_int)
+                if scheme:
+                    setting_dict['sel_scheme_name'] = scheme.name
 
     # - save settings when they have changed
     if selected_pk_dict_has_changed:
@@ -605,6 +622,25 @@ def get_selected_examyear_examperiod_from_usersetting(request):  # PR2021-07-08
 
     return sel_examyear, sel_examperiod
 
+
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+def get_selected_examyear_scheme_pk_from_usersetting(request):  # PR2021-07-13
+    # - get selected examyear.code and scheme_p from usersettings
+    # used in SchemeDownloadXlsxView
+    # note: examyear.code is integer '2021'
+    sel_examyear, sel_scheme_pk = None, None
+    req_user = request.user
+    if req_user:
+        selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        if selected_pk_dict:
+            sel_examyear = sch_mod.Examyear.objects.get_or_none(
+                pk=selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK),
+                country=request.user.country
+            )
+
+        sel_scheme_pk = selected_pk_dict.get(c.KEY_SEL_SCHEME_PK)
+
+    return sel_examyear, sel_scheme_pk
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def get_selected_examperiod_examtype_from_usersetting(request):  # PR2021-01-20

@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const url_subjecttypebase_upload = get_attr_from_el(el_data, "data-subjecttypebase_upload_url");
     const url_scheme_upload = get_attr_from_el(el_data, "data-scheme_upload_url");
     const url_schemeitem_upload = get_attr_from_el(el_data, "data-schemeitem_upload_url");
-    const url_download_scheme_xlsx = get_attr_from_el(el_data, "data-download_scheme_xlsx_url");
+    const url_download_scheme_xlsx = get_attr_from_el(el_data, "data-url_download_scheme_xlsx");
 
     const columns_hidden = {};
 
@@ -77,14 +77,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_names: ["select", "code", "name", "depbases", "sequence", "otherlang", "etenorm", "addedbyschool"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["select", "text", "text",  "text", "number", "text", "toggle",  "toggle"],
-                    field_width:  ["032", "120", "300", "150", "120",  "120", "180",  "120",  "120"],
+                    field_width:  ["020", "120", "300", "150", "120",  "120", "180",  "120",  "120"],
                     field_align: ["c", "l", "l", "l",  "r", "l","c", "c"]},
 
         scheme: {   field_caption: ["", "Subject_scheme_name", "Department", "Leerweg",  "SectorProfiel_twolines", "Minimum_subjects",  "Maximum_subjects", "Minimum_MVT_subjects", "Maximum_MVT_subjects", "Minimum_combi_subjects", "Maximum_combi_subjects"],
                     field_names: ["select", "name", "depbase_code", "lvl_abbrev", "sct_abbrev", "min_subjects", "max_subjects", "min_mvt", "max_mvt", "min_combi", "max_combi" ],
                     field_tags: ["div", "input", "div", "div", "div", "input", "input", "input", "input", "input", "input"],
                     filter_tags: ["select", "text", "text", "text", "text", "number", "number", "number", "number", "number", "number"],
-                    field_width:  ["032", "280", "120", "120",  "120",  "150",  "150",  "150",  "150",  "150",  "150"],
+                    field_width:  ["020", "280", "120", "120",  "120",  "150",  "150",  "150",  "150",  "150",  "150"],
                     field_align: ["c", "l", "l", "l",  "l", "c", "c", "c", "c", "c", "c"]},
 
         schemeitem: { field_caption: ["", "Subject_scheme", "Abbreviation", "Subject", "Character",
@@ -95,27 +95,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_names: ["select", "scheme_name", "subj_code", "subj_name", "sjtp_abbrev",
                             "gradetype", "weight_se", "weight_ce", "is_mandatory", "is_combi", "is_core_subject", "is_mvt",
                             "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
-                            "has_practexam",  "has_pws", "reex_se_allowed",  "reex_combi_allowed",
+                            "has_practexam",  "has_pws", "reex_se_allowed",
                             "max_reex",  "no_thirdperiod",  "no_exemption_ce"],
                     field_tags: ["div", "div", "div", "div", "div",
                                 "div", "div", "div", "div", "div", "div", "div",
                                 "div", "div", "div",
-                                "div", "div", "div", "div",
+                                "div", "div", "div",
                                  "div", "div", "div"],
                     filter_tags: ["select", "text", "text", "text",  "text",
-                                "text", "number", "number", "toggle",  "toggle", "toggle",  "toggle",
+                                "toggle", "toggle", "toggle", "toggle",  "toggle", "toggle",  "toggle",
                                 "toggle",  "toggle", "toggle",
-                                "toggle",  "toggle", "toggle",  "toggle",
+                                "toggle",  "toggle", "toggle",
                                 "toggle", "toggle",  "toggle"],
-                    field_width:  ["032", "280", "090", "300", "120",
-                                    "120", "090", "090", "090", "090", "090", "090",
+                    field_width:  ["020", "180", "090", "300", "120",
+                                    "090", "090", "090", "090", "090", "090", "090",
                                     "090", "090", "090",
-                                    "090", "090", "090", "090",
+                                    "090", "090", "090",
                                      "090", "090", "090"],
                     field_align: ["c", "l", "l","l", "l",
                                     "l", "r", "r", "c", "c","c", "c",
                                     "c", "c", "c",
-                                    "c", "c", "c", "c",
+                                    "c", "c", "c",
                                     "c", "c", "c"]
                     },
 
@@ -134,28 +134,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     ],
                     field_tags: ["div", "div", "div", "input", "input", "input", "input", "input", "input", "input", "input", "input"],
                     filter_tags: ["select", "text", "text", "text", "number", "number", "number", "number", "number", "number", "number", "number"],
-                    field_width:  ["032", "280", "280", "240", "100", "100", "100", "100", "100", "100", "100", "100"],
+                    field_width:  ["020", "180", "280", "240", "100", "100", "100", "100", "100", "100", "100", "100"],
                     field_align: ["c", "l", "l", "l", "c", "c", "c", "c", "c", "c", "c", "c"]},
 
         subjecttypebase: {field_caption: ["", "Code", "Name", "Abbrev",  "Sequence"],
                     field_names: ["select", "code", "name", "abbrev", "sequence"],
                     field_tags: ["div", "input", "input", "input", "input"],
                     filter_tags: ["select", "text", "text", "text", "number"],
-                    field_width:  ["032", "120", "280", "120", "120"],
+                    field_width:  ["020", "120", "280", "120", "120"],
                     field_align: ["c", "l", "l", "l", "l", "c"]},
 
         level: {  field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence"],
                     field_names: ["select", "abbrev", "name", "depbases", "sequence"],
                     field_tags: ["div", "div", "div", "div",  "div"],
                     filter_tags: ["select", "text", "text",  "text", "number"],
-                    field_width:  ["032", "120", "240", "240",  "120"],
+                    field_width:  ["020", "120", "240", "240",  "120"],
                     field_align: ["c", "l", "l", "l",  "r", "c"]},
 
         sector: {  field_caption: ["", "Abbreviation", "Name", "Departments",  "Sequence"],
                     field_names: ["select", "abbrev", "name", "depbases", "sequence"],
                     field_tags: ["div", "div", "div", "div",  "div"],
                     filter_tags: ["select", "text", "text",  "text", "number"],
-                    field_width:  ["032", "120", "240", "240",  "120"],
+                    field_width:  ["020", "120", "240", "240",  "120"],
                     field_align: ["c", "l", "l", "l",  "r", "c"]},
         };
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -360,7 +360,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict
                     selected_btn = (setting_dict.sel_btn)
-
+                    selected.scheme_pk = (setting_dict.sel_scheme_pk) ? setting_dict.sel_scheme_pk : null;
+                    console.log("selected.scheme_pk", selected.scheme_pk)
 // ---  fill col_hidden
                     if("col_hidden" in setting_dict){
                        // clear the array columns_hidden
@@ -451,10 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Delete_subjecttypebase, function() {ModConfirmOpen("subjecttypebase", "delete")}, ["tab_show", "tab_btn_subjecttypebase"]);
 
         }
-
-
-        AddSubmenuButton(el_submenu, loc.Download_subject_scheme, null, ["tab_show", "tab_btn_scheme", "tab_btn_schemeitem"], "id_submenu_download_schemexlsx", url_download_scheme_xlsx, false);  // true = download
-
+        AddSubmenuButton(el_submenu, loc.Download_subject_scheme, null, ["tab_show", "tab_btn_scheme", "tab_btn_schemeitem", "tab_btn_subjecttype" ], "id_submenu_download_schemexlsx", url_download_scheme_xlsx, false);  // true = download
         AddSubmenuButton(el_submenu, loc.Show_hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
         el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
@@ -490,7 +488,6 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("=== HandleTableRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
-        selected.scheme_pk = null;
         selected.package_pk = null;
 
         selected.subject_dict = null;
@@ -532,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ FILL TABLE ROWS ++++++++++++++++++++++++++++++++++++++++
 //========= FillTblRows  ===================== PR2021-06-21
     function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
+        console.log( "===== FillTblRows  === ");
 
         const tblName = get_tblName_from_selectedBtn();
         const field_setting = field_settings[tblName];
@@ -542,6 +539,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "tblName", tblName);
         //console.log( "field_setting", field_setting);
         //console.log( "data_rows", data_rows);
+        console.log( "selected.scheme_pk", selected.scheme_pk);
 
 // --- set_columns_hidden
         const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
@@ -570,8 +568,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-05-10
     function CreateTblHeader(field_setting, col_hidden) {
-        console.log("===  CreateTblHeader ===== ");
-        console.log("field_setting", field_setting);
+        //console.log("===  CreateTblHeader ===== ");
+        //console.log("field_setting", field_setting);
 
         const column_count = field_setting.field_names.length;
 
@@ -664,7 +662,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  lookup index where this row must be inserted
         let ob1 = "", ob2 = "", ob3 = "";
-        if (tblName === "scheme") {
+        if (tblName === "subject") {
+            if (map_dict.name) { ob1 = map_dict.name.toLowerCase() };
+        } else if (tblName === "scheme") {
             if (map_dict.name) { ob1 = map_dict.name.toLowerCase() };
         } else if (tblName === "schemeitem") {
             if (map_dict.scheme_name) { ob1 = map_dict.scheme_name.toLowerCase() };
@@ -745,16 +745,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                 } else if (tblName === "schemeitem"){
-                    if (["scheme_name", "depbase_code", "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name"].includes(field_name)){
+                    if ( filter_tag ==="text"){
                         td.addEventListener("click", function() {MSI_Open(el)}, false)
                         td.classList.add("pointer_show");
                         add_hover(td)
-                    } else if (["gradetype", "weight_se", "weight_ce",].includes(field_name)){
-
-                    } else if (["is_mandatory", "is_combi", "is_core_subject", "is_mvt",
-                            "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
-                            "has_practexam",  "has_pws", "reex_se_allowed",  "reex_combi_allowed",
-                            "no_reex",  "no_thirdperiod",  "no_exemption_ce"].includes(field_name)){
+                    } else if ( filter_tag ==="toggle"){
                         td.addEventListener("click", function() {UploadToggle(tblName, el)}, false)
                         td.classList.add("pointer_show");
                         add_hover(td)
@@ -827,9 +822,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             "min_extra_nocount" , "max_extra_nocount",
                             "min_extra_counts", "max_extra_counts",
                             "min_elective_combi", "max_elective_combi",
-                            "min_mvt", "max_mvt",  "min_combi", "max_combi", "sequence", "weight_se", "weight_ce"
+                            "min_mvt", "max_mvt",  "min_combi", "max_combi", "sequence",
+                            "weight_se", "weight_ce", "max_reex"
                 ].includes(field_name)){
-
                     inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text : null;
                 } else if ( field_name === "gradetype") {
@@ -943,11 +938,24 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("map_dict: ", map_dict);
             if(!isEmpty(map_dict)){
                 const fldName = get_attr_from_el(el_input, "data-field");
-                const old_value = (map_dict[fldName]) ? map_dict[fldName] : false;
-                const new_value = !old_value;
-
+                let new_value = null, update_dict = {};
+                if (fldName === "gradetype"){
+                    new_value = (map_dict[fldName] === 1 ) ? 2 : 1;
+                } else if (fldName === "weight_se"){
+                    new_value = (map_dict[fldName] === 1 ) ? 2 : 1;
+                } else if (fldName === "weight_ce"){
+                    new_value = (map_dict[fldName] === 1 ) ? 0 : 1;
+                } else if (fldName === "max_reex"){
+                    const old_value = (map_dict[fldName]) ? (map_dict[fldName]) : 0;
+                    new_value = old_value + 1;
+                    if (new_value > 3) {new_value = 0}
+                } else {
+                    new_value = (map_dict[fldName] == true ) ? false : true;
 // ---  change icon, before uploading
-                add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
+                //add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
+                }
+                update_dict[fldName] = new_value;
+                UpdateField(el_input, update_dict)
 
 // ---  upload changes
                 const upload_dict = {
@@ -1032,6 +1040,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
         console.log(" --- RefreshDataRows  ---");
         console.log("tblName", tblName);
+        console.log("selected.scheme_pk", selected.scheme_pk);
 
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
         if (update_rows && update_rows.length ) {
@@ -1249,9 +1258,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }; // function HandleFilterKeyup
 
-//========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23
+//========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23  PR2021-07-13
     function HandleFilterToggle(el_input) {
-        //console.log( "===== HandleFilterToggle  ========= ");
+        console.log( "===== HandleFilterToggle  ========= ");
 
         // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
         // because data-colindex goes wrong with hidden columns
@@ -1419,17 +1428,18 @@ document.addEventListener('DOMContentLoaded', function() {
 //###########################################################################
 // +++++++++++++++++ SIDE BAR +++++++++++++++++++++++++++++++++++++++++++++++
 
-//=========  SBR_FillOptionsScheme ================ PR2021-05-14
+//=========  SBR_FillOptionsScheme ================ PR2021-05-14 PR2021-07-13
     function SBR_FillOptionsScheme() {
-        console.log("=== SBR_FillOptionsScheme");
-        console.log("scheme_map", scheme_map);
+        //console.log("=== SBR_FillOptionsScheme");
+        //console.log("scheme_map", scheme_map);
 
         const selectall_text = "&#60" + loc.All_subject_schemes + "&#62";
         const select_text_none = loc.No_departments_found;
         const select_text = loc.Select_department;
         const id_field = "id", display_field = "name";
+        const selected_pk = selected.scheme_pk;
         t_FillSelectOptions(el_SBR_select_scheme, scheme_map, id_field, display_field, false,
-                        null, selectall_text, select_text_none, select_text);
+                        selected_pk, selectall_text, select_text_none, select_text);
 
     }  // SBR_FillOptionsScheme
 
@@ -1439,8 +1449,10 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "el_select.value: ", el_select.value, typeof el_select.value)
         selected.scheme_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
 
-        //console.log( "selected.scheme_pk: ", selected.scheme_pk)
+// ---  upload new setting
+        const upload_dict = {selected_pk: {sel_scheme_pk: selected.scheme_pk}};
 
+        UploadSettings (upload_dict, url_settings_upload);
         //UpdateHeaderRight();
 
         FillTblRows();
@@ -1471,6 +1483,8 @@ document.addEventListener('DOMContentLoaded', function() {
         DatalistDownload(datalist_request);
 
     }  // MSED_Response
+
+
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // +++++++++++++++++ MODAL SELECT  ++++++++++++++++++++++++++++
@@ -1952,9 +1966,10 @@ document.addEventListener('DOMContentLoaded', function() {
     } // MSJTP_FillDicts
 
 //========= MSJTP_FillTbls  ============= PR2021-06-26
-    function MSJTP_FillTbls() {
+    function MSJTP_FillTbls(justclicked_pk) {
         console.log("===== MSJTP_FillTbls ===== ");
         console.log("mod_MSJTP_dict", mod_MSJTP_dict);
+        console.log("justclicked_pk", justclicked_pk);
 
         el_MSJT_tblBody_subjecttype.innerText = null;
         el_MSJT_tblBody_sjtpbase.innerText = null;
@@ -1964,19 +1979,19 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 0, sjtpbase_dict; sjtpbase_dict=subjecttypebase_rows[i]; i++) {
             const sjtpbase_pk = sjtpbase_dict.id
             // check if sjtp exists in mod_MSJTP_dict.sjtp_dictlist
-        console.log("sjtpbase_dict", sjtpbase_dict);
-        console.log("sjtpbase_pk", sjtpbase_pk);
+        //console.log("sjtpbase_dict", sjtpbase_dict);
+        //console.log("sjtpbase_pk", sjtpbase_pk);
             const sjtp_dict = b_lookup_dict_in_dictlist(mod_MSJTP_dict.sjtp_dictlist, "sjtpbase_pk", sjtpbase_pk);
             const lookup_sjtpbase_pk = (sjtp_dict && sjtp_dict.sjtpbase_pk) ? sjtp_dict.sjtpbase_pk : null;
             const lookup_deleted =  (sjtp_dict && sjtp_dict.isdeleted) ? sjtp_dict.isdeleted : false;
-        console.log("sjtp_dict", sjtp_dict);
-        console.log("lookup_sjtpbase_pk", lookup_sjtpbase_pk);
-        console.log("lookup_deleted", lookup_deleted);
+        //console.log("sjtp_dict", sjtp_dict);
+        //console.log("lookup_sjtpbase_pk", lookup_sjtpbase_pk);
+        //console.log("lookup_deleted", lookup_deleted);
             if(lookup_sjtpbase_pk && !lookup_deleted){
-                //MSI_MSJT_FillSelectRow("sjtp", el_MSJT_tblBody_subjecttype, sjtp_dict.sjtpbase_pk, sjtp_dict);
-                MSI_MSJT_FillSelectRow("sjtp", el_MSJT_tblBody_subjecttype, sjtp_dict.sjtpbase_pk, sjtpbase_dict);
+                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk, justclicked_pk)
+                MSI_MSJT_CreateSelectRow("sjtp", el_MSJT_tblBody_subjecttype, sjtp_dict.sjtpbase_pk, sjtpbase_dict, null, justclicked_pk)
             } else {
-                MSI_MSJT_FillSelectRow("subjecttypebase", el_MSJT_tblBody_sjtpbase, sjtpbase_pk, sjtpbase_dict);
+                MSI_MSJT_CreateSelectRow("subjecttypebase", el_MSJT_tblBody_sjtpbase, sjtpbase_pk, sjtpbase_dict, null, justclicked_pk)
             }
         }
     } // MSJTP_FillTbls
@@ -2027,18 +2042,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
         }
-        MSJTP_FillTbls();
+        const justclicked_pk = sjtpbase_pk;
+        MSJTP_FillTbls(justclicked_pk);
+
     }  // MSJT_SubjecttypebaseClicked
 
 //========= MSJT_SjtpClicked  ============= PR2021-06-26
     function MSJT_SjtpClicked(tr_clicked) {
-        //console.log("  =====  MSJT_SjtpClicked  =====");
+        console.log("  =====  MSJT_SjtpClicked  =====");
 
         const sjtpbase_pk = get_attr_from_el_int(tr_clicked, "data-pk")
 
         //console.log("tr_clicked", tr_clicked);
         //console.log("sjtpbase_pk", sjtpbase_pk);
-        //console.log("mod_MSJTP_dict", mod_MSJTP_dict);
+        console.log("mod_MSJTP_dict", mod_MSJTP_dict);
+
 
 // lookup sjtp_dict in mod_MSJTP_dict.sjtp_dictlist,
 // Note: lookup by base_pk, because new rows dont have sjtp_pk
@@ -2048,8 +2066,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const [index, sjtp_dict] = b_lookup_dict_with_index_in_dictlist(sjtp_dictlist, "sjtpbase_pk", sjtpbase_pk)
         //console.log("index", index);
         //console.log("sjtp_dict", sjtp_dict);
-
         // sjtp_dict = {si_pk: null, sjtp_pk: 202, subj_pk: 759 ,name: "Franse taal", iscreated: true }
+
         if (sjtp_dict){
 // ---  check if schemeitem_pk already exists in mod_MSJTP_dict.schemeitem_dict
             if(sjtp_dict.iscreated){
@@ -2060,9 +2078,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // set deleted=true when it is a saved si
                 sjtp_dict.isdeleted = true;
             }
-
         }
-        MSJTP_FillTbls()
+        const justclicked_pk = sjtpbase_pk;
+        MSJTP_FillTbls(justclicked_pk);
 
     }  // MSJT_SjtpClicked
 
@@ -2396,7 +2414,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(permit_dict.permit_crud){
             // delete is handled by ModConfirm("delete")
             let has_changes = false;
-            let upload_dict = {table: 'subject', examyear_pk: mod_MSUBJ_dict.examyear_id};
+            let upload_dict = {table: 'subject', examyear_pk: mod_MSUBJ_dict.examyear_pk};
             if(mod_MSUBJ_dict.is_addnew) {
                 upload_dict.mode = "create";
                 has_changes = true;
@@ -2878,27 +2896,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 //document.getElementById("id_MSI_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
 
-        console.log("mod_MSI_dict.department_pk", mod_MSI_dict.department_pk)
-        console.log("mod_MSI_dict.lvl_pk", mod_MSI_dict.lvl_pk)
-        console.log("mod_MSI_dict.sct_pk", mod_MSI_dict.sct_pk)
+                console.log("mod_MSI_dict.department_pk", mod_MSI_dict.department_pk)
+                console.log("mod_MSI_dict.lvl_pk", mod_MSI_dict.lvl_pk)
+                console.log("mod_MSI_dict.sct_pk", mod_MSI_dict.sct_pk)
 
+                t_FillSelectOptions(el_MSI_department, department_map, "id", "base_code", false, mod_MSI_dict.department_pk, null, loc.No_departments_found, loc.Select_department);
+                el_MSI_level.innerHTML = t_FillOptionLevelSectorFromMap("level", level_map, mod_MSI_dict.depbase_pk, mod_MSI_dict.lvl_pk);
+                el_MSI_sector.innerHTML = t_FillOptionLevelSectorFromMap("sector", sector_map, mod_MSI_dict.depbase_pk, mod_MSI_dict.sct_pk);
 
-/*
-    function t_FillSelectOptions(el_select, data_map, id_field, display_field, hide_none,
-                selected_pk, selectall_text, select_text_none, select_text) {
-*/
-t_FillSelectOptions(el_MSI_department, department_map, "id", "base_code", false, mod_MSI_dict.department_pk, null, loc.No_departments_found, loc.Select_department);
-el_MSI_level.innerHTML = t_FillOptionLevelSectorFromMap("level", level_map, mod_MSI_dict.depbase_pk, mod_MSI_dict.lvl_pk);
-el_MSI_sector.innerHTML = t_FillOptionLevelSectorFromMap("sector", sector_map, mod_MSI_dict.depbase_pk, mod_MSI_dict.sct_pk);
-
-el_tblBody_subjects.innerText = null;
-el_tblBody_schemeitems.innerText = null;
-        // hide selecrtboxes dep, lvl, sct when there is a scheme
-        console.log("has_scheme", has_scheme)
+                el_tblBody_subjects.innerText = null;
+                el_tblBody_schemeitems.innerText = null;
+                // hide selecrtboxes dep, lvl, sct when there is a scheme
+                console.log("has_scheme", has_scheme)
                 add_or_remove_class(el_MSI_deplvlsct_container, cls_hide, has_scheme)
 
                 MSI_SetInputFields(null, false);
-MSI_InputChange();
+
+                MSI_InputChange();
         // ---  set focus to el_MSTUD_abbrev
                 //setTimeout(function (){el_MSTUD_abbrev.focus()}, 50);
 
@@ -3024,11 +3038,12 @@ MSI_InputChange();
 // ---  loop through subjecttype_rows, add only subjecttypes from this scheme
         for (let i = 0, sjtp_dict; sjtp_dict = subjecttype_rows[i]; i++) {
             if(sjtp_dict.scheme_id && scheme_pk && sjtp_dict.scheme_id ===scheme_pk ){
-                mod_MSI_dict.sjtp_dictlist.push( {
+                mod_MSI_dict.sjtp_dictlist.push({
                     sjtp_pk: sjtp_dict.id,
                     name: sjtp_dict.name,
+                    sequence: sjtp_dict.sjtpbase_sequence,
                     si_list: []
-                    } );
+                });
             };
         }
         console.log("mod_MSI_dict.sjtp_dictlist", mod_MSI_dict.sjtp_dictlist);
@@ -3041,17 +3056,26 @@ MSI_InputChange();
 
 //========= MSI_FillTblSubjects  ============= PR2021-06-25
     function MSI_fill_si_list(scheme_pk) {
-        console.log("===== MSI_fill_si_list ===== ");
+        //console.log("===== MSI_fill_si_list ===== ");
 
 // ---  loop through schemeitem_rows, add schemeitems from this scheme with this subjecttype to si_list
         for (let i = 0, si_dict; si_dict=schemeitem_rows[i]; i++) {
+
+        //console.log("si_dict", si_dict);
         // add only schemeitems from scheme of this student
             if (scheme_pk && scheme_pk === si_dict.scheme_id) {
                 const sjtp_pk = get_dict_value(si_dict, ["sjtp_id"]);
                 const sjtp_pk2 = si_dict.sjtp_id;
                 // lookup sjtp_dict in mod_MSI_dict.sjtp_dictlist
                 const sjtp_dict = b_lookup_dict_in_dictlist(mod_MSI_dict.sjtp_dictlist, "sjtp_pk", sjtp_pk)
-                sjtp_dict.si_list.push({si_pk: si_dict.id, sjtp_pk: si_dict.sjtp_id, subj_pk: si_dict.subj_id, name: si_dict.subj_name});
+                sjtp_dict.si_list.push({
+                    si_pk: si_dict.id,
+                    sjtp_pk: si_dict.sjtp_id,
+                    subj_pk: si_dict.subj_id,
+                    name: si_dict.subj_name,
+                    sjtp_name: si_dict.sjtp_name,
+                    sjtpbase_sequence: si_dict.sjtpbase_sequence
+                    });
             }
         }
     };  // MSI_fill_si_list
@@ -3070,7 +3094,8 @@ MSI_InputChange();
         for (const [subject_pk_str, dict] of Object.entries(mod_MSI_dict.subject_dict)) {
         //console.log("dict", dict);
         //console.log("dict.subj_pk", dict.subj_pk);
-            MSI_MSJT_FillSelectRow("subject", el_tblBody_subjects, dict.subj_pk, dict);
+                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk, justclicked_pk)
+            MSI_MSJT_CreateSelectRow("subject", el_tblBody_subjects, dict.subj_pk, dict);
         }
 
     } // MSI_FillTblSubjects
@@ -3078,7 +3103,7 @@ MSI_InputChange();
 
 //========= MSI_FillTbls  ============= PR2021-06-22
     function MSI_FillTblSchemeitems(sel_schemeitem_pk_list) {
-        console.log("===== MSI_FillTblSchemeitems ===== ");
+        //console.log("===== MSI_FillTblSchemeitems ===== ");
 
         // function fills table el_tblBody_schemeitems
         // with items of mod_MSI_dict.sjtp_dictlist
@@ -3087,8 +3112,8 @@ MSI_InputChange();
 
         el_tblBody_schemeitems.innerText = null;
 
-    console.log("mod_MSI_dict", mod_MSI_dict);
-    console.log("mod_MSI_dict.sjtp_dictlist", mod_MSI_dict.sjtp_dictlist);
+    //console.log("mod_MSI_dict", mod_MSI_dict);
+    //console.log("mod_MSI_dict.sjtp_dictlist", mod_MSI_dict.sjtp_dictlist);
 
 // ---  loop through the subjecttype dictlist (mod_MSI_dict.sjtp_dictlist)
         // mod_MSI_dict.sjtp_dictlist contains list of subjecttype dicts
@@ -3097,20 +3122,22 @@ MSI_InputChange();
             for (let i = 0, sjtp_dict; sjtp_dict = mod_MSI_dict.sjtp_dictlist[i]; i++) {
 
     // ---  add subjecttypes as subheader to list of schemeitems
-                console.log("sjtp_dict", sjtp_dict);
-                console.log("sjtp_dict.sjtp_pk", sjtp_dict.sjtp_pk);
-                MSI_MSJT_FillSelectRow("subjecttype", el_tblBody_schemeitems, sjtp_dict.sjtp_pk, sjtp_dict);
+                //console.log("sjtp_dict", sjtp_dict);
+                //console.log("sjtp_dict.sjtp_pk", sjtp_dict.sjtp_pk);
+                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk, justclicked_pk)
+                MSI_MSJT_CreateSelectRow("subjecttype", el_tblBody_schemeitems, sjtp_dict.sjtp_pk, sjtp_dict);
 
     // ---  add subjects of this subjecttype
                 const si_list = sjtp_dict.si_list;
-                console.log("############ si_list", si_list);
+                //console.log("############ si_list", si_list);
                 if (sjtp_dict.si_list && sjtp_dict.si_list.length){
                     for (let i = 0, si_dict; si_dict = sjtp_dict.si_list[i]; i++) {
-                        console.log("############", si_dict);
-                        console.log("si_dict", si_dict);
+                        //console.log("############", si_dict);
+                        //console.log("si_dict", si_dict);
                         // skip when si_dict isdeleted
                         if(!si_dict.isdeleted){
-                            MSI_MSJT_FillSelectRow("schemeitem", el_tblBody_schemeitems, si_dict.subj_pk, si_dict, sjtp_dict.sjtp_pk);
+                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk, justclicked_pk)
+                            MSI_MSJT_CreateSelectRow("schemeitem", el_tblBody_schemeitems, si_dict.subj_pk, si_dict, sjtp_dict.sjtp_pk);
                         }
                     }
                 }
@@ -3130,7 +3157,8 @@ MSI_InputChange();
                     const schemeitem_pk = dict.schemeitem_id;
                     studsubj_si_list.push({si_pk: schemeitem_pk} )
 
-                    MSI_MSJT_FillSelectRow("schemeitem", el_tblBody_schemeitems, schemeitem_pk, dict);
+                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk, justclicked_pk)
+                    MSI_MSJT_CreateSelectRow("schemeitem", el_tblBody_schemeitems, schemeitem_pk, dict);
                     has_rows = true;
                 }
             }
@@ -3143,25 +3171,34 @@ MSI_InputChange();
                             " <i>", loc.Change_subjecttypes_of_subject_scheme, "</i><br>",
                             loc.Enter_subject_types, "</p>"]
             const html_str = html_list.join('')
-        console.log("html_str", html_str);
+        //console.log("html_str", html_str);
             el_tblBody_schemeitems.innerHTML = html_list.join('')
         };
     } // MSI_FillTblSchemeitems
 
-//========= MSI_MSJT_FillSelectRow  ============= PR2020--09-30
-    function MSI_MSJT_FillSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk) {
-        //console.log("===== MSI_MSJT_FillSelectRow ===== ");
-        //console.log("..........pk_int", pk_int);
-        //console.log("..........tblName", tblName);
-        //console.log("dict", dict);
+//========= MSI_MSJT_CreateSelectRow  ============= PR2020--09-30
+    function MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, map_dict, sjtp_pk, justclicked_pk) {
+        console.log("===== MSI_MSJT_CreateSelectRow ===== ");
+        console.log("..........pk_int", pk_int);
+        console.log("..........tblName", tblName);
+        console.log("map_dict", map_dict);
 
-        if (!isEmpty(dict)){
-            let subj_code = (dict.code) ? dict.code : "";
-            if(dict.is_combi) { subj_code += " *" }
-            let display_txt = (dict.name) ? dict.name : null;
-            const sjtp_abbrev = (dict.sjtp_abbrev) ? dict.sjtp_abbrev : null;
+        console.log("justclicked_pk", justclicked_pk);
 
-            const tblRow = tblBody_select.insertRow(-1);
+        if (!isEmpty(map_dict)){
+            let subj_code = (map_dict.code) ? map_dict.code : "";
+            if(map_dict.is_combi) { subj_code += " *" }
+            let display_txt = (map_dict.name) ? map_dict.name : null;
+            const sjtp_abbrev = (map_dict.sjtp_abbrev) ? map_dict.sjtp_abbrev : null;
+
+// ---  lookup index where this row must be inserted
+            let ob1 = "", row_index = -1;
+            if(tblName === "subject"){
+                if (map_dict.name) { ob1 = map_dict.name.toLowerCase()};
+                row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", setting_dict.user_lang);
+            }
+
+            const tblRow = tblBody_select.insertRow(row_index);
             tblRow.setAttribute("data-pk", pk_int);
             if(sjtp_pk){tblRow.setAttribute("data-sjtp_pk", sjtp_pk)};
 
@@ -3169,12 +3206,24 @@ MSI_InputChange();
             const selected_int = 0
             tblRow.setAttribute("data-selected", selected_int);
 
+// ---  add data-sortby attribute to tblRow, for ordering new rows
+            tblRow.setAttribute("data-ob1", ob1);
+            //tblRow.setAttribute("data-ob2", ob2);
+            //tblRow.setAttribute("data-ob3", ob3);
+
+
             if(tblName === "subjecttype"){
                 tblRow.classList.add("bg_selected_blue")
             } else {
 
                 //if(highlighted){ ShowClassWithTimeout(tblRow, "bg_selected_blue")};
             }
+            if (justclicked_pk && justclicked_pk === pk_int) {
+                tblRow.classList.add("bg_medium_blue")
+                setTimeout(function (){tblRow.classList.remove("bg_medium_blue")  }, 500);
+                setTimeout(function (){tblRow.classList.add("bg_transparent")  }, 500);
+            }
+
             add_hover(tblRow)
 
     // --- add first td to tblRow.
@@ -3207,7 +3256,7 @@ MSI_InputChange();
                 tblRow.addEventListener("click", function() {MSJT_SjtpClicked(tblRow)}, false);
             }
         }
-    } // MSI_MSJT_FillSelectRow
+    } // MSI_MSJT_CreateSelectRow
 
 
 //========= MSI_SubjectClicked  ============= PR2020-10-01 PR2021-03-05 PR2021-06-24
@@ -3296,7 +3345,9 @@ MSI_InputChange();
         console.log("tblRow", tblRow);
                 sel_subj_pk_int = get_attr_from_el_int(tblRow, "data-pk")
         console.log("sel_subj_pk_int", sel_subj_pk_int);
-                MSI_AddSubjectToSubjecttype(sel_subj_pk_int, sjtp_dict)
+
+                const justclicked_subj_pk = sel_subj_pk_int;
+                MSI_AddSubjectToSubjecttype(sel_subj_pk_int, sjtp_dict, justclicked_subj_pk)
             }
 
 // ---  remove data-selected from this tblRow, show/hide tickmark PR2020-11-21
@@ -3313,10 +3364,11 @@ MSI_InputChange();
 
 
 //========= MSI_AddSubjectToSubjecttype  ============= PR2021-06-24
-    function MSI_AddSubjectToSubjecttype(subj_pk_int, sjtp_dict) {
+    function MSI_AddSubjectToSubjecttype(subj_pk_int, sjtp_dict, justclicked_subj_pk) {
         console.log("  =====  MSI_AddSubjectToSubjecttype  =====");
         console.log("subj_pk_int", subj_pk_int);
         console.log("sjtp_dict", sjtp_dict);
+        console.log("justclicked_subj_pk", justclicked_subj_pk);
 
 // get subject_dict
         // subject_dict = {id: 759, name: "Franse taal}
@@ -3392,8 +3444,8 @@ MSI_InputChange();
                 }
             }
         }
-
-        MSI_FillTblSchemeitems(sel_schemeitem_pk_list)
+        const justclicked_pk = subj_pk_int;
+        MSI_FillTblSchemeitems(sel_schemeitem_pk_list, justclicked_pk)
 
     }  // MSI_SchemeitemClicked
 
@@ -3646,7 +3698,10 @@ MSI_InputChange();
             let upload_dict = { table: mod_dict.table,
                                 mapid: mod_dict.mapid};
             if(mod_dict.mode === "delete") {
+                // TODO change to moede = delete
                 upload_dict.delete = true;
+                // this one is used in table 'SUbject'
+                upload_dict.mode = mod_dict.mode;
             }
             if (selected_btn === "btn_subject"){
                 upload_dict.subject_pk = mod_dict.id;

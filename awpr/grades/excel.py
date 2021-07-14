@@ -819,7 +819,7 @@ def create_orderlist_xlsx(orderlist_rows, examyear_code, settings,
 ############ SCHEME LIST ##########################
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 @method_decorator([login_required], name='dispatch')
-class SchemeDownloadXlsxView(View):  # PR2021-06-28
+class SchemeDownloadXlsxView(View):  # PR2021-07-13
 
     def get(self, request):
         logging_on = s.LOGGING_ON
@@ -838,23 +838,26 @@ class SchemeDownloadXlsxView(View):  # PR2021-06-28
                 user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
                 activate(user_lang)
 
-
     # - get selected examyear, school and department from usersettings
-                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                sel_examyear, sel_scheme_pk = \
+                    dl.get_selected_examyear_scheme_pk_from_usersetting(request)
 
                 if sel_examyear :
-    # get text from examyearsetting
-                    exform_text = af.get_exform_text(sel_examyear, ['exform'])
-                    if logging_on:
-                        logger.debug('exform_text: ' + str(exform_text))
 
     # +++ get dict of subjects of these studsubj_rows
-                    scheme_rows = subj_vw.create_scheme_rows(sel_examyear, None, {})
-                    subjecttype_rows = subj_vw.create_subjecttype_rows(sel_examyear)
-                    schemeitem_rows = subj_vw.create_schemeitem_rows(sel_examyear)
+                    scheme_rows = subj_vw.create_scheme_rows(
+                        examyear=sel_examyear,
+                        scheme_pk=sel_scheme_pk)
+                    subjecttype_rows = subj_vw.create_subjecttype_rows(
+                        examyear=sel_examyear,
+                        scheme_pk=sel_scheme_pk,
+                        orderby_sequence=True)
+                    schemeitem_rows = subj_vw.create_schemeitem_rows(
+                        examyear=sel_examyear,
+                        scheme_pk=sel_scheme_pk,
+                        orderby_name=True)
                     if schemeitem_rows:
-                        response = create_scheme_xlsx(sel_examyear, scheme_rows, subjecttype_rows, schemeitem_rows, exform_text, user_lang)
+                        response = create_scheme_xlsx(sel_examyear, scheme_rows, subjecttype_rows, schemeitem_rows, user_lang)
 
         #except:
         #    raise Http404("Error creating Ex2A file")
@@ -868,27 +871,13 @@ class SchemeDownloadXlsxView(View):  # PR2021-06-28
 
 
 # +++++++++++ Scheme list ++++++++++++
-def create_scheme_xlsx(examyear, scheme_rows, subjecttype_rows, schemeitem_rows, exform_text, user_lang):  # PR2021-06-28
+def create_scheme_xlsx(examyear, scheme_rows, subjecttype_rows, schemeitem_rows, user_lang):  # PR2021-06-28
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_scheme_xlsx -----')
-        for row in scheme_rows:
-            logger.debug('scheme_row: ' + str(row))
-        for row in subjecttype_rows:
-            logger.debug('subjecttype_row: ' + str(row))
 
     # from https://stackoverflow.com/questions/16393242/xlsxwriter-object-save-as-http-response-to-create-download-in-django
     # logger.debug('period_dict: ' + str(period_dict))
-
-    """
-
-        scheme_row: {'id': 193, 'department_id': 99, 'level_id': None, 'sector_id': 147, 'mapid': 'scheme_193', 
-        'scheme_name': 'Vwo - n&t', 'min_subjects': None, 'max_subjects': None, 'min_mvt': None, 'max_mvt': None, 
-        'dep_abbrev': 'V.W.O.', 'lvl_abbrev': None, 'sct_abbrev': 'n&t', 'ey_code': 2021, 'depbase_code': 'Vwo', 
-        'modifiedby_id': 41, 'modifiedat': datetime.datetime(2021, 6, 28, 15, 14, 8, 446421, tzinfo=<UTC>), 
-        'modby_username': 'Ete'}
-
-    """
 
     response = None
 
@@ -896,9 +885,9 @@ def create_scheme_xlsx(examyear, scheme_rows, subjecttype_rows, schemeitem_rows,
         # ---  create file Name and worksheet Name
         today_dte = af.get_today_dateobj()
         today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
-        title = ' '.join(('Ex1', str(examyear), today_dte.isoformat()))
+        title = ''.join((str(_('Subject schemes')), ' ', str(examyear), ' dd ', today_dte.isoformat()))
         file_name = title + ".xlsx"
-        worksheet_name = str(_('Ex1'))
+        worksheet_name = str(_('Subject schemes'))
 
         # create the HttpResponse object ...
         # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -922,7 +911,10 @@ def create_scheme_xlsx(examyear, scheme_rows, subjecttype_rows, schemeitem_rows,
         # th_format.set_bg_color('#d8d8d8') #   #d8d8d8;  /* light grey 218 218 218 100%
         # or: th_format = book.add_format({'bg_color': '#d8d8d8'
         th_align_center = book.add_format(
-            {'font_size': 8, 'border': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+            {'font_size': 8, 'border': True, 'bold': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        th_align_center.set_bottom()
+        th_align_center.set_bg_color('#d8d8d8')  # #d8d8d8;  /* light grey 218 218 218 100%
+
         th_rotate = book.add_format(
             {'font_size': 8, 'border': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True, 'rotation': 90})
 
@@ -940,72 +932,45 @@ def create_scheme_xlsx(examyear, scheme_rows, subjecttype_rows, schemeitem_rows,
         totalrow_merge = book.add_format({'border': True, 'align': 'right', 'valign': 'vcenter'})
 
         # get number of columns
-        col_count = 3  # add column exnr, idnumber, name and class
-        field_width = [10, 12, 35]
-        field_names = ['examnumber', 'idnumber', 'fullname']
-        field_captions = ['Ex.nr.', 'ID-nummer', 'Naam en voorletters van de kandidaat\n(in alfabetische volgorde)']
-        header_formats = [th_align_center, th_align_center, th_align_center]
 
-        # --- title row
-        # was: sheet.write(0, 0, str(_('Report')) + ':', bold)
-        sheet.write(0, 0, exform_text['minond'], bold_format)
-        sheet.write(1, 0, exform_text['title'], bold_format)
+        field_width = [25, 12, 12, 12,
+                       12, 12, 12, 12, 12, 12,
+                       15, 15,
+                       12, 12, 12, 12, 12, 12, 12,
+                       15, 15
+                       ]
 
-        # ---  table header row
-        row_index = 9
-        for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
-            sheet.write(row_index, i, field_captions[i], header_formats[i])
+# --- set column width
+        for i, width in enumerate(field_width):
+            sheet.set_column(i, i, width)
 
-        if len(studsubj_rows):
-            totals = {}
-            for row in studsubj_rows:
-                logger.debug('row: ' + str(row))
-                # row: {'id': 155, 'idnumber': '1998092908', 'examnumber': '109', 'lastname': 'Castillo', 'firstname': 'Shurensly', 'prefix': None, 'classname': None,
-                # 'lvl_abbrev': 'PBL', 'sct_abbrev': 'tech',
-                # 'subj_id_arr': [3, 1, 10, 15, 27, 29, 31, 33, 46]}
-                row_index += 1
-                for i, field_name in enumerate(field_names):
-                    value = ''
-                    if isinstance(field_name, int):
-                        # in subject column 'field_name is the ph of the subject
-                        subj_id_list = row.get('subj_id_arr', [])
-                        if subj_id_list and field_name in subj_id_list:
-                            value = 'x'
-                            if field_name not in totals:
-                                totals[field_name] = 1
-                            else:
-                                totals[field_name] += 1
-                    elif field_name == 'fullname':
-                        prefix = row.get('prefix')
-                        lastname = row.get('lastname', '')
-                        firstname = row.get('firstname', '')
-                        if prefix:
-                            lastname = ' '.join((prefix, lastname))
-                        value = ''.join((lastname, ', ', firstname))
-                    else:
-                        value = row.get(field_name, '')
-                    sheet.write(row_index, i, value, row_formats[i])
+        row_index = 0
 
-            # ---  table total row
-            row_index += 1
-            for i, field_name in enumerate(field_names):
-                logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
-                value = ''
-                if isinstance(field_name, int):
-                    if field_name in totals:
-                        value = totals[field_name]
-                    sheet.write(row_index, i, value, totalrow_formats[i])
-                    # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
-                elif field_name == 'examnumber':
-                    #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
-                    sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, 'TOTAAL', totalrow_merge)
+# --- title row
+        title = ''.join((str(_('Subject schemes')), ' ', str(examyear)))
+        sheet.write(row_index, 0, title, bold_format)
 
+        row_index += 3
+        for scheme_row in scheme_rows:
+            scheme_pk = scheme_row.get('id')
+
+    # ---  table subject scheme
+            row_index = create_scheme_paragraph_xlsx(row_index, sheet, scheme_row, bold_format,
+                                         th_align_center, row_align_left, row_align_center, user_lang)
+
+    # ---  table subject type
+            row_index = create_subjecttype_paragraph_xlsx(row_index, sheet, subjecttype_rows, scheme_pk,
+                                         th_align_center, row_align_left, row_align_center, user_lang)
+
+    # ---  table scheitems
+            row_index = create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_pk,
+                                              th_align_center, row_align_left, row_align_center, user_lang)
         book.close()
 
-        # Rewind the buffer.
+# - Rewind the buffer.
         output.seek(0)
 
-        # Set up the Http response.
+# - Set up the Http response.
         response = HttpResponse(
             output,
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -1015,4 +980,190 @@ def create_scheme_xlsx(examyear, scheme_rows, subjecttype_rows, schemeitem_rows,
     # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     # response['Content-Disposition'] = "attachment; filename=" + file_name
     return response
-# --- end of create_ex1_xlsx
+# --- end of create_scheme_xlsx
+
+
+def create_scheme_paragraph_xlsx(row_index, sheet, row, bold_format,
+                                 th_align_center, row_align_left, row_align_center, user_lang):  # PR2021-07-13
+
+    # get number of columns
+    field_names = ['name', 'dep_abbrev', 'lvl_abbrev', 'sct_abbrev',
+                   'min_subjects', 'max_subjects',
+                   'min_mvt', 'max_mvt',
+                   'min_combi', 'max_combi',
+                   'modifiedat', 'modby_username']
+    field_captions = [str(_('Subject scheme')), str(_('Department')), str(_('Level')), str(_('Sector / Profiel')),
+                      str(_('Minimum amount of subjects')), str(_('Maximum amount of subjects')),
+                      str(_('Minimum amount of MVT subjects')), str(_('Maximum amount of MVT subjects')),
+                      str(_('Minimum amount of combination subjects')),
+                      str(_('Maximum amount of combination subjects')),
+                      str(_('Last modified on ')), str(_('Last modified by'))]
+    header_format = th_align_center
+    row_formats = [row_align_left, row_align_center, row_align_center, row_align_center,
+                   row_align_center, row_align_center,
+                   row_align_center, row_align_center,
+                   row_align_center, row_align_center,
+                   row_align_left, row_align_left
+                   ]
+
+    col_count = len(field_names)
+
+    row_index += 3
+    # --- title row
+    title = row.get('name', '')
+    sheet.write(row_index, 0, title, bold_format)
+
+    row_index += 2
+
+    # ---  table header row
+    for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
+        sheet.write(row_index, i, field_captions[i], header_format)
+
+    # ---  loop through scheme rows
+    if row:
+        row_index += 1
+        for i, field_name in enumerate(field_names):
+            if field_name == 'modifiedat':
+                modified_dte = row.get(field_name, '')
+                value = af.format_modified_at(modified_dte, user_lang)
+            else:
+                value = row.get(field_name, '')
+            sheet.write(row_index, i, value, row_formats[i])
+
+    return row_index
+# --- end of create_scheme_paragraph_xlsx
+
+
+def create_subjecttype_paragraph_xlsx(row_index, sheet, subjecttype_rows, scheme_pk,
+                                 th_align_center, row_align_left, row_align_center, user_lang):  # PR2021-07-13
+
+    # get number of columns
+    field_names = ['name', 'abbrev',
+                   'min_subjects', 'max_subjects',
+                   'min_extra_nocount', 'max_extra_nocount',
+                   'min_extra_counts', 'max_extra_counts',
+                   'min_elective_combi', 'max_elective_combi',
+                   'modifiedat', 'modby_username']
+    field_captions = [str(_('Subject type')), str(_('Abbreviation')),
+                      str(_('Minimum amount of subjects')),
+                      str(_('Maximum amount of subjects')),
+                      str(_("Minimum extra subject, doesn't count")),
+                      str(_("Maximum extra subject, doesn't count")),
+                      str(_("Minimum extra subject, counts")),
+                      str(_("Maximum extra subject, counts")),
+                      str(_("Minimum elective combi subject")),
+                      str(_("Maximum elective combi subject")),
+                      str(_('Last modified on ')), str(_('Last modified by'))]
+    header_format = th_align_center
+    row_formats = [row_align_left, row_align_center,
+                   row_align_center, row_align_center,
+                   row_align_center, row_align_center,
+                   row_align_center, row_align_center,
+                   row_align_center, row_align_center,
+                   row_align_left, row_align_left
+                   ]
+
+    col_count = len(field_names)
+
+    row_index += 3
+    # ---  table header row
+    for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
+        sheet.write(row_index, i, field_captions[i], header_format)
+
+    # ---  loop through scheme rows
+    if len(subjecttype_rows):
+        for row in subjecttype_rows:
+            scheme_id = row.get('scheme_id')
+            if scheme_id == scheme_pk:
+                row_index += 1
+                for i, field_name in enumerate(field_names):
+                    if field_name == 'modifiedat':
+                        modified_dte = row.get(field_name, '')
+                        value = af.format_modified_at(modified_dte, user_lang)
+                    else:
+                        value = row.get(field_name, '')
+                    sheet.write(row_index, i, value, row_formats[i])
+
+    return row_index
+# --- end of create_subjecttype_paragraph_xlsx
+
+
+def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_pk,
+                                 th_align_center, row_align_left, row_align_center, user_lang):  # PR2021-07-13
+
+    # get number of columns
+    field_names = ['subj_name', 'subj_code', 'sjtp_abbrev', 'gradetype',
+                   'weight_se', 'weight_ce',
+                   'is_mandatory',
+                   'is_combi', 'is_core_subject', 'is_mvt',
+                   'extra_count_allowed', 'extra_nocount_allowed',
+                   'elective_combi_allowed',
+                   'has_practexam',
+
+                   'has_pws',
+                   'reex_se_allowed', 'max_reex',
+                   'no_thirdperiod', 'no_exemption_ce',
+
+                   'modifiedat', 'modby_username']
+
+    col_count = len(field_names)
+
+    field_captions = [str(_('Subjects of this subject scheme')),
+                      str(_('Abbreviation')),
+                      str(_('Subject type')),
+                      str(_('Grade type')),
+                      str(_('SE weight')), str(_('CE weight')),
+                      str(_('Mandatory')),
+                      str( _('Combination subject')),
+                      str(_('Core subject')),
+                      str(_('MVT subject')),
+                      str(_('Extra subject counts allowed')), str(_('Extra subject does not count allowed')),
+                      str(_('Elective combi subject allowed')),
+                      str(_('Has practical exam')),
+                      str(_('Has assignment')),
+                      str(_('Herkansing SE allowed')),
+                      str(_('Maximum number of re-examinations')),
+                      str(_('Subject has no third period')),
+                      str(_('Exemption without CE allowed')),
+                      str(_('Last modified on ')), str(_('Last modified by'))]
+    header_format = th_align_center
+
+    row_formats = []
+    for x in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
+        if 1 < x <  col_count - 2:
+            row_formats.append(row_align_center)
+        else:
+            row_formats.append(row_align_left)
+
+    row_index += 3
+    # ---  table header row
+    for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
+        sheet.write(row_index, i, field_captions[i], header_format)
+
+    # ---  loop through scheme rows
+    if len(schemeitem_rows):
+        for row in schemeitem_rows:
+            scheme_id = row.get('scheme_id')
+            if scheme_id == scheme_pk:
+                row_index += 1
+                for i, field_name in enumerate(field_names):
+                    if field_name == 'modifiedat':
+                        modified_dte = row.get(field_name, '')
+                        value = af.format_modified_at(modified_dte, user_lang)
+                    elif field_name == 'gradetype':
+                        gradetype = row.get(field_name)
+                        if gradetype == 1:
+                            value = str(_('Number'))
+                        elif gradetype == 2:
+                            value = 'o/v/g'
+                        else:
+                            value = ''
+                    else:
+                        value = row.get(field_name, '')
+                        if isinstance(value, bool):
+                            value = 'x' if value else ''
+
+                    sheet.write(row_index, i, value, row_formats[i])
+
+    return row_index
+# --- end of create_subjecttype_paragraph_xlsx

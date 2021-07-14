@@ -142,6 +142,19 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MSED_btn_save.addEventListener("click", function() {t_MSED_Save(MSED_Response)}, false);
         }
 
+// ---  MSSS MOD SELECT SCHOOL / SUBJECT / STUDENT ------------------------------
+        const el_MSSSS_input = document.getElementById("id_MSSSS_input");
+        const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tbody_select");
+        const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save");
+        if (el_MSSSS_input){
+            el_MSSSS_input.addEventListener("keyup", function(event){
+                setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});
+        }
+        if (el_MSSSS_btn_save){
+            el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save(el_MSSSS_input, MSSSS_Response)}, false );
+        }
+
+
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
         if(el_SBR_select_level){
@@ -322,26 +335,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     must_create_submenu = true;
                 };
                 if ("setting_dict" in response) {
-                    setting_dict = response.setting_dict
-                    selected_btn = (setting_dict.sel_btn)
+                    setting_dict = response.setting_dict;
+                    selected_btn = (setting_dict.sel_btn);
                     must_update_headerbar = true;
 
+                console.log("setting_dict", setting_dict)
 
-
-                    // <PERMIT> PR2021-10-20
-                    // TODO
-                    //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-                    //  - can add/delete/edit only 'role_school' + same_school plus 'perm_edit'
-                    //  - cannot edit when country, examyear or schoolis locked
-                    //  - can only edit when school is published
-                   // permit_dict.permit_crud = (setting_dict.requsr_role_admin && setting_dict.usergroup_edit) ||
-                    //                  (setting_dict.requsr_role_system && setting_dict.usergroup_edit);
-                    // <PERMIT> PR2020-10-27
-                    // - every user may change examyear and department
-                    // -- only insp, admin and system may change school
-                   // has_permit_select_school = (setting_dict.requsr_role_insp ||
-                   //                             setting_dict.requsr_role_admin ||
-                   //                             setting_dict.requsr_role_system);
                 };
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
@@ -462,8 +461,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= FillTblRows  ==================== PR2021-07-01
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
-        console.log( "setting_dict", setting_dict);
+        //console.log( "===== FillTblRows  === ");
+        //console.log( "setting_dict", setting_dict);
 
         const tblName = get_tblName_from_selectedBtn();
         const field_setting = field_settings[tblName]
@@ -911,6 +910,21 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- also used for level, sector,
     function MSTUD_Open(el_input){
         console.log(" -----  MSTUD_Open   ----")
+
+
+                const datalist_request = {
+                setting: {page: "page_studsubj"},
+
+            };
+
+        DatalistDownload(datalist_request, "TEST");
+
+
+
+
+
+
+
         if( permit_dict.permit_crud){
             let user_pk = null, user_country_pk = null, user_schoolbase_pk = null, mapid = null;
             const fldName = get_attr_from_el(el_input, "data-field");
@@ -1291,8 +1305,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  MSTUDSUBJ_Open   ----")
         console.log("el_input", el_input)
         //console.log("permit_dict", permit_dict)
-        if(el_input && permit_dict.permit_crud){
-
+        // TODO === FIXIT === set permit
+        //if(el_input && permit_dict.permit_crud){
+        if (true){
         // mod_MSTUDSUBJ_dict stores general info of selected candidate in MSTUDSUBJ PR2020-11-21
             mod_MSTUDSUBJ_dict = {
                 mod_schemeitem_dict: {},  // stores available studsubj for selected candidate in MSTUDSUBJ
@@ -2614,6 +2629,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10
     function MSED_Response(new_setting) {
         console.log( "===== MSED_Response ========= ");
+        console.log( "new_setting", new_setting);
 
 // ---  upload new selected_pk
 // also retrieve the tables that have been changed because of the change in examyear / dep
@@ -2627,4 +2643,77 @@ document.addEventListener('DOMContentLoaded', function() {
         DatalistDownload(datalist_request);
 
     }  // MSED_Response
+
+
+//###########################################################################
+//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-07-14
+    function MSSSS_Response(tblName, selected_pk, selected_code, selected_name) {
+        //console.log( "===== MSSSS_Response ========= ");
+        //console.log( "selected_pk", selected_pk);
+
+    // ---  upload new setting
+        if(selected_pk === -1) { selected_pk = null};
+        const upload_dict = {};
+        const selected_pk_dict = {sel_student_pk: selected_pk};
+        selected_pk_dict["sel_" + tblName + "_pk"] = selected_pk;
+        let new_selected_btn = null;
+
+        if (tblName === "school") {
+// ---  upload new setting and refresh page
+            const datalist_request = {
+                    setting: {page: "page_studsubj",
+                        sel_schoolbase_pk: selected_pk
+                    },
+                    school_rows: {get: true},
+                    department_rows: {get: true},
+                    level_rows: {cur_dep_only: true},
+                    sector_rows: {cur_dep_only: true},
+                    student_rows: {cur_dep_only: true},
+                    studentsubject_rows: {cur_dep_only: true},
+                    schemeitem_rows: {cur_dep_only: true}
+                };
+
+            DatalistDownload(datalist_request);
+
+
+        } else if (tblName === "subject") {
+            setting_dict.sel_subject_pk = selected_pk;
+    // reset selected student when subject is selected, in setting_dict and upload_dict
+            if(selected_pk){
+                selected_pk_dict.sel_student_pk = null;
+                setting_dict.sel_student_pk = null;
+                setting_dict.sel_student_name = null;
+                new_selected_btn = "grade_by_subject";
+            }
+
+        } else if (tblName === "student") {
+            setting_dict.sel_student_pk = selected_pk;
+            setting_dict.sel_student_name = selected_name;
+    // reset selected subject when student is selected, in setting_dict and upload_dict
+            if(selected_pk){
+                selected_pk_dict.sel_subject_pk = null;
+                setting_dict.sel_subject_pk = null;
+                new_selected_btn = "grade_by_student";
+            }
+        }
+
+        if (tblName === "school") {
+
+        } else {
+            UploadSettings ({selected_pk: selected_pk_dict}, url_settings_upload);
+            if (new_selected_btn) {
+        // change selected_button
+                HandleBtnSelect(new_selected_btn, true)  // true = skip_upload
+                // also calls: FillTblRows(), MSSSS_display_in_sbr(), UpdateHeader()
+            }  else {
+        // fill datatable
+                FillTblRows();
+                MSSSS_display_in_sbr()
+        // --- update header text - comes after MSSSS_display_in_sbr
+                UpdateHeaderLeft();
+            }
+        }
+    }  // MSSSS_Response
+
 })  // document.addEventListener('DOMContentLoaded', function()
+

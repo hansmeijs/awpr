@@ -639,7 +639,7 @@ def dep_initials(dep_name):
 
 
 def delete_instance(instance, messages, request, this_txt=None, header_txt=None):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_instance  -----')
         logger.debug('instance: ' + str(instance))

@@ -15,7 +15,7 @@
             <h5>{% trans 'Subjects' %}</h5>
         </div>
         {% if not no_access %}
-            <div class="tw_200 m-2">
+            <div class="tw_200 m-2 tab_show tab_btn_scheme tab_btn_schemeitem tab_btn_subjecttype">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Subject scheme' %}:</h6>
                 <select id="id_SBR_select_scheme" class="tw_200 border_none px-1"
                     autocomplete="off" ondragstart="return false;" ondrop="return false;"
@@ -88,7 +88,7 @@
                 data-subjecttypebase_upload_url="{% url 'subjecttypebase_upload_url' %}"
                 data-scheme_upload_url="{% url 'scheme_upload_url' %}"
                 data-schemeitem_upload_url="{% url 'schemeitem_upload_url' %}"
-                data-download_scheme_xlsx_url="{% url 'download_scheme_xlsx_url' %}"
+                data-url_download_scheme_xlsx="{% url 'url_download_scheme_xlsx' %}"
             >
             </div>
         {% endif %}

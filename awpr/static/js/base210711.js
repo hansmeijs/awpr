@@ -1095,7 +1095,7 @@
 
 //========= b_recursive_tblRow_lookup  ========== PR2020-06-16
     function b_recursive_tblRow_lookup(tblBody, search_value_1, search_value_2, search_value_3, user_lang){
-        // console.log( " ----- b_recursive_tblRow_lookup -----");
+        //console.log( " ----- b_recursive_tblRow_lookup -----");
         // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
         // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
         // function returns rowindex of searched value, or rowindex of row to be inserted
@@ -1103,6 +1103,9 @@
         const lookup_field_1 = "data-ob1", lookup_field_2 = "data-ob2", lookup_field_3 = "data-ob3";
         let compare = null, middle_index = null, found_row = null;
         const last_index = (tblBody.rows && tblBody.rows.length) ? tblBody.rows.length -1 : 0;
+
+    //console.log( "last_index: ", last_index);
+
         if (tblBody.rows && tblBody.rows.length){
             let min_index = 0;
             let max_index = last_index;
@@ -1125,9 +1128,9 @@
                     const middle_value_field_2 = get_attr_from_el(tblRow, lookup_field_2, "");
                     const middle_value_field_3 = get_attr_from_el(tblRow, lookup_field_3, "");
 
-        //console.log( i, "LOOP : ", min_index, " - ", max_index, " > ", middle_index);
-        //console.log( "lookup_values: ", search_value_1, " - ",  search_value_2, search_value_3);
-        //console.log( "row_values: ", middle_value_field_1, " - ",  middle_value_field_2, middle_value_field_3);
+    //console.log( i, "LOOP : ", min_index, " - ", max_index, " > ", middle_index);
+    //console.log( "lookup_values: ", search_value_1, " - ",  search_value_2, " - ", search_value_3);
+    //console.log( "row_values: ", middle_value_field_1, " - ",  middle_value_field_2, " - ", middle_value_field_3);
 
                     // PR2021-06-08 note: toLowerCase is not necessary, because sensitivity: 'base' ignores lower- / uppercase and accents;
                     // sort function from https://stackoverflow.com/questions/51165/how-to-sort-strings-in-javascript
@@ -1148,7 +1151,7 @@
                     } else {
                         compare = compare1;
                     }
-        //console.log( "compare : ", compare);
+    //console.log( "compare : ", compare);
                     if (!compare ) {
                         //  search_value === middle_value
                         // exit, return middle_index (compare = 0 means item is found at index: middle_index
@@ -1208,7 +1211,7 @@
             middle_index = -1;
         };  //  if (tblBody.rows && tblBody.rows.length)
 
-        //console.log( "return : index", middle_index, " found_row ", found_row, " compare ", return_compare);
+    //console.log( "return : index", middle_index, " found_row ", found_row, " compare ", compare);
         return middle_index;
     };  // b_recursive_tblRow_lookup
 

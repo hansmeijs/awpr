@@ -280,6 +280,7 @@ KEY_SEL_SUBJECT_PK = 'sel_subject_pk'
 KEY_SEL_STUDENT_PK = 'sel_student_pk'
 KEY_SEL_LEVEL_PK = 'sel_level_pk'
 KEY_SEL_SECTOR_PK = 'sel_sector_pk'
+KEY_SEL_SCHEME_PK = 'sel_scheme_pk'
 KEY_SEL_BTN = 'sel_btn'
 KEY_COL_HIDDEN = 'col_hidden'
 

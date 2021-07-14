@@ -484,7 +484,6 @@ class Grade(sch_mod.AwpBaseModel):
     objects = CustomManager()
 
     studentsubject = ForeignKey(Studentsubject, related_name='+', on_delete=CASCADE)
-
     exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
 
     examperiod = PositiveSmallIntegerField(db_index=True, default=1) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption

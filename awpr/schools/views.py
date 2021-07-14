@@ -138,7 +138,7 @@ class ExamyearListView(View):
         page = 'page_examyear'
         # don't show dep and school on page examyear
         # Note: set display_school / display_dep also in download_setting
-        display_school = (request and request.user and request.user.role <= c.ROLE_008_SCHOOL)
+        display_school = True  # (request and request.user and request.user.role <= c.ROLE_008_SCHOOL)
         display_department = False
         param = {'display_school': display_school, 'display_department': display_department}
         headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
@@ -432,7 +432,7 @@ class SchoolListView(View):  # PR2018-08-25 PR2020-10-21 PR2021-03-25
 
 # - get headerbar parameters
         page = 'page_school'
-        display_school = (request and request.user and request.user.role <= c.ROLE_008_SCHOOL)
+        display_school = True  #(request and request.user and request.user.role <= c.ROLE_008_SCHOOL)
         display_department = False
         param = {'display_school': display_school, 'display_department': display_department}
         headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
