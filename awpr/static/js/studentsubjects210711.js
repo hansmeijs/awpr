@@ -1381,8 +1381,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  MSTUDSUBJ_Save   ----")
         console.log( "mod_MSTUDSUBJ_dict.studentsubject_dict: ", mod_MSTUDSUBJ_dict.studentsubject_dict);
         console.log( "mod_MSTUDSUBJ_dict: ", mod_MSTUDSUBJ_dict);
-
-        if(permit_dict.permit_crud && mod_MSTUDSUBJ_dict.stud_id){
+        // TODO === FIXIT === set permit
+        //if(permit_dict.permit_crud && mod_MSTUDSUBJ_dict.stud_id){
+        if(true){
             const upload_dict = {
                 table: 'studentsubject',
                 sel_examyear_pk: setting_dict.sel_examyear_pk,

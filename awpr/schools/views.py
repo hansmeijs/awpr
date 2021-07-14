@@ -279,9 +279,11 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def create_examyear(country, examyear_code_int, request):
-    # --- create examyear # PR2019-07-30 PR2020-10-05
-    logger.debug(' ----- create_examyear ----- ')
-    logger.debug('examyear_code_int: ' + str(examyear_code_int) + ' ' + str(type(examyear_code_int)))
+    # --- create examyear # PR2019-07-30 PR2020-10-05 PR2021-07-14
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_examyear ----- ')
+        logger.debug('examyear_code_int: ' + str(examyear_code_int) + ' ' + str(type(examyear_code_int)))
 
     instance = None
     msg_err = None
@@ -292,11 +294,7 @@ def create_examyear(country, examyear_code_int, request):
             instance = sch_mod.Examyear(
                 country=request.user.country,
                 code=examyear_code_int,
-                #published=False,
-                #locked=False,
                 createdat=timezone.now()
-                #publishedat=None,
-                #lockedat=None,
             )
             instance.save(request=request)
         except Exception as e:
@@ -384,6 +382,8 @@ def copy_tables_from_last_year(new_examyear_instance, request):
 
     prev_examyear_instance, msg_err = sf.get_previous_examyear_instance(new_examyear_instance)
     if new_examyear_instance and prev_examyear_instance:
+
+        sf.copy_examyear_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
 
         sf.copy_exfilestext_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
         mapped_deps = sf.copy_deps_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)

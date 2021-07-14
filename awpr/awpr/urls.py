@@ -152,10 +152,10 @@ urlpatterns = [
 # ===== SCHOOLS ==========================  PR2018-08-23 PR2020-10-20 PR2021-04-26
     path('schools/', include([
         path('examyears', school_views.ExamyearListView.as_view(), name='examyears_url'),
-        path('examyear_upload', school_views.ExamyearUploadView.as_view(), name='examyear_upload_url'),
+        path('examyear_upload', school_views.ExamyearUploadView.as_view(), name='url_examyear_upload'),
 
         path('school', school_views.SchoolListView.as_view(), name='schools_url'),
-        path('school_upload', school_views.SchoolUploadView.as_view(), name='school_upload_url'),
+        path('school_upload', school_views.SchoolUploadView.as_view(), name='url_school_upload'),
         path('school_import', school_views.SchoolImportView.as_view(), name='school_import_url'),
 
         path('awp_upload', upload_views.UploadAwpView.as_view(), name='school_awpupload_url'),

@@ -388,66 +388,55 @@ class StudentsubjectValidateView(View):
         update_wrap = {}
         messages = []
 
-# - get permit
-        has_permit = False
-        req_usr = request.user
-        if req_usr and req_usr.country and req_usr.schoolbase:
-            permit_list = req_usr.permit_list('page_studsubj')
-            if permit_list:
-                has_permit = 'permit_crud' in permit_list
+# - get permit - no permit necessary
+
+# - reset language
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+
+            messages = []
+# ----- get selected examyear, school and department from usersettings
+            sel_examyear, sel_school, sel_department, may_editNIU, msg_listNIU = \
+                dl.get_selected_ey_school_dep_from_usersetting(request)
+
             if logging_on:
-                logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('has_permit: ' + str(has_permit))
-
-        if has_permit:
-
-    # - reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
-
-    # - get upload_dict from request.POST
-            upload_json = request.POST.get('upload', None)
-            if upload_json:
-                upload_dict = json.loads(upload_json)
-
-                messages = []
-    # ----- get selected examyear, school and department from usersettings
-                sel_examyear, sel_school, sel_department, may_editNIU, msg_listNIU = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
-
-                if logging_on:
-                    logger.debug('upload_dict' + str(upload_dict))
-                    logger.debug('sel_examyear: ' + str(sel_examyear))
-                    logger.debug('sel_school: ' + str(sel_school))
-                    logger.debug('sel_department: ' + str(sel_department))
+                logger.debug('upload_dict' + str(upload_dict))
+                logger.debug('sel_examyear: ' + str(sel_examyear))
+                logger.debug('sel_school: ' + str(sel_school))
+                logger.debug('sel_department: ' + str(sel_department))
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
 
-                #if len(msg_list):
-                #    msg_html = ''
-                #    for msg in msg_list:
-                #        msg_html += ''.join(( '<p>', str(msg), '</p>'))
-                #    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
+            #if len(msg_list):
+            #    msg_html = ''
+            #    for msg in msg_list:
+            #        msg_html += ''.join(( '<p>', str(msg), '</p>'))
+            #    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
 
-                student_pk = upload_dict.get('student_pk')
-                student = stud_mod.Student.objects.get_or_none(
-                    id=student_pk,
-                    school=sel_school,
-                    department=sel_department,
-                    locked=False
-                )
-                if logging_on:
-                    logger.debug('student: ' + str(student))
+            student_pk = upload_dict.get('student_pk')
+            student = stud_mod.Student.objects.get_or_none(
+                id=student_pk,
+                school=sel_school,
+                department=sel_department,
+                locked=False
+            )
+            if logging_on:
+                logger.debug('student: ' + str(student))
 
-                if student:
+            if student:
 
 # +++ validate subjects of student
-                    msg_html = stud_val.validate_studentsubjects(student)
-                    if msg_html:
-                        update_wrap['validate_studsubj_html'] = msg_html
+                msg_html = stud_val.validate_studentsubjects(student)
+                if msg_html:
+                    update_wrap['validate_studsubj_html'] = msg_html
 
-                if len(messages):
-                    update_wrap['messages'] = messages
+            if len(messages):
+                update_wrap['messages'] = messages
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -479,6 +468,9 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                 logger.debug('permit_list: ' + str(permit_list))
                 logger.debug('has_permit: ' + str(has_permit))
 
+        # TODO === FIXIT === set permit
+        has_permit = True
+
         if has_permit:
 
         # - check for double subjects, double subjects are not allowed -> happens in create_studsubj PR2021-07-11
@@ -509,8 +501,13 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                 student = None
                 # TODO : may_edit = examyear_published and school_activated and requsr_same_school and sel_department and not is_locked
 
+                # TODO === FIXIT === set permit
+                msg_list = []
+                may_edit = True
+
                 if len(msg_list):
-                    messages.append({'class': "border_bg_warning", 'msg_list': [msg_list]})
+                    msg_html = '<br>'.join(msg_list)
+                    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
                 elif may_edit:
                     student_pk = upload_dict.get('student_pk')
                     student = stud_mod.Student.objects.get_or_none(

@@ -15,6 +15,24 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+
+def copy_examyear_from_prev_examyear(request, prev_examyear, new_examyear):
+    # copy exfilestext from previous examyear PR2021-07-14
+
+    try:
+        new_examyear.no_practexam = prev_examyear.no_practexam
+        new_examyear.reex_se_allowed = prev_examyear.reex_se_allowed
+        new_examyear.no_centralexam = prev_examyear.no_centralexam
+        new_examyear.no_thirdperiod = prev_examyear.no_thirdperiod
+        new_examyear.modifiedby_id = request.user.id,
+        new_examyear.modifiedat = timezone.now()
+
+        new_examyear.save(request=request)
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# - end of copy_examyear_from_prev_examyear
+
+
 def copy_exfilestext_from_prev_examyear(request, prev_examyear, new_examyear):
     # copy exfilestext from previous examyear PR2021-04-25
 

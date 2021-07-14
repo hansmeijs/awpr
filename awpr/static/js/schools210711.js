@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let el_data = document.getElementById("id_data");
     const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
-    const url_school_upload = get_attr_from_el(el_data, "data-school_upload_url");
+    const url_school_upload = get_attr_from_el(el_data, "data-url_school_upload");
     const url_school_import = get_attr_from_el(el_data, "data-school_import_url");
     const url_school_awpupload = get_attr_from_el(el_data, "data-school_awpupload_url");
 

@@ -46,8 +46,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let el_data = document.getElementById("id_data");
     const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
-    const url_examyear_upload = get_attr_from_el(el_data, "data-examyear_upload_url");
-    const url_school_upload = get_attr_from_el(el_data, "data-school_upload_url");
+    const url_examyear_upload = get_attr_from_el(el_data, "data-url_examyear_upload");
+    const url_school_upload = get_attr_from_el(el_data, "data-url_school_upload");
 
 // --- get field_settings
     const field_settings = {
