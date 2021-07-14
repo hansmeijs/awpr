@@ -175,12 +175,15 @@ def message_diff_exyr(examyear):  #PR2020-10-30
         if now.month > 7:
             this_examyear = now.year + 1
         if examyear_int != this_examyear:
+            # TODO === FIXIT set masg, not for admin in July
+            pass
             # PR2018-08-24 debug: in base.html  href="#" is needed,
             # because bootstrap line 233: a:not([href]):not([tabindex]) overrides navbar-item-warning
-            msg = str(_(
-                'Please note: the selected exam year %(exyr)s is different from the current exam year.') % {
-                          'exyr': str(examyear.code)})
-            awp_message = {'msg_list': [msg], 'class': 'border_bg_warning'}
+
+            #msg = str(_(
+            #    'Please note: the selected exam year %(exyr)s is different from the current exam year.') % {
+            #              'exyr': str(examyear.code)})
+            #awp_message = {'msg_list': [msg], 'class': 'border_bg_warning'}
 
     return awp_message
 

@@ -1702,11 +1702,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function MSTUDSUBJ_SetInputFields(schemitem_pk, is_selected){
 // ---  put value in input box 'Characteristics of this subject
-        //console.log( "===== MSTUDSUBJ_SetInputFields  ========= ");
-        //console.log( "schemitem_pk", schemitem_pk);
+        console.log( "===== MSTUDSUBJ_SetInputFields  ========= ");
+        console.log( "schemitem_pk", schemitem_pk);
         //console.log( "is_selected", is_selected);
 
-        let is_empty = true, is_combi = false, is_elective_combi = false,
+        let is_empty = true, is_mand = false, is_combi = false, is_elective_combi = false,
             is_extra_counts = false, is_extra_nocount = false,
             pwstitle = null, pwssubjects = null,
             extra_count_allowed = false, extra_nocount_allowed = false, elective_combi_allowed = false;
@@ -1717,8 +1717,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(is_selected && schemitem_pk && mod_MSTUDSUBJ_dict.studentsubject_dict[schemitem_pk]){
             map_dict = mod_MSTUDSUBJ_dict.studentsubject_dict[schemitem_pk];
+
+        console.log( "map_dict", map_dict);
             if(!isEmpty(map_dict)){
                 is_empty = false;
+                is_mand = map_dict.is_mandatory
                 is_combi = map_dict.is_combi
                 extra_count_allowed = map_dict.extra_count_allowed
                 extra_nocount_allowed = map_dict.extra_nocount_allowed
@@ -1741,7 +1744,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const el_wrap = el.parentNode.parentNode.parentNode
 
             const field = get_attr_from_el(el, "data-field")
-            const hide_element = (field === "is_combi") ? is_empty :
+            const hide_element = (field === "is_mandatory") ? is_empty :
+                                (field === "is_combi") ? is_empty :
                                  (field === "is_elective_combi") ? !map_dict.elective_combi_allowed :
                                  (field === "is_extra_nocount") ? !map_dict.extra_nocount_allowed :
                                  (field === "is_extra_counts") ? !map_dict.extra_count_allowed :
@@ -1856,8 +1860,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         sel_studsubj_dict.haschanged = true;
         // ---  if checkbox: put checked value in sel_studsubj_dict
                     } else if(el_input.classList.contains("awp_input_checkbox")) {
-                        if (field === "is_combi"){
-                            // is_combi cannot be changed.
+                        if (["is_combi", "is_mandatory"].includes(field)){
+                            // is_combi and is_mandatory cannot be changed.
                             // setting disabled makes checkbox grey, is not what we want
                             // therefore always undo changes after clicked om this checkbox
                             el_input.checked = !el_input.checked;
