@@ -17,7 +17,7 @@
 {% endblock %}
 
 {% block content %}
-  {% if user.enable_students_view %}
+  {% if user.enable_students_viewNIU %}
 
         <h4>{% trans 'Student results' %} {{ school.name }} {{ user.examyear }}</h4>
 
@@ -40,11 +40,11 @@
             {% for item in results.all %}
               <tr>
                 <td>
-                  {% if user.enable_students_modify %}<a href="{% url 'tresult_edit_url' item.pk %}">{% endif %}
+                  {% if user.enable_students_modifyNIU %}<a href="{% url 'tresult_edit_url' item.pk %}">{% endif %}
                   {{ item.student.lastname_firstname_initials }}</a>
                 </td>
                 <td>
-                  {% if user.enable_students_modify %}<a href="{% url 'studentsubject_formset_url' item.pk %}">{% endif %}
+                  {% if user.enable_students_modifyNIU %}<a href="{% url 'studentsubject_formset_url' item.pk %}">{% endif %}
                   {{ item.diplomanumber }}</a>
                 </td>
                 <td>{{ item.gradelistnumber}}</td>
@@ -59,7 +59,7 @@
           </tbody>
         </table>
   {% else %}
-    <div class="alert alert-danger">{{ user.message_students_view }}</div>
+    <div class="alert alert-danger">{{ user.message_students_viewNIU }}</div>
     <a href="{% url 'home_url' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
   {% endif %}
 {% endblock %}l>

@@ -186,6 +186,19 @@ class User(AbstractUser):
         return permit_list
     # - end of permit_list
 
+
+    @property
+    def is_usergroup_admin(self):
+        _has_permit = False
+        if self.is_authenticated:
+            if self.usergroups is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
+                usergroups_delim = ''.join((';', self.usergroups, ';' ))
+                if ';admin;' in usergroups_delim:
+                    _has_permit = True
+        return _has_permit
+
+
+
     # PR2018-05-30 list of permits that user can be assigned to:
     # - System users can only have permits: 'Admin' and 'Read'
     # - System users can add all roles: 'System', Insp', School', but other roles olny with 'Admin' and 'Read' permit
@@ -248,140 +261,9 @@ class User(AbstractUser):
         if self.is_authenticated:
             if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
                 if self.role == c.ROLE_128_SYSTEM or self.role == c.ROLE_032_INSP:
-                    if self.is_group_admin:
+                    if self.is_usergroup_admin:
                         _has_permit = True
         return _has_permit
-
-    # +++++++++++++++++++  FORM PERMITS  +++++++++++++++++++++++
-# - user
-    @property
-    def message_user_authenticated(self):
-        return _("You must be logged in to view this page.")
-
-    @property
-    def enable_user_view_modify(self):
-        return not bool(self.message('user_view_modify'))
-
-    @property
-    def message_user_view_modify(self):  # PR2018-08-18
-        return self.message('user_view_modify')
-
-# - country
-    @property
-    def enable_country_view(self):  # PR2018-08-18
-        return not bool(self.message('country_view'))
-
-    @property
-    def message_country_view(self):  # PR2018-08-18
-        return self.message('country_view')
-
-    @property
-    def enable_country_modify(self):  # PR2018-08-18
-        enable_modify = False
-        enable_view = not bool(self.message('country_view'))
-        if enable_view:
-            if self.is_group_system:
-                enable_modify = True
-        return enable_modify
-
-    @property
-    def message_country_modify(self):  # PR2018-08-18
-        if not self.enable_country_modify:
-            return _("You don't have permission to modify countries.")
-        else:
-            return None
-# - examyear
-    @property
-    def enable_examyear_view(self):  # PR2018-08-19
-        return not bool(self.message('examyear_view'))
-
-    @property
-    def message_examyear_view(self):  # PR2018-08-18
-        return self.message('examyear_view')
-
-    @property
-    def enable_examyear_modify(self):  # PR2018-08-18
-        return not bool(self.message('examyear_modify'))
-
-    @property
-    def message_examyear_modify(self):  # PR2018-08-18
-        return self.message('examyear_modify')
-
-# -- default items: schooldefault / subjectdefault / departments / levels / sectors:
-    @property
-    def enable_default_items_view(self):  # PR2018-08-19
-        return not bool(self.message('default_items_view'))
-
-    @property
-    def message_default_items_view(self):  # PR2018-08-18
-        return self.message('default_items_view')
-
-    @property
-    def enable_default_items_modify(self):  # PR2018-08-18
-        return not bool(self.message('default_items_modify'))
-
-    @property
-    def message_default_items_modify(self):  # PR2018-08-18
-        return self.message('default_items_modify')
-
-    # -- schemes, levels, sectors deps, subjects:
-    @property
-    def enable_schemes_view(self):  # PR2018-08-23
-        return not bool(self.message('scheme_etc_view'))
-
-    @property
-    def message_schemes_view(self):  # PR2018-08-23
-        return self.message('scheme_etc_view')
-
-    @property
-    def enable_schemes_modify(self):  # PR2018-08-23
-        return not bool(self.message('scheme_etc_edit'))
-
-    @property
-    def message_schemes_modify(self):  # PR2018-08-23
-        return self.message('scheme_etc_edit')
-
-    # -- schools
-    @property
-    def enable_schools_view(self):  # PR2018-09-15
-        return not bool(self.message('school_view'))
-
-    @property
-    def message_schools_view(self):  # PR2018-09-15
-        return self.message('school_view')
-
-    @property
-    def enable_schools_modify(self):  # PR2018-09-15
-        return not bool(self.message('school_edit'))
-
-    @property
-    def message_schools_modify(self):  # PR2018-09-15
-        return self.message('school_edit')
-
-    @property
-    def enable_schools_add_delete(self):  # PR2018-09-15
-        return not bool(self.message('school_add_delete'))
-
-    @property
-    def message_schools_add_delete(self):  # PR2018-09-15
-        return self.message('school_add_delete')
-
-# -- students: PR2018-09-02
-    @property
-    def enable_students_view(self):
-        return not bool(self.message('students_view'))
-
-    @property
-    def message_students_view(self):
-        return self.message('students_view')
-
-    @property
-    def enable_students_modify(self):
-        return not bool(self.message('students_modify'))
-
-    @property
-    def message_students_modify(self):
-        return self.message('students_modify')
 
  # -----
     def message(self, page_name ='None'):
@@ -389,7 +271,7 @@ class User(AbstractUser):
         # school admin may add his own school, subjects etc. Is function, not form
         # system and insp may add schoolyear
         #         _has_permit = False
-        # self.is_role_insp_or_system_and_group_admin is: self.is_authenticated AND (self.is_role_system OR self.is_role_insp) AND (self.is_group_system:
+        # self.is_role_insp_or_system_and_group_admin is: self.is_authenticated AND (self.is_role_system OR self.is_role_insp) AND (self.is_usergroup_admin:
 
         _no_permission =_("You don't have permission to view this page.")
 
@@ -416,7 +298,7 @@ class User(AbstractUser):
     # - userlist: only admin can view and modify userlist
         if page_name == 'user_view_modify':
             # only admins can view user list
-            if not self.is_group_system:
+            if not self.is_usergroup_admin:
                 return _no_permission
             else:
                 return None
@@ -542,7 +424,7 @@ class User(AbstractUser):
                 return _("This country is locked. You cannot modify schools.")
             elif self.examyear_locked:
                 return _("This examyear is locked. You cannot modify schools.")
-            elif not self.is_group_system:
+            elif not self.is_usergroup_admin:
                 # only admin users can modify school
                 # filter that role-school users can only modify their own school is part of form-get
                 return _("You don't have permission to modify schools.")

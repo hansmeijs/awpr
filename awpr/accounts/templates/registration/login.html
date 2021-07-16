@@ -1,25 +1,27 @@
 {% extends 'base.html' %}
 {% load i18n %}
 
-{% block title %}{% trans 'Log in' %}{% endblock %}
+{% block title %}Inloggen{% endblock %}
 
 {% block content %}
   <div class="row justify-content-center mt-5">
     <div class="col-lg-4 col-md-6 col-sm-8">
       <div class="card mt-5">
         <div class="card-body tsa_bc_lightlightgrey">
-            <h4>{% trans 'Log in' %}</h4>
+            <h4>Inloggen</h4>
         </div>
         <div class="card-body">
             <form method="post" novalidate>
               {% csrf_token %}
               <input type="hidden" name="next" value="{{ next }}">
               {% include 'includes/form.html' %}
-              <button type="submit" class="btn btn-primary btn-block">{% trans 'Log in' %}</button>
+            <div class="pt-3">
+              <button type="submit" class="btn btn-primary btn-block">Log in</button>
+        </div>
             </form>
         </div>
         <div class="card-footer text-muted text-center">
-          <a href="{% url 'password_reset' %}" class="text-muted">{% trans 'Forgot your password?' %}</a>
+          <a href="{% url 'password_reset' %}" class="text-muted">Wachtwoord vergeten?</a>
         </div>
       </div>
     </div>

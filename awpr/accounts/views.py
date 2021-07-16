@@ -2,10 +2,26 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required  # PR2018-04-01
 from django.contrib.auth.mixins import UserPassesTestMixin  # PR2018-11-03
 from django.contrib.sites.shortcuts import get_current_site
+
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.forms import (
+    AuthenticationForm, PasswordChangeForm, PasswordResetForm, SetPasswordForm,
+)
+
 from django.core.mail import send_mail
 
 from django.db import connection
 from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpResponseNotFound, FileResponse
+
+from django.views.decorators.csrf import csrf_protect
+
+from django import forms
+from django.template import loader
+from django.core.mail import EmailMultiAlternatives
+
+import unicodedata
+from django.contrib.auth import get_user_model, authenticate
+UserModel = get_user_model()
 
 from django.shortcuts import render, redirect
 from django.template.loader import render_to_string
@@ -15,13 +31,23 @@ from django.utils.decorators import method_decorator
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.translation import activate, ugettext_lazy as _
-from django.views.generic import ListView, View, UpdateView, DeleteView
+from django.views.generic import ListView, View, UpdateView, DeleteView, FormView
+
 from django.contrib.auth.forms import SetPasswordForm # PR2018-10-14
 
+
+from django.views.decorators.cache import never_cache
+from django.views.decorators.debug import sensitive_post_parameters
+from django.core.exceptions import ValidationError
+
 from django.contrib.auth import (
+    authenticate, get_user_model, password_validation,
     REDIRECT_FIELD_NAME, get_user_model, login as auth_login,
     logout as auth_logout, update_session_auth_hash,
 )
+
+INTERNAL_RESET_SESSION_TOKEN = '_password_reset_token'
+
 
 import xlsxwriter
 
@@ -44,6 +70,16 @@ import pytz
 import json
 import logging
 logger = logging.getLogger(__name__)
+
+
+def _unicode_ci_compare(s1, s2):
+    """
+    Perform case-insensitive comparison of two identifiers, using the
+    recommended algorithm from Unicode Technical Report 36, section
+    2.11.2(B)(2).
+    """
+    return unicodedata.normalize('NFKC', s1).casefold() == unicodedata.normalize('NFKC', s2).casefold()
+
 
 @method_decorator([login_required], name='dispatch')
 class UserListView(ListView):
@@ -193,7 +229,7 @@ class UserUploadView(View):
                                         id=user_pk,
                                         country=req_user.country
                                     )
-                                elif has_permit_this_school:
+                                elif has_permit_same_school:
                                     instance = acc_mod.User.objects.get_or_none(
                                         id=user_pk,
                                         country=req_user.country,
@@ -772,6 +808,7 @@ def SignupActivateView(request, uidb64, token):
 
 
 # PR2018-04-24
+
 @method_decorator([login_required], name='dispatch')
 class UserActivateView(UpdateView):
     model = User
@@ -872,6 +909,382 @@ def UserActivate(request, uidb64, token):
         return render(request, 'account_activation_invalid.html')
 
 
+# === resend_activation_email ===================================== PR2020-08-15
+def resend_activation_email(user_pk, update_wrap, err_dict, request):
+    #  resend_activation_email is called from table Users, field 'activated' when the activation link has expired.
+    #  it sends an email to the user
+    #  it returns a HttpResponse, with ok_msg or err-msg
+
+    user = acc_mod.User.objects.get_or_none(id=user_pk, country= request.user.country)
+    #logger.debug('user: ' + str(user))
+    has_error = False
+    if user:
+        update_wrap['user'] = {'pk': user.pk, 'username': user.username}
+
+        current_site = get_current_site(request)
+
+# - check if user.email is a valid email address:
+        msg_err = v.validate_email_address(user.email)
+        if msg_err:
+            err_dict['msg01'] = _("'%(email)s' is not a valid email address.") % {'email': user.email}
+            has_error = True
+
+# -  send email 'Activate your account'
+        if not has_error:
+            try:
+                subject = 'Activate your AWP-online account'
+                from_email = 'AWP-online <noreply@awponline.net>'
+                message = render_to_string('signup_activation_email.html', {
+                    'user': user,
+                    'domain': current_site.domain,
+                    # PR2018-04-24 debug: In Django 2.0 you should call decode() after base64 encoding the uid, to convert it to a string:
+                    # 'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                    # PR2021-03-24 debug. Gave error: 'str' object has no attribute 'decode'
+                    # apparently force_bytes(user.pk) returns already a string, no need for decode() any more
+                    # from https://stackoverflow.com/questions/28583565/str-object-has-no-attribute-decode-python-3-error
+                    # was: 'uid': urlsafe_base64_encode(force_bytes(user.pk)).decode(),
+                    'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                    'token': account_activation_token.make_token(user),
+                })
+                # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
+                mail_count = send_mail(subject, message, from_email, [user.email], fail_silently=False)
+                if not mail_count:
+                    err_dict['msg01'] = _('An error occurred.')
+                    err_dict['msg02'] = _('The activation email has not been sent.')
+                else:
+                # - return message 'We have sent an email to user'
+                    msg01 = _("We have sent an email to the email address '%(email)s' of user '%(usr)s'.") % \
+                                                    {'email': user.email, 'usr': user.username_sliced}
+                    msg02 = _('The user must click the link in that email to verify the email address and create a password.')
+
+                    update_wrap['msg_ok'] = {'msg01': msg01, 'msg02': msg02}
+
+            except:
+                err_dict['msg01'] = _('An error occurred.')
+                err_dict['msg02'] = _('The activation email has not been sent.')
+
+# - reset expiration date by setting the field 'date_joined', to now
+        if not has_error:
+            # PR2021-01-01 was:
+            # now_utc_naive = datetime.utcnow()
+            # now_utc = now_utc_naive.replace(tzinfo=pytz.utc)
+            # user.date_joined = now_utc
+
+            now_utc = timezone.now()
+            user.date_joined = now_utc  # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+            user.modifiedby = request.user
+            user.modifiedat = now_utc
+
+            user.save()
+# === end of resend_activation_email =====================================
+
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+class AwpPasswordResetForm(forms.Form):
+
+    logger.debug(' ============= AwpPasswordResetForm ============= ')
+
+    schoolcode = forms.CharField(
+        required=True,
+        label="Schoolcode",
+        widget=forms.TextInput(attrs={'autofocus': True})
+    )
+
+    email = forms.EmailField(
+        label="E-mail adres",
+        max_length=254,
+        widget=forms.EmailInput(attrs={'autocomplete': 'email'})
+    )
+
+    def send_mail(self, subject_template_name, email_template_name,
+                  context, from_email, to_email, html_email_template_name=None):
+        logger.debug(' ----- send_mail -----')
+        """
+        Send a django.core.mail.EmailMultiAlternatives to `to_email`.
+        """
+        subject = loader.render_to_string(subject_template_name, context)
+        # Email subject *must not* contain newlines
+        subject = ''.join(subject.splitlines())
+        body = loader.render_to_string(email_template_name, context)
+
+        email_message = EmailMultiAlternatives(subject, body, from_email, [to_email])
+        if html_email_template_name is not None:
+            html_email = loader.render_to_string(html_email_template_name, context)
+            email_message.attach_alternative(html_email, 'text/html')
+
+        email_message.send()
+
+    def get_users(self, schoolbase_id, email):
+        logger.debug(' ----- get_users -----')
+        """Given an email, return matching user(s) who should receive a reset.
+
+        This allows subclasses to more easily customize the default policies
+        that prevent inactive users and users with unusable passwords from
+        resetting their password.
+        """
+        email_field_name = UserModel.get_email_field_name()
+
+        #active_users = UserModel._default_manager.filter(**{
+        #    '%s__iexact' % email_field_name: email,
+       #     'schoolbase_id': schoolbase_id,
+        #    'is_active': True,
+       # })
+        active_users = acc_mod.User.objects.filter(
+            email=email,
+            schoolbase_id=schoolbase_id,
+            is_active=True
+        )
+
+        logger.debug('schoolbase_id: ' + str(schoolbase_id))
+        logger.debug('email_field_name: ' + str(email_field_name))
+        logger.debug('active_users: ' + str(active_users))
+        if active_users:
+            for usr in active_users:
+                logger.debug('usr: ' + str(usr))
+
+        return (
+            u for u in active_users
+            if u.has_usable_password() and
+            _unicode_ci_compare(email, getattr(u, email_field_name))
+        )
+
+    def save(self, domain_override=None,
+             subject_template_name='registration/password_reset_subject.txt',
+             email_template_name='registration/password_reset_email.html',
+             use_https=False, token_generator=default_token_generator,
+             from_email=None, request=None, html_email_template_name=None,
+             extra_email_context=None):
+        logger.debug(' ----- save -----')
+        """
+        Generate a one-use only link for resetting password and send it to the
+        user.
+        """
+        schoolcode = self.cleaned_data["schoolcode"]
+        schoolbase_id = None
+        if schoolcode:
+            schoolbase = sch_mod.Schoolbase.objects.get_or_none(
+                code__iexact=schoolcode
+            )
+            if schoolbase:
+                schoolbase_id = schoolbase.pk
+        logger.debug('schoolcode: ' + str(schoolcode))
+        logger.debug('schoolbase_id: ' + str(schoolbase_id))
+
+        email = self.cleaned_data["email"]
+
+        if not domain_override:
+            current_site = get_current_site(request)
+            site_name = current_site.name
+            domain = current_site.domain
+        else:
+            site_name = domain = domain_override
+        email_field_name = UserModel.get_email_field_name()
+
+        logger.debug('email: ' + str(email))
+        logger.debug('email_field_name: ' + str(email_field_name))
+
+        for user in self.get_users(schoolbase_id, email):
+            user_email = getattr(user, email_field_name)
+            context = {
+                'email': user_email,
+                'domain': domain,
+                'site_name': site_name,
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'user': user,
+                'token': token_generator.make_token(user),
+                'protocol': 'https' if use_https else 'http',
+                **(extra_email_context or {}),
+            }
+            self.send_mail(
+                subject_template_name, email_template_name, context, from_email,
+                user_email, html_email_template_name=html_email_template_name,
+            )
+
+# === end of class AwpPasswordResetForm =====================================
+
+
+class PasswordContextMixin:
+    extra_context = None
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'title': self.title,
+            **(self.extra_context or {})
+        })
+        return context
+
+
+class AwpPasswordResetView(PasswordContextMixin, FormView):
+    logger.debug(' ============= AwpPasswordResetView ============= ')
+
+    email_template_name = 'registration/password_reset_email.html'
+    extra_email_context = None
+    form_class = AwpPasswordResetForm
+    from_email = None
+    html_email_template_name = None
+    subject_template_name = 'registration/password_reset_subject.txt'
+    success_url = reverse_lazy('password_reset_done')
+    template_name = 'registration/password_reset_form.html'
+    title = _('Password reset')
+    token_generator = default_token_generator
+
+    @method_decorator(csrf_protect)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def form_valid(self, form):
+        opts = {
+            'use_https': self.request.is_secure(),
+            'token_generator': self.token_generator,
+            'from_email': self.from_email,
+            'email_template_name': self.email_template_name,
+            'subject_template_name': self.subject_template_name,
+            'request': self.request,
+            'html_email_template_name': self.html_email_template_name,
+            'extra_email_context': self.extra_email_context,
+        }
+        form.save(**opts)
+        return super().form_valid(form)
+
+# === end of class AwpPasswordResetView =====================================
+
+class AwpSetPasswordForm(forms.Form):
+    logger.debug(' ============= AwpSetPasswordForm ============= ')
+    """
+    A form that lets a user change set their password without entering the old
+    password
+    """
+    error_messages = {
+        'password_mismatch': 'Het nieuwe wachtwoord en de herhaling zijn niet hetzelfde.',
+    }
+
+    help_text_html = ''.join((
+        "<ul><li>",
+        "Het wachtwoord mag niet te veel lijken op je persoonsgegevens.", "</li><li>",
+        "Het wachtwoord moet tenminste 8 tekens bevatten.","</li><li>",
+        "Het wachtwoord mag geen veel gebruikt wachtwoord zijn.","</li><li>",
+        "Het wachtwoord mag niet alleen uit cijfers bestaan.""</li></ul>",
+    ))
+    new_password1 = forms.CharField(
+        label="Nieuw wachtwoord",
+        widget=forms.PasswordInput(attrs={'autocomplete': 'new-password'}),
+        strip=False,
+        #help_text=password_validation.password_validators_help_text_html(),
+        help_text=help_text_html,
+    )
+    new_password2 = forms.CharField(
+        label=_("Herhaling nieuw wachtwoord"),
+        strip=False,
+        widget=forms.PasswordInput(attrs={'autocomplete': 'new-password'}),
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_new_password2(self):
+        password1 = self.cleaned_data.get('new_password1')
+        password2 = self.cleaned_data.get('new_password2')
+        if password1 and password2:
+            if password1 != password2:
+                raise ValidationError(
+                    self.error_messages['password_mismatch'],
+                    code='password_mismatch',
+                )
+        password_validation.validate_password(password2, self.user)
+        return password2
+
+    def save(self, commit=True):
+        password = self.cleaned_data["new_password1"]
+        self.user.set_password(password)
+        if commit:
+            self.user.save()
+        return self.user
+# === end of class AwpSetPasswordForm =====================================
+
+
+class AwpPasswordResetConfirmView(PasswordContextMixin, FormView):
+    logger.debug(' ============= AwpPasswordResetConfirmView ============= ')
+    form_class = AwpSetPasswordForm
+    post_reset_login = False
+    post_reset_login_backend = None
+    reset_url_token = 'set-password'
+    success_url = reverse_lazy('password_reset_complete')
+    template_name = 'registration/password_reset_confirm.html'
+    title = _('Nieuw wachtwoord aanmaken')
+    token_generator = default_token_generator
+
+    activate(c.LANG_DEFAULT)
+
+    @method_decorator(sensitive_post_parameters())
+    @method_decorator(never_cache)
+    def dispatch(self, *args, **kwargs):
+        assert 'uidb64' in kwargs and 'token' in kwargs
+
+        self.validlink = False
+        self.user = self.get_user(kwargs['uidb64'])
+
+        if self.user is not None:
+            token = kwargs['token']
+            if token == self.reset_url_token:
+                session_token = self.request.session.get(INTERNAL_RESET_SESSION_TOKEN)
+                if self.token_generator.check_token(self.user, session_token):
+                    # If the token is valid, display the password reset form.
+                    self.validlink = True
+                    return super().dispatch(*args, **kwargs)
+            else:
+                if self.token_generator.check_token(self.user, token):
+                    # Store the token in the session and redirect to the
+                    # password reset form at a URL without the token. That
+                    # avoids the possibility of leaking the token in the
+                    # HTTP Referer header.
+                    self.request.session[INTERNAL_RESET_SESSION_TOKEN] = token
+                    redirect_url = self.request.path.replace(token, self.reset_url_token)
+                    return HttpResponseRedirect(redirect_url)
+
+        # Display the "Password reset unsuccessful" page.
+        return self.render_to_response(self.get_context_data())
+
+    def get_user(self, uidb64):
+        try:
+            # urlsafe_base64_decode() decodes to bytestring
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = UserModel._default_manager.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist, ValidationError):
+            user = None
+        return user
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.user
+        return kwargs
+
+    def form_valid(self, form):
+        user = form.save()
+        del self.request.session[INTERNAL_RESET_SESSION_TOKEN]
+        if self.post_reset_login:
+            auth_login(self.request, user, self.post_reset_login_backend)
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.validlink:
+            context['validlink'] = True
+        else:
+            context.update({
+                'form': None,
+                'title': _('Password reset unsuccessful'),
+                'validlink': False,
+            })
+        return context
+
+# === end of class AwpPasswordResetConfirmView =====================================
+
+
+
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 @method_decorator([login_required], name='dispatch')
 class UserDeleteView(DeleteView):
     model = User
@@ -899,7 +1312,7 @@ def create_user_list(request, user_pk=None):
     user_list = []
     if request.user.country and request.user.schoolbase:
         if request.user.role >= c.ROLE_008_SCHOOL:
-            #if request.user.is_group_system :
+            #if request.user.is_usergroup_admin:
             if True:
 
                 sql_keys = {'country_id': request.user.country.pk, 'max_role': request.user.role}
@@ -960,6 +1373,7 @@ def create_permit_list(permit_pk=None):
 # - end of create_permit_list
 
 # TODO to be replaced by req_usr.permit_list('page_xxx') PR2021-07-03
+
 def get_userpermit_list(page, req_user):
     # --- create list of all permits and usergroups of req_usr PR2021-03-19
     logging_on = False  # s.LOGGING_ON
@@ -1008,6 +1422,7 @@ def get_userpermit_list(page, req_user):
 
 
 # === create_or_validate_user_instance ========= PR2020-08-16 PR2021-01-01
+
 def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, usergroups, is_validate_only, user_lang, request):
     #logger.debug('-----  create_or_validate_user_instance  -----')
     #logger.debug('upload_dict: ' + str(upload_dict))
@@ -1220,7 +1635,7 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
 
             # - sysadmins cannot remove sysadmin permission from their own account
                     """
-                    if request.user.is_group_system:
+                    if request.user.is_usergroup_admin:
                         if permit_field in ('perm_admin', 'perm_system'):
                             if instance == request.user:
                                 if not new_permit_bool:
@@ -1255,7 +1670,7 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
                 elif field == 'is_active':
                     new_isactive = field_dict.get('value', False)
                     # sysadmins cannot remove is_active from their own account
-                    if request.user.is_group_system and instance == request.user:
+                    if request.user.is_usergroup_admin and instance == request.user:
                         if not new_isactive:
                             err_dict[field] = _("System administrators cannot make their own account inactive.")
                             has_error = True
@@ -1282,6 +1697,7 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
 # - +++++++++ end of update_user_instance ++++++++++++
 
 # === update_usergroups ===================================== PR2021-03-24
+
 def update_usergroups(instance, field_dict, validate, request):
     # called by UserUploadView.update_user_instance and UserpermitUploadView.update_grouppermit
     # validate only when called by update_user_instance
@@ -1350,76 +1766,8 @@ def update_usergroups(instance, field_dict, validate, request):
 
     return data_has_changed
 
-# === resend_activation_email ===================================== PR2020-08-15
-def resend_activation_email(user_pk, update_wrap, err_dict, request):
-    #  resend_activation_email is called from table Users, field 'activated' when the activation link has expired.
-    #  it sends an email to the user
-    #  it returns a HttpResponse, with ok_msg or err-msg
 
-    user = acc_mod.User.objects.get_or_none(id=user_pk, country= request.user.country)
-    #logger.debug('user: ' + str(user))
-    has_error = False
-    if user:
-        update_wrap['user'] = {'pk': user.pk, 'username': user.username}
-
-        current_site = get_current_site(request)
-
-# - check if user.email is a valid email address:
-        msg_err = v.validate_email_address(user.email)
-        if msg_err:
-            err_dict['msg01'] = _("'%(email)s' is not a valid email address.") % {'email': user.email}
-            has_error = True
-
-# -  send email 'Activate your account'
-        if not has_error:
-            try:
-                subject = 'Activate your AWP-online account'
-                from_email = 'AWP-online <noreply@awponline.net>'
-                message = render_to_string('signup_activation_email.html', {
-                    'user': user,
-                    'domain': current_site.domain,
-                    # PR2018-04-24 debug: In Django 2.0 you should call decode() after base64 encoding the uid, to convert it to a string:
-                    # 'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-                    # PR2021-03-24 debug. Gave error: 'str' object has no attribute 'decode'
-                    # apparently force_bytes(user.pk) returns already a string, no need for decode() any more
-                    # from https://stackoverflow.com/questions/28583565/str-object-has-no-attribute-decode-python-3-error
-                    # was: 'uid': urlsafe_base64_encode(force_bytes(user.pk)).decode(),
-                    'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-                    'token': account_activation_token.make_token(user),
-                })
-                # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
-                mail_count = send_mail(subject, message, from_email, [user.email], fail_silently=False)
-                if not mail_count:
-                    err_dict['msg01'] = _('An error occurred.')
-                    err_dict['msg02'] = _('The activation email has not been sent.')
-                else:
-                # - return message 'We have sent an email to user'
-                    msg01 = _("We have sent an email to the email address '%(email)s' of user '%(usr)s'.") % \
-                                                    {'email': user.email, 'usr': user.username_sliced}
-                    msg02 = _('The user must click the link in that email to verify the email address and create a password.')
-
-                    update_wrap['msg_ok'] = {'msg01': msg01, 'msg02': msg02}
-
-            except:
-                err_dict['msg01'] = _('An error occurred.')
-                err_dict['msg02'] = _('The activation email has not been sent.')
-
-# - reset expiration date by setting the field 'date_joined', to now
-        if not has_error:
-            # PR2021-01-01 was:
-            # now_utc_naive = datetime.utcnow()
-            # now_utc = now_utc_naive.replace(tzinfo=pytz.utc)
-            # user.date_joined = now_utc
-
-            now_utc = timezone.now()
-            user.date_joined = now_utc  # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
-            user.modifiedby = request.user
-            user.modifiedat = now_utc
-
-            user.save()
-# === end of resend_activation_email =====================================
-
-
+# +++++++++++++++++++  permits +++++++++++++++++++++++
 def get_permit(permits_int, permit_index):  # PR2020-10-12 PR2021-01-18
     has_permit = False
     if permits_int and permit_index:
@@ -1447,6 +1795,7 @@ def get_permit_sum_from_tuple(permits_tuple):
     # PR2021-01-19 sum all values of permits in tuple
     return sum(permits_tuple) if permits_tuple else 0
 
+
 def remove_other_auth_permits(permit_field, permit_list):
     # PR2021-01-19 remove value of other auth permits when auth permit is set
     if permit_field != "perm_auth1" and c.USERGROUP_AUTH1_PRES in permit_list:
@@ -1455,7 +1804,6 @@ def remove_other_auth_permits(permit_field, permit_list):
         permit_list.remove(c.USERGROUP_AUTH2_SECR)
     if permit_field != "perm_auth3" and c.USERGROUP_AUTH3_COM in permit_list:
         permit_list.remove(c.USERGROUP_AUTH3_COM)
-
 
 
 def has_permit(permits_int, permit_index): # PR2020-10-12 separate function made PR2021-01-18

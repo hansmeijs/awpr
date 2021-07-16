@@ -12,7 +12,7 @@
 {% endblock %}
 
 {% block content %}
-  {% if user.enable_user_view_modify %}
+  {% if user.enable_user_view_modifyNIU %}
     <h4>{% trans 'Edit user' %} {{selected_username}}</h4>
     <h4>{% trans 'Request user' %} {{user.username}}</h4>
       <form method="post" novalidate>
@@ -29,7 +29,7 @@
         </div>
       </form>
   {% else %}
-    <div class="alert alert-danger">{{ user.message_user_view_modify }}</div>
+    <div class="alert alert-danger">{{ user.message_user_view_modifyNIU }}</div>
     <a href="{% url 'home_url' %}" class="btn btn-outline-primary">{% trans 'Cancel' %}</a>
   {% endif %}
 {% endblock %}

@@ -42,25 +42,25 @@ class SchoolbaseAuthenticationForm(Form):
     """
     schoolcode = CharField(
         required=True,
-        label=_("School code"),
+        label="Schoolcode",
         widget=TextInput(attrs={'autofocus': True})
     )
 
     username = UsernameField(
         widget=TextInput(attrs={'autofocus': True}),
-        label = _("Username"),
+        label="Gebruikersnaam",
     )
     password = CharField(
-        label=_("Password"),
+        label=_("Wachtwoord"),
         strip=False,
         widget=PasswordInput,
     )
 
     error_messages = {
-        'invalid_login': _(
-            "Please enter a correct school code, username and password. Note that the password is case-sensitive."
-        ),
-        'inactive': _("This account is inactive. You cannot login."),
+        #'invalid_login': _( "Please enter a correct school code, username and password. Note that the password is case-sensitive." ),
+        #'inactive': _("This account is inactive. You cannot login."),
+        'invalid_login': "Vul een correcte schoolcode, gebruikersnaam en wachtwoord in. Let erop dat het wachtwoord hoofdlettergevoelig is.",
+        'inactive': "Dez gebruiersaccount is niet-aktief. Je kunt niet inloggen.",
     }
 
     def __init__(self, request=None, *args, **kwargs):

@@ -41,25 +41,24 @@ from awpr.decorators import user_examyear_is_correct
 urlpatterns = [
 # PR2018-03-20
     #url(r'^login/$', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
-# PR2020-09-25 redirects to Loggedin
+# PR2020-09-25 redirects to schools/views/Loggedin
     path('login', auth_views.LoginView.as_view(authentication_form=SchoolbaseAuthenticationForm), name='login'),
-    # TODO create custom message when user that is not is_active wants to login - PR2020-08-18
+    # this problem is fixed:
+    #  create custom message when user that is not is_active wants to login - PR2020-08-18
     #      now a 'username password not correct' message appears, that is confusing
 
     # PR2018-03-19
     url(r'^logout/$', auth_views.LogoutView.as_view(), name='logout'),
-# PR2018-03-27
-    url(r'^reset/$',
-        auth_views.PasswordResetView.as_view(
+
+# 1. AwpPasswordResetView shows form with input fields 'schoolcode' and 'email' PR2018-03-27 PR2021-07-15
+   # url(r'^reset/$',
+    path('reset',
+        account_views.AwpPasswordResetView.as_view(
             template_name='password_reset.html',
             email_template_name='password_reset_email.html',
             subject_template_name='password_reset_subject.txt'
         ),
         name='password_reset'),
-    url(r'^reset/done/$',
-        auth_views.PasswordResetDoneView.as_view(template_name='password_reset_done.html'),
-        name='password_reset_done'),
-
 
     # debug not solves see https://github.com/iMerica/dj-rest-auth/issues/118 PR2021-07-12
     # was:
@@ -67,10 +66,21 @@ urlpatterns = [
     #    auth_views.PasswordResetConfirmView.as_view(template_name='password_reset_confirm.html'),
     #    name='password_reset_confirm'),
     # from https://www.ordinarycoders.com/blog/article/django-password-reset
-    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='password_reset_confirm.html'),
-        name='password_reset_confirm'),
 
+# 2. after clicking the link the form AwpPasswordResetView opens.
+    # It has the input fields 'password1 and 'password2' PR2021-07-15
+    #path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='password_reset_confirm.html'),
+    #    name='password_reset_confirm'),
+    path('reset/<uidb64>/<token>/',
+         account_views.AwpPasswordResetConfirmView.as_view(template_name='password_reset_confirm.html'),
+         name='password_reset_confirm'),
 
+# 3. Shows message "We hebben een e-mail verzonden naar je e-mail adres ... "
+    url(r'^reset/done/$',
+        auth_views.PasswordResetDoneView.as_view(template_name='password_reset_done.html'),
+        name='password_reset_done'),
+
+# 4. Shows message "Je hebt met succes een nieuw wachtwoord aangemaakt"
     url(r'^reset/complete/$',
         auth_views.PasswordResetCompleteView.as_view(template_name='password_reset_complete.html'),
         name='password_reset_complete'),
@@ -79,6 +89,15 @@ urlpatterns = [
         name='password_change'),
     url(r'^settings/password/done/$', auth_views.PasswordChangeDoneView.as_view(template_name='password_change_done.html'),
         name='password_change_done'),
+
+    url(r'^users/set-password$',
+        account_views.AwpPasswordResetView.as_view(
+            template_name='password_setpassword.html',
+            email_template_name='password_reset_email.html',
+            subject_template_name='password_reset_subject.txt'
+        ),
+        name='password_setpassword'),
+
 
 # ++++ SIGN UP +++++++++++++++++++++++++++++++++++++++ PR2020-09-25
 
@@ -102,13 +121,6 @@ urlpatterns = [
        account_views.UserActivateView.as_view(), name='activate_url'),
     #url(r'^users/(?P<pk>\d+)/activated$', account_views.UserActivatedSuccess.as_view(), name='account_activation_success_url'),
 
-    url(r'^users/set-password$',
-        auth_views.PasswordResetView.as_view(
-            template_name='password_setpassword.html',
-            email_template_name='password_reset_email.html',
-            subject_template_name='password_reset_subject.txt'
-        ),
-        name='password_setpassword'),
 
     # PR2018-03-09 path is new in django2.0 See: https://docs.djangoproject.com/en/2.0/releases/2.0/#whats-new-2-0
     path('admin/', admin.site.urls, name='admin_url'),
