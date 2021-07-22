@@ -288,7 +288,7 @@ KEY_COL_HIDDEN = 'col_hidden'
 
 KEY_IMPORT_SUBJECT = 'import_subject'
 KEY_IMPORT_STUDENT = 'import_student'
-KEY_IMPORT_STUDENTSUBJECT = 'import_studentsubject'
+KEY_IMPORT_STUDENTSUBJECT = 'import_studsubj'
 KEY_IMPORT_GRADE = 'import_grade'
 KEY_IMPORT_PERMITS = 'import_permit'
 
@@ -497,7 +497,7 @@ MENUS_ITEMS = {
                      'page_result'],  #, 'page_report', 'page_analysis'],
     ROLE_032_INSP: ['page_examyear', 'page_school', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result'],  #,'page_report', 'page_analysis'],
     ROLE_016_COMM: ['page_examyear', 'page_school', 'page_student', 'page_grade', 'page_result'],
-    ROLE_008_SCHOOL: ['page_examyear', 'page_student', 'page_studsubj', 'page_exams', 'page_grade'], #, 'page_result', 'page_report']
+    ROLE_008_SCHOOL: ['page_examyear', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_report']
 }
 
 MENUS_DICT = {

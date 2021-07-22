@@ -1,5 +1,7 @@
 # PR2018-05-28
-from django.contrib import messages
+
+from datetime import datetime, timedelta
+
 from django.db import connection
 from django.utils.translation import activate, ugettext_lazy as _
 from django.utils import timezone
@@ -97,10 +99,6 @@ def set_status_sum_by_index(status_sum, index, new_value_bool):  # PR2021-01-15
 
 
 #################################################################
-
-
-
-
 # ---------- Date functions ---------------
 
 def get_today_dateobj():  # PR2020-10-20
@@ -125,6 +123,23 @@ def get_date_from_arr(arr_int):  # PR2019-11-17  # PR2020-10-20
 
 
 # ################### DATE STRING  FUNCTIONS ###################
+
+
+def get_dateISO_from_dateOBJ(date_obj):  # PR2019-12-22 from tsa
+    # use row.rosterdate.isoformat() instead PR2020-06-25
+    date_iso = None
+    if date_obj:
+        try:
+            year_str = str(date_obj.year)
+            month_str = ('0' + str(date_obj.month))[-2:]
+            date_str = ('0' + str(date_obj.day))[-2:]
+            date_iso = '-'.join([year_str, month_str, date_str])
+            # today_iso: 2019-11-17 <class 'str'>
+        except:
+            logger.error('ERROR: get_dateISO_from_dateOBJ: date_obj' +
+                         str(date_obj) + ' ' + str(type(date_obj)))
+    return date_iso
+
 
 def get_dateISO_from_string(date_string, format=None):  # PR2019-08-06
     #logger.debug('... get_dateISO_from_string ...')
@@ -183,6 +198,21 @@ def get_dateISO_from_string(date_string, format=None):  # PR2019-08-06
             logger.error('ERROR: get_dateISO_from_string: ' + str(date_string) + ' new_dat_str: ' + str(new_dat_str))
     return new_dat_str
 
+
+# ========  get_birthdate_from_excel_ordinal  ======= PR2021-07-20
+def get_date_from_excel_ordinal(excel_ordinal, error_list):
+    date_obj = None
+    if excel_ordinal:
+        try:
+            epoch0 = date(1899, 12, 31)
+            if excel_ordinal >= 60:
+                excel_ordinal -= 1  # Excel leap year bug, 1900 is not a leap year!
+            date_obj = (epoch0 + timedelta(days=excel_ordinal))
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            error_list.append(' '.join((str(_('An error occurred:')), str(e), str(_("This is not a valid date.")))))
+
+    return date_obj
 
 # >>>>>> This is the right way, I think >>>>>>>>>>>>>
 def get_date_from_ISO(date_iso):  # PR2019-09-18 PR2020-03-20
@@ -323,8 +353,6 @@ def format_HM_from_dt_local(datetime_local, use24insteadof00, use_suffix, timefo
     return display_txt
 
 
-
-
 def format_modified_at(modifiedat, user_lang):
     # PR2021-07-13
 
@@ -338,9 +366,6 @@ def format_modified_at(modifiedat, user_lang):
         datetime_formatted = date_formatted + ', ' + time_formatted
 
     return datetime_formatted
-
-
-
 
 
 def get_modifiedby_formatted(instance, user_lang):

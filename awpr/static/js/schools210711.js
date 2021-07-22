@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MSCH_select_otherlang = document.getElementById("id_MSCH_otherlang");
 
 
-// ---  MODAL UPLOAD PERMITS
+// ---  MODAL UPLOAD DATA - MIMP
     // --- create EventListener for buttons in btn_container
         const el_MIMP_btn_container = document.getElementById("id_MIMP_btn_container");
         if(el_MIMP_btn_container){
@@ -2050,12 +2050,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
            // may check size or type here with
             // ---  upload changes
-                const upload_dict = { table: "awp_upload",
-                                       file_type: file_type,
-                                       file_name: file_name,
-                                       file_size: file_size
-                                       };
-                const upload_json = JSON.stringify (upload_dict)
+            const upload_dict = { table: "awp_upload",
+                                   file_type: file_type,
+                                   file_name: file_name,
+                                   file_size: file_size
+                                   };
+            const upload_json = JSON.stringify (upload_dict)
 
             if(file_size){
 

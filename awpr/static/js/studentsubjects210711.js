@@ -72,28 +72,28 @@ document.addEventListener('DOMContentLoaded', function() {
         studsubj: {  field_caption: ["", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines",
                                 "Abbreviation", "Subject", "Character", "",
                                 "Exemption", "", "Re_examination","",  "Re_exam_3rd_2lns", "",
-                                "Proof_of_knowledge_2lns", ""],
+                                "Proof_of_knowledge_2lns", "", ""],
                     field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
                                 "subj_code", "subj_name", "sjtp_abbrev", "subj_status",
                                 "has_exemption", "exm_status", "has_reex", "re2_status", "has_reex03", "re3_status",
-                                "has_pok", "pok_status"],
+                                "has_pok", "pok_status", "notestatus"],
                     field_tags: ["div", "div", "div", "div", "div",
                                 "div", "div", "div", "div",
                                 "div", "div", "div", "div", "div", "div",
-                                "div", "div"],
+                                "div", "div", "div"],
 
                     filter_tags: ["select", "text", "text",  "text",  "text",
                                 "text", "text", "text",  "text",
                                  "toggle", "text", "toggle", "text", "toggle", "text",
-                                 "toggle", "text"],
+                                 "toggle", "toggle", "toggle"],
                     field_width:  ["020", "075", "180",  "075", "075",
                                     "075", "180","090", "032",
                                     "090", "032", "090", "032", "090", "032",
-                                    "090", "032"],
+                                    "090", "032", "032"],
                     field_align: ["c", "r", "l", "c", "c",
                                     "l", "l", "l", "c",
                                     "c", "c", "c", "c", "c", "c", "c",
-                                    "c"]}
+                                    "c", "c"]}
         };
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -263,9 +263,9 @@ document.addEventListener('DOMContentLoaded', function() {
    const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
         el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false )
    const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
-        el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test", setting_dict)}, false )
+        el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test", RefreshDataRowsStudsubjAfterUpload, setting_dict)}, false )
    const el_MIMP_btn_upload = document.getElementById("id_MIMP_btn_upload");
-        el_MIMP_btn_upload.addEventListener("click", function() {MIMP_Save("save", setting_dict)}, false )
+        el_MIMP_btn_upload.addEventListener("click", function() {MIMP_Save("save", RefreshDataRowsStudsubjAfterUpload, setting_dict)}, false )
 
 
 // ---  MOD CONFIRM ------------------------------------
@@ -286,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // period also returns emplhour_list
         const datalist_request = {
                 setting: {page: "page_studsubj"},
-                schoolsetting: {setting_key: "import_studentsubject"},
+                schoolsetting: {setting_key: "import_studsubj"},
                 locale: {page: ["page_studsubj", "page_subject", "page_student", "upload"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
@@ -391,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
             AddSubmenuButton(el_submenu, loc.Add_subject, function() {MSTUD_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_subject, function() {ModConfirmOpen("delete")});
             AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, null, null, "id_submenu_download_ex1", url_grade_download_ex1, false);  // true = download
-            AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open("import_studentsubject")}, null, "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open("import_studsubj")}, null, "id_submenu_import");
 
          el_submenu.classList.remove(cls_hide);
 
@@ -492,11 +492,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }  // if(data_rows)
     }  // FillTblRows
 
-//=========  CreateTblHeader  === PR2020-07-31
+//=========  CreateTblHeader  === PR2020-07-31 PR2021-07-22
     function CreateTblHeader(field_setting) {
-        console.log("===  CreateTblHeader ===== ");
-
-        console.log("field_setting", field_setting);
+        //console.log("===  CreateTblHeader ===== ");
+        //console.log("field_setting", field_setting);
 
         const column_count = field_setting.field_names.length;
 
@@ -512,36 +511,35 @@ document.addEventListener('DOMContentLoaded', function() {
             const class_width = "tw_" + field_setting.field_width[j] ;
             const class_align = "ta_" + field_setting.field_align[j];
 
-            const key = field_setting.field_caption[j];
-            let caption = (loc[key]) ? loc[key] : key;
-        //console.log("field_name", field_name);
-        //console.log("key", key);
-        //console.log("setting_dict.sel_dep_has_profiel", setting_dict.sel_dep_has_profiel);
-        //console.log("loc.Sector", loc.Sector);
-        //console.log("loc.Profiel", loc.Profiel);
-            if (field_name === "sct_abbrev") {
-                caption = (setting_dict.sel_dep_has_profiel) ? loc.Profiel : loc.Sector;
-            }
-        //console.log("caption", caption);
-
             // skip columns if in columns_hidden
             if (!columns_hidden[field_name]){
+
+                const key = field_setting.field_caption[j];
+                let field_caption = (loc[key]) ? loc[key] : key;
+                if (field_name === "sct_abbrev") {
+                    field_caption = (setting_dict.sel_dep_has_profiel) ? loc.Profiel : loc.Sector;
+                }
+
 // ++++++++++ create header row +++++++++++++++
-// --- add th to tblRow.
+        // --- add th to tblRow.
                 let th_header = document.createElement("th");
-// --- add div to th, margin not working with th
+        // --- add div to th, margin not working with th
                     const el_header = document.createElement("div");
                         if (j === 0 ){
-// --- add checked image to first column
+        // --- add checked image to first column
                            // TODO add multiple selection
                             //AppendChildIcon(el_header, imgsrc_stat00);
                         } else  if (field_name.includes("_status")){
                             // --- add  statud icon.
-                            el_header.classList.add("stat_0_4")
+                            el_header.classList.add("diamond_0_0")
+                        } else if(field_name === "notestatus"){
+                             // dont show note icon when user has no permit_read_note
+                            //const class_str = (permit_dict.permit_read_note) ? "note_0_1" : "note_0_0"
+                            el_header.classList.add("note_0_1")
 
                         } else {
 // --- add innerText to el_div
-                            if(caption) {el_header.innerText = caption};
+                            if(field_caption) {el_header.innerText = field_caption};
                             if(field_name === "examnumber"){el_header.classList.add("pr-2")}
                         };
 // --- add width, text_align
@@ -719,6 +717,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
                 } else if (field_name.includes("has_")){
                     filter_value = (fld_value) ? "1" : "0";
+                    const is_etenorm = false
                     el_div.className = (is_etenorm) ? "tickmark_1_2" : "tickmark_0_0";
                 } else if (field_name.includes("_status")){
                     const prefix_mapped = {btn_studsubj: "subj_", btn_exemption: "exem_", btn_reex: "reex_", btn_reex3: "reex3_", btn_pok: "pok_", }
@@ -775,6 +774,7 @@ document.addEventListener('DOMContentLoaded', function() {
         columns_hidden.re3_status = (selected_btn !== "btn_reex3");
         columns_hidden.has_pok = (selected_btn !== "btn_pok");
         columns_hidden.pok_status = (selected_btn !== "btn_pok");
+
     };  // set_columns_hidden
 
 
@@ -953,8 +953,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const sct_req = (dep_dict.sct_req) ? dep_dict.sct_req : false;
             document.getElementById("id_MSTUD_level_label").innerText = dep_dict.lvl_caption + ':';
             document.getElementById("id_MSTUD_sector_label").innerText = dep_dict.sct_caption + ':';
-            document.getElementById("id_MSTUD_level_select").innerHTML = t_FillOptionLevelSectorFromMap("level", level_map, depbase_pk, selected_pk)
-            document.getElementById("id_MSTUD_sector_select").innerHTML = t_FillOptionLevelSectorFromMap("sector", sector_map, depbase_pk, selected_pk)
+            document.getElementById("id_MSTUD_level_select").innerHTML = t_FillOptionLevelSectorFromMap("level", "id", level_map, depbase_pk, selected_pk)
+            document.getElementById("id_MSTUD_sector_select").innerHTML = t_FillOptionLevelSectorFromMap("sector", "id", sector_map, depbase_pk, selected_pk)
 
             const el_MSTUD_level_div = document.getElementById("id_MSTUD_level_div")
             add_or_remove_class(el_MSTUD_level_div, cls_hide, !lvl_req)
@@ -2111,6 +2111,12 @@ document.addEventListener('DOMContentLoaded', function() {
 //###########################################################################
 // +++++++++++++++++ REFRESH DATA ROWS +++++++++++++++++++++++++++++++++++++++
 
+//=========  RefreshDataRowsStudsubjAfterUpload  ================ PR2021-07-20
+    function RefreshDataRowsStudsubjAfterUpload(response) {
+        console.log(" --- RefreshDataRowsStudsubjAfterUpload  ---");
+        console.log( "response", response);
+        // TODO
+    }  //  RefreshDataRowsStudsubjAfterUpload
 //=========  RefreshDataRows  ================  PR2021-06-21
     function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
         //console.log(" --- RefreshDataRows  ---");
@@ -2282,7 +2288,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                             if(el_MSUBJ_input){el_MSUBJ_input.classList.add("border_bg_invalid")};
 
                                         // put msgtext in msg box
-                                            b_render_msg_box("id_MSUBJ_msg_" + el_fldName, msg_list)
+                                            b_render_msg_container("id_MSUBJ_msg_" + el_fldName, msg_list)
                                         }
     */
                 // make field green when field name is in updated_columns

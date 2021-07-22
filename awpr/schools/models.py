@@ -422,9 +422,10 @@ class School(AwpBaseModel):  # PR2018-08-20 PR2018-11-11
     iseveningschool = BooleanField(default=False)
     islexschool = BooleanField(default=False)
 
+    # school will be activated when adding student in create_student
     activated = BooleanField(default=False)
-    locked = BooleanField(default=False)
     activatedat = DateTimeField(null=True)
+    locked = BooleanField(default=False)
     lockedat = DateTimeField(null=True)
 
     class Meta:
@@ -467,8 +468,8 @@ class School_log(AwpBaseModel):
     islexschool = BooleanField(default=False)
 
     activated = BooleanField(default=False)
-    locked = BooleanField(default=False)
     activatedat = DateTimeField(null=True)
+    locked = BooleanField(default=False)
     lockedat = DateTimeField(null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
@@ -638,7 +639,7 @@ def dep_initials(dep_name):
     return initials
 
 
-def delete_instance(instance, messages, request, this_txt=None, header_txt=None):
+def delete_instance(instance, msg_list, error_list, request, this_txt=None, header_txt=None):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_instance  -----')
@@ -653,17 +654,21 @@ def delete_instance(instance, messages, request, this_txt=None, header_txt=None)
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
             caption = this_txt if this_txt else _('This item')
-            msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
-                        str(_("%(cpt)s could not be deleted.") % {'cpt': str(caption)})))
-            msg_dict = {'header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
-            messages.append(msg_dict)
+            err_txt1 = str(_('An error occurred'))
+            err_txt2 = str(e)
+            err_txt3 = str(_("%(cpt)s could not be deleted.") % {'cpt': str(caption)})
+            error_list = ''.join((err_txt1, ' (', err_txt2, ') ', err_txt3))
 
+            msg_html = ''.join((err_txt1, ': ', '<br><i>', err_txt2, '</i><br>',err_txt3))
+            msg_dict = {'header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
+            msg_list.append(msg_dict)
         else:
             instance = None
             deleted_ok = True
 
     if logging_on:
-        logger.debug('messages: ' + str(messages))
+        logger.debug('msg_list: ' + str(msg_list))
+        logger.debug('error_list: ' + str(error_list))
         logger.debug('instance: ' + str(instance))
         logger.debug('deleted_ok: ' + str(deleted_ok))
 

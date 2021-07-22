@@ -10,7 +10,7 @@
             <div class="modal-content">
                 <div class="modal-header tsa_bc_lightlightgrey">
                     <h4 id="id_MIMP_header" class="modal-title mx-2" ></h4>
-                    <a href="{% url 'manual_url' 'upload' %}" target="_blank" title="{% trans 'Open manual' %}" aria-label="Manual"> <div class="questionmark"></div> </a>
+                    <a href="{% url 'manual_url' 'upload' 'intro' %}" target="_blank" title="{% trans 'Open manual' %}" aria-label="Manual"> <div class="questionmark"></div> </a>
                 </div>
                 <div class="modal_body_right mx-4 mt-2 mb-0">
                     <div id="id_MIMP_btn_container" class="btn-group btn-block m-2" role="group" aria-label="Choose option" >
@@ -23,11 +23,6 @@
                 </div>
                 <div id="id_MIMP_body" class="mx-4 my-2">
 
-<!-- modal_body_left contains employee select table -->
-
-                    <div class="ta_c">
-                        <img id="id_modroster_employee_loader" src="{% static 'img/loader.gif' %}" height="24" width="24" class="display_hide" >
-                    </div>
 
                     <h4 id="id_MIMP_step_text" class="mx-4 my-0"></h4>
 <!-- STEP 1 -->
@@ -68,6 +63,7 @@
                     <div class="mx-4 mt-2 btn_show btn_step2 display_hide">
                         <div class="mx-2"><small>{% trans "Click corresponding names in the left and right list to link an Excel column to an AWP-column." %}</small></div>
                         <div class="mx-2"><small >{% trans "Click linked names in the lower list to unlink these columns." %}</small></div>
+                        <div class="mx-2"><small><b>{% trans "You don't have to link the subjects yet." %}</b> {% trans "They will be linked in the next step." %}</small></div>
                         <div class="mx-2"><small id="id_MIMP_msg_linkrequired"></small></div>
 
                         <div id="id_MIMP_crosstab_container" >
@@ -80,7 +76,6 @@
                                 <input id="id_MIMP_tabular" type="checkbox" value="true" class="tw_032">
                                 <label for="id_MIMP_tabular" class="mx-2 my-0">{% trans "All subjects are in one column 'Subject'." %}</label>
                             </span>
-                            <div class="mx-2"><small >{% trans "You don't have to link the subjects yet. They will be linked in the next step." %}</small></div>
                         </div>
 
                         <div class="flex_container mt-2">
@@ -397,8 +392,7 @@
                             </div>
                         </div>
 
-                        <div class="flex_container mt-2 tsa_tr_error">
-                            XXXXXXXXXXXXXXXXXXXX
+                        <div class="flex_container mt-2 ">
                             <div id="id_MIMP_div_dateformat" class="flex_1 mx-1 display_hideXX">
                                 <h6 class="ta_l mt-4 mx-2">{% trans 'Date format' %}</h6>
                                 <div id="id_MIMP_msg_dateformat"><small class="text-danger mx-2 my-0">
@@ -422,108 +416,41 @@
                         </div>
                     </div>
 
-<!-- STEP 4 -->
-                    <div class="ta_l mx-4 mt-2 btn_show btn_step4 display_hide">
-                        <div class="mx-2"><small>{% trans "Click 'Test upload' to validate the new data and compare it with the existing database. It will not save the new data." %}</small></div>
-
-                        <div class="content_subheader_left mx-2 my-2">
+<!-- STEP 4 - STEP 5 -->
+                    <div class="ta_l mx-4 mt-2 btn_show btn_step4 btn_step5 display_hide">
+                        <div class="mx-2 btn_show btn_step4 display_hide">
+                            <small>{% trans "Click 'Test upload' to validate the new data and compare it with the existing database. It will not save the new data yet." %}</small>
+                        </div>
+                        <div class="mx-2 btn_show btn_step5 display_hide">
+                            <small >{% trans "Click 'Upload' to upload and save the new data. Data of existing candidates will be replaced by the new data." %}</small>
+                        </div>
+                        <div class="content_subheader_left mx-2 my-2 btn_show btn_step4 display_hide">
                             <button id="id_MIMP_btn_test" type="button" class="btn btn-secondary">{% trans 'Test upload' %}</button>
-                            <span>
-                                <img id="id_MIMP_loader_test" src="{% static 'img/loader.gif' %}" height="24" width="24" class="mx-4 visibility_hide" >
-                            </span>
                         </div>
-
-                        <div class="flex_container mx-4XX mb-0 btn_show btn_step1 btn_step4 display_hide">
-                        <div class="flex_1">
-                            <div id="id_MIMP_msg_container" class="border_bg_transparent mx-0 p-2">
-
-                                <div class="content_header">
-                                    <div class="content_subheader_left mx-1 my-2">
-                                        <div id="id_MEP_testresult_container" class="display_hide">
-                                        </div>
-                                         <div id="id_MEP_bisexame_info" class="px-4">
-                                             <div><small class="text-muted">
-                                                 {% trans "If you link an existing candidate to a new candidate, AWP will check if the new candidate is a bis-candidate." %}
-                                             </small></div>
-                                             <div><small class="text-muted">
-                                                 {% trans "In that case, exemptions will be automatically entered." %}
-                                             </small></div>
-                                             <div><small class="text-muted">
-                                                 {% trans "Linking an existing candidate to a new candidate has no effect on the data you are about to upload." %}
-                                             </small></div>
-                                             <div><small class="text-muted">
-                                                 {% trans "Only link a candidate when you are sure that it is the same person." %}
-                                             </small></div>
-                                             <div><small class="text-muted">
-                                                 {% trans "AWP shows kandidates with the same ID-number, or when two of the fields birthdate, last name and first names are the same." %}
-                                             </small></div>
-                                        </div>
-
-                                    </div>
-                                </div>
-
-                                <div class=" content_subheader_left">
-                                    <div id="id_btns_grid" class="btn-group btn-group-sm mt-2 mr-2 display_hideXX" role="group" aria-label="Go back and forward">
-                                        <button data-index="1" class="btn btn-add ml-2">{% trans 'Test results' %}</button>
-                                        <button data-index="2" class="btn btn-add"> << </button>
-                                        <button data-index="3" class="btn btn-add"> < </button>
-                                        <button data-index="4" class="btn btn-add"> o </button>
-                                        <button data-index="5" class="btn btn-add"> > </button>
-                                        <button data-index="6" class="btn btn-add"> >> </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                        </div>
-                    </div>
-
-
-<!-- STEP 5 -->
-                    <div class="ta_l mx-4 mt-2 btn_show btn_step5 display_hide">
-                        <div class="mx-2"><small >{% trans "Click 'Upload' to upload and save the new data. Existing data will be replaced by the new data." %}</small></div>
-
-                        <div class="content_subheader_left mx-2 my-2">
+                        <div class="content_subheader_left mx-2 my-2 btn_show btn_step5 display_hide">
                             <button id="id_MIMP_btn_upload" type="button" class="btn btn-secondary">{% trans 'Upload' %}</button>
-                            <span>
-                                <img id="id_MIMP_loader" src="{% static 'img/loader.gif' %}" height="24" width="24" class="mx-4 visibility_hide" >
-                            </span>
                         </div>
 
-                        <div class="flex_container mx-4XX mb-0 btn_show btn_step1 btn_step4 display_hide">
-                        <div class="flex_1">
-
-                            <!-- <div class="mb-4">
-                            <table id="id_table" class="awp_import_table" width="100%">
-                                <thead id="id_MIMP_thead_data" class="c_theadXX"></thead>
-                                <tbody id="id_MIMP_tbody_data" class="c_tbody"></tbody>
-                                <tfoot id="id_MIMP_tfoot_data" class="c_tfoot"></tfoot>
-                            </table>
-                            </div> -->
-
-                            <div id="id_MIMP_msg_containe
-                            r" class="border_bg_transparent mx-4 p-2">
-                                <div class="content_header">
-                                    <div class="content_subheader_left mx-1 my-2">
-                                        <h6 id="id_MEP_correction_header" class="mx-2" >{% trans 'Correction' %}</h6>
-                                        <div id="id_MEP_correction_container" class="display_hide">
-                                            <table  class="table tsa_tbl m-0">
-                                                <thead id="id_MEP_thead_correction"></thead>
-                                                <tbody id="id_MEP_tbody_correction"></tbody>
-                                                <tfoot id="id_MEP_tfoot_correction"></tfoot>
-                                            </table>
+                        <div class="flex_container mb-0">
+                            <div class="flex_1">
+                                <div class="ta_c">
+                                    <img id="id_MIMP_loader" src="{% static 'img/loader.gif' %}" height="24" width="24" class="display_hide" >
+                                </div>
+                                <div id="id_MIMP_msg_container" class="border_bg_transparent m-2 p-2 display_hide">
+                                    <div class="content_header">
+                                        <div class="content_subheader_left">
+                                            <div id="id_MIMP_result_container">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                        </div>
                         </div>
                     </div>
 
                 </div>
-                <div class="modal-footer pr-4">
 
+                <div class="modal-footer pr-4">
                     <div class="content_subheader_left mx-1 ">
                         <div id="id_btn_container2" class="sidebar_btngroup btn-group btn-block" role="group" aria-label="Choose option" >
                             <button id="id_MIMP_btn_prev" type="button" class="btn btn-secondary"> &lt;  {% trans 'Previous step' %}</button>
@@ -531,13 +458,15 @@
                         </div>
                     </div>
                     <div class="content_subheader_right">
-                        <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MIMP_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
                     </div>
 
                 </div>
 
                 <div id="id_MIMP_data" data-url_import_settings_upload="{% url 'url_import_settings_upload' %}"
-                     data-url_importdata_upload="{% url 'url_importdata_upload' %}"></div>
+                     data-url_importdata_upload="{% url 'url_importdata_upload' %}"
+                     data-url_importstudent_upload="{% url 'url_importstudent_upload' %}"
+                     data-url_importstudentsubject_upload="{% url 'url_importstudentsubject_upload' %}"></div>
             </div>
         </div>
     </div>

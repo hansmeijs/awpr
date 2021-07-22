@@ -158,7 +158,7 @@ urlpatterns = [
 
 # ===== MANUAL ==========================  PR2021-06-10
     path('manual/', include([
-        path('main/<list>/', school_views.ManualListView.as_view(), name='manual_url')
+        path('<page>/<paragraph>/', school_views.ManualListView.as_view(), name='manual_url')
 
     ])),
 # ===== SCHOOLS ==========================  PR2018-08-23 PR2020-10-20 PR2021-04-26
@@ -254,9 +254,11 @@ urlpatterns = [
     ])),
 
     # ajax PR2018-12-02
-    path('ajax/', include([
+    path('import/', include([
         #path('import_student_load/', student_views.StudentImportUploadDataView.as_view(), name='import_student_load_url'),
         path('importsettings_upload/', school_imports.UploadImportSettingView.as_view(), name='url_import_settings_upload'),
+        path('student_upload/', school_imports.UploadImportStudentView.as_view(), name='url_importstudent_upload'),
+        path('studentsubject_upload/', school_imports.UploadImportStudentsubjectView.as_view(), name='url_importstudentsubject_upload'),
         path('importdata_upload/', school_imports.UploadImportDataView.as_view(), name='url_importdata_upload'),
         path('ajax_schemeitems_download/', subject_views.SchemeitemsDownloadView.as_view(), name='ajax_schemeitems_download_url'),
     ])),

@@ -1,7 +1,7 @@
 # PR2019-02-17
 from django.utils.translation import pgettext_lazy, ugettext_lazy as _
 
-from django.db.models import Q
+from django.db import connection
 
 from datetime import datetime
 import logging
@@ -692,34 +692,275 @@ def employee_email_exists(email, company, this_pk = None):
 
 # ++++++++++++ Validations  +++++++++++++++++++++++++
 
+# ========  get_examnumberlist_from_database  ======= PR2021-07-19
+# NOT IN USE, switched to excel number format
+def get_dateformat_from_uploadfileNIU(data_list, date_field):
+    # function returns logging_on, that is used in datefield of  uploadfile
+    logging_on = False  #s.LOGGING_ON
+    if logging_on:
+        logger.debug(' -----  get_dateformat_from_uploadfile  -----')
+        logger.debug('date_field: ' + str(date_field))
 
-# ========  get_double_entrieslist_from_uploadfile  ======= PR2021-06-14
+# - get_min_max_dateparts():
+    max_0, max_1, max_2 = 0, 0, 0
+    for data_dict in data_list:
+        date_string = data_dict.get(date_field)
+        if date_string:
+            if '/' in date_string:
+                date_string = date_string.replace('/', '-')
+
+            if logging_on:
+                logger.debug('---- ' )
+                logger.debug('date_string: ' + str(date_string))
+
+            if '-' in date_string:
+                arr = date_string.split('-')
+                if logging_on:
+                    logger.debug('arr: ' + str(arr))
+
+                if len(arr) == 3:
+                    int_0, int_1, int_2 = None, None, None
+                    if arr[0] and arr[0].isdecimal():
+                        int_0 = int(arr[0])
+                    if arr[1] and arr[1].isdecimal():
+                        int_1 = int(arr[1])
+                    if arr[2] and arr[2].isdecimal():
+                        int_2 = int(arr[2])
+
+                    if logging_on:
+                        logger.debug('int_0: ' + str(int_0) + ' int_1: ' + str(int_1) + ' int_2: ' + str(int_2))
+
+                    if int_0 is not None and int_1 is not None and int_2 is not None:
+                        if int_0 > max_0:
+                            max_0 = int_0
+                        if int_1 > max_1:
+                            max_1 = int_1
+                        if int_2 > max_2:
+                            max_2 = int_2
+
+                    if logging_on:
+                        logger.debug('max_0: ' + str(max_0) + ' max_1: ' + str(max_1) + ' max_2: ' + str(max_2))
+
+
+    if logging_on:
+        logger.debug('final max_0: ' + str(max_0) + ' max_1: ' + str(max_1) + ' max_2: ' + str(max_2))
+
+# - get position of year (either pos 0 or pos 2)
+    year_pos = None
+    if max_0 > 31 and max_1 <= 31 and max_2 <= 31:
+        year_pos = 0
+    elif max_2 > 31 and max_0 <= 31 and max_1 <= 31:
+        year_pos = 2
+
+# - get position of day
+    day_pos = None
+    if year_pos == 0:
+        if max_1 > 12 and max_2 <= 12:
+            day_pos = 1
+        elif max_2 > 12 and max_1 <= 12:
+            day_pos = 2
+    elif year_pos == 2:
+        if max_0 > 12 and max_1 <= 12:
+            day_pos = 0
+        elif max_1 > 12 and max_0 <= 12:
+            day_pos = 1
+
+    if logging_on:
+        logger.debug('year_pos: ' + str(year_pos) + ' day_pos: ' + str(day_pos))
+
+# - format
+    dateformat = ''
+    if year_pos is not None and day_pos is not None:
+        if year_pos == 0:
+            if day_pos == 1:
+                dateformat = 'yyyy-dd-mm'
+            elif day_pos == 2:
+                dateformat = 'yyyy-mm-dd'
+        elif year_pos == 2:
+            if day_pos == 0:
+                dateformat = 'dd-mm-yyyy'
+            elif day_pos == 1:
+                dateformat = 'mm-dd-yyyy'
+
+    if logging_on:
+        logger.debug('dateformat: ' + str(dateformat))
+
+    return dateformat
+# - end of get_dateformat_from_uploadfile
+
+
+# ========  get_idnumberlist_from_database  ======= PR2021-07-19
+def get_idnumberlist_from_database(sel_school):
+    # get list of examnumbers of this school, used with import student and update student
+    # idnumber_list contains tuples with (id, idnumber)
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_idnumberlist_from_database -----')
+        logger.debug('sel_school: ' + str(sel_school))
+
+    idnumber_list = []
+    if sel_school:
+        sql_keys = {'sch_id': sel_school.pk}
+        sql_list = ["SELECT st.id, st.idnumber",
+            "FROM students_student AS st",
+            "WHERE st.school_id = %(sch_id)s::INT",
+            "AND st.idnumber IS NOT NULL",
+            "ORDER BY st.idnumber"]
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            idnumber_list = cursor.fetchall()
+
+    if logging_on:
+        logger.debug('idnumber_list: ' + str(idnumber_list))
+
+    return idnumber_list
+# - end of get_idnumberlist_from_database
+
+
+
+# ========  get_examnumberlist_from_database  ======= PR2021-07-19
+def get_examnumberlist_from_database(sel_school, sel_department):
+    # get list of examnumbers of this school and this department, used with import student  and update student
+    # list contains tuples with (id, examnumber)
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_examnumberlist_from_database -----')
+        logger.debug('sel_school: ' + str(sel_school))
+        logger.debug('sel_department: ' + str(sel_department))
+
+    examnumber_list = []
+    if sel_school and sel_department:
+        sql_keys = {'sch_id': sel_school.pk, 'dep_id': sel_department.pk}
+        sql_list = ["SELECT st.id, st.examnumber",
+            "FROM students_student AS st",
+            "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
+            "AND st.examnumber IS NOT NULL",
+            "ORDER BY st.examnumber"]
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            examnumber_list = cursor.fetchall()
+
+    if logging_on:
+        logger.debug('examnumber_list: ' + str(examnumber_list))
+    return examnumber_list
+# - end of get_examnumberlist_from_database
+
+
+# ========  get_double_entrieslist_from_uploadfile  ======= PR2021-06-14 PR2021-07-17
 def get_double_entrieslist_from_uploadfile(data_list):
-    # function returns list of trimmed idnumbers without dots that occur multiple times in data_list
+    # function returns list of idnumbers, that occur multiple times in data_list
+
+    logging_on = False  #s.LOGGING_ON
+    if logging_on:
+        logger.debug(' -----  get_double_entrieslist_from_uploadfile  -----')
+
     double_entrieslist = []
-    id_number_list = []
+    # student_list is list of idnumbers of all students in data_list.
+    student_list = []
     for data_dict in data_list:
         id_number = data_dict.get('idnumber')
-        if id_number:
-            id_number_nodots = id_number.strip().replace('.', '')
-            if id_number_nodots not in id_number_list:
-                id_number_list.append(id_number_nodots)
-            else:
-                double_entrieslist.append(id_number_nodots)
+        if logging_on:
+            logger.debug('id_number: ' + str(id_number) + ' ' + str(type(id_number)))
+            logger.debug('isinstance(id_number, int): ' + str(isinstance(id_number, int)))
+
+        id_number_nodots_stripped = get_id_number_nodots_stripped(id_number)
+
+        found = False
+        if student_list:
+            for student_id in student_list:
+                if student_id == id_number_nodots_stripped:
+                    found = True
+                    if id_number_nodots_stripped not in double_entrieslist:
+                        double_entrieslist.append(id_number_nodots_stripped)
+                    break
+        if not found:
+            student_list.append(id_number_nodots_stripped)
+
+        if logging_on:
+            logger.debug('student_list: ' + str(student_list))
+            logger.debug('double_entrieslist: ' + str(double_entrieslist))
     return double_entrieslist
 
 
-# ========  validate_double_entries_in_uploadfile  ======= PR2021-06-19
-def validate_double_entries_in_uploadfile(id_number_nodots, double_entrieslist, error_list):
+def get_id_number_nodots_stripped(id_number): # PR2021-07-20
+    id_number_nodots_stripped = ''
+    if id_number:
+        if isinstance(id_number, int):
+            id_number_nodots_stripped = str(id_number)
+        else:
+            id_number_nodots_stripped = id_number.replace('.', '').strip()
+    return id_number_nodots_stripped
+
+# ========  get_double_entrieslist_with_firstlastname_from_uploadfileNIU  ======= PR2021-06-14 PR2021-07-16
+# NOT IN USE
+def get_double_entrieslist_with_firstlastname_from_uploadfileNIU(data_list):
+    # function returns list of student tuples with (idnumber, lastname, firstname) that occur multiple times in data_list
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' -----  get_double_entrieslist_with_firstlastname_from_uploadfileNIU  -----')
+
+    double_entrieslist = []
+    # student_list is list of all students in data_list. It has format: tuple (idnumber, lastname, firstsname)
+    student_list = []
+    for data_dict in data_list:
+        id_number = data_dict.get('idnumber')
+        id_number_nodots_stripped = id_number.replace('.', '').strip()  if id_number else ''
+
+        last_name = data_dict.get('lastname')
+        last_name_stripped = last_name.strip() if last_name else ''
+
+        first_name = data_dict.get('firstname')
+        first_name_stripped = first_name.strip() if first_name else ''
+
+        student_tuple = (id_number_nodots_stripped, last_name_stripped, first_name_stripped)
+
+        found = False
+        if student_list:
+            for item in student_list:
+                if item == student_tuple:
+                    found = True
+                    if student_tuple not in double_entrieslist:
+                        double_entrieslist.append(student_tuple)
+                    break
+        if not found:
+            student_list.append(student_tuple)
+
+        if logging_on:
+            logger.debug('student_tuple: ' + str(student_tuple))
+            logger.debug('student_list: ' + str(student_list))
+            logger.debug('double_entrieslist: ' + str(double_entrieslist))
+    return double_entrieslist
+
+
+# ========  validate_double_entries_in_uploadfile  ======= PR2021-07-17
+def validate_double_entries_in_uploadfile(id_number_nodots_stripped, double_entrieslist, error_list):
 
     has_error = False
-    if id_number_nodots and double_entrieslist:
-        if id_number_nodots in double_entrieslist:
+    if id_number_nodots_stripped and double_entrieslist:
+        if id_number_nodots_stripped in double_entrieslist:
             has_error = True
-            error_list.append(_("%(fld)s '%(val)s' is found multiple times in this upload file.") \
-                      % {'fld': _("The ID-number"), 'val': id_number_nodots})
+            error_list.append(_("ID-number '%(val)s' is found multiple times in this upload file.") \
+                      % {'val': id_number_nodots_stripped})
     return has_error
 
+
+# ========  validate_double_entries_in_uploadfileNIU  ======= PR2021-06-19
+def validate_double_entries_in_uploadfileNIU(id_number_nodots_stripped, lastname_stripped, firstname_stripped, double_entrieslist, error_list):
+
+    has_error = False
+    student_tuple = (id_number_nodots_stripped, lastname_stripped, firstname_stripped )
+    if student_tuple and double_entrieslist:
+        if student_tuple in double_entrieslist:
+            has_error = True
+            caption = ' '.join((id_number_nodots_stripped, firstname_stripped, lastname_stripped))
+            error_list.append(_("%(fld)s '%(val)s' is found multiple times in this upload file.") \
+                      % {'fld': _("Candidate"), 'val': caption})
+    return has_error
 
 # ========  validate_name_idnumber_length  ======= PR2021-06-19
 def validate_name_idnumber_length(id_number_nodots, lastname_stripped, firstname_stripped, prefix_stripped, error_list):

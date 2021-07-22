@@ -34,7 +34,7 @@
                             <label for="id_MSTUD_gender" class="label_margin_top_m3">{% trans 'Gender' %}:</label>
                              <select id="id_MSTUD_gender" data-field= "gender" class="form-control"
                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                 <option value="">-</option>
+                               <!--  <option value="">-</option> -->
                                  <option value="M">{% trans 'M' %}</option>
                                  <option value="V">{% trans 'F' %}</option>
                             </select>
@@ -92,16 +92,17 @@
                          </div>
                      </div>
                      <div class="content_header">
+                         <div class="content_subheader_left mx-1 ">
+                            <label for="id_MSTUD_regnumber" class="label_margin_top_m3">{% trans 'Registration number' %}:</label>
+                            <input id="id_MSTUD_regnumber" type="text" data-field= "regnumber" class="form-control"
+                                readonly autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                         </div>
                          <div class="content_subheader_left mx-1">
                             <label for="id_MSTUD_examnumber" class="label_margin_top_m3">{% trans 'Exam number' %}:</label>
                             <input id="id_MSTUD_examnumber" type="text" data-field= "examnumber" class="form-control"
                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
                          </div>
-                         <div class="content_subheader_left mx-1 ">
-                            <label for="id_MSTUD_regnumber" class="label_margin_top_m3">{% trans 'Registration number' %}:</label>
-                            <input id="id_MSTUD_regnumber" type="text" data-field= "regnumber" class="form-control"
-                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                         </div>
+
                          <div class="content_subheader_left mx-1">
                             <label for="id_MSTUD_diplomanumber" class="label_margin_top_m3">{% trans 'Diploma number' %}:</label>
                             <input id="id_MSTUD_diplomanumber" type="text" data-field= "diplomanumber" class="form-control"
@@ -115,11 +116,12 @@
                      </div>
                      <div class="content_header">
                          <div class="content_subheader_left mx-2">
-                              <small id="id_MSTUD_err_examnumber"  class="text-danger"></small>
-                         </div>
-                         <div class="content_subheader_left mx-2">
                               <small id="id_MSTUD_err_regnumber" class="text-danger"></small>
                          </div>
+                         <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_examnumber"  class="text-danger"></small>
+                         </div>
+
                          <div class="content_subheader_left mx-2">
                               <small id="id_MSTUD_err_diplomanumber" class="text-danger"></small>
                          </div>
@@ -135,13 +137,13 @@
                          </div>
                          <div id="id_MSTUD_level_div" class="flex_1 mx-1">
                             <label id="id_MSTUD_level_label" for="id_MSTUD_level_select" class="label_margin_top_m3"></label>
-                            <select id="id_MSTUD_level_select" data-field= "lvl_id" class="form-control"
+                            <select id="id_MSTUD_level_select" data-field= "lvlbase_id" class="form-control"
                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
                             </select>
                          </div>
                          <div id="id_MSTUD_sector_div" class="flex_1 mx-1">
                             <label id="id_MSTUD_sector_label" for="id_MSTUD_sector_select" class="label_margin_top_m3"></label>
-                            <select id="id_MSTUD_sector_select" data-field= "sct_id" class="form-control"
+                            <select id="id_MSTUD_sector_select" data-field= "sctbase_id" class="form-control"
                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
                             </select>
                         </div>
@@ -166,12 +168,7 @@
                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
                          </div>
                          <div class="flex_3 mx-1">
-                            <label for="id_MSTUD_notes" class="label_margin_top_m3">{% trans 'Notes' %}:</label>
-                            <input id="id_MSTUD_notes" type="text" data-field= "notes" class="form-control"
-                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                            <div class="mx-2">
-                                <small id="id_MSTUD_err_workhoursperday"  class="text-danger"></small>
-                            </div>
+
                          </div>
                      </div>
 
@@ -180,11 +177,10 @@
                      </div>
                 </div>
 
-
                 <div class="modal-footer">
-                    <div class="content_subheader_left mx-1 tab_show tab_update">
+                    <div class="content_subheader_left mx-1">
                         <button id="id_MSTUD_btn_delete" type="button" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete candidate' %}</button>
-                        <button id="id_MSTUD_btn_log" class="btn btn-outline-secondary" >{% trans 'Show logfile' %}</button>
+                        <button id="id_MSTUD_btn_log" class="btn btn-outline-secondary display_hide" >{% trans 'Show logfile' %}</button>
                     </div>
                     <div class="content_subheader_right">
                         <button id="id_MSTUD_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>

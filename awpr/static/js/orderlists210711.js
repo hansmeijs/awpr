@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // period also returns emplhour_list
         const datalist_request = {
                 setting: {page: "page_orderlist"},
-                schoolsetting: {setting_key: "import_studentsubject"},
+                schoolsetting: {setting_key: "import_studsubj"},
                 locale: {page: ["page_studsubj", "page_subject", "page_student", "upload", "page_orderlist"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
@@ -1163,7 +1163,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                             if(el_MSUBJ_input){el_MSUBJ_input.classList.add("border_bg_invalid")};
 
                                         // put msgtext in msg box
-                                            b_render_msg_box("id_MSUBJ_msg_" + el_fldName, msg_list)
+                                            b_render_msg_container("id_MSUBJ_msg_" + el_fldName, msg_list)
                                         }
     */
                 // make field green when field name is in updated_columns

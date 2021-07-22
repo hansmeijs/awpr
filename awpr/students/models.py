@@ -148,7 +148,6 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
 
     locked = BooleanField(default=False)
 
-
     class Meta:
         ordering = [Lower('lastname'), Lower('firstname')]
 

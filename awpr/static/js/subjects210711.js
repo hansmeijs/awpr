@@ -560,7 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                      (["schemeitem", "subjecttype"].includes(tblName)) ? map_dict.scheme_id : null;
                 const show_row = (!lookup_value || !selected.scheme_pk || selected.scheme_pk === lookup_value);
                 if(show_row){
-                    let tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_id, map_dict)
+                    let tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_dict)
                 };
           };
         }  // if(data_rows)
@@ -649,7 +649,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };  //  CreateTblHeader
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-05-10  PR2021-06-21
-    function CreateTblRow(tblName, field_setting, col_hidden, map_id, map_dict) {
+    function CreateTblRow(tblName, field_setting, col_hidden, map_dict) {
         //console.log("=========  CreateTblRow =========", tblName);
         //console.log("map_dict", map_dict);
 
@@ -659,6 +659,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const field_align = field_setting.field_align;
         const field_width = field_setting.field_width;
         const column_count = field_names.length;
+
+        const map_id = (map_dict.mapid) ? map_dict.mapid : null;
 
 // ---  lookup index where this row must be inserted
         let ob1 = "", ob2 = "", ob3 = "";
@@ -1103,11 +1105,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- lookup index where new row must be inserted in data_rows
                 // PR2021-06-21 not necessary, new row has always pk higher than existing. Add at end of rows
+
     // ---  add new item in data_rows at end
                 data_rows.push(update_dict);
 
     // ---  create row in table., insert in alphabetical order
-                const new_tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_id, update_dict)
+                const new_tblRow = CreateTblRow(tblName, field_setting, col_hidden, update_dict)
 
     // ---  scrollIntoView,
                 if(new_tblRow){
@@ -1123,9 +1126,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 (tblName === "schemeitem") ? schemeitem_rows :
                                 (tblName === "subjecttype") ? subjecttype_rows :
                                 (tblName === "subjecttypebase") ? subjecttypebase_rows : [];
-                const [index, dict, compare] = b_recursive_lookup(map_rows, map_id, setting_dict.user_lang);
-                const map_dict = dict;
-                const datarow_index = index;
+                const [index, found_dict, compare] = b_recursive_integer_lookup(map_rows, "id", setting_dict.user_lang);
+                const map_dict = (!isEmpty(found_dict)) ? found_dict : null;
+                const row_index = index;
 
 // ++++ deleted ++++
                 if(is_deleted){
@@ -1134,12 +1137,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     const deleted_row_dict = deleted_row_arr[0];
 
     //--- delete tblRow
-                    const tblRow_tobe_deleted = document.getElementById(update_dict.mapid);
+                    if(deleted_row_dict && deleted_row_dict.mapid){
+                        const tblRow_tobe_deleted = document.getElementById(update_dict.mapid);
     // ---  when delete: make tblRow red for 2 seconds, before uploading
-                    tblRow_tobe_deleted.classList.add("tsa_tr_error")
-                    setTimeout(function() {
-                        tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)
-                    }, 2000);
+                        tblRow_tobe_deleted.classList.add("tsa_tr_error")
+                        setTimeout(function() {
+                            tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)
+                        }, 2000);
+                    }
                 } else {
 
 // +++++++++++ updated row +++++++++++
@@ -1171,7 +1176,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 //--- delete current tblRow
                                     tblRow.parentNode.removeChild(tblRow);
                                 //--- insert row new at new position
-                                    tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_id, update_dict)
+                                    tblRow = CreateTblRow(tblName, field_setting, col_hidden, update_dict)
                                 };
 
         //console.log("tblRow", tblRow);
@@ -1201,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                             if(el_MSUBJ_input){el_MSUBJ_input.classList.add("border_bg_invalid")};
 
                                         // put msgtext in msg box
-                                            b_render_msg_box("id_MSUBJ_msg_" + el_fldName, msg_list)
+                                            b_render_msg_container("id_MSUBJ_msg_" + el_fldName, msg_list)
                                         }
     */
                 // make field green when field name is in updated_columns
@@ -1768,8 +1773,8 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MSJT_tblBody_sjtpbase.innerText = null;
 
             t_FillSelectOptions(el_MSJTP_department, department_map, "id", "base_code", false, null, null, loc.No_departments_found, loc.Select_department);
-            el_MSJTP_level.innerHTML = t_FillOptionLevelSectorFromMap("level", level_map, mod_MSJTP_dict.department_pk, mod_MSJTP_dict.lvl_pk);
-            el_MSJTP_sector.innerHTML = t_FillOptionLevelSectorFromMap("sector", sector_map, mod_MSJTP_dict.department_pk, mod_MSJTP_dict.sct_pk);
+            el_MSJTP_level.innerHTML = t_FillOptionLevelSectorFromMap("level", "id", level_map, mod_MSJTP_dict.department_pk, mod_MSJTP_dict.lvl_pk);
+            el_MSJTP_sector.innerHTML = t_FillOptionLevelSectorFromMap("sector", "id", sector_map, mod_MSJTP_dict.department_pk, mod_MSJTP_dict.sct_pk);
 
             el_MSJTP_department.value = (mod_MSJTP_dict.department_pk) ? mod_MSJTP_dict.department_pk : null;
             MSI_MSJT_set_selectbox_level_sector("MSJT", mod_MSJTP_dict.department_pk);
@@ -1936,8 +1941,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_level = document.getElementById("id_" + formName + "_level");
         const el_sector = document.getElementById("id_" + formName + "_sector");
-        el_level.innerHTML = t_FillOptionLevelSectorFromMap("level", level_map, depbase_pk, lvl_pk);
-        el_sector.innerHTML = t_FillOptionLevelSectorFromMap("sector", sector_map, depbase_pk, sct_pk);
+        el_level.innerHTML = t_FillOptionLevelSectorFromMap("level", "id", level_map, depbase_pk, lvl_pk);
+        el_sector.innerHTML = t_FillOptionLevelSectorFromMap("sector", "id", sector_map, depbase_pk, sct_pk);
 
     }  // MSI_MSJT_set_selectbox_level_sector
 
@@ -2146,7 +2151,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  put border_bg_invalid in input box when error
             add_or_remove_class(el_input, "border_bg_invalid", msg_err)
 // ---  put msg_err in msg_box or reset and hide
-            b_render_msg_box("id_MSJT_msg_" + fldName, [msg_err])
+            b_render_msg_container("id_MSJT_msg_" + fldName, [msg_err])
         };
 // ---  disable save button on error
         el_MSJT_btn_save.disabled = disable_save_btn;
@@ -2665,7 +2670,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  put border_bg_invalid in input box when error
             add_or_remove_class(el_input, "border_bg_invalid", msg_err)
 // ---  put msg_err in msg_box or reset and hide
-            b_render_msg_box("id_MSUBJ_msg_" + fldName, [msg_err])
+            b_render_msg_container("id_MSUBJ_msg_" + fldName, [msg_err])
         };
 // ---  disable save button on error
         el_MSUBJ_btn_save.disabled = disable_save_btn;
@@ -2901,8 +2906,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log("mod_MSI_dict.sct_pk", mod_MSI_dict.sct_pk)
 
                 t_FillSelectOptions(el_MSI_department, department_map, "id", "base_code", false, mod_MSI_dict.department_pk, null, loc.No_departments_found, loc.Select_department);
-                el_MSI_level.innerHTML = t_FillOptionLevelSectorFromMap("level", level_map, mod_MSI_dict.depbase_pk, mod_MSI_dict.lvl_pk);
-                el_MSI_sector.innerHTML = t_FillOptionLevelSectorFromMap("sector", sector_map, mod_MSI_dict.depbase_pk, mod_MSI_dict.sct_pk);
+                el_MSI_level.innerHTML = t_FillOptionLevelSectorFromMap("level", "id", level_map, mod_MSI_dict.depbase_pk, mod_MSI_dict.lvl_pk);
+                el_MSI_sector.innerHTML = t_FillOptionLevelSectorFromMap("sector", "id", sector_map, mod_MSI_dict.depbase_pk, mod_MSI_dict.sct_pk);
 
                 el_tblBody_subjects.innerText = null;
                 el_tblBody_schemeitems.innerText = null;

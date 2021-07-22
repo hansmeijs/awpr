@@ -12,7 +12,7 @@ from awpr import constants as c
 from awpr import settings as s
 
 import logging
-logger = logging.getLogger(__name__)  # __name__ tsap.validators
+logger = logging.getLogger(__name__)
 
 
 # === validate_unique_username ===================================== PR2020-03-31 PR2020-09-24 PR2021-01-01
@@ -64,8 +64,8 @@ def validate_email_address(email_address):
 
 # === validate_unique_useremail ===================================== PR2020-03-31 PR2020-09-24
 def validate_unique_useremail(value, country, schoolbase, cur_user_id=None):
-    #logger.debug ('validate_unique_useremail', value)
-    #logger.debug ('cur_user_id', cur_user_id)
+    logger.debug ('validate_unique_useremail', value)
+    logger.debug ('cur_user_id', cur_user_id)
     # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
     msg_err = None
     if not value:
@@ -75,11 +75,19 @@ def validate_unique_useremail(value, country, schoolbase, cur_user_id=None):
             msg_err = _('There is no school selected. You must first select a school before you can add a new user')
         else:
             if cur_user_id:
-                user = am.User.objects.filter(country=country, schoolbase=schoolbase, email__iexact=value).exclude(pk=cur_user_id).first()
+                user = am.User.objects.filter(
+                    country=country,
+                    schoolbase=schoolbase,
+                    email__iexact=value
+                ).exclude(pk=cur_user_id).first()
             else:
-                user = am.User.objects.filter(country=country, schoolbase=schoolbase, email__iexact=value).first()
+                user = am.User.objects.filter(
+                    country=country,
+                    schoolbase=schoolbase,
+                    email__iexact=value
+                ).first()
 
-            #logger.debug('user', user)
+            logger.debug('user', user)
             if user:
                 username = user.username_sliced
                 msg_err = str(_("This email address is already in use by '%(usr)s'. ") % {'usr': username})
@@ -88,6 +96,7 @@ def validate_unique_useremail(value, country, schoolbase, cur_user_id=None):
                 elif not user.is_active:
                     msg_err += str(_("The account is inactive."))
 
+            logger.debug('msg_err', msg_err)
     return msg_err
 
 

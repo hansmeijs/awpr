@@ -34,11 +34,8 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk):
             "LEFT JOIN accounts_user AS au ON (au.id = ey.modifiedby_id)",
             "WHERE ey.country_id = %(cntr_id)s::INT"]
 
-    if req_usr.role < c.ROLE_032_INSP:
-        sql_list.append('AND ey.published')
-
     if examyear_pk:
-        # when employee_pk has value: skip other filters
+        # when examyear_pk has value: skip other filters
         sql_list.append('AND ey.id = %(ey_id)s::INT')
         sql_keys['ey_id'] = examyear_pk
     else:
@@ -50,9 +47,9 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk):
     newcursor.execute(sql, sql_keys)
     examyear_rows = af.dictfetchall(newcursor)
 
-    # - add messages to subject_row
+# - add messages to examyear_row
     if examyear_pk and examyear_rows:
-        # when subject_pk has value there is only 1 row
+        # when examyear_pk has value there is only 1 row
         row = examyear_rows[0]
         if row:
             for key, value in append_dict.items():
@@ -93,7 +90,12 @@ def create_department_rows(examyear):
 
 def create_level_rows(examyear, depbase, cur_dep_only):
     # --- create rows of all levels of this examyear / country PR2020-12-11 PR2021-03-08  PR2021-06-24
-    #logger.debug(' =============== create_level_rows ============= ')
+    logging_on = False  #s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_level_rows ============= ')
+        logger.debug('examyear: ' + str(examyear))
+        logger.debug('depbase: ' + str(depbase))
+        logger.debug('cur_dep_only: ' + str(cur_dep_only))
 
     rows =[]
     if examyear:
@@ -114,10 +116,19 @@ def create_level_rows(examyear, depbase, cur_dep_only):
         if cur_dep_only:
             depbase_lookup = None
             if depbase:
-                department = sch_mod.Department.objects.get_or_none(examyear=examyear, base=depbase)
+                department = sch_mod.Department.objects.get_or_none(
+                    examyear=examyear,
+                    base=depbase
+                )
                 if department:
                     if department.level_req:
                         depbase_lookup = ''.join( ('%;', str(depbase.pk), ';%') )
+
+
+                if logging_on:
+                    logger.debug('department: ' + str(department))
+                    logger.debug('depbase_lookup: ' + str(depbase_lookup))
+
             if depbase_lookup:
                 sql_keys['depbase_pk'] = depbase_lookup
                 sql_list.append("AND CONCAT(';', lvl.depbases::TEXT, ';') LIKE %(depbase_pk)s::TEXT")
@@ -126,10 +137,26 @@ def create_level_rows(examyear, depbase, cur_dep_only):
         sql_list.append("ORDER BY lvl.sequence")
         sql = ' '.join(sql_list)
 
+        if logging_on:
+            logger.debug('sql: ' + str(sql))
+
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
             rows = af.dictfetchall(cursor)
 
+            if logging_on:
+                logger.debug('rows: ' + str(rows))
+                #logger.debug('connection.queries: ' + str(connection.queries))
+        """
+        'sql': "SELECT lvl.id, lvl.base_id, lvl.examyear_id, ey.code AS examyear_code, ey.country_id, 
+                CONCAT('level_', lvl.id::TEXT) AS mapid, lvl.name, lvl.abbrev, lvl.sequence, lvl.depbases, lvl.modifiedby_id, lvl.modifiedat, 
+                SUBSTRING(au.username, 7) AS modby_username 
+                FROM subjects_level AS lvl  
+                INNER JOIN schools_examyear AS ey ON (ey.id = lvl.examyear_id) 
+                LEFT JOIN accounts_user AS au ON (au.id = lvl.modifiedby_id) 
+                WHERE ey.id = 62::INT AND CONCAT(';', lvl.depbases::TEXT, ';') LIKE '%;1;%'::TEXT 
+                ORDER BY lvl.sequence", 'time': '0.000'}]
+        """
     return rows
 # --- end of create_level_rows
 
@@ -204,7 +231,7 @@ def create_school_rows(examyear, permit_dict, school_pk=None):
     sql_list = ["SELECT sch.id, sch.base_id, sch.examyear_id, ey.code AS examyear_code, ey.country_id, c.name AS country,",
         "CONCAT('school_', sch.id::TEXT) AS mapid, sb.defaultrole,",
         "sch.name, sch.abbrev, sch.article, sb.code AS sb_code, sch.depbases, sch.otherlang,",
-        "sch.isdayschool, sch.iseveningschool, sch.islexschool, sch.activated, sch.locked,",
+        "sch.isdayschool, sch.iseveningschool, sch.islexschool, sch.activated, sch.activatedat, sch.locked, sch.lockedat,",
         "sch.modifiedby_id, sch.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
 
         "FROM schools_school AS sch",

@@ -165,10 +165,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MUA_email = document.getElementById("id_MUA_email");
         const el_MUA_btn_delete = document.getElementById("id_MUA_btn_delete");
         const el_MUA_btn_submit = document.getElementById("id_MUA_btn_submit");
+        const el_MUA_btn_cancel = document.getElementById("id_MUA_btn_cancel");
         const el_MUA_footer_container = document.getElementById("id_MUA_footer_container");
         const el_MUA_footer01 = document.getElementById("id_MUA_footer01");
         const el_MUA_footer02 = document.getElementById("id_MUA_footer02");
         const el_MUA_loader = document.getElementById("id_MUA_loader");
+
         if (el_MUA_schoolname){
             el_MUA_schoolname.addEventListener("keyup", function() {MUA_InputSchoolname(el_MUA_schoolname, event.key)}, false);
         }
@@ -219,9 +221,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
         if (el_MIMP_btn_next){el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false)};
         const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
-        if (el_MIMP_btn_test){el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test")}, false)};
+        if (el_MIMP_btn_test){el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test", RefreshDataRowsPermitsAfterUpload)}, false)};
         const el_MUP_btn_upload = document.getElementById("id_MIMP_btn_upload");
-        if (el_MUP_btn_upload){el_MUP_btn_upload.addEventListener("click", function() {MIMP_Save("save")}, false)};
+        if (el_MUP_btn_upload){el_MUP_btn_upload.addEventListener("click", function() {MIMP_Save("save", RefreshDataRowsPermitsAfterUpload)}, false)};
 
 
 // ---  MOD CONFIRM ------------------------------------
@@ -559,7 +561,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         if (field_name === "select") {
                             // TODO add select multiple users option PR2020-08-18
-                        } else if (["sb_code", "username", "last_name", "email", "employee_code"].includes(field_name)){
+
+                        } else if (["sb_code", "school_abbrev", "username", "last_name", "email"].includes(field_name)){
                             el.addEventListener("click", function() {MUA_Open("update", el)}, false)
                             el.classList.add("pointer_show");
                             add_hover(el);
@@ -623,7 +626,8 @@ document.addEventListener('DOMContentLoaded', function() {
             let inner_text = null, title_text = null, filter_value = null;
             if (field_name === "select") {
                 // TODO add select multiple users option PR2020-08-18
-            } else if (["sb_code", "username", "last_name", "email", "employee_code", "page"].includes(field_name)){
+
+            } else if (["sb_code", "username", "last_name", "email", "page"].includes(field_name)){
                 inner_text = map_dict[field_name];
                 filter_value = (inner_text) ? inner_text.toLowerCase() : null;
             } else if (field_name === "school_abbrev") {
@@ -666,11 +670,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 filter_value = (is_expired) ? "2" : (is_activated) ? "1" : "0"
                 el_div.className = (is_activated) ? "tickmark_2_2" : (is_expired) ? "exclamation_0_2" : "tickmark_0_0" ;
-
 // ---  add EventListener
                 if(!is_activated){
                     el_div.addEventListener("click", function() {ModConfirmOpen("user", "resend_activation_email", el_div)}, false )
                 }
+                add_or_remove_class(el_div, "pointer_show", !is_activated)
+
 // ---  add title
                 title_text = (is_expired) ? loc.Activationlink_expired + "\n" + loc.Resend_activationlink : null
             } else if (field_name === "is_active") {
@@ -919,6 +924,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  hide btn delete when addnew mode
             add_or_remove_class(el_MUA_btn_delete, cls_hide, is_addnew)
 
+
     // ---  disable btn submit
             MUA_DisableBtnSave()
 
@@ -929,13 +935,17 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // MUA_Open
 
 //========= MUA_DisableBtnSave  ============= PR2021-06-30
-   function MUA_DisableBtnSave(){
+   function MUA_DisableBtnSave(is_ok){
 // ---  disable btn submit
 
         const disable_btn_save = (!mod_MUA_dict.user_schoolbase_pk || !el_MUA_username.value ||
                                   !el_MUA_last_name.value || !el_MUA_email.value )
         el_MUA_btn_submit.disabled = disable_btn_save;
         el_MUA_btn_submit.innerText = (mod_MUA_dict.mode === "update") ? loc.Save : loc.Submit;
+
+// ---  hide submit btn when is_ok
+        add_or_remove_class(el_MUA_btn_submit, cls_hide, is_ok)
+
    }  // MUA_DisableBtnSave
 
 //========= MUA_Save  ============= PR2020-08-02 PR2020-08-15 PR2021-06-30
@@ -989,7 +999,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 email: el_MUA_email.value
                               };
             } else if (["validate", "create"].includes(upload_mode)){
-                upload_dict = { schoolbase_pk: mod_MUA_dict.user_schoolbase_pk,
+                upload_dict = { user_pk: mod_MUA_dict.user_pk,
+                                schoolbase_pk: mod_MUA_dict.user_schoolbase_pk,
                                 mode: upload_mode,
                                 username: el_MUA_username.value,
                                 last_name: el_MUA_last_name.value,
@@ -1024,14 +1035,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         refresh_user_map(response.updated_userlist);
                     }
                     if ("validation_ok" in response){
-
-        console.log("validation_ok ");
                         if(response.validation_ok){
-        console.log("MUA_Create ");
-                        MUA_Create()
-                        }
-                        ;
-                    }
+                            MUA_CreateOrUpdate();
+                        };
+                    };
 
                 },  // success: function (response) {
                 error: function (xhr, msg) {
@@ -1042,24 +1049,26 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // MUA_Save
 
 
-//========= MUA_Save  ============= PR2021-07-05
-   function MUA_Create() {
+//========= MUA_CreateOrUpdate  ============= PR2021-07-05
+   function MUA_CreateOrUpdate() {
         console.log("=== MUA_Save === ");
         //  mode = 'validate' when called by el_MUA_btn_submit
         //  mode = "save" after response OK
-        // create new user
+        // create new user or update existing user
 
 // ---  skip if one of the fields is blank
         let skip = !(el_MUA_username.value && el_MUA_last_name.value && el_MUA_email.value)
         if(!skip){
             console.log("mod_MUA_dict.mode", mod_MUA_dict.mode);
    // ---  create upload_dict
-            const upload_dict = { mode:  "create",
+            const upload_mode = (mod_MUA_dict.user_pk) ? "update" : "create";
+            const upload_dict = { mode:  upload_mode,
                                 schoolbase_pk: mod_MUA_dict.user_schoolbase_pk,
                                 username: el_MUA_username.value,
                                 last_name: el_MUA_last_name.value,
                                 email: el_MUA_email.value
                               };
+            if (mod_MUA_dict.user_pk){upload_dict.user_pk = mod_MUA_dict.user_pk}
             console.log("upload_dict: ", upload_dict);
 
             // must lose focus, otherwise green / red border won't show
@@ -1094,10 +1103,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }  // error: function (xhr, msg) {
             });  // $.ajax({
         }
-    };  // MUA_Save
-
-
-
+    };  // MUA_CreateOrUpdate
 
 //========= MUA_FillSelectTableSchool  ============= PR2020--09-17
     function MUA_FillSelectTableSchool() {
@@ -1188,22 +1194,25 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         el_MUA_footer_container.classList.add(cls_hide);
+
+// ---  reset text on btn cancel
+        if(el_MUA_btn_cancel) {el_MUA_btn_cancel.innerText = loc.Cancel};
+
     }  // MUA_ResetElements
 
 //========= MUA_SetMsgElements  ============= PR2020-08-02
     function MUA_SetMsgElements(response){
-        //console.log( "===== MUA_SetMsgElements  ========= ");
-
-        const err_dict = ("msg_err" in response) ? response.msg_err : {}
+        console.log( "===== MUA_SetMsgElements  ========= ");
+        // TOD) switch to render msg box
+        const err_dict = (response && "msg_err" in response) ? response.msg_err : {}
         const validation_ok = get_dict_value(response, ["validation_ok"], false);
-    //console.log( "err_dict", err_dict);
 
-        const el_msg_container = document.getElementById("id_msg_container")
+
+        const el_msg_container = document.getElementById("id_MUA_msg_container")
         let err_save = false;
-        let is_ok = ("msg_ok" in response);
+        let is_ok = (response && "msg_ok" in response);
         if (is_ok) {
-            const ok_dict = response["msg_ok"];
-    //console.log( "ok_dict", ok_dict);
+            const ok_dict = response.msg_ok;
             document.getElementById("id_msg_01").innerText = get_dict_value(ok_dict, ["msg01"]);
             document.getElementById("id_msg_02").innerText = get_dict_value(ok_dict, ["msg02"]);
             document.getElementById("id_msg_03").innerText = get_dict_value(ok_dict, ["msg03"]);
@@ -1217,11 +1226,16 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // --- loop through input elements
             if("save" in err_dict){
+
+        console.log( "err_dict", err_dict);
+                const save_dict = err_dict.save
+        console.log( "save_dict", save_dict);
                 err_save = true;
-                document.getElementById("id_msg_01").innerText = get_dict_value(err_dict, ["save"]);
-                document.getElementById("id_msg_02").innerText = null;
-                document.getElementById("id_msg_03").innerText =  null;
-                document.getElementById("id_msg_04").innerText =  null;
+
+                document.getElementById("id_msg_01").innerText = get_dict_value(save_dict, ["msg01"]);
+                document.getElementById("id_msg_02").innerText = get_dict_value(save_dict, ["msg02"]);
+                document.getElementById("id_msg_03").innerText = get_dict_value(save_dict, ["msg03"]);
+                document.getElementById("id_msg_04").innerText = get_dict_value(save_dict, ["msg04"]);
 
                 el_msg_container.classList.remove("border_bg_valid");
                 el_msg_container.classList.add("border_bg_invalid");
@@ -1257,14 +1271,15 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  show message in footer when no error and no ok msg
         add_or_remove_class(el_MUA_footer_container, cls_hide, !validation_ok )
 
-// ---  hide submit btn when is_ok
-        add_or_remove_class(el_MUA_btn_submit, cls_hide, is_ok)
+// ---  hide submit btn and delete btnwhen is_ok or when error
+        add_or_remove_class(el_MUA_btn_submit, cls_hide, is_ok || err_save)
+        add_or_remove_class(el_MUA_btn_delete, cls_hide, is_ok || err_save)
 
 // ---  set text on btn cancel
-        const el_MUA_btn_cancel = document.getElementById("id_MUA_btn_cancel");
-        el_MUA_btn_cancel.innerText = ((is_ok || err_save) ? loc.Close : loc.Cancel);
-        if(is_ok || err_save){el_MUA_btn_cancel.focus()}
-
+        if (el_MUA_btn_cancel){
+            el_MUA_btn_cancel.innerText = ((is_ok || err_save) ? loc.Close : loc.Cancel);
+            if(is_ok || err_save){el_MUA_btn_cancel.focus()}
+        }
     }  // MUA_SetMsgElements
 
 //=========  MUA_SelectSchool  ================ PR2020-09-25
@@ -1799,10 +1814,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     dont_show_modal = (map_dict.activated);
                     if(!dont_show_modal){
                         if(is_expired) {
-                            msg_list.append(loc.Activationlink_expired);
+                            msg_list.push(loc.Activationlink_expired);
                         };
-                        msg_list.append(loc.We_will_resend_an_email_to_user + " '" + username + "'.");
-                        msg_list.append(loc.Do_you_want_to_continue);
+                        msg_list.push(loc.We_will_resend_an_email_to_user + " '" + username + "'.");
+                        msg_list.push(loc.Do_you_want_to_continue);
                     }
                 }
 
@@ -1929,7 +1944,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_confirm_msg_container.classList.add("border_bg_valid");
             }
 
-            const msg_html = (msg_list.length()) ? msg_list.join("<br>") : null;
+            const msg_html = (msg_list.length) ? msg_list.join("<br>") : null;
             el_confirm_msg_container.innerHTML = msg_html;
             el_confirm_btn_cancel.innerText = loc.Close
             el_confirm_btn_save.classList.add(cls_hide);
@@ -1940,6 +1955,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // ModConfirmResponse
 
 //###########################################################################
+
+//=========  RefreshDataRowsPermitsAfterUpload  ================ PR2021-07-20
+    function RefreshDataRowsPermitsAfterUpload(response) {
+        console.log(" --- RefreshDataRowsPermitsAfterUpload  ---");
+        console.log( "response", response);
+        // TODO
+    }  //  RefreshDataRowsPermitsAfterUpload
 
 // +++++++++++++++++ REFRESH PERMIT MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
 //=========  refresh_permit_map  ================ PR2021-03-18

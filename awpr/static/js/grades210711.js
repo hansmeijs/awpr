@@ -772,9 +772,16 @@ document.addEventListener("DOMContentLoaded", function() {
         let tblRow_header = tblHead_datatable.insertRow (-1);
         let tblRow_filter = tblHead_datatable.insertRow (-1);
 
-    // --- loop through columns
+//--- insert th's to tblHead_datatable
         for (let j = 0; j < column_count; j++) {
+
             const field_name = field_setting.field_names[j];
+            const filter_tag = field_setting.filter_tags[j];
+            const class_width = "tw_" + field_setting.field_width[j] ;
+            const class_align = "ta_" + field_setting.field_align[j];
+
+            const key = field_setting.field_caption[j];
+            let caption = (loc[key]) ? loc[key] : key;
 
     // - skip columns if columns_shown[field_name]) = true;
             if (columns_shown[field_name]){
@@ -808,7 +815,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 const class_align = "ta_" + field_setting.field_align[j];
 
 
-// ++++++++++ insert columns in header row +++++++++++++++
+// ++++++++++ create header row +++++++++++++++
         // --- add th to tblRow_header +++
                 let th_header = document.createElement("th");
         // --- add div to th, margin not working with th

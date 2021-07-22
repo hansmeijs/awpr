@@ -13,8 +13,6 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Frame, Spacer, Imag
 from awpr import constants as c
 from awpr import functions as af
 from awpr import settings as s
-from schools import models as sch_mod
-from subjects import models as subj_mod
 from subjects import views as subj_views
 
 import logging
@@ -334,3 +332,122 @@ def write_question(canvas, amount, assignment_keys_dict, max_rows_per_page, page
     # - add data_frame to canvas
             data_frame = Frame(x_data, bottom, width, height, showBoundary=0)
             data_frame.addFromList(data_list, canvas)
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+def draw_pdf_upload_log(canvas, sel_exam_instance, user_lang):  # PR2021-07-16
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- draw_exam -----')
+        logger.debug('sel_exam_instance: ' + str(sel_exam_instance) + ' ' + str(type(sel_exam_instance)))
+
+    # pagesize A4  = (595.27, 841.89) points, 1 point = 1/72 inch
+    # move the origin up and to the left
+    # c.translate(inch,inch)
+
+    # filepath = awpr_settings.STATICFILES_FONTS_DIR + 'Garamond.ttf'
+
+    # filepath = awpr_settings.STATICFILES_FONTS_DIR + 'Palace_Script_MT.ttf'
+    # logger.debug('filepath: ' + str(filepath))
+    # pdfmetrics.registerFont(TTFont('Palace_Script_MT', filepath))
+
+    # c.setFont('Palace_Script_MT', 36)
+    # c.drawString(10, 650, "Some text encoded in UTF-8")
+    # c.drawString(10, 600, "In the Palace_Script_MT TT Font!")
+
+    # choose some colors
+    # c.setStrokeColorRGB(0.2,0.5,0.3)
+    # c.setFillColorRGB(1,0,1)
+
+    # draw a rectangle
+    # canvas.rect(x, y, width, height, stroke=1, fill=0)
+
+    subject = sel_exam_instance.subject
+    examyear = subject.examyear
+    examperiod = sel_exam_instance.examperiod
+    examtype = sel_exam_instance.examtype
+
+    amount = sel_exam_instance.amount if sel_exam_instance.amount else 0
+    amount_str = str(amount) if amount else '---'
+
+    blanks_str = str(sel_exam_instance.blanks) if sel_exam_instance.blanks else '-'
+
+    assignment = sel_exam_instance.assignment
+    keys = sel_exam_instance.keys
+    examyear_code = str(examyear.code)
+
+    subject_name = subject.name
+    examperiod_caption = c.get_examperiod_caption(examperiod)
+    examtype_caption = c.get_examtype_caption(examtype)
+
+# create list of questions
+    assignment_keys_dict = subj_views.get_assignment_keys_dict(amount, assignment, keys)
+    if logging_on:
+        logger.debug('assignment_keys_dict: ' + str(assignment_keys_dict) + ' ' + str(type(assignment_keys_dict)))
+
+# - get dep_abbrev from department
+    dep_abbrev = '---'
+    department = sel_exam_instance.department
+    if department:
+        dep_abbrev = department.abbrev
+
+# - get level_abbrev from level
+    level_abbrev = None
+    level = sel_exam_instance.level
+    if level and level.abbrev:
+        dep_abbrev += ' - ' + level.abbrev
+
+# - get version
+    version = sel_exam_instance.version
+
+    last_modified_text = af.get_modifiedby_formatted(sel_exam_instance, user_lang)
+
+# NIU: sector_abbrevs = get_sector_abbrevs(sel_exam_instance, examyear)
+
+    header_list = ("MINISTERIE VAN ONDERWIJS, WETENSCHAP, CULTUUR EN SPORT",
+                 "Examenvragen voor het examenjaar " + examyear_code)
+
+    data_list = [( str(_('Education type')) + ':', dep_abbrev) ]
+    data_list.append( (str(_('Exam type')) + ':', ' '.join( (examtype_caption, examperiod_caption) ) ) )
+    data_list.append((str(_('Subject')) + ':', subject_name) )
+    if version:
+        data_list.append( (str(_('Version')) + ':', version) )
+    question_list = [ ( str(_('Number of questions')) + ':', amount_str ),
+                      ( str(_('Blanks')) + ':', blanks_str )
+                    ]
+    filepath = s.STATICFILES_FONTS_DIR + 'arial.ttf'
+    try:
+        ttfFile = TTFont('Arial', filepath)
+        #logger.debug('ttfFile: ' + str(ttfFile))
+        pdfmetrics.registerFont(ttfFile)
+    except Exception as e:
+        logger.error('filepath: ' + str(filepath))
+        logger.error(getattr(e, 'message', str(e)))
+
+# +++ loop through pages (max pages = 2
+    max_rows_per_page = 25
+    max_questions_per_page = max_rows_per_page * 5
+    page_count = 1
+    if amount:
+        page_count = 1 + int( (amount - 1) / max_questions_per_page )
+
+    if logging_on:
+        logger.debug('amount: ' + str(amount))
+        logger.debug('page_count: ' + str(page_count))
+
+    for page_number in range(1, 6):  # range(start_value, end_value, step), end_value is not included!
+
+# create 2 frames per column: 1 for label and 1 for values
+        first_q_number_on_page = (page_number -1) * max_questions_per_page
+        if logging_on:
+            logger.debug('first_q_number_on_page: ' + str(first_q_number_on_page))
+
+        if first_q_number_on_page < amount:
+            # go to new page
+            if page_number > 1:
+                canvas.showPage()
+            write_page(canvas, header_list, data_list, question_list, assignment_keys_dict,
+                       amount, page_number, page_count, max_rows_per_page, last_modified_text)
+
+# - end of draw_exam

@@ -979,14 +979,21 @@
 // +++++++++++++++++ LOOKUP dict in ordered dictlist +++++++++++++++++++++++++++ PR2021-06-16
 
 //========= b_get_mapdict_by_integer_from_datarows  ================== PR2021-07-14
-    function b_get_mapdict_by_integer_from_datarows(data_rows, search_int, user_lang){
-        const found_dict = b_recursive_integer_lookup(data_rows, search_int);
+    function b_get_mapdict_by_integer_from_datarows(data_rows, lookup_field, search_int){
+        const [middle_index, found_dict, compare] = b_recursive_integer_lookup(data_rows, lookup_field, search_int);
+        const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
+        return selected_dict;
+    }
+
+//========= b_get_mapdict_from_datarows  ================== PR2021-06-21
+    function b_get_mapdict_from_datarows(data_rows, map_id, user_lang){
+        const [middle_index, found_dict, compare] = b_recursive_lookup(data_rows, map_id, user_lang);
         const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
         return selected_dict;
     }
 
 //========= b_recursive_integer_lookup  ========== PR2020-07-14
-    function b_recursive_integer_lookup(dict_list, search_int){
+    function b_recursive_integer_lookup(dict_list, lookup_field, search_int){
         //console.log( " ----- b_recursive_integer_lookup -----");
         // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
         // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
@@ -995,14 +1002,14 @@
 
         let compare = null, middle_index = null, found_dict = null;
         if (dict_list && dict_list.length){
-            const lookup_field = "id";
+            //const lookup_field = "id";
             const last_index = dict_list.length - 1;
             let min_index = 0;
             let max_index = last_index;
             middle_index =  Math.floor( (min_index + max_index) / 2);
 
             if(!search_int){search_int = ""};
-        console.log( "search_int: ", search_int);
+        //console.log( "search_int: ", search_int);
         //console.log( "lookup_field: ", lookup_field);
 
             const max_loop = 25;
@@ -1015,13 +1022,13 @@
                 } else {
                     const middle_dict = dict_list[middle_index];
                     const middle_value = middle_dict[lookup_field];
-                    compare = (search_value === middle_value) ? 0 :
-                              (search_value > middle_value) ? 1 : -1;
-        console.log( i, "LOOP : ", min_index, " - ", max_index, " > ", middle_index);
-        console.log( "middle_value: ", middle_value);
-        console.log( "compare : ", compare);
-        console.log( "min_index : ", min_index);
-        console.log( "max_index : ", max_index);
+                    compare = (search_int === middle_value) ? 0 :
+                              (search_int > middle_value) ? 1 : -1;
+        //console.log( i, "LOOP : ", min_index, " - ", max_index, " > ", middle_index);
+        //console.log( "middle_value: ", middle_value);
+        //console.log( "compare : ", compare);
+        //console.log( "min_index : ", min_index);
+        //console.log( "max_index : ", max_index);
                     if (!compare) {
                         found_dict = middle_dict;
                         break;
@@ -1053,17 +1060,9 @@
 
         //console.log( "found_dict: ", found_dict);
         //console.log( "compare: ", compare);
-        return found_dict;
+        return [middle_index, found_dict, compare];
     };  // b_recursive_integer_lookup
 
-
-
-//========= b_get_mapdict_from_datarows  ================== PR2021-06-21
-    function b_get_mapdict_from_datarows(data_rows, map_id, user_lang){
-        const [middle_index, found_dict, compare] = b_recursive_lookup(data_rows, map_id, user_lang);
-        const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
-        return selected_dict;
-    }
 
 //========= b_recursive_lookup  ========== PR2020-06-16
     function b_recursive_lookup(dict_list, search_value, user_lang){
@@ -1172,9 +1171,6 @@
         //console.log( "compare: ", compare);
         return [middle_index, found_dict, compare];
     };  // b_recursive_lookup
-
-
-
 
 
 //========= b_recursive_tblRow_lookup  ========== PR2020-06-16
@@ -1413,37 +1409,37 @@
         }  //   if (awp_messages && awp_messages.length)
     }  // b_render_awp_messages
 
-//========= b_render_msg_box  ================= PR2021-05-13
-    function b_render_msg_box(id_el_msg, msg_list) {
-        console.log( "===== b_render_msg_box -----")
-        console.log( "id_el_msg", id_el_msg)
-        console.log( "msg_list", msg_list)
+//========= b_render_msg_container  ================= PR2021-05-13
+    function b_render_msg_container(id_el_msg, msg_list) {
+        //console.log( "===== b_render_msg_container -----")
+        //console.log( "id_el_msg", id_el_msg)
+        //console.log( "msg_list", msg_list)
 
         const el_msg = document.getElementById(id_el_msg);
-        console.log("el_msg", el_msg)
+        //console.log("el_msg", el_msg)
         if (el_msg){
             const has_msg = (!!msg_list && !!msg_list.length)
-        console.log("has_msg", has_msg)
+        //console.log("has_msg", has_msg)
     // put msg in el_msg
             let msg_html = ""
             if (has_msg){
-                for (let j = 0, msg, el_p; msg = msg_list[j]; j++) {
-                    if (j){msg_html += "<br>"};
+                for (let j = 0, msg; msg = msg_list[j]; j++) {
+                    if(j){msg_html += "<br>"};
                     if(msg){msg_html +=msg};
                 }
             }
-        console.log("msg_html", msg_html)
+        //console.log("msg_html", msg_html)
             el_msg.innerHTML = msg_html;
     // show el_msg when has_msg
             add_or_remove_class(el_msg, cls_hide, !has_msg)
         }
-    }  // b_render_msg_box
+    }  // b_render_msg_container
 
 
 //=========  b_ShowModMessages  ================ PR2021-06-27  PR2021-07-03
     function b_ShowModMessages(msg_dictlist) {
-        console.log("==== b_ShowModMessages  ======")
-        console.log("msg_dictlist", msg_dictlist)
+        //console.log("==== b_ShowModMessages  ======")
+        //console.log("msg_dictlist", msg_dictlist)
 
         //  [ { class: "alert-warning", header: 'Update this',
         //      msg_html: "Deze loonperiode heeft 7 diensten."]
@@ -1451,7 +1447,7 @@
         if(msg_dictlist && msg_dictlist.length){
             const el_container = document.getElementById("id_mod_message_container");
             let header_text = null
-            console.log("el_container", el_container)
+            //console.log("el_container", el_container)
             if(el_container){
                 el_container.innerHTML = null;
                 for (let i = 0, msg_dict; msg_dict = msg_dictlist[i]; i++) {

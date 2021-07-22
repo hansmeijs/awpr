@@ -932,28 +932,30 @@ console.log("=========   handle_table_row_clicked   ======================") ;
     };
 
 //>>>>>>>>>>> FILL OPTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-//========= t_FillOptionLevelSectorFromMap  ============= PR2020-12-11 from tsa
-    function t_FillOptionLevelSectorFromMap(tblName, data_map, depbase_pk, selected_pk, firstoption_txt) {
+//========= t_FillOptionLevelSectorFromMap  ============= PR2020-12-11 from tsa PR2021-07-18
+    function t_FillOptionLevelSectorFromMap(tblName, pk_field, data_map, depbase_pk, selected_pk, firstoption_txt) {
          //console.log( "===== t_FillOptionLevelSectorFromMap  ========= ");
          // used in page schemes
 // add empty option on first row, put firstoption_txt in < > (placed here to escape \< and \>
-        if(!firstoption_txt){firstoption_txt = "-"}
-        let option_text = "<option value=\"0\" data-ppk=\"0\">" + firstoption_txt + "</option>";
+        let option_text = "";
+        if(firstoption_txt){
+            option_text = "<option value=\"0\" data-ppk=\"0\">" + firstoption_txt + "</option>";
+        }
 // --- loop through data_map, fill only items with department_pk in depbases
         for (const [map_id, item_dict] of data_map.entries()) {
             if(item_dict.depbases && item_dict.depbases.includes(depbase_pk)){
-                option_text += FillOptionText(tblName, item_dict, selected_pk);
+                option_text += FillOptionText(tblName, pk_field, item_dict, selected_pk);
             }
         }
         return option_text
     }  // t_FillOptionLevelSectorFromMap
 
 //========= FillOptionText  ============= PR2020-12-11 from tsa
-    function FillOptionText(tblName, item_dict, selected_pk) {
+    function FillOptionText(tblName, pk_field, item_dict, selected_pk) {
         //console.log( "===== FillOptionText  ========= ");
         const value = (tblName === "level") ? (item_dict.abbrev) ? item_dict.abbrev : "---"
                                             : (item_dict.name) ? item_dict.name : "---" ;
-        const pk_int = item_dict.id;
+        const pk_int = item_dict[pk_field];
         const pk_str = (pk_int != null) ? pk_int.toString() : "";
         const selected_pk_str = (selected_pk != null) ? selected_pk.toString() : "";
         const is_selected =  (selected_pk && pk_int === selected_pk);

@@ -21,7 +21,8 @@
 
 //========= function test printPDF  ====  PR2020-10-21
     function printPDFlogfile(log_list, file_name, printtoscreen) {
-        //console.log("printPDFlogfile")
+        console.log("printPDFlogfile")
+
         let doc = new jsPDF();
 
         //doc.addFont('courier', 'courier', 'normal');

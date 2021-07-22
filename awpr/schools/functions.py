@@ -555,11 +555,30 @@ def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_de
 
         if setting_key in (c.KEY_IMPORT_STUDENT, c.KEY_IMPORT_STUDENTSUBJECT, c.KEY_IMPORT_SUBJECT, c.KEY_IMPORT_GRADE, c.KEY_IMPORT_PERMITS):
             sel_examyear_pk = sel_examyear.pk if sel_examyear else None
+            sel_examyear_code = sel_examyear.code if sel_examyear else None
             sel_schoolbase_pk = sel_schoolbase.pk if sel_schoolbase else None
+            sel_schoolbase_code = sel_schoolbase.code if sel_schoolbase else None
             sel_depbase_pk = sel_depbase.pk if sel_depbase else None
+            sel_depbase_code = sel_depbase.code if sel_depbase else None
+            sel_school_pk = None
+            sel_school_name = None
+            if sel_examyear and sel_schoolbase:
+                sel_school = sch_mod.School.objects.get_or_none(
+                    base=sel_schoolbase,
+                    examyear=sel_examyear
+                )
+                if sel_school:
+                    sel_school_pk = sel_school.pk
+                    sel_school_name = sel_school.name
+
             schoolsetting_dict = {'sel_examyear_pk': sel_examyear_pk,
+                                  'sel_examyear_code': sel_examyear_code,
                                   'sel_schoolbase_pk': sel_schoolbase_pk,
-                                  'sel_depbase_pk': sel_depbase_pk}
+                                  'sel_schoolbase_code': sel_schoolbase_code,
+                                  'sel_depbase_pk': sel_depbase_pk,
+                                  'sel_depbase_code': sel_depbase_code,
+                                  'sel_school_pk': sel_school_pk,
+                                  'sel_school_name': sel_school_name}
             schoolsetting_dict[setting_key] = get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase)
         else:
             schoolsetting_dict[setting_key] = sel_schoolbase.get_schoolsetting_dict(setting_key)
@@ -688,7 +707,6 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
         for tblName in table_list:
             if tblName in ('department', 'level', 'sector', 'profiel', 'subject', 'subjecttype'):
     # - only add list of level / sector when _req is True in sel_department
-                is_req = False
                 if tblName == 'level':
                     is_req = is_level_req
                 elif tblName in ('sector', 'profiel'):
@@ -701,7 +719,7 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
                     tbl_instances = []
                     instances = None
 
-        # - reverse the  stored_dict : convert {'ned': 4} to {4: 'ned'} to speed up search
+        # - reverse the stored_dict : convert {'ned': 4} to {4: 'ned'} to speed up search
                     reversed_dict = {}
                     stored_dict = stored_settings_dict.get(tblName) if stored_settings_dict else None
                     if logging_on:
@@ -722,7 +740,8 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
                     elif tblName == 'subject':
                         instances = subj_mod.Subject.objects.filter(examyear=sel_examyear)
                     elif tblName == 'subjecttype':
-                        instances = subj_mod.Subjecttype.objects.filter(scheme__department__examyear=sel_examyear)
+                        # PR2021-07-20 switched to subjecttypebase, because subjecttype is now per scheme
+                        instances = subj_mod.Subjecttypebase.objects.all()
 
         # - loop through instances of this examyear
                     for instance in instances:
@@ -737,9 +756,9 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
                                     add_to_list = True
 
                     # if subjecttype: check if subjecttype.scheme.department is in school_depbasePk_list
+                            # PR2021-07-20 switched to subjecttypebase, get all rows
                             elif tblName == 'subjecttype':
-                                if instance.scheme.department == sel_department:
-                                    add_to_list = True
+                                add_to_list = True
 
                             elif instance.depbases:
                     # in other tables: only add if sel_depbase.pk is in depbases
@@ -763,7 +782,11 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
                                         add_to_list = True
 
                         if add_to_list:
-                            instance_basePk = instance.base.pk
+                            if tblName == 'subjecttype':
+                                instance_basePk = instance.pk
+                            else:
+                                instance_basePk = instance.base.pk
+
                             instance_value = None
                             if tblName in ('department', 'subject'):
                                 instance_value = instance.base.code if instance.base.code else None

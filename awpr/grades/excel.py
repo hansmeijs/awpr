@@ -156,7 +156,7 @@ def create_ex1_xlsx(examyear, school, department, settings, subject_col_count,
         totalrow_merge = book.add_format({'border': True, 'align': 'right', 'valign': 'vcenter'})
 
 # get number of columns
-        # columns are (0: 'exnumber', 1: idnumber, 2: name 3: 'class' 4: level "
+        # columns are (0: 'examnumber', 1: idnumber, 2: name 3: 'class' 4: level "
         # columns 5 thru 19 are subject columns. Extend number when more than 15 subjects
         is_lexschool = school.islexschool
         level_req = department.level_req

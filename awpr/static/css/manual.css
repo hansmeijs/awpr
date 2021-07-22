@@ -68,7 +68,7 @@
 .manual_bullet li {
     list-style: inside;
     list-style-type: disc;
-    padding-left: 2rem;
+    /*padding-left: 2rem;*/
 }
 
 
@@ -104,7 +104,6 @@
     /* padding: 1rem 0.5rem 0.25rem 0.5rem;*/
     /*padding: 0.5rem 0.5rem 0.25rem 0.5rem;*/
     padding: 0px;
-    margin-bottom: 16px;
 }
 
 .mfl {
@@ -134,26 +133,64 @@
 
 }
 
-
 /* ---------------------------------------------------
-    IMAGES
+    IMAGES - HOME PAGE
 ----------------------------------------------------- */
 
-.img_upload_stud_step1 {
+.img_home_titlebar {
     background-repeat: no-repeat;
-    height: 394px; /* original is   526; */
-    width: 856px; /* original is   1142; */
-    margin-left: 16px;
-    background-image: url('/static/manual/stud_upload_step1.png');
-    background-size: 856px 394px;
+    margin-left: 32px;
+}
+.img_home_titlebar {
+    height: 424px; /* original is   424; */
+    width: 1075px; /* original is   1075; */
+    background-image: url('/static/manual/home_titlebar.png');
+    background-size: 1075px 424px;
 }
 
-.img_upload_stud_step2 {
-    background-repeat: no-repeat;
-    height: 491px; /* original is   655; */
-    width: 870px; /* original is   1160; */
-    margin-left: 16px;
-    background-image: url('/static/manual/stud_upload_step2.png');
-    background-size: 870px 491px;
 
+/* ---------------------------------------------------
+    IMAGES - UPLOAD CANDIDATES
+----------------------------------------------------- */
+
+.img_upload_stud_menu, .img_upload_stud_step1, .img_upload_stud_step2,
+.img_upload_stud_step3, .img_upload_stud_step4, .img_upload_stud_step5 {
+    background-repeat: no-repeat;
+    margin-left: 32px;
+}
+.img_upload_stud_menu {
+    height: 200px; /* original is   200; */
+    width: 1087px; /* original is   1087; */
+    background-image: url('/static/manual/stud_upload_menu.png');
+    background-size: 1087px 200px;
+}
+.img_upload_stud_step1 {
+    height: 529px; /* original is   529; */
+    width: 801px; /* original is   801; */
+    background-image: url('/static/manual/stud_upload_step1.png');
+    background-size: 801px 529px;
+}
+.img_upload_stud_step2 {
+    height: 803px; /* original is   803; */
+    width: 801px; /* original is   801; */
+    background-image: url('/static/manual/stud_upload_step2.png');
+    background-size: 801px 803px;
+}
+.img_upload_stud_step3 {
+    height: 554px; /* original is   803; */
+    width: 801px; /* original is   801; */
+    background-image: url('/static/manual/stud_upload_step3.png');
+    background-size: 801px 554px;
+}
+.img_upload_stud_step4 {
+    height: 502px; /* original is   655; */
+    width: 801px; /* original is   1160; */
+    background-image: url('/static/manual/stud_upload_step4.png');
+    background-size: 801px 502px;
+}
+.img_upload_stud_step5 {
+    height: 803px; /* original is   655; */
+    width: 801px; /* original is   1160; */
+    background-image: url('/static/manual/stud_upload_step5.png');
+    background-size: 801px 803px;
 }

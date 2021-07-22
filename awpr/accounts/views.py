@@ -285,11 +285,21 @@ class UserUploadView(View):
                             else:
                                 new_usergroups = ';'.join((c.USERGROUP_EDIT, c.USERGROUP_ADMIN))
                             # - new user gets role from defaultrole of user_schoolbase
-                            #   PR2021-02-06 debug: don't forget to set values of defaultrole in schoolbase!
-                            new_role = user_schoolbase.defaultrole
 
-                            new_user_pk, err_dict, ok_dict = create_or_validate_user_instance(
-                                user_schoolbase, upload_dict, user_pk, new_usergroups, is_validate_only, user_lang, request)
+                            #   PR2021-02-06 debug: don't forget to set values of defaultrole in schoolbase!
+                            # new_role = user_schoolbase.defaultrole
+
+                            new_user_pk, err_dict, ok_dict = \
+                                create_or_validate_user_instance(
+                                    user_schoolbase=user_schoolbase,
+                                    upload_dict=upload_dict,
+                                    user_pk=user_pk,
+                                    usergroups=new_usergroups,
+                                    is_validate_only=is_validate_only,
+                                    user_lang=user_lang,
+                                    request=request
+                                )
+
                             if err_dict:
                                 update_wrap['msg_err'] = err_dict
                             if ok_dict:
@@ -313,8 +323,12 @@ class UserUploadView(View):
                                     country=req_user.country,
                                     schoolbase=req_user.schoolbase
                                 )
+
+                            if logging_on:
+                                logger.debug('user instance: ' + str(instance))
+
                             if instance:
-                                err_dict, ok_dict = update_user_instance(instance, user_pk, upload_dict, is_validate_only, request)
+                                err_dict, ok_dict = update_user_instance(instance, upload_dict, request)
                                 if err_dict:
                                     update_wrap['msg_err'] = err_dict
                                 if ok_dict:
@@ -982,7 +996,7 @@ def resend_activation_email(user_pk, update_wrap, err_dict, request):
 
 class AwpPasswordResetForm(forms.Form):
 
-    logger.debug(' ============= AwpPasswordResetForm ============= ')
+    #logger.debug(' ============= AwpPasswordResetForm ============= ')
 
     schoolcode = forms.CharField(
         required=True,
@@ -998,7 +1012,7 @@ class AwpPasswordResetForm(forms.Form):
 
     def send_mail(self, subject_template_name, email_template_name,
                   context, from_email, to_email, html_email_template_name=None):
-        logger.debug(' ----- send_mail -----')
+        #logger.debug(' ----- send_mail -----')
         """
         Send a django.core.mail.EmailMultiAlternatives to `to_email`.
         """
@@ -1015,7 +1029,7 @@ class AwpPasswordResetForm(forms.Form):
         email_message.send()
 
     def get_users(self, schoolbase_id, email):
-        logger.debug(' ----- get_users -----')
+        #logger.debug(' ----- get_users -----')
         """Given an email, return matching user(s) who should receive a reset.
 
         This allows subclasses to more easily customize the default policies
@@ -1035,12 +1049,12 @@ class AwpPasswordResetForm(forms.Form):
             is_active=True
         )
 
-        logger.debug('schoolbase_id: ' + str(schoolbase_id))
-        logger.debug('email_field_name: ' + str(email_field_name))
-        logger.debug('active_users: ' + str(active_users))
-        if active_users:
-            for usr in active_users:
-                logger.debug('usr: ' + str(usr))
+        #logger.debug('schoolbase_id: ' + str(schoolbase_id))
+        #logger.debug('email_field_name: ' + str(email_field_name))
+        #logger.debug('active_users: ' + str(active_users))
+        #if active_users:
+        #    for usr in active_users:
+                #logger.debug('usr: ' + str(usr))
 
         return (
             u for u in active_users
@@ -1054,7 +1068,7 @@ class AwpPasswordResetForm(forms.Form):
              use_https=False, token_generator=default_token_generator,
              from_email=None, request=None, html_email_template_name=None,
              extra_email_context=None):
-        logger.debug(' ----- save -----')
+        #logger.debug(' ----- save -----')
         """
         Generate a one-use only link for resetting password and send it to the
         user.
@@ -1067,8 +1081,8 @@ class AwpPasswordResetForm(forms.Form):
             )
             if schoolbase:
                 schoolbase_id = schoolbase.pk
-        logger.debug('schoolcode: ' + str(schoolcode))
-        logger.debug('schoolbase_id: ' + str(schoolbase_id))
+        #logger.debug('schoolcode: ' + str(schoolcode))
+        #logger.debug('schoolbase_id: ' + str(schoolbase_id))
 
         email = self.cleaned_data["email"]
 
@@ -1080,8 +1094,8 @@ class AwpPasswordResetForm(forms.Form):
             site_name = domain = domain_override
         email_field_name = UserModel.get_email_field_name()
 
-        logger.debug('email: ' + str(email))
-        logger.debug('email_field_name: ' + str(email_field_name))
+        #logger.debug('email: ' + str(email))
+        #logger.debug('email_field_name: ' + str(email_field_name))
 
         for user in self.get_users(schoolbase_id, email):
             user_email = getattr(user, email_field_name)
@@ -1116,7 +1130,7 @@ class PasswordContextMixin:
 
 
 class AwpPasswordResetView(PasswordContextMixin, FormView):
-    logger.debug(' ============= AwpPasswordResetView ============= ')
+    #logger.debug(' ============= AwpPasswordResetView ============= ')
 
     email_template_name = 'registration/password_reset_email.html'
     extra_email_context = None
@@ -1126,7 +1140,7 @@ class AwpPasswordResetView(PasswordContextMixin, FormView):
     subject_template_name = 'registration/password_reset_subject.txt'
     success_url = reverse_lazy('password_reset_done')
     template_name = 'registration/password_reset_form.html'
-    title = _('Password reset')
+    title = 'Nieuw wachtwoord'
     token_generator = default_token_generator
 
     @method_decorator(csrf_protect)
@@ -1150,7 +1164,7 @@ class AwpPasswordResetView(PasswordContextMixin, FormView):
 # === end of class AwpPasswordResetView =====================================
 
 class AwpSetPasswordForm(forms.Form):
-    logger.debug(' ============= AwpSetPasswordForm ============= ')
+    #logger.debug(' ============= AwpSetPasswordForm ============= ')
     """
     A form that lets a user change set their password without entering the old
     password
@@ -1205,7 +1219,7 @@ class AwpSetPasswordForm(forms.Form):
 
 
 class AwpPasswordResetConfirmView(PasswordContextMixin, FormView):
-    logger.debug(' ============= AwpPasswordResetConfirmView ============= ')
+    #logger.debug(' ============= AwpPasswordResetConfirmView ============= ')
     form_class = AwpSetPasswordForm
     post_reset_login = False
     post_reset_login_backend = None
@@ -1424,10 +1438,12 @@ def get_userpermit_list(page, req_user):
 # === create_or_validate_user_instance ========= PR2020-08-16 PR2021-01-01
 
 def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, usergroups, is_validate_only, user_lang, request):
-    #logger.debug('-----  create_or_validate_user_instance  -----')
-    #logger.debug('upload_dict: ' + str(upload_dict))
-    #logger.debug('user_pk: ' + str(user_pk))
-    #logger.debug('is_validate_only: ' + str(is_validate_only))
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('-----  create_or_validate_user_instance  -----')
+        logger.debug('upload_dict: ' + str(upload_dict))
+        logger.debug('user_pk: ' + str(user_pk))
+        logger.debug('is_validate_only: ' + str(is_validate_only))
 
     country = request.user.country
 
@@ -1574,53 +1590,80 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, user
 
 # - +++++++++ end of create_or_validate_user_instance ++++++++++++
 
-# === update_user_instance ========== PR2020-08-16 PR2020-09-24 PR2021-03-24
-def update_user_instance(instance, user_pk, upload_dict, is_validate_only, request):
-    logger.debug('-----  update_user_instance  -----')
-    logger.debug('upload_dict: ' + str(upload_dict))
+# === update_user_instance ========== PR2020-08-16 PR2020-09-24 PR2021-03-24 PR2021-07-22
+def update_user_instance(instance, upload_dict, request):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('-----  update_user_instance  -----')
+        logger.debug('instance: ' + str(instance))
+        logger.debug('upload_dict: ' + str(upload_dict))
     has_error = False
     err_dict = {}
     ok_dict = {}
-    field_changed_list = []
 
     if instance:
         country = request.user.country
-        schoolbase = request.user.schoolbase
-        data_has_changed = False
+        usr_schoolbase = instance.schoolbase
+        user_pk = instance.pk
 
-        for field, field_dict in upload_dict.items():
+        data_has_changed = False
+        # upload_dict: {'mode': 'update', 'schoolbase_pk': 23, 'username': 'Ete', 'last_name': 'Ete2',
+        #           'email': 'hmeijs@gmail.com', 'user_pk': 41}
+        for field, field_value in upload_dict.items():
+
+            if logging_on:
+                logger.debug('field: ' + str(field))
+                logger.debug('field_value: ' + str(field_value))
+
             if field in ('username', 'last_name', 'email', 'usergroups', 'is_active'):
-# - check if this username already exists
+# - check if this username already exists in this school, exept for this user
                 if field == 'username':
-                    new_username = field_dict.get('value')
-                    msg_err = v.validate_unique_username(new_username, schoolbase.prefix, user_pk)
+                    new_username = field_value
+                    msg_err = v.validate_unique_username(new_username, usr_schoolbase.prefix, user_pk)
+
+                    if logging_on:
+                        logger.debug('new_username: ' + str(new_username))
+                        logger.debug('msg_err: ' + str(msg_err))
+
                     if msg_err:
                         err_dict[field] = msg_err
                         has_error = True
                     if not has_error and new_username and new_username != instance.username:
-                        prefixed_username = schoolbase.prefix + new_username
+                        prefixed_username = usr_schoolbase.prefix + new_username
                         instance.username = prefixed_username
                         data_has_changed = True
+
 # - check if namelast is blank
                 elif field == 'last_name':
-                    new_last_name = field_dict.get('value')
+                    new_last_name = field_value
                     msg_err = v.validate_notblank_maxlength(new_last_name, c.MAX_LENGTH_NAME, _('The name'))
+
+                    if logging_on:
+                        logger.debug('new_last_name: ' + str(new_last_name))
+                        logger.debug('msg_err: ' + str(msg_err))
+
                     if msg_err:
                         err_dict[field] = msg_err
                         has_error = True
                     if not has_error and new_last_name and new_last_name != instance.last_name:
                         instance.last_name = new_last_name
                         data_has_changed = True
+
 # - check if this is a valid email address:
                 elif field == 'email':
-                    new_email = field_dict.get('value')
+                    new_email = field_value
                     msg_err = v.validate_email_address(new_email)
+
+                    if logging_on:
+                        logger.debug('new_email: ' + str(new_email))
+                        logger.debug('msg_err: ' + str(msg_err))
+
                     if msg_err:
                         err_dict[field] = msg_err
                         has_error = True
 # - check if this email address already exists
                     else:
-                        msg_err = v.validate_unique_useremail(new_email, country, schoolbase, user_pk)
+                        msg_err = v.validate_unique_useremail(new_email, country, usr_schoolbase, user_pk)
                         if msg_err:
                             err_dict[field] = msg_err
                             has_error = True
@@ -1628,8 +1671,10 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
                     if not has_error and new_email and new_email != instance.email:
                         instance.email = new_email
                         data_has_changed = True
+
                 elif field == 'usergroups':
-                    usergroups_haschanged = update_usergroups(instance, field_dict, True, request) # True = validate
+                    # field_value is dict: {read: true}
+                    usergroups_haschanged = update_usergroups(instance, field_value, True, request) # True = validate
                     if usergroups_haschanged:
                         data_has_changed = True
 
@@ -1668,7 +1713,7 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
                             data_has_changed = True
                         """
                 elif field == 'is_active':
-                    new_isactive = field_dict.get('value', False)
+                    new_isactive = field_value if field_value else  False
                     # sysadmins cannot remove is_active from their own account
                     if request.user.is_usergroup_admin and instance == request.user:
                         if not new_isactive:
@@ -1679,7 +1724,7 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
                         data_has_changed = True
 
 # -  update user
-        if not is_validate_only and not has_error:
+        if not has_error:
             if data_has_changed:
 # - get now without timezone
                 now_utc_naive = datetime.utcnow()
@@ -1689,9 +1734,16 @@ def update_user_instance(instance, user_pk, upload_dict, is_validate_only, reque
                     instance.modifiedby = request.user
                     instance.modifiedat = now_utc
                     instance.save()
-                    ok_dict['msg_ok'] = _("The changes have been saved successfully.")
-                except:
-                    err_dict['save'] = _('An error occurred. The changes have not been saved.')
+                    ok_dict = {'msg01':  _("The changes have been saved successfully.")}
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+                    err_dict['save'] = {'msg01':  _('An error occurred.'),
+                                        'msg02': str(e),
+                                        'msg03':  _('The changes have not been saved.')}
+
+    if logging_on:
+        logger.debug('ok_dict: ' + str(ok_dict))
+        logger.debug('err_dict: ' + str(err_dict))
 
     return err_dict, ok_dict
 # - +++++++++ end of update_user_instance ++++++++++++

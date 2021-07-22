@@ -544,7 +544,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
 # these settings can not be changed by calling download, are changes by UploadSettings
 # value of key 'sel_page' is set and retrieved in get_headerbar_param
 
-    logger.debug('...........page: ' + str(page))
+    #logger.debug('...........page: ' + str(page))
     # get page settings - keys starting with 'page_'
     if page:
         page_dict = acc_view.get_usersetting_dict(page, request)

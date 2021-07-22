@@ -12,20 +12,22 @@
 <!-- SIDE BAR -->
 {% block sidebar %}
     <nav id="id_sidebar" class="awp_sidebar">
-        <div class="content_subheader_left tab_show tab_init mx-2 my-4">
-            <h5>{% trans 'Students' %}</h5>
+        <div class="content_subheader_left mx-2 my-4">
+            <h5>{% trans 'Candidates' %}</h5>
         </div>
         {% if not no_access %}
-            <div class="tw_200 mx-2 mt-2 mb-4">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Filter' %}:</h6>
-                <input id="id_SBR_filter"
-                    type="text"
-                    class="tw_200 border_none px-2">
+            <div class="display_hide">
+                <div class="tw_200 mx-2 mt-2 mb-4">
+                    <h6 class="tw_200 line_height_normal px-2">{% trans 'Filter' %}:</h6>
+                    <input id="id_SBR_filter"
+                        type="text"
+                        class="tw_200 border_none px-2">
+                </div>
+                <div class="tbl_div_520_200 mx-2 my-2">
+                    <table>
+                        <tbody id="id_SBR_tblbody_select"></tbody>
+                    </table>
             </div>
-            <div class="tbl_div_520_200 mx-2 my-2">
-                <table>
-                    <tbody id="id_SBR_tblbody_select"></tbody>
-                </table>
             </div>
         {% endif %}
     </nav>

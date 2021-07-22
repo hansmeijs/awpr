@@ -249,7 +249,7 @@ def create_subject_rows(setting_dict, subject_pk, etenorm_only=False, cur_dep_on
                 sql_keys['depbase_lookup'] = ''.join( ('%;', str(sel_depbase_pk), ';%') )
                 sql_list.append("AND CONCAT(';', sj.depbases::TEXT, ';') LIKE %(depbase_lookup)s::TEXT")
 
-            sql_list.append("ORDER BY sj.id::TEXT")
+            sql_list.append("ORDER BY sj.id")
 
         sql = ' '.join(sql_list)
 
@@ -265,10 +265,9 @@ def create_subject_rows(setting_dict, subject_pk, etenorm_only=False, cur_dep_on
 
 
 @method_decorator([login_required], name='dispatch')
-class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14
+class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
 
     def post(self, request):
-
         logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
@@ -297,19 +296,14 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14
                 is_create = (mode == 'create')
                 is_delete = (mode == 'delete')
 
-                if is_delete:
-                    message_header = _('Delete subject')
-                elif is_create:
-                    message_header = _('Create subject')
-                else:
-                    message_header = _('Update subject')
-
                 if logging_on:
+                    logger.debug('mode: ' + str(mode))
                     logger.debug('upload_dict' + str(upload_dict))
 
                 updated_rows = []
                 error_list = []
                 is_created = False
+                message_header = _('Subject')
 
 # - get selected examyear from Usersetting
                 selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
@@ -351,28 +345,29 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14
                     if logging_on:
                         logger.debug('..... subject: ' + str(subject))
 
-                    if subject:
-# ++++ Delete subject if is_delete
-                        if is_delete:
-                            deleted_ok = delete_subject(subject, updated_rows, messages, request)
-                            if deleted_ok:
-                                subject = None
+                    deleted_ok = False
 
-# +++ Update subject, also when it is created, not when delete has failed (when deleted ok there is no subject)
-                        if subject and not is_delete:
-                                update_subject_instance(subject, examyear, upload_dict, error_list, request)
+                    if subject:
+# ++++ Delete subject
+                        if is_delete:
+                            deleted_ok = delete_subject(subject, updated_rows, messages, error_list, request)
+
+# - create subject_row, also when deleting failed, not when deleted ok, in that case subject_row is added in delete_subject
+                        else:
+                            update_subject_instance(subject, examyear, upload_dict, error_list, request)
 
 # - create subject_row, also when deleting failed (when deleted ok there is no subject, subject_row is made above)
-                        if subject:
-                            setting_dict = {'sel_examyear_pk': examyear.pk}
-                            updated_rows = create_subject_rows(
-                                setting_dict=setting_dict,
-                                subject_pk=subject.pk
-                            )
+                    if not deleted_ok:
+                        setting_dict = {'sel_examyear_pk': examyear.pk}
+                        updated_rows = create_subject_rows(
+                            setting_dict=setting_dict,
+                            subject_pk=subject.pk
+                        )
         # - add messages to subject_row (there is only 1 subject_row
                     if updated_rows:
                         row = updated_rows[0]
                         if row:
+                            # TODO fix it odr remove
                             # - add error_list to updated_rows[0]
                             if error_list:
                                 updated_rows[0]['error'] = error_list
@@ -384,6 +379,8 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14
             update_wrap['messages'] = messages
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of SubjectUploadView
+
 # - end of SubjectUploadView
 
 
@@ -581,7 +578,8 @@ def delete_subjecttypebase(subjecttypebase, subjecttypebase_rows, messages, requ
         messages.append(msg_dict)
 
     else:
-        deleted_ok = sch_mod.delete_instance(subjecttypebase, messages, request, this_txt, header_txt)
+        err_list = []  # TODO
+        deleted_ok = sch_mod.delete_instance(subjecttypebase, messages, err_list, request, this_txt, header_txt)
 
     if deleted_ok:
    # - add deleted_row to subjecttypebase_rows
@@ -806,11 +804,11 @@ class SchemeUploadView(View):  # PR2021-06-27
 # - get upload_dict from request.POST
             upload_json = request.POST.get('upload')
             if upload_json:
-                # upload_dict = {mapid: "scheme_191", name: "Vwo - e&m2", scheme_pk: 191}
                 upload_dict = json.loads(upload_json)
 
                 if logging_on:
                     logger.debug('upload_dict: ' + str(upload_dict))
+
 # - get  variables
                 scheme_pk = upload_dict.get('scheme_pk')
                 # not in use: is_create = upload_dict.get('create', False)
@@ -1988,21 +1986,26 @@ def get_field_caption(table, field):
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-def delete_subject(subject, subject_rows, messages, request):
-    # --- delete subject # PR2021-05-14
+def delete_subject(subject, subject_rows, msg_list, error_list, request):
+    # --- delete subject # PR2021-05-14 PR2021-07-18
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_subject ----- ')
         logger.debug('subject: ' + str(subject))
 
-    subject_row = {'pk': subject.pk,
+    deleted_ok = False
+
+# - create subject_row - to be returned after successfull delete
+    subject_row = {'id': subject.pk,
                    'mapid': 'subject_' + str(subject.pk),
                    'deleted': True}
     base_pk = subject.base.pk
 
     this_txt = _("Subject '%(tbl)s'") % {'tbl': subject.name}
     header_txt = _("Delete subject")
-# check if there are students with this subject
+
+# - check if there are students with this subject
     students_with_this_subject_exist = stud_mod.Studentsubject.objects.filter(
         schemeitem__subject=subject).exists()
 
@@ -2010,29 +2013,32 @@ def delete_subject(subject, subject_rows, messages, request):
         logger.debug('students_with_this_subject_exist: ' + str(students_with_this_subject_exist))
 
     if students_with_this_subject_exist:
-        deleted_ok = False
-        msg_html = ''.join((str(_('There are candidates with this subject.')),
-            str(_("%(cpt)s could not be deleted.") % {'cpt': this_txt})))
-        messages.append({'header': str(header_txt), 'class': "border_bg_invalid", 'msg_html': msg_html})
+        err_txt1 = str(_('There are candidates with this subject.'))
+        err_txt2 = str(_("%(cpt)s could not be deleted.") % {'cpt': this_txt})
+        error_list.append(' '.join((err_txt1, err_txt2)))
+
+        msg_html = '<br>'.join((err_txt1, err_txt2))
+        msg_list.append({'header': str(header_txt), 'class': "border_bg_invalid", 'msg_html': msg_html})
 
     else:
-
-        deleted_ok = sch_mod.delete_instance(subject, messages, request, this_txt, header_txt)
+        deleted_ok = sch_mod.delete_instance(subject, msg_list, error_list, request, this_txt, header_txt)
 
     if deleted_ok:
-        # check if this subject also exists in other examyears.
+# - add deleted_row to subject_rows
+        subject_rows.append(subject_row)
+
+# - check if this subject also exists in other examyears.
         subjects = subj_mod.Subject.objects.filter(base_id=base_pk).first()
         # If not: delete also subject_base
         if subjects is None:
             subject_base = subj_mod.Subjectbase.objects.get_or_none(id=base_pk)
             if subject_base:
                 subject_base.delete()
-        # - add deleted_row to subject_rows
-        subject_rows.append(subject_row)
 
     if logging_on:
         logger.debug('subject_rows' + str(subject_rows))
-        logger.debug('messages' + str(messages))
+        logger.debug('msg_list' + str(msg_list))
+        logger.debug('error_list' + str(error_list))
 
     return deleted_ok
 # - end of delete_subject
@@ -2325,8 +2331,9 @@ def delete_schemeitem(schemeitem, messages, request):
         messages.append(msg_dict)
 
     else:
+        err_list = []  # TODO
         scheme_pk = schemeitem.pk
-        deleted_ok = sch_mod.delete_instance(schemeitem, messages, request, this_txt, header_txt)
+        deleted_ok = sch_mod.delete_instance(schemeitem, messages, err_list, request, this_txt, header_txt)
 
    # - create deleted_row, to be returned to client
         # if deleting failed, schemeitem still exists and wil be returned to client, together with error message
@@ -2697,7 +2704,8 @@ def delete_subjecttype(subjecttype, messages, request):
 
     else:
         # delete_instance will set subjecttype to None if deleted_ok
-        deleted_ok = sch_mod.delete_instance(subjecttype, messages, request, this_txt, header_txt)
+        err_list = []  # TODO
+        deleted_ok = sch_mod.delete_instance(subjecttype, messages, err_list, request, this_txt, header_txt)
 
     if deleted_ok:
     # - check if this subjecttype base has other child subjecttypes, delet if none found
@@ -2940,7 +2948,7 @@ def create_subjecttype_rows(examyear, scheme_pk=None, depbase=None, cur_dep_only
         if orderby_sequence:
             sql_list.append("ORDER BY sjtpbase.sequence")
         else:
-            sql_list.append("ORDER BY sjtp.id::TEXT")
+            sql_list.append("ORDER BY sjtp.id")
         sql = ' '.join(sql_list)
         if logging_on:
             logger.debug('sql: ' + str(sql))
@@ -2968,7 +2976,7 @@ def create_subjecttypebase_rows(sjtbase_pk=None):
         sql_keys['sjtbase_pk'] = sjtbase_pk
         sql_list.append("WHERE sjtbase.id = %(sjtbase_pk)s::INT")
 
-    sql_list.append("ORDER BY sjtbase.id::TEXT")
+    sql_list.append("ORDER BY sjtbase.id")
 
     sql = ' '.join(sql_list)
 
@@ -3024,7 +3032,7 @@ def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=Non
             else:
                 sql_list.append("AND FALSE")
 
-        sql_list.append("ORDER BY scheme.id::TEXT")
+        sql_list.append("ORDER BY scheme.id")
         sql = ' '.join(sql_list)
 
         with connection.cursor() as cursor:
@@ -3035,7 +3043,8 @@ def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=Non
 # --- end of create_scheme_rows
 
 
-def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None, cur_dep_only=False, depbase=None, orderby_name=False):
+def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
+                           cur_dep_only=False, depbase=None, orderby_name=False, orderby_sjtpbase_sequence=False):
     # --- create rows of all schemeitems of this examyear PR2020-11-17 PR2021-07-01
 
     logging_on = False  # s.LOGGING_ON
@@ -3052,7 +3061,7 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None, cur_dep
         sql_keys = {'ey_id': examyear.pk}
         sql_list = ["SELECT si.id, si.scheme_id, scheme.department_id, scheme.level_id, scheme.sector_id,",
             "CONCAT('schemeitem_', si.id::TEXT) AS mapid,",
-            "si.subject_id AS subj_id, subj.name AS subj_name, subjbase.code AS subj_code,",
+            "si.subject_id AS subj_id, subj.name AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
             "sjtpbase.code AS sjtpbase_code, sjtpbase.sequence AS sjtpbase_sequence,",
             "sjtp.id AS sjtp_id, sjtp.name AS sjtp_name, sjtp.abbrev AS sjtp_abbrev,",
             "sjtp.has_prac AS sjtp_has_prac, sjtp.has_pws AS sjtp_has_pws, ",
@@ -3103,8 +3112,10 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None, cur_dep
 
         if orderby_name:
             sql_list.append('ORDER BY LOWER(scheme.name), LOWER(subj.name)')
+        elif orderby_sjtpbase_sequence:
+            sql_list.append('ORDER BY sjtpbase.sequence')
         else:
-            sql_list.append('ORDER BY si.id::TEXT')
+            sql_list.append('ORDER BY si.id')
 
         sql = ' '.join(sql_list)
 

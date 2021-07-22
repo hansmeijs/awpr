@@ -102,25 +102,29 @@ def Loggedin(request):
 
 
 # === MANUAL =====================================
-@method_decorator([login_required], name='dispatch')
+# @method_decorator([login_required], name='dispatch')
 class ManualListView(View):
     # PR2021-06-10
 
-    def get(self, request, list):
+    def get(self, request, page, paragraph):
         logger.debug(" =====  ManualListView  =====")
+        logger.debug("page: " + str(page))
+        logger.debug("paragraph: " + str(paragraph))
 
+        # 'AnonymousUser' object has no attribute 'lang'
         # -  get user_lang
-        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-        activate(user_lang)
+        # user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        # activate(user_lang)
 
         # - get headerbar parameters
-        page = 'page_manual'
-        param = {'list': list}
-        headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
+       # page = 'page_manual'
+        #param = {'list': list}
+        #headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
+        param = { 'page': page, 'paragraph': paragraph}
 
-        logger.debug("headerbar_param: " + str(headerbar_param))
+        logger.debug("param: " + str(param))
 
-        return render(request, 'manual.html', headerbar_param)
+        return render(request, 'manual.html', param)
 
 # === EXAMYEAR =====================================
 @method_decorator([login_required], name='dispatch')
@@ -220,8 +224,9 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
                             else:
                                 if logging_on:
                                     logger.debug('delete examyear: ' + str(examyear))
+                                msg_list = []  # TODO
                                 examyear_pk = examyear.pk
-                                deleted_ok = sch_mod.delete_instance(examyear, error_list, request, this_text)
+                                deleted_ok = sch_mod.delete_instance(examyear, msg_list, error_list, request, this_text)
                                 if logging_on:
                                     logger.debug('deleted_ok' + str(deleted_ok))
 
@@ -534,7 +539,9 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                                     # delete_employee_from_teammember(employee, request)
                                     # c. delete school
                                     # format of error_list: [err_str1, err_str2]
-                                    deleted_ok = sch_mod.delete_instance(school, error_dict, request, this_text)
+                                    # TODO msg and err not correct
+                                    err_list = []
+                                    deleted_ok = sch_mod.delete_instance(school, messages, err_list, request, this_text)
                                     if deleted_ok:
                                         # - add deleted_row to school_rows
                                         school_dict.update({'pk': school_pk,
