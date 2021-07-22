@@ -655,7 +655,7 @@ class SchoolImportView(View):  # PR2020-10-01
             param = awpr_menu.get_headerbar_param(request, 'school_import', {'captions': captions, 'setting': coldefs_json})
 
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'subjectimport210711.html', param)
+        return render(request, 'subjectimport210722.html', param)
 
 
 @method_decorator([login_required], name='dispatch')
