@@ -193,6 +193,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['President'] = TXT_President
         dict['Secretary'] = TXT_Secretary
         dict['Commissioner'] = TXT_Commissioner
+        dict['Examinator'] = TXT_Examinator
 
         dict['Organization'] = TXT_Organization
         dict['Action'] = _('Action')
@@ -497,9 +498,14 @@ def get_locale_dict(table_dict, user_lang):
         dict['Upload_candidates'] = _('Upload candidates')
 
         dict['Please_select_candidate_first'] = _('Please select a candidate first.')
-        dict['This_candidate_has_nosubjects_yet'] = _('This candidate has no subjects yet.')
+        dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
 
+        dict['Examnumber'] = TXT_Examnumber
         dict['Examnumber_twolines'] = TXT_Examnumber_twolines
+        dict['Regnumber'] = TXT_Regnumber
+        dict['Regnumber_twolines'] = TXT_Regnumber_twolines
+        dict['Prefix_twolines'] = TXT_Prefix_twolines
+
 
         dict['Last_name'] = _('Last name')
         dict['First_name'] = _('First name')
@@ -514,37 +520,60 @@ def get_locale_dict(table_dict, user_lang):
 # ====== PAGE STUDENTSUBJECTS ========================= PR2020-12-21
     if 'page_studsubj' in page_list:
         dict['Character'] = _('Character')
+        dict['Examnumber'] = TXT_Examnumber
         dict['Examnumber_twolines'] = TXT_Examnumber_twolines
-        dict['This_candidate_has_nosubjects_yet'] = _('This candidate has no subjects yet.')
+        dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
         dict['No_subject_selected'] = _('No subject selected.')
+        dict['validation_error'] = _('The composition of the subjects is not correct')
+
+        dict['All_subjects'] = TXT_All_subjects
+        dict['All_candidates'] = TXT_All_candidates
+        dict['All_leerwegen'] = TXT_All_leerwegen
+        dict['All_sectors'] = TXT_All_sectors
+        dict['All_profielen'] = TXT_All_profielen
+
+        dict['Notes'] = _('Notes')
 
         dict['Authorized_chairman'] = _('Authorized\nchairman')
         dict['Authorized_secretary'] = _('Authorized\nsecretary')
         dict['Submitted'] = _('Submitted')
         dict['Authorized_by'] = _('Authorized by')
 
+        dict['President'] = TXT_President
+        dict['Secretary'] = TXT_Secretary
+
+        dict['Function'] = TXT_Function
         dict['at_'] = pgettext_lazy('at_date', 'at ')
         dict['_of_'] = TXT__of_
         dict['_or_'] = TXT__or_
 
-        dict['Submit_Ex1_form'] = _('Submit Ex2A form')
-        dict['Approve_grades'] = _('Approve grades')
-        dict['Submit_Ex1_form'] = _('Submit Ex2A form')
+        dict['Approve_subjects'] = _('Approve subjects')
+        dict['Apply_verificationcode'] = _('Apply verificationcode')
+        dict['Submit_Ex1_form'] = _('Submit Ex1 form')
+
         dict['Preliminary_Ex1_form'] = _('Preliminary Ex1 form')
         dict['Approve'] = _('Approve')
         dict['Check_grades'] = _('Check grades')
         dict['Submit'] = TXT_Submit
+        dict['Approved_by'] = TXT_Approved_by
+        dict['_by_'] = TXT__by_
 
-        dict['MAG_info'] = {
-            'subheader_approve': _('The following grades will be approved:'),
-            'subheader_submit': _('An Ex2A form with the following grades will be submitted:'),
-            'approve_0': _("Click 'Check grades' to check the selected grades before approving."),
-            'approve_1': _('After the grades are approved by the president, secretary and commissioner,'),
-            'approve_2': _('the Ex2A form can be submitted by the president or secretary.'),
+        dict['Name_ex_form'] = TXT_Name_ex_form
+        dict['Exam_period'] = TXT_Exam_period
+        dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
+        dict['Date_submitted'] = TXT_Date_submitted
+        dict['Download_Exform'] = TXT_Download_Exform
 
-            'submit_0': _("Click 'Check grades' to check the selected grades before submitting."),
-            'submit_1': _("If the check is OK, click 'Submit Ex2A form' to submit the selected grades."),
-            'submit_2': _("After the grades are submitted, you can only change them with permission of the Inpsection."),
+        dict['MASS_info'] = {
+            'subheader_approve': _('Selection of the subjects, that will be approved:'),
+            'subheader_submit': _('An Ex1form with the following subjects will be submitted:'),
+            'approve_0': _("Click 'Check subjects' to check the selected subjects before approving."),
+            'approve_1': _('After the subjects are approved by the president and secretary,'),
+            'approve_2': _('the Ex1 form can be submitted by the president or secretary.'),
+
+            'submit_0': _("Click 'Check subjects' to check the selected subjects before submitting."),
+            'submit_1': _("If the check is OK, click 'Submit Ex1 form' to submit the selected subjects."),
+            'submit_2': _("After the subjects are submitted, you can change them by submitting an additional Ex1 form."),
 
             'submit_ok_01': _("The Ex2A form is succesfully created."),
         }
@@ -561,9 +590,9 @@ def get_locale_dict(table_dict, user_lang):
         dict['No_examtypes_found'] = TXT_No_examtypes_found
 
         dict['Select_subject'] = _('Select subject')
-        #dict['All_levels'] = _("All 'leerwegen'")
-        #dict['All_sectors'] = _("All sectors")
-        #dict['All_profielen'] = _("All 'profielen'")
+        #dict['All_leerwegen'] = TXT_All_leerwegen
+        #dict['All_sectors'] = TXT_All_sectors
+        #dict['All_profielen'] = TXT_All_profielen
 
         dict['Select_leerweg'] = TXT_Select_leerweg
         dict['No_leerwegen_found'] = TXT_No_leerwegen_found
@@ -573,7 +602,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['options_examtype_exam'] = c.EXAMTYPE_OPTIONS_EXAM
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
 
-        dict['All_leerwegen'] = _("All 'leerwegen'")
+        dict['All_leerwegen'] = TXT_All_leerwegen
 
         dict['Exam'] = _("Exam")
         dict['Add_exam'] = _("Add exam")
@@ -624,18 +653,19 @@ def get_locale_dict(table_dict, user_lang):
     if 'page_grade' in page_list:
 
         dict['No_candidate_selected'] = _('No candidate selected')
-        dict['This_candidate_has_nosubjects_yet'] = _('This candidate has no subjects yet.')
+        dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
 
         dict['Ex_nr'] = _('Ex.#')
+        dict['Examnumber'] = TXT_Examnumber
         dict['Examnumber_twolines'] = TXT_Examnumber_twolines
         dict['Last_name'] = _('Last name')
         dict['First_name'] = _('First name')
         dict['Gender'] = _('Gender')
         dict['ID_number'] = _('ID number')
 
-        dict['All_subjects'] = _('All subjects')
-        dict['All_candidates'] = _('All candidates')
-        dict['All_leerwegen'] = _("All 'leerwegen'")
+        dict['All_subjects'] = TXT_All_subjects
+        dict['All_candidates'] = TXT_All_candidates
+        dict['All_leerwegen'] = TXT_All_leerwegen
         dict['All_subjects_and_candidates'] = _('All subjects and candidates')
 
         dict['Abbrev'] = _('Abbrev.')
@@ -644,9 +674,9 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['_of_'] = TXT__of_
 
-        dict['Name_ex_form'] = _('Name Ex form')
-        dict['Date_submitted'] = _('Date submitted')
-        dict['Download_Exform'] = _('Download Ex form')
+        dict['Name_ex_form'] = TXT_Name_ex_form
+        dict['Date_submitted'] = TXT_Date_submitted
+        dict['Download_Exform'] = TXT_Download_Exform
 
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
@@ -706,9 +736,9 @@ def get_locale_dict(table_dict, user_lang):
         dict['Exam_type'] = TXT_Exam_type
         dict['Select_examtype'] = TXT_Select_examtype
         dict['No_examtypes_found'] = TXT_No_examtypes_found
-        dict['All_levels'] = _("All 'leerwegen'")
-        dict['All_sectors'] = _("All sectors")
-        dict['All_profielen'] = _("All 'profielen'")
+        dict['All_leerwegen'] = TXT_All_leerwegen
+        dict['All_sectors'] = TXT_All_sectors
+        dict['All_profielen'] = TXT_All_profielen
         dict['Attachment'] = _('Attachment')
 
         # options_examperiod PR2020-12-20
@@ -718,6 +748,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['President'] = TXT_President
         dict['Secretary'] = TXT_Secretary
         dict['Commissioner'] = TXT_Commissioner
+        dict['Examinator'] = TXT_Examinator
         dict['Approved_by'] = TXT_Approved_by
         dict['Submitted_by'] = TXT_Submitted_by
 
@@ -792,7 +823,14 @@ def get_locale_dict(table_dict, user_lang):
 TXT_School_code = _('School code')
 TXT_Organization = _('Organization')
 
+TXT_Examnumber = _('Exam number')
 TXT_Examnumber_twolines = _('Exam\nnumber')
+
+TXT_Regnumber = _('Registration number')
+TXT_Regnumber_twolines = _('Registration\nnumber')
+
+TXT_Prefix_twolines = pgettext_lazy('two lines ', 'Prefix')
+
 
 TXT_Exam_period = _('Exam period')
 TXT_Select_examperiod = _('Select exam period')
@@ -805,13 +843,27 @@ TXT_No_examtypes_found = _('No exam types found')
 TXT_Select_leerweg = _("Select a 'leerweg'")
 TXT_No_leerwegen_found = _("No 'leerwegen' found")
 
+_('All subjects')
+
+TXT_All_candidates = _('All candidates')
+TXT_All_subjects = _('All subjects')
+TXT_All_leerwegen = _("All 'leerwegen'")
+TXT_All_sectors = _("All sectors")
+TXT_All_profielen = _("All 'profielen'")
+TXT_Attachment = _('Attachment')
+
 TXT_Email_address = _('Email address')
 
 TXT_Inactive = _("Inactive")
 
+TXT_This_candidate_has_no_subjects = _('This candidate has no subjects.')
+
+TXT_Function = _('Function')
 TXT_President = _('President')
 TXT_Secretary = _('Secretary')
 TXT_Commissioner = _('Commissioner')
+TXT_Examinator = _('Examinator')
+
 TXT__of_ = _(' of ')
 TXT_Submit = _('Submit')
 
@@ -820,6 +872,12 @@ TXT_Submitted_by = _('Submitted by')
 
 TXT__and_ = _(' and ')
 TXT__or_ = _(" or ")
+TXT__by_ = _(" by ")
+
+TXT_Name_ex_form = _('Name Ex form')
+TXT_Date_submitted = _('Date submitted')
+TXT_Download_Exform = _('Download Ex form')
+
 
 TXT_Sequence = _('Sequence')
 TXT_Sequence_2lines =  pgettext_lazy('2 lines', 'Sequence')

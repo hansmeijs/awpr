@@ -1,4 +1,6 @@
 // PR2020-09-29 added
+    let school_rows = [];
+
 document.addEventListener("DOMContentLoaded", function() {
     "use strict";
 
@@ -37,7 +39,6 @@ document.addEventListener("DOMContentLoaded", function() {
     let user_list = [];
 
     let examyear_map = new Map();
-    let school_map = new Map();
     let department_map = new Map();
 
     let level_map = new Map();
@@ -156,7 +157,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+                function() {t_MSSSS_Open(loc, "school", school_rows, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         }
 
 // ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
@@ -358,16 +359,18 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
 
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
-                if ("school_rows" in response)  {b_fill_datamap(school_map, response.school_rows)};
+                if ("school_rows" in response)  {
+                    school_rows = response.school_rows
+                };
                 if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows) };
 
                 if ("level_rows" in response) {
-                    b_fill_datamap(level_map, response.level_rows)
-                    FillOptionsSelectLevelSector("level", response.level_rows)
+                    b_fill_datamap(level_map, response.level_rows);
+                    FillOptionsSelectLevelSector("level", response.level_rows);
                 };
                 if ("sector_rows" in response) {
-                    b_fill_datamap(sector_map, response.level_rows)
-                    FillOptionsSelectLevelSector("sector", response.sector_rows)
+                    b_fill_datamap(sector_map, response.level_rows);
+                    FillOptionsSelectLevelSector("sector", response.sector_rows);
                 };
                 if ("subject_rows" in response) { b_fill_datamap(subject_map, response.subject_rows) };
                 if ("student_rows" in response) { b_fill_datamap(student_map, response.student_rows) };
@@ -397,10 +400,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let el_submenu = document.getElementById("id_submenu")
         AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A_form, null, null, "id_submenu_download_ex2a", url_grade_download_ex2a, true);  // true = download
-        if (permit_dict.approve_grade){
+        if (permit_dict.permit_approve_grade){
             AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MAG_Open("approve")});
         }
-        if (permit_dict.submit_grade){
+        if (permit_dict.permit_submit_grade){
             AddSubmenuButton(el_submenu, loc.Submit_Ex2A_form, function() {MAG_Open("submit")});
         };
         el_submenu.classList.remove(cls_hide);
@@ -612,7 +615,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const display_rows = []
         const has_items = (!!rows && !!rows.length);
         const has_profiel = setting_dict.sel_dep_has_profiel;
-        const caption_all = "&#60" + ( (tblName === "level") ? loc.All_levels : (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
+        const caption_all = "&#60" + ( (tblName === "level") ? loc.All_leerwegen : (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
         if (has_items){
             if (rows.length === 1){
                 // if only 1 level: make that the selected one
@@ -1202,7 +1205,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= HandleInputChange  ===============PR2020-08-16 PR2021-03-25
     function HandleInputChange(el_input){
-        //console.log(" --- HandleInputChange ---")
+        console.log(" --- HandleInputChange ---")
 
         const tblRow = get_tablerow_selected(el_input)
         const map_id = tblRow.id
@@ -1210,8 +1213,8 @@ document.addEventListener("DOMContentLoaded", function() {
             const map_dict = get_mapdict_from_datamap_by_id(grade_map, map_id)
             const fldName = get_attr_from_el(el_input, "data-field")
             const map_value = map_dict[fldName];
-        //console.log("fldName", fldName)
-        //console.log("map_dict", map_dict)
+        console.log("fldName", fldName)
+        console.log("map_dict", map_dict)
 
             if (!permit_dict.permit_crud){
         // show message no permission
@@ -1428,25 +1431,25 @@ document.addEventListener("DOMContentLoaded", function() {
 /////////////////////////////////////////////
 //========= UploadToggle  ============= PR2020-07-31  PR2021-01-14
     function UploadToggle(el_input) {
-        //console.log( " ==== UploadToggle ====");
-        //console.log( "usergroups", usergroups);
+        console.log( " ==== UploadToggle ====");
+        console.log( "permit_dict.permit_approve_grade", permit_dict.permit_approve_grade);
         // only called by field 'se_status', 'pe_status', 'ce_status'
         // mode = 'approve_submit' or ''approve_reset'
         mod_dict = {};
-        if(permit_dict.approve_grade){
+        if(permit_dict.permit_approve_grade){
             const tblRow = get_tablerow_selected(el_input);
             if(tblRow){
 
-                // get_statusindex_of_user returns index of auth user, returns 0 when user has none or multiple auth usergroups
+                // b_get_statusindex_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
                 // status_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3
                 // gives err messages when multiple found.
-                const status_index = get_statusindex_of_user();
+                const status_index = b_get_statusindex_of_requsr(loc, permit_dict);
 
-        //console.log( "status_index", status_index);
+        console.log( "status_index", status_index);
                 if(status_index){
                     const map_id = tblRow.id
                     const map_dict = get_mapdict_from_datamap_by_id(grade_map, map_id);
-        //console.log( "map_dict", map_dict);
+        console.log( "map_dict", map_dict);
                     if(!isEmpty(map_dict)){
                         const tblName = "grade";
                         const fldName = get_attr_from_el(el_input, "data-field");
@@ -1537,7 +1540,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     }  //  if(!isEmpty(map_dict))
                 }  //if(perm_auth1 || perm_auth1)
             }  //   if(!!tblRow)
-        }  // if(permit_dict.approve_grade){
+        }  // if(permit_dict.permit_approve_grade){
     }  // UploadToggle
 
 //========= UploadChanges  ============= PR2020-08-03
@@ -1826,10 +1829,10 @@ document.addEventListener("DOMContentLoaded", function() {
         const is_approve_mode = (mode === "approve");
         const is_submit_mode = (mode === "submit");
 
-        // get_statusindex_of_user returns index of auth user, returns 0 when user has none or multiple auth usergroups
+        // b_get_statusindex_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
         // gives err messages when multiple found.
-        const status_index = get_statusindex_of_user();
-        if (permit_dict.approve_grade || permit_dict.submit_grade) {
+        const status_index = b_get_statusindex_of_requsr(loc, permit_dict);
+        if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade) {
             if(status_index){
                 // modes are 'approve' 'submit_test' 'submit_submit'
                 mod_MAG_dict = {mode: mode,
@@ -1887,7 +1890,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 $("#id_mod_approve_grade").modal({backdrop: true});
 
             }  // if(status_index)
-        }  // if (permit_dict.approve_grade || permit_dict.submit_grade)
+        }  // if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade)
     }  // MAG_Open
 
 //=========  MAG_Save  ================
@@ -1895,7 +1898,7 @@ document.addEventListener("DOMContentLoaded", function() {
         //console.log("===  MAG_Save  =====") ;
         //console.log("mod_MAG_dict.mode", mod_MAG_dict.mode) ;
 
-        if (permit_dict.approve_grade || permit_dict.submit_grade) {
+        if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade) {
 
             mod_MAG_dict.is_reset = (mode === "delete");
 
@@ -1930,7 +1933,7 @@ document.addEventListener("DOMContentLoaded", function() {
             //console.log("upload_dict", upload_dict);
             UploadChanges(upload_dict, url_grade_approve);
 
-        }  // if (permit_dict.approve_grade || permit_dict.submit_grade)
+        }  // if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade)
 // hide modal
         //$("#id_mod_approve_grade").modal("hide");
     };  // MAG_Save
@@ -2722,12 +2725,10 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
     }  // MSED_Response
 
-//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05
-    function MSSSS_Response(tblName, selected_pk, selected_code, selected_name) {
+//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
+    function MSSSS_Response(tblName, selected_dict, selected_pk) {
         console.log( "===== MSSSS_Response ========= ");
         //console.log( "selected_pk", selected_pk);
-        //console.log( "selected_code", selected_code);
-        //console.log( "selected_name", selected_name);
 
     // ---  upload new setting
         if(selected_pk === -1) { selected_pk = null};
@@ -2768,7 +2769,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
         } else if (tblName === "student") {
             setting_dict.sel_student_pk = selected_pk;
-            setting_dict.sel_student_name = selected_name;
+            //setting_dict.sel_student_name = selected_name;
     // reset selected subject when student is selected, in setting_dict and upload_dict
             if(selected_pk){
                 selected_pk_dict.sel_subject_pk = null;
@@ -3452,40 +3453,6 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         return [output_text, msg_err]
     }  // GetNumberFromInputGrade
 
-
-//========= get_statusindex_of_user  ======== // PR2021-03-26
-    function get_statusindex_of_user(){
-        // function returns status_index of auth user, returns 0 when user has none or multiple auth usergroups
-        // gives err messages when multiple found.
-        // STATUS_01_AUTH1 = 2,  STATUS_02_AUTH2 = 4, STATUS_03_AUTH3 = 8
-        let status_index = 0;
-        const usrgrp = {auth1: false, auth2: false, auth3: false};
-            const perm_auth1 = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth1"));
-            const perm_auth2 = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth2"));
-            const perm_auth3 = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth3"));
-
-            if(!perm_auth1 && !perm_auth2 && !perm_auth3){
-                // skip if user has no auth usergroup
-            } else if(perm_auth1 + perm_auth2 + perm_auth3 > 1){
-    // show msg error if user has multiple auth usergroups
-                const functions = (perm_auth1 && perm_auth2 && perm_auth3) ? loc.President + ", " + loc.Secretary + loc.and + loc.Commissioner :
-                                  (perm_auth1 && perm_auth2) ? loc.President + loc.and + loc.Secretary :
-                                  (perm_auth1 && perm_auth3) ? loc.President + loc.and + loc.Commissioner :
-                                  (perm_auth2 && perm_auth3) ? loc.Secretary + loc.and + loc.Commissioner : "";
-
-                const msg_html = loc.approve_err_list.You_have_functions + functions + ". " + "<br>" +
-                            loc.approve_err_list.Only_1_allowed + "<br>" + loc.approve_err_list.cannot_approve
-                b_show_mod_message(msg_html);
-
-            } else if(perm_auth1){
-                status_index = 1;
-            } else if(perm_auth2){
-                status_index = 2;
-            } else if(perm_auth3){
-                status_index = 3;
-            }
-    return status_index;
-    }  // get_statusindex_of_user
 
 //========= get_tblName_from_selectedBtn  ======== // PR2021-01-22
     function get_tblName_from_selectedBtn() {

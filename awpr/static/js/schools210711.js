@@ -1984,12 +1984,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // MSED_Response
 
-//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05
-    function MSSSS_Response(tblName, selected_pk, selected_code, selected_name) {
+//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
+    function MSSSS_Response(tblName, selected_dict, selected_pk) {
         console.log( "===== MSSSS_Response ========= ");
         console.log( "selected_pk", selected_pk);
-        //console.log( "selected_code", selected_code);
-        console.log( "selected_name", selected_name);
 
     // ---  upload new setting
         if(selected_pk === -1) { selected_pk = null};

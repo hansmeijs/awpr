@@ -2,9 +2,7 @@
 
     "use strict";
 
-    console.log ('===== man_upload =====')
-
-    const man_home_list = [
+    const man_home = [
         "<div class='my-4'>",
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
@@ -12,7 +10,6 @@
                 "<h3 class='px-2'>Introductie</h3>",
             "</div>",
         "</div>",
-
 
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
@@ -173,7 +170,6 @@
             "<p>Klik op <i>Volgende stap</i> als je de gegevens wilt uploaden of op <i>Annuleren</i> als je nog wijzigingen in het upload bestand wilt aanbrengen.</p>",
             "</div>",
         "</div>",
-
 
          "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",

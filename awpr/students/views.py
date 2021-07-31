@@ -1,16 +1,29 @@
 # PR2018-09-02
+from datetime import datetime, timedelta
+from random import randint
+
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.sites.shortcuts import get_current_site
 
+from django.core.mail import send_mail
+
+from django.db.models import Q
 from django.db.models.functions import Lower
-
 from django.db import connection
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.utils.translation import activate, ugettext_lazy as _
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.translation import activate, pgettext_lazy, ugettext_lazy as _
 from django.views.generic import View
 
+from accounts import models as acc_mod
+from accounts import views as acc_view
+from accounts.tokens import account_activation_token
 from awpr import menus as awpr_menu
 from awpr import constants as c
 from awpr import settings as s
@@ -19,6 +32,7 @@ from awpr import functions as af
 from awpr import downloads as dl
 
 from grades import views as grd_vw
+from grades import excel as grd_exc
 
 from schools import models as sch_mod
 from students import models as stud_mod
@@ -33,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 # PR2019-01-04 from https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
 from django.utils.functional import Promise
-from django.utils.encoding import force_text
+from django.utils.encoding import force_text, force_bytes
 from django.core.serializers.json import DjangoJSONEncoder
 
 class LazyEncoder(DjangoJSONEncoder):
@@ -183,8 +197,9 @@ def create_student_rows(setting_dict, append_dict, student_pk):
             first_name = row.get('firstname')
             last_name = row.get('lastname')
             prefix = row.get('prefix')
-            full_name = lastname_firstname_initials(last_name, first_name, prefix)
-            row['fullname'] = full_name if full_name else None
+            # PR2021-07-26 was: full_name = lastname_firstname_initials(last_name, first_name, prefix)
+            row['fullname'] = get_full_name(last_name, first_name, prefix)
+            row['name_first_init'] = get_lastname_firstname_initials(last_name, first_name, prefix)
 
     # - add messages to student_row
     if student_pk and student_rows:
@@ -365,6 +380,56 @@ class NoteAttachmentDownloadView(View): # PR2021-03-17
 # - end of DownloadPublishedFile
 
 
+@method_decorator([login_required], name='dispatch')
+class StudentsubjectValidateAllView(View):  # PR2021-07-24
+
+    def post(self, request):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= StudentsubjectValidateAllView ============= ')
+
+        # function validates studentsubject records of all students of this dep PR2021-07-10
+
+        update_wrap = {}
+
+# - get permit - no permit necessary
+
+# - reset language
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+        # - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+
+            # ----- get selected examyear, school and department from usersettings
+            sel_examyear, sel_school, sel_department, may_editNIU, msg_listNIU = \
+                dl.get_selected_ey_school_dep_from_usersetting(request)
+
+# +++ validate subjects of all students of this dep, used to update studsubj table
+            # TODO to speed up: get info in 1 request, no msg_text
+            students = stud_mod.Student.objects.filter(
+                school=sel_school,
+                department=sel_department
+            )
+
+            if students:
+                validate_studsubj_list = []
+                for student in students:
+                    has_error = stud_val.validate_studentsubjects_no_msg(student)
+                    if logging_on:
+                        logger.debug('student: ' + str(student))
+                        logger.debug('has_error: ' + str(has_error))
+
+                    if has_error:
+                        if student.pk not in validate_studsubj_list:
+                            validate_studsubj_list.append(student.pk)
+                if validate_studsubj_list:
+                    update_wrap['validate_studsubj_list'] = validate_studsubj_list
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 
 #################################################################################
 @method_decorator([login_required], name='dispatch')
@@ -375,9 +440,9 @@ class StudentsubjectValidateView(View):
         if logging_on:
             logger.debug(' ============= StudentsubjectValidateView ============= ')
 
-        # function validates studentsubject records of current student PR2021-07-10
+        # function validates studentsubject records of this student PR2021-07-10
+
         update_wrap = {}
-        messages = []
 
 # - get permit - no permit necessary
 
@@ -390,7 +455,6 @@ class StudentsubjectValidateView(View):
         if upload_json:
             upload_dict = json.loads(upload_json)
 
-            messages = []
 # ----- get selected examyear, school and department from usersettings
             sel_examyear, sel_school, sel_department, may_editNIU, msg_listNIU = \
                 dl.get_selected_ey_school_dep_from_usersetting(request)
@@ -401,40 +465,967 @@ class StudentsubjectValidateView(View):
                 logger.debug('sel_school: ' + str(sel_school))
                 logger.debug('sel_department: ' + str(sel_department))
 
-# - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
-
-            #if len(msg_list):
-            #    msg_html = ''
-            #    for msg in msg_list:
-            #        msg_html += ''.join(( '<p>', str(msg), '</p>'))
-            #    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
-
+# +++ validate subjects of one student, used in modal
             student_pk = upload_dict.get('student_pk')
-            student = stud_mod.Student.objects.get_or_none(
-                id=student_pk,
-                school=sel_school,
-                department=sel_department,
-                locked=False
-            )
-            if logging_on:
-                logger.debug('student: ' + str(student))
-
-            if student:
-
-# +++ validate subjects of student
-                msg_html = stud_val.validate_studentsubjects(student)
-                if msg_html:
-                    update_wrap['validate_studsubj_html'] = msg_html
-
-            if len(messages):
-                update_wrap['messages'] = messages
+            if student_pk:
+                student = stud_mod.Student.objects.get_or_none(
+                    id=student_pk,
+                    school=sel_school,
+                    department=sel_department,
+                    locked=False
+                )
+                if student:
+                    msg_html = stud_val.validate_studentsubjects(student)
+                    if msg_html:
+                        update_wrap['studsubj_validate_html'] = msg_html
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 
-
 # - end of StudentsubjectValidateView
+
+
+#####################################################################################
+@method_decorator([login_required], name='dispatch')
+class StudentsubjectSendEmailExformView(View):  # PR2021-07-26
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug(' ============= StudentsubjectSendEmailExformView ============= ')
+
+        update_wrap = {}
+        msg_list = []
+        class_str = 'border_bg_transparent'
+
+# - get permit
+        has_permit = False
+        req_usr = request.user
+        if req_usr and req_usr.country and req_usr.schoolbase:
+            permit_list = req_usr.permit_list('page_studsubj')
+            if permit_list and req_usr.usergroup_list:
+                if 'auth1' in req_usr.usergroup_list or 'auth2' in req_usr.usergroup_list:
+                    has_permit = 'permit_approve_subject' in permit_list
+
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
+        if has_permit:
+
+# -  get user_lang
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+
+                if may_edit:
+                    try:
+            # create _verificationcode and key, store in usersetting, send key to client, set expiration to 30 minutes
+                        # get random number between 1,000,000 en 1,999,999, convert to string and get last 6 characters
+                        # this way you get string from '000000' thru '999999'
+                        # key is sent to client, code must be entered by user
+                        # key_code is stored in usersettings, with
+                        _verificationcode = str(randint(1000000, 1999999))[-6:]
+                        _verificationkey = str(randint(1000000, 1999999))[-6:]
+                        update_wrap['verificationkey'] = _verificationkey
+
+                        key_code = '_'.join((_verificationkey, _verificationcode))
+
+                        now = datetime.now() # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+                        expirationtime = now + timedelta(seconds=1800)
+                        expirationtime_iso = expirationtime.isoformat()
+
+                        verification_dict = {'form': 'Ex1', 'key_code': key_code, 'expirationtime': expirationtime_iso}
+                        acc_view.set_usersetting_dict(c.KEY_VERIFICATIONCODE, verification_dict, request)
+
+
+
+                        subject = str(_('AWP-online verificationcode'))
+                        from_email = 'AWP-online <noreply@awponline.net>'
+                        message = render_to_string('submit_ex1_email.html', {
+                            'user': request.user,
+                            'examyear': sel_examyear,
+                            'school': sel_school,
+                            'department': sel_department,
+                            'verificationcode': _verificationcode
+                        })
+
+                        # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
+                        mail_count = send_mail(subject, message, from_email, [req_usr.email], fail_silently=False)
+
+                        if logging_on:
+                            logger.debug('mail_count: ' + str(mail_count))
+
+                        if not mail_count:
+                            class_str = 'border_bg_invalid'
+                            msg_list +=  ("<p class='pb-2'>",
+                                               str(_('An error occurred')),
+                                               str(_('The email has not been sent.')), '</p>')
+                        else:
+                            # - return message 'We have sent an email to user'
+                            class_str = 'border_bg_transparent'
+                            msg_list += ("<p class='pb-2'>",
+                                         str(_("We have sent an email with a 6 digit verification code to the email address:")),
+                                         '<br>', req_usr.email, '<br>',
+                                         str(_("Enter the verification code and click 'Submit Ex form' to submit the Ex1 form.")),
+                                         '</p>')
+
+                    except Exception as e:
+                        class_str = 'border_bg_invalid'
+                        msg_list += ("<p class='pb-2'>",
+                                           str(_('An error occurred')),':<br><i>', str(e), '</i><br>',
+                                            str(_('The email has not been sent.')),'</p>')
+
+                if msg_list:
+                    msg_wrap_start = ["<div class='p-2 ", class_str, "'>"]
+                    msg_wrap_end = ['</p>']
+
+                    msg_html = ''.join(msg_wrap_start + msg_list + msg_wrap_end)
+
+                    # - add  msg_dict to update_wrap
+                    update_wrap['approve_msg_html'] = msg_html
+
+    # - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+# - end of StudentsubjectSendEmailExformView
+
+#####################################################################################
+@method_decorator([login_required], name='dispatch')
+class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug(' ============= StudentsubjectApproveMultipleView ============= ')
+
+# function sets auth and publish of studentsubject records of current department # PR2021-07-25
+        update_wrap = {}
+        messages = []
+        requsr_auth = None
+        msg_html = None
+
+# - get permit
+        has_permit = False
+        req_usr = request.user
+        if req_usr and req_usr.country and req_usr.schoolbase:
+            permit_list = req_usr.permit_list('page_studsubj')
+            if permit_list:
+                requsr_usergroup_list = req_usr.usergroup_list
+                # msg_err is made on client side. Here: just skip if user has no or multiple functions
+
+                if logging_on:
+                    logger.debug('requsr_usergroup_list: ' + str(requsr_usergroup_list) + ' ' + str(type(requsr_usergroup_list)))
+                    # requsr_usergroup_list: ['admin', 'auth1', 'edit'] <class 'list'>
+
+                is_auth1 = 'auth1' in requsr_usergroup_list
+                is_auth2 = 'auth2' in requsr_usergroup_list
+                if is_auth1 + is_auth2 == 1:
+                    if is_auth1:
+                        requsr_auth = 'auth1'
+                    elif is_auth2:
+                        requsr_auth = 'auth2'
+                if requsr_auth:
+                    has_permit = 'permit_approve_subject' in permit_list
+
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
+        if has_permit:
+
+# -  get user_lang
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+
+# ----- get selected examyear, school and department from usersettings
+                # may_edit = False when:
+                # - examyear, schoolbase, school, depbase or department is None
+                # - country, examyear or school is locked
+                # - not requsr_same_school,
+                # - not sel_examyear.published,
+                # - not sel_school.activated,
+                # not af.is_allowed_depbase_requsr or not af.is_allowed_depbase_school,
+
+                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                if len(msg_list):
+                    msg_html = '<br>'.join(msg_list)
+                    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
+
+                else:
+
+#----------------------------
+        #<PERMIT>
+        # only users with role > student and perm_edit can change student data
+        # only school that is requsr_school can be changed
+        #   current schoolbase can be different from request.user.schoolbase (when role is insp, admin, system)
+        # only if country/examyear/school/student not locked, examyear is published and school is activated
+
+    # - get selected mode. Modes are 'approve' 'submit_test' 'submit_submit', 'reset'
+                    mode = upload_dict.get('mode')
+                    is_approve = True if mode in ('approve_test', 'approve_submit', 'approve_reset') else False
+                    is_submit = True if mode in ('submit_test', 'submit_submit') else False
+                    is_reset = True if mode == 'approve_reset' else False
+                    is_test = True if mode in ('approve_test', 'submit_test') else False
+
+                    if logging_on:
+                        logger.debug('upload_dict' + str(upload_dict))
+                        logger.debug('mode: ' + str(mode))
+
+# - when mode = submit_submit: check verificationcode.
+                    verification_is_ok = True
+                    if is_submit and not is_test:
+                        verification_is_ok, verif_msg_html = self.check_verificationcode(logging_on, upload_dict, request)
+                        if verif_msg_html:
+                            msg_html = verif_msg_html
+
+                    if verification_is_ok:
+    # - get auth_index (1 = President, 2 = Secretary, 3 = Commissioner)
+                        # PR2021-03-27 auth_index is taken from requsr_usergroups_list, not from upload_dict
+                        #  function may have changed if page is not refreshed in time)
+
+
+                        sel_lvlbase_pk, sel_sctbase_pk, sel_subject_pk, sel_student_pk = None, None, None, None
+                        selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                        if selected_dict:
+                            sel_lvlbase_pk = selected_dict.get(c.KEY_SEL_LVLBASE_PK)
+                            sel_sctbase_pk = selected_dict.get(c.KEY_SEL_SCTBASE_PK)
+                            sel_subject_pk = selected_dict.get(c.KEY_SEL_SUBJECT_PK)
+                            # TODO filter by cluster
+                        if logging_on:
+                            logger.debug('selected_dict: ' + str(selected_dict))
+
+    # +++ get selected subject_rows
+                        crit = Q(student__school=sel_school) & \
+                               Q(student__department=sel_department)
+            # when submit: don't filter on level, sector, subject or cluster
+                        if not is_submit:
+                            if sel_lvlbase_pk:
+                                crit.add(Q(student__level__base_id=sel_lvlbase_pk), crit.connector)
+                                crit.add(Q(schemeitem__scheme__level__base_id=sel_lvlbase_pk), crit.connector)
+                            if sel_sctbase_pk:
+                                crit.add(Q(student__sector__base_id=sel_sctbase_pk), crit.connector)
+                                crit.add(Q(schemeitem__scheme__sector__base_id=sel_sctbase_pk), crit.connector)
+                            if sel_subject_pk:
+                                crit.add(Q(schemeitem__subject_id=sel_subject_pk), crit.connector)
+
+                        row_count = stud_mod.Studentsubject.objects.filter(crit).count()
+
+                        if logging_on:
+                            logger.debug('sel_lvlbase_pk:   ' + str(sel_lvlbase_pk))
+                            logger.debug('sel_sctbase_pk:  ' + str(sel_sctbase_pk))
+                            logger.debug('sel_subject_pk: ' + str(sel_subject_pk))
+                            logger.debug('row_count:      ' + str(row_count))
+
+                        studsubjects = stud_mod.Studentsubject.objects.filter(crit).order_by('schemeitem__subject__base__code', 'student__lastname', 'student__firstname')
+
+                        count_dict = {'count': 0,
+                                    'student_count': 0,
+                                    'student_committed_count': 0,
+                                    'student_saved_count': 0,
+                                    'already_published': 0,
+                                    'double_approved': 0,
+                                    'committed': 0,
+                                    'saved': 0,
+                                    'save_error': 0,
+                                    'reset': 0,
+                                    'already_approved_by_auth': 0,
+                                    'auth_missing': 0,
+                                    'test_is_ok': False
+                                    }
+                        if studsubjects is not None:
+
+    # create new published_instance. Only save it when it is not a test
+                            # file_name will be added after creating Ex-form
+                            published_instance = None
+                            if is_submit and not is_test:
+                                now_arr = upload_dict.get('now_arr')
+
+                                published_instance = create_published_Ex1_instance(
+                                    sel_school=sel_school,
+                                    sel_department=sel_department,
+                                    sel_examperiod=1,
+                                    is_test=is_test,
+                                    now_arr=now_arr,
+                                    request=request)  # PR2021-07-27
+
+                            studsubj_rows = []
+
+    # +++++ loop through subjects
+                            row_count, student_pk_list, student_committed_list, student_saved_list = 0, [],[], []
+
+                            if studsubjects:
+                                for studsubj in studsubjects:
+                                    row_count += 1
+
+                                    is_committed = False
+                                    is_saved = False
+
+                                    if is_approve:
+                                        is_committed, is_saved = approve_studsubj(studsubj, requsr_auth, is_test, is_reset, count_dict, request)
+                                    elif is_submit:
+                                        is_committed, is_saved = submit_studsubj(studsubj, is_test, published_instance, count_dict, request)
+
+                                    if studsubj.student_id not in student_pk_list:
+                                        student_pk_list.append(studsubj.student_id)
+                                    if is_committed:
+                                        if studsubj.student_id not in student_committed_list:
+                                            student_committed_list.append(studsubj.student_id)
+                                    if is_saved:
+                                        if studsubj.student_id not in student_saved_list:
+                                            student_saved_list.append(studsubj.student_id)
+
+        # - add rows to studsubj_rows, to be sent back to page
+                                    if not is_test and is_saved:
+                                        rows = create_studentsubject_rows(
+                                            examyear=sel_examyear,
+                                            schoolbase=sel_school.base,
+                                            depbase=sel_department.base,
+                                            append_dict={},
+                                            student_pk=None,
+                                            studsubj_pk=studsubj.pk)
+                                        if rows:
+                                              studsubj_rows.append(rows[0])
+    # +++++  end of loop through  subjects
+
+                            count_dict['count'] = row_count
+                            count_dict['student_count'] = len(student_pk_list)
+                            count_dict['student_committed_count'] = len(student_committed_list)
+                            count_dict['student_saved_count'] = len(student_saved_list)
+                            update_wrap['approve_count_dict'] = count_dict
+
+    # - create msg_html with info of rows
+                            msg_html = self.create_msg_list(logging_on, count_dict, requsr_auth, is_approve, is_test)
+
+                            if row_count:
+                                if is_submit and not is_test:
+                                    self.create_Ex1(
+                                        published_instance=published_instance,
+                                        sel_examyear=sel_examyear,
+                                        sel_school=sel_school,
+                                        sel_department=sel_department,
+                                        save_to_disk=True,
+                                        user_lang=user_lang)
+
+                                    #update_wrap['updated_published_rows'] = create_published_rows(
+                                    #    sel_examyear_pk=sel_examyear.pk,
+                                    #    sel_schoolbase_pk=sel_school.base_id,
+                                    #    sel_depbase_pk=sel_department.base_id,
+                                    #    published_pk=published_instance.pk
+                                    #)
+
+                                if (studsubj_rows):
+                                    update_wrap['updated_studsubj_approve_rows'] = studsubj_rows
+
+                                if is_test:
+                                    committed = count_dict.get('committed', 0)
+                                    if committed:
+                                        update_wrap['test_is_ok'] = True
+
+    # - add  msg_html to update_wrap
+        update_wrap['approve_msg_html'] = msg_html
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+    def create_msg_list(self, logging_on, count_dict, requsr_auth, is_approve, is_test):
+        if logging_on:
+            logger.debug('  ----- create_msg_list -----')
+            logger.debug('count_dict: ' + str(count_dict))
+            logger.debug('is_test: ' + str(is_test))
+
+        count = count_dict.get('count', 0)
+        student_count = count_dict.get('student_count', 0)
+        committed = count_dict.get('committed', 0)
+        student_committed_count = count_dict.get('student_committed_count', 0)
+        saved = count_dict.get('saved', 0)
+        save_error = count_dict.get('save_error', 0)
+        student_saved_count = count_dict.get('student_saved_count', 0)
+        already_published = count_dict.get('already_published', 0)
+        auth_missing = count_dict.get('auth_missing', 0)
+        already_approved_by_auth = count_dict.get('already_approved_by_auth', 0)
+        double_approved = count_dict.get('double_approved', 0)
+
+        if logging_on:
+            logger.debug('.....count: ' + str(count))
+            logger.debug('.....committed: ' + str(committed))
+            logger.debug('.....already_published: ' + str(already_published))
+            logger.debug('.....auth_missing: ' + str(auth_missing))
+            logger.debug('.....already_approved_by_auth: ' + str(already_approved_by_auth))
+            logger.debug('.....double_approved: ' + str(double_approved))
+
+        show_warning_msg = False
+        if is_test:
+            if is_approve:
+                class_str = 'border_bg_valid' if committed else 'border_bg_invalid'
+            else:
+                if committed:
+                    if (is_test and auth_missing) or (is_test and double_approved):
+                        class_str = 'border_bg_warning'
+                        show_warning_msg = True
+                    else:
+                        class_str = 'border_bg_valid'
+                else:
+                    class_str = 'border_bg_invalid'
+        else:
+            class_str = 'border_bg_transparent'
+
+        msg_list = ["<div class='p-2 ", class_str, "'>",
+                    "<p class='pb-2'>",
+                    str(_("The selection contains %(stud)s with %(subj)s.") %
+                        {'stud': get_student_count_text(student_count), 'subj': get_subject_count_text(count)}),
+                    '</p>']
+
+        if committed < count:
+            msg_list.append("<p class='pb-0'>" + str(_("The following subjects will be skipped")) + ':</p><ul>')
+            if already_published:
+                msg_list.append('<li>' + str(_("%(subj)s already submitted") %
+                                             {'subj': get_subjects_are_text(already_published)}) + ';</li>')
+            if auth_missing:
+                msg_list.append('<li>' + str(_("%(subj)s not completely approved") %
+                                             {'subj': get_subjects_are_text(auth_missing)}) + ';</li>')
+            if already_approved_by_auth:
+                msg_list.append('<li>' + get_subjects_are_text(already_approved_by_auth) + str(_(' already approved')) + ';</li>')
+            if double_approved:
+                other_function =  str(_('president')) if requsr_auth == 'auth2' else str(_('secretary'))
+                msg_list.append(''.join(('<li>', get_subjects_are_text(double_approved),
+                                         str(_(' already approved by you as ')), other_function, '.<br>',
+                                str(_("You cannot approve a subject both as president and as secretary.")), '</li>')))
+            msg_list.append('</ul>')
+
+        msg_list.append('<p>')
+        if is_test:
+            if not committed:
+                if is_approve:
+                    msg_str = _("No subjects will be approved.")
+                else:
+                    msg_str = _("The Ex1 form can not be submitted.")
+            else:
+                student_count_txt = get_student_count_text(student_committed_count)
+                subject_count_txt = get_subject_count_text(committed)
+                will_be_text = get_will_be_text(committed)
+                approve_txt = _('approved.') if is_approve else _('added to the Ex1 form.')
+                msg_str = ' '.join((str(subject_count_txt), str(_('of')),  str(student_count_txt),
+                                    str(will_be_text), str(approve_txt)))
+
+        else:
+            not_str = '' if saved else str(_('not')) + ' '
+            msg_str = str(_("The Ex1 form has %(not)s been submitted.") % {'not': not_str})
+            if saved:
+                student_count_txt = get_student_count_text(student_saved_count)
+                subject_count_txt = get_subject_count_text(saved)
+                msg_str += '<br>' + str(_("It contains %(subj)s of %(stud)s.")
+                                        % {'stud': student_count_txt, 'subj': subject_count_txt})
+
+        msg_list.append(str(msg_str))
+        msg_list.append('</p>')
+
+        if show_warning_msg:
+            msg_list.append("<p class='pt-2'><b>")
+            msg_list.append(str(_('WARNING')))
+            msg_list.append(':</b> ')
+            msg_list.append(str(_('There are subjects that are not fully approved.')))
+            msg_list.append(' ')
+            msg_list.append(str(_('They will not be included in the Ex1 form.')))
+            msg_list.append(' ')
+            msg_list.append(str(_('Are you sure you want to submit the Ex1 form?')))
+
+        msg_list.append('</p>')
+
+        msg_list.append('</div>')
+
+        msg_html = ''.join(msg_list)
+
+        return msg_html
+
+    def create_Ex1(self, published_instance, sel_examyear, sel_school, sel_department, save_to_disk, user_lang):
+        #PR2021-07-27
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug(' ============= StudentsubjectApproveView ============= ')
+
+# get text from examyearsetting
+        settings = af.get_exform_text(sel_examyear, ['exform', 'ex1'])
+        if logging_on:
+            logger.debug('settings: ' + str(settings))
+
+# +++ get mapped_subject_rows
+        subject_row_count, subject_pk_list, subject_code_list, level_pk_list = \
+            grd_exc.create_ex1_mapped_subject_rows(sel_examyear, sel_school, sel_department)
+        #  subject_pk_dict: {34: 0, 29: 1, ...} ( subject_pk: index)
+        #  subject_code_list: ['bw', 'cav', ]
+        #  index = row_count
+
+        if logging_on:
+            logger.debug('subject_row_count: ' + str(subject_row_count))
+            logger.debug('subject_pk_list: ' + str(subject_pk_list))
+            logger.debug('subject_code_list: ' + str(subject_code_list))
+            logger.debug('level_pk_list: ' + str(level_pk_list))
+
+# -get dict of subjects of these studsubj_rows
+        studsubj_rows = grd_exc.create_ex1_rows(sel_examyear, sel_school, sel_department)
+
+        if studsubj_rows:
+
+# - create Ex1 xlsx file
+            response = grd_exc.create_ex1_xlsx(
+                published_instance=published_instance,
+                examyear=sel_examyear,
+                school=sel_school,
+                department=sel_department,
+                settings=settings,
+                save_to_disk=save_to_disk,
+                subject_pk_list=subject_pk_list,
+                subject_code_list=subject_code_list,
+                studsubj_rows=studsubj_rows,
+                user_lang=user_lang)
+
+    def check_verificationcode(self, logging_on, upload_dict, request ):
+        if logging_on:
+            logger.debug('  ----- check_verificationcode -----')
+
+        _verificationkey = upload_dict.get('verificationkey')
+        _verificationcode = upload_dict.get('verificationcode')
+        is_ok, is_expired = False, False
+        msg_html, msg_txt = None, None
+        if _verificationkey and _verificationcode:
+            key_code = '_'.join((_verificationkey, _verificationcode))
+        # - get saved key_code
+            saved_dict = acc_view.get_usersetting_dict(c.KEY_VERIFICATIONCODE, request)
+            if logging_on:
+                logger.debug('saved_dict: ' + str(saved_dict))
+
+            if saved_dict:
+        # - check if code is expired:
+                saved_expirationtime = saved_dict.get('expirationtime')
+                # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+                now_iso = datetime.now().isoformat()
+                if logging_on:
+                    logger.debug('saved_expirationtime: ' + str(saved_expirationtime))
+                    logger.debug('now_iso: ' + str(now_iso))
+                if now_iso > saved_expirationtime:
+                    is_expired = True
+                    msg_txt = _("The verificationcode has expired.")
+                else:
+        # - check if code is correct:
+                    saved_form = saved_dict.get('form')
+                    saved_key_code = saved_dict.get('key_code')
+                    if logging_on:
+                        logger.debug('saved_form: ' + str(saved_form))
+                        logger.debug('saved_key_code: ' + str(saved_key_code))
+
+                    if saved_form == 'Ex1' and key_code == saved_key_code:
+                        is_ok = True
+                    else:
+                        msg_txt = _("The verificationcode you have entered is not correct.")
+
+        # - delete setting when expired or ok
+                if is_ok or is_expired:
+                    acc_view.set_usersetting_dict(c.KEY_VERIFICATIONCODE, None, request)
+
+        if logging_on:
+            logger.debug('is_ok: ' + str(is_ok))
+            logger.debug('is_expired: ' + str(is_expired))
+        if msg_txt:
+            msg_html = ''.join(("<div class='p-2 border_bg_invalid'>",
+                                "<p class='pb-2'>",
+                                str(msg_txt),
+                                '</p>'))
+
+        return is_ok, msg_html
+
+# --- end of StudentsubjectApproveMultipleView
+
+
 #################################################################################
+@method_decorator([login_required], name='dispatch')
+class StudentsubjectApproveView(View):  # PR2021-07-25
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug(' ============= StudentsubjectApproveView ============= ')
+
+# function sets auth and publish of studentsubject records of current department # PR2021-07-25
+        update_wrap = {}
+        messages = []
+
+# - get permit
+        has_permit = False
+        req_usr = request.user
+        if req_usr and req_usr.country and req_usr.schoolbase:
+            permit_list = req_usr.permit_list('page_studsubj')
+            if permit_list:
+                has_permit = 'permit_approve_subject' in permit_list
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+
+# ----- get selected examyear, school and department from usersettings
+                # may_edit = False when:
+                # - examyear, schoolbase, school, depbase or department is None
+                # - country, examyear or school is locked
+                # - not requsr_same_school,
+                # - not sel_examyear.published,
+                # - not sel_school.activated,
+                # not af.is_allowed_depbase_requsr or not af.is_allowed_depbase_school,
+
+                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                if len(msg_list):
+                    msg_html = '<br>'.join(msg_list)
+                    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
+
+                else:
+# - get list of studentsubjects from upload_dict
+                    studsubj_list = upload_dict.get('studsubj_list')
+                    if studsubj_list:
+                        studsubj_rows = []
+# -------------------------------------------------
+# - loop through list of uploaded studentsubjects
+                        for studsubj_dict in studsubj_list:
+                            student_pk = studsubj_dict.get('student_pk')
+                            studsubj_pk = studsubj_dict.get('studsubj_pk')
+                            if logging_on:
+                                logger.debug('---------- ')
+                                logger.debug('     student_pk: ' + str(student_pk))
+                                logger.debug('     studsubj_pk: ' + str(studsubj_pk))
+
+                            append_dict = {}
+                            error_dict = {}
+
+# - get current student and studsubj
+                            student = stud_mod.Student.objects.get_or_none(
+                                id=student_pk,
+                                department=sel_department
+                            )
+                            studsubj = stud_mod.Studentsubject.objects.get_or_none(
+                                id=studsubj_pk,
+                                student=student
+                            )
+                            if logging_on:
+                                logger.debug('student: ' + str(student))
+                                logger.debug('studsubj: ' + str(studsubj))
+
+# - update studsubj
+                            if student and studsubj:
+                                if logging_on:
+                                    logger.debug('studsubj: ' + str(studsubj))
+                                update_studsubj(studsubj, studsubj_dict, error_dict, request)
+
+                                # TODO check value of error_dict
+                                # error_dict = {err_update: "Er is een fout opgetreden. De wijzigingen zijn niet opgeslagen."}
+                                if error_dict:
+                                    append_dict['error'] = error_dict
+                                setting_dict = {
+                                    'sel_examyear_pk': sel_school.examyear.pk,
+                                    'sel_schoolbase_pk': sel_school.base_id,
+                                    'sel_depbase_pk': sel_department.base_id
+                                }
+
+                                if logging_on:
+                                    logger.debug('studsubj.pk: ' + str(studsubj.pk))
+                                rows = create_studentsubject_rows(
+                                    examyear=sel_examyear,
+                                    schoolbase=sel_school.base,
+                                    depbase=sel_department.base,
+                                    append_dict=append_dict,
+                                    student_pk=student.pk,
+                                    studsubj_pk=studsubj.pk
+                                )
+                                if rows:
+                                    studsubj_row = rows[0]
+                                    if studsubj_row:
+                                        studsubj_rows.append(studsubj_row)
+# - end of loop
+# -------------------------------------------------
+                        if studsubj_rows:
+                            update_wrap['updated_studsubj_approve_rows'] = studsubj_rows
+
+        if len(messages):
+            update_wrap['messages'] = messages
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of StudentsubjectApproveView
+##################################################################################
+
+
+def get_student_count_text(student_count):
+    if not student_count:
+        msg_text = str(_('no candidates'))
+    elif student_count == 1:
+        msg_text = str(_('1 candidate'))
+    else:
+        msg_text = ' '.join((str(student_count), str(_('candidates'))))
+    return msg_text
+
+
+def get_will_be_text(count):
+    if count == 1:
+        msg_text = pgettext_lazy('singular', 'will be')
+    else:
+        msg_text = pgettext_lazy('plural', 'will be')
+    return msg_text
+
+def get_subject_count_text(count):
+    if not count:
+        msg_text = str(_('no subjects'))
+    elif count == 1:
+        msg_text = str(_('1 subject'))
+    else:
+        msg_text = ' '.join((str(count), str(_('subjects'))))
+    return msg_text
+
+
+def get_subjects_are_text(count):
+    if not count:
+        msg_text = str(_('no subjects are'))
+    elif count == 1:
+        msg_text = str(_('1 subject is'))
+    else:
+        msg_text = str(count) + str(_(' subjects are'))
+    return msg_text
+
+
+def approve_studsubj(studsubj, requsr_auth, is_test, is_reset, count_dict, request):
+    # PR2021-07-26
+    # status_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
+    logging_on = s.LOGGING_ON
+    if logging_on:
+
+        logger.debug('----- approve_studsubj -----')
+        logger.debug('requsr_auth:  ' + str(requsr_auth))
+        logger.debug('is_reset:     ' + str(is_reset))
+
+    is_committed = False
+    is_saved = False
+    if studsubj:
+        req_user = request.user
+
+# - skip if this studsubj is already published
+        published = getattr(studsubj, 'subj_published')
+        if logging_on:
+            logger.debug('published:    ' + str(published))
+
+        if published:
+            count_dict['already_published'] += 1
+        else:
+            requsr_authby_field = 'subj_' + requsr_auth + 'by'
+
+# - skip if other_auth has already approved and other_auth is same as this auth. - may not approve if same auth has already approved
+            auth1by = getattr(studsubj, 'subj_auth1by')
+            auth2by = getattr(studsubj, 'subj_auth2by')
+            if logging_on:
+                logger.debug('requsr_authby_field: ' + str(requsr_authby_field))
+                logger.debug('auth1by:      ' + str(auth1by))
+                logger.debug('auth2by:      ' + str(auth2by))
+
+            save_changes = False
+
+# - remove authby when is_reset
+            if is_reset:
+                setattr(studsubj, requsr_authby_field, None)
+                count_dict['reset'] += 1
+                save_changes = True
+            else:
+
+# - skip if this studsubj is already approved
+                requsr_authby_value = getattr(studsubj, requsr_authby_field)
+                requsr_authby_field_already_approved = True if requsr_authby_value else False
+                if logging_on:
+                    logger.debug('requsr_authby_field_already_approved: ' + str(requsr_authby_field_already_approved))
+                if requsr_authby_field_already_approved:
+                    count_dict['already_approved_by_auth'] += 1
+                else:
+
+# - skip if this author (like 'president') has already approved this studsubj
+        # under a different permit (like 'secretary' or 'commissioner')
+                    logger.debug('>>> requsr_auth: ' + str(requsr_auth))
+                    logger.debug('>>> req_user:    ' + str(req_user))
+                    logger.debug('>>> auth1by:     ' + str(auth1by))
+                    logger.debug('>>> auth2by:     ' + str(auth2by))
+
+                    double_approved = False
+                    if requsr_auth == 'auth1':
+                        double_approved = True if auth2by and auth2by == req_user else False
+                    elif requsr_auth == 'auth2':
+                        double_approved = True if auth1by and auth1by == req_user else False
+                    if logging_on:
+                        logger.debug('double_approved: ' + str(double_approved))
+
+                    if double_approved:
+                        count_dict['double_approved'] += 1
+                    else:
+                        setattr(studsubj, requsr_authby_field, req_user)
+
+                        save_changes = True
+                        if logging_on:
+                            logger.debug('save_changes: ' + str(save_changes))
+
+# - set value of requsr_authby_field
+            if save_changes:
+                if is_test:
+                    count_dict['committed'] += 1
+                    is_committed = True
+                else:
+# - save changes
+                    try:
+                        a=1/0
+                        studsubj.save(request=request)
+                        is_saved = True
+                        count_dict['saved'] += 1
+                    except Exception as e:
+                        logger.error(getattr(e, 'message', str(e)))
+                        count_dict['save_error'] += 1
+
+    return is_committed, is_saved
+# - end of approve_studsubj
+
+
+def submit_studsubj(studsubj, is_test, published_instance, count_dict, request):  # PR2021-01-21 PR2021-07-27
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- submit_studsubj -----')
+
+    is_committed = False
+    is_saved = False
+
+    if studsubj:
+
+# - check if this studsubj is already published
+        published = getattr(studsubj, 'subj_published')
+        if logging_on:
+            logger.debug('subj_published: ' + str(published))
+        if published:
+            count_dict['already_published'] += 1
+        else:
+
+# - check if this studsubj / examtype is approved by all auth
+            auth1by = getattr(studsubj, 'subj_auth1by')
+            auth2by = getattr(studsubj, 'subj_auth2by')
+            auth_missing = auth1by is None or auth2by is None
+            if logging_on:
+                logger.debug('auth1by: ' + str(auth1by))
+                logger.debug('auth2by: ' + str(auth2by))
+                logger.debug('auth_missing: ' + str(auth_missing))
+            if auth_missing:
+                count_dict['auth_missing'] += 1
+            else:
+# - check if all auth are different
+                double_approved = auth1by == auth2by
+                if logging_on:
+                    logger.debug('double_approved: ' + str(double_approved))
+                if double_approved and not auth_missing:
+                    count_dict['double_approved'] += 1
+                else:
+# - set value of published_instance and exatmtype_status field
+                    if is_test:
+                        count_dict['committed'] += 1
+                        is_committed = True
+                    else:
+
+                        try:
+# - put published_id in field subj_published
+                            setattr(studsubj, 'subj_published', published_instance)
+# - save changes
+                            studsubj.save(request=request)
+                            is_saved = True
+                            count_dict['saved'] += 1
+                        except Exception as e:
+                            logger.error(getattr(e, 'message', str(e)))
+                            count_dict['save_error'] += 1
+
+    return is_committed, is_saved
+# - end of submit_studsubj
+
+
+def create_published_Ex1_instance(sel_school, sel_department, sel_examperiod, is_test, now_arr, request):  # PR2021-07-27
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- create_published_Ex1_instance -----')
+    # create new published_instance and save it when it is not a test
+    # filename is added after creating file in create_ex1_xlsx
+    depbase_code = sel_department.base.code if sel_department.base.code else '-'
+    school_code = sel_school.base.code if sel_school.base.code else '-'
+    school_abbrev = sel_school.abbrev if sel_school.abbrev else '-'
+
+    # to be used when submitting Ex4 form
+    examtype_caption = ''
+    exform = 'Ex1'
+    if sel_examperiod == 1:
+        examtype_caption = '-tv1'
+    if sel_examperiod == 2:
+        examtype_caption = '-tv2'
+        exform = 'Ex4'
+    elif sel_examperiod == 3:
+        examtype_caption = '-tv3'
+        exform = 'Ex4'
+    elif sel_examperiod == 4:
+        examtype_caption = '-vrst'
+
+    today_date = af.get_date_from_arr(now_arr)
+
+    year_str = str(now_arr[0])
+    month_str = ("00" + str(now_arr[1]))[-2:]
+    date_str = ("00" + str(now_arr[2]))[-2:]
+    hour_str = ("00" + str(now_arr[3]))[-2:]
+    minute_str = ("00" +str( now_arr[4]))[-2:]
+    now_formatted = ''.join([year_str, "-", month_str, "-", date_str, " ", hour_str, "u", minute_str])
+
+    file_name = ' '.join((exform, school_code, school_abbrev, depbase_code, examtype_caption, now_formatted))
+    # skip school_abbrev if total file_name is too long
+    if len(file_name) > c.MAX_LENGTH_FIRSTLASTNAME:
+        file_name = ' '.join((exform, school_code, depbase_code, examtype_caption, now_formatted))
+    # if total file_name is still too long: cut off
+    if len(file_name) > c.MAX_LENGTH_FIRSTLASTNAME:
+        file_name = file_name[0:c.MAX_LENGTH_FIRSTLASTNAME]
+
+    published_instance = sch_mod.Published(
+        school=sel_school,
+        department=sel_department,
+        examtype=None,
+        examperiod=sel_examperiod,
+        name=file_name,
+        datepublished=today_date)
+    # Note: filefield 'file' gets value on creating Ex form
+    if not is_test:
+        published_instance.filename = file_name + '.xlsx'
+        published_instance.save(request=request)
+
+        if logging_on:
+            logger.debug('published_instance.saved: ' + str(published_instance))
+
+    return published_instance
+# - end of create_published_Ex1_instance
+
+
+
+#################################################################################
+
 @method_decorator([login_required], name='dispatch')
 class StudentsubjectUploadView(View):  # PR2020-11-20
 
@@ -459,7 +1450,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                 logger.debug('permit_list: ' + str(permit_list))
                 logger.debug('has_permit: ' + str(has_permit))
 
-        # TODO === FIXIT === set permit
+        # TODO === FIXIT === remove has_permit = True
         has_permit = True
 
         if has_permit:
@@ -477,8 +1468,16 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                 upload_dict = json.loads(upload_json)
 
 # ----- get selected examyear, school and department from usersettings
+                # may_edit = False when:
+                # - examyear, schoolbase, school, depbase or department is None
+                # - country, examyear or school is locked
+                # - not requsr_same_school,
+                # - not sel_examyear.published,
+                # - not sel_school.activated,
+                # not af.is_allowed_depbase_requsr or not af.is_allowed_depbase_school,
+
                 sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                        dl.get_selected_ey_school_dep_from_usersetting(request)
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
 
                 if logging_on:
                     logger.debug('upload_dict' + str(upload_dict))
@@ -492,7 +1491,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                 student = None
                 # TODO : may_edit = examyear_published and school_activated and requsr_same_school and sel_department and not is_locked
 
-                # TODO === FIXIT === set permit
+                # TODO === FIXIT === remove may_edit = True
                 msg_list = []
                 may_edit = True
 
@@ -564,19 +1563,19 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                                     studsubj.reex_published or \
                                     studsubj.reex3_published or \
                                     studsubj.pok_published:
-                    # - if published: set deleted=True, so its remains in the Ex1 form
-                                    setattr(studsubj, 'deleted', True)
+                    # - if published: set tobedeleted=True, so its remains in the Ex1 form
+                                    setattr(studsubj, 'tobedeleted', True)
                                     studsubj.save(request=request)
                                     if logging_on:
-                                        logger.debug('studsubj.deleted: ' + str(studsubj.deleted))
+                                        logger.debug('studsubj.tobedeleted: ' + str(studsubj.tobedeleted))
                                     grades = stud_mod.Grade.objects.filter(studentsubject=studsubj)
-                            # also set grades deleted=True
+                            # also set grades tobedeleted=True
                                     if grades:
                                         for grade in grades:
-                                            setattr(grade, 'deleted', True)
+                                            setattr(grade, 'tobedeleted', True)
                                             grade.save(request=request)
                                             if logging_on:
-                                                logger.debug('grade.deleted: ' + str(grade.deleted))
+                                                logger.debug('grade.tobedeleted: ' + str(grade.tobedeleted))
                                 else:
                     # - if not yet published: delete Grades, Studentsubjectnote, Noteattachment will also be deleted with cascade_delete
                                     err_list = []  # TODO
@@ -628,7 +1627,9 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                                 'sel_depbase_pk': sel_department.base_id
                             }
                             rows = create_studentsubject_rows(
-                                setting_dict= setting_dict,
+                                examyear=sel_examyear,
+                                schoolbase=sel_school.base,
+                                depbase=sel_department.base,
                                 append_dict=append_dict,
                                 studsubj_pk=studsubj.pk
                             )
@@ -644,7 +1645,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
 # +++ validate subjects of student
                         msg_html = stud_val.validate_studentsubjects(student)
                         if msg_html:
-                            update_wrap['validate_studsubj_html'] = msg_html
+                            update_wrap['studsubj_validate_html'] = msg_html
         if len(messages):
             update_wrap['messages'] = messages
 # - return update_wrap
@@ -656,36 +1657,24 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
 def update_studsubj(instance, upload_dict, msg_dict, request):
     # --- update existing and new instance PR2019-06-06
     # add new values to update_dict (don't reset update_dict, it has values)
-    logger.debug(' ------- update_studsubj -------')
-    logger.debug('upload_dict' + str(upload_dict))
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- update_studsubj -------')
+        logger.debug('upload_dict' + str(upload_dict))
+        # upload_dict{'mode': 'update', 'studsubj_pk': 26993, 'schemeitem_pk': 2033, 'subj_auth2by': 48}
 
-    # FIELDS_STUDENTSUBJECT = ('student', 'schemeitem', 'cluster', 'is_extra_nocount','is_extra_counts', 'is_elective_combi',
-    #                          'pws_title','pws_subjects', 'has_exemption', 'has_reex', 'has_reex03', 'has_pok', 'pok_status',
-    #                          'modifiedby', 'modifiedat')
-
-    #
-    # FIELDS_STUDENTSUBJECT = ( student, schemeitem, cluster,
-    #   is_extra_nocount, is_extra_counts, is_elective_combi, pws_title, pws_subjects,
-    #   has_exemption, has_reex, has_reex03, has_pok,
-    #   subj_auth1by, subj_auth2by, subjpublished, exem_auth1by, exem_auth2by, exemppublished,
-    #   reex_auth1by, reex_auth2by, reexpublished, reex3_auth1by, reex3_auth2by, reex3published,
-    #   pok_auth1by, pok_auth2by, pokpublished,
-    #   deleted, 'modifiedby', 'modifiedat')
-
-
-    # upload_dict{'mode': 'update', 'studsubj_id': 10, 'schemeitem_id': 201, 'stud_id': 29,
-    #                   'is_extra_nocount': False, 'is_extra_counts': False, 'is_elective_combi': False,
-    #                   'pws_title': 'oo', 'pws_subjects': 'pp'}
     save_changes = False
     for field, new_value in upload_dict.items():
 # a. get new_value and saved_value
 
-        #logger.debug('field: ' + str(field) + ' new_value: ' + str(new_value))
+        if logging_on:
+            logger.debug('field: ' + str(field) + ' new_value: ' + str(new_value))
 
-# 2. save changes in field 'name', 'abbrev'
+# +++ save changes in instance fields
         if field in ['pws_title', 'pws_subjects']:
             saved_value = getattr(instance, field)
-            logger.debug('saved_value: ' + str(saved_value))
+            if logging_on:
+                logger.debug('saved_value: ' + str(saved_value))
             if new_value != saved_value:
                 # TODO
                 msg_err = None
@@ -696,7 +1685,6 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
                 else:
                     msg_dict['err_' + field] = msg_err
 
-# 3. save changes in fields 'namefirst', 'namelast'
         elif field in ['is_extra_nocount','is_extra_counts', 'is_elective_combi']:
             saved_value = getattr(instance, field)
             logger.debug('saved_value: ' + str(saved_value))
@@ -743,19 +1731,20 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
                     grade.save(request=request)
 
 
-    #   subj_auth1by, subj_auth2by, subjpublished, exem_auth1by, exem_auth2by, exemppublished,
-    #   reex_auth1by, reex_auth2by, reexpublished, reex3_auth1by, reex3_auth2by, reex3published,
-    #   pok_auth1by, pok_auth2by, pokpublished,
+        #   subj_auth1by, subj_auth2by, subjpublished, exem_auth1by, exem_auth2by, exemppublished,
+        #   reex_auth1by, reex_auth2by, reexpublished, reex3_auth1by, reex3_auth2by, reex3published,
+        #   pok_auth1by, pok_auth2by, pokpublished,
 
-        elif field in ('subj_auth1by', 'subj_auth2by', 'exem_auth1by', 'exem_auth2by',
-                       'reex_auth1by', 'reex_auth2by', 'reex3_auth1by', 'reex3_auth2by',
-                       'pok_auth1by', 'pok_auth2by'):
+        #elif field in ('subj_auth1by', 'subj_auth2by', 'exem_auth1by', 'exem_auth2by',
+        #               'reex_auth1by', 'reex_auth2by', 'reex3_auth1by', 'reex3_auth2by',
+        #               'pok_auth1by', 'pok_auth2by'):
+        elif '_auth' in field:
             logger.debug('field: ' + str(field) )
             logger.debug('new_value: ' + str(new_value))
 
-            prefix, suffix  = field.split('_')
+            prefix, authby = field.split('_')
             logger.debug('prefix: ' + str(prefix) )
-            logger.debug('suffix: ' + str(suffix) )
+            logger.debug('authby: ' + str(authby) )
 
 # - check if instance is published. Authorization of published instances cannot be changed.
             err_published, err_same_user = False, False
@@ -765,8 +1754,8 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
                 err_published = True
 # - check other authorization, to check if it is the same user. Only when auth is set to True
             elif new_value:
-                suffix_other = 'auth2by' if suffix == 'auth1by' else 'auth1by'
-                fld_other = prefix + '_' + suffix_other
+                authby_other = 'auth2by' if authby == 'auth1by' else 'auth1by'
+                fld_other = prefix + '_' + authby_other
                 other_authby = getattr(instance, fld_other)
                 logger.debug('other_authby: ' + str(other_authby) )
                 logger.debug('request.user: ' + str(request.user) )
@@ -788,7 +1777,7 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
     if save_changes:
         try:
             instance.save(request=request)
-            logger.debug('The changes have been saved' + str(instance))
+            logger.debug('The changes have been saved: ' + str(instance))
         except:
             msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
 # --- end of update_studsubj
@@ -886,6 +1875,8 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                         logger.debug('file_type: ' + str(file_type))
                         logger.debug('file_name: ' + str(file_name))
                         logger.debug('file: ' + str(file))
+
+                    # attachments are stored in spaces awpmedia/awpmedia/media/private
 
                     if studsubjnote and file:
                         instance = stud_mod.Noteattachment(
@@ -1015,162 +2006,13 @@ class StudentImportView(View):  # PR2020-10-01
         return render(request, 'import_student.html', param)
 
 
-@method_decorator([login_required], name='dispatch')
-class StudentImportUploadSetting(View):  # PR2019-03-10
-    # function updates mapped fields, no_header and worksheetname in table Companysetting
-    def post(self, request, *args, **kwargs):
-        # logger.debug(' ============= StudentImportUploadSetting ============= ')
-        # logger.debug('request.POST' + str(request.POST) )
-        schoolsetting_dict = {}
-        has_permit = False
-        if request.user is not None and request.user.schoolbase is not None:
-            has_permit = (request.user.is_role_adm_or_sys_and_group_system)
-        if has_permit:
-            if request.POST['upload']:
-                new_setting_json = request.POST['upload']
-                # new_setting is in json format, no need for json.loads and json.dumps
-                # logger.debug('new_setting_json' + str(new_setting_json))
-
-                new_setting_dict = json.loads(request.POST['upload'])
-                settings_key = c.KEY_IMPORT_SUBJECT
-
-                new_worksheetname = ''
-                new_has_header = True
-                new_code_calc = ''
-                new_coldefs = {}
-
-                stored_json = request.user.schoolbase.get_schoolsetting_dict(settings_key)
-                if stored_json:
-                    stored_setting = json.loads(stored_json)
-                    # logger.debug('stored_setting: ' + str(stored_setting))
-                    if stored_setting:
-                        new_has_header = stored_setting.get('has_header', True)
-                        new_worksheetname = stored_setting.get('worksheetname', '')
-                        new_code_calc = stored_setting.get('codecalc', '')
-                        new_coldefs = stored_setting.get('coldefs', {})
-
-                if new_setting_json:
-                    new_setting = json.loads(new_setting_json)
-                    # logger.debug('new_setting' + str(new_setting))
-                    if new_setting:
-                        if 'worksheetname' in new_setting:
-                            new_worksheetname = new_setting.get('worksheetname', '')
-                        if 'has_header' in new_setting:
-                            new_has_header = new_setting.get('has_header', True)
-                        if 'coldefs' in new_setting:
-                            new_coldefs = new_setting.get('coldefs', {})
-                    # logger.debug('new_code_calc' + str(new_code_calc))
-                new_setting = {'worksheetname': new_worksheetname,
-                               'has_header': new_has_header,
-                               'codecalc': new_code_calc,
-                               'coldefs': new_coldefs}
-                new_setting_json = json.dumps(new_setting)
-
-                request.user.schoolbase.set_schoolsetting_dict(settings_key, new_setting_json)
-
-        return HttpResponse(json.dumps(schoolsetting_dict, cls=LazyEncoder))
-
-
-# --- end of StudentImportUploadSetting
-
-@method_decorator([login_required], name='dispatch')
-class StudentImportUploadData(View):  # PR2018-12-04 PR2019-08-05 PR2020-06-04
-
-    def post(self, request):
-        logger.debug(' ========================== StudentImportUploadData ========================== ')
-        params = {}
-        has_permit = False
-        is_not_locked = False
-        if request.user is not None and request.user.schoolbase is not None:
-            has_permit = (request.user.is_role_adm_or_sys_and_group_system)
-            # TODO change request.user.examyear to sel_examyear
-            is_not_locked = not request.user.examyear.locked
-
-        if is_not_locked and has_permit:
-            # - Reset language
-            # PR2019-03-15 Debug: language gets lost, get request.user.lang again
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
-
-            upload_json = request.POST.get('upload', None)
-            if upload_json:
-                upload_dict = json.loads(upload_json)
-                params = import_students(upload_dict, user_lang, request)
-
-        return HttpResponse(json.dumps(params, cls=LazyEncoder))
-
-
-# --- end of StudentImportUploadData
-
-def import_students(upload_dict, user_lang, request):
-    logger.debug(' -----  import_students ----- ')
-    logger.debug('upload_dict: ' + str(upload_dict))
-    # - get is_test, codecalc, dateformat, awpKey_list
-    is_test = upload_dict.get('test', False)
-    awpKey_list = upload_dict.get('awpKey_list')
-    dateformat = upload_dict.get('dateformat', '')
-
-    params = {}
-    if awpKey_list:
-        # - get lookup_field
-        # lookup_field is field that determines if student alreay exist.
-        # check if one of the fields 'payrollcode', 'identifier' or 'code' exists
-        # first in the list is lookup_field
-        lookup_field = 'code'
-
-        # - get upload_dict from request.POST
-        student_list = upload_dict.get('students')
-        if student_list:
-
-            today_dte = af.get_today_dateobj()
-            today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
-            double_line_str = '=' * 80
-            indent_str = ' ' * 5
-            space_str = ' ' * 30
-            logfile = []
-            logfile.append(double_line_str)
-            logfile.append('  ' + str(request.user.schoolbase.code) + '  -  ' +
-                           str(_('Import students')) + ' ' + str(_('date')) + ': ' + str(today_formatted))
-            logfile.append(double_line_str)
-
-            if lookup_field is None:
-                info_txt = str(_('There is no field given to lookup candidates. Candidates cannot be uploaded.'))
-                logfile.append(indent_str + info_txt)
-            else:
-                if is_test:
-                    info_txt = str(_("This is a test. The candidate data are not saved."))
-                else:
-                    info_txt = str(_("The candidate data are saved."))
-                logfile.append(indent_str + info_txt)
-                lookup_caption = str(get_field_caption('student', lookup_field))
-                info_txt = str(_("Candidates are looked up by the field: '%(fld)s'.") % {'fld': lookup_caption})
-                logfile.append(indent_str + info_txt)
-                # if dateformat:
-                #    info_txt = str(_("The date format is: '%(fld)s'.") % {'fld': dateformat})
-                #    logfile.append(indent_str + info_txt)
-                update_list = []
-                for student_dict in student_list:
-                    # from https://docs.quantifiedcode.com/python-anti-patterns/readability/not_using_items_to_iterate_over_a_dictionary.html
-
-                    update_dict = upload_student(student_list, student_dict, lookup_field,
-                                                 awpKey_list, is_test, dateformat, indent_str, space_str, logfile,
-                                                 request)
-                    # json_dumps_err_list = json.dumps(msg_list, cls=f.LazyEncoder)
-                    if update_dict:  # 'Any' returns True if any element of the iterable is true.
-                        update_list.append(update_dict)
-
-                if update_list:  # 'Any' returns True if any element of the iterable is true.
-                    params['student_list'] = update_list
-            if logfile:  # 'Any' returns True if any element of the iterable is true.
-                params['logfile'] = logfile
-                # params.append(new_student)
-    return params
-
-def lookup_student(studentbase, request):  # PR2019-12-17 PR2020-10-20
+def lookup_studentNIU(studentbase, request):  # PR2019-12-17 PR2020-10-20
     #logger.debug('----------- lookup_student ----------- ')
 
     student = None
     multiple_students_found = False
+
+
 
 # - search student by studentbase and request.user.examyear  # TODO change request.user.examyear to sel_examyear
     if studentbase:
@@ -1689,6 +2531,13 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
             examnumber = getattr(instance, 'examnumber')
             new_regnumber = stud_func.calc_regnumber(school_code, gender, examyear_code, examnumber, depbase, levelbase)
 
+            if logging_on:
+                logger.debug('recalc_regnumber: ')
+                logger.debug('level:      ' + str(level))
+                logger.debug('gender:     ' + str(gender))
+                logger.debug('examnumber:     ' + str(examnumber))
+                logger.debug('new_regnumber:     ' + str(new_regnumber))
+
             saved_value = getattr(instance, 'regnumber')
             if new_regnumber != saved_value:
                 setattr(instance, 'regnumber', new_regnumber)
@@ -1717,60 +2566,74 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def update_scheme_in_studsubj(student, request):
     # --- update_scheme_in_studsubj # PR2021-03-13
-    logger.debug(' ----- update_scheme_in_studsubj ----- ')
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- update_scheme_in_studsubj ----- ')
+        logger.debug('student: ' + str(student))
 
-    # - update scheme in student, also remove if necessary
-    new_scheme = subj_mod.Scheme.objects.get_or_none(
-        department=student.department,
-        level=student.level,
-        sector=student.sector)
-    setattr(student, 'scheme', new_scheme)
+    if student:
+        # - update scheme in student, also remove if necessary
+        new_scheme = subj_mod.Scheme.objects.get_or_none(
+            department=student.department,
+            level=student.level,
+            sector=student.sector)
+        setattr(student, 'scheme', new_scheme)
 
-# - loop through studsubj of this student
-    studsubjects = stud_mod.Studentsubject.objects.filter(student=student)
-    for studsubj in studsubjects:
-        if new_scheme is None:
-            # delete studsub when no scheme
-            studsubj.delete(request=request)
-        else:
-            # skip when studsub scheme equals new_scheme
-            if studsubj.schemeitem.scheme != new_scheme:
-                # check how many times this subjject occurs in new scheme
-                count_subject_in_newscheme = subj_mod.Schemeitem.objects.filter(
-                    scheme=new_scheme,
-                    subject=studsubj.schemeitem.subject
-                    ).count()
-                if not count_subject_in_newscheme:
-                    # delete studsub when subject does not exist in new_scheme
-                    studsubj.delete(request=request)
-                elif count_subject_in_newscheme == 1:
-                    # if subject occurs only once in mew_scheme: replace schemeitem by new schemeitem
-                    new_schemeitem = subj_mod.Schemeitem.objects.get_or_none(
+        if logging_on:
+            logger.debug('new_scheme: ' + str(new_scheme))
+
+    # - loop through studsubj of this student
+        studsubjects = stud_mod.Studentsubject.objects.filter(
+            student=student
+        )
+        for studsubj in studsubjects:
+            if new_scheme is None:
+                # delete studsubj when no scheme
+                # TODO check if studsubj is submitted, set delete = True if submitted
+                studsubj.delete(request=request)
+            else:
+                old_subject = studsubj.schemeitem.subject
+                old_subjecttype = studsubj.schemeitem.subjecttype
+
+        # skip when studsub scheme equals new_scheme
+                if studsubj.schemeitem.scheme != new_scheme:
+         # check how many times this subject occurs in new scheme
+                    count_subject_in_newscheme = subj_mod.Schemeitem.objects.filter(
                         scheme=new_scheme,
-                        subject=studsubj.schemeitem.subject
-                    )
-                    if new_schemeitem:
-                        studsubj.schemeitem = new_schemeitem
-                        studsubj.save(request=request)
-                else:
-                    # if subject occurs multiple times in mew_scheme: check if one exist with same subjecttype
-                    new_schemeitem = subj_mod.Schemeitem.objects.get_or_none(
-                        scheme=new_scheme,
-                        subject=studsubj.schemeitem.subject,
-                        subjecttype=studsubj.schemeitem.subjecttype
-                    )
-                    if new_schemeitem:
-                        studsubj.schemeitem = new_schemeitem
-                        studsubj.save(request=request)
-                    else:
-                        # if no schemeitem exist with same subjecttype: get schemeitem with lowest sequence
+                        subject=old_subject
+                        ).count()
+                    if not count_subject_in_newscheme:
+        # delete studsub when subject does not exist in new_scheme
+                        # TODO check if studsubj is submitted, set delete = True if submitted
+                        studsubj.delete(request=request)
+                    elif count_subject_in_newscheme == 1:
+        # if subject occurs only once in new_scheme: replace schemeitem by new schemeitem
                         new_schemeitem = subj_mod.Schemeitem.objects.get_or_none(
                             scheme=new_scheme,
-                            subject=studsubj.schemeitem.subject
-                        ).order_by('sequence').first()
+                            subject=old_subject
+                        )
                         if new_schemeitem:
                             studsubj.schemeitem = new_schemeitem
                             studsubj.save(request=request)
+                    else:
+        # if subject occurs multiple times in new_scheme: check if one exist with same subjecttype
+                        new_schemeitem = subj_mod.Schemeitem.objects.get_or_none(
+                            scheme=new_scheme,
+                            subject=old_subject,
+                            subjecttype=old_subjecttype
+                        )
+                        if new_schemeitem:
+                            studsubj.schemeitem = new_schemeitem
+                            studsubj.save(request=request)
+                        else:
+                            # if no schemeitem exist with same subjecttype: get schemeitem with lowest sequence
+                            new_schemeitem = subj_mod.Schemeitem.objects.filter(
+                                scheme=new_scheme,
+                                subject=studsubj.schemeitem.subject
+                            ).order_by('subjecttype__base__sequence').first()
+                            if new_schemeitem:
+                                studsubj.schemeitem = new_schemeitem
+                                studsubj.save(request=request)
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1798,7 +2661,7 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
             row_count, deleted_count = 0, 0
             for studsubj in studsubjects:
                 row_count += 1
-                if studsubj.deleted:
+                if studsubj.tobedeleted:
                     deleted_count += 1
 
             if row_count:
@@ -1877,19 +2740,17 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
 
 #/////////////////////////////////////////////////////////////////
 
-def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studsubj_pk=None):
+def create_studentsubject_rows(examyear, schoolbase, depbase, append_dict, student_pk=None, studsubj_pk=None):
     # --- create rows of all students of this examyear / school PR2020-10-27
     #logger.debug(' =============== create_student_rows ============= ')
     #logger.debug('append_dict: ' + str(append_dict))
     #logger.debug('setting_dict: ' + str(setting_dict))
+
     # create list of students of this school / examyear, possibly with filter student_pk or studsubj_pk
     # with left join of studentsubjects with deleted=False
-    sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
-    sel_schoolbase_pk = af.get_dict_value(setting_dict, ('sel_schoolbase_pk',))
-    sel_depbase_pk = af.get_dict_value(setting_dict, ('sel_depbase_pk',))
-    #logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
-    #logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
-    #logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
+    sel_examyear_pk = examyear.pk if examyear else None
+    sel_schoolbase_pk = schoolbase.pk if schoolbase else None
+    sel_depbase_pk = depbase.pk if depbase else None
 
     sql_studsubj_list = ["SELECT studsubj.id AS studsubj_id, studsubj.student_id,",
         "studsubj.cluster_id, si.id AS schemeitem_id, si.scheme_id AS scheme_id,",
@@ -1905,27 +2766,27 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
         "sjt.id AS sjtp_id, sjt.abbrev AS sjtp_abbrev, sjt.has_prac AS sjtp_has_prac, sjt.has_pws AS sjtp_has_pws,",
         "sjtbase.sequence AS sjtbase_sequence,",
 
-        "studsubj.subj_auth1by_id AS subj_auth1_id, SUBSTRING(subj_auth1.username, 7) AS subj_auth1_usr, subj_auth1.modified_at AS subj_auth1_modat,",
-        "studsubj.subj_auth2by_id AS subj_auth2_id, SUBSTRING(subj_auth2.username, 7) AS subj_auth2_usr, subj_auth2.modified_at AS subj_auth2_modat,",
+        "studsubj.subj_auth1by_id AS subj_auth1_id, subj_auth1.last_name AS subj_auth1_usr,",
+        "studsubj.subj_auth2by_id AS subj_auth2_id, subj_auth2.last_name AS subj_auth2_usr,",
         "studsubj.subj_published_id AS subj_publ_id, subj_published.modifiedat AS subj_publ_modat,",
 
-        "studsubj.exem_auth1by_id AS exem_auth1_id, SUBSTRING(exem_auth1.username, 7) AS exem_auth1_usr, exem_auth1.modified_at AS exem_auth1_modat,",
-        "studsubj.exem_auth2by_id AS exem_auth2_id, SUBSTRING(exem_auth2.username, 7) AS exem_auth2_usr, exem_auth2.modified_at AS exem_auth2_modat,",
+        "studsubj.exem_auth1by_id AS exem_auth1_id, exem_auth1.last_name AS exem_auth1_usr,",
+        "studsubj.exem_auth2by_id AS exem_auth2_id, exem_auth2.last_name AS exem_auth2_usr,",
         "studsubj.exem_published_id AS exem_publ_id, exem_published.modifiedat AS exem_publ_modat,",
 
-        "studsubj.reex_auth1by_id AS reex_auth1_id, SUBSTRING(reex_auth1.username, 7) AS reex_auth1_usr, reex_auth1.modified_at AS reex_auth1_modat,",
-        "studsubj.reex_auth2by_id AS reex_auth2_id, SUBSTRING(reex_auth2.username, 7) AS reex_auth2_usr, reex_auth2.modified_at AS reex_auth2_modat,",
+        "studsubj.reex_auth1by_id AS reex_auth1_id, reex_auth1.last_name AS reex_auth1_usr,",
+        "studsubj.reex_auth2by_id AS reex_auth2_id, reex_auth2.last_name AS reex_auth2_usr,",
         "studsubj.reex_published_id AS reex_publ_id, reex_published.modifiedat AS reex_publ_modat,",
 
-        "studsubj.reex3_auth1by_id AS reex3_auth1_id, SUBSTRING(reex3_auth1.username, 7) AS reex3_auth1_usr, reex3_auth1.modified_at AS reex3_auth1_modat,",
-        "studsubj.reex3_auth2by_id AS reex3_auth2_id, SUBSTRING(reex3_auth2.username, 7) AS reex3_auth2_usr, reex3_auth2.modified_at AS reex3_auth2_modat,",
+        "studsubj.reex3_auth1by_id AS reex3_auth1_id, reex3_auth1.last_name AS reex3_auth1_usr,",
+        "studsubj.reex3_auth2by_id AS reex3_auth2_id, reex3_auth2.last_name AS reex3_auth2_usr,",
         "studsubj.reex3_published_id AS reex3_publ_id, reex3_published.modifiedat AS reex3_publ_modat,",
 
-        "studsubj.pok_auth1by_id AS pok_auth1_id, SUBSTRING(pok_auth1.username, 7) AS pok_auth1_usr, pok_auth1.modified_at AS pok_auth1_modat,",
-        "studsubj.pok_auth2by_id AS pok_auth2_id, SUBSTRING(pok_auth2.username, 7) AS pok_auth2_usr, pok_auth2.modified_at AS pok_auth2_modat,",
+        "studsubj.pok_auth1by_id AS pok_auth1_id, pok_auth1.last_name AS pok_auth1_usr,",
+        "studsubj.pok_auth2by_id AS pok_auth2_id, pok_auth2.last_name AS pok_auth2_usr,",
         "studsubj.pok_published_id AS pok_publ_id, pok_published.modifiedat AS pok_publ_modat,",
 
-        "studsubj.deleted, studsubj.modifiedby_id, studsubj.modifiedat,",
+        "studsubj.tobedeleted, studsubj.modifiedby_id, studsubj.modifiedat,",
         "SUBSTRING(au.username, 7) AS modby_username",
 
         "FROM students_studentsubject AS studsubj",
@@ -1957,14 +2818,14 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
         "LEFT JOIN accounts_user AS pok_auth2 ON (pok_auth2.id = studsubj.pok_auth2by_id)",
         "LEFT JOIN schools_published AS pok_published ON (pok_published.id = studsubj.pok_published_id)",
 
-        "WHERE NOT studsubj.deleted"]
+        "WHERE NOT studsubj.tobedeleted"]
     sql_studsubjects = ' '.join(sql_studsubj_list)
 
     sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
 
-    sql_list = ["SELECT studsubj.studsubj_id, studsubj.schemeitem_id, studsubj.cluster_id,",
+    sql_list = ["SELECT st.id AS stud_id, studsubj.studsubj_id, studsubj.schemeitem_id, studsubj.cluster_id,",
         "CONCAT('studsubj_', st.id::TEXT, '_', studsubj.studsubj_id::TEXT) AS mapid, 'studsubj' AS table,",
-        "st.id AS stud_id, st.lastname, st.firstname, st.prefix, st.examnumber,",
+        "st.lastname, st.firstname, st.prefix, st.examnumber,",
         "st.scheme_id, st.iseveningstudent, st.locked, st.has_reex, st.bis_exam, st.withdrawn,",
         "studsubj.subject_id AS subj_id, studsubj.subj_code, studsubj.subj_name,",
         "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
@@ -1976,27 +2837,27 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
         "studsubj.is_mandatory, studsubj.is_combi, studsubj.extra_count_allowed, studsubj.extra_nocount_allowed, studsubj.elective_combi_allowed,",
         "studsubj.sjtp_id, studsubj.sjtp_abbrev, studsubj.sjtp_has_prac, studsubj.sjtp_has_pws,",
 
-        "studsubj.subj_auth1_id, studsubj.subj_auth1_usr, studsubj.subj_auth1_modat,",
-        "studsubj.subj_auth2_id, studsubj.subj_auth2_usr, studsubj.subj_auth2_modat,",
+        "studsubj.subj_auth1_id, studsubj.subj_auth1_usr,",
+        "studsubj.subj_auth2_id, studsubj.subj_auth2_usr,",
         "studsubj.subj_publ_id, studsubj.subj_publ_modat,",
 
-        "studsubj.exem_auth1_id, studsubj.exem_auth1_usr, studsubj.exem_auth1_modat,",
-        "studsubj.exem_auth2_id, studsubj.exem_auth2_usr, studsubj.exem_auth2_modat,",
+        "studsubj.exem_auth1_id, studsubj.exem_auth1_usr,",
+        "studsubj.exem_auth2_id, studsubj.exem_auth2_usr,",
         "studsubj.exem_publ_id, studsubj.exem_publ_modat,",
 
-        "studsubj.reex_auth1_id, studsubj.reex_auth1_usr, studsubj.reex_auth1_modat,",
-        "studsubj.reex_auth2_id, studsubj.reex_auth2_usr, studsubj.reex_auth2_modat,",
+        "studsubj.reex_auth1_id, studsubj.reex_auth1_usr,",
+        "studsubj.reex_auth2_id, studsubj.reex_auth2_usr,",
         "studsubj.reex_publ_id, studsubj.reex_publ_modat,",
 
-        "studsubj.reex3_auth1_id, studsubj.reex3_auth1_usr, studsubj.reex3_auth1_modat,",
-        "studsubj.reex3_auth2_id, studsubj.reex3_auth2_usr, studsubj.reex3_auth2_modat,",
+        "studsubj.reex3_auth1_id, studsubj.reex3_auth1_usr,",
+        "studsubj.reex3_auth2_id, studsubj.reex3_auth2_usr,",
         "studsubj.reex3_publ_id, studsubj.reex3_publ_modat,",
 
-        "studsubj.pok_auth1_id, studsubj.pok_auth1_usr, studsubj.pok_auth1_modat,",
-        "studsubj.pok_auth2_id, studsubj.pok_auth2_usr, studsubj.pok_auth2_modat,",
+        "studsubj.pok_auth1_id, studsubj.pok_auth1_usr,",
+        "studsubj.pok_auth2_id, studsubj.pok_auth2_usr,",
         "studsubj.pok_publ_id, studsubj.pok_publ_modat,",
 
-        "studsubj.deleted, studsubj.modifiedat, studsubj.modby_username",
+        "studsubj.tobedeleted, studsubj.modifiedat, studsubj.modby_username",
         "FROM students_student AS st",
         "LEFT JOIN (" + sql_studsubjects + ") AS studsubj ON (studsubj.student_id = st.id)",
         "INNER JOIN schools_school AS school ON (school.id = st.school_id)",
@@ -2010,22 +2871,27 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
     if studsubj_pk:
         sql_list.append('AND studsubj.studsubj_id = %(studsubj_id)s::INT')
         sql_keys['studsubj_id'] = studsubj_pk
-    elif student_pk:
+    if student_pk:
         sql_keys['st_id'] = student_pk
         sql_list.append('AND st.id = %(st_id)s::INT')
-        sql_list.append('ORDER BY studsubj.subj_code')
-    else:
-        sql_list.append('ORDER BY LOWER(st.lastname), LOWER(st.firstname), studsubj.subj_code')
+    # studsubj_id can be None, sort them first so it can be given the value of 0 in b_recursive_integer_lookup
+    # field with nulls must be ordered last
+    sql_list.append('ORDER BY studsubj.studsubj_id NULLS FIRST, st.id')
     sql = ' '.join(sql_list)
 
-    #logger.debug('sql: ' + str(sql))
-    newcursor = connection.cursor()
-    newcursor.execute(sql, sql_keys)
-    student_rows = af.dictfetchall(newcursor)
+    #logger.debug('sql_keys: ' + str(sql_keys) + ' ' + str(type(sql_keys)))
+    #logger.debug('sql: ' + str(sql) + ' ' + str(type(sql)))
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        rows = af.dictfetchall(cursor)
+
+    #logger.debug('rows: ' + str(rows) + ' ' + str(type(rows)))
+
+    #logger.debug('connection.queries: ' + str(connection.queries))
 
 # - full name to rows
-    if student_rows:
-        for row in student_rows:
+    if rows:
+        for row in rows:
             first_name = row.get('firstname')
             last_name = row.get('lastname')
             prefix = row.get('prefix')
@@ -2035,12 +2901,12 @@ def create_studentsubject_rows(setting_dict, append_dict, student_pk=None, studs
 # - add messages to student_row, only when only 1 row added (then studsubj_pk has value)
         if studsubj_pk:
             # when student_pk has value there is only 1 row
-            row = student_rows[0]
+            row = rows[0]
             if row:
                 for key, value in append_dict.items():
                     row[key] = value
 
-    return student_rows
+    return rows
 # --- end of create_studentsubject_rows
 
 
@@ -2210,7 +3076,7 @@ def create_orderlist_rows(sel_examyear_pk):
                 "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
                 "INNER JOIN schools_schoolbase AS schbase ON (schbase.id = sch.base_id)",
 
-                "WHERE NOT studsubj.deleted",
+                "WHERE NOT studsubj.tobedeleted",
                 # "AND studsubj.subj_published_id IS NOT NULL"
 
                 ]
@@ -2248,6 +3114,37 @@ def create_orderlist_rows(sel_examyear_pk):
 
 # oooooooooooooo Functions  Student name ooooooooooooooooooooooooooooooooooooooooooooooooooo
 
+def get_full_name(last_name, first_name, prefix):  # PR2021-07-26
+    last_name = last_name.strip() + ','   if last_name else ''
+    first_name = first_name.strip() if first_name else ''
+    prefix = prefix.strip() if prefix else ''
+    return ' '.join((prefix, last_name, first_name))
+
+def get_firstname_initials(first_name):  # PR2021-07-26
+    firstname_initials = ''
+    first_name = first_name.strip() if first_name else ''
+    if first_name:
+        # strings '', ' ' and '   ' give empty list [] which is False
+        firstnames_arr = first_name.split()
+        if firstnames_arr:
+            skip = False
+            for item in firstnames_arr:
+                if not skip:
+                    firstname_initials += item + ' '  # write first firstname in full
+                    skip = True
+                else:
+                    if item:
+                        #PR2017-02-18 VB debug. bij dubbele spatie in voornaam krijg je lege err(x)
+                        firstname_initials += item[:1] # write of the next firstnames only the first letter
+    return firstname_initials
+
+
+def get_lastname_firstname_initials(last_name, first_name, prefix): # PR2021-07-26
+    firstname_initials = get_firstname_initials(first_name)
+    return get_full_name(last_name, firstname_initials, prefix)
+
+
+# TODO deprecate
 def lastname_firstname_initials(last_name, first_name, prefix):
     full_name = last_name.strip()
     firstnames = ''

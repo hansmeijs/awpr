@@ -380,7 +380,7 @@ def get_modifiedby_formatted(instance, user_lang):
         if instance.modifiedat:
             # local timezone is set to 'America/Curacao' by default
             datetime_local = get_datetimelocal_from_datetime_utc(instance.modifiedat)
-            last_modified_date =  datetime_local.date()
+            last_modified_date = datetime_local.date()
             date_formatted = format_DMY_from_dte(last_modified_date, user_lang)
 
             time_formatted = format_HM_from_dt_local(datetime_local, True, True, '24h', user_lang)

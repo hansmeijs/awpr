@@ -33,7 +33,11 @@
     let level_map = new Map();
     let sector_map = new Map();
 
-    let student_rows = [];
+    // PR2021-07-18 moved to import.js:
+    //let student_rows = [];
+    //let subject_rows = [];
+    //let studentsubject_rows = [];
+    //let schemeitem_rows = [];
 
     // MIME xls: application/vnd.ms-excel
     // MIME xlsx: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet

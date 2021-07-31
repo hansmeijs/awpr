@@ -254,7 +254,7 @@ def create_school_rows(examyear, permit_dict, school_pk=None):
         sql_list.append("AND sb.id = %(sb_id)s::INT")
 
     # order by id necessary to make sure that lookup function on client gets the right row
-    sql_list.append("ORDER BY sch.id::TEXT")
+    sql_list.append("ORDER BY sch.id")
     sql = ' '.join(sql_list)
     if logging_on:
         logger.debug('sql_keys' + str(sql_keys))

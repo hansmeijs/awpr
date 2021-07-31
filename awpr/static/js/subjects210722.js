@@ -1087,6 +1087,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ("field" in msg_dict){field_error_list.push(msg_dict.field)};
                 };
 
+        console.log("field_error_list", field_error_list);
             //} else {
             // close modal MSJ when no error --- already done in modal
                 //$("#id_mod_subject").modal("hide");
@@ -1128,7 +1129,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 (tblName === "subjecttypebase") ? subjecttypebase_rows : [];
                 const [index, found_dict, compare] = b_recursive_integer_lookup(map_rows, "id", setting_dict.user_lang);
                 const map_dict = (!isEmpty(found_dict)) ? found_dict : null;
-                const row_index = index;
+                const datarow_index = index;
 
 // ++++ deleted ++++
                 if(is_deleted){

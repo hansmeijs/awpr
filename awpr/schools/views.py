@@ -110,17 +110,24 @@ class ManualListView(View):
         logger.debug(" =====  ManualListView  =====")
         logger.debug("page: " + str(page))
         logger.debug("paragraph: " + str(paragraph))
+        logger.debug("request: " + str(request))
+        logger.debug("request.user: " + str(request.user))
+        logger.debug("request.user.is_anonymous: " + str(request.user.is_anonymous))
+        logger.debug("request.user.is_authenticated: " + str(request.user.is_authenticated))
 
         # 'AnonymousUser' object has no attribute 'lang'
         # -  get user_lang
-        # user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-        # activate(user_lang)
+        user_lang = c.LANG_DEFAULT
+        if request.user.is_authenticated:
+            if request.user.lang:
+                user_lang = request.user.lang
+        activate(user_lang)
 
         # - get headerbar parameters
        # page = 'page_manual'
         #param = {'list': list}
         #headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
-        param = { 'page': page, 'paragraph': paragraph}
+        param = {'page': page, 'paragraph': paragraph, 'lang': user_lang}
 
         logger.debug("param: " + str(param))
 

@@ -6,64 +6,76 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
-    const data_page = get_attr_from_el(el_data, "data-page");
+    const href_page = get_attr_from_el(el_data, "data-page");
     const data_paragraph = get_attr_from_el(el_data, "data-paragraph");
+    const data_lang = get_attr_from_el(el_data, "data-lang");
 
-    console.log ('data_page', data_page)
+    console.log ('href_page', href_page)
     console.log ('data_paragraph', data_paragraph)
+    console.log ('data_lang', data_lang)
 
     let html_upload_list = [];
 
 // - Loop through all dropdown buttons to toggle between hiding and showing its dropdown content - This allows the user to have multiple dropdowns without any conflict */
-    const dropdown = document.getElementsByClassName("dropdown-btn");
+    const el_sidenav = document.getElementById("id_sidenav");
+    const dropdown_els = el_sidenav.getElementsByClassName("dropdown-btn");
 
-    for (let i = 0, el; el = dropdown[i]; i++) {
-        const page = get_attr_from_el(el, "data-page");
-        if (page === data_page) {el.classList.add("active")};
-        el.addEventListener("click", function() {HandleDropdownClicked(el);});
+    for (let i = 0, el; el = dropdown_els[i]; i++) {
+        const btn_page = (el.id) ? el.id.slice(7) : null; // "id_btn_intro"
+        console.log (".... btn_page", btn_page)
+
+        if (btn_page === href_page) {
+            SelectBtn(el);
+        };
+
+        el.addEventListener("click", function() {HandleDropdownClicked(el)});
+
     }
 
-/*
-    for (let i = 0; i < dropdown.length; i++) {
-      dropdown[i].addEventListener("click", function() {
-        this.classList.toggle("active");
-        var dropdownContent = this.nextElementSibling;
-        if (dropdownContent.style.display === "block") {
-          dropdownContent.style.display = "none";
-        } else {
-          dropdownContent.style.display = "block";
-        }
-      });
-    }
-*/
+    LoadPage(href_page);
 
-    let html_str = "", html_list = [];
-    switch (data_page){
-    case "home":
-        html_list = man_home_list;
-        break;
-    case "upload":
-        html_list = man_upload_list;
-        break;
-    case "sct":
-        html_str = "<h1> CONTENT TEST </h1>"
-        break;
-    };
-    html_str = html_list.join('');
-
-    console.log ('html_list', html_list)
-
-
-    document.getElementById("id_content").innerHTML = html_str;
-
+//========= HandleDropdownClicked  ============= PR2021-07-30
     function HandleDropdownClicked(el){
-        el.classList.toggle("active");
-        const dropdownContent = el.nextElementSibling;
-        if (dropdownContent.style.display === "block") {
-          dropdownContent.style.display = "none";
-        } else {
-          dropdownContent.style.display = "block";
-        }
-      };
+        console.log( "===== HandleDropdownClicked  ========= ");
+        DeselectAll();
+        SelectBtn(el);
 
+        const el_id = el.id  // "id_btn_intro"
+        const btn_page = (el_id) ? el_id.slice(7) : null;
+        console.log (".... btn_page", btn_page)
+        LoadPage(btn_page);
+      };  // HandleDropdownClicked
+
+
+//========= LoadPage  ============= PR2021-07-30
+    function LoadPage(page){
+        console.log( "===== LoadPage  ========= ");
+        console.log( "page", page);
+
+        let html_list = (page === "home") ? man_home :
+                        (page === "upload") ? man_upload :
+                        (page === "approve") ? man_approve : null;
+
+        const html_str = (html_list && html_list.length) ? html_list.join('') : "<h4 class='p-5'> Deze pagina is nog niet beschikbaar.</h4>";
+
+        document.getElementById("id_content").innerHTML = html_str;
+    };  // LoadPage
+
+//========= SelectBtn  ============= PR2021-07-30
+    function SelectBtn(el){
+        console.log( "===== SelectBtn  ========= ");
+        el.classList.add("active");
+        const el_dropdown = document.getElementById(el.id + "_dropdown")
+        if(el_dropdown) {el_dropdown.style.display = "block"};
+    } // DeselectAll
+
+//========= DeselectAll  ============= PR2021-07-30
+    function DeselectAll(){
+        console.log( "===== DeselectAll  ========= ");
+        for (let i = 0, el; el = dropdown_els[i]; i++) {
+            el.classList.remove("active");
+            const el_dropdown = document.getElementById(el.id + "_dropdown")
+            if(el_dropdown) {el_dropdown.style.display = "none"};
+        }
+    } // DeselectAll
 })  // document.addEventListener('DOMContentLoaded', function()

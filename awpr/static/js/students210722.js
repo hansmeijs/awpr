@@ -1,4 +1,10 @@
 // PR2020-09-29 added
+
+// PR2021-07-23  declare variables outside function to make them global variables
+let student_rows = [];
+let school_rows = [];
+let loc = {};
+
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
@@ -15,7 +21,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let selected_btn = "btn_student";
     let setting_dict = {};
     let permit_dict = {};
-    let loc = {};  // locale_dict
 
     let selected = {student_pk: null,
                     student_dict: {}};
@@ -35,8 +40,11 @@ document.addEventListener('DOMContentLoaded', function() {
     //let department_map = new Map();
     //let level_map = new Map();
     //let sector_map = new Map();
-    // PR2021-07-18 moved to imprt.js:
-    //  let student_rows = [];
+
+    // PR2021-07-23 moved outside this function:
+    // let student_rows = [];
+    // let loc = {};
+
     let subject_map = new Map();
     let studentsubject_map = new Map()
     let scheme_map = new Map()
@@ -57,11 +65,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     const field_settings = {
-        student: {  field_caption: ["", "ID_number", "Last_name", "First_name", "Gender", "Leerweg", "Sector", "Examnumber_twolines", "Class", "Bis_candidate"],
-                    field_names: ["select", "idnumber", "lastname", "firstname", "gender", "lvlbase_id", "sctbase_id", "examnumber", "classname", "bis_exam"],
-                    filter_tags: ["select", "text", "text",  "text", "text", "text", "text", "text", "text", "toggle"],
-                    field_width:  ["020", "120", "220", "240", "090", "090",  "090", "090", "090", "090"],
-                    field_align: ["c", "l", "l", "l", "c", "l", "l", "l", "l", "c"]},
+        student: {  field_caption: ["", "ID_number", "Last_name", "First_name", "Prefix_twolines", "Gender", "Leerweg", "Sector", "Class", "Examnumber_twolines", "Regnumber_twolines", "Bis_candidate"],
+                    field_names: ["select", "idnumber", "lastname", "firstname", "prefix", "gender", "lvlbase_id", "sctbase_id", "classname", "examnumber", "regnumber", "bis_exam"],
+                    filter_tags: ["select", "text", "text",  "text", "text", "text", "text","text", "text", "text", "text", "toggle"],
+                    field_width:  ["020", "120", "220", "240", "090", "090", "090", "090", "090", "090", "120","090"],
+                    field_align: ["c", "l", "l", "l", "l", "c", "l", "l", "l", "l", "l","c"]},
         studsubj: { field_caption: ["", "Examnumber_twolines", "Candidate", "Abbreviation", "Subject", "Character"],
                     field_names: ["select", "examnumber", "fullname", "subj_code", "subj_name", "sjtp_abbrev"],
                     filter_tags: ["select", "text", "text", "text", "text", "text", "text", "text", "text", "text"],
@@ -101,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+                function() {t_MSSSS_Open(loc, "school", school_rows, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         }
 
 // ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
@@ -251,11 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 department_rows: {get: true},
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
-                student_rows: {get: true},
-                subject_rows: {get: true},
-                studentsubject_rows: {get: true},
-                scheme_rows: {cur_dep_only: true},
-                schemeitem_rows: {get: true}
+                student_rows: {cur_dep_only: true}
             };
 
         DatalistDownload(datalist_request, "DOMContentLoaded");
@@ -270,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
 
-// ---  show loader
+// ---  show loader  // don't use cls_hide, use cls_visible_hide
         el_loader.classList.remove(cls_visible_hide)
 
         let param = {"download": JSON.stringify (datalist_request)};
@@ -315,7 +319,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(isloaded_settings || isloaded_permits){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school)};
 
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows)};
-                if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows)};
+                if ("school_rows" in response)  {
+                    school_rows =  response.school_rows;
+                    b_fill_datamap(school_map, response.school_rows)};
                 if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows)};
 
                 if ("level_rows" in response)  {
@@ -400,13 +406,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // HandleTableRowClicked
 
-// TODO repace by b_get_mapdict_from_datarows
-//========= get_selected_student_dict_from_mapid  ================== PR2021-06-16
-    function get_selected_student_dict_from_mapid(map_id){
-        const [middle_index, found_dict, compare] = b_recursive_lookup(student_rows, map_id, setting_dict.user_lang);
-        const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
-        return selected_dict;
-    }
 
 //========= UpdateHeaderText  ================== PR2020-07-31
     function UpdateHeaderText(){
@@ -492,7 +491,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- add width, text_align, right padding in examnumber
                     th_header.classList.add(class_width, class_align);
                     el_header.classList.add(class_width, class_align);
-                    if(field_name === "examnumber"){el_header.classList.add("pr-2")};
+                    // if(field_name === "examnumber"){el_header.classList.add("pr-2")};
 
                     th_header.appendChild(el_header)
                 tblRow_header.appendChild(th_header);
@@ -604,7 +603,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 td.appendChild(el);
 
     // --- add EventListener to td
-                if (["examnumber", "lastname", "firstname", "gender", "idnumber", "db_code", "lvlbase_id", "sctbase_id", "classname",
+                if (["examnumber", "regnumber", "lastname", "firstname", "prefix", "gender", "idnumber", "db_code", "lvlbase_id", "sctbase_id", "classname",
                             "fullname", "subj_code", "subj_name", "sjtp_abbrev", "bis_exam"].includes(field_name)){
                     td.addEventListener("click", function() {MSTUD_Open(el)}, false)
                     td.classList.add("pointer_show");
@@ -656,7 +655,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_div.innerText = (abbrev) ? abbrev : "\n";
                     filter_value = (abbrev) ? abbrev.toLowerCase() : null;
 
-                } else if (["examnumber", "lastname", "firstname", "prefix", "gender", "idnumber", "db_code", "classname",
+                } else if (["examnumber", "regnumber", "lastname", "firstname", "prefix", "gender", "idnumber", "db_code", "classname",
                             "fullname", "subj_code", "subj_name", "sjtp_abbrev"].includes(field_name)){
                     // put hard return in el_div, otherwise green border doesnt show in update PR2021-06-16
                     el_div.innerText = (fld_value) ? fld_value : "\n";
@@ -756,7 +755,8 @@ function RefreshDataRowsAfterUpload(response) {
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-16
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
         console.log(" --- RefreshDatarowItem  ---");
-        console.log("update_dict", update_dict);
+        //console.log("tblName", tblName);
+        //console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -765,19 +765,16 @@ function RefreshDataRowsAfterUpload(response) {
             const is_deleted = (!!update_dict.deleted);
             const is_created = (!!update_dict.created);
 
-        console.log("map_id", map_id);
-            let updated_columns = [];
             let field_error_list = []
-
             const error_list = get_dict_value(update_dict, ["error"], []);
-        console.log("error_list", error_list);
+        //console.log("error_list", error_list);
 
             if(error_list && error_list.length){
 
     // - show modal messages
                 b_ShowModMessages(error_list);
 
-    // - add fields with error in updated_columns, to put old value back in field
+    // - add fields with error in field_error_list, to put old value back in field
                 for (let i = 0, msg_dict ; msg_dict = error_list[i]; i++) {
                     if ("field" in msg_dict){field_error_list.push(msg_dict.field)};
                 };
@@ -818,22 +815,22 @@ function RefreshDataRowsAfterUpload(response) {
                 }
             } else {
 
-// --- get existing map_dict from data_rows
+// --- get existing data_dict from data_rows
                 const pk_int = (update_dict && update_dict.id) ? update_dict.id : null;
-                const [index, found_dict, compare] = b_recursive_integer_lookup(student_rows, "id", pk_int);
-                const map_dict = (!isEmpty(found_dict)) ? found_dict : null;
-                const row_index = index;
+                const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
+                const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
+                const datarow_index = index;
+        //console.log("pk_int", pk_int);
+        //console.log("data_dict", data_dict);
 
-        console.log("pk_int", pk_int);
-        console.log("map_dict", map_dict);
 // ++++ deleted ++++
                 if(is_deleted){
                     // delete row from data_rows. Splice returns array of deleted rows
-                    const deleted_row_arr = data_rows.splice(row_index, 1)
+                    const deleted_row_arr = data_rows.splice(datarow_index, 1)
                     const deleted_row_dict = deleted_row_arr[0];
-
         console.log("deleted_row_dict", deleted_row_dict);
         console.log("deleted_row_dict.mapid", deleted_row_dict.mapid);
+
         //--- delete tblRow
                     if(deleted_row_dict && deleted_row_dict.mapid){
                         const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
@@ -844,14 +841,14 @@ function RefreshDataRowsAfterUpload(response) {
 
 // +++++++++++ updated row +++++++++++
     // ---  check which fields are updated, add to list 'updated_columns'
-                    if(!isEmpty(map_dict) && field_names){
+                    if(!isEmpty(data_dict) && field_names){
 
-        //console.log("map_dict", map_dict);
+        //console.log("data_dict", data_dict);
                         let updated_columns = [];
                         // skip first column (is margin)
                         for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
-                            if (col_field in map_dict && col_field in update_dict){
-                                if (map_dict[col_field] !== update_dict[col_field] ) {
+                            if (col_field in data_dict && col_field in update_dict){
+                                if (data_dict[col_field] !== update_dict[col_field] ) {
         // ---  add field to updated_columns list
                                     updated_columns.push(col_field)
                                 }}
@@ -859,12 +856,12 @@ function RefreshDataRowsAfterUpload(response) {
         //console.log("updated_columns", updated_columns);
 // ---  update fields in data_row
                         for (const [key, new_value] of Object.entries(update_dict)) {
-                            if (key in map_dict){
-                                if (new_value !== map_dict[key]) {
-                                    map_dict[key] = new_value
+                            if (key in data_dict){
+                                if (new_value !== data_dict[key]) {
+                                    data_dict[key] = new_value
                         }}};
 
-        //console.log("map_dict", map_dict);
+        //console.log("data_dict", data_dict);
 
         // ---  update field in tblRow
                         // note: when updated_columns is empty, then updated_columns is still true.
@@ -902,7 +899,7 @@ function RefreshDataRowsAfterUpload(response) {
                         }; //  if(updated_columns.length){
 
 
-                    };  //  if(!isEmpty(map_dict) && field_names){
+                    };  //  if(!isEmpty(data_dict) && field_names){
                 };  // if(is_deleted){
             };  // if(is_created)
 
@@ -1292,26 +1289,21 @@ function RefreshDataRowsAfterUpload(response) {
 // +++++++++ END MOD STUDENT +++++++++++++++++++++++++++++++++++++++++
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-15
-    function ModConfirmOpen(mode, el_input) {
+//=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-15 PR2021-07-23
+    function ModConfirmOpen(mode) {
         //console.log(" -----  ModConfirmOpen   ----")
-        // values of mode are : "delete", "inactive" or "resend_activation_email", "permission_sysadm"
-
-        //console.log("mode", mode)
-        //console.log("el_input", el_input)
+        // only called by menubtn Delete_candidate and mod MSTUD btn delete
+        // values of mode is : "delete"
 
         if(permit_dict.permit_crud){
             const tblName = "student";
 
 // ---  get selected.student_dict
-            // tblRow is undefined when clicked on delete btn in submenu btn or form (no inactive btn)
-            // in that case use the existing selected.student_dict
-            const tblRow = get_tablerow_selected(el_input);
-            if(tblRow){selected.student_dict = get_selected_student_dict_from_mapid(tr_clicked.id)};
+            // already done in HandleTableRowClicked
 
 // ---  get info from data_map
             const map_dict = selected.student_dict;
-    //console.log("map_dict", map_dict)
+        //console.log("map_dict", map_dict)
 
 // ---  create mod_dict
             mod_dict = {mode: mode};
@@ -1323,7 +1315,6 @@ function RefreshDataRowsAfterUpload(response) {
             };
 
 // ---  put text in modal form
-            let dont_show_modal = false;
             const header_text = loc.Delete_candidate;
 
             let msg_01_txt = null, msg_02_txt = null, msg_03_txt = null;
@@ -1338,29 +1329,29 @@ function RefreshDataRowsAfterUpload(response) {
                     msg_02_txt = loc.Do_you_want_to_continue;
                 }
             }
-            if(!dont_show_modal){
-                el_confirm_header.innerText = header_text;
-                el_confirm_loader.classList.add(cls_visible_hide)
-                el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
-                el_confirm_msg01.innerText = msg_01_txt;
-                el_confirm_msg02.innerText = msg_02_txt;
-                el_confirm_msg03.innerText = msg_03_txt;
 
-                const caption_save = (mode === "delete") ? loc.Yes_delete : loc.OK;
-                el_confirm_btn_save.innerText = caption_save;
-                add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
+            el_confirm_header.innerText = header_text;
+            el_confirm_loader.classList.add(cls_visible_hide)
+            el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
+            el_confirm_msg01.innerText = msg_01_txt;
+            el_confirm_msg02.innerText = msg_02_txt;
+            el_confirm_msg03.innerText = msg_03_txt;
 
-                //add_or_remove_class (el_confirm_btn_save, "btn-primary", (mode !== "delete"));
-                add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete"), "btn-primary");
+            const caption_save = (mode === "delete") ? loc.Yes_delete : loc.OK;
+            el_confirm_btn_save.innerText = caption_save;
+            add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
 
-                el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
+            //add_or_remove_class (el_confirm_btn_save, "btn-primary", (mode !== "delete"));
+            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete"), "btn-primary");
 
-        // set focus to cancel button
-                set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
+            el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
 
-    // show modal
-                $("#id_mod_confirm").modal({backdrop: true});
-            }
+    // set focus to cancel button
+            set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
+
+// show modal
+            $("#id_mod_confirm").modal({backdrop: true});
+
         }
     };  // ModConfirmOpen
 
@@ -1702,8 +1693,8 @@ function RefreshDataRowsAfterUpload(response) {
 
 
 //###########################################################################
-//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05
-    function MSSSS_Response(tblName, selected_pk, selected_code, selected_name) {
+//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
+    function MSSSS_Response(tblName, selected_dict, selected_pk) {
         //console.log( "===== MSSSS_Response ========= ");
         //console.log( "selected_pk", selected_pk);
         //console.log( "selected_code", selected_code);
@@ -1839,4 +1830,32 @@ function RefreshDataRowsAfterUpload(response) {
         }
     }
 
+
+//========= get_regnr_info  ======== // PR2021-07-23
+    function get_regnr_info(scheme_pk, subject_pk) {
+        //console.log( " =====  get_regnr_info  ===== ");
+/*
+        'PR2015-06-13 Regnr hoeft hier niet opnieuw berekend te worden. Laat toch maar staan, maar dan wel opslaan (gebeurt in Property Let Kand_Registratienr
+        strNewRegistratienr = pblKand.Kand_Registratienr_Generate(Nz(Me.pge00_txtGeslacht.Value, ""), Nz(Me.pge00_txtExamenNr.Value, ""), Nz(Me.pge00_txtStudierichtingID.Value, 0)) 'PR2014-11-09
+        pblKand.Kand_RegistratieNr = strNewRegistratienr
+        Me.pge00_txtRegistratieNr.Value = strNewRegistratienr
+
+        strMsgText = "In examenjaar " & CStr(pblAfd.CurSchoolExamenjaar) & " bestaat het registratienummer van een kandidaat" & vbCrLf
+        Select Case pblAfd.CurSchoolExamenjaar
+        Case Is >= 2015
+            strMsgText = strMsgText & "uit 13 tekens en is als volgt opgebouwd:" & vbCrLf & vbCrLf
+            If Not strNewRegistratienr = vbNullString Then
+                strMsgText = strMsgText & "            " & Left(strNewRegistratienr, 5) & " - " & _
+                                 Mid(strNewRegistratienr, 6, 1) & " - " & _
+                                 Mid(strNewRegistratienr, 7, 2) & " - " & _
+                                 Mid(strNewRegistratienr, 9, 4) & " - " & _
+                                 Mid(strNewRegistratienr, 13, 1) & vbCrLf & vbCrLf
+            End If
+            strMsgText = strMsgText & "1 tm 5:     Schoolregistratienr:   " & pblAfd.CurSchoolRegnr & vbCrLf & _
+                                     "6:             Geslacht:                    M=1, V = 2" & vbCrLf & _
+                                     "7 tm 8:     Examenjaar                " & Right(CStr(pblAfd.CurSchoolExamenjaar), 2) & " (schooljaar " & pblAfd.CurSchoolSchooljaar & ")" & vbCrLf & _
+                                     "9 tm 12:   Examennummer        0001 etc. (001b voor bis examen) " & vbCrLf & _
+                                     "13:           Studierichting:          1=Havo, 2=Vwo, 3=Tkl, 4=Pkl, 5 = Pbl."
+*/
+    };  // get_regnr_info
 })  // document.addEventListener('DOMContentLoaded', function()

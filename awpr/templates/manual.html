@@ -5,7 +5,7 @@
     <head>
         <meta charset="utf-8">
         <link rel="icon" href="{% static 'img/favicon.ico' %}" />
-        <title>{% block title %}AWP manual{% endblock %}</title>
+        <title>{% trans 'AWP-online manual' %}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <link rel="stylesheet" href="https://ajax.aspnetcdn.com/ajax/bootstrap/4.3.1/css/bootstrap.min.css">
@@ -30,6 +30,7 @@
 
         <script src="{% static 'js/manual/man_home210711.js' %}"></script>
         <script src="{% static 'js/manual/man_upload210711.js' %}"></script>
+        <script src="{% static 'js/manual/man_approve210730.js' %}"></script>
         <script src="{% static 'js/manual/manual210711.js' %}"></script>
 
     </head>
@@ -43,17 +44,17 @@
                     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsibleNavbar2">
                       <span class="navbar-toggler-icon"></span>
                     </button>
-
-
                     <div id="collapsibleNavbar1" class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
                         <ul class="navbar-nav">
                             <li class="nav-item active">
                                 <a class="nav-link awplogo" href="{% url 'home_url' %}"></a>
                             </li>
-                            <li id="id_hdrbar_examyear" class="nav-item awp_navbar_item mr-0 pr-0">
+                            <li class="nav-item awp_navbar_item mr-0 pr-4">
                                 <h5 class="pt-1">{% trans 'Manual' %}</h5>
                             </li>
-
+                            <li class="nav-item awp_navbar_item mr-0 pr-0">
+                                <h5 id="id_page" class="pt-1 pl-5">{{page}} {{paragraph}} {{lang}} </h5>
+                            </li>
                         </ul>
                     </div>
                     <button type="button" class="closeX" aria-label="Close">
@@ -64,56 +65,28 @@
         </header>
 
 <!-- SIDE BAR -->
- <div class="sidenav">
+ <div id="id_sidenav" class="sidenav">
 
-  <a href="#about">-</a>
-  <a href="#about">{% trans 'Introduction' %}</a>
-  <a href="#services">{% trans 'Users' %}</a>
-  <a href="#clients">{% trans 'New exam year' %}</a>
-  <button class="dropdown-btn" data-page="upload">{% trans 'Upload data' %}
-    <i class="fa fa-caret-down"></i>
-  </button>
-  <div class="dropdown-container">
-    <a href="#">{% trans 'Introduction' %}</a>
-    <a href="#">{% trans 'Upload candidates' %}</a>
-    <a href="#">{% trans 'Upload subjects' %}</a>
-    <a href="#">{% trans 'Upload grades' %}</a>
-  </div>
-
-  <a href="#">{% trans 'Search options' %}</a>
-  <a href="#">{% trans 'Subjects' %}</a>
-  <a href="#">{% trans 'Subject packages' %}</a>
-  <a href="#">{% trans 'Students and subjects' %}</a>
-  <a href="#">{% trans 'Clusters' %}</a>
-  <a href="#">{% trans 'Grades' %}</a>
-  <a href="#">{% trans 'Scores' %}</a>
-
-  <button class="dropdown-btn">{% trans 'Approve and submit' %}
-    <i class="fa fa-caret-down"></i>
-  </button>
-  <div class="dropdown-container">
-    <a href="#">{% trans 'Approve' %}</a>
-    <a href="#">{% trans 'Submit' %}</a>
-    <a href="#">{% trans 'List of submissions' %}</a>
-    <a href="#">{% trans 'Undo' %}</a>
-  </div>
-
-  <a href="#">{% trans 'Re-examinations' %}</a>
-  <a href="#">{% trans 'Calculating grades' %}</a>
-  <a href="#">{% trans 'Results' %}</a>
-  <a href="#">{% trans "Diploma's and Transcripts" %}</a>
-  <button class="dropdown-btn">{% trans 'Ex-forms' %}
-    <i class="fa fa-caret-down"></i>
-  </button>
-  <div class="dropdown-container">
-    <a href="#">Ex1-{% trans 'form' %}</a>
-    <a href="#">Ex2-{% trans 'form' %}</a>
-    <a href="#">Ex2A-{% trans 'form' %}</a>
-    <a href="#">Ex3-{% trans 'form' %}</a>
-    <a href="#">Ex4-% trans 'form' %}</a>
-    <a href="#">Ex5-{% trans 'form' %}</a>
-    <a href="#">Ex6-{% trans 'form' %}</a>
-  </div>
+  <a href="#" class="mb-5 pb-5">--</a>
+  <button id="id_btn_intro" class="dropdown-btn">{% trans 'Introduction' %}<i class="fa fa-caret-down"></i></button>
+        <div id="id_btn_intro_dropdown" class="dropdown-container">
+            <a href="#">{% trans 'Introduction' %}</a>
+        </div>
+  <button id="id_btn_users" class="dropdown-btn">{% trans 'Users' %}<i class="fa fa-caret-down"></i></button>
+        <div id="id_btn_users_dropdown" class="dropdown-container">
+            <a href="#">{% trans 'Introduction' %}</a>
+        </div>
+  <button id="id_btn_upload" class="dropdown-btn">{% trans 'Upload data' %}<i class="fa fa-caret-down"></i></button>
+        <div id="id_btn_upload_dropdown" class="dropdown-container">
+        <a href="#">{% trans 'Introduction' %}</a>
+        </div>
+  <button id="id_btn_approve" class="dropdown-btn">{% trans 'Approve and submit' %}<i class="fa fa-caret-down"></i></button>
+      <div id="id_btn_approve_dropdown" class="dropdown-container">
+        <a href="#">{% trans 'Approve' %}</a>
+        <a href="#">{% trans 'Submit' %}</a>
+        <a href="#">{% trans 'List of submissions' %}</a>
+        <a href="#">{% trans 'Undo' %}</a>
+      </div>
 
 </div>
 <!-- END SIDE BAR -->
@@ -121,7 +94,8 @@
         </div>
         <div id="id_data"
             data-page="{{page}}"
-            data-paragraph="{{paragraph}}">
+            data-paragraph="{{paragraph}}"
+            data-lang="{{lang}}">
         </div>
         {% include 'session_security/all.html' %}
     </body>

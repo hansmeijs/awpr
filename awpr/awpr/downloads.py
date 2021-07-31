@@ -21,7 +21,7 @@ from schools import dicts as school_dicts
 from subjects import models as subj_mod
 from subjects import views as sj_vw
 from students import models as stud_mod
-from students import views as st_vw
+from students import views as stud_view
 from grades import views as gr_vw
 
 import json
@@ -153,18 +153,23 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['exam_rows'] = sj_vw.create_exam_rows(new_setting_dict, {}, cur_dep_only)
 # ----- students
                 if datalist_request.get('student_rows'):
-                    datalists['student_rows'] = st_vw.create_student_rows(new_setting_dict, {}, None)
+                    datalists['student_rows'] = stud_view.create_student_rows(new_setting_dict, {}, None)
 # ----- studentsubjects
                 if datalist_request.get('studentsubject_rows'):
-                    datalists['studentsubject_rows'] = st_vw.create_studentsubject_rows(new_setting_dict, {})
+                    datalists['studentsubject_rows'] = stud_view.create_studentsubject_rows(
+                        examyear=sel_examyear,
+                        schoolbase=sel_schoolbase,
+                        depbase=sel_depbase,
+                        append_dict={}
+                    )
 # ----- studentsubjectnote
                 #request_item = datalist_request.get('studentsubjectnote_rows')
                 #if request_item:
-                #    datalists['studentsubjectnote_rows'] = st_vw.create_studentsubjectnote_rows(request_item, request)
+                #    datalists['studentsubjectnote_rows'] = stud_view.create_studentsubjectnote_rows(request_item, request)
 
 # ----- orderlists
                 if datalist_request.get('orderlist_rows'):
-                    datalists['orderlist_rows'] = st_vw.create_orderlist_rows(sel_examyear)
+                    datalists['orderlist_rows'] = stud_view.create_orderlist_rows(sel_examyear)
 
 # ----- grade_with_exam_rows
                 if datalist_request.get('grade_with_exam_rows'):
@@ -497,7 +502,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
         logger.debug('setting_dict[c.sel_examtype_caption]: ' + str(setting_dict['sel_examtype_caption']))
 
 # ===== SUBJECT, STUDENT, LEVEL,SECTOR ======================= PR2021-01-23 PR2021-03-14
-    for key_str in (c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK, c.KEY_SEL_LEVEL_PK, c.KEY_SEL_SECTOR_PK, c.KEY_SEL_SCHEME_PK):
+    for key_str in (c.KEY_SEL_LVLBASE_PK, c.KEY_SEL_SCTBASE_PK, c.KEY_SEL_SCHEME_PK, c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK):
     # - get saved_pk_str
         saved_pk_str = selected_pk_dict.get(key_str)
     # - check if there is a new pk_str in request_setting
@@ -516,19 +521,29 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
             pk_int = int(saved_pk_str)
             setting_dict[key_str] = int(pk_int)
             if key_str == c.KEY_SEL_SUBJECT_PK:
-                subject = subj_mod.Subject.objects.get_or_none(pk=pk_int)
+                subject = subj_mod.Subject.objects.get_or_none(
+                    pk=pk_int
+                )
                 if subject:
                     setting_dict['sel_subject_code'] = subject.base.code
+                    setting_dict['sel_subject_name'] = subject.name
             elif key_str == c.KEY_SEL_STUDENT_PK:
-                student = stud_mod.Student.objects.get_or_none(pk=pk_int)
+                student = stud_mod.Student.objects.get_or_none(
+                    pk=pk_int
+                )
                 if student:
-                    setting_dict['sel_student_name'] = student.fullname
-            elif key_str == c.KEY_SEL_LEVEL_PK:
-                level = subj_mod.Level.objects.get_or_none(pk=pk_int)
+                    setting_dict['sel_student_name'] = stud_view.get_full_name(student.lastname, student.firstname, student.prefix)
+                    setting_dict['sel_student_name_init'] = stud_view.get_lastname_firstname_initials(student.lastname, student.firstname, student.prefix)
+            elif key_str == c.KEY_SEL_LVLBASE_PK:
+                level = subj_mod.Level.objects.get_or_none(
+                    examyear=sel_examyear_instance,
+                    base_id=pk_int)
                 if level:
                     setting_dict['sel_level_abbrev'] = level.abbrev
-            elif key_str == c.KEY_SEL_SECTOR_PK:
-                sector = subj_mod.Sector.objects.get_or_none(pk=pk_int)
+            elif key_str == c.KEY_SEL_SCTBASE_PK:
+                sector = subj_mod.Sector.objects.get_or_none(
+                    examyear=sel_examyear_instance,
+                    base_id=pk_int)
                 if sector:
                     setting_dict['sel_sector_abbrev'] = sector.abbrev
             elif key_str == c.KEY_SEL_SCHEME_PK:
@@ -604,6 +619,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
 
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 def get_selected_examyear_examperiod_from_usersetting(request):  # PR2021-07-08
     # - get selected examyear.code and examperiod from usersettings
     # used in OrderlistDownloadView
@@ -773,6 +789,7 @@ def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 def create_permit_dict(req_user):
 # - get role from req_user, put them in setting_dict PR2020-12-14  PR2021-01-26 PR2021-04-22
     permit_dict = {'requsr_pk': req_user.pk,

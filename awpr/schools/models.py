@@ -510,7 +510,7 @@ class Published(AwpBaseModel): # PR2020-12-02
     school = ForeignKey(School, related_name='+', on_delete=CASCADE)
     department = ForeignKey(Department, related_name='+', on_delete=CASCADE)
 
-    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
+    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True, null=True)
     examperiod = PositiveSmallIntegerField(db_index=True) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
 
     name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)

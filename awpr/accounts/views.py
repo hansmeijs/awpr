@@ -1305,6 +1305,12 @@ class UserDeleteView(DeleteView):
     success_url = reverse_lazy('user_list_url')
 
 
+def csrf_failure(request, reason=""):
+    ctx = {'message': 'some custom messages'}
+    return render_to_response(your_custom_template, ctx)
+
+
+
 def create_user_list(request, user_pk=None):
     # --- create list of all users of this school, or 1 user with user_pk PR2020-07-31
     #logger.debug(' =============== create_user_list ============= ')
@@ -1353,6 +1359,7 @@ def create_user_list(request, user_pk=None):
                     sql_list.append('AND u.schoolbase_id = %(sb_id)s::INT')
 
                 sql_list.append('ORDER BY LOWER(sb.code), LOWER(u.username)')
+
                 sql = ' '.join(sql_list)
 
                 newcursor = connection.cursor()

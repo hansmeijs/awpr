@@ -1,0 +1,21 @@
+{% load i18n %}
+
+{% autoescape off %}
+{% trans 'Hello ' %}{{ user.last_name }},
+
+{% trans "You are about to submit the Ex1 form of " %}{{ usr_schoolname }}:
+
+  - {% trans 'School' %}:  {{ school.base.code }} {{ school.name }}
+  - {% trans 'Department' %}:  {{ department.name }}
+  - {% trans 'Exam year' %}:  {{ examyear.code }}
+
+{% trans 'The verificationcode is:' %}
+
+{{ verificationcode }}
+
+{% trans "The verification code expires in 30 minutes." %}
+
+
+{% trans 'The AWP-online team' %}
+
+{% endautoescape %}

@@ -1,4 +1,5 @@
 import tempfile
+from django.core.files import File
 
 from django.db import connection
 
@@ -71,7 +72,19 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24
     # +++ get dict of subjects of these studsubj_rows
                     studsubj_rows = create_ex1_rows(sel_examyear, sel_school, sel_department)
                     if studsubj_rows:
-                        response = create_ex1_xlsx(sel_examyear, sel_school, sel_department, settings, subject_row_count, subject_pk_list, subject_code_list, studsubj_rows, user_lang)
+                        save_to_disk = False
+                        published_instance = None
+                        response = create_ex1_xlsx(
+                            published_instance=published_instance,
+                            examyear=sel_examyear,
+                            school=sel_school,
+                            department=sel_department,
+                            settings=settings,
+                            save_to_disk=save_to_disk,
+                            subject_pk_list=subject_pk_list,
+                            subject_code_list=subject_code_list,
+                            studsubj_rows=studsubj_rows,
+                            user_lang=user_lang)
         #except:
         #    raise Http404("Error creating Ex2A file")
 
@@ -82,10 +95,11 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 
-def create_ex1_xlsx(examyear, school, department, settings, subject_col_count,
+#//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+def create_ex1_xlsx(published_instance, examyear, school, department, settings, save_to_disk,
                     subject_pk_list, subject_code_list, studsubj_rows, user_lang):  # PR2021-02-13
     logger.debug(' ----- create_ex1_xlsx -----')
-    logger.debug('settings: ' + str(settings))
+    #logger.debug('settings: ' + str(settings))
 
     # from https://stackoverflow.com/questions/16393242/xlsxwriter-object-save-as-http-response-to-create-download-in-django
     #logger.debug('period_dict: ' + str(period_dict))
@@ -113,6 +127,29 @@ def create_ex1_xlsx(examyear, school, department, settings, subject_col_count,
 
     if settings and studsubj_rows:
 
+        # PR2021-03-17 was:
+        #if s.AWS_LOCATION:
+            #file_dir = ''.join((s.AWS_LOCATION, '/published/'))
+        # this one gave path:awpmedia/awpmedia/media/private/media/private/published
+        #if s.AWS_PRIVATE_MEDIA_LOCATION:
+        #    # AWS_PRIVATE_MEDIA_LOCATION = 'media/private'
+        #    file_dir = ''.join((s.AWS_PRIVATE_MEDIA_LOCATION, '/published/'))
+        #else:
+            # STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'media', 'private', 'published') + '/'
+        #    file_dir = s.STATICFILES_MEDIA_DIR
+
+        # PR2021-07-28 changed to file_dir = 'published/'
+        # this one gives path:awpmedia/awpmedia/media/private/published
+        # published_instance is None when downloading preliminary Ex1 form
+        if published_instance:
+            file_dir = 'published/'
+            file_path = ''.join((file_dir, published_instance.filename))
+            file_name = published_instance.name
+
+            logger.debug('file_dir: ' + str(file_dir))
+            logger.debug('file_name: ' + str(file_name))
+            logger.debug('filepath: ' + str(file_path))
+
 # ---  create file Name and worksheet Name
         today_dte = af.get_today_dateobj()
         today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
@@ -125,13 +162,18 @@ def create_ex1_xlsx(examyear, school, department, settings, subject_col_count,
         #response['Content-Disposition'] = "attachment; filename=" + file_name
 
 # Create an in-memory output file for the new workbook.
-        output = io.BytesIO()
+
+        # from https://docs.python.org/3/library/tempfile.html
+        temp_file = tempfile.TemporaryFile()
+
+        output = temp_file if save_to_disk else io.BytesIO()
         # Even though the final file will be in memory the module uses temp
         # files during assembly for efficiency. To avoid this on servers that
         # don't allow temp files, for example the Google APP Engine, set the
         # 'in_memory' Workbook() constructor option as shown in the docs.
         #  book = xlsxwriter.Workbook(response, {'in_memory': True})
         book = xlsxwriter.Workbook(output)
+        logger.debug('output: ' + str(output))
 
         sheet = book.add_worksheet(worksheet_name)
         sheet.hide_gridlines(2) # 2 = Hide screen and printed gridlines
@@ -285,7 +327,7 @@ def create_ex1_xlsx(examyear, school, department, settings, subject_col_count,
 # ---  table total row
             row_index += 1
             for i, field_name in enumerate(field_names):
-                logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
+                #logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
                 value = ''
                 if isinstance(field_name, int):
                     if field_name in totals:
@@ -320,16 +362,26 @@ def create_ex1_xlsx(examyear, school, department, settings, subject_col_count,
             row_index += 1
         book.close()
 
+        if save_to_disk:
+            excel_file = File(temp_file)
+
+            published_instance.file.save(file_path, excel_file)
+
+            logger.debug('file_path: ' + str(file_path))
+            # file_path: media/private/published/Ex2A CUR13 ATC Vsbo SE-tv1 cav 2021-04-29 10u11.pdf
+            # stored in dir:
+            logger.debug('published_instance.file: ' + str(published_instance.file))
+        else:
     # Rewind the buffer.
-        output.seek(0)
+            output.seek(0)
 
-    # Set up the Http response.
-        response = HttpResponse(
-            output,
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
+        # Set up the Http response.
+            response = HttpResponse(
+                output,
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
 
-        response['Content-Disposition'] = 'attachment; filename=%s' % file_name
+            response['Content-Disposition'] = 'attachment; filename=%s' % file_name
     # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     # response['Content-Disposition'] = "attachment; filename=" + file_name
     return response
@@ -534,7 +586,7 @@ def create_orderlist_mapped_subject_rows(examyear, examperiod_int, is_ete_exam, 
         "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
 
-        "WHERE ey.code = %(ey_int)s::INT AND NOT studsubj.deleted",
+        "WHERE ey.code = %(ey_int)s::INT AND NOT studsubj.tobedeleted",
         ete_clause,
         examperiod_clause,
         otherlang_clause,
@@ -594,7 +646,7 @@ def create_orderlist_rows(examyear, examperiod_int, is_ete_exam, otherlang):
         "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
 
-        "WHERE ey.code = %(ey_int)s::INT AND NOT studsubj.deleted",
+        "WHERE ey.code = %(ey_int)s::INT AND NOT studsubj.tobedeleted",
         ete_clause,
         examperiod_clause,
         otherlang_clause,

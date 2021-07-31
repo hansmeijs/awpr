@@ -138,6 +138,25 @@ class User(AbstractUser):
         return self.username[6:]
 
 
+    @property
+    def usergroup_list(self):
+        # --- create list of  usergroups of this user  PR2021-07-26
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' =============== permit_list ============= ')
+
+        usergroup_list = []
+
+        requsr_role = getattr(self, 'role')
+        requsr_usergroups = getattr(self, 'usergroups')
+
+        if requsr_role and requsr_usergroups:
+            usergroup_list = requsr_usergroups.split(';')
+
+        return usergroup_list
+    # - end of usergroup_list
+
+
     def permit_list(self, page):
         # --- create list of all permits  of this user PR2021-04-22  PR2021-07-03
         logging_on = False  #s.LOGGING_ON

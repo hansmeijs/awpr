@@ -1,9 +1,12 @@
 import re # PR2018-12-31
+
+from awpr import settings as s
+
 import logging
 logger = logging.getLogger(__name__)
 
 
-def calc_regnumber(regnr_school, gender, examyear, examnumber, depbase, levelbase):
+def calc_regnumber(regnr_school, gender, examyear_int, examnumber_str, depbase, levelbase):
     # function calculates regnumber. This format is used in examyear 2015 and later PR2021-07-19
     #    'structuur registratienummer kandidaat: '12345 6 78910 111213 14 bv: cur02112130021 = cur02-1-1213-002-1
     #    '12345:     SchoolID: CUR01 etc, BON01,
@@ -12,7 +15,17 @@ def calc_regnumber(regnr_school, gender, examyear, examnumber, depbase, levelbas
     #    '11,12,13:   volgnr leerling
     #    '14:        1=Havo, 2=Vwo, 3=Tkl, 4=Pkl, 5 = pbl
 
-# - eerste 5 tekens zijn regnr school
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- calc_regnumber -------')
+        logger.debug('regnr_school: ' + str(regnr_school))
+        logger.debug('gender:       ' + str(gender))
+        logger.debug('examyear:     ' + str(examyear_int) + ' ' + str(type(examyear_int)))
+        logger.debug('examnumber:   ' + str(examnumber_str) + ' ' + str(type(examnumber_str)))
+        logger.debug('depbase:      ' + str(depbase))
+        logger.debug('levelbase:    ' + str(levelbase))
+
+    # - eerste 5 tekens zijn regnr school
     regnr_school_fill = regnr_school + '-----'
     reg01 = regnr_school_fill[:5]
 
@@ -25,19 +38,19 @@ def calc_regnumber(regnr_school, gender, examyear, examnumber, depbase, levelbas
         reg02 = '2'
 
 # - teken 7, 8 is examenjaar
-    examyear_str = str(examyear)
+    examyear_str = str(examyear_int)
     reg03 = examyear_str[2:4] if examyear_str else '--'
 
 # - teken 9, 10, 11 en 12 zijn volgnr kandidaat
-    if examnumber:
-        examnumber_len = len(examnumber)
+    if examnumber_str:
+        examnumber_len = len(examnumber_str)
         if examnumber_len == 4:
-            reg04 = examnumber
+            reg04 = examnumber_str
         elif examnumber_len > 4:
-            reg04 = examnumber[:4]
+            reg04 = examnumber_str[:4]
         else:
-            examnumber_fill = '0000' + examnumber
-            reg04 = examnumber_fill[-4]
+            examnumber_fill = '0000' + examnumber_str
+            reg04 = examnumber_fill[-4:]
     else:
         reg04 = '----'
 
@@ -59,9 +72,42 @@ def calc_regnumber(regnr_school, gender, examyear, examnumber, depbase, levelbas
                 reg05 = '5'
     regnumber = ''.join((reg01, reg02, reg03, reg04, reg05 ))
 
+    if logging_on:
+        logger.debug('regnumber: ' + str(regnumber))
     return regnumber
 # - end of calc_regnumber
 
+
+def get_regnumber_info(regnumber):
+    info_html = None
+    # TODO PR2021-07-23
+    """
+    /*
+        'PR2015-06-13 Regnr hoeft hier niet opnieuw berekend te worden. Laat toch maar staan, maar dan wel opslaan (gebeurt in Property Let Kand_Registratienr
+        strNewRegistratienr = pblKand.Kand_Registratienr_Generate(Nz(Me.pge00_txtGeslacht.Value, ""), Nz(Me.pge00_txtExamenNr.Value, ""), Nz(Me.pge00_txtStudierichtingID.Value, 0)) 'PR2014-11-09
+        pblKand.Kand_RegistratieNr = strNewRegistratienr
+        Me.pge00_txtRegistratieNr.Value = strNewRegistratienr
+
+        strMsgText = "In examenjaar " & CStr(pblAfd.CurSchoolExamenjaar) & " bestaat het registratienummer van een kandidaat" & vbCrLf
+        Select Case pblAfd.CurSchoolExamenjaar
+        Case Is >= 2015
+            strMsgText = strMsgText & "uit 13 tekens en is als volgt opgebouwd:" & vbCrLf & vbCrLf
+            If Not strNewRegistratienr = vbNullString Then
+                strMsgText = strMsgText & "            " & Left(strNewRegistratienr, 5) & " - " & _
+                                 Mid(strNewRegistratienr, 6, 1) & " - " & _
+                                 Mid(strNewRegistratienr, 7, 2) & " - " & _
+                                 Mid(strNewRegistratienr, 9, 4) & " - " & _
+                                 Mid(strNewRegistratienr, 13, 1) & vbCrLf & vbCrLf
+            End If
+            strMsgText = strMsgText & "1 tm 5:     Schoolregistratienr:   " & pblAfd.CurSchoolRegnr & vbCrLf & _
+                                     "6:             Geslacht:                    M=1, V = 2" & vbCrLf & _
+                                     "7 tm 8:     Examenjaar                " & Right(CStr(pblAfd.CurSchoolExamenjaar), 2) & " (schooljaar " & pblAfd.CurSchoolSchooljaar & ")" & vbCrLf & _
+                                     "9 tm 12:   Examennummer        0001 etc. (001b voor bis examen) " & vbCrLf & _
+                                     "13:           Studierichting:          1=Havo, 2=Vwo, 3=Tkl, 4=Pkl, 5 = Pbl."
+*/
+    """
+    return info_html
+# - end of get_regnumber_info
 
 def split_prefix(name, is_lastname): # PR2018-12-06
     #PR2016-04-01 aparte functie van gemaakt

@@ -339,6 +339,11 @@ class Studentsubject(sch_mod.AwpBaseModel):
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     subj_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
+    tobedeleted = BooleanField(default=False)
+    del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    del_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    del_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+
     exem_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     exem_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     exem_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
@@ -371,7 +376,6 @@ class Studentsubject(sch_mod.AwpBaseModel):
     gradelist_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
-    deleted = BooleanField(default=False)
 
 # PR2018-06-06
 class Studentsubject_log(sch_mod.AwpBaseModel):
@@ -401,6 +405,11 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     subj_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
+    tobedeleted = BooleanField(default=False)
+    del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    del_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    del_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+
     exem_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     exem_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     exem_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
@@ -433,7 +442,9 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     gradelist_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
-    deleted = BooleanField(default=False)
+
+
+
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
@@ -503,6 +514,7 @@ class Grade(sch_mod.AwpBaseModel):
     se_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    se_auth4by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     se_blocked = BooleanField(default=False)
 
@@ -511,6 +523,7 @@ class Grade(sch_mod.AwpBaseModel):
     sr_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     sr_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     sr_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    sr_auth4by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     sr_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     sr_blocked = BooleanField(default=False)
 
@@ -518,6 +531,7 @@ class Grade(sch_mod.AwpBaseModel):
     pe_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    pe_auth4by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     pe_blocked = BooleanField(default=False)
 
@@ -525,6 +539,7 @@ class Grade(sch_mod.AwpBaseModel):
     ce_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    ce_auth4by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_blocked = BooleanField(default=False)
 
@@ -546,7 +561,11 @@ class Grade(sch_mod.AwpBaseModel):
     blanks = PositiveSmallIntegerField(null=True)
     answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
-    deleted = BooleanField(default=False)
+    tobedeleted = BooleanField(default=False)
+    del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    del_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    del_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+
     status = PositiveSmallIntegerField(default=0)
 
 
@@ -576,6 +595,7 @@ class Grade_log(sch_mod.AwpBaseModel):
     se_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    se_auth4by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     se_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     se_blocked = BooleanField(default=False)
 
@@ -584,6 +604,7 @@ class Grade_log(sch_mod.AwpBaseModel):
     sr_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     sr_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     sr_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    sr_auth4by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     sr_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     sr_blocked = BooleanField(default=False)
 
@@ -591,6 +612,7 @@ class Grade_log(sch_mod.AwpBaseModel):
     pe_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    pe_auth4by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     pe_blocked = BooleanField(default=False)
 
@@ -598,6 +620,7 @@ class Grade_log(sch_mod.AwpBaseModel):
     ce_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    ce_auth4by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_blocked = BooleanField(default=False)
 
@@ -619,7 +642,11 @@ class Grade_log(sch_mod.AwpBaseModel):
     blanks = PositiveSmallIntegerField(null=True)
     answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
-    deleted = BooleanField(default=False)
+    tobedeleted = BooleanField(default=False)
+    del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    del_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    del_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+
     status = PositiveSmallIntegerField(default=0)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)

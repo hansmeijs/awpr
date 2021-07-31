@@ -127,7 +127,7 @@ class GradeApproveView(View):  # PR2021-01-19
             is_auth1 = 'auth1' in requsr_usergroups_list
             is_auth2 = 'auth2' in requsr_usergroups_list
             is_auth3 = 'auth3' in requsr_usergroups_list
-
+            # TODO auth4
             msg_dict = {}
             has_permit = False
             requsr_auth = None
@@ -231,7 +231,7 @@ class GradeApproveView(View):  # PR2021-01-19
 
                     if sel_examyear and sel_school and sel_department and sel_examperiod and sel_examtype:
 
-    # +++ get selected grade_rows
+# +++ get selected grade_rows
                         crit = Q(studentsubject__student__school=sel_school) & \
                                Q(studentsubject__student__department=sel_department) & \
                                Q(examperiod=sel_examperiod)
@@ -247,6 +247,7 @@ class GradeApproveView(View):  # PR2021-01-19
                             logger.debug('row_count:      ' + str(row_count))
 
                         grades = stud_mod.Grade.objects.filter(crit).order_by('studentsubject__student__lastname', 'studentsubject__student__firstname')
+
                         msg_dict = {'count': 0,
                                     'already_published': 0,
                                     'double_approved': 0,
@@ -260,17 +261,18 @@ class GradeApproveView(View):  # PR2021-01-19
                                     }
                         if grades is not None:
 
-       # create new published_instance. Only save it when it is not a test
+# create new published_instance. Only save it when it is not a test
+                            # file_name will be added after creating Ex-form
                             published_instance = None
                             if is_submit and not is_test:
                                 now_arr = upload_dict.get('now_arr')
                                 published_instance = create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, now_arr, request)
 
-        # +++++ loop through  grades
+# +++++ loop through  grades
                             grade_rows = []
                             for grade in grades:
                                 if logging_on:
-                                    logger.debug('grade: ' + str(grade))
+                                    logger.debug('----- grade: ' + str(grade))
 
                                 msg_dict['count'] += 1
                                 if is_approve:
@@ -294,7 +296,7 @@ class GradeApproveView(View):  # PR2021-01-19
                                         row = rows[0]
                                         row.pop('note_status')
                                         grade_rows.append(row)
-        # +++++  end of loop through  grades
+# +++++  end of loop through  grades
 
                             row_count = len(grade_rows)
                             if logging_on:
@@ -311,9 +313,16 @@ class GradeApproveView(View):  # PR2021-01-19
                                         pk=sel_subject_pk,
                                         examyear=sel_examyear
                                     )
-                                    create_ex2a(published_instance, sel_examyear, sel_school,
-                                                         sel_department, sel_subject, sel_examperiod,
-                                                         sel_examtype, grade_rows, request)
+                                    create_ex2a(
+                                        published_instance=published_instance,
+                                        sel_examyear=sel_examyear,
+                                        sel_school=sel_school,
+                                        sel_department=sel_department,
+                                        sel_subject=sel_subject,
+                                        sel_examperiod=sel_examperiod,
+                                        sel_examtype=sel_examtype,
+                                        grade_rows=grade_rows,
+                                        request=request)
 
                                     update_wrap['updated_published_rows'] = create_published_rows(
                                         sel_examyear_pk=sel_examyear.pk,
@@ -324,6 +333,7 @@ class GradeApproveView(View):  # PR2021-01-19
 
                                 update_wrap['updated_grade_rows'] = grade_rows
 
+# - create msg_html with info of rows
                                 if is_test:
                                     count = msg_dict.get('count', 0)
                                     committed = msg_dict.get('committed', 0)
@@ -391,7 +401,7 @@ class GradeApproveView(View):  # PR2021-01-19
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# --- end of GradeUploadView
+# --- end of GradeApproveView
 
 
 def create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, now_arr, request):  # PR2021-01-21
@@ -471,9 +481,9 @@ def get_grades_are_text(count):
 def get_approved_text(count):
     msg_text = None
     if count == 1:
-        msg_text = _(' - 1 grade is already approved by you')
+        msg_text = _(' - 1 grade is already approved')
     else:
-        msg_text = ' - ' + str(count) + str(_(' grades are already approved by you'))
+        msg_text = ' - ' + str(count) + str(_(' grades are already approved'))
     return msg_text
 
 
@@ -660,7 +670,7 @@ def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, req
                             msg_dict['saved'] += 1
                             setattr(grade, sel_examtype + '_published', published_instance)
 
-                            status_index = 4  # c.STATUS_04_SUBMITTED # STATUS_04_SUBMITTED = 16
+                            status_index = 4  # c.STATUS_05_SUBMITTED # STATUS_05_SUBMITTED = 32
                             saved_status_sum = getattr(grade, sel_examtype + '_status')
                             new_value_bool = True
                             new_status_sum = af.set_status_sum_by_index(saved_status_sum, status_index, new_value_bool)
@@ -696,7 +706,13 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
         has_permit = False
         if request.user and request.user.country and request.user.schoolbase:
             permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list('page_grade', request.user)
-            has_permit = 'crud' in permit_list
+            has_permit = 'permit_crud' in permit_list
+
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('requsr_usergroups_listNIU: ' + str(requsr_usergroups_listNIU))
+                logger.debug('has_permit: ' + str(has_permit))
+
         if not has_permit:
             err_html = _("You don't have permission to perform this action.")
         else:
@@ -709,9 +725,9 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
                 if logging_on:
                     logger.debug('upload_dict: ' + str(upload_dict))
 # - get selected examyear, school and department from usersettings
-                sel_examyear, sel_school, sel_department, is_locked, \
-                examyear_published, school_activated, requsr_same_school = \
+                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
                     dl.get_selected_ey_school_dep_from_usersetting(request)
+
 
 # - get select
                 # ed examperiod and examtype from upload_dict
@@ -726,16 +742,17 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
                 student = None
                 # is_locked: either country, examyear or school is locked
                 # sel_department only has value when sel_examyear and sel_school have value
-                may_edit = examyear_published and school_activated and not is_locked and requsr_same_school and sel_department
                 if not may_edit:
                     err_list = []
-                    if not examyear_published:
+                    if not sel_examyear.published:
                         err_list.append(str(_('This examyear is not published yet.')))
-                    if not school_activated:
+                    if sel_examyear.is_locked:
+                        err_list.append(str(_('This examyear is locked.')))
+                    if not sel_school.activated:
                         err_list.append(str(_('The school has not activated this examyear yet.')))
-                    if is_locked:
-                        err_list.append(str(_('This examyear or school is locked.')))
-                    if not requsr_same_school:
+                    if sel_school.is_locked:
+                        err_list.append(str(_('This school is locked.')))
+                    if request.user.schoolbase is None or sel_school.base != request.user.schoolbase:
                         err_list.append(str(_('Only users of this school are allowed to make changes.')))
                     if not sel_department:
                         err_list.append(str(_('There is no department selected.')))
@@ -1158,8 +1175,8 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                 "WHERE ey.id = %(ey_id)s::INT",
                 "AND school.base_id = %(sb_id)s::INT",
                 "AND dep.base_id = %(depbase_id)s::INT",
-                "AND NOT grd.deleted AND NOT studsubj.deleted",
-                "AND NOT studsubj.deleted AND NOT studsubj.deleted",
+                "AND NOT grd.tobedeleted",
+                "AND NOT studsubj.tobedeleted",
 
                 "AND grd.examperiod = %(experiod)s::INT"
                 ]
@@ -1292,8 +1309,7 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "AND school.base_id = %(sb_id)s::INT",
                 "AND dep.base_id = %(depbase_id)s::INT",
                 "AND subj.etenorm",
-                "AND NOT grd.deleted AND NOT studsubj.deleted",
-                "AND NOT studsubj.deleted AND NOT studsubj.deleted",
+                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
 
                 "AND grd.examperiod = %(experiod)s::INT"
                 ]
@@ -1420,10 +1436,16 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
         #if s.AWS_LOCATION:
             #file_dir = ''.join((s.AWS_LOCATION, '/published/'))
         # this one gave path:awpmedia/awpmedia/media/private/media/private/published
-        if s.AWS_PRIVATE_MEDIA_LOCATION:
-            file_dir = ''.join((s.AWS_PRIVATE_MEDIA_LOCATION, '/published/'))
-        else:
-            file_dir = s.STATICFILES_MEDIA_DIR
+        #if s.AWS_PRIVATE_MEDIA_LOCATION:
+        #    # AWS_PRIVATE_MEDIA_LOCATION = 'media/private'
+        #    file_dir = ''.join((s.AWS_PRIVATE_MEDIA_LOCATION, '/published/'))
+        #else:
+        #    # STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'media', 'private', 'published') + '/'
+        #    file_dir = s.STATICFILES_MEDIA_DIR
+
+        # PR2021-07-28 changed to file_dir = 'published/'
+        # this one gives path:awpmedia/awpmedia/media/private/published
+        file_dir = 'published/'
 
         file_path = ''.join((file_dir, published_instance.filename))
         file_name = published_instance.name

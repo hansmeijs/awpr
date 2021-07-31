@@ -27,6 +27,7 @@ from awpr import downloads as awpr_downloads
 from schools import views as school_views
 from schools import imports as school_imports
 from students import views as student_views
+from students import ex1files as student_ex1files
 from subjects import views as subject_views
 from grades import views as grade_views
 from grades import excel as grade_excel
@@ -201,20 +202,23 @@ urlpatterns = [
         path('student', student_views.StudentListView.as_view(), name='students_url'),
 
         path('student_upload', student_views.StudentUploadView.as_view(), name='url_student_upload'),
-        #path('student_import', student_views.StudentImportView.as_view(), name='student_import_url'),
-        #path('uploaddata', student_views.StudentImportUploadData.as_view(), name='student_uploaddata_url'),
 
         path('studentsubject', student_views.StudentsubjectListView.as_view(), name='studentsubjects_url'),
-        path('studentsubject_upload', student_views.StudentsubjectUploadView.as_view(), name='url_studsubj_upload'),
-        path('studentsubject_validate', student_views.StudentsubjectValidateView.as_view(), name='url_studsubj_validate'),
+        path('studsubj_upload', student_views.StudentsubjectUploadView.as_view(), name='url_studsubj_upload'),
+        path('studsubj_validate', student_views.StudentsubjectValidateView.as_view(), name='url_studsubj_validate'),
+        path('studsubj_validate_all', student_views.StudentsubjectValidateAllView.as_view(), name='url_studsubj_validate_all'),
+
+        path('studsubj_approve', student_views.StudentsubjectApproveView.as_view(), name='url_studsubj_approve'),
+        path('studsubj_approve_multiple', student_views.StudentsubjectApproveMultipleView.as_view(), name='url_studsubj_approve_multiple'),
+        path('studsubj_send_email_exform', student_views.StudentsubjectSendEmailExformView.as_view(), name='url_studsubj_send_email_exform'),
 
         path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='studentsubjectnote_upload_url'),
         path('studentsubjectnote_download', student_views.StudentsubjectnoteDownloadView.as_view(), name='studentsubjectnote_download_url'),
         path('noteattachment_download/<int:pk_int>/', student_views.NoteAttachmentDownloadView.as_view(), name='noteattachment_download_url'),
 
+
         path('download_ex1', grade_excel.StudsubjDownloadEx1View.as_view(), name='url_grade_download_ex1'),
 
-        path('uploadsetting', student_views.StudentImportUploadSetting.as_view(), name='student_uploadsetting_url'),
     ])),
 
 # ===== ORDERLISTS ========================== PR2021-04-04

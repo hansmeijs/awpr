@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+                function() {t_MSSSS_Open(loc, "school", school_rows, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         }
 
    // ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
@@ -302,7 +302,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("permit_rows" in response) { refresh_permit_map(response.permit_rows) };
 
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
-                if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows) };
+                if ("school_rows" in response)  {
+                   b_fill_datamap(school_map, response.school_rows)
+                   school_rows = response.school_rows
+                };
                 if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows) };
 
                 HandleBtnSelect(selected_btn, true);  // true = skip_upload
@@ -321,19 +324,19 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
 
-        // hardcode access of system admin, to get access before action 'crud' is added to permits
-        //const permit_system_admin = (permit_dict.requsr_role_system && permit_dict.usergroup_list.includes("admin"));
-        //if (permit_dict.permit_crud || permit_system_admin){
+        if (permit_dict.permit_crud_sameschool || permit_dict.permit_crud_otherschool) {
             AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")}, ["tab_show", "tab_btn_user_list", "tab_btn_usergroups"]);
             AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, ["tab_show", "tab_btn_user_list", "tab_btn_usergroups"]);
-        //}
+        }
         // hardcode access of system admin
-        //if (permit_dict.permit_crud || permit_system_admin){
+        // hardcode access of system admin, to get access before action 'crud' is added to permits
+        const permit_system_admin = (permit_dict.requsr_role_system && permit_dict.usergroup_list.includes("admin"));
+        if (permit_system_admin){
             AddSubmenuButton(el_submenu, loc.Add_permission, function() {MUPM_Open("addnew")}, ["tab_show", "tab_btn_userpermit"]);;
             AddSubmenuButton(el_submenu, loc.Delete_permission, function() {ModConfirmOpen("userpermit","delete")}, ["tab_show", "tab_btn_userpermit"]);;
             AddSubmenuButton(el_submenu, loc.Download_permissions, null, ["tab_show", "tab_btn_userpermit"], "id_submenu_download_perm", url_download_permits, false);  // true = download
             AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open("import_permit")}, ["tab_show", "tab_btn_userpermit"], "id_submenu_import");
-        //};
+        };
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
 
@@ -824,16 +827,18 @@ document.addEventListener('DOMContentLoaded', function() {
     function MUA_Open(mode, el_input){
         console.log(" -----  MUA_Open   ---- mode: ", mode)  // modes are: addnew, update
         console.log("permit_dict: ", permit_dict)
+        console.log("permit_dict.permit_crud_sameschool: ", permit_dict.permit_crud_sameschool)
         console.log("permit_dict.permit_crud_otherschool: ", permit_dict.permit_crud_otherschool)
         // mode = 'addnew' when called by SubmenuButton
         // mode = 'update' when called by tblRow event
 
-        if(permit_dict.permit_crud || permit_dict.permit_crud_otherschool){
+        if (permit_dict.permit_crud_sameschool || permit_dict.permit_crud_otherschool){
             let user_dict = {}, user_pk = null;
             let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null;
             const fldName = get_attr_from_el(el_input, "data-field");
             const is_addnew = (mode === "addnew");
 
+        console.log("fldName: ", fldName)
             if(el_input){
                 const tblRow = get_tablerow_selected(el_input);
                 user_mapid = tblRow.id;
@@ -1109,16 +1114,16 @@ document.addEventListener('DOMContentLoaded', function() {
     function MUA_FillSelectTableSchool() {
         console.log("===== MUA_FillSelectTableSchool ===== ");
 
-        const data_map = school_map;
+        const data_rows = school_rows;
         const tblBody_select = document.getElementById("id_MUA_tbody_select");
         tblBody_select.innerText = null;
 
 // ---  loop through dictlist
-        //[ {pk: 2608, code: "Colpa de, William"} ]
         let row_count = 0
 
-        if(data_map){
-            for (const [map_id, map_dict] of data_map.entries()) {
+        if(data_rows && data_rows.length){
+            const tblName = "school";
+            for (let i = 0, map_dict; map_dict = data_rows[i]; i++) {
                 if (!isEmpty(map_dict)) {
                     const defaultrole = (map_dict.defaultrole) ? map_dict.defaultrole : 0;
     // only add schools to list whith sme or lower role
@@ -1129,13 +1134,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         const code = (map_dict.sb_code) ? map_dict.sb_code : "";
                         const abbrev = (map_dict.abbrev) ? map_dict.abbrev : "";
 
-                        const tblRow = tblBody_select.insertRow(-1);
+// ---  lookup index where this row must be inserted
+                        let ob1 = "", row_index = -1;
+                        if (code) { ob1 = code.toLowerCase()};
+                        row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", loc.user_lang);
+//--------- insert tblBody_select row at row_index
+                        const map_id = "sel_" + tblName + "_" + base_id
+                        const tblRow = tblBody_select.insertRow(row_index);
+
                         row_count += 1;
 
                         tblRow.id = map_id;
                         tblRow.setAttribute("data-pk", base_id);
                         tblRow.setAttribute("data-ppk", country_id);
                         tblRow.setAttribute("data-value", code + " - " + abbrev);
+
+// ---  add data-sortby attribute to tblRow, for ordering new rows
+                        tblRow.setAttribute("data-ob1", ob1);
 
         // ---  add hover to select row
                         add_hover(tblRow)
@@ -2304,8 +2319,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // MSED_Response
 //###########################################################################
-//=========  MSSSS_Response  ================ PR2021-04-23
-    function MSSSS_Response(tblName, selected_pk, selected_code, selected_name) {
+//=========  MSSSS_Response  ================ PR2021-04-23  PR2021-07-26
+    function MSSSS_Response(tblName, selected_dict, selected_pk) {
         console.log( "===== MSSSS_Response ========= ");
 
         // Note: when tblName = school: pk_int = schoolbase_pk

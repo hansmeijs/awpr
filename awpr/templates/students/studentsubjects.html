@@ -12,8 +12,8 @@
 <!-- SIDE BAR -->
 {% block sidebar %}
     <nav id="id_sidebar" class="awp_sidebar">
-        <div class="content_subheader_left tab_show tab_init mx-2 my-4">
-            <h5>{% trans 'Subjects of candidates' %}</h5>
+        <div class="sidebar_header">
+            <h3>{% trans 'Subjects of candidates' %}</h3>
         </div>
         {% if not no_access %}
             <div id="id_SBR_container_level" class="tw_200 m-2 display_hide">
@@ -49,7 +49,7 @@
             </div>
 
             <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
-                <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all from this period' %}</h6>
+                <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all subjects' %}</h6>
             </div>
         {% endif %}
     </nav>
@@ -63,46 +63,48 @@
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
+            {% include 'includes/modselectcolumns.html' %}
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
-            {% include 'students/modstudent.html' %}
+            {% include 'students/modapprovesubject.html' %}
             {% include 'students/modstudentsubject.html' %}
             {% include 'includes/modimport.html' %}
+            {% include 'includes/messages.html' %}
 
-            <div class="content_margin_top78">
     <!-- CONTENT HEADER - LOADER -->
+            <div class="margin_top78_left16">
             <!-- content_header -->
-                {% include 'includes/messages.html' %}
-        <!-- submenu -->
-                <div class="content_header flex_container">
-                    <div id="id_submenu" class="awp_navbar_submenuXX mt-5">
+    <!-- header_text left -->
+                <div class="header_left cls_hide">
+                    <h5 id="id_hdr_left" class="mb-0"></h5>
                 </div>
-        <!-- header_text -->
-                    <div class="flex_4 mx-4 visibility_hide">
-                        <h5 id="id_hdr_left"></h5>
-                    </div>
-        <!-- loader -->
-                    <div class="flex_1">
-                        <div id="id_loader" class="image_container visibility_hide">
-                            <img src="{% static 'img/loader.gif' %}" class="icon_24">
+    <!-- loader -->
+                <div id="id_loader" class="py-2">
+                    <div class="loader">
+                        <div class="duo duo1">
+                            <div class="dot dot-a"></div>
+                            <div class="dot dot-b"></div>
+                        </div>
+                            <div class="duo duo2">
+                            <div class="dot dot-a"></div>
+                            <div class="dot dot-b"></div>
                         </div>
                     </div>
-        <!-- header_text -->
-                    <div class="flex_2 mx-4 visibility_hide">
-                        <h5 id="id_hdr_textright1"></h5>
-                    </div>
-                    <div class="flex_2 mx-4 visibility_hide">
-                        <h5 id="id_hdr_textright2"></h5>
-                    </div>
                 </div>
+
+
+            </div>
+            <!-- end content_header -->
+
             <!-- end content_header -->
     <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="btn_studsubj" class="btn btn-secondary ">{% trans 'Subjects' %}</button>
-                    <button data-btn="btn_exemption" class="btn btn-secondary ">{% trans 'Exemptions' %}</button>
-                    <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Re-examinations' %}</button>
-                    <button data-btn="btn_reex3" class="btn btn-secondary ">{% trans 'Re-exam 3rd period' %}</button>
-                    <button data-btn="btn_pok" class="btn btn-secondary ">{% trans 'Proof_of_knowledge' %}</button>
+                    <button data-btn="btn_exemption" class="btn btn-secondary display_hide">{% trans 'Exemptions' %}</button>
+                    <button data-btn="btn_reex" class="btn btn-secondary display_hide">{% trans 'Re-examinations' %}</button>
+                    <button data-btn="btn_reex3" class="btn btn-secondary display_hide">{% trans 'Re-exam 3rd period' %}</button>
+                    <button data-btn="btn_pok" class="btn btn-secondary display_hide">{% trans 'Proof_of_knowledge' %}</button>
+                    <button data-btn="btn_published" class="btn btn-secondary ">{% trans 'Submitted Ex forms' %}</button>
                 </div>
     <!-- end BUTTON GROUP -->
     <!-- END OF CONTENT HEADER -->
@@ -125,7 +127,10 @@
                 data-url_student_upload="{% url 'url_student_upload' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
                 data-url_studsubj_validate="{% url 'url_studsubj_validate' %}"
-
+                data-url_studsubj_validate_all="{% url 'url_studsubj_validate_all' %}"
+                data-url_studsubj_approve="{% url 'url_studsubj_approve' %}"
+                data-url_studsubj_approve_multiple="{% url 'url_studsubj_approve_multiple' %}"
+                data-url_studsubj_send_email_exform="{% url 'url_studsubj_send_email_exform' %}"
                 data-url_grade_download_ex1="{% url 'url_grade_download_ex1' %}"
             >
             </div>

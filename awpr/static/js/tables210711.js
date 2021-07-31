@@ -244,27 +244,27 @@
 // ++++++++++++  END OF MODAL SELECT SCHOOL OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
 
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
-//========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23
-    function t_MSSSS_Open (loc, tblName, data_map, add_all, setting_dict, permit_dict, MSSSS_Response) {
+//========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23
+    function t_MSSSS_Open (loc, tblName, data_rows, add_all, setting_dict, permit_dict, MSSSS_Response) {
         //console.log(" ===  t_MSSSS_Open  =====", tblName) ;
         //console.log( "setting_dict", setting_dict);
         //console.log( "permit_dict", permit_dict);
-        //console.log( "data_map", data_map);
+        //console.log( "data_rows", data_rows);
         // tblNames are: "school", "subject", "student"
 
         // PR2021-04-27 debug: opening modal before loc and setting_dict are loaded gives 'NaN' on modal.
         // allow opening only when loc has value
         if(!isEmpty(permit_dict)){
             const may_select = (tblName === "school") ? !!permit_dict.may_select_school : true;
-            //console.log( "may_select", may_select);
+        //console.log( "may_select", may_select);
             if (may_select){
                 const selected_pk = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_pk : null;
 
                 const el_MSSSS_input = document.getElementById("id_MSSSS_input")
                 el_MSSSS_input.setAttribute("data-table", tblName);
-                //console.log( "el_MSSSS_input", el_MSSSS_input);
+        //console.log( "el_MSSSS_input", el_MSSSS_input);
         // --- fill select table
-                t_MSSSS_Fill_SelectTable(loc, tblName, data_map, setting_dict, el_MSSSS_input, MSSSS_Response, selected_pk, add_all)
+                t_MSSSS_Fill_SelectTable(loc, tblName, data_rows, setting_dict, el_MSSSS_input, MSSSS_Response, selected_pk, add_all)
                 el_MSSSS_input.value = null;
         // ---  set focus to input element
                 set_focus_on_el_with_timeout(el_MSSSS_input, 50);
@@ -276,8 +276,8 @@
 
 //=========  t_MSSSS_Save  ================ PR2020-01-29 PR2021-01-23
     function t_MSSSS_Save(el_input, MSSSS_Response) {
-        //console.log("===  t_MSSSS_Save =========");
-        //console.log("el_input.dataset", el_input.dataset);
+        console.log("===  t_MSSSS_Save =========");
+        console.log("el_input", el_input);
     // --- put tblName, sel_pk and value in MSSSS_Response, MSSSS_Response handles uploading
 
         const tblName = get_attr_from_el(el_input, "data-table");
@@ -287,15 +287,33 @@
         const selected_code = get_attr_from_el(el_input, "data-code");
         const selected_name = get_attr_from_el(el_input, "data-name");
 
-        MSSSS_Response(tblName, selected_pk_int, selected_code, selected_name)
+// +++ get existing map_dict from data_rows
+        const data_rows = (tblName === "school") ? school_rows :
+                        (tblName === "subject") ? subject_rows :
+                        (tblName === "student") ? student_rows : null;
+        const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", selected_pk_int);
+        const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
+
+        console.log("selected_pk_int", selected_pk_int);
+        console.log("selected_code", selected_code);
+        console.log("selected_name", selected_name);
+        console.log( "selected_dict", selected_dict);
+
+        t_MSSSS_display_in_sbr(tblName, selected_pk_int);
+        const other_tblName = (tblName === "subject") ? "student" : (tblName === "student") ? "subject" : null;
+        if (other_tblName){
+            t_MSSSS_display_in_sbr(other_tblName, null);
+        }
+
+        MSSSS_Response(tblName, selected_dict, selected_pk_int)
 // hide modal
         $("#id_mod_select_school_subject_student").modal("hide");
     }  // t_MSSSS_Save
 
-//========= t_MSSSS_Fill_SelectTable  ============= PR2021-01-23
-    function t_MSSSS_Fill_SelectTable(loc, tblName, data_map, setting_dict, el_input, MSSSS_Response, selected_pk, add_all) {
+//========= t_MSSSS_Fill_SelectTable  ============= PR2021-01-23  PR2021-07-23
+    function t_MSSSS_Fill_SelectTable(loc, tblName, data_rows, setting_dict, el_input, MSSSS_Response, selected_pk, add_all) {
         //console.log("===== t_MSSSS_Fill_SelectTable ===== ", tblName);
-        //console.log("data_map", data_map);
+        //console.log("data_rows", data_rows, typeof data_rows);
 
 // set header text
         const label_text = loc.Select + (
@@ -303,9 +321,6 @@
                                     (tblName === "subject") ?  loc.a_subject :
                                     (tblName === "school") ?  loc.a_school : ""
                                      );
-        const msg_text = (tblName === "student") ? loc.Type_afew_letters_candidate :
-                        (tblName === "subject") ? loc.Type_afew_letters_subject :
-                         (tblName === "school") ? loc.Type_afew_letters_school : "";
         const item = (tblName === "student") ? loc.a_candidate :
                      (tblName === "subject") ? loc.a_subject :
                      (tblName === "school") ? loc.a_school : "";
@@ -319,29 +334,37 @@
         tblBody_select.innerText = null;
 
 // ---  add All to list when multiple subject / students exist
-        if(data_map.size && add_all){
-            const caption = (tblName === "student") ? loc.Candidates.toLowerCase() :
-                            (tblName === "subject") ? loc.Subjects.toLowerCase() :
-                            (tblName === "school") ? loc.Schools.toLowerCase() : "";
-
-            const add_all_text = "<" + loc.All + caption + ">";
-            const add_all_dict = (tblName === "student") ? {id: -1, examnumber: "", fullname: add_all_text} :
-                                 (tblName === "subject") ? {id: -1,  code: "", name: add_all_text} :
-                                 (tblName === "school") ? {id: -1,  code: "", name: add_all_text} : {};
+        if(data_rows && data_rows.length && add_all){
+            const add_all_dict = t_MSSSS_AddAll_dict(tblName);
             t_MSSSS_Create_SelectRow(loc, tblName, tblBody_select, add_all_dict, selected_pk, el_input, MSSSS_Response)
         }
+
 // ---  loop through dictlist
-        for (const [map_id, map_dict] of data_map.entries()) {
+        //PR 2021-07-23 was: for (const [map_id, map_dict] of data_map.entries()) {
+        for (let i = 0, map_dict; map_dict = data_rows[i]; i++) {
             t_MSSSS_Create_SelectRow(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response);
         }
     } // t_MSSSS_Fill_SelectTable
 
+function t_MSSSS_AddAll_txt(tblName){
+    const caption = (tblName === "student") ? loc.Candidates.toLowerCase() :
+                    (tblName === "subject") ? loc.Subjects.toLowerCase() :
+                    (tblName === "school") ? loc.Schools.toLowerCase() : "";
+    return "<" + loc.All + caption + ">";
+}
+
+function t_MSSSS_AddAll_dict(tblName){
+    const add_all_text = t_MSSSS_AddAll_txt(tblName);
+    return (tblName === "student") ? {id: -1, examnumber: "", fullname: add_all_text} :
+           (tblName === "subject") ? {id: -1,  code: "", name: add_all_text} :
+           (tblName === "school") ? {id: -1,  code: "", name: add_all_text} : {};
+}
 //========= t_MSSSS_Create_SelectRow  ============= PR2020-12-18 PR2020-07-14
     function t_MSSSS_Create_SelectRow(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
         //console.log("===== t_MSSSS_Create_SelectRow ===== ");
         //console.log("..........tblName", tblName);
         //console.log("map_dict", map_dict);
-        //console.log("map_dict", map_dict);
+
 
 //--- get info from map_dict
         // when tblName = school: pk_int = schoolbase_pk
@@ -349,7 +372,7 @@
                     (tblName === "subject") ? map_dict.id :
                     (tblName === "school") ? map_dict.base_id : "";
 
-        const code = (tblName === "student") ? map_dict.examnumber :
+        const code = (tblName === "student") ? map_dict.name_first_init :
                     (tblName === "subject") ? map_dict.code :
                     (tblName === "school") ? map_dict.sb_code : "";
 
@@ -358,11 +381,14 @@
                     (tblName === "school") ? map_dict.abbrev : "";
         const is_selected_row = (pk_int === selected_pk);
 
+        //console.log("name", name);
+
 // ---  lookup index where this row must be inserted
-        let ob1 = "", row_index = -1;
+        let ob1 = "", ob2 = "", row_index = -1;
         if(tblName === "student"){
-            if (name) { ob1 = name.toLowerCase()};
-            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", loc.user_lang);
+            if (map_dict.lastname) { ob1 = map_dict.lastname.toLowerCase()};
+            if (map_dict.firstname) { ob2 = map_dict.firstname.toLowerCase()};
+            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, "", loc.user_lang);
         } else if(tblName === "subject"){
             if (name) { ob1 = name.toLowerCase()};
             row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", loc.user_lang);
@@ -371,7 +397,7 @@
             row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", loc.user_lang);
         }
 
-//--------- insert tblBody_select row at end
+//--------- insert tblBody_select row at row_index
         const map_id = "sel_" + tblName + "_" + pk_int
         const tblRow = tblBody_select.insertRow(row_index);
 
@@ -383,7 +409,7 @@
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
         tblRow.setAttribute("data-ob1", ob1);
-        //tblRow.setAttribute("data-ob2", ob2);
+        tblRow.setAttribute("data-ob2", ob2);
         //tblRow.setAttribute("data-ob3", ob3);
 
         const class_selected = (is_selected_row) ? cls_selected: cls_bc_transparent;
@@ -393,14 +419,17 @@
         add_hover(tblRow)
 
 // --- add td to tblRow.
-        let td = tblRow.insertCell(-1);
-        let el_div = document.createElement("div");
-            el_div.classList.add("pointer_show")
-            el_div.innerText = code;
-            el_div.classList.add("tw_075", "px-1")
-            td.appendChild(el_div);
+        let td = null, el_div = null;
+        if (["school", "subject"].includes(tblName)) {
+            td = tblRow.insertCell(-1);
+            el_div = document.createElement("div");
+                el_div.classList.add("pointer_show")
+                el_div.innerText = code;
+                el_div.classList.add("tw_075", "px-1")
+                td.appendChild(el_div);
 
-        td.classList.add("tsa_bc_transparent")
+            td.classList.add("tsa_bc_transparent")
+        };
 
 // --- add td to tblRow.
         td = tblRow.insertCell(-1);
@@ -421,7 +450,6 @@
                 el_div.classList.add("tw_032", class_locked)
                 el_div.title = (locked) ? loc.This_school_is_locked : (activated) ? loc.This_school_is_activated : "";
             td.appendChild(el_div);
-
         }
 
 //--------- add addEventListener
@@ -489,101 +517,53 @@
         }
     }; // t_MSSSS_InputKeyup
 
+//========= t_MSSSS_display_in_sbr  ====================================
+    function t_MSSSS_display_in_sbr(tblName, selected_pk) {
+        //console.log( "===== t_MSSSS_display_in_sbr  ========= ");
+        //console.log( "tblName", tblName);
+        //console.log( "selected_pk", selected_pk);
+
+        const add_all_txt = t_MSSSS_AddAll_txt(tblName);
+        //console.log( "add_all_txt", add_all_txt);
+
+        if (tblName === "school") {
+        } else if (["subject", "student"].includes(tblName)) {
+            const data_rows = (tblName === "student") ? student_rows : subject_rows;
+        //console.log( "data_rows", data_rows);
+            let display_txt = null;
+            // selected_pk = -1 when clicked on All
+            if(selected_pk > 0){
+                const data_dict = b_get_mapdict_by_integer_from_datarows(data_rows, "id", selected_pk)
+        //console.log( "data_dict", data_dict);
+                const name_field = (tblName === "student") ? "fullname" : "name";
+                const code_field = (tblName === "student") ? "name_first_init" : "code";
+                display_txt = (data_dict && name_field in data_dict && data_dict[name_field].length < 25) ? data_dict[name_field] :
+                              (data_dict && code_field in data_dict) ? data_dict[code_field] : "---";
+
+            } else {
+                display_txt = add_all_txt;
+            }
+        //console.log( "display_txt", display_txt);
+
+           // const display_txt = (!selected_pk) ? t_MSSSS_AddAll_txt(tblName) :
+           //                     (selected_name && selected_name.length < 25) ? selected_name :
+           //                     (selected_code) ? selected_code : null;
+
+            const el_SBR_select_id = (tblName === "student") ? "id_SBR_select_student" : "id_SBR_select_subject";
+            const el_SBR_select = document.getElementById(el_SBR_select_id);
+
+            if(el_SBR_select){
+                el_SBR_select.value = display_txt;
+                add_or_remove_class(el_SBR_select.parentNode, cls_hide, false)
+            }
+            const el_SBR_container_showall = document.getElementById("id_SBR_container_showall");
+            add_or_remove_class(el_SBR_container_showall, cls_hide, false)
+        };
+    }; // MSSSS_display_in_sbr
+
 // +++++++++++++++++ END OF MODAL SELECT SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// NIU
-//========= CreateTableRows  ====================================
-    function CreateTableRowsXXX(tableBase, stored_items, excel_items,
-                    JustLinkedAwpId, JustUnlinkedAwpId, JustUnlinkedExcId) {
-
-    //console.log("==== CreateMapTableRows  =========>> ", tableBase);
-        const cae_hv = "c_colAwpExcel_hover";
-        //const cae_hl = "c_colAwpExcel_highlighted";
-        const cli_hv = "c_colLinked_hover";
-        //const cli_hi = "c_colLinked_highlighted";
-
-        const Xid_exc_tbody = "#id_exc_tbody_" + tableBase;
-        const Xid_awp_tbody = "#id_awp_tbody_" + tableBase;
-        const Xid_lnk_tbody = "#id_lnk_tbody_" + tableBase;
-
-        // only when level is required, i.e. when mapped_level_list exists
-//console.log("stored_items", stored_items, typeof stored_items);
-//console.log("excel_items", excel_items, typeof excel_items);
-
-        // JustUnlinkedAwpId = id_awp_tr_sct_1
-        // JustUnlinkedExcId = id_exc_tr_sct_2
-        // delete existing rows of tblColExcel, tblColAwp, tblColLinked
-        $(Xid_exc_tbody).html("");
-        $(Xid_awp_tbody).html("");
-        $(Xid_lnk_tbody).html("");
-
-    //======== loop through array stored_items ========
-        for (let i = 0 ; i <stored_items.length; i++) {
-            // row = {awpKey: "30", caption: "tech", excKey: "cm"}
-            let row = stored_items[i];
-            const idAwpRow = "id_awp_tr_" + tableBase + "_" + i.toString();
-            const XidAwpRow = "#" + idAwpRow;
-
-        //if excKey exists: append row to table ColLinked
-            if (!!row.excKey){
-                $("<tr>").appendTo(Xid_lnk_tbody)  // .appendTo( "#id_lnk_tbody_lvl" )
-                    .attr({"id": idAwpRow, "key": row.awpKey})
-                    .addClass("c_colLinked_tr")
-                    .mouseenter(function(){$(XidAwpRow).addClass(cli_hv);})
-                    .mouseleave(function(){$(XidAwpRow).removeClass(cli_hv);})
-        // append cells to row Linked
-                    .append("<td>" + row.excKey + "</td>")
-                    .append("<td>" + row.caption + "</td>");
-
-        //if new appended row: highlight row for 1 second
-                if (!!JustLinkedAwpId && !!idAwpRow && JustLinkedAwpId === idAwpRow) {
-                   $(XidAwpRow).addClass(cli_hv);
-                   setTimeout(function (){$(XidAwpRow).removeClass(cli_hv);}, 1000);
-                }
-            } else {
-
-        // append row to table Awp if excKey does not exist in stored_items
-                $("<tr>").appendTo(Xid_awp_tbody)
-                    .attr({"id": idAwpRow, "key": row.awpKey})
-                    .addClass("c_colExcelAwp_tr")
-                    .mouseenter(function(){$(XidAwpRow).addClass(cae_hv);})
-                    .mouseleave(function(){$(XidAwpRow).removeClass(cae_hv);})
-        // append cell to row ExcKey
-                    .append("<td>" + row.caption + "</td>");
-        // if new unlinked row: highlight row for 1 second
-                if (!!JustUnlinkedAwpId && !!idAwpRow && JustUnlinkedAwpId === idAwpRow) {
-                    $(XidAwpRow).addClass(cae_hv);
-                    setTimeout(function () {$(XidAwpRow).removeClass(cae_hv);}, 1000);
-            }}};
-
-    //======== loop through array excel_items ========
-        // excel_sectors [{excKey: "cm", {awpKey: "c&m"},}, {excKey: "em"}, {excKey: "ng"}, {excKey: "nt"}]
-        for (let i = 0 ; i < excel_items.length; i++) {
-            // only rows that are not linked are added to tblColExcel
-            //  {excKey: "idSctExc_0", caption: "china"}
-            let row = excel_items[i];
-            const idExcRow = "id_exc_tr_" + tableBase + "_" + i.toString();
-            const XidExcRow = "#" + idExcRow;
-
-        // append row to table Excel if awpKey: does not exist in excel_items
-            if (!row.awpKey){
-                $("<tr>").appendTo(Xid_exc_tbody)
-                    .attr({"id": idExcRow})
-                    .attr({"id": idExcRow, "key": row.excKey})
-                    .addClass("c_colExcelAwp_tr")
-                    .mouseenter(function(){$(XidExcRow).addClass(cae_hv);})
-                    .mouseleave(function(){$(XidExcRow).removeClass(cae_hv);})
-        // append cell to row ExcKey
-                    .append("<td>" + row.excKey + "</td>");
-        // if new unlinked row: highlight row ColExc
-                if (!!JustUnlinkedExcId && !!idExcRow && JustUnlinkedExcId === idExcRow) {
-                    $(XidExcRow).addClass(cae_hv);
-                    setTimeout(function () {$(XidExcRow).removeClass(cae_hv);}, 1000);
-        }}};
-     }; //function CreateTableRows()
-
-
 
 //=========   handle_table_row_clicked   ======================
     function handle_table_row_clicked(e) {  //// EAL: Excel Awp Linked table

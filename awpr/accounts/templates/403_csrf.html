@@ -1,0 +1,30 @@
+{% extends 'base_accounts.html' %}
+{% load i18n %}
+
+{% block title %}Fout bij het inloggen{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center mt-5">
+    <div class="col-lg-4 col-md-6 col-sm-8 ">
+      <div class="card mt-5">
+         <div class="card-body tsa_bc_lightlightgrey">
+            <h4>Fout bij het inloggen</h4>
+        </div>
+        <div class="card-body">
+            <div class="border_bg_invalid">
+              <p>Er is een fout opgetreden bij het inloggen.</p>
+              <p>Mogelijke oorzaken zijn:</p>
+                <ul>
+                  <li>Je bent al ingelogd in deze browser.</li>
+                  <li>Een andere gebruiker is al ingelogd in deze browser.</li>
+                  <li>Je browser accepteert geen cookies.</li>
+                </ul>
+            </div>
+            <div class="pt-3">
+              <a href="{% url 'home_url' %}" class="btn btn-secondary">Sluiten</a>
+            </div>
+            </div>
+        </div>
+      </div>
+    </div>
+{% endblock %}

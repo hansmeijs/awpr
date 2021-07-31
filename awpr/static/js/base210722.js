@@ -712,7 +712,8 @@
             const auth1 = b_get_status_bool_at_arrayindex(status_array, 1)  // STATUS_01_AUTH1 = 2
             const auth2 = b_get_status_bool_at_arrayindex(status_array, 2) // STATUS_02_AUTH2 = 4
             const auth3 = b_get_status_bool_at_arrayindex(status_array, 3) // STATUS_03_AUTH3 = 8
-            const submitted = b_get_status_bool_at_arrayindex(status_array, 4) // STATUS_04_SUBMITTED = 16
+            const auth4 = b_get_status_bool_at_arrayindex(status_array, 4) // STATUS_04_AUTH4 = 16
+            const submitted = b_get_status_bool_at_arrayindex(status_array, 5) // STATUS_04_SUBMITTED = 32
 
             img_class = (submitted) ? "appr_1_5" :
                         (auth1 && auth2 && auth3) ? "appr_1_4" :
@@ -724,11 +725,11 @@
                         (auth1) ? "appr_0_2" :
                         (created) ? "stat_0_1" : "stat_0_0"
 
-        } else if (status_sum < 64) {img_class = "note_1_2" // STATUS_05_REQUEST = 32
-        } else if (status_sum < 128) {img_class = "note_1_3"// STATUS_06_WARNING = 64
-        } else if (status_sum < 256) {img_class = "note_1_4"// STATUS_07_REJECTED = 128
-        } else if (status_sum < 512) {img_class = "note_2_2"// STATUS_08_REQUEST_ANSWERED = 256
-        } else if (status_sum < 1024) {img_class = "note_2_3" // STATUS_09_WARNING_ANSWERED = 512
+        } else if (status_sum < 128) {img_class = "note_1_2" // STATUS_06_REQUEST = 64
+        } else if (status_sum < 256) {img_class = "note_1_3"// STATUS_07_WARNING = 128
+        } else if (status_sum < 512) {img_class = "note_1_4"// STATUS_08_REJECTED = 256
+        } else if (status_sum < 1024) {img_class = "note_2_2"// STATUS_09_REQUEST_ANSWERED = 512
+        //} else if (status_sum < 1024) {img_class = "note_2_3" // STATUS_09_WARNING_ANSWERED = 512
         } else if (status_sum < 2048) {img_class = "note_2_4" // STATUS_10_REJECTED_ANSWERED = 1024
         } else if (status_sum < 4096) {img_class = "note_1_5"  // STATUS_11_EDIT = 2048
         } else if (status_sum < 8192) {img_class = "note_2_5" // STATUS_12_EDIT_ANSWERED = 4096
@@ -978,9 +979,9 @@
 //######### IT WORKS !!! #################################################################
 // +++++++++++++++++ LOOKUP dict in ordered dictlist +++++++++++++++++++++++++++ PR2021-06-16
 
-//========= b_get_mapdict_by_integer_from_datarows  ================== PR2021-07-14
-    function b_get_mapdict_by_integer_from_datarows(data_rows, lookup_field, search_int){
-        const [middle_index, found_dict, compare] = b_recursive_integer_lookup(data_rows, lookup_field, search_int);
+//========= b_get_mapdict_by_integer_from_datarows  ================== PR2021-07-25
+    function b_get_mapdict_by_integer_from_datarows(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int){
+        const [middle_index, found_dict, compare] = b_recursive_integer_lookup(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int);
         const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
         return selected_dict;
     }
@@ -992,43 +993,59 @@
         return selected_dict;
     }
 
-//========= b_recursive_integer_lookup  ========== PR2020-07-14
-    function b_recursive_integer_lookup(dict_list, lookup_field, search_int){
+//========= b_recursive_integer_lookup  ========== PR2020-07-14 PR2020-07-25
+    function b_recursive_integer_lookup(dict_list, lookup_1_field, search_1_int, lookup_2_field, search_2_int){
         //console.log( " ----- b_recursive_integer_lookup -----");
         // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
         // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
         // function returns rowindex of searched value, or rowindex of row to be inserted
         // dict_list must be ordered by id (as text field), done by server
 
+        //console.log( ".....lookup_1_field: ", lookup_1_field, search_1_int);
+        //console.log( ".....lookup_2_field: ", lookup_2_field,  search_2_int);
+
         let compare = null, middle_index = null, found_dict = null;
         if (dict_list && dict_list.length){
-            //const lookup_field = "id";
             const last_index = dict_list.length - 1;
             let min_index = 0;
             let max_index = last_index;
             middle_index =  Math.floor( (min_index + max_index) / 2);
 
-            if(!search_int){search_int = ""};
-        //console.log( "search_int: ", search_int);
-        //console.log( "lookup_field: ", lookup_field);
+            if(!search_1_int){search_1_int = 0};
+            if(!search_2_int){search_2_int = 0};
 
             const max_loop = 25;
             for (let i = 0; i < max_loop; i++) {
-                if (i > 23) {
+                if (i === max_loop - 1) {
                 // exit when loop not breaked (should not be possible), put index at end of list
-                    compare = 1;
+                    compare_1 = 1;
                     middle_index = last_index;
                     break;
                 } else {
-                    const middle_dict = dict_list[middle_index];
-                    const middle_value = middle_dict[lookup_field];
-                    compare = (search_int === middle_value) ? 0 :
-                              (search_int > middle_value) ? 1 : -1;
         //console.log( i, "LOOP : ", min_index, " - ", max_index, " > ", middle_index);
-        //console.log( "middle_value: ", middle_value);
+        //console.log( ".....middle_index: ", middle_index);
+                    const middle_dict = dict_list[middle_index];
+        //console.log( ".....middle_dict: ", middle_dict);
+
+                    // studsubj_id can be None, it is ordered first so it can be given the value of 0 in lookup
+                    const middle_1_value = (middle_dict[lookup_1_field]) ? middle_dict[lookup_1_field] : 0;
+                    const middle_2_value = (middle_dict[lookup_2_field]) ? middle_dict[lookup_2_field] : 0;
+
+        //console.log( ".....search_1_int  : ", search_1_int, typeof search_1_int);
+        //console.log( ".....middle_1_value: ", middle_1_value, typeof middle_1_value);
+        //console.log( ".....search_2_int  : ", search_2_int, typeof search_2_int);
+        //console.log( ".....middle_2_value: ", middle_2_value, typeof middle_2_value);
+                    // NULL values are sorted last in default ascending order.
+                    const compare_1 = (search_1_int === middle_1_value) ? 0 :
+                                (search_1_int  >  middle_1_value) ? 1 : -1;
+                    if (!compare_1){
+                        const compare_2 = (search_2_int === middle_2_value) ? 0 :
+                                        (search_2_int  >  middle_2_value) ? 1 : -1;
+                        compare = compare_2;
+                    } else {
+                        compare = compare_1;
+                    }
         //console.log( "compare : ", compare);
-        //console.log( "min_index : ", min_index);
-        //console.log( "max_index : ", max_index);
                     if (!compare) {
                         found_dict = middle_dict;
                         break;
@@ -1344,6 +1361,45 @@
             };
         };
     };  // b_clear_array
+
+
+//========= b_get_statusindex_of_requsr  ======== // PR2021-03-26 PR2021-07-26
+    function b_get_statusindex_of_requsr(loc, permit_dict){
+        // function returns status_index of auth user, returns 0 when user has none or multiple auth usergroups
+        // gives err messages when multiple found.
+        // STATUS_01_AUTH1 = 2,  STATUS_02_AUTH2 = 4, STATUS_03_AUTH3 = 8, STATUS_04_AUTH3 = 16
+        let status_index = 0;
+        const usrgrp = {auth1: false, auth2: false, auth3: false};
+            const perm_auth1 = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth1"));
+            const perm_auth2 = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth2"));
+            const perm_auth3 = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth3"));
+            const perm_auth4 = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth4"));
+
+            if(!perm_auth1 && !perm_auth2 && !perm_auth3){
+                // skip if user has no auth usergroup
+            } else if(perm_auth1 + perm_auth2 + perm_auth3 > 1){
+    // show msg error if user has multiple auth usergroups
+                const functions = (perm_auth1 && perm_auth2 && perm_auth3) ? loc.President + ", " + loc.Secretary + loc.and + loc.Commissioner :
+                                  (perm_auth1 && perm_auth2) ? loc.President + loc.and + loc.Secretary :
+                                  (perm_auth1 && perm_auth3) ? loc.President + loc.and + loc.Commissioner :
+                                  (perm_auth2 && perm_auth3) ? loc.Secretary + loc.and + loc.Examinator : "";
+
+                const msg_html = loc.approve_err_list.You_have_functions + functions + ". " + "<br>" +
+                            loc.approve_err_list.Only_1_allowed + "<br>" + loc.approve_err_list.cannot_approve
+                b_show_mod_message(msg_html);
+
+            } else if(perm_auth1){
+                status_index = 1;
+            } else if(perm_auth2){
+                status_index = 2;
+            } else if(perm_auth3){
+                status_index = 3;
+            } else if(perm_auth4){
+                status_index = 4;
+            }
+    return status_index;
+    }  // b_get_statusindex_of_requsr
+
 
 //#########################################################################
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++

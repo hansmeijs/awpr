@@ -71,6 +71,9 @@
     /*padding-left: 2rem;*/
 }
 
+.man_underline {
+  text-decoration: underline;
+}
 
 /* ---- manual_flexcontainer -------------------- */
 .mfc {

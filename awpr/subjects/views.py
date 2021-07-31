@@ -1113,7 +1113,7 @@ class ExamUploadView(View):
         if req_usr and req_usr.country:
             permit_list = req_usr.permit_list('page_exams')
             if permit_list:
-                has_permit = 'crud' in permit_list
+                has_permit = 'permit_crud' in permit_list
             if logging_on:
                 logger.debug('permit_list: ' + str(permit_list))
                 logger.debug('has_permit: ' + str(has_permit))
@@ -1392,7 +1392,7 @@ def create_exam_rows(setting_dict, append_dict, cur_dep_only=False):
     sel_examyear_pk = setting_dict.get('sel_examyear_pk')
     sel_examperiod = setting_dict.get('sel_examperiod')
     sel_depbase_pk = setting_dict.get('sel_depbase_pk')
-    sel_levelbase_pk = setting_dict.get('sel_levelbase_pk')
+    sel_lvlbase_pk = setting_dict.get('sel_lvlbase_pk')
     exam_pk = setting_dict.get('exam_pk')
 
     if logging_on:
@@ -1400,7 +1400,7 @@ def create_exam_rows(setting_dict, append_dict, cur_dep_only=False):
         logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
         logger.debug('sel_examperiod:  ' + str(sel_examperiod))
         logger.debug('sel_depbase_pk:  ' + str(sel_depbase_pk))
-        logger.debug('sel_levelbase_pk:  ' + str(sel_levelbase_pk))
+        logger.debug('sel_lvlbase_pk:  ' + str(sel_lvlbase_pk))
 
     sql_keys = {'ey_id': sel_examyear_pk, 'depbase_id': sel_depbase_pk}
 
@@ -1436,10 +1436,10 @@ def create_exam_rows(setting_dict, append_dict, cur_dep_only=False):
         sql_keys ['ex_id'] = exam_pk
         sql_list.append('AND ex.id = %(ex_id)s::INT')
     else:
-        if sel_levelbase_pk:
+        if sel_lvlbase_pk:
             # cannot filter on levelbase_pk because of LEFT JOIN subjects_level
             level = subj_mod.Level.objects.get_or_none(
-                base_id=sel_levelbase_pk,
+                base_id=sel_lvlbase_pk,
                 examyear_id=sel_examyear_pk
             )
             if level:

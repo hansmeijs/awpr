@@ -2,9 +2,7 @@
 
     "use strict";
 
-    console.log ('===== man_upload =====')
-
-    const man_upload_list = [
+    const man_upload = [
         "<div class='my-4'>",
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
@@ -12,7 +10,6 @@
                 "<h3 class='px-2'>Gegevens uploaden</h3>",
             "</div>",
         "</div>",
-
 
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
@@ -62,6 +59,7 @@
                 "<h4  class='px-2'>Stap 1: Selecteer een Excel bestand</h4>",
             "</div>",
         "</div>",
+
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",

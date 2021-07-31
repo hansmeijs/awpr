@@ -206,11 +206,6 @@ LOGIN_REDIRECT_URL = 'loggedin_url' # PR 2018-12-23
 # PR 2018-03-19
 LOGOUT_REDIRECT_URL = 'home_url'
 
-# In global.settings.py: PR2018-07-30
-# The number of days a password reset link is valid for
-PASSWORD_RESET_TIMEOUT_DAYS = 7
-
-
 # was: PR 2018-03-27  EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # PR 2018-12-28
@@ -354,7 +349,15 @@ MESSAGE_TAGS = {
     messages.ERROR: 'alert-danger',
 }
 
-# PR2018-05-10
-SESSION_EXPIRE_AT_BROWSER_CLOSE=True
-SESSION_SECURITY_WARN_AFTER = 3200 # Time (in seconds) before the user should be warned. Default 540.
-SESSION_SECURITY_EXPIRE_AFTER = 3600 # Time (in seconds) before the user should be logged out. Default is 600.
+# PR2018-05-10 PR2021-07-23: changed to 30 minutes
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SECURITY_WARN_AFTER = 1740 # PR2021-07-23: was 3200. Time (in seconds) before the user should be warned. Default 540.
+SESSION_SECURITY_EXPIRE_AFTER = 1800 # PR2021-07-23: was 3600. Time (in seconds) before the user should be logged out. Default is 600.
+
+# In global.settings.py: PR2018-07-30
+# The number of days a password reset link is valid for
+# The PASSWORD_RESET_TIMEOUT_DAYS setting is deprecated. Use 'PASSWORD_RESET_TIMEOUT instead.' PR2021-07-28
+# Default: 259200 (3 days, in seconds)
+# was: PASSWORD_RESET_TIMEOUT_DAYS = 7
+PASSWORD_RESET_TIMEOUT = 604800  #  7 days = 604.800 seconds
+

@@ -522,11 +522,11 @@ document.addEventListener
         console.log("=== HandleSbrLevel");
         console.log( "el_select.value: ", el_select.value, typeof el_select.value)
 
-        setting_dict.sel_levelbase_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
+        setting_dict.sel_lvlbase_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
         setting_dict.sel_level_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].text : null;
 
 // ---  upload new setting
-        const upload_dict = {selected_pk: {sel_levelbase_pk: setting_dict.sel_levelbase_pk}};
+        const upload_dict = {selected_pk: {sel_lvlbase_pk: setting_dict.sel_lvlbase_pk}};
         UploadSettings (upload_dict, url_settings_upload);
 
         UpdateHeaderLeft();
@@ -586,12 +586,12 @@ document.addEventListener
         const has_profiel = setting_dict.sel_dep_has_profiel;
         console.log("has_items", has_items);
         console.log("has_profiel", has_profiel);
-        const caption_all = "&#60" + ( (tblName === "level") ? loc.All_levels : (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
+        const caption_all = "&#60" + ( (tblName === "level") ? loc.All_leerwegen : (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
         if (has_items){
             if (rows.length === 1){
                 // if only 1 level: make that the selected one
                 if (tblName === "level"){
-                    setting_dict.sel_levelbase_pk = rows.base_id;
+                    setting_dict.sel_lvlbase_pk = rows.base_id;
                 } else if (tblName === "sector"){
                     setting_dict.sel_sector_pk = rows.base_id
                 }
@@ -605,7 +605,7 @@ document.addEventListener
                 display_rows.push({value: row.base_id, caption: row.abbrev})
             }
 
-            const selected_pk = (tblName === "level") ? setting_dict.sel_levelbase_pk : (tblName === "sector") ? setting_dict.sel_sector_pk : null;
+            const selected_pk = (tblName === "level") ? setting_dict.sel_lvlbase_pk : (tblName === "sector") ? setting_dict.sel_sector_pk : null;
             const el_SBR_select = (tblName === "level") ? el_SBR_select_level : (tblName === "sector") ? el_SBR_select_sector : null;
             t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
 
@@ -633,7 +633,7 @@ document.addEventListener
     function HandleShowAll() {
         console.log("=== HandleShowAll");
 
-        setting_dict.sel_levelbase_pk = null;
+        setting_dict.sel_lvlbase_pk = null;
         setting_dict.sel_level_abbrev = null;
 
         setting_dict.sel_sector_pk = null;
@@ -646,7 +646,7 @@ document.addEventListener
         el_SBR_select_sector.value = "0";
 
 // ---  upload new setting
-        const selected_pk_dict = {sel_levelbase_pk: null, sel_sector_pk: null, sel_subject_pk: null, sel_student_pk: null};
+        const selected_pk_dict = {sel_lvlbase_pk: null, sel_sector_pk: null, sel_subject_pk: null, sel_student_pk: null};
         //const page_grade_dict = {sel_btn: "grade_by_all"}
        //const upload_dict = {selected_pk: selected_pk_dict, page_grade: page_grade_dict};
         const upload_dict = {selected_pk: selected_pk_dict};
@@ -663,7 +663,7 @@ document.addEventListener
         //console.log("setting_dict", setting_dict)
         // sel_subject_txt gets value in MSSSS_display_in_sbr, therefore UpdateHeader comes after MSSSS_display_in_sbr
         let header_left = setting_dict.sel_examtype_caption + " " + setting_dict.sel_depbase_code;
-        if (setting_dict.sel_levelbase_pk) { header_left += " " + setting_dict.sel_level_abbrev }
+        if (setting_dict.sel_lvlbase_pk) { header_left += " " + setting_dict.sel_level_abbrev }
         document.getElementById("id_hdr_left").innerText = header_left
 
         document.getElementById("id_hdr_textright1").innerText = setting_dict.sel_examperiod_caption
@@ -699,9 +699,9 @@ document.addEventListener
             // only show rows of selected student / subject
                 let show_row = true;
                 if (tblName === "exam"){
-                    show_row = (!setting_dict.sel_levelbase_pk || map_dict.levelbase_id === setting_dict.sel_levelbase_pk)
+                    show_row = (!setting_dict.sel_lvlbase_pk || map_dict.levelbase_id === setting_dict.sel_lvlbase_pk)
                 } else {
-                    show_row =  (!setting_dict.sel_levelbase_pk || map_dict.levelbase_id === setting_dict.sel_levelbase_pk) &&
+                    show_row =  (!setting_dict.sel_lvlbase_pk || map_dict.levelbase_id === setting_dict.sel_lvlbase_pk) &&
                                 (!setting_dict.sel_sector_pk || map_dict.sct_id === setting_dict.sel_sector_pk) &&
                                 (!setting_dict.sel_subject_pk || map_dict.subject_id === setting_dict.sel_subject_pk);
                 }
@@ -1047,9 +1047,9 @@ document.addEventListener
         mod_dict = {};
         const tblRow = get_tablerow_selected(el_input);
         if(tblRow){
-            // get_statusindex_of_user returns index of auth user, returns 0 when user has none or multiple auth usergroups
+            // b_get_statusindex_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
             // gives err messages when multiple found.
-            const status_index = get_statusindex_of_user();
+            const status_index = b_get_statusindex_of_requsr(loc, permit_dict);
 
             // if(status_index){
             if(true){
@@ -1723,7 +1723,7 @@ document.addEventListener
 
             if(is_addnew){
                 mod_MEX_dict.is_addnew = true;
-                mod_MEX_dict.levelbase_pk = (setting_dict.sel_levelbase_pk) ? setting_dict.sel_levelbase_pk : null;
+                mod_MEX_dict.levelbase_pk = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_lvlbase_pk : null;
             } else {
                 const tblRow = get_tablerow_selected(el_input);
                 const map_id = (tblRow) ? tblRow.id : null;
@@ -3202,12 +3202,10 @@ document.addEventListener
 
     }  // MSED_Response
 
-//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05
-    function MSSSS_Response(tblName, selected_pk, selected_code, selected_name) {
+//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
+    function MSSSS_Response(tblName, selected_dict, selected_pk) {
         console.log( "===== MSSSS_Response ========= ");
         console.log( "selected_pk", selected_pk);
-        //console.log( "selected_code", selected_code);
-        console.log( "selected_name", selected_name);
 
     // ---  upload new setting
         if(selected_pk === -1) { selected_pk = null};
@@ -3233,7 +3231,6 @@ document.addEventListener
             }
         }
 
-
         if (tblName === "subject") {
             setting_dict.sel_subject_pk = selected_pk;
     // reset selected student when subject is selected, in setting_dict and upload_dict
@@ -3245,7 +3242,7 @@ document.addEventListener
             }
         } else if (tblName === "student") {
             setting_dict.sel_student_pk = selected_pk;
-            setting_dict.sel_student_name = selected_name;
+            //setting_dict.sel_student_name = selected_name;
     // reset selected subject when student is selected, in setting_dict and upload_dict
             if(selected_pk){
                 selected_pk_dict.sel_subject_pk = null;

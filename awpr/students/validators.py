@@ -1,4 +1,11 @@
 # PR2019-02-17
+
+from awpr import constants as c
+from awpr import settings as s
+
+from students import models as stud_mod
+from subjects import models as subj_mod
+
 from django.utils.translation import pgettext_lazy, ugettext_lazy as _
 
 from django.db import connection
@@ -7,16 +14,11 @@ from datetime import datetime
 import logging
 logger = logging.getLogger(__name__)
 
-from awpr import constants as c
-from awpr import settings as s
-
-from students import models as stud_mod
-from subjects import models as subj_mod
 
 
 # ========  validate_studentsubjects  ======= PR2021-07-09
 def validate_studentsubjects(student):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  validate_studentsubjects  -----')
         logger.debug('student: ' + str(student))
@@ -30,7 +32,34 @@ def validate_studentsubjects(student):
             logger.debug('stud_scheme: ' + str(stud_scheme))
 
         if stud_scheme is None:
-            msg_list.append(_("No subject scheme found. Please enter the 'profiel' or 'leerweg' and 'sector'."))
+            dep_missing, level_missing, sector_missing, has_profiel = False, False, False, False
+
+            department = student.department
+            if department is None:
+                dep_missing = True
+            else:
+                has_profiel = department.has_profiel
+                level_missing = department.level_req and student.level is None
+                sector_missing = department.sector_req and student.sector is None
+
+            caption = ''
+            if dep_missing:
+                caption = _('the department')
+            else:
+                if level_missing and sector_missing:
+                    if has_profiel:
+                        caption = _("the 'leerweg' and 'profiel'")
+                    else:
+                        caption = _("the 'leerweg' and 'sector'")
+                elif level_missing:
+                    caption = _("the 'leerweg'")
+                elif sector_missing:
+                    if has_profiel:
+                        caption = _("the 'profiel'")
+                    else:
+                        caption = _("the sector")
+
+            msg_list.append(_("No subject scheme found. Please enter %(cpt)s.") % {'cpt': caption})
             if logging_on:
                 logger.debug('msg_list: ' + str(msg_list))
         else:
@@ -62,7 +91,7 @@ def validate_studentsubjects(student):
                         str(_("The subjects %(list)s occur multiple times and must be deleted.") % {'list': display_str}),
                         "<br>",
                         str(_("They will be disregarded in the rest of the validation.")),
-                        "</li>") ))
+                        "</li>")))
 
             if logging_on:
                 logger.debug('scheme_dict: ' + str(scheme_dict))
@@ -82,15 +111,75 @@ def validate_studentsubjects(student):
 # - check amount of subjects per subjecttype
             validate_amount_subjecttype_subjects(scheme_dict, studsubj_dict, msg_list)
 
-    msg_html = None
     if len(msg_list):
-
-        msg_str = ''.join(( '<h6>', str(_('The composition of the subjects is not correct:')), '</h6>', "<ul class='msg_bullet'>" ))
+        msg_str = ''.join(("<div class='p-2 border_bg_warning'><h6>", str(_('The composition of the subjects is not correct')), ':</h6>', "<ul class='msg_bullet'>"))
         msg_list.insert(0, msg_str)
-        msg_list.append("</ul>")
-        msg_html = ''.join(msg_list)
+        msg_list.append("</ul></div>")
+    else:
+        pass
+        # don't give message 'correct', the rules might not be entered
+        # msg_list = ("<div class='p-2 border_bg_valid'><p>", str(_('The composition of the subjects is correct.')), "</p></div>")
 
+    msg_html = ''.join(msg_list)
     return msg_html
+# --- end of validate_studentsubjects
+
+
+
+# ========  validate_studentsubjects  ======= PR2021-07-24
+def validate_studentsubjects_no_msg(student):
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' -----  validate_studentsubjects  -----')
+        logger.debug('student: ' + str(student))
+
+# - store info of schemeitem in si_dict
+
+    if student:
+        stud_scheme = student.scheme
+        if logging_on:
+            logger.debug('stud_scheme: ' + str(stud_scheme))
+
+        if stud_scheme is None:
+            return True
+        else:
+
+# ++++++++++++++++++++++++++++++++
+# - get min max subjects and mvt from scheme
+            scheme_dict = get_scheme_si_sjtp_dict(stud_scheme)
+# ++++++++++++++++++++++++++++++++
+# - get info from studsubjects
+            doubles_pk_list = []
+            msg_list = []
+            studsubj_dict = get_studsubj_dict(stud_scheme, student, doubles_pk_list, msg_list)
+            if msg_list:
+                return True
+            if doubles_pk_list:
+                return True
+# -------------------------------
+# - check required subjects
+            validate_required_subjects(scheme_dict, studsubj_dict, msg_list)
+            if msg_list:
+                return True
+# - check total amount of subjects
+            validate_amount_subjects('subject', scheme_dict, studsubj_dict, msg_list)
+            if msg_list:
+                return True
+
+# - check amount of mvt and combi subjects
+            validate_amount_subjects('mvt', scheme_dict, studsubj_dict, msg_list)
+            if msg_list:
+                return True
+            validate_amount_subjects('combi', scheme_dict, studsubj_dict, msg_list)
+            if msg_list:
+                return True
+
+# - check amount of subjects per subjecttype
+            validate_amount_subjecttype_subjects(scheme_dict, studsubj_dict, msg_list)
+            if msg_list:
+                return True
+
+    return False
 # --- end of validate_studentsubjects
 
 
@@ -152,7 +241,7 @@ def convert_code_list_to_display_str(code_list):
 def validate_amount_subjecttype_subjects(scheme_dict, studsubj_dict, msg_list):
     # - validate amount of subjects PR2021-07-11
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  validate_amount_subjecttype_subjects  -----')
 
@@ -341,7 +430,7 @@ def validate_amount_subjects(field, scheme_dict, studsubj_dict, msg_list):
 
 def validate_minmax_count(field, scheme_dict, subject_count, caption, captions, sjtp_name, min_subj, max_subj, msg_list):
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  validate_minmax_count  -----')
         logger.debug('subject_count: ' + str(subject_count))
@@ -524,7 +613,7 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
 # - create dict with studentsubject values that are used in validator
     rows = stud_mod.Studentsubject.objects.filter(
         student=student,
-        deleted=False
+        tobedeleted=False
     )
     if rows is None:
         msg_list.append(_("Candidate has no subjects."))
@@ -536,8 +625,11 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
                 logger.debug('studsubj.schemeitem.subject.name: ' + str(studsubj.schemeitem.subject.name))
             si = studsubj.schemeitem
             if si.scheme_id != stud_scheme.pk:
-                value = si.subject.name
-                msg_list.append(_("Subject '%(val)s' does not belong to this subject scheme.") % {'val': value})
+                value = si.subject.base.code
+                msg_str = '<li>' + str(_("Subject '%(val)s' does not occur in this subject scheme.") % {'val': value}) + '</li>'
+                if logging_on:
+                    logger.debug('msg_str: ' + str(msg_str))
+                msg_list.append(msg_str)
             else:
 
 # - put subject.pk in subject_list, or in doubles_list when already exists
@@ -563,19 +655,19 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
                             'elective_list': [],
 
                         }
-                    dict = sjtp_dict.get(sjtp_pk)
+                    item_dict = sjtp_dict.get(sjtp_pk)
 
-                    subj_list = dict.get('subj_list')
+                    subj_list = item_dict.get('subj_list')
                     subj_list.append(subj_pk)
 
                     if studsubj.is_extra_nocount:
-                        nocount_list = dict.get('nocount_list')
+                        nocount_list = item_dict.get('nocount_list')
                         nocount_list.append(subj_pk)
                     if studsubj.is_extra_counts:
-                        counts_list = dict.get('counts_list')
+                        counts_list = item_dict.get('counts_list')
                         counts_list.append(subj_pk)
                     if studsubj.is_elective_combi:
-                        elective_list = dict.get('elective_list')
+                        elective_list = item_dict.get('elective_list')
                         elective_list.append(subj_pk)
 
                     if si.is_mandatory:
@@ -611,85 +703,6 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
 
 
 #######################################################################################
-
-# TODO from tsa, to be adapted
-def validate_namelast_namefirst(namelast, namefirst, company, update_field, msg_dict, this_pk=None):
-    # validate if employee already_exists in this company PR2019-03-16
-    # from https://stackoverflow.com/questions/1285911/how-do-i-check-that-multiple-keys-are-in-a-dict-in-a-single-pass
-    # if all(k in student for k in ('idnumber','lastname', 'firstname')):
-    #logger.debug(' --- validate_namelast_namefirst --- ' + str(namelast) + ' ' + str(namefirst) + ' ' + str(this_pk))
-
-    msg_err_namelast = None
-    msg_err_namefirst = None
-    has_error = False
-    if not company:
-        msg_err_namelast = _("No company.")
-    else:
-        # first name can be blank, last name not
-        if not namelast:
-            msg_err_namelast = _("Last name cannot be blank.")
-    if msg_err_namelast is None:
-        if len(namelast) > c.NAME_MAX_LENGTH:
-            msg_err_namelast = _("Last name is too long.") + str(c.NAME_MAX_LENGTH) + _(' characters or fewer.')
-        elif namefirst:
-            if len(namefirst) > c.NAME_MAX_LENGTH:
-                msg_err_namefirst = _("First name is too long.") + str(c.NAME_MAX_LENGTH) + _(' characters or fewer.')
-
-        # check if first + lastname already exists
-        if msg_err_namelast is None and msg_err_namefirst is None:
-            if this_pk:
-                name_exists = m.Employee.objects.filter(namelast__iexact=namelast,
-                                                      namefirst__iexact=namefirst,
-                                                      company=company
-                                                      ).exclude(pk=this_pk).exists()
-            else:
-                name_exists = m.Employee.objects.filter(namelast__iexact=namelast,
-                                                      namefirst__iexact=namefirst,
-                                                      company=company
-                                                      ).exists()
-            if name_exists:
-                new_name = ' '.join([namefirst, namelast])
-                msg_err = str(_("%(cpt)s '%(val)s' already exists.") % {'cpt': _('Name'), 'val': new_name})
-                if update_field == 'namelast':
-                    msg_err_namelast = msg_err
-                elif update_field == 'namefirst':
-                    msg_err_namefirst = msg_err
-
-    if msg_err_namelast or msg_err_namefirst:
-        has_error = True
-        if msg_err_namelast:
-            msg_dict['err_namelast'] = msg_err_namefirst
-        if msg_err_namefirst:
-            msg_dict['err_namefirst'] = msg_err_namefirst
-
-    return has_error
-
-
-def employee_email_exists(email, company, this_pk = None):
-    # validate if email address already_exists in this company PR2019-03-16
-
-    msg_dont_add = None
-    if not company:
-        msg_dont_add = _("No company.")
-    elif not email:
-        msg_dont_add = _("The email address cannot be blank.")
-    elif len(email) > c.NAME_MAX_LENGTH:
-        msg_dont_add = _('The email address is too long.') + str(c.CODE_MAX_LENGTH) + _(' characters or fewer.')
-    else:
-        if this_pk:
-            email_exists = m.Employee.objects.filter(email__iexact=email,
-                                                  company=company
-                                                  ).exclude(pk=this_pk).exists()
-        else:
-            email_exists = m.Employee.objects.filter(email__iexact=email,
-                                                  company=company).exists()
-        if email_exists:
-            msg_dont_add = _("This email address already exists.")
-
-    return msg_dont_add
-
-
-
 # ++++++++++++ Validations  +++++++++++++++++++++++++
 
 # ========  get_examnumberlist_from_database  ======= PR2021-07-19
@@ -1044,53 +1057,6 @@ def validate_idnumber(id_str):
         msg_dont_add = _("ID number not entered.")
 
     return idnumber_clean, birthdate, msg_dont_add
-
-
-def idnumber_already_exists(idnumber_stripped, school):
-    # validate if idnumber already exist in this school and examyear PR2019-02-17
-    msg_dont_add = None
-    if not idnumber_stripped:
-        msg_dont_add =_("ID number not entered.")
-    elif Student.objects.filter(
-                idnumber__iexact=idnumber_stripped,  # _iexact filters a Case-insensitive exact match.
-                school=school).exists():
-            msg_dont_add =_("ID number already exists.")
-    return msg_dont_add
-
-
-def studentname_already_exists(lastname, firstname, school):
-    # validate if student name already exists in this school and examyear PR2019-02-17
-    # from https://stackoverflow.com/questions/1285911/how-do-i-check-that-multiple-keys-are-in-a-dict-in-a-single-pass
-                    # if all(k in student for k in ('idnumber','lastname', 'firstname')):
-    msg_dont_add = None
-    if not lastname:
-        if not firstname:
-            msg_dont_add = _("First name and last name not entered.")
-        else:
-            msg_dont_add = _("Last name not entered.")
-    else:
-        if not firstname:
-            msg_dont_add = _("First name not entered.")
-        else:
-            if Student.objects.filter(
-                    lastname__iexact=lastname,
-                    firstname__iexact=firstname,
-                    school=school).exists():
-                msg_dont_add =_("Student name already exists.")
-    return msg_dont_add
-
-
-def examnumber_already_exists(examnumber, school):
-    # validate if examnumber already exists in this school and examyear PR2019-02-19
-    msg_dont_add = None
-    if not examnumber:
-        msg_dont_add = _("Exam number not entered.")
-    else:
-        if Student.objects.filter(
-                examnumber__iexact=examnumber,
-                school=school).exists():
-            msg_dont_add =_("Exam number already exists.")
-    return msg_dont_add
 
 
 def validate_gender(value):
