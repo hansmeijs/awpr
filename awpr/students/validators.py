@@ -97,19 +97,23 @@ def validate_studentsubjects(student):
                 logger.debug('scheme_dict: ' + str(scheme_dict))
                 logger.debug('studsubj_dict: ' + str(studsubj_dict))
 
+# ++++++++++++++++++++++++++++++++
+# - get eveninstudent or lex student
+            is_evening_or_lex_student = student.iseveningstudent or student.islexstudent
+
 # -------------------------------
 # - check required subjects
-            validate_required_subjects(scheme_dict, studsubj_dict, msg_list)
+            validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
 
 # - check total amount of subjects
-            validate_amount_subjects('subject', scheme_dict, studsubj_dict, msg_list)
+            validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
 
 # - check amount of mvt and combi subjects
-            validate_amount_subjects('mvt', scheme_dict, studsubj_dict, msg_list)
-            validate_amount_subjects('combi', scheme_dict, studsubj_dict, msg_list)
+            validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+            validate_amount_subjects('combi', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
 
 # - check amount of subjects per subjecttype
-            validate_amount_subjecttype_subjects(scheme_dict, studsubj_dict, msg_list)
+            validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
 
     if len(msg_list):
         msg_str = ''.join(("<div class='p-2 border_bg_warning'><h6>", str(_('The composition of the subjects is not correct')), ':</h6>', "<ul class='msg_bullet'>"))
@@ -156,26 +160,31 @@ def validate_studentsubjects_no_msg(student):
                 return True
             if doubles_pk_list:
                 return True
+
+# ++++++++++++++++++++++++++++++++
+# - get eveninstudent or lex student
+            is_evening_or_lex_student = student.iseveningstudent or student.islexstudent
+
 # -------------------------------
-# - check required subjects
-            validate_required_subjects(scheme_dict, studsubj_dict, msg_list)
+# - check required subjects - not when is_evening_or_lex_student
+            validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             if msg_list:
                 return True
 # - check total amount of subjects
-            validate_amount_subjects('subject', scheme_dict, studsubj_dict, msg_list)
+            validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             if msg_list:
                 return True
 
 # - check amount of mvt and combi subjects
-            validate_amount_subjects('mvt', scheme_dict, studsubj_dict, msg_list)
+            validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             if msg_list:
                 return True
-            validate_amount_subjects('combi', scheme_dict, studsubj_dict, msg_list)
+            validate_amount_subjects('combi', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             if msg_list:
                 return True
 
 # - check amount of subjects per subjecttype
-            validate_amount_subjecttype_subjects(scheme_dict, studsubj_dict, msg_list)
+            validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             if msg_list:
                 return True
 
@@ -183,41 +192,43 @@ def validate_studentsubjects_no_msg(student):
 # --- end of validate_studentsubjects
 
 
-def validate_required_subjects(scheme_dict, studsubj_dict, msg_list):
-    # - validate ampount of subjects PR2021-07-10
+def validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list):
+    # - validate amount of subjects PR2021-07-10
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  validate_required_subjects  -----')
 
-    scheme_req_list = scheme_dict.get('req_list', [])
-    studsubj_req_list = studsubj_dict.get('req_list', [])
+# - skip when is_evening_or_lex_student
+    if not is_evening_or_lex_student:
+        scheme_req_list = scheme_dict.get('req_list', [])
+        studsubj_req_list = studsubj_dict.get('req_list', [])
 
-    subject_code_dict = scheme_dict.get('subj_code')
+        subject_code_dict = scheme_dict.get('subj_code')
 
-    missing_req_list = []
-    if len(scheme_req_list):
-        for i, req_pk in enumerate(scheme_req_list):
-            if req_pk not in studsubj_req_list:
-                req_code = subject_code_dict[req_pk]
-                missing_req_list.append(req_code)
+        missing_req_list = []
+        if len(scheme_req_list):
+            for i, req_pk in enumerate(scheme_req_list):
+                if req_pk not in studsubj_req_list:
+                    req_code = subject_code_dict[req_pk]
+                    missing_req_list.append(req_code)
 
-    msg_txt = None
-    missing_req_len = len(missing_req_list)
-    if missing_req_len:
-        if missing_req_len == 1:
-            req_code = missing_req_list[0]
-            msg_txt = _("The required subject '%(code)s' is missing.") % {'code': req_code}
-        else:
-            req_code_list = convert_code_list_to_display_str(missing_req_list)
-            msg_txt = _("The required subjects %(code)s are missing.") % {'code': req_code_list}
+        msg_txt = None
+        missing_req_len = len(missing_req_list)
+        if missing_req_len:
+            if missing_req_len == 1:
+                req_code = missing_req_list[0]
+                msg_txt = _("The required subject '%(code)s' is missing.") % {'code': req_code}
+            else:
+                req_code_list = convert_code_list_to_display_str(missing_req_list)
+                msg_txt = _("The required subjects %(code)s are missing.") % {'code': req_code_list}
 
-    if msg_txt:
-        msg_html = ''.join(('<li>', msg_txt, '</li>'))
-        msg_list.append(msg_html)
+        if msg_txt:
+            msg_html = ''.join(('<li>', msg_txt, '</li>'))
+            msg_list.append(msg_html)
 
-    if logging_on:
-        logger.debug('msg_txt: ' + str(msg_txt))
+        if logging_on:
+            logger.debug('msg_txt: ' + str(msg_txt))
 
 
 def convert_code_list_to_display_str(code_list):
@@ -238,7 +249,7 @@ def convert_code_list_to_display_str(code_list):
     return display_str
 
 
-def validate_amount_subjecttype_subjects(scheme_dict, studsubj_dict, msg_list):
+def validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list):
     # - validate amount of subjects PR2021-07-11
 
     logging_on = False  # s.LOGGING_ON
@@ -298,14 +309,14 @@ def validate_amount_subjecttype_subjects(scheme_dict, studsubj_dict, msg_list):
             caption = _('subject')
             captions = _('subjects')
 
-            validate_minmax_count('sjtp', scheme_dict, subject_count, caption, captions, sjtp_name, min_subjects, max_subjects, msg_list)
+            validate_minmax_count('sjtp', is_evening_or_lex_student, scheme_dict, subject_count, caption, captions, sjtp_name, min_subjects, max_subjects, msg_list)
 
 # - end of validate_amount_subjecttype_subjects
 
 
-def validate_amount_subjects(field, scheme_dict, studsubj_dict, msg_list):
+def validate_amount_subjects(field, is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list):
     # - validate amount of subjects PR2021-07-10
-
+    # - skip validate minimum subjects when is_evening_or_lex_student
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  validate_amount_subjects  -----')
@@ -365,49 +376,50 @@ def validate_amount_subjects(field, scheme_dict, studsubj_dict, msg_list):
         minmax_txt = None
         minmax_val = None
         if min_subj and subject_count < min_subj:
-            minmax_txt = pgettext_lazy('NL_minimale', 'minimum')
-            minmax_val = min_subj
-            # - add available list , not when field = 'subject'
-            if field != 'subject':
-                scheme_pk_list = scheme_dict.get(subject_list_key)
-                subject_code_dict = scheme_dict.get('subj_code')
+            if not is_evening_or_lex_student:
+                minmax_txt = pgettext_lazy('NL_minimale', 'minimum')
+                minmax_val = min_subj
+                # - add available list , not when field = 'subject'
+                if field != 'subject':
+                    scheme_pk_list = scheme_dict.get(subject_list_key)
+                    subject_code_dict = scheme_dict.get('subj_code')
 
-                available_list = []
-                if logging_on:
-                    logger.debug('scheme_pk_list: ' + str(scheme_pk_list))
-
-                for subj_pk in scheme_pk_list:
+                    available_list = []
                     if logging_on:
-                        logger.debug('subj_pk: ' + str(subj_pk))
+                        logger.debug('scheme_pk_list: ' + str(scheme_pk_list))
 
-                    code = subject_code_dict[subj_pk]
-                    if code not in available_list:
-                        available_list.append(code)
-
-                if logging_on:
-                    logger.debug('available_list: ' + str(available_list))
-
-                available_len = len(available_list)
-                if available_len:
-                    if available_len == 1:
-                        msg_available = _("The %(cpt)s is: '%(list)s'.") % {'cpt': caption, 'list': available_list}
-                    else:
-                        available_list.sort()
+                    for subj_pk in scheme_pk_list:
                         if logging_on:
-                            logger.debug('available_list.sort: ' + str(available_list))
-                        list_str = ''
-                        for x in range(0, available_len):  # range(start_value, end_value, step), end_value is not included!
-                            if x == 0:
-                                join_str = ''
-                            elif x == (available_len - 1):
-                                join_str = str(_(' and '))
-                            else:
-                                join_str = ', '
-                            list_str += ''.join((join_str, "'", available_list[x], "'"))
-                        msg_available = _("The %(cpt)s are: %(list)s.") % {'cpt': captions, 'list': list_str}
-                        if logging_on:
-                            logger.debug('list_str: ' + str(list_str))
-                            logger.debug('msg_available: ' + str(msg_available))
+                            logger.debug('subj_pk: ' + str(subj_pk))
+
+                        code = subject_code_dict[subj_pk]
+                        if code not in available_list:
+                            available_list.append(code)
+
+                    if logging_on:
+                        logger.debug('available_list: ' + str(available_list))
+
+                    available_len = len(available_list)
+                    if available_len:
+                        if available_len == 1:
+                            msg_available = _("The %(cpt)s is: '%(list)s'.") % {'cpt': caption, 'list': available_list}
+                        else:
+                            available_list.sort()
+                            if logging_on:
+                                logger.debug('available_list.sort: ' + str(available_list))
+                            list_str = ''
+                            for x in range(0, available_len):  # range(start_value, end_value, step), end_value is not included!
+                                if x == 0:
+                                    join_str = ''
+                                elif x == (available_len - 1):
+                                    join_str = str(_(' and '))
+                                else:
+                                    join_str = ', '
+                                list_str += ''.join((join_str, "'", available_list[x], "'"))
+                            msg_available = _("The %(cpt)s are: %(list)s.") % {'cpt': captions, 'list': list_str}
+                            if logging_on:
+                                logger.debug('list_str: ' + str(list_str))
+                                logger.debug('msg_available: ' + str(msg_available))
 
         if max_subj and subject_count > max_subj:
             minmax_txt = pgettext_lazy('NL_maximale', 'maximum')
@@ -428,7 +440,7 @@ def validate_amount_subjects(field, scheme_dict, studsubj_dict, msg_list):
 # - validate_amount_subjects
 
 
-def validate_minmax_count(field, scheme_dict, subject_count, caption, captions, sjtp_name, min_subj, max_subj, msg_list):
+def validate_minmax_count(field, is_evening_or_lex_student, scheme_dict, subject_count, caption, captions, sjtp_name, min_subj, max_subj, msg_list):
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -459,44 +471,45 @@ def validate_minmax_count(field, scheme_dict, subject_count, caption, captions, 
         minmax_txt = None
         minmax_val = None
         if min_subj is not None and subject_count < min_subj:
-            minmax_txt = pgettext_lazy('NL_minimale', 'minimum')
-            minmax_val = min_subj
-            # - add available list , not when field = 'subject'
-            if field != 'subject':
-                subject_code_dict = scheme_dict.get('subj_code')
-                available_list = []
-                for subj_pk, subject_code in subject_code_dict.items():
+            if not is_evening_or_lex_student:
+                minmax_txt = pgettext_lazy('NL_minimale', 'minimum')
+                minmax_val = min_subj
+                # - add available list , not when field = 'subject'
+                if field != 'subject':
+                    subject_code_dict = scheme_dict.get('subj_code')
+                    available_list = []
+                    for subj_pk, subject_code in subject_code_dict.items():
+                        if logging_on:
+                            logger.debug('subj_pk: ' + str(subj_pk))
+                            logger.debug('subject_code: ' + str(subject_code))
+
+                        if subject_code not in available_list:
+                            available_list.append(subject_code)
+
                     if logging_on:
-                        logger.debug('subj_pk: ' + str(subj_pk))
-                        logger.debug('subject_code: ' + str(subject_code))
+                        logger.debug('available_list: ' + str(available_list))
 
-                    if subject_code not in available_list:
-                        available_list.append(subject_code)
-
-                if logging_on:
-                    logger.debug('available_list: ' + str(available_list))
-
-                available_len = len(available_list)
-                if available_len:
-                    if available_len == 1:
-                        msg_available = _("The %(cpt)s is: '%(list)s'.") % {'cpt': caption, 'list': available_list}
-                    else:
-                        available_list.sort()
-                        if logging_on:
-                            logger.debug('available_list.sort: ' + str(available_list))
-                        list_str = ''
-                        for x in range(0, available_len):  # range(start_value, end_value, step), end_value is not included!
-                            if x == 0:
-                                join_str = ''
-                            elif x == (available_len - 1):
-                                join_str = str(_(' and '))
-                            else:
-                                join_str = ', '
-                            list_str += ''.join((join_str, "'", available_list[x], "'"))
-                        msg_available = _("The %(cpt)s are: %(list)s.") % {'cpt': captions, 'list': list_str}
-                        if logging_on:
-                            logger.debug('list_str: ' + str(list_str))
-                            logger.debug('msg_available: ' + str(msg_available))
+                    available_len = len(available_list)
+                    if available_len:
+                        if available_len == 1:
+                            msg_available = _("The %(cpt)s is: '%(list)s'.") % {'cpt': caption, 'list': available_list}
+                        else:
+                            available_list.sort()
+                            if logging_on:
+                                logger.debug('available_list.sort: ' + str(available_list))
+                            list_str = ''
+                            for x in range(0, available_len):  # range(start_value, end_value, step), end_value is not included!
+                                if x == 0:
+                                    join_str = ''
+                                elif x == (available_len - 1):
+                                    join_str = str(_(' and '))
+                                else:
+                                    join_str = ', '
+                                list_str += ''.join((join_str, "'", available_list[x], "'"))
+                            msg_available = _("The %(cpt)s are: %(list)s.") % {'cpt': captions, 'list': list_str}
+                            if logging_on:
+                                logger.debug('list_str: ' + str(list_str))
+                                logger.debug('msg_available: ' + str(msg_available))
 
         if max_subj is not None and subject_count > max_subj:
             minmax_txt = pgettext_lazy('NL_maximale', 'maximum')

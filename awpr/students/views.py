@@ -696,7 +696,6 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
                         # PR2021-03-27 auth_index is taken from requsr_usergroups_list, not from upload_dict
                         #  function may have changed if page is not refreshed in time)
 
-
                         sel_lvlbase_pk, sel_sctbase_pk, sel_subject_pk, sel_student_pk = None, None, None, None
                         selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                         if selected_dict:
@@ -707,7 +706,7 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
                         if logging_on:
                             logger.debug('selected_dict: ' + str(selected_dict))
 
-    # +++ get selected subject_rows
+# +++ get selected subject_rows
                         crit = Q(student__school=sel_school) & \
                                Q(student__department=sel_department)
             # when submit: don't filter on level, sector, subject or cluster
@@ -739,7 +738,7 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
                                     'double_approved': 0,
                                     'committed': 0,
                                     'saved': 0,
-                                    'save_error': 0,
+                                    'saved_error': 0,
                                     'reset': 0,
                                     'already_approved_by_auth': 0,
                                     'auth_missing': 0,
@@ -763,8 +762,10 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
 
                             studsubj_rows = []
 
-    # +++++ loop through subjects
-                            row_count, student_pk_list, student_committed_list, student_saved_list = 0, [],[], []
+# +++++ loop through subjects
+                            row_count = 0
+                            student_pk_list, student_committed_list, student_saved_list, student_saved_error_list = \
+                                [],[], [], []
 
                             if studsubjects:
                                 for studsubj in studsubjects:
@@ -772,12 +773,16 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
 
                                     is_committed = False
                                     is_saved = False
+                                    is_saved_error = False
 
                                     if is_approve:
-                                        is_committed, is_saved = approve_studsubj(studsubj, requsr_auth, is_test, is_reset, count_dict, request)
+                                        is_committed, is_saved, is_saved_error = approve_studsubj(studsubj, requsr_auth, is_test, is_reset, count_dict, request)
                                     elif is_submit:
-                                        is_committed, is_saved = submit_studsubj(studsubj, is_test, published_instance, count_dict, request)
+                                        is_committed, is_saved, is_saved_error = submit_studsubj(studsubj, is_test, published_instance, count_dict, request)
 
+        # - add student_pk to student_pk_list, student_committed_list or student_saved_list
+                                    # this is used to count the students in msg: '4 students with 39 subjects are added'
+                                    # after the loop the totals are added to count_dict['student_count'] etc
                                     if studsubj.student_id not in student_pk_list:
                                         student_pk_list.append(studsubj.student_id)
                                     if is_committed:
@@ -786,6 +791,9 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
                                     if is_saved:
                                         if studsubj.student_id not in student_saved_list:
                                             student_saved_list.append(studsubj.student_id)
+                                    if is_saved_error:
+                                        if studsubj.student_id not in student_saved_error_list:
+                                            student_saved_error_list.append(studsubj.student_id)
 
         # - add rows to studsubj_rows, to be sent back to page
                                     if not is_test and is_saved:
@@ -804,6 +812,7 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
                             count_dict['student_count'] = len(student_pk_list)
                             count_dict['student_committed_count'] = len(student_committed_list)
                             count_dict['student_saved_count'] = len(student_saved_list)
+                            count_dict['student_saved_error_count'] = len(student_saved_error_list)
                             update_wrap['approve_count_dict'] = count_dict
 
     # - create msg_html with info of rows
@@ -851,8 +860,9 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
         committed = count_dict.get('committed', 0)
         student_committed_count = count_dict.get('student_committed_count', 0)
         saved = count_dict.get('saved', 0)
-        save_error = count_dict.get('save_error', 0)
+        saved_error = count_dict.get('saved_error', 0)
         student_saved_count = count_dict.get('student_saved_count', 0)
+        student_saved_error_count = count_dict.get('student_saved_error_count', 0)
         already_published = count_dict.get('already_published', 0)
         auth_missing = count_dict.get('auth_missing', 0)
         already_approved_by_auth = count_dict.get('already_approved_by_auth', 0)
@@ -867,6 +877,7 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
             logger.debug('.....double_approved: ' + str(double_approved))
 
         show_warning_msg = False
+
         if is_test:
             if is_approve:
                 class_str = 'border_bg_valid' if committed else 'border_bg_invalid'
@@ -880,16 +891,26 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
                 else:
                     class_str = 'border_bg_invalid'
         else:
-            class_str = 'border_bg_transparent'
+            if student_saved_error_count:
+               class_str = 'border_bg_invalid'
+            elif student_saved_count:
+                class_str = 'border_bg_valid'
+            else:
+                class_str = 'border_bg_transpaprent'
 
-        msg_list = ["<div class='p-2 ", class_str, "'>",
-                    "<p class='pb-2'>",
-                    str(_("The selection contains %(stud)s with %(subj)s.") %
-                        {'stud': get_student_count_text(student_count), 'subj': get_subject_count_text(count)}),
-                    '</p>']
+# - create first line with 'The selection contains 4 candidates with 39 subjects'
+        msg_list = ["<div class='p-2 ", class_str, "'>"]
+        if is_test:
+            msg_list.append(''.join(( "<p class='pb-2'>",
+                        str(_("The selection contains %(stud)s with %(subj)s.") %
+                            {'stud': get_student_count_text(student_count), 'subj': get_subject_count_text(count)}),
+                        '</p>')))
 
-        if committed < count:
-            msg_list.append("<p class='pb-0'>" + str(_("The following subjects will be skipped")) + ':</p><ul>')
+# - if any subjects skipped: create lines 'The following subjects will be skipped' plus the reason
+        if is_test and committed < count:
+            willbe_or_are_txt = pgettext_lazy('plural', 'will be') if is_test else _('are')
+            msg_list.append("<p class='pb-0'>" + str(_("The following subjects %(willbe)s skipped")
+                                                     % {'willbe': willbe_or_are_txt}) + ':</p><ul>')
             if already_published:
                 msg_list.append('<li>' + str(_("%(subj)s already submitted") %
                                              {'subj': get_subjects_are_text(already_published)}) + ';</li>')
@@ -905,34 +926,71 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
                                 str(_("You cannot approve a subject both as president and as secretary.")), '</li>')))
             msg_list.append('</ul>')
 
+# - line with text how many subjects will be approved / submitted
         msg_list.append('<p>')
         if is_test:
-            if not committed:
-                if is_approve:
+            if is_approve:
+                if not committed:
                     msg_str = _("No subjects will be approved.")
                 else:
-                    msg_str = _("The Ex1 form can not be submitted.")
+                    student_count_txt = get_student_count_text(student_committed_count)
+                    subject_count_txt = get_subject_count_text(committed)
+                    will_be_text = get_will_be_text(committed)
+                    approve_txt = _('approved.')
+                    msg_str = ' '.join((str(subject_count_txt), str(_('of')),  str(student_count_txt),
+                                        str(will_be_text), str(approve_txt)))
             else:
-                student_count_txt = get_student_count_text(student_committed_count)
-                subject_count_txt = get_subject_count_text(committed)
-                will_be_text = get_will_be_text(committed)
-                approve_txt = _('approved.') if is_approve else _('added to the Ex1 form.')
-                msg_str = ' '.join((str(subject_count_txt), str(_('of')),  str(student_count_txt),
-                                    str(will_be_text), str(approve_txt)))
-
+                if not committed:
+                    if is_approve:
+                        msg_str = _("No subjects will be approved.")
+                    else:
+                        msg_str = _("The Ex1 form can not be submitted.")
+                else:
+                    student_count_txt = get_student_count_text(student_committed_count)
+                    subject_count_txt = get_subject_count_text(committed)
+                    will_be_text = get_will_be_text(committed)
+                    approve_txt = _('approved.') if is_approve else _('added to the Ex1 form.')
+                    msg_str = ' '.join((str(subject_count_txt), str(_('of')),  str(student_count_txt),
+                                        str(will_be_text), str(approve_txt)))
         else:
-            not_str = '' if saved else str(_('not')) + ' '
-            msg_str = str(_("The Ex1 form has %(not)s been submitted.") % {'not': not_str})
-            if saved:
-                student_count_txt = get_student_count_text(student_saved_count)
-                subject_count_txt = get_subject_count_text(saved)
-                msg_str += '<br>' + str(_("It contains %(subj)s of %(stud)s.")
-                                        % {'stud': student_count_txt, 'subj': subject_count_txt})
+            student_count_txt = get_student_count_text(student_saved_count)
+            subject_count_txt = get_subject_count_text(saved)
+            student_saved_error_count_txt = get_student_count_text(student_saved_error_count)
+            subject_error_count_txt = get_subject_count_text(saved_error)
 
+# - line with text how many subjects have been approved / submitted
+            if is_approve:
+                not_str = '' if saved else str(_('not')) + ' '
+                msg_str = ''
+                if not saved and not saved_error:
+                    msg_str = str(_("No subjects have been approved."))
+                else:
+                    if saved:
+                        have_has_been_txt = _('has been') if saved == 1 else _('have been')
+                        msg_str = str(_("%(subj)s of %(stud)s %(havehasbeen)s approved.")
+                                                % {'subj': subject_count_txt, 'stud': student_count_txt, 'havehasbeen': have_has_been_txt})
+                    else:
+                        msg_str = str(_("No subjects have been approved."))
+                    if saved_error:
+                        if msg_str:
+                            msg_str += '<br>'
+                        could_txt = pgettext_lazy('singular', 'could') if saved_error == 1 else pgettext_lazy('plural', 'could')
+                        msg_str += str(_("%(subj)s of %(stud)s %(could)s not be approved because an error occurred.")
+                                                % {'subj': subject_error_count_txt, 'stud': student_saved_error_count_txt, 'could': could_txt})
+
+            else:
+                not_str = '' if saved else str(_('not')) + ' '
+                msg_str = str(_("The Ex1 form has %(not)s been submitted.") % {'not': not_str})
+                if saved:
+                    student_count_txt = get_student_count_text(student_saved_count)
+                    subject_count_txt = get_subject_count_text(saved)
+                    msg_str += '<br>' + str(_("It contains %(subj)s of %(stud)s.")
+                                            % {'stud': student_count_txt, 'subj': subject_count_txt})
         msg_list.append(str(msg_str))
         msg_list.append('</p>')
 
-        if show_warning_msg:
+# - warning if any subjects are not fully approved
+        if show_warning_msg and not is_approve:
             msg_list.append("<p class='pt-2'><b>")
             msg_list.append(str(_('WARNING')))
             msg_list.append(':</b> ')
@@ -941,14 +999,14 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
             msg_list.append(str(_('They will not be included in the Ex1 form.')))
             msg_list.append(' ')
             msg_list.append(str(_('Are you sure you want to submit the Ex1 form?')))
-
-        msg_list.append('</p>')
+            msg_list.append('</p>')
 
         msg_list.append('</div>')
 
         msg_html = ''.join(msg_list)
 
         return msg_html
+    # - end of create_submit_msg_list
 
     def create_Ex1(self, published_instance, sel_examyear, sel_school, sel_department, save_to_disk, user_lang):
         #PR2021-07-27
@@ -1216,13 +1274,13 @@ def approve_studsubj(studsubj, requsr_auth, is_test, is_reset, count_dict, reque
     # status_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
     logging_on = s.LOGGING_ON
     if logging_on:
-
         logger.debug('----- approve_studsubj -----')
         logger.debug('requsr_auth:  ' + str(requsr_auth))
         logger.debug('is_reset:     ' + str(is_reset))
 
     is_committed = False
     is_saved = False
+    is_saved_error = False
     if studsubj:
         req_user = request.user
 
@@ -1294,15 +1352,15 @@ def approve_studsubj(studsubj, requsr_auth, is_test, is_reset, count_dict, reque
                 else:
 # - save changes
                     try:
-                        a=1/0
                         studsubj.save(request=request)
                         is_saved = True
                         count_dict['saved'] += 1
                     except Exception as e:
                         logger.error(getattr(e, 'message', str(e)))
-                        count_dict['save_error'] += 1
+                        is_saved_error = True
+                        count_dict['saved_error'] += 1
 
-    return is_committed, is_saved
+    return is_committed, is_saved, is_saved_error
 # - end of approve_studsubj
 
 
@@ -1313,6 +1371,7 @@ def submit_studsubj(studsubj, is_test, published_instance, count_dict, request):
 
     is_committed = False
     is_saved = False
+    is_saved_error = False
 
     if studsubj:
 
@@ -1352,14 +1411,16 @@ def submit_studsubj(studsubj, is_test, published_instance, count_dict, request):
 # - put published_id in field subj_published
                             setattr(studsubj, 'subj_published', published_instance)
 # - save changes
+                            a=1/0
                             studsubj.save(request=request)
                             is_saved = True
                             count_dict['saved'] += 1
                         except Exception as e:
                             logger.error(getattr(e, 'message', str(e)))
-                            count_dict['save_error'] += 1
+                            is_saved_error = True
+                            count_dict['saved_error'] += 1
 
-    return is_committed, is_saved
+    return is_committed, is_saved, is_saved_error
 # - end of submit_studsubj
 
 

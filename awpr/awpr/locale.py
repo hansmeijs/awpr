@@ -538,6 +538,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Authorized_secretary'] = _('Authorized\nsecretary')
         dict['Submitted'] = _('Submitted')
         dict['Authorized_by'] = _('Authorized by')
+        dict['Submitted_at'] = _('Submitted at')
 
         dict['President'] = TXT_President
         dict['Secretary'] = TXT_Secretary

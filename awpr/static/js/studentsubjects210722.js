@@ -487,8 +487,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if(permit_dict.permit_crud){
                 AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open("import_studsubj")}, null, "id_submenu_import");
             }
-            // TODO  add Show_hide_columns
-            // AddSubmenuButton(el_submenu, loc.Show_hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
+
+            AddSubmenuButton(el_submenu, loc.Show_hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
          el_submenu.classList.remove(cls_hide);
         };
     };//function CreateSubmenu
@@ -931,6 +931,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const field_auth1_id = prefix + "_auth1_id" // subj_auth1_id
                 const field_auth2_id = prefix + "_auth2_id" // subj_auth2_id
                 const field_publ_id = prefix + "_publ_id" // subj_publ_id
+                const field_publ_modat = prefix + "_publ_modat" // subj_publ_modat
 
                 const auth1_id = (map_dict[field_auth1_id]) ? map_dict[field_auth1_id] : null;
                 const auth2_id = (map_dict[field_auth2_id]) ? map_dict[field_auth2_id] : null;
@@ -947,8 +948,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const field_published = prefix + "_published" // subj_published
 
                 if (publ_id){
-                    const field_modat = prefix + "_publ_modat";
-                    //title_text = loc.Submitted_at + " " + get_date_formatted(field_modat, map_dict);
+                    const modified_dateJS = parse_dateJS_from_dateISO(map_dict[field_publ_modat]);
+                    title_text = loc.Submitted_at + ":\n" + format_datetime_from_datetimeJS(loc, modified_dateJS)
+
                 } else if(auth1_id || auth2_id){
                     title_text = loc.Approved_by + ": "
                     for (let i = 1; i < 3; i++) {
@@ -2832,7 +2834,7 @@ console.log("selected_dict", selected_dict)
 
     // ---  show info container and delete button only in approve mode
                 console.log("...........is_submit", is_submit) ;
-                add_or_remove_class(el_MASS_select_container, cls_hide, is_submit)
+                add_or_remove_class(el_MASS_select_container, cls_hide, !is_approve)
                 add_or_remove_class(el_MASS_btn_delete, cls_hide, is_submit)
 
                 add_or_remove_class(el_MASS_info_container, cls_hide, true)
@@ -2893,7 +2895,9 @@ console.log("selected_dict", selected_dict)
             }
 
     // ---  show loader
-            add_or_remove_class(el_MASS_loader, cls_hide, false)
+            add_or_remove_class(el_MASS_loader, cls_hide, false);
+    // ---  hide info_container
+            add_or_remove_class(el_MASS_info_container, cls_hide, true);
 
     // ---  upload changes
             UploadChanges(upload_dict, url_str);
@@ -2990,17 +2994,16 @@ test_is_ok: false
 
 // ---  hide save button when not can_publish
         let hide_save_btn = true, disable_save_btn = false, save_btn_txt = null, hide_delete_btn = true;
-        let hide_select_container = true, hide_apply_code = true;
+        let hide_apply_code = true;
         if (step === 0) {
         } else if (step === 1) {
-            hide_select_container = (is_submit);
             hide_apply_code = (!is_submit || !test_is_ok);
             hide_delete_btn = (is_submit || !mod_MASS_dict.has_already_approved_by_auth);
             hide_save_btn = (!test_is_ok);
             save_btn_txt = (is_submit) ? loc.Apply_verificationcode : loc.Approve_subjects;
         } else if (step === 2) {
-            if ( is_approve && submit_is_ok) {
-                $("#id_mod_approve_studsubj").modal("hide");
+            if (is_approve) {
+                hide_save_btn = true
             } else {
                 disable_save_btn = !el_MASS_input_verifcode.value
                 hide_save_btn = false;
@@ -3008,8 +3011,7 @@ test_is_ok: false
             }
         } else if (step === 3) {
         }
-// - hide el_MASS_select_container
-        add_or_remove_class(el_MASS_select_container, cls_hide, hide_select_container);
+
 // - hide el_MASS_apply_code_container
         add_or_remove_class(el_MASS_apply_code_container, cls_hide, hide_apply_code);
 
@@ -3026,8 +3028,8 @@ test_is_ok: false
         el_MASS_btn_cancel.innerText = (submit_is_ok || (!test_is_ok) || (!submit_is_ok)) ? loc.Close : loc.Cancel;
 
 // show input verifcode on step 2, set focus
-        add_or_remove_class(el_MASS_input_verifcode.parentNode, cls_hide, (step !== 2));
-        if (step === 2){set_focus_on_el_with_timeout(el_MASS_input_verifcode, 150); };
+        add_or_remove_class(el_MASS_input_verifcode.parentNode, cls_hide, (!is_submit || step !== 2));
+        if (!is_submit || step !== 2){set_focus_on_el_with_timeout(el_MASS_input_verifcode, 150); };
 
 
      } //  MASS_SetBtnSaveDeleteCancel
