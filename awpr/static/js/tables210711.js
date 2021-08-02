@@ -1572,3 +1572,123 @@ console.log( "show_row", show_row);
         return filter_row
     }; // t_create_filter_row
 // ++++++++++++  END OF FILTER PAYROLL TABLES +++++++++++++++++++++++++++++++++++++++
+
+// +++++++++++++++++ MODAL SELECT COLUMNS ++++++++++++++++++++++++++++++++++++++++++
+//=========  MCOL_Open  ================ PR2021-08-02
+    function MCOL_Open() {
+       //console.log(" -----  MCOL_Open   ----")
+
+        const tblName = selected_btn.slice(4);
+
+        mod_MCOL_dict = {tblName: tblName, col_hidden: []}
+
+        const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
+        for (let i = 0, field; field = col_hidden[i]; i++) {
+            mod_MCOL_dict.col_hidden.push(field);
+        };
+
+        MCOL_FillSelectTable();
+        const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
+        el_MCOL_btn_save.disabled = true
+// ---  show modal, set focus on save button
+       $("#id_mod_select_columns").modal({backdrop: true});
+    }  // MCOL_Open
+
+//=========  t_MCOL_Save  ================ PR2021-08-02
+    function t_MCOL_Save(url_settings_upload, HandleBtnSelect) {
+        console.log(" -----  t_MCOL_Save   ----")
+
+// ---  get hidden columns from mod_MCOL_dict.col_hidden and put them  in columns_hidden[tblName]
+
+        if (!(mod_MCOL_dict.tblName in columns_hidden)){
+            columns_hidden[mod_MCOL_dict.tblName] = [];
+        }
+        const col_hidden = columns_hidden[mod_MCOL_dict.tblName];
+        console.log("col_hidden", col_hidden)
+   // clear the array
+        b_clear_array(col_hidden);
+   // add hidden columns to col_hidden
+        for (let i = 0, field; field = mod_MCOL_dict.col_hidden[i]; i++) {
+            col_hidden.push(field);
+        };
+// upload the new list of hidden columns
+        // format: setting[page_name] = {col_hidden: {student: ["regnumber", "bis_exam"]}}
+        const key_str = "page_" + mod_MCOL_dict.tblName;
+        const upload_dict = {}, page_dict = {};
+        const tab_str = mod_MCOL_dict.tblName;
+        page_dict[tab_str] = col_hidden;
+        upload_dict[key_str] = {col_hidden: page_dict }
+        console.log("upload_dict", upload_dict)
+        UploadSettings (upload_dict, url_settings_upload);
+
+        HandleBtnSelect(selected_btn, true)  // true = skip_upload
+
+// hide modal
+        // in HTML: data-dismiss="modal"
+    }  // t_MCOL_Save
+
+//=========  MCOL_FillSelectTable  ================ PR2021-07-07 PR2021-08-02
+    function MCOL_FillSelectTable() {
+        console.log("===  MCOL_FillSelectTable == ");
+        console.log("selected_btn", selected_btn);
+        console.log("field_settings", field_settings);
+
+        const el_MCOL_tblBody_available = document.getElementById("id_MCOL_tblBody_available");
+        const el_MCOL_tblBody_show = document.getElementById("id_MCOL_tblBody_show");
+        el_MCOL_tblBody_available.innerHTML = null;
+        el_MCOL_tblBody_show.innerHTML = null;
+
+        const field_names = columns_tobe_hidden[mod_MCOL_dict.tblName].field_names;
+        const field_captions = columns_tobe_hidden[mod_MCOL_dict.tblName].field_caption;
+
+//+++ loop through list of field_names
+        if(field_names && field_names.length){
+            const len = field_names.length;
+            for (let j = 0; j < len; j++) {
+                const field_name = field_names[j];
+                const field_caption = (field_name === "sct_abbrev") ?
+                                (setting_dict.sel_dep_has_profiel) ? loc.Profiel : loc.Sector :
+                                (field_captions[j]) ? loc[field_captions[j]] : null;
+
+                const is_hidden = (field_name && mod_MCOL_dict.col_hidden.includes(field_name));
+                const tBody = (is_hidden) ? el_MCOL_tblBody_available : el_MCOL_tblBody_show;
+
+    //+++ insert tblRow into tBody
+                const tblRow = tBody.insertRow(-1);
+                tblRow.setAttribute("data-field", field_name);
+
+        // --- add EventListener to tblRow.
+                tblRow.addEventListener("click", function() {MCOL_SelectItem(tblRow);}, false )
+        //- add hover to tableBody row
+                add_hover(tblRow)
+
+                const td = tblRow.insertCell(-1);
+                td.innerText = field_caption;
+        //- add data-tag  to tblRow
+                td.classList.add("tw_240")
+
+                tblRow.setAttribute("data-field", field_name);
+
+            }
+        }  // if(field_captions && field_captions.length)
+    } // MCOL_FillSelectTable
+
+//=========  MCOL_SelectItem  ================ PR2021-07-07
+    function MCOL_SelectItem(tr_clicked) {
+        console.log("===  MCOL_SelectItem == ");
+        if(!!tr_clicked) {
+            const field_name = get_attr_from_el(tr_clicked, "data-field")
+            const is_hidden = (field_name && mod_MCOL_dict.col_hidden.includes(field_name));
+            if (is_hidden){
+                b_remove_item_from_array(mod_MCOL_dict.col_hidden, field_name);
+            } else {
+                mod_MCOL_dict.col_hidden.push(field_name)
+            }
+            MCOL_FillSelectTable();
+            // enable sasave btn
+            const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
+            el_MCOL_btn_save.disabled = false;
+        }
+    }  // MCOL_SelectItem
+
+

@@ -52,6 +52,7 @@
                             </div>
                         </div>
 
+
                         <label class="mx-2 mt-4 mb-2">C. {% trans 'Select if the worksheet has a header row:' %}</label>
                         <div class="content_subheader_left mx-4">
                             <span>
@@ -65,7 +66,7 @@
                     <div class="mx-4 mt-2 btn_show btn_step2 display_hide">
                         <div class="mx-2"><small>{% trans "Click corresponding names in the left and right list to link an Excel column to an AWP-column." %}</small></div>
                         <div class="mx-2"><small >{% trans "Click linked names in the lower list to unlink these columns." %}</small></div>
-                        <div class="mx-2"><small><b>{% trans "You don't have to link the subjects yet." %}</b> {% trans "They will be linked in the next step." %}</small></div>
+                        <div id="id_MIMP_msg_dontlinksubjects" class="mx-2"><small><b>{% trans "You don't have to link the subjects yet." %}</b> {% trans "They will be linked in the next step." %}</small></div>
                         <div class="mx-2"><small id="id_MIMP_msg_linkrequired"></small></div>
 
                         <div id="id_MIMP_crosstab_container" >

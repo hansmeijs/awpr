@@ -56,11 +56,13 @@ def get_locale_dict(table_dict, user_lang):
     dict['This_school_is_locked'] = _('This school is locked.')
     dict['This_school_is_activated'] = _('This school is activated.')
 
+    dict['Hide_columns'] = _('Hide columns')
+
     # mod confirm
-    dict['will_be_deleted'] = _(' will be deleted.')
-    dict['will_be_made_inactive'] = _(' will be made inactive.')
-    dict['will_be_made_active'] = _(' will be made active.')
-    dict['will_be_printed'] = _(' will be printed.')
+    dict['will_be_deleted'] = pgettext_lazy('singular', ' will be deleted.')
+    dict['will_be_made_inactive'] = pgettext_lazy('singular', ' will be made inactive.')
+    dict['will_be_made_active'] = pgettext_lazy('singular', ' will be made active.')
+    dict['will_be_printed'] = pgettext_lazy('singular', ' will be printed.')
     dict['Do_you_want_to_continue'] = _('Do you want to continue?')
     dict['Yes_delete'] = _('Yes, delete')
     dict['Yes_make_inactive'] = _('Yes, make inactive')
@@ -339,7 +341,6 @@ def get_locale_dict(table_dict, user_lang):
 # ====== PAGE SUBJECTS ========================= PR2020-09-30
     if 'page_subject' in page_list:
 
-        dict['Show_hide_columns'] = _('Show or hide columns')
         dict['Add_subject'] = _('Add subject')
         dict['Add_department'] = _('Add department')
         dict['Add_level'] = _('Add level')
@@ -504,8 +505,9 @@ def get_locale_dict(table_dict, user_lang):
         dict['Examnumber_twolines'] = TXT_Examnumber_twolines
         dict['Regnumber'] = TXT_Regnumber
         dict['Regnumber_twolines'] = TXT_Regnumber_twolines
-        dict['Prefix_twolines'] = TXT_Prefix_twolines
 
+        dict['Prefix'] = TXT_Prefix
+        dict['Prefix_twolines'] = TXT_Prefix_twolines
 
         dict['Last_name'] = _('Last name')
         dict['First_name'] = _('First name')
@@ -830,6 +832,7 @@ TXT_Examnumber_twolines = _('Exam\nnumber')
 TXT_Regnumber = _('Registration number')
 TXT_Regnumber_twolines = _('Registration\nnumber')
 
+TXT_Prefix = _('Prefix')
 TXT_Prefix_twolines = pgettext_lazy('two lines ', 'Prefix')
 
 

@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_selected = "tsa_tr_selected";
 
 // ---  id of selected customer and selected order
-    let selected_btn = "btn_user_list";
+    let selected_btn = "btn_user";
     let setting_dict = {};
     let permit_dict = {};
 
@@ -356,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
 
-// ---  show loader  // don't use cls_hide, use cls_visible_hide
+// ---  show loader
         el_loader.classList.remove(cls_hide)
         el_hdr_left.classList.add(cls_hide)
 
@@ -371,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
                 console.log(response)
 
-                // hide loader
+// ---  hide loader
                 el_loader.classList.add(cls_hide)
                 el_hdr_left.classList.remove(cls_hide)
 
@@ -399,13 +399,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             columns_hidden[key] = value;
                         }
                     }
-                    console.log("columns_hidden", columns_hidden)
-
                     must_update_headerbar = true;
-
-                console.log("setting_dict", setting_dict)
-
                 };
+
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
                     // get_permits must come before CreateSubmenu and FiLLTbl
@@ -488,7 +484,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open("import_studsubj")}, null, "id_submenu_import");
             }
 
-            AddSubmenuButton(el_submenu, loc.Show_hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
+            AddSubmenuButton(el_submenu, loc.Hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
          el_submenu.classList.remove(cls_hide);
         };
     };//function CreateSubmenu
@@ -584,9 +580,6 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "field_setting", field_setting);
         //console.log( "data_rows", data_rows);
 
-// --- show columns
-        //set_columns_hidden();
-
 // --- reset table
         tblHead_datatable.innerText = null;
         tblBody_datatable.innerText = null;
@@ -619,31 +612,32 @@ document.addEventListener('DOMContentLoaded', function() {
     function CreateTblHeader(field_setting) {
         //console.log("===  CreateTblHeader ===== ");
         //console.log("field_setting", field_setting);
-
         //console.log("columns_hidden", columns_hidden);
+
         const column_count = field_setting.field_names.length;
 
-//--- insert table rows
+// +++  insert header and filter row ++++++++++++++++++++++++++++++++
         let tblRow_header = tblHead_datatable.insertRow (-1);
         let tblRow_filter = tblHead_datatable.insertRow (-1);
 
-//--- insert th's to tblHead_datatable
+    // --- loop through columns
         for (let j = 0; j < column_count; j++) {
-
             const field_name = field_setting.field_names[j];
-            const filter_tag = field_setting.filter_tags[j];
-            const class_width = "tw_" + field_setting.field_width[j] ;
-            const class_align = "ta_" + field_setting.field_align[j];
 
-            // skip columns if in columns_hidden
+    // ---skip columns if in columns_hidden
             const col_is_hidden = get_column_hidden(field_name);
             if (!col_is_hidden){
+
+        // --- get field_caption from field_setting, diplay 'Profiel' in column sctbase_id if has_profiel
                 const key = field_setting.field_caption[j];
                 let field_caption = (loc[key]) ? loc[key] : key;
                 if (field_name === "sct_abbrev") {
                     field_caption = (setting_dict.sel_dep_has_profiel) ? loc.Profiel : loc.Sector;
                 }
 
+                const filter_tag = field_setting.filter_tags[j];
+                const class_width = "tw_" + field_setting.field_width[j] ;
+                const class_align = "ta_" + field_setting.field_align[j];
 // ++++++++++ create header row +++++++++++++++
         // --- add th to tblRow.
                 let th_header = document.createElement("th");
@@ -754,7 +748,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const field_name = field_names[j];
 
 // skip columns if in columns_hidden
-            // skip columns if in columns_hidden
+            // skip column if in columns_hidden
             const col_is_hidden = get_column_hidden(field_name);
             if (!col_is_hidden){
                 const field_tag = field_tags[j];
@@ -1921,7 +1915,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
 // +++++++++++++++++ MODAL SELECT COLUMNS ++++++++++++++++++++++++++++++++++++++++++
 //=========  MCOL_Open  ================ PR2021-07-07
-    function MCOL_Open() {
+    function t_MCOL_Open() {
        //console.log(" -----  MCOL_Open   ----")
         mod_MCOL_dict = {col_hidden: []}
 
@@ -3061,7 +3055,7 @@ test_is_ok: false
 
 //========= get_mapdict_by_integer_from_datarows ============= PR2021-07-25
     function get_mapdict_by_integer_from_datarows(data_rows, tblRow, student_pk, studsubj_pk) {
-        console.log( " ==== get_mapdict_by_integer_from_datarows ====");
+        //console.log( " ==== get_mapdict_by_integer_from_datarows ====");
         // if tblRow has value: get student_pk, studsubj_pk from tblRow.id
         if (tblRow){
             const arr = tblRow.id.split("_");
@@ -3075,7 +3069,7 @@ test_is_ok: false
         const lookup_2_field = (selected_btn === "btn_published") ? null : "stud_id";
         const data_dict = b_get_mapdict_by_integer_from_datarows(data_rows, lookup_1_field, studsubj_pk, lookup_2_field, student_pk)
 
-        console.log( "data_dict", data_dict);
+       // console.log( "data_dict", data_dict);
 
         return data_dict;
     };  // get_mapdict_by_integer_from_datarows

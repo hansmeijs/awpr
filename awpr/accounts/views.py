@@ -127,6 +127,7 @@ class UserUploadView(View):
             logger.debug(' ========== UserUploadView ===============')
 
         update_wrap = {}
+        msg_list =[]
         if request.user and request.user.country and request.user.schoolbase:
             req_user = request.user
             # <PERMIT> PR2020-09-24
@@ -216,11 +217,11 @@ class UserUploadView(View):
                     else:
                         updated_dict = {}
 
-    # ++++  resend activation email ++++++++++++
+# ++++  resend activation email ++++++++++++
                         if mode == 'resend_activation_email':
                             resend_activation_email(user_pk, update_wrap, err_dict, request)
 
-    # ++++  delete user ++++++++++++
+# ++++  delete user ++++++++++++
                         elif mode == 'delete':
                             if user_pk:
                                 instance = None
@@ -265,12 +266,19 @@ class UserUploadView(View):
 
                                             if logging_on:
                                                 logger.debug('deleted: ' + str(True))
-                                        except:
-                                            err_dict['msg01'] = _("User '%(val)s' can not be deleted.\nInstead, you can make the user inactive.") \
-                                                                % {'val': instance.username_sliced}
-
-                                            if logging_on:
-                                                logger.debug('err_dict msg01: ' + str(err_dict['msg01']))
+                                        except Exception as e:
+                                            logger.error(getattr(e, 'message', str(e)))
+                                            msg_html = ''.join((
+                                                str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
+                                                str(_("User account '%(val)s' can not be deleted.") % {'val': instance.username_sliced}),
+                                                str(_("Instead, you can make the user account inactive."))))
+                                            msg_dict = {'header': str(_('Delete user')), 'class': 'border_bg_invalid',
+                                                        'msg_html': msg_html}
+                                            msg_list.append(msg_dict)
+                                        else:
+                                            instance = None
+                                            deleted_ok = True
+                                            ##############
 
     # ++++  create or validate new user ++++++++++++
                         elif mode in ('create', 'validate'):
@@ -311,24 +319,25 @@ class UserUploadView(View):
                                 if created_instance_list:
                                     updated_dict = created_instance_list[0]
                                     updated_dict['created'] = True
-
                         else:
-    # - +++++++++ update ++++++++++++
+
+# - +++++++++ update ++++++++++++
                             instance = None
                             if has_permit_all_schools:
-                                instance = acc_mod.User.objects.get_or_none(id=user_pk, country=req_user.country)
+                                instance = acc_mod.User.objects.get_or_none(
+                                    id=user_pk,
+                                    country=req_user.country)
                             elif has_permit_same_school:
                                 instance = acc_mod.User.objects.get_or_none(
                                     id=user_pk,
                                     country=req_user.country,
                                     schoolbase=req_user.schoolbase
                                 )
-
                             if logging_on:
                                 logger.debug('user instance: ' + str(instance))
 
                             if instance:
-                                err_dict, ok_dict = update_user_instance(instance, upload_dict, request)
+                                err_dict, ok_dict = update_user_instance(instance, upload_dict, msg_list, request)
                                 if err_dict:
                                     update_wrap['msg_err'] = err_dict
                                 if ok_dict:
@@ -341,12 +350,14 @@ class UserUploadView(View):
 
     # - +++++++++ en of is update ++++++++++++
                         if updated_dict:
-                            update_wrap['updated_userlist'] = [updated_dict]
+                            update_wrap['updated_user_rows'] = [updated_dict]
                     if err_dict:
                         update_wrap['msg_err'] = err_dict
                     elif is_validate_only:
                         update_wrap['validation_ok'] = True
-
+        # TODO append  err_dict to  msg_list
+        if msg_list:
+            update_wrap['msg_dictlist'] = msg_list
         # - create_user_list returns list of only 1 user
         #update_wrap['user_list'] = ad.create_user_list(request, instance.pk)
 # - return update_wrap
@@ -1358,7 +1369,8 @@ def create_user_list(request, user_pk=None):
                     sql_keys['sb_id'] = schoolbase_pk
                     sql_list.append('AND u.schoolbase_id = %(sb_id)s::INT')
 
-                sql_list.append('ORDER BY LOWER(sb.code), LOWER(u.username)')
+                # sql_list.append('ORDER BY LOWER(sb.code), LOWER(u.username)')
+                sql_list.append('ORDER BY u.id')
 
                 sql = ' '.join(sql_list)
 
@@ -1597,8 +1609,8 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, user
 
 # - +++++++++ end of create_or_validate_user_instance ++++++++++++
 
-# === update_user_instance ========== PR2020-08-16 PR2020-09-24 PR2021-03-24 PR2021-07-22
-def update_user_instance(instance, upload_dict, request):
+# === update_user_instance ========== PR2020-08-16 PR2020-09-24 PR2021-03-24 PR2021-08-01
+def update_user_instance(instance, upload_dict, msg_list, request):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('-----  update_user_instance  -----')
@@ -1744,18 +1756,20 @@ def update_user_instance(instance, upload_dict, request):
                     ok_dict = {'msg01':  _("The changes have been saved successfully.")}
                 except Exception as e:
                     logger.error(getattr(e, 'message', str(e)))
-                    err_dict['save'] = {'msg01':  _('An error occurred.'),
-                                        'msg02': str(e),
-                                        'msg03':  _('The changes have not been saved.')}
+                    msg_html = ''.join((
+                        str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
+                        str(_("The changes have not been saved."))))
+                    msg_dict = {'header': str(_('Update user account')), 'class': 'border_bg_invalid',
+                                'msg_html': msg_html}
+                    msg_list.append(msg_dict)
 
     if logging_on:
         logger.debug('ok_dict: ' + str(ok_dict))
-        logger.debug('err_dict: ' + str(err_dict))
 
     return err_dict, ok_dict
 # - +++++++++ end of update_user_instance ++++++++++++
 
-# === update_usergroups ===================================== PR2021-03-24
+# === update_usergroups ===================================== PR2021-03-24 PR2021-08-01
 
 def update_usergroups(instance, field_dict, validate, request):
     # called by UserUploadView.update_user_instance and UserpermitUploadView.update_grouppermit
@@ -1788,7 +1802,7 @@ def update_usergroups(instance, field_dict, validate, request):
         # - remove other 'auth' usergroups when usergroup = 'auth123' is set to True
         #   only when called by update_user_instance
                 if validate:
-                    auth_list = (c.USERGROUP_AUTH1_PRES, c.USERGROUP_AUTH2_SECR, c.USERGROUP_AUTH3_COM)
+                    auth_list = (c.USERGROUP_AUTH1_PRES, c.USERGROUP_AUTH2_SECR, c.USERGROUP_AUTH3_COM, c.USERGROUP_AUTH4_EXAM)
                     if usergroup in auth_list:
                         for auth in auth_list:
                             if auth != usergroup:

@@ -29,6 +29,7 @@
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
+            {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'accounts/moduser.html' %}
             {% include 'accounts/modpermit.html' %}
@@ -59,8 +60,8 @@
 
 <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="btn_user_list" class="btn btn-secondary ">{% trans 'Users' %}</button>
-                    <button data-btn="btn_usergroups" class="btn btn-secondary ">{% trans 'User groups' %}</button>
+                    <button data-btn="btn_user" class="btn btn-secondary ">{% trans 'Users' %}</button>
+                    <button data-btn="btn_usergroup" class="btn btn-secondary ">{% trans 'User groups' %}</button>
                     {% if show_btn_userpermit %}
                         <button data-btn="btn_userpermit" class="btn btn-secondary ">{% trans 'Permissions' %}</button>
                     {% endif %}

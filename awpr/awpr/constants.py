@@ -298,15 +298,16 @@ KEY_IMPORT_PERMITS = 'import_permit'
 # when one_unique_identifier =  True: only 1 of the linkfields can be the identifier (either exnr or idnr of the candidate)
 # when one_unique_identifier = False: all linkfields must be used to lookup recrds (permits: c_abbrev, page, role and action)
 
+# don't use tuple, because department may be removed from list student
 KEY_COLDEF = {
     KEY_IMPORT_SUBJECT:
-        ({'awpColdef': 'code', 'caption': _('Subject abbreviation'), 'linkrequired': True, 'unique': True},
+        [{'awpColdef': 'code', 'caption': _('Subject abbreviation'), 'linkrequired': True, 'unique': True},
           {'awpColdef': 'name', 'caption': _('Subject name')},
           {'awpColdef': 'sequence', 'caption': _('Sequence')},
-          {'awpColdef': 'depbases', 'caption': _('Departments, in which this subject occurs')}),
+          {'awpColdef': 'depbases', 'caption': _('Departments, in which this subject occurs')}],
 
     KEY_IMPORT_STUDENTSUBJECT:
-        ({'awpColdef': 'examnumber', 'caption': _('Exam number')},
+        [{'awpColdef': 'examnumber', 'caption': _('Exam number')},
             {'awpColdef': 'idnumber', 'caption': _('ID-number'), 'linkrequired': True, 'unique': True},
             {'awpColdef': 'pws_title', 'caption': _('Title assignment')},
             {'awpColdef': 'pws_subjects', 'caption': _('Subjects assignment')},
@@ -314,10 +315,10 @@ KEY_COLDEF = {
             # to be used for tabular upload :
             {'awpColdef': 'subject', 'caption': _('Subject'), 'tabularfield': True},
             {'awpColdef': 'subjecttype', 'caption': _('Character'), 'tabularfield': True}
-         ),
+         ],
 
     KEY_IMPORT_STUDENT:
-        ( {'awpColdef': 'idnumber', 'caption': _('ID-number'), 'linkrequired': True, 'unique': True},
+        [ {'awpColdef': 'idnumber', 'caption': _('ID-number'), 'linkrequired': True, 'unique': True},
         {'awpColdef': 'lastname', 'caption': _('Last name'), 'linkrequired': True},
         {'awpColdef': 'firstname', 'caption': _('First name'), 'linkrequired': True},
         {'awpColdef': 'prefix', 'caption': _('Prefix')},
@@ -334,16 +335,16 @@ KEY_COLDEF = {
         {'awpColdef': 'level', 'caption': _('Level')},
         {'awpColdef': 'sector', 'caption': _('Sector')},
         {'awpColdef': 'profiel', 'caption': _('Profiel')}
-         ),
+         ],
 
     KEY_IMPORT_PERMITS:
-        ({'awpColdef': 'c_abbrev', 'caption': _('Country'), 'linkrequired': True},
+        [{'awpColdef': 'c_abbrev', 'caption': _('Country'), 'linkrequired': True},
          {'awpColdef': 'page', 'caption': _('Page'), 'linkrequired': True},
          {'awpColdef': 'role', 'caption': _('Organization'), 'linkrequired': True},
          {'awpColdef': 'action', 'caption': _('Action'), 'linkrequired': True},
          {'awpColdef': 'usergroups', 'caption': _('User groups')},
          {'awpColdef': 'sequence', 'caption': _('Sequence')}
-         ),
+         ],
 }
 
 CAPTIONS = {'student': {'lastname': _('Last name'),
@@ -468,6 +469,7 @@ USERGROUP_EDIT = 'edit'
 USERGROUP_AUTH1_PRES = 'auth1'
 USERGROUP_AUTH2_SECR = 'auth2'
 USERGROUP_AUTH3_COM = 'auth3'
+USERGROUP_AUTH4_EXAM = 'auth4'
 USERGROUP_ANALYZE = 'anlz'
 USERGROUP_ADMIN = 'admin'
 
@@ -477,10 +479,10 @@ USERGROUP_CAPTION = {
     USERGROUP_AUTH1_PRES: _('President'),
     USERGROUP_AUTH2_SECR: _('Secretary'),
     USERGROUP_AUTH3_COM: _('Commissioner'),
+    USERGROUP_AUTH4_EXAM: _('Examinator'),
     USERGROUP_ANALYZE: _('Analyze'),
     USERGROUP_ADMIN: _('Administrator')
 }
-
 
 PAGE_LIST = {
     'users': _('Users'),

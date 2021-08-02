@@ -548,12 +548,13 @@ def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_de
         logger.debug('sel_depbase: ' + str(sel_depbase))
 
     # only called by DatalistDownloadView
-    # setting_keys are: {setting_key: "import_student"}, {setting_key: "import_subject"},, {setting_key: "import_grade"}
+    # setting_keys are: 'import_subject', 'import_studsubj', 'import_subject'. 'import_grade', 'import_permit'
+    # TODO: add 'import_user'
+
     setting_key = request_item_setting.get('setting_key')
     schoolsetting_dict = {}
     if setting_key:
-
-        if setting_key in (c.KEY_IMPORT_STUDENT, c.KEY_IMPORT_STUDENTSUBJECT, c.KEY_IMPORT_SUBJECT, c.KEY_IMPORT_GRADE, c.KEY_IMPORT_PERMITS):
+        if setting_key in (c.KEY_IMPORT_SUBJECT, c.KEY_IMPORT_STUDENT, c.KEY_IMPORT_STUDENTSUBJECT, c.KEY_IMPORT_GRADE, c.KEY_IMPORT_PERMITS):
             sel_examyear_pk = sel_examyear.pk if sel_examyear else None
             sel_examyear_code = sel_examyear.code if sel_examyear else None
             sel_schoolbase_pk = sel_schoolbase.pk if sel_schoolbase else None
@@ -590,7 +591,7 @@ def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_de
 
 
 # ===============================
-def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase):
+def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-08-01
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------- get_stored_coldefs_dict ---------------- ')
@@ -614,15 +615,20 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
     is_sector_req = False
     has_profiel = False
     sel_department = None
+    school_has_multiple_deps = False
     if sel_school:
         # doublecheck if sel_depbase is in sel_school.depbases
         depbases_str_list = sel_school.depbases.split(';') if sel_school.depbases else None
         sel_school_depbases_list = list(map(int, depbases_str_list)) if depbases_str_list else None
 
+        if len(sel_school_depbases_list) > 1:
+            school_has_multiple_deps = True
+
         if logging_on:
             logger.debug('sel_school.depbases: ' + str(sel_school.depbases))
             logger.debug('depbases_str_list: ' + str(depbases_str_list))
             logger.debug('sel_school_depbases_list: ' + str(sel_school_depbases_list))
+            logger.debug('school_has_multiple_deps: ' + str(school_has_multiple_deps))
 
         if sel_depbase and sel_school_depbases_list and sel_depbase.pk in sel_school_depbases_list:
             sel_department = sch_mod.Department.objects.get_or_none(base=sel_depbase, examyear=sel_examyear)
@@ -647,7 +653,10 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
 
 # - get list of tables needed for uploading
     if setting_key == c.KEY_IMPORT_STUDENT:
-        table_list = ("coldef", "department", "level", "sector", "profiel")
+        if school_has_multiple_deps:
+            table_list = ("coldef", "department", "level", "sector", "profiel")
+        else:
+            table_list = ("coldef", "level", "sector", "profiel")
     elif setting_key == c.KEY_IMPORT_STUDENTSUBJECT:
         table_list = ("coldef", "subject", "subjecttype")
     else:
@@ -661,6 +670,16 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
 
         default_coldef_list = c.KEY_COLDEF.get(setting_key)
 
+# - remove 'department' from coldefs if school has ony 1 department
+        if setting_key == c.KEY_IMPORT_STUDENT:
+            if not school_has_multiple_deps:
+                index_tobe_removed = None
+                for i, coldef_dict in enumerate(default_coldef_list):
+                    if coldef_dict.get('awpColdef') == 'department':
+                        index_tobe_removed = i
+                        break
+                if index_tobe_removed:
+                    del default_coldef_list[index_tobe_removed]
         if logging_on:
             logger.debug('stored_coldef: ' + str(stored_coldef))
             logger.debug('default_coldef_list: ' + str(default_coldef_list))

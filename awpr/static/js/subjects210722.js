@@ -392,8 +392,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const awp_messages = (response.awp_messages) ? response.awp_messages : {};
                 b_render_awp_messages(response.awp_messages);
 
-                if("messages" in response){
-                    b_ShowModMessages(response.messages);
+                if("msg_list" in response){
+                    b_ShowModMessages(response.msg_list);
                 }
 
                 if ("subjecttype_rows" in response) {subjecttype_rows = response.subjecttype_rows};
@@ -453,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         }
         AddSubmenuButton(el_submenu, loc.Download_subject_scheme, null, ["tab_show", "tab_btn_scheme", "tab_btn_schemeitem", "tab_btn_subjecttype" ], "id_submenu_download_schemexlsx", url_download_scheme_xlsx, false);  // true = download
-        AddSubmenuButton(el_submenu, loc.Show_hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
+        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
         el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
 

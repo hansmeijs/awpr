@@ -353,6 +353,9 @@ class UploadImportStudentView(View):  # PR2020-12-05 PR2021-02-23  PR2021-07-17
 
             if request.POST['upload']:
                 upload_dict = json.loads(request.POST['upload'])
+                # upload_dict: {'sel_examyear_pk': 58, 'sel_schoolbase_pk': 11, 'sel_depbase_pk': 1, 'sel_depbase_code': 'Vsbo', 'sel_school_abbrev': '---',
+                # 'importtable': 'import_student', 'filename': 'StJozef_2021_Kandidaten.xlsx',
+                # 'awpColdef_list': ['examnumber', 'lastname', 'firstname', 'prefix', 'gender', 'idnumber', 'birthdate', 'birthcountry', 'birthcity', 'classname', 'level', 'sector'], 'test': True, 'data_list': [{'
 
                 importtable = upload_dict.get('importtable')
                 page = importtable.replace('import', 'page')
@@ -367,9 +370,9 @@ class UploadImportStudentView(View):  # PR2020-12-05 PR2021-02-23  PR2021-07-17
                 has_permit = 'permit_crud' in permit_list
 
                 if logging_on:
-                    logger.debug('request.user.role: ' + str(request.user.role) + ' ' + str(type(request.user.role)))
-                    logger.debug('permit_list: ' + str(permit_list) + ' ' + str(type(permit_list)))
-                    logger.debug('has_permit: ' + str(has_permit) + ' ' + str(type(has_permit)))
+                    logger.debug('request.user.role: ' + str(request.user.role))
+                    logger.debug('permit_list: ' + str(permit_list))
+                    logger.debug('has_permit: ' + str(has_permit))
 
                 if not has_permit:
                     err_html = _("You don't have permission to perform this action.")
@@ -389,11 +392,16 @@ class UploadImportStudentView(View):  # PR2020-12-05 PR2021-02-23  PR2021-07-17
                     is_test = upload_dict.get('test', False)
                     awpColdef_list = upload_dict.get('awpColdef_list')
                     data_list = upload_dict.get('data_list')
-                    dateformat = upload_dict.get('dateformat', '')
                     filename = upload_dict.get('filename', '')
-                    updated_rows = []
-                    log_list = []
 
+                    if logging_on:
+                        logger.debug('is_test: ' + str(is_test))
+                        logger.debug('awpColdef_list: ' + str(awpColdef_list))
+                        logger.debug('len(data_list: ' + str(len(data_list)))
+                        logger.debug('sel_school: ' + str(sel_school))
+                        logger.debug('sel_department: ' + str(sel_department))
+
+                    updated_rows, log_list = [], []
                     count_total, count_existing, count_new, count_error, count_bisexam = 0, 0, 0, 0, 0
 
                     if awpColdef_list and data_list and sel_school and sel_department:
@@ -423,15 +431,20 @@ class UploadImportStudentView(View):  # PR2020-12-05 PR2021-02-23  PR2021-07-17
 
         # - get double_entrieslist, a list of idnumbers/lastname/firstname that occur multiple times in data_list
                         double_entrieslist = stud_val.get_double_entrieslist_from_uploadfile(data_list)
+                        if logging_on:
+                            logger.debug('double_entrieslist: ' + str(double_entrieslist))
 
         # - get id_number_list, the list of idnumbers of this school
                         # new idnumbers will be added to the idnumber_list in upload_student_from_datalist
                         idnumber_list = stud_val.get_idnumberlist_from_database(sel_school)
+                        if logging_on:
+                            logger.debug('double_entrieslist: ' + str(double_entrieslist))
 
         # - get examnumber_list and id_number_list, the list of examnumbers of this department
                         # new examnumbers will be added to the examnumber_list in upload_student_from_datalist
                         examnumber_list = stud_val.get_examnumberlist_from_database(sel_school, sel_department)
-
+                        if logging_on:
+                            logger.debug('double_entrieslist: ' + str(double_entrieslist))
                         if logging_on:
                             logger.debug('school_name: ' + str(school_name))
                             logger.debug('double_entrieslist: ' + str(double_entrieslist))
@@ -462,7 +475,6 @@ class UploadImportStudentView(View):  # PR2020-12-05 PR2021-02-23  PR2021-07-17
                                         school=sel_school,
                                         department=sel_department,
                                         is_test=is_test,
-                                        dateformat=dateformat,
                                         double_entrieslist=double_entrieslist,
                                         idnumber_list=idnumber_list,
                                         examnumber_list=examnumber_list,
@@ -496,7 +508,7 @@ class UploadImportStudentView(View):  # PR2020-12-05 PR2021-02-23  PR2021-07-17
 
 
 # ========  upload_student_from_datalist  ======= # PR2019-12-17 PR2020-06-03 PR2021-06-19
-def upload_student_from_datalist(data_dict, school, department, is_test, dateformat, double_entrieslist, idnumber_list, examnumber_list, log_list, request):
+def upload_student_from_datalist(data_dict, school, department, is_test, double_entrieslist, idnumber_list, examnumber_list, log_list, request):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- upload_student_from_datalist  --------------------')

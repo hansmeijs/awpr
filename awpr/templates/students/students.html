@@ -16,18 +16,34 @@
             <h5>{% trans 'Candidates' %}</h5>
         </div>
         {% if not no_access %}
-            <div class="display_hide">
-                <div class="tw_200 mx-2 mt-2 mb-4">
-                    <h6 class="tw_200 line_height_normal px-2">{% trans 'Filter' %}:</h6>
-                    <input id="id_SBR_filter"
-                        type="text"
-                        class="tw_200 border_none px-2">
-                </div>
-                <div class="tbl_div_520_200 mx-2 my-2">
-                    <table>
-                        <tbody id="id_SBR_tblbody_select"></tbody>
-                    </table>
+            <div id="id_SBR_container_level" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Leerweg' %}:</h6>
+                <select id="id_SBR_select_level" class="tw_200 border_none px-1"
+                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+               ></select>
             </div>
+
+            <div id="id_SBR_container_sector" class="tw_200 m-2 display_hide">
+                <h6 id="id_SBR_select_sector_label" class="tw_200 line_height_normal px-2"></h6>
+                <select id="id_SBR_select_sector" class="tw_200 border_none px-1"
+                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+               ></select>
+            </div>
+
+            <div id="id_SBR_container_cluster" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Class' %}:</h6>
+                <input id="id_SBR_select_class" type="text"
+                    class="tw_200 border_none pointer_show px-2" readonly>
+            </div>
+
+            <div id="id_SBR_container_student" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Candidate' %}:</h6>
+                <input id="id_SBR_select_student" type="text"
+                    class="tw_200 border_none pointer_show px-1" readonly>
+            </div>
+
+            <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
+                <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all subjects' %}</h6>
             </div>
         {% endif %}
     </nav>
@@ -59,13 +75,6 @@
     <!-- loader -->
                 <div class="flex_1 py-2">
                     {% include 'includes/loader.html' %}
-                </div>
-    <!-- header_text right -->
-                <div class="flex_2 mx-4 visibility_hide">
-                    <h5 id="id_hdr_textright1"></h5>
-                </div>
-                <div class="flex_2 mx-4 visibility_hide">
-                    <h5 id="id_hdr_textright2"></h5>
                 </div>
             </div>
             <!-- end content_header -->

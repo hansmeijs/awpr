@@ -432,7 +432,7 @@ def get_selected_examyear_from_usersetting(request):  # PR2021-05-31
 # - end of get_selected_examyear_from_usersetting
 
 
-def get_sel_examyear_instance(request, request_setting=None):  # PR2020-12-25
+def get_sel_examyear_instance(request, request_setting=None):  # PR2020-12-25 PR2021-08-01
     #logger.debug('  -----  get_sel_examyear_instance  -----')
     sel_examyear_instance = None
     sel_examyear_save = False
@@ -445,20 +445,26 @@ def get_sel_examyear_instance(request, request_setting=None):  # PR2020-12-25
 # - check if there is a new examyear_pk in request_setting, check if request_examyear exists
         if request_setting is not None:
             selected_pk_dict = request_setting.get(c.KEY_SELECTED_PK)
-            #logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
             if selected_pk_dict:
                 r_eyr_pk = selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK)
                 sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=r_eyr_pk, country=requsr_country)
                 if sel_examyear_instance is not None:
                     sel_examyear_save = True
 
+# - if None: get saved_examyear_pk from Usersetting, check if saved_examyear exists
         if sel_examyear_instance is None:
-# - get saved_examyear_pk from Usersetting, check if saved_examyear exists
             selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
             s_ey_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
             sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=s_ey_pk, country=requsr_country)
 
-# - if there is no saved nor request examyear: get latest examyear_pk of table
+# - if None: get today's examyear
+        # get this year in Jan thru July, get next year in Aug thru Dec PR2020-09-29 PR2020-12-24
+        if sel_examyear_instance is None:
+            sel_examyear_instance = get_todays_examyear_instance(requsr_country)
+            if sel_examyear_instance is not None:
+                sel_examyear_save = True
+
+# - if None: get latest examyear_int of table
         if sel_examyear_instance is None:
             sel_examyear_instance = sch_mod.Examyear.objects.filter(country=requsr_country).order_by('-code').first()
             if sel_examyear_instance is not None:

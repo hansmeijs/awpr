@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_visible_hide = "visibility_hide";
     const cls_selected = "tsa_tr_selected";
 
-    const selected = {examyear_pk: null, btn: "btn_user_list"};
+    const selected = {examyear_pk: null, btn: "btn_user"};
 
     let selected_department_pk = null;
     let selected_level_pk = null;
@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function HandleBtnSelect(data_btn, skip_upload) {
         console.log( "===== HandleBtnSelect ========= ");
         selected.btn = data_btn
-        if(!selected.btn){selected.btn = "btn_user_list"}
+        if(!selected.btn){selected.btn = "btn_user"}
 
 // ---  upload new selected.btn, not after loading page (then skip_upload = true)
         if(!skip_upload){

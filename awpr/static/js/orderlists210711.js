@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_selected = "tsa_tr_selected";
 
 // ---  id of selected customer and selected order
-    let selected_btn = "btn_user_list";
+    let selected_btn = "btn_user";
     let setting_dict = {};
     let permit_dict = {};
     let loc = {};
@@ -286,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("href_DUO", href_DUO);
             AddSubmenuButton(el_submenu, loc.Download_orderlist_ETE, null, null, "id_submenu_download_orderlist", href_ETE, true);  // true = download
             AddSubmenuButton(el_submenu, loc.Download_orderlist_DUO, null, null, "id_submenu_download_orderlist", href_DUO, true);  // true = download
-            AddSubmenuButton(el_submenu, loc.Show_hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
+            AddSubmenuButton(el_submenu, loc.Hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
 
 
         el_submenu.classList.remove(cls_hide);
@@ -347,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function UpdateHeaderText(){
         //console.log(" --- UpdateHeaderText ---" )
         let header_text = null;
-        if(selected_btn === "btn_user_list"){
+        if(selected_btn === "btn_user"){
             header_text = loc.User_list;
         } else {
             header_text = loc.Permissions;

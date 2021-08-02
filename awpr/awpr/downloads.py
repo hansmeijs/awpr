@@ -309,7 +309,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     # every user can change examyear, is stored in Usersetting.
     # request_setting: {'page_school': {'mode': 'get'}, 'sel_examyear_pk': 6}
 
-# - get selected examyear from request_setting, Usersetting or first in list
+# - get selected examyear from request_setting, Usersetting, this_examyear or latest
     sel_examyear_instance, sel_examyear_save, may_select_examyear = af.get_sel_examyear_instance(request, request_setting)
 
     permit_dict['may_select_examyear'] = may_select_examyear
@@ -387,7 +387,6 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
         # sel_depbase_instance has always value when selected_pk_dict_has_changed
         selected_pk_dict[c.KEY_SEL_DEPBASE_PK] = sel_depbase_instance.pk
         selected_pk_dict_has_changed = True
-        #logger.debug('selected_pk_dict_has_changed: ' + str(selected_pk_dict[c.KEY_SEL_DEPBASE_PK]))
 
 # - add info to setting_dict, will be sent back to client
     if sel_depbase_instance:
@@ -673,7 +672,7 @@ def get_selected_examperiod_examtype_from_usersetting(request):  # PR2021-01-20
 
 
 def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-06-14
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_ey_school_dep_from_usersetting ----- ' )
     # this function gets sel_examyear, sel_school, sel_department from req_user and usersetting
@@ -717,6 +716,7 @@ def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-
 
             if logging_on:
                 logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+
 # ===== EXAMYEAR =======================
     # - get selected examyear from Usersetting
             sel_examyear = sch_mod.Examyear.objects.get_or_none(
@@ -749,13 +749,21 @@ def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-
 
                 if logging_on:
                     logger.debug('sel_school: ' + str(sel_school))
+
 # ===== DEPBASE =======================
                 sel_depbase = sch_mod.Departmentbase.objects.get_or_none(
                     pk=selected_dict.get(c.KEY_SEL_DEPBASE_PK)
                 )
 
+        # get first depbase from sel_school.depbases if sel_depbase is None
+                if sel_depbase is None:
+                    if sel_school.depbases:
+                        depbase_list = sel_school.depbases.split(';')
+                        if depbase_list:
+                            sel_depbase = sch_mod.Departmentbase.objects.get_or_none(pk=depbase_list[0])
                 if logging_on:
                     logger.debug('sel_depbase: ' + str(sel_depbase))
+
 # ===== DEPARTMENT =======================
                 if sel_depbase is None:
                     msg_list.append(str(_('No department selected.')))

@@ -103,6 +103,9 @@
             const el_MIMP_msg_container = document.getElementById("id_MIMP_msg_container");
             add_or_remove_class(el_MIMP_msg_container, cls_hide, true)
 
+// show msg "You don't have to link the subjects yet." only when importing studsubjects
+            show_hide_element_by_id("id_MIMP_msg_dontlinksubjects", (import_table === "import_studsubj"));
+
             MIMP_btnSelectClicked("btn_step1");
 
 // ---  fill select unique option
@@ -399,7 +402,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //=========   MIMP_HandleFiledialog   ======================
     function MIMP_HandleFiledialog(el_filedialog) { // functie wordt alleen doorlopen als file is geselecteerd
-        //console.log(" ========== MIMP_HandleFiledialog ===========");
+        console.log(" ========== MIMP_HandleFiledialog ===========");
 
         mimp.excel_coldefs = [];
         mimp.excel_dateformat = null;
@@ -444,11 +447,12 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         show_hide_element(el_msg_err, (!!msg_err));
 
         MIMP_GetWorkbook(curFile);
+
     }  // MIMP_HandleFiledialog
 
 //=========  MIMP_GetWorkbook  ====================================
     function MIMP_GetWorkbook(curFile) {
-        //console.log("======  MIMP_GetWorkbook  =====");
+        console.log("======  MIMP_GetWorkbook  =====");
         // curWorkbook.SheetNames = ["Sheet2", "Compleetlijst", "Sheet1"]
         // curWorkbook.Sheets = { Sheet1: {!margins: {left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0.3, …},
         //                                 !ref: "A1"
@@ -557,7 +561,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                     el_msg_err.innerText = msg_err;
                     show_hide_element(el_msg_err, (!!msg_err));
                 }  // if (!!workbook){
-                // PR2020-04-16 debug: must be in reader.onload, will not be reached when ik MIMP_HandleFiledialog
+                // PR2020-04-16 debug: must be in reader.onload, will not be reached when in MIMP_HandleFiledialog
                 MIMP_HighlightAndDisableButtons();
             }; // reader.onload = function(event) {
         }; // if(!!mimp.selected_file){
@@ -660,10 +664,10 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 const date_str = today.getFullYear() + "-" + this_month_index + "-" + today.getDate();
                 let filename = "Log upload ";
                 if (mimp_stored.import_table === "import_permit"){
-                    filename += "permits dd " + date_str;
+                    filename += "permits dd " + date_str + ".pdf";
                 } else if (mimp_stored.import_table === "import_student"){
                     const schoolname =  [mimp_stored.sel_examyear_code, mimp_stored.sel_school_name, mimp_stored.sel_depbase_code].join(" ");
-                    filename += "kandidaten " +  schoolname + " dd " + date_str;
+                    filename += "kandidaten " +  schoolname + " dd " + date_str + ".pdf";
                 }
             //console.log("filename", filename);
                 printPDFlogfile(mimp_logfile, filename )
@@ -1239,9 +1243,9 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 // ---  set subheader text 'Step 1. Select file' etc
         document.getElementById("id_MIMP_step_text").innerText = step_text
 
-// ---  make id_MIMP_msg_linkrequired visible
-        let el_msg_link_unique = document.getElementById("id_MIMP_msg_linkrequired");
-        //add_or_remove_class (el_msg_link_unique, cls_hide, required_identifiers_are_linked);
+// ---  make el_MIMP_msg_linkrequired visible
+        //let el_MIMP_msg_linkrequired = document.getElementById("id_MIMP_msg_linkrequired");
+        //add_or_remove_class (el_MIMP_msg_linkrequired, cls_hide, required_identifiers_are_linked);
 
 // ---  focus on next element
         if (mimp.sel_btn === "btn_step1"){
@@ -1263,8 +1267,8 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         };
     }  // MIMP_HighlightAndDisableButtons
 
-//========= MIMP_RequredFieldsAreLinked  ==================================== PR2020-12-06 PR2021-04-21
-    function MIMP_RequredFieldsAreLinked(selected_unique_identifier) {
+//========= MIMP_RequredFieldsAreLinked  ==================================== PR2020-12-06 PR2021-04-21 PR2021-08-01
+    function MIMP_RequredFieldsAreLinked() {
         //console.log("=== MIMP_RequredFieldsAreLinked ===");
         //console.log("mimp_stored.coldefs", mimp_stored.coldefs);
 
@@ -1272,7 +1276,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         const unlinked_fields_list = [],  linkrequired_fieldlist = [];
         let msg_text = null;
         if(mimp_stored.coldefs) {
-// ---  check if all linkrequired fields are linked, if an unlinked field is found: add field to unlinked_fields_list
+// ---  check if linkrequired field are linked, if an unlinked field is found: add field to unlinked_fields_list
             for (let i = 0, stored_row; stored_row = mimp_stored.coldefs[i]; i++) {
                 // stored_row =  {awpColdef: "page", caption: "Pagina", linkfield: true, excColdef: "page"}
                 if (stored_row.linkrequired) {
@@ -1297,9 +1301,9 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             msg_text += (has_unlinked_fields) ? (list_length > 1) ? mimp_loc.link_mustbelinked_plural_zijn : mimp_loc.link_mustbelinked_single_zijn
                             : (list_length > 1) ? mimp_loc.link_mustbelinked_plural_worden : mimp_loc.link_mustbelinked_single_worden;
         }
-        const el_msg_linkrequired = document.getElementById("id_MIMP_msg_linkrequired")
-        el_msg_linkrequired.innerText = msg_text;
-        add_or_remove_class(el_msg_linkrequired, "text-danger", has_unlinked_fields)
+        const el_MIMP_msg_linkrequired = document.getElementById("id_MIMP_msg_linkrequired")
+        el_MIMP_msg_linkrequired.innerText = msg_text;
+        add_or_remove_class(el_MIMP_msg_linkrequired, "text-danger", has_unlinked_fields)
 
         return !has_unlinked_fields;
     }  // MIMP_RequredFieldsAreLinked
@@ -2083,7 +2087,6 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         //FillExcelValueLists();
         Fill_AEL_Tables(awp_row_id);
 
-        UpdateDatatableHeader();
         MIMP_HighlightAndDisableButtons();
     };  // LinkColumns
 
@@ -2148,7 +2151,6 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         //FillExcelValueLists();
         Fill_AEL_Tables(null, JustUnLinkedAwpId, JustUnlinkedExcId);
 
-        UpdateDatatableHeader();
         MIMP_HighlightAndDisableButtons();
     }  // UnlinkColumns
 
@@ -2292,7 +2294,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 console.log( "response");
                 console.log(response);
 
-//--------- hide loading gif
+//--------- hide loader
                 add_or_remove_class(document.getElementById("id_MIMP_loader"), cls_hide, true);
 
                 if("subject_list" in response){

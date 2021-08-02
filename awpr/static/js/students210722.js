@@ -5,12 +5,19 @@ let student_rows = [];
 let school_rows = [];
 let loc = {};
 
+let selected_btn = "btn_student";
+
+const field_settings = {};
+const columns_hidden = {};
+const columns_tobe_hidden = {};
+
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
 // ---  check if user has permit to view this page. If not: el_loader does not exist PR2020-10-02
-    let el_loader = document.getElementById("id_loader");
-    const has_view_permit = (!!el_loader);
+    const el_loader = document.getElementById("id_loader");
+    const el_hdr_left = document.getElementById("id_hdr_left");
+    const may_view_page = (!!el_loader);
 
     const cls_hide = "display_hide";
     const cls_hover = "tr_hover";
@@ -18,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_selected = "tsa_tr_selected";
 
 // ---  id of selected customer and selected order
-    let selected_btn = "btn_student";
+    // declared as global: let selected_btn = "btn_student";
     let setting_dict = {};
     let permit_dict = {};
 
@@ -41,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
     //let level_map = new Map();
     //let sector_map = new Map();
 
-    // PR2021-07-23 moved outside this function:
+    // PR2021-07-23 moved outside this function, to make it available in import.js
     // let student_rows = [];
     // let loc = {};
 
@@ -61,21 +68,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
 
-    let columns_hidden = {lvlbase_id: true};
+    //  columns_hidden = {'student': [ "sctbase_id", "classname"]};
+    // declared as global: const columns_hidden = {};
 
 // --- get field_settings
-    const field_settings = {
-        student: {  field_caption: ["", "ID_number", "Last_name", "First_name", "Prefix_twolines", "Gender", "Leerweg", "Sector", "Class", "Examnumber_twolines", "Regnumber_twolines", "Bis_candidate"],
-                    field_names: ["select", "idnumber", "lastname", "firstname", "prefix", "gender", "lvlbase_id", "sctbase_id", "classname", "examnumber", "regnumber", "bis_exam"],
-                    filter_tags: ["select", "text", "text",  "text", "text", "text", "text","text", "text", "text", "text", "toggle"],
-                    field_width:  ["020", "120", "220", "240", "090", "090", "090", "090", "090", "090", "120","090"],
-                    field_align: ["c", "l", "l", "l", "l", "c", "l", "l", "l", "l", "l","c"]},
-        studsubj: { field_caption: ["", "Examnumber_twolines", "Candidate", "Abbreviation", "Subject", "Character"],
-                    field_names: ["select", "examnumber", "fullname", "subj_code", "subj_name", "sjtp_abbrev"],
-                    filter_tags: ["select", "text", "text", "text", "text", "text", "text", "text", "text", "text"],
-                    field_width:  ["032", "075", "360", "100", "240", "120"],
-                    field_align: ["c", "r", "l", "l", "l"]}
-        };
+    // declared as global: let field_settings = {};
+    field_settings.student = {
+        field_caption: ["", "ID_number", "Last_name", "First_name", "Prefix_twolines", "Gender", "Leerweg", "Sector", "Class", "Examnumber_twolines", "Regnumber_twolines", "Bis_candidate"],
+        field_names: ["select", "idnumber", "lastname", "firstname", "prefix", "gender", "lvlbase_id", "sctbase_id", "classname", "examnumber", "regnumber", "bis_exam"],
+        filter_tags: ["select", "text", "text",  "text", "text", "text", "text","text", "text", "text", "text", "toggle"],
+        field_width:  ["020", "120", "220", "240", "090", "090", "090", "090", "090", "090", "120","090"],
+        field_align: ["c", "l", "l", "l", "l", "c", "l", "l", "l", "l", "l","c"]}
+
+    columns_tobe_hidden.student = {
+        field_names: ["idnumber", "prefix", "gender", "lvlbase_id", "sctbase_id", "classname", "examnumber", "regnumber", "bis_exam"],
+        field_caption: ["ID_number", "Prefix", "Gender", "Leerweg", "Sector", "Class", "Examnumber", "Regnumber", "Bis_candidate"]
+    }
+
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
 
@@ -128,6 +137,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if(el_SBR_filter){
             el_SBR_filter.addEventListener("keyup", function() {MSTUD_InputKeyup(el_SBR_filter)}, false );
         }
+
+
+// ---  MODAL SELECT COLUMNS ------------------------------------
+        const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
+        if(el_MCOL_btn_save){
+            el_MCOL_btn_save.addEventListener("click", function() {t_MCOL_Save(url_settings_upload, HandleBtnSelect)}, false )
+        };
+
 // ---  MODAL STUDENT
         const el_MSTUD_div_form_controls = document.getElementById("id_MSTUD_div_form_controls")
         if(el_MSTUD_div_form_controls){
@@ -248,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("btn_clicked: ", btn_clicked)
         SetMenubuttonActive(document.getElementById("id_plg_page_student"));
 
-    if(has_view_permit){
+    if(may_view_page){
         // period also returns emplhour_list
         const datalist_request = {
                 setting: {page: "page_student"},
@@ -274,8 +291,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
 
-// ---  show loader  // don't use cls_hide, use cls_visible_hide
+// ---  show loader
         el_loader.classList.remove(cls_visible_hide)
+        el_hdr_left.classList.add(cls_hide)
 
         let param = {"download": JSON.stringify (datalist_request)};
         let response = "";
@@ -287,8 +305,12 @@ document.addEventListener('DOMContentLoaded', function() {
             success: function (response) {
                 console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
                 console.log(response)
-                // hide loader
-                el_loader.classList.add(cls_visible_hide)
+
+// ---  hide loader
+                el_loader.classList.add(cls_visible_hide);
+                el_hdr_left.classList.remove(cls_hide)
+
+                let must_update_headerbar = false;
                 let check_status = false;
                 let isloaded_loc = false, isloaded_settings = false, isloaded_permits = false;
 
@@ -302,14 +324,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     setting_dict = response.setting_dict
                     selected_btn = (setting_dict.sel_btn)
                     isloaded_settings = true;
+
+            // ---  fill col_hidden
+                    if("col_hidden" in setting_dict){
+                       // clear the array columns_hidden
+                       // reset all arrays of key to [], keep the keys.
+                        for (const key of Object.keys(columns_hidden)) {
+                            b_clear_array(columns_hidden[key]);
+                        };
+                       // fill the arrays in  columns_hidden
+                        for (const [key, value] of Object.entries(setting_dict.col_hidden)) {
+                            columns_hidden[key] = value;
+                        }
+                    }
+                    must_update_headerbar = true;
                 };
 
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
                     // get_permits must come before CreateSubmenu and FiLLTbl
                     b_get_permits_from_permitlist(permit_dict);
-                    set_columns_hidden();
                     isloaded_permits = true;
+                    must_update_headerbar = true;
                 }
                 if ("schoolsetting_dict" in response) {
                     i_UpdateSchoolsettingsImport(response.schoolsetting_dict)
@@ -351,13 +387,17 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("===  CreateSubmenu == ");
         //console.log("loc.Add_subject ", loc.Add_subject);
         //console.log("loc ", loc);
-        if(permit_dict.permit_crud){
+
         let el_submenu = document.getElementById("id_submenu")
+        if(permit_dict.permit_crud){
             AddSubmenuButton(el_submenu, loc.Add_candidate, function() {MSTUD_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete")});
             AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open("import_student")}, null, "id_submenu_import");
-         el_submenu.classList.remove(cls_hide);
         };
+
+        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
+        el_submenu.classList.remove(cls_hide);
+
     };//function CreateSubmenu
 
 //###########################################################################
@@ -380,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
         b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
 // ---  fill sidebar selecttable students
-        SBR_FillSelectTable();
+        //SBR_FillSelectTable();
 
 // ---  fill datatable
         FillTblRows();
@@ -394,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("=== HandleTableRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
-// ---  update selected.student_dict
+// ---  get selected.student_dict
         selected.student_pk = get_attr_from_el_int(tr_clicked, "data-pk");
         selected.student_dict = b_get_mapdict_by_integer_from_datarows(student_rows, "id", selected.student_pk);
         //console.log( "selected.student_pk: ", selected.student_pk);
@@ -412,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log(" --- UpdateHeaderText ---" )
         // TODO
         //let header_text = null;
-        //if(selected_btn === "btn_user_list"){
+        //if(selected_btn === "btn_user"){
         //   header_text = loc.User_list;
         //} else {
         //    header_text = loc.Permissions;
@@ -447,9 +487,11 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }  // FillTblRows
 
-//=========  CreateTblHeader  === PR2020-07-31 PR2021-06-15
+//=========  CreateTblHeader  === PR2020-07-31 PR2021-06-15 PR2021-08-02
     function CreateTblHeader(field_setting) {
         //console.log("===  CreateTblHeader ===== ");
+        //console.log("field_setting", field_setting);
+        //console.log("columns_hidden", columns_hidden);
 
 //--- get info from selected department_map
         let sct_caption = null, has_profiel = false,  lvl_req = false, sct_req = false;
@@ -470,8 +512,9 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let j = 0; j < column_count; j++) {
             const field_name = field_setting.field_names[j];
 
-    // - skip columns if columns_hidden[field_name]) = false;
-            if (!columns_hidden[field_name]){
+    // --- skip column if in columns_hidden
+            const col_is_hidden = get_column_hidden(field_name);
+            if (!col_is_hidden){
 
         // --- get field_caption from field_setting, diplay 'Profiel' in column sctbase_id if has_profiel
                 const key = field_setting.field_caption[j];
@@ -486,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let th_header = document.createElement("th");
         // --- add div to th, margin not working with th
                     const el_header = document.createElement("div");
-        // --- add innerText to el_div
+        // --- add innerText to el_header
                     el_header.innerText = field_caption;
         // --- add width, text_align, right padding in examnumber
                     th_header.classList.add(class_width, class_align);
@@ -508,7 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_filter.setAttribute("data-field", field_name);
                 el_filter.setAttribute("data-filtertag", filter_tag);
 
-        // --- add EventListener to el_filter
+        // --- add EventListener to el_filter / th_filter
                 if (filter_tag === "text") {
                     el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
                     add_hover(th_filter);
@@ -530,6 +573,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_filter.setAttribute("ondragstart", "return false;");
                     el_filter.setAttribute("ondrop", "return false;");
                 }
+
         // --- add width, text_align
                 // PR2021-05-30 debug. Google chrome not setting width without th_filter class_width
                 th_filter.classList.add(class_width, class_align);
@@ -582,16 +626,16 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let j = 0; j < column_count; j++) {
             const field_name = field_names[j];
 
-    // - skip columns if columns_hidden[field_name]) = false;
-            if (!columns_hidden[field_name]){
-
+    // --- skip columns if in columns_hidden
+            const col_is_hidden = get_column_hidden(field_name);
+            if (!col_is_hidden){
                 const class_width = "tw_" + field_width[j];
                 const class_align = "ta_" + field_align[j];
 
-        // --- insert td element,
+    // --- insert td element,
                 const td = tblRow.insertCell(-1);
 
-        // --- create element with tag from field_tags
+    // --- create element with tag from field_tags
                 const el = document.createElement(field_tag);
 
         // --- add data-field attribute
@@ -600,6 +644,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- add  text_align
                 el.classList.add(class_width, class_align);
 
+        // --- append element
                 td.appendChild(el);
 
     // --- add EventListener to td
@@ -740,6 +785,7 @@ function RefreshDataRowsAfterUpload(response) {
     function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
         //console.log(" --- RefreshDataRows  ---");
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
+
         if (update_rows && update_rows.length ) {
             const field_setting = field_settings[tblName];
             for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
@@ -810,6 +856,7 @@ function RefreshDataRowsAfterUpload(response) {
     // ---  scrollIntoView,
                 if(new_tblRow){
                     new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
+
     // ---  make new row green for 2 seconds,
                     ShowOkElement(new_tblRow);
                 }
@@ -854,13 +901,13 @@ function RefreshDataRowsAfterUpload(response) {
                                 }}
                         };
         //console.log("updated_columns", updated_columns);
+
 // ---  update fields in data_row
                         for (const [key, new_value] of Object.entries(update_dict)) {
                             if (key in data_dict){
                                 if (new_value !== data_dict[key]) {
                                     data_dict[key] = new_value
                         }}};
-
         //console.log("data_dict", data_dict);
 
         // ---  update field in tblRow
@@ -1451,108 +1498,6 @@ function RefreshDataRowsAfterUpload(response) {
 //###########################################################################
 // +++++++++++++++++ SIDEBAR SELECT TABLE STUDENTS ++++++++++++++++++++++++++
 
-//========= SBR_FillSelectTable  ============= PR2020-11-14
-    // TODO not in use yet PR2021-07-18
-    function SBR_FillSelectTable(selected_pk) {
-        //console.log( "=== SBR_FillSelectTable === ");
-        //console.log( "selected_pk", selected_pk);
-        //console.log( "mod_SBR_dict", mod_SBR_dict);
-        let tblBody = document.getElementById("id_SBR_tblbody_select");
-        tblBody.innerText = null;
-
-        const data_map = new Map();   //was: const data_map = student_map;
-        let row_count = 0
-        if (data_map.size){
-//--- loop through student_map
-            for (const [map_id, map_dict] of data_map.entries()) {
-                const pk_int = map_dict.id;
-                const full_name = (map_dict.fullname) ? map_dict.fullname : "---";
-                const first_name = (map_dict.firstname) ? map_dict.firstname : "";
-                const last_name = (map_dict.firstname) ? map_dict.firstname : "";
-                const order_by = (map_dict.fullname) ? map_dict.fullname.toLowerCase() : null;
-
-//- insert tblBody row
-                let tblRow = tblBody.insertRow(-1); //index -1 results in that the new row will be inserted at the last position.
-                tblRow.setAttribute("data-pk", pk_int);
-                tblRow.setAttribute("data-sortby", order_by);
-// -  highlight selected row
-                if (selected_pk && pk_int === selected_pk){
-                    tblRow.classList.add(cls_selected)
-                }
-//- add hover to tblBody row
-                add_hover(tblRow);
-//- add EventListener to Modal SelectEmployee row
-                tblRow.addEventListener("click", function() {SBR_SelectRowClicked(tblRow)}, false )
-// - add first td to tblRow.
-                let td = tblRow.insertCell(-1);
-// --- add a element to td, necessary to get same structure as item_table, used for filtering
-                let el = document.createElement("div");
-                    el.innerText = full_name;
-                    el.classList.add("mx-1")
-                td.appendChild(el);
-                row_count += 1;
-
-            } // for (const [map_id, item_dict] of employee_map.entries())
-        }  //  if (employee_map.size === 0)
-//--- when no items found: show 'select_employee_none'
-        if(!row_count){
-            let tblRow = tblBody.insertRow(-1); //index -1 results in that the new row will be inserted at the last position.
-            let td = tblRow.insertCell(-1);
-            td.innerText = loc.No_candidates;
-        }
-    } // SBR_FillSelectTable
-
-
-//=========  SBR_SelectRowClicked  ================ PR2020-11-15
-    function SBR_SelectRowClicked(sel_tblRow) {
-        //console.log( "===== SBR_SelectRowClicked ========= ");
-
-// ---  deselect all highlighted rows
-        DeselectHighlightedRows(sel_tblRow, cls_selected)
-
-        if(sel_tblRow) {
-// ---  highlight clicked row
-            sel_tblRow.classList.add(cls_selected)
-// ---  put value in input box, put employee_pk in mod_MAB_dict, set focus to select_abscatselect_abscat
-
-// ---  update selected.student_pk
-            selected.student_pk = null;
-            selected.student_dict = {};
-
-            // only select employee from select table
-            const pk_int = get_attr_from_el_int(sel_tblRow, "data-pk");
-            let student_name = null, student_level = null, student_sector = null, student_class = null;
-            if(pk_int){
-                const map_dict = {} // was: get_mapdict_from_datamap_by_tblName_pk(student_map, "student", pk_int);
-        //console.log( "map_dict", map_dict);
-
-                selected.student_dict = map_dict;
-                selected.student_pk = map_dict.id;
-
-                const last_name = (map_dict.lastname) ? map_dict.lastname : "";
-                const first_name = (map_dict.firstname) ? map_dict.firstname : "";
-                student_name = last_name + ", " + first_name
-                student_level = (map_dict.lvl_abbrev) ? map_dict.lvl_abbrev : null;
-                student_sector = (map_dict.sct_abbrev) ? map_dict.sct_abbrev : null;
-                student_class = (map_dict.classname) ? map_dict.classname : null;
-            }
-// ---  put info in header box
-            document.getElementById("id_hdr_left").innerText = student_name;
-            document.getElementById("id_hdr_textright1").innerText = student_level;
-            document.getElementById("id_hdr_textright2").innerText = student_sector;
-
-            let tblRow = t_HighlightSelectedTblRowByPk(tblBody_datatable, selected.student_pk)
-            // ---  scrollIntoView, only in tblBody customer
-            if (tblRow){
-                tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
-            };
-
-
-
-// ---  enable btn_save and input elements
-            //MAB_BtnSaveEnable();
-        }  // if(!!tblRow) {
-    }  // SBR_SelectRowClicked
 
 //###########################################################################
 // +++++++++++++++++ FILTER TABLE ROWS ++++++++++++++++++++++++++++++++++++++
@@ -1858,4 +1803,42 @@ function RefreshDataRowsAfterUpload(response) {
                                      "13:           Studierichting:          1=Havo, 2=Vwo, 3=Tkl, 4=Pkl, 5 = Pbl."
 */
     };  // get_regnr_info
+
+//========= get_column_hidden  ====== PR2021-08-02
+    function get_column_hidden(field_name) {
+        //console.log( "===== get_column_hidden  === ");
+        //console.log( "selected_btn", selected_btn);
+        //console.log( "field_name", field_name);
+
+        //example of mapped field
+        //const mapped_field = (field_name === "subj_status") ? "subj_error" :
+        //                     (field_name === "has_pok") ? "pok_status" : field_name;
+        const mapped_field = field_name;
+
+// --- set col_hidden
+        //const tblName = (selected_btn === "btn_student")? "student" : "student";
+        const tblName = "student";
+        const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
+
+        //console.log("col_hidden", col_hidden)
+        let is_hidden = col_hidden.includes(mapped_field);
+        //console.log("is_hidden", is_hidden)
+
+/*
+field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
+            "subj_code", "subj_name", "sjtp_abbrev", "subj_status",
+            "has_exemption", "exm_status", "has_reex", "re2_status", "has_reex03", "re3_status",
+            "has_pok", "pok_status", "notes"],
+*/
+
+        if(!is_hidden){
+            if (mapped_field === "lvl_abbrev") {
+                is_hidden = (!setting_dict.sel_dep_level_req);
+            };
+        }
+        //console.log( "is_hidden", is_hidden);
+        return is_hidden;
+    };  // get_column_hidden
+
+
 })  // document.addEventListener('DOMContentLoaded', function()
