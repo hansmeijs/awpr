@@ -2329,8 +2329,8 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //========= i_UpdateSchoolsettingsImport  ================ PR2020-04-17 PR2021-01-12
     function i_UpdateSchoolsettingsImport(schoolsetting_dict){
-        console.log("===== i_UpdateSchoolsettingsImport ===== ")
-        console.log("schoolsetting_dict", deepcopy_dict(schoolsetting_dict))
+        //console.log("===== i_UpdateSchoolsettingsImport ===== ")
+        //console.log("schoolsetting_dict", deepcopy_dict(schoolsetting_dict))
 
         let import_table = null;
         if (!isEmpty(schoolsetting_dict)){
@@ -2362,14 +2362,6 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         mimp_stored.sel_school_pk = schoolsetting_dict.sel_school_pk;
         mimp_stored.sel_school_name = schoolsetting_dict.sel_school_name;
 
-/*
-        mimp_stored.worksheetname = get_dict_value(schoolsetting_dict, [import_table, "worksheetname"])
-        mimp_stored.noheader = get_dict_value(schoolsetting_dict, [import_table, "noheader"])
-        mimp_stored.coldefs = get_dict_value(schoolsetting_dict, [import_table, "coldef"])
-        mimp_stored.department = get_dict_value(schoolsetting_dict, [import_table, "department"])
-        mimp_stored.level = get_dict_value(schoolsetting_dict, [import_table, "level"])
-        mimp_stored.sector = get_dict_value(schoolsetting_dict, [import_table, "sector"])
-*/
         //console.log("mimp_stored", mimp_stored)
     }  // i_UpdateSchoolsettingsImport
 

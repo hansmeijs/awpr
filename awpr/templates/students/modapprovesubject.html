@@ -21,7 +21,6 @@
 
                     <p id="id_MASS_subheader"></p>
 
-
                     <div class="flex_container">
                         <div id="id_MASS_level_container" class="flex_1 mx-2 mb-2 mt-0 ">
                             <label for="id_MASS_level" class="mx-2">{% trans 'Level' %}:</label>
@@ -43,9 +42,10 @@
 
                     <small class="mx-3" >{% trans 'You can change the selection in de vertical grey bar on the left of the page.' %}</small>
                 </div>
-                <div id="id_MASS_info_container" class="mx-0 mt-2 display_hide">
 
+                <div id="id_MASS_info_container" class="mx-0 mt-2 display_hide">
                 </div>
+
                 <div id="id_MASS_loader" class="display_hide mx-4 mt-2">
                     <div class="image_container">
                         <img src="{% static 'img/loader.gif' %}" class="icon_24">
@@ -53,12 +53,12 @@
                     </div>
                 </div>
 
-                <div id="id_MASS_apply_code_container" class="mx-0 mt-2 p-2 border_bg_transparent display_hide">
+                <div id="id_MASS_info_request_verifcode" class="mx-0 mt-2 p-2 border_bg_transparent display_hide">
                     <p>{% trans "You need a 6 digit verification code to submit the Ex form." %}</p>
                     <p>{% trans "Click 'Request verification code' and we will send you an email with the verification code." %}</p>
                     <p>{% trans "The verification code expires in 30 minutes." %}</p>
                 </div>
-                <div id="id_MASS_input_verifcode_container">
+                <div>
                     <label for="id_MASS_input_verifcode" class="label_margin_top_m2">{% trans 'Verification code' %}:</label>
                     <input id="id_MASS_input_verifcode" type="text" data-field="verificationcode" class="form-control"
                         autocomplete="off" ondragstart="return false;" ondrop="return false;">

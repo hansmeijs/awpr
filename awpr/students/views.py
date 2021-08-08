@@ -606,6 +606,12 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
         msg_html = None
 
 # - get permit
+        # <PERMIT>
+        # only users with role > student and perm_edit can change student data
+        # only school that is requsr_school can be changed
+        #   current schoolbase can be different from request.user.schoolbase (when role is insp, admin, system)
+        # only if country/examyear/school/student not locked, examyear is published and school is activated
+
         has_permit = False
         req_usr = request.user
         if req_usr and req_usr.country and req_usr.schoolbase:
@@ -660,14 +666,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 
                 else:
 
-#----------------------------
-        #<PERMIT>
-        # only users with role > student and perm_edit can change student data
-        # only school that is requsr_school can be changed
-        #   current schoolbase can be different from request.user.schoolbase (when role is insp, admin, system)
-        # only if country/examyear/school/student not locked, examyear is published and school is activated
-
-    # - get selected mode. Modes are 'approve' 'submit_test' 'submit_submit', 'reset'
+    # - get selected mode. Modes are 'approve_test', 'approve_submit', 'approve_reset', 'submit_test' 'submit_submit'
                     mode = upload_dict.get('mode')
                     is_approve = True if mode in ('approve_test', 'approve_submit', 'approve_reset') else False
                     is_submit = True if mode in ('submit_test', 'submit_submit') else False
@@ -684,6 +683,8 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                         verification_is_ok, verif_msg_html = self.check_verificationcode(logging_on, upload_dict, request)
                         if verif_msg_html:
                             msg_html = verif_msg_html
+                        if verification_is_ok:
+                            update_wrap['verification_is_ok'] = True
 
                     if verification_is_ok:
     # - get auth_index (1 = President, 2 = Secretary, 3 = Commissioner)
@@ -700,7 +701,8 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                         if logging_on:
                             logger.debug('selected_dict: ' + str(selected_dict))
 
-# +++ get selected subject_rows
+# +++ get selected studsubj_rows
+                        # TODO exclude published rows??
                         crit = Q(student__school=sel_school) & \
                                Q(student__department=sel_department)
             # when submit: don't filter on level, sector, subject or cluster
@@ -1016,7 +1018,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
             logger.debug('settings: ' + str(settings))
 
 # +++ get mapped_subject_rows
-        subject_row_count, subject_pk_list, subject_code_list, level_pk_list = \
+        subject_row_count, subject_pk_list, subject_code_list = \
             grd_exc.create_ex1_mapped_subject_rows(sel_examyear, sel_school, sel_department)
         #  subject_pk_dict: {34: 0, 29: 1, ...} ( subject_pk: index)
         #  subject_code_list: ['bw', 'cav', ]
@@ -1026,7 +1028,6 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
             logger.debug('subject_row_count: ' + str(subject_row_count))
             logger.debug('subject_pk_list: ' + str(subject_pk_list))
             logger.debug('subject_code_list: ' + str(subject_code_list))
-            logger.debug('level_pk_list: ' + str(level_pk_list))
 
 # -get dict of subjects of these studsubj_rows
         studsubj_rows = grd_exc.create_ex1_rows(sel_examyear, sel_school, sel_department)
@@ -1267,7 +1268,7 @@ def get_subjects_are_text(count):
 def approve_studsubj(studsubj, requsr_auth, is_test, is_reset, count_dict, request):
     # PR2021-07-26
     # status_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- approve_studsubj -----')
         logger.debug('requsr_auth:  ' + str(requsr_auth))
@@ -1406,7 +1407,6 @@ def submit_studsubj(studsubj, is_test, published_instance, count_dict, request):
 # - put published_id in field subj_published
                             setattr(studsubj, 'subj_published', published_instance)
 # - save changes
-                            a=1/0
                             studsubj.save(request=request)
                             is_saved = True
                             count_dict['saved'] += 1
@@ -1433,15 +1433,15 @@ def create_published_Ex1_instance(sel_school, sel_department, sel_examperiod, is
     examtype_caption = ''
     exform = 'Ex1'
     if sel_examperiod == 1:
-        examtype_caption = '-tv1'
+        examtype_caption = 'tv1'
     if sel_examperiod == 2:
-        examtype_caption = '-tv2'
+        examtype_caption = 'tv2'
         exform = 'Ex4'
     elif sel_examperiod == 3:
-        examtype_caption = '-tv3'
+        examtype_caption = 'tv3'
         exform = 'Ex4'
     elif sel_examperiod == 4:
-        examtype_caption = '-vrst'
+        examtype_caption = 'vrst'
 
     today_date = af.get_date_from_arr(now_arr)
 
@@ -2962,7 +2962,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, append_dict, stude
         sql_list.append('AND st.id = %(st_id)s::INT')
     # studsubj_id can be None, sort them first so it can be given the value of 0 in b_recursive_integer_lookup
     # field with nulls must be ordered last
-    sql_list.append('ORDER BY studsubj.studsubj_id NULLS FIRST, st.id')
+    sql_list.append('ORDER BY st.id, studsubj.studsubj_id NULLS FIRST')
     sql = ' '.join(sql_list)
 
     #logger.debug('sql_keys: ' + str(sql_keys) + ' ' + str(type(sql_keys)))

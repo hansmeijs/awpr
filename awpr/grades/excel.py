@@ -57,7 +57,7 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24
                         logger.debug('settings: ' + str(settings))
 
     # +++ get mapped_subject_rows
-                    subject_row_count, subject_pk_list, subject_code_list, level_pk_list = \
+                    subject_row_count, subject_pk_list, subject_code_list = \
                         create_ex1_mapped_subject_rows(sel_examyear, sel_school, sel_department)
                     #  subject_pk_dict: {34: 0, 29: 1, ...} ( subject_pk: index)
                     #  subject_code_list: ['bw', 'cav', ]
@@ -67,10 +67,11 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24
                         logger.debug('subject_row_count: ' + str(subject_row_count))
                         logger.debug('subject_pk_list: ' + str(subject_pk_list))
                         logger.debug('subject_code_list: ' + str(subject_code_list))
-                        logger.debug('level_pk_list: ' + str(level_pk_list))
 
     # +++ get dict of subjects of these studsubj_rows
                     studsubj_rows = create_ex1_rows(sel_examyear, sel_school, sel_department)
+
+    # +++ create ex1_xlsx
                     if studsubj_rows:
                         save_to_disk = False
                         published_instance = None
@@ -249,7 +250,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
 
         first_subject_column = col_count
         subject_length = len(subject_code_list)
-        subject_col_width = 2.14
+        subject_col_width = 2.86
         for x in range(0, subject_length):  # range(start_value, end_value, step), end_value is not included!
             field_width.append(subject_col_width)
             subject_code = subject_code_list[x] if subject_code_list[x] else ''
@@ -314,7 +315,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
                 for i, field_name in enumerate(field_names):
                     value = ''
                     if isinstance(field_name, int):
-                        # in subject column 'field_name is the ph of the subject
+                        # in subject column 'field_name' is subject_id
                         subj_id_list = row.get('subj_id_arr', [])
                         if subj_id_list and field_name in subj_id_list:
                             value = 'x'
@@ -434,19 +435,17 @@ def create_ex1_rows(examyear, school, department):
 # --- end of create_ex1_rows
 
 
-def create_ex1_mapped_subject_rows(examyear, school, department):
+def create_ex1_mapped_subject_rows(examyear, school, department):  # PR2021-08-08
     # function returns:
     #  subject_pk_dict: {34: 0, 29: 1, 4: 2, 36: 3, 31: 4, 27: 5, 33: 6, 35: 7, 1: 8, 15: 9, 3: 10}
     #  subject_code_list: ['bw', 'cav', 'en', 'inst', 'lo', 'mm1', 'mt', 'mvt', 'ne', 'ns1', 'pa']
-    #  level_pk_list: [1]
     #  index = row_count
 
     subject_pk_dict = {}
     subject_code_list = []
     subject_pk_list = []
-    level_pk_list = []
     sql_list = [
-        "SELECT subj.id, subjbase.code, st.level_id",
+        "SELECT subj.id, subjbase.code",
 
         "FROM students_studentsubject AS studsubj",
         "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
@@ -455,7 +454,7 @@ def create_ex1_mapped_subject_rows(examyear, school, department):
 
         "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
         "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
-        "GROUP BY subj.id, subjbase.code, st.level_id",
+        "GROUP BY subj.id, subjbase.code",
         "ORDER BY LOWER(subjbase.code)"
     ]
     sql = ' '.join(sql_list)
@@ -470,11 +469,9 @@ def create_ex1_mapped_subject_rows(examyear, school, department):
             subject_pk_dict[subject_row[0]] = index
             subject_pk_list.append(subject_row[0])
             subject_code_list.append(subject_row[1])
-            if subject_row[2] and subject_row[2] not in level_pk_list:
-                level_pk_list.append(subject_row[2])
             index += 1
 
-    return index, subject_pk_list, subject_code_list, level_pk_list
+    return index, subject_pk_list, subject_code_list
 # --- end of create_ex1_mapped_subject_rows
 
 
@@ -1152,6 +1149,10 @@ def create_subjecttype_paragraph_xlsx(row_index, sheet, subjecttype_rows, scheme
 
 def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_pk,
                                  th_align_center, row_align_left, row_align_center, user_lang):  # PR2021-07-13
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_schemeitem_paragraph_xlsx  ----- ')
+        logger.debug('row_index: ' + str(row_index))
 
     # get number of columns
     field_names = ['subj_name', 'subj_code', 'sjtp_abbrev', 'gradetype',
@@ -1160,39 +1161,31 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
                    'is_combi', 'is_core_subject', 'is_mvt',
                    'extra_count_allowed', 'extra_nocount_allowed',
                    'elective_combi_allowed',
-                   'has_practexam',
-
-                   'has_pws',
+                   'has_practexam', 'has_pws',
                    'reex_se_allowed', 'max_reex',
                    'no_thirdperiod', 'no_exemption_ce',
-
                    'modifiedat', 'modby_username']
 
     col_count = len(field_names)
+    if logging_on:
+        logger.debug('col_count: ' + str(col_count))
 
-    field_captions = [str(_('Subjects of this subject scheme')),
-                      str(_('Abbreviation')),
-                      str(_('Subject type')),
-                      str(_('Grade type')),
+    field_captions = [str(_('Subjects of this subject scheme')), str(_('Abbreviation')),
+                      str(_('Subject type')), str(_('Grade type')),
                       str(_('SE weight')), str(_('CE weight')),
-                      str(_('Mandatory')),
-                      str( _('Combination subject')),
-                      str(_('Core subject')),
-                      str(_('MVT subject')),
+                      str(_('Mandatory')),  str(_("'Mandatory-if' subject")),
+                      str( _('Combination subject')), str(_('Core subject')), str(_('MVT subject')),
                       str(_('Extra subject counts allowed')), str(_('Extra subject does not count allowed')),
                       str(_('Elective combi subject allowed')),
-                      str(_('Has practical exam')),
-                      str(_('Has assignment')),
-                      str(_('Herkansing SE allowed')),
-                      str(_('Maximum number of re-examinations')),
-                      str(_('Subject has no third period')),
-                      str(_('Exemption without CE allowed')),
+                      str(_('Has practical exam')), str(_('Has assignment')),
+                      str(_('Herkansing SE allowed')), str(_('Maximum number of re-examinations')),
+                      str(_('Subject has no third period')), str(_('Exemption without CE allowed')),
                       str(_('Last modified on ')), str(_('Last modified by'))]
     header_format = th_align_center
 
     row_formats = []
     for x in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
-        if 1 < x <  col_count - 2:
+        if 1 < x < col_count - 2:
             row_formats.append(row_align_center)
         else:
             row_formats.append(row_align_left)
@@ -1200,8 +1193,12 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
     row_index += 3
     # ---  table header row
     for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
+        if logging_on:
+            logger.debug('i: ' + str(i))
+            logger.debug('field_captions[i]: ' + str(field_captions[i]))
         sheet.write(row_index, i, field_captions[i], header_format)
-
+    if logging_on:
+        logger.debug('field_captions end ')
     # ---  loop through scheme rows
     if len(schemeitem_rows):
         for row in schemeitem_rows:
@@ -1226,6 +1223,7 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
                             value = 'x' if value else ''
 
                     sheet.write(row_index, i, value, row_formats[i])
+
 
     return row_index
 # --- end of create_subjecttype_paragraph_xlsx

@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log ('data_lang', data_lang)
 
     let html_upload_list = [];
+    let user_lang = (data_lang) ? data_lang : null;
 
 // - Loop through all dropdown buttons to toggle between hiding and showing its dropdown content - This allows the user to have multiple dropdowns without any conflict */
     const el_sidenav = document.getElementById("id_sidenav");
@@ -48,14 +49,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 //========= LoadPage  ============= PR2021-07-30
-    function LoadPage(page){
+    function LoadPage(page,){
         console.log( "===== LoadPage  ========= ");
         console.log( "page", page);
+        console.log( "user_lang", user_lang);
 
-        let html_list = (page === "home") ? man_home :
+        const html_dict = (page === "home") ? man_home :
                         (page === "upload") ? man_upload :
                         (page === "approve") ? man_approve : null;
-
+        console.log( "html_dict", html_dict);
+        const html_list= (user_lang === 'en' && html_dict.en) ?  html_dict.en :  html_dict.nl;
+        console.log( "html_list", html_list);
         const html_str = (html_list && html_list.length) ? html_list.join('') : "<h4 class='p-5'> Deze pagina is nog niet beschikbaar.</h4>";
 
         document.getElementById("id_content").innerHTML = html_str;

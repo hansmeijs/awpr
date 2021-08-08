@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MASS_info_container = document.getElementById("id_MASS_info_container");
         const el_MASS_loader = document.getElementById("id_MASS_loader");
 
-        const el_MASS_apply_code_container = document.getElementById("id_MASS_apply_code_container");
+        const el_MASS_info_request_verifcode = document.getElementById("id_MASS_info_request_verifcode");
 
         const el_MASS_input_verifcode = document.getElementById("id_MASS_input_verifcode");
         if (el_MASS_input_verifcode){
@@ -551,9 +551,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  update selected student_pk
         selected.studentsubject_dict = null;
         selected.student_pk = null;
-        selected.subject_pk = null
-        const data_rows = (selected_btn === "btn_published")? published_rows : studsubj_rows;
-        const data_dict = get_mapdict_by_integer_from_datarows(data_rows, tr_clicked);
+        selected.subject_pk = null;
+
+// get data_dict from data_rows
+        const data_dict = get_datadict_from_tblRow(tr_clicked);
+        console.log( "data_dict", data_dict);
 
         if (selected_btn === "btn_published"){
             //TODO
@@ -1038,13 +1040,9 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
         if (permit_dict.permit_approve_subject){
 
-            mod_dict = {};
-            const tblName = (selected_btn === "btn_published")? "published" : "studsubj";
-
             const tblRow = get_tablerow_selected(el_input);
-            const data_rows = (selected_btn === "btn_published")? published_rows : studsubj_rows;
-            const map_dict = get_mapdict_by_integer_from_datarows(data_rows, tblRow);
-            console.log( "map_dict", map_dict);
+            const data_dict = get_datadict_from_tblRow(tblRow);
+            console.log( "data_dict", data_dict);
 /*
 // +++ get existing data_dict from data_rows. data_rows is ordered by: studsubj_id, stud_id'
             const studsubj_pk = (update_dict && update_dict.studsubj_id) ? update_dict.studsubj_id : null;
@@ -1055,7 +1053,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
         console.log(".....data_dict", data_dict);
 */
 
-            if(!isEmpty(map_dict)){
+            if(!isEmpty(data_dict)){
                 const fldName = get_attr_from_el(el_input, "data-field");
                 const prefix = fldName.replace("_status", "");
                 const auth = (permit_dict.usergroup_auth1 && !permit_dict.usergroup_auth2) ? "_auth1" :
@@ -1065,7 +1063,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
         console.log( "permit_dict.usergroup_auth2", permit_dict.usergroup_auth2);
         console.log( "auth", auth);
                 const field_auth_id = prefix + auth +  "_id";
-                const auth_id = (map_dict[field_auth_id]) ? map_dict[field_auth_id] : null;
+                const auth_id = (data_dict[field_auth_id]) ? data_dict[field_auth_id] : null;
                 const model_field = (auth === "_auth1") ? "subj_auth1by" : (auth === "_auth2") ? "subj_auth2by" : null;
                 if (model_field) {
 // - get new_auth_id - remove oif already filled in
@@ -1073,8 +1071,8 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
     // ---  upload changes
                     const studsubj_dict = {
-                        student_pk: map_dict.stud_id,
-                        studsubj_pk: map_dict.studsubj_id
+                        student_pk: data_dict.stud_id,
+                        studsubj_pk: data_dict.studsubj_id
                     };
                     studsubj_dict[model_field] = new_auth_id;
 
@@ -1085,7 +1083,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
                     UploadChanges(upload_dict, urls.url_studsubj_approve);
                 };
-            }  //  if(!isEmpty(map_dict)){
+            }  //  if(!isEmpty(data_dict)){
 
         } //   if(permit_dict.permit_approve_subject)
     }  // UploadToggleStatus
@@ -1588,12 +1586,11 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
         console.log( "schemitem_pk", schemitem_pk);
         //console.log( "is_selected", is_selected);
 
-        let is_empty = true, is_mand = false, is_combi = false, is_elective_combi = false,
-            is_extra_counts = false, is_extra_nocount = false,
-            pwstitle = null, pwssubjects = null,
-            extra_count_allowed = false, extra_nocount_allowed = false, elective_combi_allowed = false;
-
-        let sjtp_has_prac = false, sjtp_has_pws = false;
+        let is_empty = true, is_mand = false, is_mand_subj = false, is_combi = false,
+            extra_count_allowed = false, extra_nocount_allowed = false, elective_combi_allowed = false,
+            is_extra_counts = false, is_extra_nocount = false, is_elective_combi = false,
+            sjtp_has_prac = false, sjtp_has_pws = false,
+            pwstitle = null, pwssubjects = null;
 
         let map_dict = {};
 
@@ -2282,8 +2279,8 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21
     function RefreshDatarowItem(tblName, field_setting, field_names, update_dict, data_rows) {
-        //console.log(" --- RefreshDatarowItem  ---");
-        //console.log("tblName", tblName);
+    //console.log(" --- RefreshDatarowItem  ---");
+    //console.log("tblName", tblName);
     //console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
@@ -2343,18 +2340,11 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
                 }
             } else {
 
-// +++ get existing data_dict from data_rows. data_rows is ordered by: studsubj_id, stud_id'
-                // studsubj_id can be None, sort them first so it can be given the value of 0 in b_recursive_integer_lookup
-                // field with nulls must be ordered first
-                const data_rows = (selected_btn === "btn_published") ? published_rows : studsubj_rows;
-                const stud_pk = (update_dict.stud_id) ? update_dict.stud_id : 0;
-                const studsubj_pk = (update_dict.studsubj_id) ? update_dict.studsubj_id : 0;
-                const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "stud_id", stud_pk, "studsubj_id", studsubj_pk);
-                const data_dict = selected_dict
-                const datarow_index = index;
-
-    console.log( "map_dict", map_dict);
-    console.log( "datarow_index", datarow_index);
+// +++ get existing data_dict from data_rows. data_rows is ordered by: stud_id, studsubj_id'
+                const student_pk = (update_dict && update_dict.stud_id) ? update_dict.stud_id : null;
+                const studsubj_pk = (update_dict && update_dict.studsubj_id) ? update_dict.studsubj_id : null;
+                const data_dict = get_datadict_by_studpk_studsubjpk_from_tblRow(student_pk, studsubj_pk);
+    //console.log( "data_dict", data_dict);
 
 // ++++ deleted ++++
                 if(is_deleted){
@@ -2852,7 +2842,6 @@ console.log("selected_dict", selected_dict)
                 add_or_remove_class(el_MASS_select_container, cls_hide, !is_approve)
                 add_or_remove_class(el_MASS_btn_delete, cls_hide, is_submit)
 
-                add_or_remove_class(el_MASS_info_container, cls_hide, true)
 
     // ---  show info and hide loader
                 // PR2021-01-21 debug 'display_hide' not working when class 'image_container' is in same div
@@ -2903,16 +2892,10 @@ console.log("selected_dict", selected_dict)
                     upload_dict.verificationcode = el_MASS_input_verifcode.value
                     upload_dict.verificationkey = mod_MASS_dict.verificationkey;
                 }
-            } else if (mod_MASS_dict.step === 3){
-                if (mod_MASS_dict.is_submit){
 
-                }
             }
 
-    // ---  show loader
-            add_or_remove_class(el_MASS_loader, cls_hide, false);
-    // ---  hide info_container
-            add_or_remove_class(el_MASS_info_container, cls_hide, true);
+            MASS_SetBtnSaveDeleteCancel() ;
 
     // ---  upload changes
             UploadChanges(upload_dict, url_str);
@@ -2928,107 +2911,129 @@ console.log("selected_dict", selected_dict)
 //========= MASS_UpdateFromResponse ============= PR2021-07-25
     function MASS_UpdateFromResponse(response) {
         console.log( " ==== MASS_UpdateFromResponse ====");
-        console.log( "response", response);
-        console.log("mod_MASS_dict", mod_MASS_dict);
+        //console.log( "response", response);
+        //console.log("mod_MASS_dict", mod_MASS_dict);
 
         mod_MASS_dict.step += 1,
-        mod_MASS_dict.test_is_ok = response.test_is_ok;
+        mod_MASS_dict.test_is_ok = !!response.test_is_ok;
         mod_MASS_dict.verificationkey = response.verificationkey;
+        mod_MASS_dict.verification_is_ok = !!response.verification_is_ok;
+
         const count_dict = (response.approve_count_dict) ? response.approve_count_dict : {};
 
-/*
-already_approved_by_auth: 5
-already_published: 31
-auth_missing: 0
-committed: 0
-count: 36
-double_approved: 0
-reset: 0
-save_error: 0
-saved: 0
-student_committed_count: 0
-student_count: 4
-student_saved_count: 0
-test_is_ok: false
-*/
         mod_MASS_dict.has_already_approved_by_auth = (!!count_dict.already_approved_by_auth)
         mod_MASS_dict.submit_is_ok = (!!count_dict.saved)
         //mod_MASS_dict.has_already_published = (!!msg_dict.already_published)
         //mod_MASS_dict.has_saved = !!msg_dict.saved;
 
-        add_or_remove_class(el_MASS_loader, cls_hide, true)
-        add_or_remove_class(el_MASS_info_container, cls_hide, false)
+        MASS_SetBtnSaveDeleteCancel (response);
 
-        console.log("response.approve_count_dict", response.approve_count_dict);
-        el_MASS_info_container.innerHTML = (response.approve_msg_html) ? response.approve_msg_html : null;
-
-
-
-
-        MASS_SetBtnSaveDeleteCancel ();
         if ("updated_studsubj_approve_rows" in response){
             RefreshDataRows("studsubj", response.updated_studsubj_approve_rows, studsubj_rows, true);
         }
 
     };  // MASS_UpdateFromResponse
 
-//=========  MASS_InputVerifcode  ================ PR2021-07-30
-     function MASS_InputVerifcode(el_input) {
-        console.log("===  MASS_InputVerifcode  =====") ;
-
-        const value =  el_input.value
-        console.log("value", value) ;
-        MASS_SetBtnSaveDeleteCancel() ;
-     };  // MASS_InputVerifcode
-
 //=========  MASS_SetBtnSaveDeleteCancel  ================ PR2021-02-08
-     function MASS_SetBtnSaveDeleteCancel() {
+     function MASS_SetBtnSaveDeleteCancel(response) {
         console.log("===  MASS_SetBtnSaveDeleteCancel  =====") ;
 
-        const is_approve = mod_MASS_dict.is_approve;
-        const is_submit = mod_MASS_dict.is_submit;
+        const step = mod_MASS_dict.step;
+        const is_response = (!!response);
+        console.log("........step", step) ;
+        // step 0: opening modal
+        // step 1 + response : return after check
+        // step 1 without response: save clicked approve or request verifcode
+        // step 2 + response : return after approve or after email sent
+        // step 2 without response: submit Exform wit hverifcode
+        // step 3 + response: return from submit Exform
+
+        // TODO is_reset
         const is_reset = mod_MASS_dict.is_reset;
 
-        const step = mod_MASS_dict.step;
-        const test_is_ok = mod_MASS_dict.test_is_ok;
-        const submit_is_ok = mod_MASS_dict.submit_is_ok;
 
-        const has_already_published = !!mod_MASS_dict.has_already_published;
-        const has_saved = !!mod_MASS_dict.has_saved;
+        //const has_already_published = !!mod_MASS_dict.has_already_published;
+       // const has_saved = !!mod_MASS_dict.has_saved;
 
-        console.log("is_approve", is_approve) ;
-        console.log("is_submit", is_submit) ;
-        console.log("is_reset", is_reset) ;
+////////////////////////////////////////////////////////////////////////
+// ---  select_container
 
-        console.log("test_is_ok", test_is_ok) ;
-        console.log("submit_is_ok", submit_is_ok) ;
+////////////////////////////////////////////////////////////////////////
+// ---  info_container and loader
+        let msg_html = null, show_loader = false;
+        if (response) {
+            if (response.approve_msg_html) {msg_html = response.approve_msg_html};
+        } else {
+        // info when opening form or clicked on save btn
+            let msg_info_txt = null;
+            if (mod_MASS_dict.step === 0){
+                msg_info_txt = loc.MASS_info.checking_studsubj;
+                show_loader = true;
+            } else if (mod_MASS_dict.step === 1){
+                show_loader = true;
+                if (mod_MASS_dict.is_approve){
+                    msg_info_txt = loc.MASS_info.approving_studsubj;
+                } else if (mod_MASS_dict.is_submit){
+                    msg_info_txt = loc.MASS_info.requesting_verifcode;
+                }
+            } else if (mod_MASS_dict.step === 2){
+                if (mod_MASS_dict.is_submit){
+                    show_loader = true;
+                    msg_info_txt = loc.MASS_info.creating_Ex1_form;
+                }
+            } else if (mod_MASS_dict.step === 3){
+                if (mod_MASS_dict.is_submit){
+                }
+            }
+            if (msg_info_txt){
+                msg_html = "<div class='p-2 border_bg_transparent'><p class='pb-2'>" +  msg_info_txt + " ...</p></div>";
+            }
+        }
+        el_MASS_info_container.innerHTML = msg_html;
+        add_or_remove_class(el_MASS_info_container, cls_hide, !msg_html)
+        add_or_remove_class(el_MASS_loader, cls_hide, !show_loader)
 
-        console.log("has_already_published", has_already_published) ;
-        console.log("has_saved", has_saved) ;
-        console.log("........step", step) ;
+////////////////////////////////////////////////////////////////////////
+// --- info_request_verifcode  and input_verifcode
+        // show info_request on step 1
+        // show input verifcode on step 2, or in step 3 when verif not correct set focus
+        let show_info_request_verifcode = false, show_input_verifcode = false;
+        if(mod_MASS_dict.is_submit){
+            if (step === 1){
+                if (is_response){
+                    show_info_request_verifcode = mod_MASS_dict.test_is_ok;
+                }
+            } else if(step === 2){
+                show_input_verifcode = true;
+            } else if (step === 3){
+                show_input_verifcode = !mod_MASS_dict.verification_is_ok;
+            }
+        }
+        add_or_remove_class(el_MASS_info_request_verifcode, cls_hide, !show_info_request_verifcode);
+        add_or_remove_class(el_MASS_input_verifcode.parentNode, cls_hide, !show_input_verifcode);
+        if (show_input_verifcode){set_focus_on_el_with_timeout(el_MASS_input_verifcode, 150); };
 
+/////////////////////////////////////////////
 // ---  hide save button when not can_publish
         let hide_save_btn = true, disable_save_btn = false, save_btn_txt = null, hide_delete_btn = true;
-        let hide_apply_code = true;
+
         if (step === 0) {
         } else if (step === 1) {
-            hide_apply_code = (!is_submit || !test_is_ok);
-            hide_delete_btn = (is_submit || !mod_MASS_dict.has_already_approved_by_auth);
-            hide_save_btn = (!test_is_ok);
-            save_btn_txt = (is_submit) ? loc.Apply_verificationcode : loc.Approve_subjects;
+
+            hide_delete_btn = (mod_MASS_dict.is_submit || !mod_MASS_dict.has_already_approved_by_auth);
+            hide_save_btn = (!mod_MASS_dict.test_is_ok);
+            save_btn_txt = (mod_MASS_dict.is_submit) ? loc.Apply_verificationcode : loc.Approve_subjects;
         } else if (step === 2) {
-            if (is_approve) {
+            if (mod_MASS_dict.is_approve) {
                 hide_save_btn = true
             } else {
                 disable_save_btn = !el_MASS_input_verifcode.value
                 hide_save_btn = false;
-                save_btn_txt = (is_submit) ? loc.Submit_Ex1_form : loc.Approve_grades
+                save_btn_txt = (mod_MASS_dict.is_submit) ? loc.Submit_Ex1_form : loc.Approve_grades
             }
         } else if (step === 3) {
         }
 
-// - hide el_MASS_apply_code_container
-        add_or_remove_class(el_MASS_apply_code_container, cls_hide, hide_apply_code);
 
 // - hide save button in step 0 and 3
         add_or_remove_class(el_MASS_btn_save, cls_hide, hide_save_btn);
@@ -3040,14 +3045,17 @@ test_is_ok: false
         add_or_remove_class(el_MASS_btn_delete, cls_hide, hide_delete_btn);
 
 // ---  set innerText of cancel_btn
-        el_MASS_btn_cancel.innerText = (submit_is_ok || (!test_is_ok) || (!submit_is_ok)) ? loc.Close : loc.Cancel;
+        el_MASS_btn_cancel.innerText = (mod_MASS_dict.submit_is_ok || (!mod_MASS_dict.test_is_ok) || (!mod_MASS_dict.submit_is_ok)) ? loc.Close : loc.Cancel;
 
-// show input verifcode on step 2, set focus
-        add_or_remove_class(el_MASS_input_verifcode.parentNode, cls_hide, (!is_submit || step !== 2));
-        if (!is_submit || step !== 2){set_focus_on_el_with_timeout(el_MASS_input_verifcode, 150); };
 
 
      } //  MASS_SetBtnSaveDeleteCancel
+
+//=========  MASS_InputVerifcode  ================ PR2021-07-30
+     function MASS_InputVerifcode(el_input) {
+        console.log("===  MASS_InputVerifcode  =====") ;
+        MASS_SetBtnSaveDeleteCancel() ;
+     };  // MASS_InputVerifcode
 
 /////////////////////////////////////////////
 
@@ -3074,26 +3082,38 @@ test_is_ok: false
 
 ///////////////////
 
-//========= get_mapdict_by_integer_from_datarows ============= PR2021-07-25
-    function get_mapdict_by_integer_from_datarows(data_rows, tblRow, student_pk, studsubj_pk) {
-        //console.log( " ==== get_mapdict_by_integer_from_datarows ====");
-        // if tblRow has value: get student_pk, studsubj_pk from tblRow.id
+
+//========= get_datadict_from_tblRow ============= PR2021-07-25 PR2021-08-08
+    function get_datadict_from_tblRow(tblRow) {
+        //console.log( " ==== get_datadict_by_integer_from_tblRow ====");
+// get student_pk and studsubj_pk from tr_clicked.id
+        let student_pk = null, studsubj_pk = null;
         if (tblRow){
             const arr = tblRow.id.split("_");
             student_pk = (arr[1] && Number(arr[1])) ? Number(arr[1]) : 0;
             studsubj_pk = (arr[2] && Number(arr[2])) ? Number(arr[2]) : 0;
         };
-// +++ get existing data_dict from data_rows. data_rows is ordered by: studsubj_id, stud_id'
-        // studsubj_id can be None, sort them first so it can be given the value of 0 in b_recursive_integer_lookup
-        // field with nulls must be ordered first
-        const lookup_1_field = (selected_btn === "btn_published") ? "id" : "studsubj_id";
-        const lookup_2_field = (selected_btn === "btn_published") ? null : "stud_id";
-        const data_dict = b_get_mapdict_by_integer_from_datarows(data_rows, lookup_1_field, studsubj_pk, lookup_2_field, student_pk)
+        const data_dict = get_datadict_by_studpk_studsubjpk_from_tblRow(student_pk, studsubj_pk)
+        return data_dict;
+    }  //  get_datadict_from_tblRow
 
-       // console.log( "data_dict", data_dict);
+
+//========= get_datadict_by_integer_from_tblRow ============= PR2021-07-25 PR2021-08-08
+    function get_datadict_by_studpk_studsubjpk_from_tblRow(student_pk, studsubj_pk) {
+        //console.log( " ==== get_datadict_by_integer_from_tblRow ====");
+
+        const data_rows = (selected_btn === "btn_published") ? published_rows : studsubj_rows;
+        const lookup_1_field = (selected_btn === "btn_published") ? null : "stud_id";
+        const lookup_2_field = (selected_btn === "btn_published") ? "id" : "studsubj_id";
+        const search_1_int = student_pk;
+        const search_2_int = studsubj_pk;
+        const [middle_index, found_dict, compare] = b_recursive_integer_lookup(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int);
+        const data_dict = found_dict;
+        const row_index = middle_index;
 
         return data_dict;
-    };  // get_mapdict_by_integer_from_datarows
+    };  // get_datadict_by_integer_from_tblRow
+
 
 ////////////////////
 //========= get_tblName_from_selectedBtn  ======== // PR2021-07-28

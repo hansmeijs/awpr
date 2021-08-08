@@ -585,6 +585,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Download_Exform'] = TXT_Download_Exform
 
         dict['MASS_info'] = {
+            'checking_studsubj': _('The subjects of the candidates are checked'),
             'subheader_approve': _('Selection of the subjects, that will be approved:'),
             'subheader_submit': _('An Ex1form with the following subjects will be submitted:'),
             'approve_0': _("Click 'Check subjects' to check the selected subjects before approving."),
@@ -595,6 +596,9 @@ def get_locale_dict(table_dict, user_lang, request):
             'submit_1': _("If the check is OK, click 'Submit Ex1 form' to submit the selected subjects."),
             'submit_2': _("After the subjects are submitted, you can change them by submitting an additional Ex1 form."),
 
+            'approving_studsubj': _('AWP is approving the subjects of the candidates'),
+            'requesting_verifcode': _('AWP is sending an email with the verification code'),
+            'creating_Ex1_form': _("AWP is creating the Ex1 form"),
             'submit_ok_01': _("The Ex2A form is succesfully created."),
         }
 

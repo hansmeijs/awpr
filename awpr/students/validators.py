@@ -280,7 +280,6 @@ def validate_studentsubjects(student):
 # --- end of validate_studentsubjects
 
 
-
 # ========  validate_studentsubjects  ======= PR2021-07-24
 def validate_studentsubjects_no_msg(student):
     logging_on = False  # s.LOGGING_ON
@@ -471,7 +470,7 @@ def validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict,
 def validate_amount_subjects(field, is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list):
     # - validate amount of subjects PR2021-07-10
     # - skip validate minimum subjects when is_evening_or_lex_student
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  validate_amount_subjects  -----')
         logger.debug('field: ' + str(field))
@@ -1036,7 +1035,6 @@ def get_idnumberlist_from_database(sel_school):
 # - end of get_idnumberlist_from_database
 
 
-
 # ========  get_examnumberlist_from_database  ======= PR2021-07-19
 def get_examnumberlist_from_database(sel_school, sel_department):
     # get list of examnumbers of this school and this department, used with import student  and update student
@@ -1067,12 +1065,11 @@ def get_examnumberlist_from_database(sel_school, sel_department):
 # - end of get_examnumberlist_from_database
 
 
-
 # ========  get_double_schoolcode_usernamelist_from_uploadfile  ======= PR2021-08-04
 def get_double_schoolcode_usernamelist_from_uploadfile(data_list):
     # function returns list of (schoolcode, username) tuples that occur multiple times in data_list
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_double_schoolcode_usernamelist_from_uploadfile  -----')
 
@@ -1209,6 +1206,7 @@ def get_idnumber_nodots_stripped(id_number): # PR2021-07-20
             idnumber_nodots_stripped = id_number.replace('.', '').strip()
     return idnumber_nodots_stripped
 
+
 # ========  get_double_entrieslist_with_firstlastname_from_uploadfileNIU  ======= PR2021-06-14 PR2021-07-16
 # NOT IN USE
 def get_double_entrieslist_with_firstlastname_from_uploadfileNIU(data_list):
@@ -1261,6 +1259,7 @@ def validate_double_entries_in_uploadfile(idnumber_nodots_stripped, double_entri
             error_list.append(_("ID-number '%(val)s' is found multiple times in this upload file.") \
                       % {'val': idnumber_nodots_stripped})
     return has_error
+
 
 # ========  validate_double_entries_in_uploadfileNIU  ======= PR2021-06-19
 def validate_double_entries_in_uploadfileNIU(idnumber_nodots_stripped, lastname_stripped, firstname_stripped, double_entrieslist, error_list):
@@ -1344,7 +1343,6 @@ def validate_length(caption, input_value, max_length, blank_allowed):
 
 
 # +++++++++++++++++++++++++++++++++++++
-
 def validate_idnumber(id_str):
     # logger.debug('validate_idnumber: ' + id_str)
     # validate idnumber, convert to string without dots PR2019-02-17

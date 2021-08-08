@@ -994,19 +994,20 @@
     }
 
 //========= b_recursive_integer_lookup  ========== PR2020-07-14 PR2020-07-25
-    function b_recursive_integer_lookup(dict_list, lookup_1_field, search_1_int, lookup_2_field, search_2_int){
-        //console.log( " ----- b_recursive_integer_lookup -----");
+    function b_recursive_integer_lookup(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int){
+        //console.log(0, " ----- b_recursive_integer_lookup -----", 0);
+
         // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
         // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
         // function returns rowindex of searched value, or rowindex of row to be inserted
-        // dict_list must be ordered by id (as text field), done by server
+        // data_rows must be ordered by id (as text field), done by server
 
         //console.log( ".....lookup_1_field: ", lookup_1_field, search_1_int);
         //console.log( ".....lookup_2_field: ", lookup_2_field,  search_2_int);
 
         let compare = null, middle_index = null, found_dict = null;
-        if (dict_list && dict_list.length){
-            const last_index = dict_list.length - 1;
+        if (data_rows && data_rows.length){
+            const last_index = data_rows.length - 1;
             let min_index = 0;
             let max_index = last_index;
             middle_index =  Math.floor( (min_index + max_index) / 2);
@@ -1024,17 +1025,15 @@
                 } else {
         //console.log( i, "LOOP : ", min_index, " - ", max_index, " > ", middle_index);
         //console.log( ".....middle_index: ", middle_index);
-                    const middle_dict = dict_list[middle_index];
+                    const middle_dict = data_rows[middle_index];
         //console.log( ".....middle_dict: ", middle_dict);
 
                     // studsubj_id can be None, it is ordered first so it can be given the value of 0 in lookup
                     const middle_1_value = (middle_dict[lookup_1_field]) ? middle_dict[lookup_1_field] : 0;
                     const middle_2_value = (middle_dict[lookup_2_field]) ? middle_dict[lookup_2_field] : 0;
 
-        //console.log( ".....search_1_int  : ", search_1_int, typeof search_1_int);
-        //console.log( ".....middle_1_value: ", middle_1_value, typeof middle_1_value);
-        //console.log( ".....search_2_int  : ", search_2_int, typeof search_2_int);
-        //console.log( ".....middle_2_value: ", middle_2_value, typeof middle_2_value);
+        //console.log( ".....middle_value: ", middle_1_value, typeof middle_1_value, " --- ", middle_2_value, typeof middle_2_value);
+        //console.log( ".....search_int  : ", search_1_int, typeof search_1_int , " --- ", search_2_int, typeof search_2_int);
                     // NULL values are sorted last in default ascending order.
                     const compare_1 = (search_1_int === middle_1_value) ? 0 :
                                 (search_1_int  >  middle_1_value) ? 1 : -1;
@@ -1068,31 +1067,30 @@
                                     middle_index =  Math.ceil( (min_index + max_index) / 2);
                                 }
                             }
-        //console.log( "GOTO NEXT LOOP 2 : ", min_index, " - ", max_index, " >< ", middle_index);
                         }
                     }
                 };  // if (i > 23)
             };  // for (let i = 0,
-        };  //  if (dict_list && dict_list.length){
+        };  //  if (data_rows && data_rows.length){
 
         //console.log( "found_dict: ", found_dict);
         //console.log( "compare: ", compare);
+
         return [middle_index, found_dict, compare];
     };  // b_recursive_integer_lookup
 
-
 //========= b_recursive_lookup  ========== PR2020-06-16
-    function b_recursive_lookup(dict_list, search_value, user_lang){
+    function b_recursive_lookup(data_rows, search_value, user_lang){
         //console.log( " ----- b_recursive_lookup -----");
         // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
         // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
         // function returns rowindex of searched value, or rowindex of row to be inserted
-        // dict_list must be ordered by id (as text field), done by server
+        // data_rows must be ordered by id (as text field), done by server
 
         let compare = null, middle_index = null, found_dict = null;
-        if (dict_list && dict_list.length){
+        if (data_rows && data_rows.length){
             const lookup_field = "mapid";
-            const last_index = dict_list.length - 1;
+            const last_index = data_rows.length - 1;
             let min_index = 0;
             let max_index = last_index;
             middle_index =  Math.floor( (min_index + max_index) / 2);
@@ -1109,7 +1107,7 @@
                     middle_index = last_index;
                     break;
                 } else {
-                    const middle_dict = dict_list[middle_index];
+                    const middle_dict = data_rows[middle_index];
                     const middle_value = middle_dict[lookup_field];
 
         //console.log( i, "LOOP : ", min_index, " - ", max_index, " > ", middle_index);
@@ -1182,7 +1180,7 @@
                     }
                 };  // if (i > 23)
             };  // for (let i = 0,
-        };  //  if (dict_list && dict_list.length){
+        };  //  if (data_rows && data_rows.length){
 
         //console.log( "found_dict: ", found_dict);
         //console.log( "compare: ", compare);

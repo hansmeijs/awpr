@@ -2,7 +2,8 @@
 
     "use strict";
 
-    const man_upload = [
+    const man_upload = {
+        nl: [
         "<div class='my-4'>",
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
@@ -187,4 +188,97 @@
         "</div>",
 
         "</div>"
+    ],
+
+     en:  [
+        "<div class='my-4'>",
+        "<div class='mfc mb-2'>",
+            "<div class='mfl'><p></p></div>",
+            "<div class='mfr'>",
+                "<h3 class='px-2'>Upload data</h3>",
+            "</div>",
+        "</div>",
+
+        "<div class='mfc mb-2'>",
+            "<div class='mfl'><p></p></div>",
+            "<div class='mfr'>",
+                "<ul class='manual_bullet'><li>Introduction</li>",
+                "<li><a href='#id_step01'>Step 1</a></li>",
+                "<li>Step 2</li></ul>",
+
+            "</div>",
+        "</div>",
+
+        "<div class='mfc mb-0'>",
+            "<div class='mfl'><p></p></div>",
+            "<div class='mfr'>",
+                "<h4 class='px-2'>Introduction</h4>",
+            "</div>",
+        "</div>",
+        "<div class='mfc mb-2'>",
+            "<div class='mfl'><p></p></div>",
+            "<div class='mfr'>",
+                "<p>You're better off uploading data instead of entering it manually. It's faster and less likely to make mistakes. ",
+                "You need an Excel spreadsheet with data from the candidates, subjects and grades. The student tracking system can create such an Excel spreadsheet.</p>",
+                "<p class='pb-0'>The following data can be uploaded separately, in this order:</p>",
+                "<ul class='manual_bullet'><li>the candidate data;</li>",
+                "<li>the subjects of the candidates;</li>",
+                "<li>grades or scores of the candidates.</li></ul>",
+                "<p>You can also upload only the candidate data or only the candidate data and the subjects.</p>",
+
+                "<p>When uploading, AWP performs the necessary checks. Before the data is saved, you must first do a test upload to see if all data is entered correctly.</p>",
+                "<p>In the pages <i>Candidates</i>, <i>Subjects</i> and <i>Grades</i> you will find a button in the menu bar with respectively: <i>Upload candidates</ i>, <i>Upload subjects</i> and <i>Upload grades</i>.",
+                "If you click on this, the upload window will appear. Go through the following four steps.</p>",
+            "</div>",
+        "</div>",
+
+        "<div class='mfc mb-2'>",
+            "<div class='mfl'><p></p></div>",
+            "<div class='mfr'>",
+                "<div class='img_upload_stud_menu'></div>",
+            "</div>",
+        "</div>",
+
+        "<div id='id_step01' class='mfc mt-4'>",
+            "<div class='mfl'><p></p></div>",
+            "<div class='mfr'>",
+                "<h4 class='px-2'>Step 1: Select an Excel file</h4>",
+            "</div>",
+        "</div>",
+
+        "<div class='mfc mb-2'>",
+            "<div class='mfl'><p></p></div>",
+            "<div class='mfr'>",
+                "<p>First select the Excel file with the data you want to upload. Click on the button <i>Open an Excel file</i>, select the desired file and click on <i>Open</i> .</p>",
+                "<p>If the Excel file contains multiple worksheets, choose the correct worksheet under <i>Select a worksheet</i>.</p>",
+                "<p>Check <i>The first line of the worksheet contains column names</i> if the first line of the Excel file contains the names of the columns. If this box is not checked, the columns of the Excel file marked with F1, F2 etc.</p>",
+                "<p>Click on <i>Next step</i>. This will only work if you have entered an Excel file. Click on <i>Cancel</i> or click anywhere outside the window to close this window.< /p>",
+            "</div>",
+        "</div>",
+        "<div class='mfc mb-2'>",
+            "<div class='mfl'><p></p></div>",
+            "<div class='mfr'>",
+                "<div class='img_upload_stud_step1'></div>",
+            "</div>",
+        "</div>",
+
+        "<div class='mfc mt-4'>",
+            "<div class='mfl'><p></p></div>",
+            "<div class='mfr'>",
+                "<h4 class='px-2'>Step 2: Link Columns</h4>",
+            "</div>",
+        "</div>",
+        "<div class='mfc mb-2'>",
+            "<div class='mfl'><p></p></div>",
+            "<div class='mfr'>",
+                "<p class='pb-0'>Three lists will now appear on the screen: </p>",
+                "<ul class='manual_bullet'><li>the list of <i>AWP columns</i> with the names of the fields you can upload;</li>",
+                "<li>the list of <i>Excel columns</i> with the names of the columns in the Excel file;</li>",
+                "<li>the list of <i>Linked Columns</i>.</li></ul>",
+
+                "<p class='mt-2'>The <b>column linking</b> goes like this:</br>",
+                "Select a line from the list of AWP columns, for example 'ID number'.",
+                "Then, in the list of Excel columns, click on the name of the column that contains the ID numbers. Both names will now be moved to the <i>Linked Columns</i> list.</p>",
+
     ]
+    };

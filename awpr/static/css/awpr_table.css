@@ -1023,6 +1023,12 @@ aXX:hover{
     /*width: 320px;*/
     width: auto
 }
+.tbl_studsubj_h320_w_auto {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 320px;
+    width: auto
+}
 .tbl_h180_w360 {
     overflow-x: hidden;
     overflow-y: auto;

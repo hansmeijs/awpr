@@ -272,4 +272,3 @@ urlpatterns = [
     ])),
 ]
 
-# department PR2018-08-11 PR2019-02-27
