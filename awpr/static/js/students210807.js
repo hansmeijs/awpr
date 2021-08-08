@@ -1,11 +1,16 @@
 // PR2020-09-29 added
 
+
 // PR2021-07-23  declare variables outside function to make them global variables
+let setting_dict = {};
+let permit_dict = {};
+let loc = {};
+let urls = {};
+let selected_btn = "btn_student";
+let selected = {student_pk: null, student_dict: {}};
+
 let student_rows = [];
 let school_rows = [];
-let loc = {};
-
-let selected_btn = "btn_student";
 
 const field_settings = {};
 const columns_hidden = {};
@@ -26,11 +31,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  id of selected customer and selected order
     // declared as global: let selected_btn = "btn_student";
-    let setting_dict = {};
-    let permit_dict = {};
-
-    let selected = {student_pk: null,
-                    student_dict: {}};
+    //let setting_dict = {};
+    //let permit_dict = {};
 
     let mod_dict = {};
     let mod_MSTUD_dict = {};
@@ -47,6 +49,8 @@ document.addEventListener('DOMContentLoaded', function() {
     //let department_map = new Map();
     //let level_map = new Map();
     //let sector_map = new Map();
+    //let selected = {student_pk: null,
+    //                student_dict: {}};
 
     // PR2021-07-23 moved outside this function, to make it available in import.js
     // let student_rows = [];
@@ -61,9 +65,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
-    const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
-    const url_student_upload = get_attr_from_el(el_data, "data-url_student_upload");
+    urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+    urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    urls.url_student_upload = get_attr_from_el(el_data, "data-url_student_upload");
     //const url_studsubj_upload = get_attr_from_el(el_data, "data-url_studsubj_upload");
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
@@ -94,6 +98,19 @@ document.addEventListener('DOMContentLoaded', function() {
             if (event.key === "Escape") { ResetFilterRows()}
         });
 
+ // freeze table header PR2021-08-03
+        // from https://stackoverflow.com/questions/673153/html-table-with-fixed-headers
+        // borders dont translate. fixed with https://stackoverflow.com/questions/45692744/td-border-disappears-when-applying-transform-translate
+        // no luck, border still not showing
+        const el_tbl_container = document.getElementById("id_tbl_container");
+        if(el_tbl_container){
+            el_tbl_container.addEventListener("scroll",function(){
+               const scroll = this.scrollTop - 8
+               const translate = "translate(0," + scroll + "px)";
+               this.querySelector("thead").style.transform = translate;
+            });
+        }
+
 // --- buttons in btn_container
         const el_btn_container = document.getElementById("id_btn_container")
         if (el_btn_container){
@@ -121,6 +138,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 function() {t_MSSSS_Open(loc, "school", school_rows, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         }
 
+// ---  SIDEBAR ------------------------------------
+        const el_SBR_select_level = document.getElementById("id_SBR_select_level");
+        if(el_SBR_select_level){
+            el_SBR_select_level.addEventListener("change", function() {t_SBR_select_level_sector("level", el_SBR_select_level, FillTblRows)}, false)}
+        const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");
+        if(el_SBR_select_sector){
+            el_SBR_select_sector.addEventListener("change", function() {t_SBR_select_level_sector("sector", el_SBR_select_sector, FillTblRows)}, false)};
+        //const el_SBR_select_class = document.getElementById("id_SBR_select_class");
+        //if(el_SBR_select_class){
+        //    el_SBR_select_class.addEventListener("click", function() {t_MSSSS_Open(loc, "class", classname_rows, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
+        const el_SBR_select_student = document.getElementById("id_SBR_select_student");
+        if(el_SBR_select_student){
+            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
+        const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
+        if(el_SBR_select_showall){
+            el_SBR_select_showall.addEventListener("click", function() {t_SBR_show_all(FillTblRows)}, false);
+            add_hover(el_SBR_select_showall);
+        };
+
 // ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
         const el_MSED_input = document.getElementById("id_MSED_input");
         const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
@@ -138,11 +174,10 @@ document.addEventListener('DOMContentLoaded', function() {
             el_SBR_filter.addEventListener("keyup", function() {MSTUD_InputKeyup(el_SBR_filter)}, false );
         }
 
-
 // ---  MODAL SELECT COLUMNS ------------------------------------
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
         if(el_MCOL_btn_save){
-            el_MCOL_btn_save.addEventListener("click", function() {t_MCOL_Save(url_settings_upload, HandleBtnSelect)}, false )
+            el_MCOL_btn_save.addEventListener("click", function() {t_MCOL_Save(urls.url_settings_upload, HandleBtnSelect)}, false )
         };
 
 // ---  MODAL STUDENT
@@ -204,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_tblBody_studsubjects = document.getElementById("id_MSTUDSUBJ_tblBody_studsubjects");
         const el_tblBody_schemeitems = document.getElementById("id_MSTUDSUBJ_tblBody_schemeitems");
 
-// ---  MOD IMPORT ------------------------------------
+// ---  MODAL IMPORT ------------------------------------
 // --- create EventListener for buttons in btn_container
     const el_MIMP_btn_container = document.getElementById("id_MIMP_btn_container");
     if(el_MIMP_btn_container){
@@ -214,10 +249,15 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener("click", function() {MIMP_btnSelectClicked(data_btn)}, false )
         }
     }
-    const el_filedialog = document.getElementById("id_MIMP_filedialog");
-    if(el_filedialog){
-        el_filedialog.addEventListener("change", function() {MIMP_HandleFiledialog(el_filedialog, loc)}, false )
+    const el_MIMP_filedialog = document.getElementById("id_MIMP_filedialog");
+    if(el_MIMP_filedialog){
+        el_MIMP_filedialog.addEventListener("change", function() {MIMP_HandleFiledialog(el_MIMP_filedialog, loc)}, false )
     };
+    const el_MIMP_btn_filedialog = document.getElementById("id_MIMP_btn_filedialog");
+    if (el_MIMP_filedialog && el_MIMP_btn_filedialog){
+        el_MIMP_btn_filedialog.addEventListener("click", function() {MIMP_OpenFiledialog(el_MIMP_filedialog)}, false)};
+    const el_MIMP_filename = document.getElementById("id_MIMP_filename");
+
     const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
     if(el_worksheet_list){
         el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false);
@@ -226,10 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(el_MIMP_checkboxhasheader){
         el_MIMP_checkboxhasheader.addEventListener("change", MIMP_CheckboxHasheaderChanged) //, false);
     };
-    const el_select_dateformat = document.getElementById("id_MIMP_dateformat");
-    if(el_select_dateformat){
-        el_select_dateformat.addEventListener("change", function() {MIMP_Selectdateformat(el_select_dateformat)}, false )
-    };
+
    const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
     if(el_MIMP_btn_prev){
         el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false )
@@ -299,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let response = "";
         $.ajax({
             type: "POST",
-            url: url_datalist_download,
+            url: urls.url_datalist_download,
             data: param,
             dataType: 'json',
             success: function (response) {
@@ -316,7 +353,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if ("locale_dict" in response) {
                     loc = response.locale_dict;
-                    mimp_loc = loc;
                     isloaded_loc = true;
                 };
 
@@ -362,9 +398,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if ("level_rows" in response)  {
                     b_fill_datamap(level_map, response.level_rows);
+                    t_SBR_filloptions_level_sector("level", response.level_rows)
+
                 };
                 if ("sector_rows" in response) {
                     b_fill_datamap(sector_map, response.sector_rows);
+                    t_SBR_filloptions_level_sector("sector", response.sector_rows);
                 };
 
                 if ("student_rows" in response) {
@@ -392,7 +431,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(permit_dict.permit_crud){
             AddSubmenuButton(el_submenu, loc.Add_candidate, function() {MSTUD_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete")});
-            AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open("import_student")}, null, "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open(loc, "import_student")}, null, "id_submenu_import");
         };
 
         AddSubmenuButton(el_submenu, loc.Hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
@@ -410,7 +449,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_student: {sel_btn: selected_btn}};
-            UploadSettings (upload_dict, url_settings_upload);
+            UploadSettings (upload_dict, urls.url_settings_upload);
         };
 
 // ---  highlight selected button
@@ -462,8 +501,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= FillTblRows  ============== PR2021-06-16
     function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
-        //console.log( "student_rows", student_rows);
+        console.log( "===== FillTblRows  === ");
+        console.log( "setting_dict", setting_dict);
 
         const tblName = "student";
         const field_setting = field_settings[tblName];
@@ -481,8 +520,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- loop through data_rows
         if(data_rows && data_rows.length){
-            for (let i = 0, map_dict; map_dict = data_rows[i]; i++) {
-                let tblRow = CreateTblRow(tblName, field_setting, map_dict);
+            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+
+
+        // --- set SBR_filter
+        // Note: filter of filterrow is done by Filter_TableRows
+                let show_row = true;
+                if (show_row && setting_dict.sel_lvlbase_pk){
+                    show_row = (setting_dict.sel_lvlbase_pk === data_dict.lvlbase_id)
+                }
+                if (show_row && setting_dict.sel_sctbase_pk){
+                    show_row = (setting_dict.sel_sctbase_pk === data_dict.sctbase_id)
+                }
+                if(show_row){
+                    CreateTblRow(tblName, field_setting, data_dict);
+                };
             };
         };
     }  // FillTblRows
@@ -585,9 +637,9 @@ document.addEventListener('DOMContentLoaded', function() {
     };  //  CreateTblHeader
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-06-21
-    function CreateTblRow(tblName, field_setting, map_dict) {
+    function CreateTblRow(tblName, field_setting, data_dict) {
         //console.log("=========  CreateTblRow =========", tblName);
-        //console.log("map_dict", map_dict);
+        //console.log("data_dict", data_dict);
 
         const field_names = field_setting.field_names;
         //const field_tags = field_setting.field_tags;
@@ -597,12 +649,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const field_width = field_setting.field_width;
         const column_count = field_names.length;
 
-        const map_id = (map_dict.mapid) ? map_dict.mapid : null;
+        const map_id = (data_dict.mapid) ? data_dict.mapid : null;
 
 // ---  lookup index where this row must be inserted
-        const ob1 = (map_dict.lastname) ? map_dict.lastname : "";
-        const ob2 = (map_dict.firstname) ? map_dict.firstname : "";
-        // NIU:  const ob3 = (map_dict.firstname) ? map_dict.firstname : "";
+        const ob1 = (data_dict.lastname) ? data_dict.lastname : "";
+        const ob2 = (data_dict.firstname) ? data_dict.firstname : "";
+        // NIU:  const ob3 = (data_dict.firstname) ? data_dict.firstname : "";
 
         const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
                                      ob1, ob2, "", setting_dict.user_lang);
@@ -612,7 +664,7 @@ document.addEventListener('DOMContentLoaded', function() {
         tblRow.id = map_id
 
 // --- add data attributes to tblRow
-        tblRow.setAttribute("data-pk", map_dict.id);
+        tblRow.setAttribute("data-pk", data_dict.id);
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
         tblRow.setAttribute("data-ob1", ob1);
@@ -656,7 +708,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
     // --- put value in field
-               UpdateField(el, map_dict)
+               UpdateField(el, data_dict)
            }  // if (!columns_hidden[field_name])
         }  // for (let j = 0; j < 8; j++)
 
@@ -664,38 +716,38 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // CreateTblRow
 
 //=========  UpdateTblRow  ================ PR2020-08-01
-    function UpdateTblRow(tblRow, tblName, map_dict) {
+    function UpdateTblRow(tblRow, tblName, data_dict) {
         //console.log("=========  UpdateTblRow =========");
         if (tblRow && tblRow.cells){
             for (let i = 0, td; td = tblRow.cells[i]; i++) {
-                UpdateField(td.children[0], map_dict);
+                UpdateField(td.children[0], data_dict);
             }
         }
     };  // UpdateTblRow
 
 //=========  UpdateField  ================ PR2020-08-16 PR2021-06-16
-    function UpdateField(el_div, map_dict) {
+    function UpdateField(el_div, data_dict) {
         //console.log("=========  UpdateField =========");
-        //console.log("map_dict", map_dict);
+        //console.log("data_dict", data_dict);
 
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
-            const fld_value = map_dict[field_name];
+            const fld_value = data_dict[field_name];
 
             if(field_name){
                 let filter_value = null;
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
                 } else if (field_name === "bis_exam") {
-                    el_div.className = (map_dict.bis_exam) ? "tickmark_2_2" : "tickmark_0_0";
-                    filter_value = (map_dict.bis_exam) ? "1" : "0";
+                    el_div.className = (data_dict.bis_exam) ? "tickmark_2_2" : "tickmark_0_0";
+                    filter_value = (data_dict.bis_exam) ? "1" : "0";
                 } else if (["lvlbase_id", "sctbase_id"].includes(field_name)){
                     // put hard return in el_div, otherwise green border doesnt show in update PR2021-06-16
                     let abbrev = null;
                     if (field_name === "lvlbase_id"){
-                        abbrev = (map_dict.lvl_abbrev) ? map_dict.lvl_abbrev : null;
+                        abbrev = (data_dict.lvl_abbrev) ? data_dict.lvl_abbrev : null;
                     } else if (field_name === "sctbase_id"){
-                        abbrev = (map_dict.sct_abbrev) ? map_dict.sct_abbrev : null;
+                        abbrev = (data_dict.sct_abbrev) ? data_dict.sct_abbrev : null;
                     }
                     el_div.innerText = (abbrev) ? abbrev : "\n";
                     filter_value = (abbrev) ? abbrev.toLowerCase() : null;
@@ -800,7 +852,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-16
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
-        console.log(" --- RefreshDatarowItem  ---");
+        //console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
         //console.log("update_dict", update_dict);
 
@@ -950,7 +1002,7 @@ function RefreshDataRowsAfterUpload(response) {
                 };  // if(is_deleted){
             };  // if(is_created)
 
-        console.log("student_rows", student_rows);
+        //console.log("student_rows", student_rows);
         }  // if(!isEmpty(update_dict)){
     }  // RefreshDatarowItem
 
@@ -1100,7 +1152,7 @@ function RefreshDataRowsAfterUpload(response) {
             // TODO add loader
             //document.getElementById("id_MSTUD_loader").classList.remove(cls_visible_hide)
             // modal is closed by data-dismiss="modal"
-            UploadChanges(upload_dict, url_student_upload);
+            UploadChanges(upload_dict, urls.url_student_upload);
         };
 
     // ---  show modal
@@ -1424,7 +1476,7 @@ function RefreshDataRowsAfterUpload(response) {
                              mapid: mod_dict.mapid};
 
             //console.log("upload_dict: ", upload_dict);
-            UploadChanges(upload_dict, url_student_upload);
+            UploadChanges(upload_dict, urls.url_student_upload);
         };
 // ---  hide modal
         $("#id_mod_confirm").modal("hide");
@@ -1494,11 +1546,6 @@ function RefreshDataRowsAfterUpload(response) {
         }
     }  //  remove_studsubjrow_without_subject
 
-
-//###########################################################################
-// +++++++++++++++++ SIDEBAR SELECT TABLE STUDENTS ++++++++++++++++++++++++++
-
-
 //###########################################################################
 // +++++++++++++++++ FILTER TABLE ROWS ++++++++++++++++++++++++++++++++++++++
 
@@ -1520,7 +1567,6 @@ function RefreshDataRowsAfterUpload(response) {
             Filter_TableRows();
         }
     }; // function HandleFilterKeyup
-
 
 //========= HandleFilterToggle  =============== PR2021-06-16
     function HandleFilterToggle(el_input) {
@@ -1565,7 +1611,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 //========= Filter_TableRows  ==================================== PR2020-08-17
     function Filter_TableRows() {
-        //console.log( "===== Filter_TableRows  ========= ");
+        console.log( "===== Filter_TableRows  ========= ");
 
         const tblName_settings = "student";
         const field_setting = field_settings[tblName_settings];
@@ -1573,6 +1619,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 // ---  loop through tblBody.rows
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
+
             show_row = t_ShowTableRowExtended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row)
         }

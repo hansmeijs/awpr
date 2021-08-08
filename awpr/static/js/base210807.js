@@ -1494,8 +1494,8 @@
 
 //=========  b_ShowModMessages  ================ PR2021-06-27  PR2021-07-03
     function b_ShowModMessages(msg_dictlist) {
-        console.log("==== b_ShowModMessages  ======")
-        console.log("msg_dictlist", msg_dictlist)
+        //console.log("==== b_ShowModMessages  ======")
+        //console.log("msg_dictlist", msg_dictlist)
 
         //  [ { class: "alert-warning", header: 'Update this',
         //      msg_html: "Deze loonperiode heeft 7 diensten."]
@@ -1512,10 +1512,6 @@
                         header_text = msg_dict.header;
                     }
                     const msg_html = msg_dict.msg_html;
-        //console.log("msg_dict", msg_dict)
-        //console.log("msg_html", msg_html)
-        //console.log("header_text", header_text)
-        //console.log("class_str", class_str)
 
                     if (msg_html){
             // --- create div element with alert border for each message in messages

@@ -24,6 +24,7 @@ from django.views.generic import RedirectView
 from accounts import views as account_views
 
 from awpr import downloads as awpr_downloads
+from awpr import menus as awpr_menus
 from schools import views as school_views
 from schools import imports as school_imports
 from students import views as student_views
@@ -115,16 +116,18 @@ urlpatterns = [
 
 # PR2018-04-24
     url(r'^account_activation_sent/$', account_views.account_activation_sent, name='account_activation_sent_url'),
+
     # PR2018-10-14
-    url(r'^activate/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
-        account_views.UserActivate, name='activate_url'),
-    url(r'^activate/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
-       account_views.UserActivateView.as_view(), name='activate_url'),
+    #url(r'^activate/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+    #    account_views.UserActivate, name='activate_url'),
+    #url(r'^activate/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+    #   account_views.UserActivateView.as_view(), name='activate_url'),
+
     #url(r'^users/(?P<pk>\d+)/activated$', account_views.UserActivatedSuccess.as_view(), name='account_activation_success_url'),
 
 
     # PR2018-03-09 path is new in django2.0 See: https://docs.djangoproject.com/en/2.0/releases/2.0/#whats-new-2-0
-    path('admin/', admin.site.urls, name='admin_url'),
+    # path('admin/', admin.site.urls, name='admin_url'),
 
 # PR2018-03-21 PR2020-09-17
     # PR2018-04-21 debug: don't forget the .as_view() with brackets in the urlpattern!!!
@@ -159,13 +162,14 @@ urlpatterns = [
 
 # ===== MANUAL ==========================  PR2021-06-10
     path('manual/', include([
-        path('<page>/<paragraph>/', school_views.ManualListView.as_view(), name='manual_url')
+        path('<page>/<paragraph>/', awpr_menus.ManualListView.as_view(), name='manual_url')
 
     ])),
 # ===== SCHOOLS ==========================  PR2018-08-23 PR2020-10-20 PR2021-04-26
     path('schools/', include([
         path('examyears', school_views.ExamyearListView.as_view(), name='examyears_url'),
         path('examyear_upload', school_views.ExamyearUploadView.as_view(), name='url_examyear_upload'),
+        path('examyear_copytosxm', school_views.ExamyearCopyToSxmView.as_view(), name='url_examyear_copytosxm'),
 
         path('school', school_views.SchoolListView.as_view(), name='schools_url'),
         path('school_upload', school_views.SchoolUploadView.as_view(), name='url_school_upload'),
@@ -208,14 +212,13 @@ urlpatterns = [
         path('studsubj_validate', student_views.StudentsubjectValidateView.as_view(), name='url_studsubj_validate'),
         path('studsubj_validate_all', student_views.StudentsubjectValidateAllView.as_view(), name='url_studsubj_validate_all'),
 
-        path('studsubj_approve', student_views.StudentsubjectApproveView.as_view(), name='url_studsubj_approve'),
-        path('studsubj_approve_multiple', student_views.StudentsubjectApproveMultipleView.as_view(), name='url_studsubj_approve_multiple'),
+        path('studsubj_approve', student_views.StudentsubjectApproveSingleView.as_view(), name='url_studsubj_approve'),
+        path('studsubj_approve_multiple', student_views.StudentsubjectApproveOrSubmitEx1View.as_view(), name='url_studsubj_approve_multiple'),
         path('studsubj_send_email_exform', student_views.StudentsubjectSendEmailExformView.as_view(), name='url_studsubj_send_email_exform'),
 
         path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='studentsubjectnote_upload_url'),
         path('studentsubjectnote_download', student_views.StudentsubjectnoteDownloadView.as_view(), name='studentsubjectnote_download_url'),
         path('noteattachment_download/<int:pk_int>/', student_views.NoteAttachmentDownloadView.as_view(), name='noteattachment_download_url'),
-
 
         path('download_ex1', grade_excel.StudsubjDownloadEx1View.as_view(), name='url_grade_download_ex1'),
 
@@ -263,6 +266,7 @@ urlpatterns = [
         path('importsettings_upload/', school_imports.UploadImportSettingView.as_view(), name='url_import_settings_upload'),
         path('student_upload/', school_imports.UploadImportStudentView.as_view(), name='url_importstudent_upload'),
         path('studentsubject_upload/', school_imports.UploadImportStudentsubjectView.as_view(), name='url_importstudentsubject_upload'),
+        path('username_upload/', school_imports.UploadImportUsernameView.as_view(), name='url_importusername_upload'),
         path('importdata_upload/', school_imports.UploadImportDataView.as_view(), name='url_importdata_upload'),
         path('ajax_schemeitems_download/', subject_views.SchemeitemsDownloadView.as_view(), name='ajax_schemeitems_download_url'),
     ])),

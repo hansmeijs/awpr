@@ -7,6 +7,7 @@ USERNAME_SLICED_MAX_LENGTH = 24
 USER_LASTNAME_MAX_LENGTH = 50
 MAX_LENGTH_KEY = 24  # number is also hardcoded in _()
 MAX_LENGTH_NAME = 50
+MAX_LENGTH_EMAIL_ADDRESS = 254
 MAX_LENGTH_SCHOOLCODE = 8
 MAX_LENGTH_SCHOOLABBREV = 30
 MAX_LENGTH_SCHOOLARTICLE = 3
@@ -293,6 +294,7 @@ KEY_IMPORT_STUDENT = 'import_student'
 KEY_IMPORT_STUDENTSUBJECT = 'import_studsubj'
 KEY_IMPORT_GRADE = 'import_grade'
 KEY_IMPORT_PERMITS = 'import_permit'
+KEY_IMPORT_USERNAME = 'import_username'
 
 # PR2021-04-21
 # when one_unique_identifier =  True: only 1 of the linkfields can be the identifier (either exnr or idnr of the candidate)
@@ -309,8 +311,9 @@ KEY_COLDEF = {
     KEY_IMPORT_STUDENTSUBJECT:
         [{'awpColdef': 'examnumber', 'caption': _('Exam number')},
             {'awpColdef': 'idnumber', 'caption': _('ID-number'), 'linkrequired': True, 'unique': True},
-            {'awpColdef': 'pws_title', 'caption': _('Title assignment')},
-            {'awpColdef': 'pws_subjects', 'caption': _('Subjects assignment')},
+            # TODO pws_title and pws_subjects must be in upload_grades
+            #{'awpColdef': 'pws_title', 'caption': _('Title assignment')},
+            #{'awpColdef': 'pws_subjects', 'caption': _('Subjects assignment')},
 
             # to be used for tabular upload :
             {'awpColdef': 'subject', 'caption': _('Subject'), 'tabularfield': True},
@@ -344,6 +347,13 @@ KEY_COLDEF = {
          {'awpColdef': 'action', 'caption': _('Action'), 'linkrequired': True},
          {'awpColdef': 'usergroups', 'caption': _('User groups')},
          {'awpColdef': 'sequence', 'caption': _('Sequence')}
+         ],
+    KEY_IMPORT_USERNAME:
+        [{'awpColdef': 'schoolcode', 'caption': _('School code'), 'linkrequired': True},
+         {'awpColdef': 'username', 'caption': _('Username'), 'linkrequired': True},
+         {'awpColdef': 'last_name', 'caption': _('Name'), 'linkrequired': True},
+         {'awpColdef': 'email', 'caption': 'Email', 'linkrequired': True},
+         {'awpColdef': 'function', 'caption': _('Function')}
          ],
 }
 
@@ -446,22 +456,18 @@ ROLE_DICT = {
     ROLE_064_ADMIN: 'admin',
     ROLE_128_SYSTEM: 'system'
     }
-ROLE_CAPTION = {
-    ROLE_008_SCHOOL: _('School'),
-    ROLE_016_COMM: _('Commissioner'),
-    ROLE_032_INSP: _('Inspection'),
-    ROLE_064_ADMIN: _('Division of Examinations'),
-    ROLE_128_SYSTEM: _('System manager')
-    }
 
-# options_examtype value = ecamtype, filter = examperiod PR2020-12-17
-ROLE_OPTIONS = [
-    {'value': ROLE_008_SCHOOL, 'caption': _('School')},
-    {'value': ROLE_016_COMM,'caption': _('Commissioners')},
-    {'value': ROLE_032_INSP, 'caption': _('Inspection')},
-    {'value': ROLE_064_ADMIN, 'caption': _('Division of Examinations')},
-    {'value': ROLE_128_SYSTEM, 'caption': _('System manager')}
+def get_role_options(request):
+    ETE_DEX = _('Division of Examinations') if request.user.country.abbrev.lower() == 'sxm' else 'ETE'
+    _role_options = [
+        {'value': ROLE_008_SCHOOL, 'caption': _('School')},
+        {'value': ROLE_016_COMM, 'caption': _('Commissioners')},
+        {'value': ROLE_032_INSP, 'caption': _('Inspection')},
+        {'value': ROLE_064_ADMIN, 'caption': ETE_DEX},
+        {'value': ROLE_128_SYSTEM, 'caption': _('System manager')}
     ]
+    return _role_options
+
 
 # PR2018-05-21 PR2021-04-23
 USERGROUP_READ = 'read'

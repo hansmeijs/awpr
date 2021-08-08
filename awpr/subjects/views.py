@@ -200,7 +200,7 @@ class SubjectListView(View):
         return render(request, html_page, params)
 
 
-def create_subject_rows(setting_dict, subject_pk, etenorm_only=False, cur_dep_only=False):
+def create_subject_rows(setting_dict, subject_pk, cur_dep_only=False):
     # --- create rows of all subjects of this examyear  PR2020-09-29 PR2020-10-30 PR2020-12-02
 
     logging_on = False  # s.LOGGING_ON
@@ -226,7 +226,7 @@ def create_subject_rows(setting_dict, subject_pk, etenorm_only=False, cur_dep_on
         sql_keys = {'ey_id': sel_examyear_pk}
         sql_list = ["SELECT sj.id, sj.base_id, sj.examyear_id,",
             "CONCAT('subject_', sj.id::TEXT) AS mapid,",
-            "sj.name, sb.code, sj.sequence, sj.depbases, sj.otherlang, sj.etenorm, sj.addedbyschool,",
+            "sj.name, sb.code, sj.sequence, sj.depbases, sj.otherlang, sj.addedbyschool,",
             "sj.modifiedby_id, sj.modifiedat,",
             "ey.code AS examyear_code,",
             "SUBSTRING(au.username, 7) AS modby_username",
@@ -243,8 +243,6 @@ def create_subject_rows(setting_dict, subject_pk, etenorm_only=False, cur_dep_on
             sql_keys['sj_id'] = subject_pk
             sql_list.append('AND sj.id = %(sj_id)s::INT')
         else:
-            if etenorm_only:
-                sql_list.append('AND sj.etenorm')
             if cur_dep_only:
                 sql_keys['depbase_lookup'] = ''.join( ('%;', str(sel_depbase_pk), ';%') )
                 sql_list.append("AND CONCAT(';', sj.depbases::TEXT, ';') LIKE %(depbase_lookup)s::TEXT")
@@ -268,7 +266,7 @@ def create_subject_rows(setting_dict, subject_pk, etenorm_only=False, cur_dep_on
 class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= SubjectUploadView ============= ')
@@ -352,6 +350,7 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
                         if is_delete:
                             deleted_ok = delete_subject(subject, updated_rows, messages, error_list, request)
 
+
 # - create subject_row, also when deleting failed, not when deleted ok, in that case subject_row is added in delete_subject
                         else:
                             update_subject_instance(subject, examyear, upload_dict, error_list, request)
@@ -367,7 +366,7 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
                     if updated_rows:
                         row = updated_rows[0]
                         if row:
-                            # TODO fix it odr remove
+                            # TODO fix it or remove
                             # - add error_list to updated_rows[0]
                             if error_list:
                                 updated_rows[0]['error'] = error_list
@@ -375,8 +374,12 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
                                 updated_rows[0]['created'] = True
 
                         update_wrap['updated_subject_rows'] = updated_rows
-        if len(messages):
-            update_wrap['messages'] = messages
+
+                if logging_on:
+                    logger.debug('..... messages: ' + str(messages))
+                    logger.debug('..... error_list: ' + str(error_list))
+                if len(messages):
+                    update_wrap['messages'] = messages
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of SubjectUploadView
@@ -790,7 +793,8 @@ class SchemeUploadView(View):  # PR2021-06-27
             logger.debug(' ============= SchemeUploadView ============= ')
 
 # error_list is attached to updated row, messages is attached to update_wrap
-        messages = []
+        msg_dictlist = []
+        updated_fields = []
         update_wrap = {}
 
 # - get permit
@@ -811,16 +815,14 @@ class SchemeUploadView(View):  # PR2021-06-27
 
 # - get  variables
                 scheme_pk = upload_dict.get('scheme_pk')
-                # not in use: is_create = upload_dict.get('create', False)
-                # not in use: is_delete = upload_dict.get('delete', False)
 
                 updated_rows = []
                 error_list = []
-                # not in use: is_created = False
+
                 msg_header = _('Update subject scheme')
 
 # - get selected examyear from Usersetting
-                examyear = get_sel_examyear(msg_header, messages, request)
+                examyear = get_sel_examyear(msg_header, msg_dictlist, request)
 
 # - exit when no examyear or examyear is locked
                 # note: subjects may be changed before publishing, therefore don't exit when examyear.published = False
@@ -830,7 +832,7 @@ class SchemeUploadView(View):  # PR2021-06-27
                 # not in use
 
 # +++  get existing scheme
-                    scheme = get_scheme_instance(examyear, scheme_pk, messages, msg_header)
+                    scheme = get_scheme_instance(examyear, scheme_pk, msg_dictlist, msg_header)
                     if logging_on:
                         logger.debug('scheme: ' + str(scheme))
 
@@ -847,20 +849,19 @@ class SchemeUploadView(View):  # PR2021-06-27
                         )
 
                         # - add error_list to subject_row (there is only 1 subject_row, or none
-                        # Note: error_list is attached to updated row, messages is attached to update_wrap
+                        # Note: error_list is attached to updated row, msg_dictlist is attached to update_wrap
                         # key 'field' is needed to restore old value when updating item
-                        # 'messages' is needed when cerating goes wrong, then there is no item
+                        # 'msg_dictlist' is needed when cerating goes wrong, then there is no item
                         # 'created' is needed to add item to data_rows and make tblRow green
                         if updated_rows:
                             if error_list:
                                 updated_rows[0]['error'] = error_list
 
-
                 update_wrap['updated_scheme_rows'] = updated_rows
 
-            # - add messages to update_wrap, if any
-                if len(messages):
-                    update_wrap['messages'] = messages
+            # - add msg_dictlist to update_wrap, if any
+                if len(msg_dictlist):
+                    update_wrap['messages'] = msg_dictlist
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of SchemeUploadView
@@ -924,7 +925,7 @@ class SchemeitemUploadView(View):  # PR2021-06-25
 # +++ if upload_dict does not have si_list: it is single schemeitem update
                         else:
 
-# +++ update  value of a single schemeitem
+# +++ update value of a single schemeitem
                             si_pk = upload_dict.get('si_pk')
                             schemeitem = get_schemeitem_instance(scheme, si_pk, logging_on)
                             if schemeitem:
@@ -965,7 +966,7 @@ def get_permit_crud_page_subject(request):
     return has_permit
 
 
-def get_sel_examyear(message_header, messages, request):
+def get_sel_examyear(message_header, msg_dictlist, request):
     # --- get selected examyear from usersetting # PR2021-06-26
     # - get selected examyear from Usersetting
     selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
@@ -985,11 +986,11 @@ def get_sel_examyear(message_header, messages, request):
     # - exit when no examyear or examyear is locked
     # note: subjects may be changed before publishing, therefore don't exit when examyear.published = False
     if examyear is None:
-        messages.append({'class': "border_bg_warning",
+        msg_dictlist.append({'class': "border_bg_warning",
                          'header': str(message_header),
                          'msg_html': str(_('No exam year selected'))})
     elif examyear.locked:
-        messages.append({'class': "border_bg_warning",
+        msg_dictlist.append({'class': "border_bg_warning",
                          'header': str(message_header),
                          'msg_html': str(_("Exam year %(exyr)s is locked.") % {'exyr': str(examyear.code)})})
     return examyear
@@ -2419,9 +2420,9 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, er
 
         for field, new_value in upload_dict.items():
 
-            if field in ("gradetype", "weight_se", "weight_ce", "is_mandatory", "is_combi",
+            if field in ("gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi",
                          "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
-                         "has_practexam", "has_pws", "is_core_subject", "is_mvt",
+                         "has_practexam", "has_pws", "is_core_subject", "is_mvt", "is_wisk", "ete_exam",
                          "reex_se_allowed", "max_reex",  "no_thirdperiod",  "no_exemption_ce"):
 
                 saved_value = getattr(instance, field)
@@ -2471,7 +2472,7 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
                 logger.debug('field: ' + str(field))
                 logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
 
-            # - save changes in field 'name'
+# - save changes in field 'name'
             if field == 'name':
                 saved_value = getattr(instance, field)
                 if new_value != saved_value:
@@ -2482,9 +2483,12 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
                         setattr(instance, field, new_value)
                         save_changes = True
 
-            elif field in ('min_subjects', 'max_subjects', 'min_mvt', 'max_mvt', 'min_combi', 'max_combi'):
+            elif field in ('min_subjects', 'max_subjects', 'min_mvt', 'max_mvt', 'min_wisk', 'max_wisk', 'min_combi', 'max_combi'):
                 msg_html = None
                 new_value_int = None
+
+                if logging_on:
+                    logger.debug('..........field: ' + str(field))
 
                 if new_value:
                     # - check if value is positive whole number
@@ -2492,16 +2496,26 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
                         msg_html = str(_("'%(val)s' is not a valid number.") % {'val': new_value})
                     else:
                         new_value_int = int(new_value)
-                        if field in ('min_subjects', 'min_mvt', 'min_combi'):
-                            max_field = 'max_mvt' if field == 'min_mvt' else 'max_combi' if field == 'min_combi' else 'max_subjects'
+                        if logging_on:
+                            logger.debug('new_value_int: <' + str(new_value_int) + '> ' + str(type(new_value_int)))
+                        if field in ('min_subjects', 'min_mvt', 'min_wisk', 'min_combi'):
+                            max_field = 'max_mvt' if field == 'min_mvt' else 'max_wisk' if field == 'min_wisk' else 'max_combi' if field == 'min_combi' else 'max_subjects'
                             max_subjects = getattr(instance, max_field)
+
+                            if logging_on:
+                                logger.debug('max_subjects: <' + str(max_subjects) + '> ' + str(type(max_subjects)))
+
                             if max_subjects and new_value_int > max_subjects:
                                 msg_html = str(
                                     _("Minimum amount of subjects cannot be greater than maximum (%(val)s).") % {
                                         'val': max_subjects})
-                        elif field in ('max_subjects', 'max_mvt', 'max_combi'):
-                            min_field = 'min_mvt' if field == 'max_mvt' else 'min_combi' if field == 'max_combi' else 'min_subjects'
+                        elif field in ('max_subjects', 'max_mvt', 'max_wisk', 'max_combi'):
+                            min_field = 'min_mvt' if field == 'max_mvt' else 'min_wisk' if field == 'max_wisk' else 'min_combi' if field == 'max_combi' else 'min_subjects'
                             min_subjects = getattr(instance, min_field)
+
+                            if logging_on:
+                                logger.debug('min_subjects: <' + str(min_subjects) + '> ' + str(type(min_subjects)))
+
                             if min_subjects and new_value_int < min_subjects:
                                 msg_html = str(
                                     _("Maximum amount of subjects cannot be fewer than minimum (%(val)s).") % {
@@ -2516,9 +2530,13 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
                 else:
                     # -note: value can be None
                     saved_value = getattr(instance, field)
+                    if logging_on:
+                        logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
                     if new_value_int != saved_value:
                         setattr(instance, field, new_value_int)
                         save_changes = True
+                    if logging_on:
+                        logger.debug('..........save_changes: ' + str(save_changes))
         # --- end of for loop ---
 
         # 5. save changes
@@ -2887,7 +2905,7 @@ def update_subjecttype_instance(instance, scheme, upload_dict, error_list, reque
 
 def create_subjecttype_rows(examyear, scheme_pk=None, depbase=None, cur_dep_only=False, sjtp_pk=None, orderby_sequence=False):
     # --- create rows of all subjecttypes of this examyear / country  PR2021-06-24
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_subjecttype_rows ============= ')
         logger.debug('cur_dep_only: ' + str(cur_dep_only))
@@ -3006,7 +3024,7 @@ def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=Non
         sql_keys = {'ey_id': examyear.pk}
         sql_list = ["SELECT scheme.id, scheme.department_id, scheme.level_id, scheme.sector_id,",
             "CONCAT('scheme_', scheme.id::TEXT) AS mapid,",
-            "scheme.name, scheme.min_subjects, scheme.max_subjects, scheme.min_mvt, scheme.max_mvt, scheme.min_combi, scheme.max_combi,",
+            "scheme.name, scheme.min_subjects, scheme.max_subjects, scheme.min_mvt, scheme.max_mvt, scheme.min_wisk, scheme.max_wisk, scheme.min_combi, scheme.max_combi,",
             "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code AS ey_code,",
             "depbase.code AS depbase_code,"
             "scheme.modifiedby_id, scheme.modifiedat,",
@@ -3070,9 +3088,9 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
             "depbase.id AS depbase_id, depbase.code AS depbase_code,",
             "lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
 
-            "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_combi,",
+            "si.gradetype, si.weight_se, si.weight_ce, si.ete_exam, si.is_mandatory, si.is_mand_subj_id, si.is_combi,",
             "si.extra_count_allowed, si.extra_nocount_allowed, si.elective_combi_allowed, si.has_practexam,",
-            "si.has_pws, si.is_core_subject, si.is_mvt,",
+            "si.has_pws, si.is_core_subject, si.is_mvt, si.is_wisk,",
             "si.reex_se_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce,",
 
             "si.modifiedby_id, si.modifiedat,",

@@ -846,6 +846,7 @@ def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, requ
                         weight_ce = 0
 
                     is_mandatory = True if row_data.get('is_mandatory') == 1 else False
+                    #is_manda_subj = True if row_data.get('is_manda_subj') == 1 else False
                     is_combi = True if row_data.get('is_combi') == 1 else False
                     elective_combi_allowed = True if row_data.get('elective_combi_allowed') == 1 else False
                     has_practexam = True if row_data.get('has_practexam') == 1 else False
@@ -858,6 +859,7 @@ def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, requ
                         weight_se=weight_se,
                         weight_ce=weight_ce,
                         is_mandatory=is_mandatory,
+                        #is_mand_subj=is_mand_subj,
                         is_combi=is_combi,
                         elective_combi_allowed=elective_combi_allowed,
                         has_practexam=has_practexam

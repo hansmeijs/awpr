@@ -26,8 +26,8 @@
 
     const mimp = {};
     let mimp_stored = {};
-    let mimp_loc = {};
     let mimp_logfile = [];
+    let mimp_loc = {};
 
     let department_map = new Map();
     let level_map = new Map();
@@ -50,10 +50,10 @@
 //####################################################################
 // +++++++++++++++++ MODAL IMPORT ++++++++++++++++++++
 //=========  MIMP_Open  ================ PR2020-12-03 PR2021-01-12
-    function MIMP_Open(import_table) {
+    function MIMP_Open(loc, import_table) {
         console.log( "===== MIMP_Open ========= ");
         console.log( "import_table: ", import_table);
-        console.log( "mimp_loc: ", mimp_loc);
+        console.log( "loc: ", loc);
 
          // mimp_stored.coldefs gets value from schoolsetting_dict in i_UpdateSchoolsettingsImport(schoolsetting_dict)
 // reset all values of mimp to null, keep the keys.
@@ -62,11 +62,15 @@
             mimp[key] = null;
         };
         mimp.import_table = import_table
-
-        const el_filedialog = document.getElementById("id_MIMP_filedialog");
+        mimp.skip_open_filedialog = true;
+        mimp_loc = loc;
 
         //PR2020-12-05. This one doesn't work: if(el_filedialog){el_filedialog.files = null};
-        if(el_filedialog){el_filedialog.value = null};
+
+        const el_MIMP_filedialog = document.getElementById("id_MIMP_filedialog");
+        const el_MIMP_filename = document.getElementById("id_MIMP_filename");
+        if(el_MIMP_filedialog){el_MIMP_filedialog.value = null};
+        if(el_MIMP_filename){el_MIMP_filename.innerText = null};
 
         // default value of el_MIMP_hasheader is 'true'
         const el_MIMP_hasheader = document.getElementById("id_MIMP_hasheader");
@@ -75,15 +79,19 @@
         //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
         if (!isEmpty(mimp_loc)) {
             //mod_dict = {base_id: setting_dict.requsr_schoolbase_pk, table: import_table};
-            const header_text = (import_table === "import_student") ? mimp_loc.Upload_candidates :
+            mimp.header_text = (import_table === "import_student") ? mimp_loc.Upload_candidates :
                                 (["import_subject", "import_studsubj"].includes(import_table)) ? mimp_loc.Upload_subjects :
                                 (import_table === "import_grade") ? mimp_loc.Upload_grades :
-                                (import_table === "import_permit") ? mimp_loc.Upload_permissions : null;
-            const subheader_a = (import_table === "import_student") ? mimp_loc.Select_Excelfile_with_students :
+                                (import_table === "import_permit") ? mimp_loc.Upload_permissions :
+                                (import_table === "import_username") ? mimp_loc.Upload_usernames : null;
+
+            const subheader_a = ((import_table === "import_student") ? mimp_loc.Select_Excelfile_with_students :
                                 (["import_subject", "import_studsubj"].includes(import_table)) ? mimp_loc.Select_Excelfile_with_subjects :
                                 (import_table === "import_grade") ? mimp_loc.Select_Excelfile_with_grades :
-                                (import_table === "import_permit") ? mimp_loc.Select_Excelfile_with_pemits : null;
-            document.getElementById("id_MIMP_header").innerText = header_text;
+                                (import_table === "import_permit") ? mimp_loc.Select_Excelfile_with_permits :
+                                (import_table === "import_username") ? mimp_loc.Select_Excelfile_with_usernames : "") + ":";
+
+            document.getElementById("id_MIMP_header").innerText = mimp.header_text;
             document.getElementById("id_MIMP_filedialog_label").innerText = "A. " + subheader_a;
             // >>>>>>>>>document.getElementById("id_MIMP_upload_label").innerText = header_text;
 
@@ -115,7 +123,7 @@
             //    const el_select_unique = document.getElementById("id_MIMP_select_unique");
             //    let selected_value = null;
             //    const filter_field = "linkfield",  filter_value = true;
-                // loc.options_examtype: {'value': 'se', 'filter': EXAMPERIOD_FIRST, 'caption': _('School exam')},
+                // mimp_loc.options_examtype: {'value': 'se', 'filter': EXAMPERIOD_FIRST, 'caption': _('School exam')},
                 // mimp_stored.coldefs {awpColdef: "page", caption: "Pagina", linkfield: true, excColdef: "page"}
 
                // t_FillOptionsFromList(el_select_unique, mimp_stored.coldefs, "awpColdef", "caption",
@@ -145,6 +153,9 @@
             upload_student(mode, RefreshDataRowsAfterUpload);
         } else if(mimp.import_table === "import_student"){
             upload_student(mode, RefreshDataRowsAfterUpload);
+
+        } else if(mimp.import_table === "import_username"){
+            upload_username(mode, RefreshDataRowsAfterUpload);
         };
         add_or_remove_class(document.getElementById("id_MIMP_loader"), cls_hide, false)
         add_or_remove_class(document.getElementById("id_MIMP_msg_container"), cls_hide, true)
@@ -398,8 +409,78 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         };
     }  // upload_student
 
+//=========   upload_username   ======================
+    function upload_username(mode, RefreshDataRowsAfterUpload) {
+        console.log(" ========== upload_username ===========");
+
+        const is_test_upload = (mode === "test")
+        let rowLength = 0, colLength = 0;
+        if(mimp.curWorksheetData){rowLength = mimp.curWorksheetData.length;};
+        if(mimp_stored.coldefs){colLength = mimp_stored.coldefs.length;};
+
+        if(rowLength > 0 && colLength > 0){
+
+// ---  loop through excel_coldefs to get linked awpColdefs
+        // excel_coldefs = [ {excColIndex: 1, excColdef: "exnr", rowId: "id_tr_coldef_exc_1", awpColdef: "examnumber", awpCaption: "Examennummer"} ]
+            let awpColdef_list = []
+            if(mimp.excel_coldefs){
+                for (let i = 0, coldef; coldef = mimp.excel_coldefs[i]; i++) {
+                    if (!!coldef.awpColdef){awpColdef_list.push(coldef.awpColdef)}
+                }
+            }
+            if(!awpColdef_list || !awpColdef_list.length){
+                alert("No linked columns")
+            } else {
+
+// ---  loop through all rows of worksheet_data
+                let dict_list = [];
+                for (let i = 0; i < rowLength; i++) {
+                    let row = mimp.curWorksheetData[i];
+
+//------ loop through excel_coldefs
+                    let dict = {};
+                    for (let j = 0, exc_col; exc_col = mimp.excel_coldefs[j]; j++) {
+                        const awpColdef = exc_col.awpColdef;
+                        if (awpColdef){
+                            dict[awpColdef] = (row[j]) ? row[j] : null;
+                        }
+                    };
+                    dict_list.push(dict);
+                }
+    //console.log("dict_list:", dict_list)
+                if(!dict_list || !dict_list.length){
+                    $("#id_mod_import").modal("hide");
+                    const msg_dictlist = [{'header': mimp.header_text, 'class': 'border_bg_invalid', 'msg_html': mimp_loc.No_data_found}];
+                    b_ShowModMessages(msg_dictlist);
+                } else {
+// --- Upload Data
+                    const el_data = document.getElementById("id_MIMP_data");
+                    //const url_str = get_attr_from_el(el_data, "data-url_importdata_upload");
+
+                    const url_str = get_attr_from_el(el_data, "data-url_importusername_upload");
+                    const upload_dict = {
+                        importtable: mimp.import_table,
+                        filename: mimp.sel_filename,
+                         awpColdef_list: awpColdef_list,
+                         test: is_test_upload,
+                         data_list: dict_list
+                    };
+
+    //console.log("======== upload_dict:", upload_dict)
+                    UploadData(url_str, upload_dict, RefreshDataRowsAfterUpload);
+                }
+            }
+        };
+    }  // upload_username
+
+
 //####################################################################
 
+//=========   MIMP_OpenFiledialog   ======================
+    function MIMP_OpenFiledialog(el_filedialog) { // PR2021-08-04
+        console.log(" ========== MIMP_OpenFiledialog ===========");
+        el_filedialog.click();
+    };
 //=========   MIMP_HandleFiledialog   ======================
     function MIMP_HandleFiledialog(el_filedialog) { // functie wordt alleen doorlopen als file is geselecteerd
         console.log(" ========== MIMP_HandleFiledialog ===========");
@@ -439,6 +520,16 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         } else {
             curFile = curFiles[0];
         }
+        mimp.sel_file = curFile;
+        mimp.sel_filename = (curFile) ? curFile.name : null;
+        console.log("mimp.sel_filename: ", mimp.sel_filename);
+        console.log("curFile", curFile);
+
+// ---  display sel_filename in elid_MIMP_filename, make btn 'outline' when filename existst
+        const el_MIMP_filename = document.getElementById("id_MIMP_filename");
+        if(el_MIMP_filename && mimp.sel_filename){el_MIMP_filename.innerText = mimp.sel_filename};
+        const el_MIMP_btn_filedialog = document.getElementById("id_MIMP_btn_filedialog");
+        add_or_remove_class(el_MIMP_btn_filedialog, "btn-outline-secondary", !!mimp.sel_filename, "btn-secondary" )
 
 // ---  display error message when error
         let el_msg_err = document.getElementById("id_MIMP_msg_filedialog")
@@ -458,18 +549,16 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         //                                 !ref: "A1"
         //                                 A1: {t: "s", v: "test", r: "<t>test</t>", h: "test", w: "test"}, ... }
 
-        mimp.sel_file = curFile;
-        mimp.sel_filename = (curFile) ? curFile.name : null;
-        //console.log("curFile: ", curFile);
-        if(curFile){
+
+        if(mimp.sel_file){
 
             let reader = new FileReader();
             mimp.curWorkbook = null;
             let rABS = false; // false: readAsArrayBuffer,  true: readAsBinaryString
             if (rABS) {
-                reader.readAsBinaryString(curFile);
+                reader.readAsBinaryString(mimp.sel_file);
             } else {
-                reader.readAsArrayBuffer(curFile);}
+                reader.readAsArrayBuffer(mimp.sel_file);}
            // PR2017-11-08 debug: reader.onload didn't work when reader.readAsBinaryString was placed after reader.onload
 
     // ---  read file into workbook
@@ -481,18 +570,18 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 if(!rABS) {
                     data = new Uint8Array(data);
                 };
-                if (curFile.type === excelMIMEtypes.xls){
+                if (mimp.sel_file.type === excelMIMEtypes.xls){
                     mimp.curWorkbook = XLS.read(data, {type: rABS ? "binary" : "array"});
                 } else {
                     mimp.curWorkbook = XLSX.read(data, {type: rABS ? "binary" : "array"});
                 }
 
-        //console.log("mimp.curWorkbook: ", mimp.curWorkbook);
+        console.log("mimp.curWorkbook: ", mimp.curWorkbook);
     // ---  make list of worksheets in workbook
                 if (mimp.curWorkbook){
                     mimp.curWorkSheets = mimp.curWorkbook.Sheets;
 
-        //console.log("mimp.curWorkSheets: ", mimp.curWorkSheets);
+        console.log("mimp.curWorkSheets: ", mimp.curWorkSheets);
                     let msg_err = null
     // ---  reset el_worksheet_list.options
                     const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
@@ -524,6 +613,9 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                                 option_count += 1;
                             }
                         } //for (let x=0;
+
+        console.log("el_worksheet_list: ", el_worksheet_list);
+
     // ---  give message when no data in worksheets
                         if (!option_count ){
                             msg_err = mimp_loc.No_worksheets_with_data;
@@ -545,6 +637,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                                     el_MIMP_hasheader.checked = !mimp.curNoHeader;
     // ---  fill worksheet_data with data from worksheet
                                     mimp.curWorksheetData = FillWorksheetData();
+        console.log("mimp.curWorksheetData: ", mimp.curWorksheetData);
     // ---  fill table excel_coldefs
                                     FillExcelColdefArray();
     // ---  fill lists with linked values
@@ -674,11 +767,9 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                     }
     }; //MIMP_OpenLogfile
 
-
-
 //=========  FillExcelColdefArray  ===========
     function FillExcelColdefArray(skip_update_iscrosstab, skip_link_same_values) {
-        //console.log("=========  FillExcelColdefArray ========= ");
+        console.log("=========  FillExcelColdefArray ========= ");
         // function - creates list mimp.excel_coldefs: [{index: idx, excColdef: colName}, ...]
         //          - loops through stored_coldef and excel_coldefs and add links and caption in these arrays
         // PR20221-02-24 debug: when is_crosstab must not link col subject and subjecttype
@@ -691,6 +782,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         mimp.excel_dateformat = null;
         mimp.has_linked_datefields = false;
         let has_subject_field = false;
+
 
 // ---  create array 'excel_coldefs' with Excel column names, replaces spaces, ", ', /, \ and . with _
         const range = mimp.curWorksheetRange
@@ -716,6 +808,8 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 mimp.excel_coldefs.push ({excColIndex: idx, excColdef: colName});
                 idx += 1;
         }}
+
+        console.log("mimp.excel_coldefs", mimp.excel_coldefs);
 
 // ---  loop through array mimp_stored.coldefs
         // mimp_stored.coldefs gets value from schoolsetting_dict in i_UpdateSchoolsettingsImport(schoolsetting_dict)
@@ -1095,15 +1189,6 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         return "id_tr_" + tblName + "_" + key  + "_" + i.toString();
     }
 
-//=========  MIMP_Selectdateformat  ================ PR2019-06-04
-    function MIMP_Selectdateformat(el) {
-        //console.log( " ===== MIMP_Selectdateformat ========= ");
-
-        const el_msg_dateformat = document.getElementById("id_msg_dateformat");
-        add_or_remove_class(el_msg_dateformat, cls_visible_hide, el_select_dateformat.value)
-
-        MIMP_HighlightAndDisableButtons();
-    }  // MIMP_Selectdateformat
 
 //=========  MIMP_btnPrevNextClicked  ================ PR2020-12-05
     function MIMP_btnPrevNextClicked(prev_next) {
@@ -1130,7 +1215,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //=========  MIMP_btnSelectClicked  ================ PR2020-12-05
     function MIMP_btnSelectClicked(data_btn) {
-        //console.log("=== MIMP_btnSelectClicked ===", data_btn);
+        console.log("=== MIMP_btnSelectClicked ===", data_btn);
         mimp.sel_btn = data_btn
 
 // ---  show only the elements that are used in this mod_shift_option
@@ -1144,11 +1229,17 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             }
 
 // ---  hide loader,  msg_container
-        add_or_remove_class(document.getElementById("id_MIMP_loader"), cls_hide, true);
-        add_or_remove_class(document.getElementById("id_MIMP_msg_container"), cls_hide, true)
+            add_or_remove_class(document.getElementById("id_MIMP_loader"), cls_hide, true);
+            add_or_remove_class(document.getElementById("id_MIMP_msg_container"), cls_hide, true)
 
 // ---  highlight selected button
             MIMP_HighlightAndDisableButtons();
+            // open filedialog when clicked on 'step1 btn, not when opening modal, not when sel_fileexists
+            if(!mimp.skip_open_filedialog && data_btn === "btn_step1" && !mimp.sel_file){
+                const el_MIMP_filedialog = document.getElementById("id_MIMP_filedialog");
+                el_MIMP_filedialog.click();
+            }
+            mimp.skip_open_filedialog = false;
         }
     }  // MIMP_btnSelectClicked
 
@@ -1286,9 +1377,11 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                         unlinked_fields_list.push(stored_row.caption);
             }}};
         }  // if(mimp_stored.coldefs) {
+        //console.log("mimp_stored.coldefs", mimp_stored.coldefs);
 
         // get list of has_unlinked_fields, get all linkrequired_fields is no unlinked_fields
         const field_list = (has_unlinked_fields) ? unlinked_fields_list : linkrequired_fieldlist;
+        console.log("field_list", field_list);
         const list_length = field_list.length;
         if (field_list && field_list.length) {
             let field_names = "";
@@ -1297,6 +1390,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 field_names += "'" + fldName + "'"
             }
             msg_text = (list_length > 1) ? mimp_loc.link_The_columns : mimp_loc.link_The_column;
+
             msg_text += field_names;
             msg_text += (has_unlinked_fields) ? (list_length > 1) ? mimp_loc.link_mustbelinked_plural_zijn : mimp_loc.link_mustbelinked_single_zijn
                             : (list_length > 1) ? mimp_loc.link_mustbelinked_plural_worden : mimp_loc.link_mustbelinked_single_worden;
@@ -2235,8 +2329,8 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //========= i_UpdateSchoolsettingsImport  ================ PR2020-04-17 PR2021-01-12
     function i_UpdateSchoolsettingsImport(schoolsetting_dict){
-        //console.log("===== i_UpdateSchoolsettingsImport ===== ")
-        //console.log("schoolsetting_dict", deepcopy_dict(schoolsetting_dict))
+        console.log("===== i_UpdateSchoolsettingsImport ===== ")
+        console.log("schoolsetting_dict", deepcopy_dict(schoolsetting_dict))
 
         let import_table = null;
         if (!isEmpty(schoolsetting_dict)){
@@ -2250,8 +2344,11 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 import_table = "import_grade";
             } else if("import_permit" in schoolsetting_dict ){
                 import_table = "import_permit";
+            } else if("import_username" in schoolsetting_dict ){
+                import_table = "import_username";
             }
         };
+
         const import_table_dict = schoolsetting_dict[import_table];
         mimp_stored = deepcopy_dict(import_table_dict);
         mimp_stored.import_table = import_table;
@@ -2305,7 +2402,10 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 if("updated_student_rows" in response){
                     RefreshDataRowsAfterUpload(response)
                 }
-
+                if("updated_user_rows" in response){
+                console.log("RefreshDataRowsAfterUpload >>> updated_user_rows");
+                    RefreshDataRowsAfterUpload(response)
+                }
                 if("result" in response){
                     ResponseResult(response)
                 }

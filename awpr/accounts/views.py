@@ -241,7 +241,7 @@ class UserUploadView(View):
                                     logger.debug('instance: ' + str(instance))
 
                                 if instance:
-                                    deleted_instance_list = create_user_list(request, instance.pk)
+                                    deleted_instance_list = create_user_rows(request, instance.pk)
 
                                     if logging_on:
                                         logger.debug('deleted_instance_list: ' + str(deleted_instance_list))
@@ -313,9 +313,9 @@ class UserUploadView(View):
                             if ok_dict:
                                 update_wrap['msg_ok'] = ok_dict
                             # - new_user_pk has only value when new user is created, not when is_validate_only
-                            # - create_user_list returns list of only 1 user
+                            # - create_user_rows returns list of only 1 user
                             if new_user_pk:
-                                created_instance_list = create_user_list(request, new_user_pk)
+                                created_instance_list = create_user_rows(request, new_user_pk)
                                 if created_instance_list:
                                     updated_dict = created_instance_list[0]
                                     updated_dict['created'] = True
@@ -342,8 +342,8 @@ class UserUploadView(View):
                                     update_wrap['msg_err'] = err_dict
                                 if ok_dict:
                                     update_wrap['msg_ok'] = ok_dict
-                                # - create_user_list returns list of only 1 user
-                                updated_instance_list = create_user_list(request, instance.pk)
+                                # - create_user_rows returns list of only 1 user
+                                updated_instance_list = create_user_rows(request, instance.pk)
                                 updated_dict = updated_instance_list[0] if updated_instance_list else {}
                                 updated_dict['updated'] = True
                                 updated_dict['mapid'] = map_id
@@ -358,8 +358,8 @@ class UserUploadView(View):
         # TODO append  err_dict to  msg_list
         if msg_list:
             update_wrap['msg_dictlist'] = msg_list
-        # - create_user_list returns list of only 1 user
-        #update_wrap['user_list'] = ad.create_user_list(request, instance.pk)
+        # - create_user_rows returns list of only 1 user
+        #update_wrap['user_list'] = ad.create_user_rows(request, instance.pk)
 # - return update_wrap
         update_wrap_json = json.dumps(update_wrap, cls=af.LazyEncoder)
         return HttpResponse(update_wrap_json)
@@ -1310,21 +1310,10 @@ class AwpPasswordResetConfirmView(PasswordContextMixin, FormView):
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-@method_decorator([login_required], name='dispatch')
-class UserDeleteView(DeleteView):
-    model = User
-    success_url = reverse_lazy('user_list_url')
 
-
-def csrf_failure(request, reason=""):
-    ctx = {'message': 'some custom messages'}
-    return render_to_response(your_custom_template, ctx)
-
-
-
-def create_user_list(request, user_pk=None):
+def create_user_rows(request, user_pk=None):
     # --- create list of all users of this school, or 1 user with user_pk PR2020-07-31
-    #logger.debug(' =============== create_user_list ============= ')
+    #logger.debug(' =============== create_user_rows ============= ')
     #logger.debug('user_pk: ' + str(user_pk))
 
     #ROLE_008_SCHOOL = 8
@@ -1394,8 +1383,8 @@ def create_permit_list(permit_pk=None):
     if permit_pk:
         sql_keys['pk'] = permit_pk
         sql_list.append("WHERE p.id = %(pk)s::INT")
-    else:
-        sql_list.append("ORDER BY p.action")
+
+    sql_list.append("ORDER BY p.id")
     sql = ' '.join(sql_list)
 
     with connection.cursor() as cursor:
@@ -1457,10 +1446,11 @@ def get_userpermit_list(page, req_user):
 # === create_or_validate_user_instance ========= PR2020-08-16 PR2021-01-01
 
 def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, usergroups, is_validate_only, user_lang, request):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-----  create_or_validate_user_instance  -----')
         logger.debug('upload_dict: ' + str(upload_dict))
+        logger.debug('user_schoolbase: ' + str(user_schoolbase))
         logger.debug('user_pk: ' + str(user_pk))
         logger.debug('is_validate_only: ' + str(is_validate_only))
 
@@ -1486,8 +1476,10 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, user
     # user_pk is pk of user that will be validated when the user already exist.
     # user_pk is None when new user is created or validated
     username = upload_dict.get('username')
-    #logger.debug('username: ' + str(username))
     schoolbaseprefix = user_schoolbase.prefix if user_schoolbase else None
+    if logging_on:
+        logger.debug('username: ' + str(username))
+        logger.debug('schoolbaseprefix: ' + str(schoolbaseprefix))
     msg_err = v.validate_unique_username(username, schoolbaseprefix, user_pk)
     if msg_err:
         err_dict['username'] = msg_err
@@ -1605,8 +1597,10 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, user
             msg04 = _('Check the spam folder, if the email does not appear within a few minutes.')
             ok_dict = {'msg01': msg01, 'msg02': msg02, 'msg03': msg03, 'msg04': msg04}
 
-    return new_user_pk, err_dict, ok_dict
+    if logging_on:
+        logger.debug('err_dict: ' + str(err_dict))
 
+    return new_user_pk, err_dict, ok_dict
 # - +++++++++ end of create_or_validate_user_instance ++++++++++++
 
 # === update_user_instance ========== PR2020-08-16 PR2020-09-24 PR2021-03-24 PR2021-08-01

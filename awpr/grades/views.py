@@ -261,12 +261,13 @@ class GradeApproveView(View):  # PR2021-01-19
                                     }
                         if grades is not None:
 
-# create new published_instance. Only save it when it is not a test
+# +++ create new published_instance.
+                            # only save it when it is not a test
                             # file_name will be added after creating Ex-form
                             published_instance = None
                             if is_submit and not is_test:
                                 now_arr = upload_dict.get('now_arr')
-                                published_instance = create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, now_arr, request)
+                                published_instance = create_published_instance(sel_examyear, sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, now_arr, request)
 
 # +++++ loop through  grades
                             grade_rows = []
@@ -404,7 +405,7 @@ class GradeApproveView(View):  # PR2021-01-19
 # --- end of GradeApproveView
 
 
-def create_published_instance(sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, now_arr, request):  # PR2021-01-21
+def create_published_instance(sel_examyear, sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, now_arr, request):  # PR2021-01-21
     #logger.debug('----- create_published_instance -----')
     # create new published_instance and save it when it is not a test
     depbase_code = sel_department.base.code if sel_department.base.code else '-'
@@ -452,6 +453,7 @@ def create_published_instance(sel_school, sel_department, sel_examtype, sel_exam
     # if total file_name is still too long: cut off
     if len(file_name) > c.MAX_LENGTH_FIRSTLASTNAME:
         file_name = file_name[0:c.MAX_LENGTH_FIRSTLASTNAME]
+    file_name += '.pdf'
 
     published_instance = sch_mod.Published(
         school=sel_school,
@@ -462,6 +464,15 @@ def create_published_instance(sel_school, sel_department, sel_examtype, sel_exam
         datepublished=today_date)
     # Note: filefield 'file' gets value on creating Ex form
     if not is_test:
+
+        # PR2021-08-07 changed to file_dir = 'country/examyear/published/'
+        # this one gives path:awpmedia/awpmedia/media/cur/2022/published
+        country_abbrev = sel_examyear.country.abbrev.lower()
+        examyear_str = str(sel_examyear.code)
+        file_dir = '/'.join((country_abbrev, examyear_str, 'exfiles'))
+        file_path = '/'.join((file_dir, published_instance.filename))
+        file_name = published_instance.name
+
         published_instance.filename = file_name + '.pdf'
         published_instance.save(request=request)
         logger.debug('published_instance.saved: ' + str(published_instance))
@@ -1150,7 +1161,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                 "grd.ce_auth1by_id, grd.ce_auth2by_id, grd.ce_auth3by_id, grd.ce_published_id, grd.ce_blocked,",
 
                 "si.subject_id, si.subjecttype_id,",
-                "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_combi, si.extra_count_allowed,",
+                "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_mand_subj_id, si.is_combi, si.extra_count_allowed,",
                 "si.extra_nocount_allowed, si.elective_combi_allowed, si.has_practexam, si.has_pws,",
                 "si.is_core_subject, si.is_mvt, si.reex_se_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce,",
 
@@ -1443,11 +1454,13 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
         #    # STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'media', 'private', 'published') + '/'
         #    file_dir = s.STATICFILES_MEDIA_DIR
 
-        # PR2021-07-28 changed to file_dir = 'published/'
-        # this one gives path:awpmedia/awpmedia/media/private/published
-        file_dir = 'published/'
-
-        file_path = ''.join((file_dir, published_instance.filename))
+# ---  create file_path
+        # PR2021-08-07 changed to file_dir = 'country/examyear/exfiles/'
+        # this one gives path:awpmedia/awpmedia/media/cur/2022/exfiles
+        country_abbrev = sel_examyear.country.abbrev.lower()
+        examyear_str = str(sel_examyear.code)
+        file_dir = '/'.join((country_abbrev, examyear_str, 'exfiles'))
+        file_path = '/'.join((file_dir, published_instance.filename))
         file_name = published_instance.name
 
         logger.debug('file_dir: ' + str(file_dir))

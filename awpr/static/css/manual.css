@@ -159,31 +159,32 @@
 .img_upload_stud_menu, .img_upload_stud_step1, .img_upload_stud_step2,
 .img_upload_stud_step3, .img_upload_stud_step4, .img_upload_stud_step5 {
     background-repeat: no-repeat;
-    margin-left: 32px;
+    margin-left: 8px;
+    /*margin-left: 32px;*/
 }
 .img_upload_stud_menu {
-    height: 200px; /* original is   200; */
-    width: 1087px; /* original is   1087; */
+    height: 130px; /* original is   130; */
+    width: 1075px; /* original is   1075; */
     background-image: url('/static/manual/stud_upload_menu.png');
-    background-size: 1087px 200px;
+    background-size: 1075px 130px;
 }
 .img_upload_stud_step1 {
-    height: 529px; /* original is   529; */
-    width: 801px; /* original is   801; */
+    height: 571px; /* original is   571; */
+    width: 1138px; /* original is   1138; */
     background-image: url('/static/manual/stud_upload_step1.png');
-    background-size: 801px 529px;
+    background-size: 1138px 571px;
 }
 .img_upload_stud_step2 {
-    height: 803px; /* original is   803; */
-    width: 801px; /* original is   801; */
+    height: 750px; /* original is   750; */
+    width: 1138px; /* original is   1138; */
     background-image: url('/static/manual/stud_upload_step2.png');
-    background-size: 801px 803px;
+    background-size: 1138px 750px;
 }
 .img_upload_stud_step3 {
-    height: 554px; /* original is   803; */
-    width: 801px; /* original is   801; */
+    height: 525px; /* original is   525; */
+    width: 1138px; /* original is   1138; */
     background-image: url('/static/manual/stud_upload_step3.png');
-    background-size: 801px 554px;
+    background-size: 1138px 525px;
 }
 .img_upload_stud_step4 {
     height: 502px; /* original is   655; */

@@ -1,14 +1,30 @@
 // PR2020-09-29 added
 
 // PR2021-07-23  declare variables outside function to make them global variables
+
+let selected_btn = "btn_studsubj";
+let setting_dict = {};
+let permit_dict = {};
+let loc = {};
+let urls = {};
+
+const field_settings = {};
+const columns_hidden = {};
+const columns_tobe_hidden = {};
+const columns_tobe_hidden_caption = {};
+
+const selected = {
+    studentsubject_dict: null,
+    student_pk: null,
+    subject_pk: null
+};
+
 let school_rows = [];
 let student_rows = [];
 let subject_rows = [];
 let studsubj_rows = [];
 let schemeitem_rows = [];
 let published_rows = [];
-
-let loc = {};
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -30,15 +46,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_selected = "tsa_tr_selected";
 
 // ---  id of selected customer and selected order
-    let selected_btn = "btn_user";
-    let setting_dict = {};
-    let permit_dict = {};
-
-    const selected = {
-        studentsubject_dict: null,
-        student_pk: null,
-        subject_pk: null
-    };
 
     let mod_dict = {};
     let mod_MSTUD_dict = {};
@@ -49,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     let mod_MASS_dict = {};
-    let mod_MCOL_dict = {};
+    //let mod_MCOL_dict = {};
 
     let user_list = [];
     let examyear_map = new Map();
@@ -69,22 +76,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
-    const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
-    const url_student_upload = get_attr_from_el(el_data, "data-url_student_upload");
-    const url_studsubj_upload = get_attr_from_el(el_data, "data-url_studsubj_upload");
-    const url_studsubj_validate = get_attr_from_el(el_data, "data-url_studsubj_validate");
-    const url_studsubj_validate_all = get_attr_from_el(el_data, "data-url_studsubj_validate_all");
-    const url_studsubj_approve = get_attr_from_el(el_data, "data-url_studsubj_approve");
-    const url_studsubj_approve_multiple = get_attr_from_el(el_data, "data-url_studsubj_approve_multiple");
-    const url_studsubj_send_email_exform = get_attr_from_el(el_data, "data-url_studsubj_send_email_exform");
-
-    const url_grade_download_ex1 = get_attr_from_el(el_data, "data-url_grade_download_ex1");
+    urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+    urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    urls.url_student_upload = get_attr_from_el(el_data, "data-url_student_upload");
+    urls.url_studsubj_upload = get_attr_from_el(el_data, "data-url_studsubj_upload");
+    urls.url_studsubj_validate = get_attr_from_el(el_data, "data-url_studsubj_validate");
+    urls.url_studsubj_validate_all = get_attr_from_el(el_data, "data-url_studsubj_validate_all");
+    urls.url_studsubj_approve = get_attr_from_el(el_data, "data-url_studsubj_approve");
+    urls.url_studsubj_approve_multiple = get_attr_from_el(el_data, "data-url_studsubj_approve_multiple");
+    urls.url_studsubj_send_email_exform = get_attr_from_el(el_data, "data-url_studsubj_send_email_exform");
+    urls.url_grade_download_ex1 = get_attr_from_el(el_data, "data-url_grade_download_ex1");
 
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
-    const columns_tobe_hidden =  ["examnumber", "lvl_abbrev", "sct_abbrev", "subj_name", "sjtp_abbrev", "notes"];
-    const columns_tobe_hidden_caption =  ["", "Examnumber", "", "Leerweg", "SectorProfiel_twolines", "", "Subject", "Character", "",
+    columns_tobe_hidden.studsubj =  ["examnumber", "lvl_abbrev", "sct_abbrev", "subj_name", "sjtp_abbrev", "notes"];
+    columns_tobe_hidden_caption.studsubj =  ["", "Examnumber", "", "Leerweg", "SectorProfiel_twolines", "", "Subject", "Character", "",
                                     "", "", "","",  "", "", "", "", "Notes"];
 
     const columns_hidden = {};
@@ -134,6 +140,19 @@ document.addEventListener('DOMContentLoaded', function() {
             if (event.key === "Escape") { ResetFilterRows()}
         });
 
+ // freeze table header PR2021-08-03
+        // from https://stackoverflow.com/questions/673153/html-table-with-fixed-headers
+        // borders dont translate. fixed with https://stackoverflow.com/questions/45692744/td-border-disappears-when-applying-transform-translate
+        // no luck, border still not showing
+        const el_tbl_container = document.getElementById("id_tbl_container");
+        if(el_tbl_container){
+            el_tbl_container.addEventListener("scroll",function(){
+
+               const scroll = this.scrollTop - 8
+               const translate = "translate(0," + scroll + "px)";
+               this.querySelector("thead").style.transform = translate;
+            });
+        }
 // --- buttons in btn_container
         const el_btn_container = document.getElementById("id_btn_container")
         if (el_btn_container){
@@ -176,7 +195,11 @@ document.addEventListener('DOMContentLoaded', function() {
             el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if(el_SBR_select_showall){
-            el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false)};
+            el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false);
+            // TODO switch to t_SBR_show_all
+            //el_SBR_select_showall.addEventListener("click", function() {t_SBR_show_all(FillTblRows)}, false);
+            add_hover(el_SBR_select_showall);
+        };
 
 // ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
         const el_MSED_input = document.getElementById("id_MSED_input");
@@ -258,9 +281,6 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MASS_btn_save.addEventListener("click", function() {MASS_Save("save")}, false )
         }
 
-
-
-
 // ---  MOD IMPORT ------------------------------------
 // --- create EventListener for select dateformat element
 // --- create EventListener for buttons in btn_container
@@ -272,13 +292,13 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener("click", function() {MIMP_btnSelectClicked(data_btn)}, false )
         }
     }
-    const el_filedialog = document.getElementById("id_MIMP_filedialog");
-        el_filedialog.addEventListener("change", function() {MIMP_HandleFiledialog(el_filedialog, loc)}, false )
+    const el_MIMP_filedialog = document.getElementById("id_MIMP_filedialog");
+    if (el_MIMP_filedialog){el_MIMP_filedialog.addEventListener("change", function() {MIMP_HandleFiledialog(el_MIMP_filedialog)}, false)};
+    const el_MIMP_btn_filedialog = document.getElementById("id_MIMP_btn_filedialog");
+    if (el_MIMP_filedialog && el_MIMP_btn_filedialog){
+        el_MIMP_btn_filedialog.addEventListener("click", function() {MIMP_OpenFiledialog(el_MIMP_filedialog)}, false)};
+    const el_MIMP_filename = document.getElementById("id_MIMP_filename");
 
-    const el_select_unique = document.getElementById("id_MIMP_select_unique");
-    if (el_select_unique){
-        el_select_unique.addEventListener("change", function() {MIMP_SelectUniqueChanged(el_select_unique)}, false )
-    };
     const el_MIMP_tabular = document.getElementById("id_MIMP_tabular");
     if (el_MIMP_tabular){
         el_MIMP_tabular.addEventListener("change", function() {MIMP_CheckboxCrosstabTabularChanged(el_MIMP_tabular)}, false )
@@ -292,8 +312,7 @@ document.addEventListener('DOMContentLoaded', function() {
     //    el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false);
    // const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
    //     el_MIMP_checkboxhasheader.addEventListener("change", MIMP_CheckboxHasheaderChanged) //, false);
-    //const el_select_dateformat = document.getElementById("id_MIMP_dateformat");
-   //     el_select_dateformat.addEventListener("change", function() {MIMP_Selectdateformat(el_select_dateformat)}, false )
+
    const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
         el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false )
    const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
@@ -364,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let response = "";
         $.ajax({
             type: "POST",
-            url: url_datalist_download,
+            url: urls.url_datalist_download,
             data: param,
             dataType: 'json',
             success: function (response) {
@@ -380,7 +399,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if ("locale_dict" in response) {
                     loc = response.locale_dict;
-                    mimp_loc = loc;
                     must_create_submenu = true;
                 };
                 if ("setting_dict" in response) {
@@ -413,11 +431,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 //};
                 if ("level_rows" in response)  {
                     b_fill_datamap(level_map, response.level_rows)
-                    FillOptionsSelectLevelSector("level", response.level_rows)
+                    FillOptionsSelectLevelSectorFromDatarows("level", response.level_rows)
                 };
                 if ("sector_rows" in response) {
                     b_fill_datamap(sector_map, response.sector_rows);
-                    FillOptionsSelectLevelSector("sector", response.sector_rows);
+                    FillOptionsSelectLevelSectorFromDatarows("sector", response.sector_rows);
                 };
 
                 if(must_create_submenu){CreateSubmenu()};
@@ -473,7 +491,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_submenu = document.getElementById("id_submenu")
         if(el_submenu){
 
-            AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, null, null, "id_submenu_download_ex1", url_grade_download_ex1, false);  // true = download
+            AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, null, null, "id_submenu_download_ex1", urls.url_grade_download_ex1, false);  // true = download
             if (permit_dict.permit_approve_subject){
                 AddSubmenuButton(el_submenu, loc.Approve_subjects, function() {MASS_Open("approve")});
             }
@@ -481,7 +499,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Submit_Ex1_form, function() {MASS_Open("submit")});
             };
             if(permit_dict.permit_crud){
-                AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open("import_studsubj")}, null, "id_submenu_import");
+                AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open(loc, "import_studsubj")}, null, "id_submenu_import");
             }
 
             AddSubmenuButton(el_submenu, loc.Hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
@@ -490,16 +508,16 @@ document.addEventListener('DOMContentLoaded', function() {
     };//function CreateSubmenu
 
 //###########################################################################
-//=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14
+//=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14 PR2021-08-07
     function HandleBtnSelect(data_btn, skip_upload) {
         //console.log( "===== HandleBtnSelect ========= ", data_btn);
-        selected_btn = data_btn
-        if(!selected_btn){selected_btn = "btn_student"}
+        selected_btn = data_btn;
+        if(!selected_btn){selected_btn = "btn_studsubj"}
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_studsubj: {sel_btn: selected_btn}};
-            UploadSettings (upload_dict, url_settings_upload);
+            UploadSettings (upload_dict, urls.url_settings_upload);
         };
 
 // ---  highlight selected button
@@ -575,10 +593,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const tblName = get_tblName_from_selectedBtn()
         const field_setting = field_settings[tblName]
         const data_rows = get_datarows_from_tblName(tblName)
-
-        //console.log( "tblName", tblName);
-        //console.log( "field_setting", field_setting);
-        //console.log( "data_rows", data_rows);
 
 // --- reset table
         tblHead_datatable.innerText = null;
@@ -1069,7 +1083,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
                         studsubj_list: [studsubj_dict]
                     };
 
-                    UploadChanges(upload_dict, url_studsubj_approve);
+                    UploadChanges(upload_dict, urls.url_studsubj_approve);
                 };
             }  //  if(!isEmpty(map_dict)){
 
@@ -1106,7 +1120,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
                 mapid: map_dict.mapid,
                 student_pk: map_dict.stud_id,
                 studsubj_list: studsubj_list};
-            UploadChanges(upload_dict, url_studsubj_upload);
+            UploadChanges(upload_dict, urls.url_studsubj_upload);
 
         } //   if(permit_dict.permit_approve_subject)
     }  // UploadToggle
@@ -1234,7 +1248,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
         // validate student_subjects
                 if(has_studsubj_rows){
                     const upload_dict = {student_pk: mod_MSTUDSUBJ_dict.stud_id};
-                    UploadChanges(upload_dict, url_studsubj_validate);
+                    UploadChanges(upload_dict, urls.url_studsubj_validate);
                     add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, false);
                 }
 
@@ -1300,7 +1314,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
             if(studsubj_list && studsubj_list.length){
                 upload_dict.studsubj_list = studsubj_list;
                 console.log("upload_dict: ", upload_dict)
-                UploadChanges(upload_dict, url_studsubj_upload);
+                UploadChanges(upload_dict, urls.url_studsubj_upload);
                 // show laoder
                 add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, false);
             }
@@ -1590,6 +1604,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
             if(!isEmpty(map_dict)){
                 is_empty = false;
                 is_mand = map_dict.is_mandatory
+                is_mand_subj = map_dict.is_mand_subj
                 is_combi = map_dict.is_combi
                 extra_count_allowed = map_dict.extra_count_allowed
                 extra_nocount_allowed = map_dict.extra_nocount_allowed
@@ -1613,6 +1628,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
             const field = get_attr_from_el(el, "data-field")
             const hide_element = (field === "is_mandatory") ? is_empty :
+                                (field === "is_mand_subj") ? is_mand_subj :
                                 (field === "is_combi") ? is_empty :
                                  (field === "is_elective_combi") ? !map_dict.elective_combi_allowed :
                                  (field === "is_extra_nocount") ? !map_dict.extra_nocount_allowed :
@@ -1728,8 +1744,8 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
                         sel_studsubj_dict.haschanged = true;
         // ---  if checkbox: put checked value in sel_studsubj_dict
                     } else if(el_input.classList.contains("awp_input_checkbox")) {
-                        if (["is_combi", "is_mandatory"].includes(field)){
-                            // is_combi and is_mandatory cannot be changed.
+                        if (["is_combi", "is_mandatory", "is_mand_subj"].includes(field)){
+                            // is_combi and is_mandatory and is_mand_subj cannot be changed.
                             // setting disabled makes checkbox grey, is not what we want
                             // therefore always undo changes after clicked om this checkbox
                             el_input.checked = !el_input.checked;
@@ -1816,16 +1832,16 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
         }
             // ---  upload new setting
 
-        UploadSettings (upload_dict, url_settings_upload);
+        UploadSettings (upload_dict, urls.url_settings_upload);
 
         //UpdateHeaderLeft();
 
         FillTblRows();
     }  // HandleSbrLevelSector
 
-//=========  FillOptionsSelectLevelSector  ================ PR2021-03-06  PR2021-05-22
-    function FillOptionsSelectLevelSector(tblName, rows) {
-        //console.log("=== FillOptionsSelectLevelSector");
+//=========  FillOptionsSelectLevelSectorFromDatarows  ================ PR2021-03-06  PR2021-05-22
+    function FillOptionsSelectLevelSectorFromDatarows(tblName, rows) {
+        //console.log("=== FillOptionsSelectLevelSectorFromDatarows");
         //console.log("tblName", tblName);
         //console.log("rows", rows);
 
@@ -1879,7 +1895,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
             document.getElementById("id_SBR_select_sector_label").innerText = ( (has_profiel) ? loc.Profiel : loc.Sector ) + ":";
         }
-    }  // FillOptionsSelectLevelSector
+    }  // FillOptionsSelectLevelSectorFromDatarows
 
 //=========  HandleShowAll  ================ PR2020-12-17
     function HandleShowAll() {
@@ -1903,9 +1919,9 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
         //const page_grade_dict = {sel_btn: "grade_by_all"}
        //const upload_dict = {selected_pk: selected_pk_dict, page_grade: page_grade_dict};
         const upload_dict = {selected_pk: selected_pk_dict};
-        UploadSettings (upload_dict, url_settings_upload);
+        UploadSettings (upload_dict, urls.url_settings_upload);
 
-        HandleBtnSelect("grade_by_all", true) // true = skip_upload
+        HandleBtnSelect(selected_btn, true) // true = skip_upload
         // also calls: FillTblRows(), MSSSS_display_in_sbr(), UpdateHeader()
 
     }  // HandleShowAll
@@ -1955,7 +1971,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
         page_dict[tblName] = col_hidden;
         const upload_dict = {page_studsubj: {col_hidden: page_dict }};
         console.log("upload_dict", upload_dict)
-        UploadSettings (upload_dict, url_settings_upload);
+        UploadSettings (upload_dict, urls.url_settings_upload);
 
         HandleBtnSelect(selected_btn, true)  // true = skip_upload
 
@@ -2092,7 +2108,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
                            (tblName === "department") ? loc.Department :
                            (tblName === "level") ? loc.Level :
                            (tblName === "sector") ? loc.Sector :
-                           (tblName === "subjecttype") ? loc.Subjecttype :
+                           (tblName === "subjecttype") ? loc.Character :
                            (tblName === "scheme") ? loc.Scheme :
                            (tblName === "package") ? loc.Package : "";
 
@@ -2178,7 +2194,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
             };
 
             console.log("upload_dict: ", upload_dict);
-            UploadChanges(upload_dict, url_subject_upload);
+            UploadChanges(upload_dict, urls.url_subject_upload);
         };
 // ---  hide modal
         if(close_modal) {
@@ -2331,11 +2347,14 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
                 // studsubj_id can be None, sort them first so it can be given the value of 0 in b_recursive_integer_lookup
                 // field with nulls must be ordered first
                 const data_rows = (selected_btn === "btn_published") ? published_rows : studsubj_rows;
-                const student_pk = (update_dict.stud_id) ? update_dict.stud_id : 0;
+                const stud_pk = (update_dict.stud_id) ? update_dict.stud_id : 0;
                 const studsubj_pk = (update_dict.studsubj_id) ? update_dict.studsubj_id : 0;
-                let data_dict = get_mapdict_by_integer_from_datarows(data_rows, null, student_pk, studsubj_pk)
-    //console.log( "data_dict", data_dict);
-    //console.log( "data_rows", data_rows);
+                const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "stud_id", stud_pk, "studsubj_id", studsubj_pk);
+                const data_dict = selected_dict
+                const datarow_index = index;
+
+    console.log( "map_dict", map_dict);
+    console.log( "datarow_index", datarow_index);
 
 // ++++ deleted ++++
                 if(is_deleted){
@@ -2695,6 +2714,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 //###########################################################################
 //=========  MSSSS_Response  ================ PR2021-01-23 PR2021-07-26
     function MSSSS_Response(tblName, selected_dict, selected_pk) {
+
         console.log( "===== MSSSS_Response ========= ");
         console.log( "tblName", tblName);
         console.log( "selected_pk", selected_pk);
@@ -2703,6 +2723,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
         if(selected_pk === -1) { selected_pk = null};
 
 // +++ get existing map_dict from data_rows
+        // TODO data_rows is not correxct
         const data_rows = (tblName === "subject") ? subject_rows :  (tblName === "student") ? student_rows : null;
         const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", selected_pk);
         const map_dict = selected_dict
@@ -2736,7 +2757,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
             }
 // ---  upload new setting
             const upload_dict = {selected_pk: {sel_subject_pk: setting_dict.sel_subject_pk, sel_student_pk: null}};
-            UploadSettings (upload_dict, url_settings_upload);
+            UploadSettings (upload_dict, urls.url_settings_upload);
 
         } else if (tblName === "student") {
             setting_dict.sel_student_pk = selected_pk;
@@ -2747,13 +2768,13 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
             }
             // ---  upload new setting
             const upload_dict = {selected_pk: {sel_student_pk: setting_dict.sel_student_pk, sel_subject_pk: null}};
-            UploadSettings (upload_dict, url_settings_upload);
+            UploadSettings (upload_dict, urls.url_settings_upload);
         }
 
         if (tblName === "school") {
 
         } else {
-            //UploadSettings ({selected_pk: selected_pk_dict}, url_settings_upload);
+            //UploadSettings ({selected_pk: selected_pk_dict}, urls.url_settings_upload);
 console.log("selected_dict", selected_dict)
     // --- update header text
             const selected_name = (selected_dict) ?
@@ -2862,19 +2883,19 @@ console.log("selected_dict", selected_dict)
             mod_MASS_dict.is_reset = (save_mode === "delete");
 
             //  upload_dict.modes are: 'approve_test', 'approve_submit', 'approve_reset', 'submit_test', 'submit_submit'
-            let url_str = url_studsubj_approve_multiple;
+            let url_str = urls.url_studsubj_approve_multiple;
             const upload_dict = { table: "studsubj",
                                     now_arr: get_now_arr()  // only for timestamp on filename saved Ex-form
                                 };
 
             if (mod_MASS_dict.step === 0){
-                url_str = url_studsubj_approve_multiple;
+                url_str = urls.url_studsubj_approve_multiple;
                 upload_dict.mode = (mod_MASS_dict.is_submit) ? "submit_test" : "approve_test";
             } else if (mod_MASS_dict.step === 1){
                 if (mod_MASS_dict.is_approve){
                     upload_dict.mode = (mod_MASS_dict.is_reset) ? "approve_reset" : "approve_submit";
                  } else if (mod_MASS_dict.is_submit){
-                    url_str = url_studsubj_send_email_exform;
+                    url_str = urls.url_studsubj_send_email_exform;
                  }
             } else if (mod_MASS_dict.step === 2){
                 if (mod_MASS_dict.is_submit){
@@ -3033,7 +3054,7 @@ test_is_ok: false
 //========= DownloadGradeStatusAndIcons ============= PR2021-07-24
     function DownloadValidationStatusNotes() {
         //console.log( " ==== DownloadGradeStatusAndIcons ====");
-        const url_str = url_studsubj_validate_all;
+        const url_str = urls.url_studsubj_validate_all;
         const upload_dict = {studsubj_validate: {get: true}};
         UploadChanges(upload_dict, url_str);
 

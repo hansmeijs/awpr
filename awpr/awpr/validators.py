@@ -15,8 +15,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# === validate_unique_username ===================================== PR2020-03-31 PR2020-09-24 PR2021-01-01
-def validate_unique_username(username, schoolbaseprefix, cur_user_id=None):
+# === validate_unique_username ===================================== PR2020-03-31 PR2020-09-24 PR2021-01-01 PR2021-08-05
+def validate_unique_username(username, schoolbaseprefix, cur_user_id=None, skip_msg_activated=False):
     #logger.debug ('=== validate_unique_username ====')
     #logger.debug ('username: <' + str(username) + '>')
     #logger.debug ('cur_user_id: <' + str(cur_user_id) + '>')
@@ -40,32 +40,70 @@ def validate_unique_username(username, schoolbaseprefix, cur_user_id=None):
             user = am.User.objects.filter(username__iexact=prefixed_username).first()
         #logger.debug ('user: ' + str(user))
         if user:
-            msg_err = str(_("This username already exists at this school."))
-            if not user.activated:
-                msg_err += str(_("The account is not activated yet."))
-            elif not user.is_active:
-                msg_err += str(_("The account is inactive."))
+            msg_err = str(_("Username '%(val)s' already exists at this school.") % {'val': user.username_sliced})
+            if not skip_msg_activated:
+                if not user.activated:
+                    msg_err += str(_("The account is not activated yet."))
+                elif not user.is_active:
+                    msg_err += str(_("The account is inactive."))
 
     return msg_err
+# - end of validate_unique_username
 
 
-# === validate_unique_useremail ========= PR2020-08-02
+
+# === validate_unique_user_lastname ===================================== PR2021-08-05
+def validate_unique_user_lastname(schoolbase, user_lastname, cur_user_id=None, skip_msg_activated=False):
+    #logger.debug ('=== validate_unique_username ====')
+    # __iexact looks for the exact string, but case-insensitive. If username is None, it is interpreted as an SQL NULL
+
+    msg_err = None
+    if schoolbase is None:
+        msg_err = _('School cannot be blank.')
+    elif not user_lastname:
+        msg_err = _('Name of the user cannot be blank.')
+    elif len(user_lastname) > c.USER_LASTNAME_MAX_LENGTH:
+        msg_err = _('Name of the user must have %(fld)s characters or fewer.') % {'fld': c.USER_LASTNAME_MAX_LENGTH}
+    else:
+        # don't use get_or_none, it will return None when multiple users with the same name exist
+        if cur_user_id:
+            user = am.User.objects.filter(
+                schoolbase=schoolbase,
+                last_name__iexact=user_lastname
+            ).exclude(pk=cur_user_id).first()
+        else:
+            user = am.User.objects.filter(
+                schoolbase=schoolbase,
+                last_name__iexact=user_lastname
+            ).first()
+        if user:
+            msg_err = str(_("Username '%(val)s' already exists at this school.") % {'val': user.username_sliced})
+            if not skip_msg_activated:
+                if not user.activated:
+                    msg_err += str(_("The account is not activated yet."))
+                elif not user.is_active:
+                    msg_err += str(_("The account is inactive."))
+
+    return msg_err
+# - end of validate_unique_user_lastname
+
+# === validate_email_address ========= PR2020-08-02
 def validate_email_address(email_address):
     msg_err = None
     if email_address:
         try:
             validate_email(email_address)
-        except :
-            msg_err = _("This email address is not valid.")
+        except:
+            msg_err = _("Email address '%(val)s' is not valid'.") % {'val': email_address}
     else:
         msg_err = _('The email address cannot be blank.')
     return msg_err
 
 
-# === validate_unique_useremail ===================================== PR2020-03-31 PR2020-09-24
-def validate_unique_useremail(value, country, schoolbase, cur_user_id=None):
-    logger.debug ('validate_unique_useremail', value)
-    logger.debug ('cur_user_id', cur_user_id)
+# === validate_unique_useremail ===================================== PR2020-03-31 PR2020-09-24 PR2021-08-05
+def validate_unique_useremail(value, country, schoolbase, cur_user_id=None, skip_msg_activated=False):
+    #logger.debug ('validate_unique_useremail', value)
+    #logger.debug ('cur_user_id', cur_user_id)
     # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
     msg_err = None
     if not value:
@@ -87,16 +125,17 @@ def validate_unique_useremail(value, country, schoolbase, cur_user_id=None):
                     email__iexact=value
                 ).first()
 
-            logger.debug('user', user)
+            #logger.debug('user', user)
             if user:
                 username = user.username_sliced
-                msg_err = str(_("This email address is already in use by '%(usr)s'. ") % {'usr': username})
-                if not user.activated:
-                    msg_err += str(_("The account is not activated yet."))
-                elif not user.is_active:
-                    msg_err += str(_("The account is inactive."))
+                msg_err = str(_("Email address '%(val)s' is already in use by '%(usr)s'. ") % {'val': value, 'usr': username})
+                if not skip_msg_activated:
+                    if not user.activated:
+                        msg_err += str(_("The account is not activated yet."))
+                    elif not user.is_active:
+                        msg_err += str(_("The account is inactive."))
 
-            logger.debug('msg_err', msg_err)
+            #logger.debug('msg_err', msg_err)
     return msg_err
 
 
@@ -114,8 +153,8 @@ def validate_notblank_maxlength(value, max_length, caption):
 
 
 # === validate_unique_examyear ======== PR2020-10-05
-def validate_unique_examyear(examyear_int, request):
-    logger.debug ('=== validate_unique_examyear ====')
+def validate_unique_examyear(country, examyear_int, request):
+    # logger.debug ('=== validate_unique_examyear ====')
 
     msg_err = None
     if not examyear_int:
@@ -123,7 +162,7 @@ def validate_unique_examyear(examyear_int, request):
         msg_err = _('%(caption)s cannot be blank.') % {'caption': caption}
     elif request.user.country:
         examyear_exists = sch_mod.Examyear.objects.filter(
-            country=request.user.country,
+            country=country,
             code=examyear_int).exists()
         if examyear_exists:
             caption = _('This exam year')

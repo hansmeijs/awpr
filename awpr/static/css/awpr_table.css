@@ -1122,11 +1122,13 @@ aXX:hover{
     border: 0;
     /*background-color: transparent;*/
 }
-.border_right {
-    border-right: 1px solid #dc3545;    /*  red like in django is-invalid */
-    border-color: #a5a5a5; /* medium grey; 165 165 165 */
+.border_left {
+    border-left: 1px solid #a5a5a5; /* medium grey; 165 165 165 */
 }
 
+.border_bottom_2px {
+    border-bottom: 2px solid #a5a5a5 !important; /* medium grey; 165 165 165 */
+}
 
 .color_invalid {
     color: #dc3545;    /*  red like in django is-invalid */
@@ -1262,6 +1264,19 @@ aXX:hover{
     height: 520px;
     width: 200px;
 }
+
+/* test freeze table header */
+
+#id_tbl_container {
+    float: left;
+    overflow: auto;
+    height: 75%;
+    border-spacing: 0 !important;
+    border-collapse: separate !important;
+}
+
+/* from https://stackoverflow.com/questions/45692744/td-border-disappears-when-applying-transform-translate */
+
 
 /* SPRITES PR2020-08-17 */
 

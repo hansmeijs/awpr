@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 //=========   MIMP_HandleFiledialog   ======================
-    function MIMP_HandleFiledialog() { // functie wordt alleen doorlopen als file is geselecteerd
+    function MIMP_HandleFiledialog(el_filedialog) { // functie wordt alleen doorlopen als file is geselecteerd
         //console.log(" ========== MIMP_HandleFiledialog ===========");
 
 // ---  get curfiles from filedialog

@@ -298,6 +298,7 @@ class Department(AwpBaseModel):# PR2018-08-10
         help_text=_('Required. {} characters or fewer.'.format('50')),)
     abbrev = CharField(max_length=c.MAX_LENGTH_10)
     sequence = PositiveSmallIntegerField(default=1)
+
     level_req = BooleanField(default=True)
     sector_req = BooleanField(default=True)
     has_profiel = BooleanField(default=False)
@@ -640,7 +641,7 @@ def dep_initials(dep_name):
 
 
 def delete_instance(instance, msg_list, error_list, request, this_txt=None, header_txt=None):
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_instance  -----')
         logger.debug('instance: ' + str(instance))

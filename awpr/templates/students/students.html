@@ -5,8 +5,8 @@
 {% block title %}{% trans 'Candidates' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import210722.js' %}"></script>
-    <script src="{% static 'js/students210722.js' %}"></script>
+    <script src="{% static 'js/import210807.js' %}"></script>
+    <script src="{% static 'js/students210807.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -16,21 +16,21 @@
             <h5>{% trans 'Candidates' %}</h5>
         </div>
         {% if not no_access %}
-            <div id="id_SBR_container_level" class="tw_200 m-2 display_hide">
+            <div class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Leerweg' %}:</h6>
                 <select id="id_SBR_select_level" class="tw_200 border_none px-1"
                     autocomplete="off" ondragstart="return false;" ondrop="return false;"
                ></select>
             </div>
 
-            <div id="id_SBR_container_sector" class="tw_200 m-2 display_hide">
+            <div class="tw_200 m-2 display_hide">
                 <h6 id="id_SBR_select_sector_label" class="tw_200 line_height_normal px-2"></h6>
                 <select id="id_SBR_select_sector" class="tw_200 border_none px-1"
                     autocomplete="off" ondragstart="return false;" ondrop="return false;"
                ></select>
             </div>
 
-            <div id="id_SBR_container_cluster" class="tw_200 m-2 display_hide">
+            <div id="id_SBR_container_class" class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Class' %}:</h6>
                 <input id="id_SBR_select_class" type="text"
                     class="tw_200 border_none pointer_show px-2" readonly>
@@ -42,8 +42,8 @@
                     class="tw_200 border_none pointer_show px-1" readonly>
             </div>
 
-            <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
-                <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all subjects' %}</h6>
+            <div id="id_SBR_select_showall" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all candidates' %}</h6>
             </div>
         {% endif %}
     </nav>
@@ -93,7 +93,7 @@
 
     <!-- CONTENT BODY -->
     <!-- =================== DATA TABLE  =================== -->
-            <div class="content_body mx-2 mt-2">
+            <div id="id_tbl_container" class="content_body mx-2 mt-2">
                 <table class="table tsa_tbl">
                     <thead id="id_tblHead_datatable"></thead>
                     <tbody id="id_tblBody_datatable"></tbody>

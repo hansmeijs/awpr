@@ -850,7 +850,7 @@ document.addEventListener('DOMContentLoaded', function() {
                            (tblName === "department") ? loc.Department :
                            (tblName === "level") ? loc.Level :
                            (tblName === "sector") ? loc.Sector :
-                           (tblName === "subjecttype") ? loc.Subjecttype :
+                           (tblName === "subjecttype") ? loc.Character :
                            (tblName === "scheme") ? loc.Scheme :
                            (tblName === "package") ? loc.Package : "";
 
@@ -1325,10 +1325,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // because data-colindex goes wrong with hidden columns
         // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
         const col_index = el.parentNode.cellIndex;
-    //console.log( "col_index", col_index, "event.key", event.key);
+        console.log( "col_index", col_index, "event.key", event.key);
 
         const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
-    //console.log( "filter_dict", filter_dict);
+        //console.log( "filter_dict", filter_dict);
 
         if (!skip_filter) {
             Filter_TableRows();

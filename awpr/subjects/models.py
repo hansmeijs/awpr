@@ -248,8 +248,13 @@ class Scheme(sch_mod.AwpBaseModel):
 
     min_subjects = PositiveSmallIntegerField(null=True)
     max_subjects = PositiveSmallIntegerField(null=True)
+
     min_mvt = PositiveSmallIntegerField(null=True)
     max_mvt = PositiveSmallIntegerField(null=True)
+
+    min_wisk = PositiveSmallIntegerField(null=True)
+    max_wisk = PositiveSmallIntegerField(null=True)
+
     min_combi = PositiveSmallIntegerField(null=True)
     max_combi = PositiveSmallIntegerField(null=True)
 
@@ -298,6 +303,8 @@ class Scheme_log(sch_mod.AwpBaseModel):
     max_subjects = PositiveSmallIntegerField(null=True)
     min_mvt = PositiveSmallIntegerField(null=True)
     max_mvt = PositiveSmallIntegerField(null=True)
+    min_wisk = PositiveSmallIntegerField(null=True)
+    max_wisk = PositiveSmallIntegerField(null=True)
     min_combi = PositiveSmallIntegerField(null=True)
     max_combi = PositiveSmallIntegerField(null=True)
 
@@ -405,10 +412,8 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
     name = CharField(max_length=c.MAX_LENGTH_NAME)
     sequence = PositiveSmallIntegerField(default=9999)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-
-    etenorm = BooleanField(default=False)
-
     # pr2021-05-04 temporary, used when importing from AWP to determine if subject is uploaded from school
     addedbyschool = BooleanField(default=False)
 
@@ -449,7 +454,7 @@ class Subject_log(sch_mod.AwpBaseModel):
     sequence = PositiveSmallIntegerField(null=True)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-    etenorm = BooleanField(default=False)
+
     addedbyschool = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
@@ -528,6 +533,8 @@ class Schemeitem(sch_mod.AwpBaseModel):
     subject = ForeignKey(Subject, related_name='+', on_delete=CASCADE)
     subjecttype = ForeignKey(Subjecttype, related_name='+', on_delete=CASCADE)
 
+    ete_exam = BooleanField(default=False)
+
     # delete exam from schemitem, is linked to grade
     # exam = ForeignKey(Exam, related_name='+', null=True, on_delete=SET_NULL)
 
@@ -536,6 +543,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
     weight_ce = PositiveSmallIntegerField(default=1)
 
     is_mandatory = BooleanField(default=False)
+    is_mand_subj = ForeignKey(Subject, related_name='+', null=True, on_delete=SET_NULL)
     is_combi = BooleanField(default=False)
 
     extra_count_allowed = BooleanField(default=False)
@@ -546,6 +554,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
     has_pws = BooleanField(default=False)
     is_core_subject = BooleanField(default=False)
     is_mvt = BooleanField(default=False)
+    is_wisk = BooleanField(default=False)
 
     reex_se_allowed = BooleanField(default=False)  # herkansing schoolexamen
     # deleted: reex_combi_allowed = BooleanField(default=False)
@@ -590,6 +599,8 @@ class Schemeitem(sch_mod.AwpBaseModel):
 
             if item.is_mandatory:
                 item_dict['ssi_mand'] = 1 # was: (0, 1)[item.is_mandatory]
+           # if item.is_mand_subj:
+            #    item_dict['ssi_mand_subj'] = 1 # was: (0, 1)[item.is_mandatory]
             if item.is_combi:
                 item_dict['ssi_comb'] = 1 # was: (0, 1)[item.is_combi]
             if item.extra_count_allowed:
@@ -638,14 +649,17 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     subject_log = ForeignKey(Subject_log, null=True, related_name='+', on_delete=CASCADE)
     subjecttype_log = ForeignKey(Subjecttype_log, null=True,  related_name='+', on_delete=CASCADE)
 
-    # TODO delete exam from schemitem, is linked to grade
-    exam_log = ForeignKey(Exam_log, related_name='+', null=True, on_delete=CASCADE)
+    ete_exam = BooleanField(default=False)
+
+    # delete exam from schemitem, is linked to grade
+    #exam_log = ForeignKey(Exam_log, related_name='+', null=True, on_delete=CASCADE)
 
     gradetype = PositiveSmallIntegerField(null=True)
     weight_se = PositiveSmallIntegerField(null=True)
     weight_ce = PositiveSmallIntegerField(null=True)
 
     is_mandatory = BooleanField(default=False)
+    is_mand_subj_log = ForeignKey(Subject_log, related_name='+', null=True, on_delete=SET_NULL)
     is_combi = BooleanField(default=False)
 
     extra_count_allowed = BooleanField(default=False)
@@ -656,6 +670,7 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     has_pws = BooleanField(default=False)
     is_core_subject = BooleanField(default=False)
     is_mvt = BooleanField(default=False)
+    is_wisk = BooleanField(default=False)
 
     reex_se_allowed = BooleanField(default=False)  # herkansing schoolexamen
     max_reex = PositiveSmallIntegerField(default=1)

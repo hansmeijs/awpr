@@ -1,4 +1,20 @@
 // PR2020-09-29 added
+
+let selected_btn = "btn_school";
+let setting_dict = {};
+let permit_dict = {};
+let loc = {};  // locale_dict
+let urls = {};
+
+let selected_school_pk = null;
+let selected_period = {};
+
+const selected = {
+    school_pk: null,
+    school_dict: {}
+}
+
+
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
@@ -23,12 +39,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let setting_dict = {};
     let permit_dict = {};
 
-    const selected = {
-        school_pk: null,
-        school_dict: {}
-    }
-
-    let loc = {};  // locale_dict
     let mod_dict = {};
     let mod_MSCH_dict = {};
 
@@ -42,11 +52,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
-    const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
-    const url_school_upload = get_attr_from_el(el_data, "data-url_school_upload");
-    const url_school_import = get_attr_from_el(el_data, "data-school_import_url");
-    const url_school_awpupload = get_attr_from_el(el_data, "data-school_awpupload_url");
+    urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+    urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    urls.url_school_upload = get_attr_from_el(el_data, "data-url_school_upload");
+    //urls.url_school_import = get_attr_from_el(el_data, "data-school_import_url");
+    urls.url_school_awpupload = get_attr_from_el(el_data, "data-school_awpupload_url");
 
     let columns_hidden = {};
 
@@ -235,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let response = "";
         $.ajax({
             type: "POST",
-            url: url_datalist_download,
+            url: urls.url_datalist_download,
             data: param,
             dataType: 'json',
             success: function (response) {
@@ -248,7 +258,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if ("locale_dict" in response) {
                     loc = response.locale_dict;
-                    mimp_loc = loc;
                     must_create_submenu = true;
                 };
                 if ("setting_dict" in response) {
@@ -333,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_school: {sel_btn: selected_btn}};
-            UploadSettings (upload_dict, url_settings_upload);
+            UploadSettings (upload_dict, urls.url_settings_upload);
         };
 
 // ---  highlight selected button
@@ -664,7 +673,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                mode: "update",
                                                mapid: map_id},
                                           permits: {value: new_permit_sum, update: true}};
-                    UploadChanges(upload_dict, url_school_upload);
+                    UploadChanges(upload_dict, urls.url_school_upload);
                 }
             }  //  if(!isEmpty(map_dict)){
         }  //   if(!!tblRow)
@@ -1022,7 +1031,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             document.getElementById("id_MSCH_loader").classList.remove(cls_visible_hide)
             // modal is closed by data-dismiss="modal"
-            UploadChanges(upload_dict, url_school_upload);
+            UploadChanges(upload_dict, urls.url_school_upload);
         };
         $("#id_mod_school").modal("hide");
     }  // MSCH_Save
@@ -1582,7 +1591,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 // ---  Upload Changes
             console.log("upload_dict: ", upload_dict);
-            UploadChanges(upload_dict, url_school_upload);
+            UploadChanges(upload_dict, urls.url_school_upload);
         };
 // ---  hide modal
         if(close_modal) {
@@ -2004,7 +2013,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let datalist_request = {setting: {page: "page_grade", sel_schoolbase_pk: selected_pk}};
             DatalistDownload(datalist_request);
         } else {
-            UploadSettings ({selected_pk: selected_pk_dict}, url_settings_upload);
+            UploadSettings ({selected_pk: selected_pk_dict}, urls.url_settings_upload);
             if (new_selected_btn) {
         // change selected_button
                 HandleBtnSelect(new_selected_btn, true)  // true = skip_upload
@@ -2062,7 +2071,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 add_or_remove_class(el_ModUploadAwp_loader, cls_hide, false);
 
                 console.log("file", file);
-                const upload = new Upload(upload_json, file, url_school_awpupload);
+                const upload = new Upload(upload_json, file, urls.url_school_awpupload);
             console.log("upload_dict", upload_dict);
 
                 // execute upload

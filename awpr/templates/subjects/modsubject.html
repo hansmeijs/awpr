@@ -33,13 +33,17 @@
                                             class="form-control awp_input_text"
                                             autocomplete="off" ondragstart="return false;" ondrop="return false;">
                                         </div>
-                                        <div class="flex_1 mx-1 ">
-                                            <label for="id_MSUBJ_etenorm" class="mx-2">{% trans 'ETE exam' %}:</label>
-                                            <div id="id_MSUBJ_etenorm" data-field="etenorm" class="form-control pointer_show">
-                                                <div class="tickmark_0_0 mt-2">
-                                            </div>
-                                            </div>
+                                        <div class="flex_1 mx-1">
+                                            <label for="id_MSUBJ_otherlang" class="mx-2">{% trans 'Other languages' %}:</label>
+                                            <select id="id_MSUBJ_otherlang" data-field="otherlang" class="form-control awp_input_text">
+                                                <option value="">-</option>
+                                                <option value="en">{% trans 'English' %}</option>
+                                                <option value="pa">{% trans 'Papiamentu' %}</option>
+                                                <option value="en;pa">{% trans 'English and Papiamentu' %}</option>
+                                            </select>
                                         </div>
+
+
                                     </div>
                                     <div class="flex_container">
                                         <div class="flex_1 mx-2">
@@ -54,25 +58,16 @@
                                     </div>
 
                                     <div class="flex_container">
-                                        <div class="flex_2 mx-1 mt-2">
+                                        <div class="flex_1 mx-1 mt-2">
                                             <label for="id_MSUBJ_name" class="mx-2">{% trans 'Name' %}:</label>
                                             <input id="id_MSUBJ_name" type="text" data-field="name"
                                             class="form-control awp_input_text"
                                             autocomplete="off" ondragstart="return false;" ondrop="return false;">
                                         </div>
-                                        <div class="flex_1 mx-1 mt-2">
-                                            <label for="id_MSUBJ_otherlang" class="mx-2">{% trans 'Other languages' %}:</label>
-                                            <select id="id_MSUBJ_otherlang" data-field="otherlang" class="form-control awp_input_text">
-                                                <option value="">-</option>
-                                                <option value="en">{% trans 'English' %}</option>
-                                                <option value="pa">{% trans 'Papiamentu' %}</option>
-                                                <option value="en;pa">{% trans 'English and Papiamentu' %}</option>
-                                            </select>
-                                        </div>
                                     </div>
 
                                     <div class="flex_container">
-                                        <div class="flex_3 mx-2">
+                                        <div class="flex_1 mx-2">
                                             <small id="id_MSUBJ_msg_name" class="text-danger "></small>
                                         </div>
                                     </div>

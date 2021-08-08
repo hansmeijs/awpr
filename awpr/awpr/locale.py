@@ -8,9 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 # === get_locale_dict ===================================== PR2019-11-12
-def get_locale_dict(table_dict, user_lang):
+def get_locale_dict(table_dict, user_lang, request):
 
-    #TODO use user_lang etc from settings_dict
     dict = {'user_lang': user_lang}
 
     page_list = table_dict.get('page')
@@ -37,7 +36,15 @@ def get_locale_dict(table_dict, user_lang):
     dict['Select_examyear'] = _('Select an exam year')
     dict['Select_school'] = _('Select a school')
     dict['Select_department'] = _('Select a department')
-    dict['No_departments_found'] = _("No departments found")
+    dict['No_department_found'] = _("No department found")
+    dict['Select_leerweg'] =  _("Select a 'leerweg'")
+    dict['All_leerwegen'] = _("All 'leerwegen'")
+    dict['No_leerweg_found'] = _("No 'leerweg' found")
+    dict['Select_sector'] = _("Select a sector")
+    dict['All_sectors'] = _("All sectors")
+    dict['No_sector_found'] = _("No sector found")
+    dict['All_profielen'] = _("All 'profielen'")
+    dict['No_profiel_found'] = _("No 'profiel' found")
 
     dict['There_is_no__'] = _('There is no ')
     dict['__selected'] = _(' selected.')
@@ -151,10 +158,11 @@ def get_locale_dict(table_dict, user_lang):
         dict['Upload_candidates'] = _('Upload candidates')
         dict['Upload_subjects'] = _('Upload subjects')
         dict['Upload_grades'] = _('Upload grades')
-        dict['Select_Excelfile_with_students'] = _('Select an Excel file with students:')
-        dict['Select_Excelfile_with_subjects'] = _('Select an Excel file with subjects:')
-        dict['Select_Excelfile_with_grades'] = _('Select an Excel file with grades:')
-        dict['Select_Excelfile_with_pemits'] = _('Select an Excel file with permissions:')
+        dict['Select_Excelfile_with_students'] = _('Select an Excel file with students')
+        dict['Select_Excelfile_with_subjects'] = _('Select an Excel file with subjects')
+        dict['Select_Excelfile_with_grades'] = _('Select an Excel file with grades')
+        dict['Select_Excelfile_with_permits'] = _('Select an Excel file with permissions')
+        dict['Select_Excelfile_with_usernames'] = _('Select an Excel file with usernames')
         dict['Select_valid_Excelfile'] = _('Please select a valid Excel file.')
         dict['Not_valid_Excelfile'] = _('This is not a valid Excel file.')
         dict['Only'] = _('Only ')
@@ -176,9 +184,11 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['Select_column'] = _("Select a column")
         dict['No_column_found'] = _("No column found")
+        dict['No_data_found'] = _('No data found.')
 
         dict['Link_sectors'] = _('Link sectors')
         dict['Link_profielen'] = _('Link profielen')
+
 
 # ====== PAGE USER ========================= PR2019-11-19
     if 'page_user' in page_list:
@@ -191,6 +201,8 @@ def get_locale_dict(table_dict, user_lang):
         dict['Read_only_2lines'] =  pgettext_lazy('2 lines', 'Read\nonly')
         dict['Edit'] = _('Edit')
         dict['pagelist'] = c.PAGE_LIST
+
+        dict['Upload_usernames'] = _('Upload usernames')
 
         dict['President'] = TXT_President
         dict['Secretary'] = TXT_Secretary
@@ -227,6 +239,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['This_user'] = _('This user')
         dict['Submit_employee_as_user'] = _('Submit employee as user')
         dict['Submit'] = TXT_Submit
+        dict['Create_user_account'] = _('Create user account')
         dict['Inactive'] = TXT_Inactive
 
         dict['Sequence'] = TXT_Sequence
@@ -253,22 +266,22 @@ def get_locale_dict(table_dict, user_lang):
         dict['We_will_send_an_email_to_the_new_user'] = _('We will send an email to the new user, with a link to create a password and activate the account.')
 
         dict['Activationlink_expired'] = _('The link to active the account is valid for 7 days and has expired.')
-        dict['We_will_resend_an_email_to_user'] = _('We will email a new activation link to user')
+        dict['We_will_send_an_email_to_user'] = _('We will email an activation link to user')
         dict['Activation_email_not_sent'] = _('The activation email has not been sent.')
 
-        dict['Resend_activationlink'] = _('Click to send an email with a new activation link.')
+        dict['Send_activationlink'] = _('Click to send an email with an activation link.')
         dict['Activated'] = _('Activated')
-        dict['Resend_activation_email'] = _('Resend activation email')
+        dict['Send_activation_email'] = _('Send activation email')
 
         dict['Yes_send_email'] = _('Yes, send email')
 
 # ====== PAGE EXAM YEAR ========================= PR2020-10-04
     if 'page_examyear' in page_list:
-        dict['Created_on'] = _('Created on ')
+        dict['Created_at'] = _('Created at ')
 
         dict['Published'] = _('Published')
         dict['Not_published'] = _('Not published')
-        dict['Published_on'] = _('Published on ')
+        dict['Published_at'] = _('Published at ')
 
         dict['Activated'] = _('Activated')
         dict['Activated_on'] = _('Activated on')
@@ -288,6 +301,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Activate_examyear'] = _('Activate exam year')
         dict['Close_examyear'] = _('Close exam year')
         dict['Delete_examyear'] = _('Delete exam year')
+        dict['Copy_examyear_to_SXM'] = _('Copy exam year to SXM')
 
         dict['Create_examyear_part1'] = pgettext_lazy('NL_Examenjaar', 'Create exam year ')
         dict['Create_examyear_part2'] = pgettext_lazy('NL_aanmaken', ' ')
@@ -306,6 +320,11 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['Undo_publish_examyear'] = _('Undo publish exam year')
         dict['Undo_closure_examyear'] = _('Undo closure exam year')
+
+        dict['Copy_examyear_to_sxm'] = _('Copy exam year to SXM')
+
+        dict['will_be_copid_to_sxm'] = pgettext_lazy('singular', ' will be copied to SXM.')
+        dict['Yes_copy'] = _('Yes, copy')
 
         dict['msg_info'] = {
         'create': [
@@ -345,12 +364,12 @@ def get_locale_dict(table_dict, user_lang):
         dict['Add_department'] = _('Add department')
         dict['Add_level'] = _('Add level')
         dict['Add_sector'] = _('Add sector')
-        dict['Add_subjecttype'] = _('Add subject type')
+        dict['Add_subjecttype'] = _('Add character')
         dict['to_subject_scheme'] = _(' to subject scheme')
 
-        dict['Subjecttypebase'] = _('Subject type base')
-        dict['Add_subjecttypebase'] = _('Add subject type base')
-        dict['Delete_subjecttypebase'] = _('Delete subject type base')
+        dict['Subjecttypebase'] = _('Character base')
+        dict['Add_subjecttypebase'] = _('Add character base')
+        dict['Delete_characterbase'] = _('Delete character base')
 
         dict['Subject_scheme'] = _('Subject scheme')
         dict['Add_subject_scheme'] = _('Add subject scheme')
@@ -359,15 +378,11 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['All_subject_schemes'] = _('All subject schemes')
 
-        dict['Change_subjecttypes_of_subject_scheme'] = _('Change subject types of subject scheme')
+        dict['Change_characters_of_subject_scheme'] = _('Change characters of subject scheme')
         dict['Delete_subject_scheme'] = _('Delete subject scheme')
         dict['Add_package'] = _('Add package')
         dict['Copy_from_previous_year'] = _('Copy from previous years')
 
-        dict['Select_level'] = _("Select level")
-        dict['No_levels_found'] = _("No levels found")
-        dict['Select_sector'] = _("Select sector")
-        dict['No_sectors_found'] = _("No sectors found")
 
         dict['Base_character'] = _("Base character")
         dict['Character_name'] = _("Character name")
@@ -379,6 +394,8 @@ def get_locale_dict(table_dict, user_lang):
         dict['SE_weighing'] = _('SE weighing')
         dict['CE_weighing'] = _('CE weighing')
         dict['Mandatory'] = _('Mandatory')
+        dict['Mandatory_if_subject'] = _("'Mandatory-if' subject")
+        dict['Mandatory_if_subject_info'] = _("Subject is only mandatory if the candidate has this 'Mandatory-if' subject.")
         dict['Combination_subject'] = _('Combination subject')
         dict['Extra_count_allowed'] = _('Extra subject counts allowed')
         dict['Extra_nocount_allowed'] = _('Extra subject does not count allowed')
@@ -387,6 +404,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Has_assignment'] = _('Has assignment')
         dict['Is_core_subject'] = _('Core subject')
         dict['Is_MVT_subject'] = _('MVT subject')
+        dict['Is_wiskunde_subject'] = _('Wiskunde subject')
         dict['Herkansing_SE_allowed'] = _('Herkansing SE allowed')
         dict['Maximum_reex'] = _('Maximum number of re-examinations')
         dict['No_third_period'] = _('Subject has no third period')
@@ -396,14 +414,14 @@ def get_locale_dict(table_dict, user_lang):
         dict['Delete_department'] = _('Delete department')
         dict['Delete_level'] = _('Delete level')
         dict['Delete_sector'] = _('Delete sector')
-        dict['Delete_subjecttype'] = _('Delete subject type')
+        dict['Delete_character'] = _('Delete character')
         dict['Delete_scheme'] = _('Delete scheme')
         dict['Delete_package'] = _('Delete package')
         dict['Upload_subjects'] = _('Upload subjects')
 
-        dict['Subjecttype'] = _('Subject type')
-        dict['Subjecttypes'] = _('Subject types')
-        dict['Subjecttype_name'] = _('Subject type name')
+        dict['Character'] = _('Character')
+        dict['Characters'] = _('Characters')
+        dict['Character_name'] = _('Character name')
 
         dict['Subject_scheme_name'] = _('Subject scheme name')
         dict['Download_subject_scheme'] = _('Download subject scheme')
@@ -418,6 +436,8 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['Minimum_MVT_subjects'] = _('Minimum amount of MVT subjects')
         dict['Maximum_MVT_subjects'] = _('Maximum amount of MVT subjects')
+        dict['Minimum_Wisk_subjects'] = _('Minimum amount of Wiskunde subjects')
+        dict['Maximum_Wisk_subjects'] = _('Maximum amount of Wiskunde subjects')
         dict['Minimum_combi_subjects'] = _('Minimum amount of combination subjects')
         dict['Maximum_combi_subjects'] = _('Maximum amount of combination subjects')
 
@@ -428,7 +448,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Minimum_elective_combi'] = _("Minimum elective combi subject")
         dict['Maximum_elective_combi'] = _("Maximum elective combi subject")
 
-        dict['Scheme_doesnthave_subjecttypes'] = _('This subject scheme does not have subject types yet.')
+        dict['Scheme_doesnthave_subjecttypes'] = _('This subject scheme does not have characters yet.')
         dict['Close_window'] = _("Close this window, click the tab")
         dict['then_click'] = _("then click the menu button")
         dict['Enter_subject_types'] = _('and enter the subject types of this subject scheme.')
@@ -444,7 +464,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['this_subject'] = _('this subject')
         dict['this_level'] = _('this level')
         dict['this_sector'] = _('this sector')
-        dict['this_subjecttype'] = _('this subject type')
+        dict['this_subjecttype'] = _('this character')
         dict['this_scheme'] = _('this scheme')
         dict['this_package'] = _('this package')
 
@@ -466,8 +486,8 @@ def get_locale_dict(table_dict, user_lang):
         dict['No_schools'] = _('No schools')
 
 
-        # options_role only used in mod_school PR2201-05-30
-        dict['options_role'] = c.ROLE_OPTIONS
+        # options_role only used in mod_school PR2021-05-30 PR2021-08-05
+        dict['options_role'] = c.get_role_options(request)
         dict['Organization'] = TXT_Organization
         dict['Select_organization'] = _('Select organization')
         dict['No_organizations_found'] = _('No organizations found')
@@ -530,9 +550,6 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['All_subjects'] = TXT_All_subjects
         dict['All_candidates'] = TXT_All_candidates
-        dict['All_leerwegen'] = TXT_All_leerwegen
-        dict['All_sectors'] = TXT_All_sectors
-        dict['All_profielen'] = TXT_All_profielen
 
         dict['Notes'] = _('Notes')
 
@@ -593,19 +610,11 @@ def get_locale_dict(table_dict, user_lang):
         dict['No_examtypes_found'] = TXT_No_examtypes_found
 
         dict['Select_subject'] = _('Select subject')
-        #dict['All_leerwegen'] = TXT_All_leerwegen
-        #dict['All_sectors'] = TXT_All_sectors
-        #dict['All_profielen'] = TXT_All_profielen
-
-        dict['Select_leerweg'] = TXT_Select_leerweg
-        dict['No_leerwegen_found'] = TXT_No_leerwegen_found
 
         dict['options_examperiod_exam'] = c.EXAMPERIOD_OPTIONS_12ONLY
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
         dict['options_examtype_exam'] = c.EXAMTYPE_OPTIONS_EXAM
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
-
-        dict['All_leerwegen'] = TXT_All_leerwegen
 
         dict['Exam'] = _("Exam")
         dict['Add_exam'] = _("Add exam")
@@ -668,7 +677,6 @@ def get_locale_dict(table_dict, user_lang):
 
         dict['All_subjects'] = TXT_All_subjects
         dict['All_candidates'] = TXT_All_candidates
-        dict['All_leerwegen'] = TXT_All_leerwegen
         dict['All_subjects_and_candidates'] = _('All subjects and candidates')
 
         dict['Abbrev'] = _('Abbrev.')
@@ -739,9 +747,7 @@ def get_locale_dict(table_dict, user_lang):
         dict['Exam_type'] = TXT_Exam_type
         dict['Select_examtype'] = TXT_Select_examtype
         dict['No_examtypes_found'] = TXT_No_examtypes_found
-        dict['All_leerwegen'] = TXT_All_leerwegen
-        dict['All_sectors'] = TXT_All_sectors
-        dict['All_profielen'] = TXT_All_profielen
+
         dict['Attachment'] = _('Attachment')
 
         # options_examperiod PR2020-12-20
@@ -844,16 +850,8 @@ TXT_Exam_type = _('Exam type')
 TXT_Select_examtype = _('Select exam type')
 TXT_No_examtypes_found = _('No exam types found')
 
-TXT_Select_leerweg = _("Select a 'leerweg'")
-TXT_No_leerwegen_found = _("No 'leerwegen' found")
-
-_('All subjects')
-
 TXT_All_candidates = _('All candidates')
 TXT_All_subjects = _('All subjects')
-TXT_All_leerwegen = _("All 'leerwegen'")
-TXT_All_sectors = _("All sectors")
-TXT_All_profielen = _("All 'profielen'")
 TXT_Attachment = _('Attachment')
 
 TXT_Email_address = _('Email address')
@@ -881,7 +879,6 @@ TXT__by_ = _(" by ")
 TXT_Name_ex_form = _('Name Ex form')
 TXT_Date_submitted = _('Date submitted')
 TXT_Download_Exform = _('Download Ex form')
-
 
 TXT_Sequence = _('Sequence')
 TXT_Sequence_2lines =  pgettext_lazy('2 lines', 'Sequence')

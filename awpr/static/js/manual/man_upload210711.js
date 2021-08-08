@@ -21,8 +21,6 @@
             "</div>",
         "</div>",
 
-
-
         "<div class='mfc mb-0'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
@@ -63,7 +61,7 @@
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
-                "<p>Selecteer eerst het Excel bestand met de gegevens die je wilt uploaden. Klik hiervoor op de knop <i>Choose file...</i>, selecteer het gewenste bestand en klik op <i>OK</i>.</p>",
+                "<p>Selecteer eerst het Excel bestand met de gegevens die je wilt uploaden. Klik hiervoor op de knop <i>Open een Excel-bestand</i>, selecteer het gewenste bestand en klik op <i>Open</i>.</p>",
                 "<p>Als het Excel bestand meerdere werkbladen bevat, kies je het juiste werkblad onder <i>Selecteer een werkblad</i>.</p>",
                 "<p>Zet een vinkje bij <i>De eerste regel van het werkblad bevat kolom-namen</i> als de eerste regel van het Excel bestand de namen van de kolommen bevat. Als dit hokje niet is aangevinkt worden de kolommen van het Excel bestand aangeduid met F1, F2 etc.</p>",
                 "<p>Klik op <i>Volgende stap</i>. Dit gaat alleen als je een Excel bestand hebt ingevuld. Klik op <i>Annuleren</i> of klik ergens buiten het venster om dit venster te sluiten.</p>",
@@ -91,12 +89,19 @@
                 "<li>de lijst <i>Gekoppelde kolommen</i>.</li></ul>",
 
                 "<p class='mt-2'>Het <b>koppelen van kolommen</b> gaat als volgt:</br>",
-                "Selecteer een regel in de lijst met AWP-kolommen, bijvoorbeeld ‘Achternaam’. ",
-                "Klik vervolgens in de lijst met Excel-kolommen op de naam van de kolom waarin de achternamen staan. Beide namen worden nu verplaatst naar de lijst <i>Gekoppelde kolommen</i>.</p>",
+                "Selecteer een regel in de lijst met AWP-kolommen, bijvoorbeeld ‘ID-nummer’. ",
+                "Klik vervolgens in de lijst met Excel-kolommen op de naam van de kolom waarin de ID-nummers staan. Beide namen worden nu verplaatst naar de lijst <i>Gekoppelde kolommen</i>.</p>",
                 "<p>Klik op een regel in de lijst met gekoppelde kolommen om kolommen te <b>ontkoppelen</b>.</p>",
+
                 "<p>AWP koppelt automatisch kolommen met dezelfde naam. Je kunt ze zo nodig ontkoppelen.<br>AWP onthoudt de gekoppelde velden, zodat je ze een volgende keer niet opnieuw hoeft te koppelen.</p>",
+
                 "<p>Er zijn een paar <b>verplichte velden</b> die altijd gekoppeld moeten worden. ",
                 "Het veld <i>ID-nummer</i> is altijd verplicht. Bij het uploaden van kandidaten zijn ook <i>Achternaam</i> en <i>Voornamen</i> verplicht.</p>",
+
+                "<p>Het veld <b>Afdelingen</b> verschijnt alleen als je school meerdere afdelingen heeft (afdelingen zijn: Vsbo, Havo en Vwo). ",
+                "Je hoeft dit veld alleen de koppelen als in het Excel bestand de kandidaten van meerdere afdelingen staan. AWP uploadt dan alleen de kandidaten van de afdeling, waar je nu aan werkt. ",
+                "ALs je het veld <i>Afdelingen</i> niet koppelt, worden alle kandidaten van het Excel bestand in de huidige afdeling geüpload.</p>",
+
                 "<p>Klik op <i>Volgende stap</i> als je de gewenste kolommen hebt gekoppeld. Dit gaat alleen als je alle verplichte velden hebt gekoppeld.</p>",
 
             "</div>",
@@ -117,15 +122,16 @@
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
-                "<p class='pb-0'>Er verschijnen nu drie lijsten op het scherm: </p>",
-                "<ul class='manual_bullet'><li>de lijst <i>AWP-kolommen</i> met de namen van de velden die je kunt uploaden;</li>",
-                "<li>de lijst <i>Excel-kolommen</i> met de namen van de kolommen in het Excel bestand;</li>",
-                "<li>de lijst <i>Gekoppelde kolommen</i>.</li></ul>",
+                "<p class='pb-0'>Afhankelijk van de afdelingen van de school verschijnen er nu een of meer sets met 3 lijsten op het scherm.</p>",
+                "<p class='pb-0'>Het zijn de set <i>Leerwegen koppelen</i> en <i>Sectoren koppelen</i> of de set <i>Profielen</i> koppelen. ",
+                "Als je school meerdere afdelingen heeft verschijnt ook de set <i>Afdelingen koppelen</i>.</p>",
 
-                "<p class='mt-2'>Het <b>koppelen van kolommen</b> gaat als volgt:</br>",
-                "Selecteer een regel in de lijst met AWP-kolommen, bijvoorbeeld ‘Achternaam’.",
+                "<p class='mt-2'>Het <b>koppelen van gegevens</b> gaat op dezelde manier als bij het koppelen van kolommen in stap 2.</p>",
+                "<p class='pb-0'><i>Voorbeeld</i><br>De kolom <i>AWP-waarden</i> bevat alle beschikbare opties van de betreffende kolom, de kolom <i>Excel-waarden</i> bevat de opties in de gekoppelde kolom van het Excel-bestand.. ",
+                "In onderstaand voorbeeld staan bij <i>Sectoren koppelen</i> de AWP-waarden: <i>z&w</i>, <i>tech</i> en <i>ec</i>. ",
+                "Deze school heeft geen sector <i>z&w</i>, die hoeft daarom niet gekoppeld te worden.",
                 "Klik vervolgens in de lijst met Excel-kolommen op de naam van de kolom waarin de achternamen staan.",
-                "Beide namen worden nu verplaatst naar de lijst <i>Gekoppelde kolommen</i>.</p>",
+                "Als waarden van het Excel-bestand niet gekoppeld zijn, wordt de kandidaat wel geupload. Het betreffende gegeven blijft dan blanco bij de kandidaat.</p>",
                 "<p>Klik op een regel in de lijst met gekoppelde kolommen om kolommen te <b>ontkoppelen</b>.</p>",
                 "<p>AWP koppelt automatisch kolommen met dezelfde naam. Je kunt ze zo nodig ontkoppelen.<br>",
                 "AWP onthoudt de gekoppelde velden, zodat je ze een volgende keer niet opnieuw hoeft te koppelen.</p>",

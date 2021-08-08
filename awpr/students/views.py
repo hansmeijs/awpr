@@ -263,8 +263,6 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                 append_dict = {}
                 error_list = []
 
-                sel_country = request.user.country
-
 # ----- get selected examyear, school and department from usersettings
                 # may_edit = False when:
                 #  - country is locked,
@@ -288,9 +286,7 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
 
 # +++  Create new student
                     if is_create:
-                        studentbase = create_or_get_studentbase(sel_country,
-                            upload_dict, messages, error_list, False)  # skip_save = False
-                        student = create_student(studentbase, sel_school, sel_department,
+                        student = create_student(sel_school, sel_department,
                             upload_dict, messages, error_list, request, False)  # skip_save = False
                         if student:
                             append_dict['created'] = True
@@ -543,8 +539,6 @@ class StudentsubjectSendEmailExformView(View):  # PR2021-07-26
                         verification_dict = {'form': 'Ex1', 'key_code': key_code, 'expirationtime': expirationtime_iso}
                         acc_view.set_usersetting_dict(c.KEY_VERIFICATIONCODE, verification_dict, request)
 
-
-
                         subject = str(_('AWP-online verificationcode'))
                         from_email = 'AWP-online <noreply@awponline.net>'
                         message = render_to_string('submit_ex1_email.html', {
@@ -597,13 +591,13 @@ class StudentsubjectSendEmailExformView(View):  # PR2021-07-26
 
 #####################################################################################
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
+class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
-            logger.debug(' ============= StudentsubjectApproveMultipleView ============= ')
+            logger.debug(' ============= StudentsubjectApproveOrSubmitEx1View ============= ')
 
 # function sets auth and publish of studentsubject records of current department # PR2021-07-25
         update_wrap = {}
@@ -746,7 +740,7 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
                                     }
                         if studsubjects is not None:
 
-    # create new published_instance. Only save it when it is not a test
+# +++ create new published_instance. Only save it when it is not a test
                             # file_name will be added after creating Ex-form
                             published_instance = None
                             if is_submit and not is_test:
@@ -818,6 +812,7 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
     # - create msg_html with info of rows
                             msg_html = self.create_msg_list(logging_on, count_dict, requsr_auth, is_approve, is_test)
 
+# +++++ create Ex1 form
                             if row_count:
                                 if is_submit and not is_test:
                                     self.create_Ex1(
@@ -1013,7 +1008,7 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
-            logger.debug(' ============= StudentsubjectApproveView ============= ')
+            logger.debug(' ============= create_Ex1 ============= ')
 
 # get text from examyearsetting
         settings = af.get_exform_text(sel_examyear, ['exform', 'ex1'])
@@ -1038,8 +1033,8 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
 
         if studsubj_rows:
 
-# - create Ex1 xlsx file
-            response = grd_exc.create_ex1_xlsx(
+# +++ create Ex1 xlsx file
+            grd_exc.create_ex1_xlsx(
                 published_instance=published_instance,
                 examyear=sel_examyear,
                 school=sel_school,
@@ -1105,18 +1100,18 @@ class StudentsubjectApproveMultipleView(View):  # PR2021-07-26
 
         return is_ok, msg_html
 
-# --- end of StudentsubjectApproveMultipleView
+# --- end of StudentsubjectApproveOrSubmitEx1View
 
 
 #################################################################################
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectApproveView(View):  # PR2021-07-25
+class StudentsubjectApproveSingleView(View):  # PR2021-07-25
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
-            logger.debug(' ============= StudentsubjectApproveView ============= ')
+            logger.debug(' ============= StudentsubjectApproveSingleView ============= ')
 
 # function sets auth and publish of studentsubject records of current department # PR2021-07-25
         update_wrap = {}
@@ -1228,7 +1223,7 @@ class StudentsubjectApproveView(View):  # PR2021-07-25
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# - end of StudentsubjectApproveView
+# - end of StudentsubjectApproveSingleView
 ##################################################################################
 
 
@@ -1906,6 +1901,9 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                 if logging_on:
                     logger.debug('studsubj: ' + str(studsubj))
                     logger.debug('note: ' + str(note))
+                    logger.debug('file_type: ' + str(file_type))
+                    logger.debug('file_name: ' + str(file_name))
+                    logger.debug('file_size: ' + str(file_size))
 
 # - Create new studsubjnote if is_create:
                 # studsubjnote is also called when studsubjnote is_created, save_to_log is called in update_studsubjnote
@@ -1939,17 +1937,31 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
 
                     # attachments are stored in spaces awpmedia/awpmedia/media/private
 
+# +++ save attachment
                     if studsubjnote and file:
+# ---  create file_path
+                        # PR2021-08-07 file_dir = 'country/examyear/attachments/'
+                        # this one gives path:awpmedia/awpmedia/media/cur/2022/published
+                        country_abbrev = sel_examyear.country.abbrev.lower()
+                        examyear_str = str(sel_examyear.code)
+                        file_dir = '/'.join((country_abbrev, examyear_str, 'attachment'))
+                        file_path = '/'.join((file_dir, file_name))
+
+                        if logging_on:
+                            logger.debug('file_dir: ' + str(file_dir))
+                            logger.debug('file_name: ' + str(file_name))
+                            logger.debug('filepath: ' + str(file_path))
+
                         instance = stud_mod.Noteattachment(
                             studentsubjectnote=studsubjnote,
                             contenttype=file_type,
                             filename=file_name,
-                            file=file)
+                        )
+                        instance.save()
+                        instance.file.save(file_path, file)
 
                         if logging_on:
                             logger.debug('instance: ' + str(instance))
-                        instance.save()
-                        if logging_on:
                             logger.debug('instance.pk: ' + str(instance.pk))
 
 #======================
@@ -2067,30 +2079,6 @@ class StudentImportView(View):  # PR2020-10-01
         return render(request, 'import_student.html', param)
 
 
-def lookup_studentNIU(studentbase, request):  # PR2019-12-17 PR2020-10-20
-    #logger.debug('----------- lookup_student ----------- ')
-
-    student = None
-    multiple_students_found = False
-
-
-
-# - search student by studentbase and request.user.examyear  # TODO change request.user.examyear to sel_examyear
-    if studentbase:
-        # check if student exists multiple times
-        # TODO change request.user.examyear to sel_examyear
-        row_count = stud_mod.Student.objects.filter(base=studentbase, examyear=request.user.examyear).count()
-        if row_count > 1:
-            multiple_students_found = True
-        elif row_count == 1:
-            # get student when only one found
-            # TODO change request.user.examyear to sel_examyear
-            student = stud_mod.Student.objects.get_or_none(base=studentbase, examyear=request.user.examyear)
-
-    return student, multiple_students_found
-
-
-
 def get_field_caption(table, field):
     caption = ''
     if table == 'student':
@@ -2163,9 +2151,9 @@ def delete_student(student, student_rows, msg_list, error_list, request):
 
 def create_or_get_studentbase(country, upload_dict, messages, error_list, skip_save):
     # --- create studentbase  PR2021-07-18
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- create_studentbase ----- ')
+        logger.debug(' ----- create_or_get_studentbase ----- ')
         logger.debug('upload_dict: ' + str(upload_dict))
 
     studentbase = None
@@ -2173,7 +2161,6 @@ def create_or_get_studentbase(country, upload_dict, messages, error_list, skip_s
 # - get value of 'studentbase_pk'
     studentbase_pk = upload_dict.get('studentbase_pk')
 
-# - create studentbase
     try:
 
 # - lookup existing studentbase record
@@ -2209,48 +2196,64 @@ def create_or_get_studentbase(country, upload_dict, messages, error_list, skip_s
         logger.debug('messages: ' + str(messages))
 
     return studentbase
-# - end of create_studentbase
+# - end of create_or_get_studentbase
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def create_student(studentbase, school, department, upload_dict, messages, error_list, request, skip_save):
+def create_student(school, department, upload_dict, messages, error_list, request, skip_save):
     # --- create student # PR2019-07-30 PR2020-10-11  PR2020-12-14 PR2021-06-15
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_student ----- ')
-        logger.debug('studentbase: ' + str(not not studentbase))
-        logger.debug('studentbase.country: ' + str(studentbase.country))
-        logger.debug('studentbase.pk: ' + str(studentbase.pk))
-        logger.debug('school: ' + str(school))
+
+# - create but don't save studentbase
+    # save studentbase beyond, to prevent studentbases without student
+    studentbase = stud_mod.Studentbase(
+        country=school.examyear.country
+    )
 
     student = None
     if studentbase and school:
 
-# - get value of 'lastname', 'firstname', 'ID-number'
+# - get value of 'idnumber', 'lastname', 'firstname', 'prefix'
+        id_number = upload_dict.get('idnumber')
         last_name = upload_dict.get('lastname')
         first_name = upload_dict.get('firstname')
-        id_number = upload_dict.get('idnumber')
+        prefix = upload_dict.get('prefix')
+
+        id_number_stripped = id_number.strip() if id_number else ''
+        lastname_stripped = last_name.strip() if last_name else ''
+        firstname_stripped = first_name.strip() if first_name else ''
+        prefix_stripped = prefix.strip() if prefix else ''
+        full_name = stud_val.get_prefix_lastname_comma_firstname(lastname_stripped, firstname_stripped, prefix_stripped)
 
         if logging_on:
-            logger.debug('idnumber: ' + str(id_number))
-            logger.debug('lastname: ' + str(last_name))
-            logger.debug('firstname: ' + str(first_name))
+            logger.debug('id_number_stripped: ' + str(id_number_stripped))
+            logger.debug('lastname_stripped: ' + str(lastname_stripped))
+            logger.debug('firstname_stripped: ' + str(firstname_stripped))
+            logger.debug('full_name: ' + str(full_name))
 
         msg_list = []
-        msg_err = av.validate_notblank_maxlength(last_name, c.MAX_LENGTH_FIRSTLASTNAME, _('The last name'))
+        msg_err = av.validate_notblank_maxlength(lastname_stripped, c.MAX_LENGTH_FIRSTLASTNAME, _('The last name'))
         if msg_err:
             msg_list.append(msg_err)
-        msg_err = av.validate_notblank_maxlength(first_name, c.MAX_LENGTH_FIRSTLASTNAME, _('The first name'))
+        msg_err = av.validate_notblank_maxlength(firstname_stripped, c.MAX_LENGTH_FIRSTLASTNAME, _('The first name'))
         if msg_err:
             msg_list.append(msg_err)
-        msg_err = av.validate_notblank_maxlength(id_number, c.MAX_LENGTH_IDNUMBER, _('The ID-number'))
+        msg_err = av.validate_notblank_maxlength(id_number_stripped, c.MAX_LENGTH_IDNUMBER, _('The ID-number'))
         if msg_err:
             msg_list.append(msg_err)
-        #TODO validate if student already exists
+
+# - validate if student already exists
+        # either student, is_new_student or has_error is trueish
+        is_test, is_import, found_is_error, notfound_is_error = False, False, True, False
+        student, is_new_student, has_error = stud_val.lookup_student_by_idnumber(
+            school, department, id_number_stripped, full_name, is_test, is_import, msg_list, found_is_error, notfound_is_error)
+
         if len(msg_list) > 0:
             #  messages is list of dicts with format: {'field': fldName, header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
             msg_html = '<br>'.join(msg_list)
-            messages.append({'class': "alert-danger", 'msg_html': msg_html})
+            messages.append({'header': _('Add candidate'), 'class': "border_bg_invalid", 'msg_html': msg_html})
             error_list.extend(msg_list)
         else:
 
@@ -2706,6 +2709,7 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
         logger.debug('student: ' + str(student))
         logger.debug('schemeitem: ' + str(schemeitem))
 
+    has_error = False
     studsubj = None
     if student and schemeitem:
         subject_name = schemeitem.subject.name if schemeitem.subject and schemeitem.subject.name else '---'
@@ -2737,6 +2741,7 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                     undelete_studsubj = True
 
             if doubles_found:
+                has_error = True
                 err_01 = str(_("%(cpt)s '%(val)s' already exists.") % {'cpt': _('Subject'), 'val': subject_name})
                 # error_list not in use when using modal form, message is displayed in modmesasges
                 error_list.append(err_01)
@@ -2753,22 +2758,38 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                 )
                 if not skip_save:
                     if deleted_studsubj:
-                        setattr(deleted_studsubj, 'deleted', False)
-                        setattr(deleted_studsubj, 'schemeitem', schemeitem)
-                        deleted_studsubj.save(request=request)
-                        # also undelete grades
-                        deleted_grades = stud_mod.Grade.objects.filter(
-                            deleted_studsubj=deleted_studsubj,
-                            deleted=True
-                        )
-                        if deleted_grades:
-                            for deleted_grade in deleted_grades:
-                                setattr(deleted_grade, 'deleted', False)
-                                deleted_grade.save(request=request)
+                        try:
+                            setattr(deleted_studsubj, 'deleted', False)
+                            setattr(deleted_studsubj, 'schemeitem', schemeitem)
+                            deleted_studsubj.save(request=request)
+                            # also undelete grades
+                            deleted_grades = stud_mod.Grade.objects.filter(
+                                deleted_studsubj=deleted_studsubj,
+                                deleted=True
+                            )
+                            if deleted_grades:
+                                for deleted_grade in deleted_grades:
+                                    setattr(deleted_grade, 'deleted', False)
+                                    deleted_grade.save(request=request)
+                        except Exception as e:
+                            has_error = True
+                            logger.error(getattr(e, 'message', str(e)))
+                            # error_list not in use when using modal form, message is displayed in modmesasges
+                            err_01 = str(_('An error occurred:'))
+                            err_02 = str(e)
+                            err_03 = str(_("%(cpt)s '%(val)s' could not be added.") % {'cpt': str(_('Subject')),
+                                                                                       'val': subject_name})
+                            error_list.extend((err_01, err_02, err_03))
+
+                            # this one closes modal and shows modmessage with msg_html
+                            msg_html = '<br>'.join((err_01, '<i>' + err_02 + '</i>', err_03))
+                            messages.append({'class': "alert-danger", 'msg_html': msg_html})
+
 
 # - create and save Studentsubject
-        if not msg_err:
+        if not has_error:
             try:
+                a=1/0
                 studsubj = stud_mod.Studentsubject(
                     student=student,
                     schemeitem=schemeitem
@@ -2783,6 +2804,7 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                 if not skip_save:
                     grade.save(request=request)
             except Exception as e:
+                has_error = True
                 logger.error(getattr(e, 'message', str(e)))
 
                 # error_list not in use when using modal form, message is displayed in modmesasges
@@ -2794,6 +2816,9 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                 # this one closes modal and shows modmessage with msg_html
                 msg_html = '<br>'.join((err_01, '<i>' + err_02 + '</i>', err_03))
                 messages.append({'class': "alert-danger", 'msg_html': msg_html})
+
+        if has_error:
+            studsubj = None
 
     return studsubj
 # - end of create_studsubj
@@ -2821,7 +2846,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, append_dict, stude
         "si.subject_id, si.subjecttype_id, si.gradetype,",
         "subjbase.code AS subj_code, subj.name AS subj_name,",
         "si.weight_se AS si_se, si.weight_ce AS si_ce,",
-        "si.is_mandatory, si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
+        "si.is_mandatory, si.is_mand_subj_id, si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
         "si.elective_combi_allowed, si.has_practexam,",
 
         "sjt.id AS sjtp_id, sjt.abbrev AS sjtp_abbrev, sjt.has_prac AS sjtp_has_prac, sjt.has_pws AS sjtp_has_pws,",
@@ -2895,7 +2920,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, append_dict, stude
         "studsubj.pws_title, studsubj.pws_subjects,",
         "studsubj.has_exemption, studsubj.has_reex, studsubj.has_reex03, studsubj.has_pok,",
 
-        "studsubj.is_mandatory, studsubj.is_combi, studsubj.extra_count_allowed, studsubj.extra_nocount_allowed, studsubj.elective_combi_allowed,",
+        "studsubj.is_mandatory, studsubj.is_mand_subj_id, studsubj.is_combi, studsubj.extra_count_allowed, studsubj.extra_nocount_allowed, studsubj.elective_combi_allowed,",
         "studsubj.sjtp_id, studsubj.sjtp_abbrev, studsubj.sjtp_has_prac, studsubj.sjtp_has_pws,",
 
         "studsubj.subj_auth1_id, studsubj.subj_auth1_usr,",

@@ -1,6 +1,7 @@
 # PR2019-02-17
 
 from awpr import constants as c
+from awpr import functions as af
 from awpr import settings as s
 
 from students import models as stud_mod
@@ -14,6 +15,156 @@ from datetime import datetime
 import logging
 logger = logging.getLogger(__name__)
 
+
+# ########################### validate students ##############################
+
+def lookup_student_by_idnumber(school, department, id_number, upload_fullname,
+                   is_test, is_import, error_list, found_is_error=False, notfound_is_error=False):
+    # PR2019-12-17 PR2020-12-06 PR2020-12-31  PR2021-02-27  PR2021-06-19  PR2021-07-21
+    # function searches for existing student by idnumber in this school and this examyear, all departments
+    # if multiple found it searches again for idnumber + lastname + firstname
+    # gives error if multiple found, or found in different department
+    # also checks for first / lastname if multiple found
+    # this one is not used for uploading subjects and grade - those can skip checks
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----------- lookup_student_by_idnumber ----------- ')
+        logger.debug('--- school:           ' + str(school))
+        logger.debug('--- department:       ' + str(department))
+        logger.debug('--- id_number: ' + str(id_number))
+        logger.debug('--- upload_fullname: ' + str(upload_fullname))
+
+    idnumber_nodots_stripped = get_idnumber_nodots_stripped(id_number)
+
+    student = None
+    not_found = False
+    has_error = False
+
+    # - search student in this school and department by idnumber
+    # msg_err already given when id is blank or too long ( in validate_name_idnumber_length)
+    if idnumber_nodots_stripped:
+        msg_keys = {'cpt': _('ID-number'), 'val': id_number, 'name': upload_fullname}
+
+        err_str = None
+        # - count how many students exist with this idnumber in this school (all departments)
+        # get all students from this school with this idnumber
+        row_count = stud_mod.Student.objects.filter(
+            idnumber__iexact=idnumber_nodots_stripped,
+            school=school
+        ).count()
+        if logging_on:
+            logger.debug('row_count: ' + str(row_count))
+
+        if row_count == 0:
+            not_found = True
+            # - when importing subjects or grade: return error when student not found in any department
+            if notfound_is_error:
+                has_error = True
+                upload_fullname = str(_('Candidate'))
+                err_str = str( _("%(cpt)s '%(val)s' does not exist this year in this school.") % msg_keys)
+
+        elif row_count == 1:
+
+# - if one student found: check if it is in this department
+            row = stud_mod.Student.objects.get_or_none(
+                idnumber__iexact=idnumber_nodots_stripped,
+                school=school)
+            if row is None:
+                # this should not be possible
+                has_error = True
+                err_str = str(_("%(cpt)s '%(val)s' not found.") % msg_keys)
+            else:
+
+# - return student when student only occurs once and is in this department
+                if row.department_id == department.pk:
+                    if found_is_error:
+                        has_error = True
+                        err_str = str(_("%(cpt)s '%(val)s' already exists.") % msg_keys)
+                    else:
+                        #TODO return student tobe user when updating student info when importing. Not in use yet PR2021-08-07
+                        student = row
+                else:
+# - return error when student only occurs in different department
+                    has_error = True
+                    err_str = str(
+                        _("%(cpt)s '%(val)s' already exists this year in a different department of this school.") % msg_keys)
+
+        else:  # row_count > 1:
+            # - multiple students found with this idnumber in this school (all departments)
+            student = None
+            has_error = True
+
+# - check idepartments of students
+            found_in_this_dep, found_in_diff_dep = False, False
+
+            # .values() returns dict,
+            # .values_list() returns tuple,
+            # with flat=True: values_list(id, flat=True) returns value when there is only 1 field
+
+            dep_ids = stud_mod.Student.objects.filter(
+                idnumber__iexact=idnumber_nodots_stripped,
+                school=school).values('department_id')
+
+            for item in dep_ids:
+                # dep_id {'department_id': 97}
+                dep_id = item.get('department_id')
+                if logging_on:
+                    logger.debug('item: ' + str(item))
+                    logger.debug('dep_id: ' + str(dep_id))
+
+                if dep_id and dep_id == department.pk:
+                    found_in_this_dep = True
+                else:
+                    found_in_diff_dep = True
+
+            err_str = str(_("%(cpt)s '%(val)s' exists multiple times this year ") % msg_keys)
+            if logging_on:
+                logger.debug('msg_keys: ' + str(msg_keys))
+                logger.debug('err_str: ' + str(err_str))
+
+            if found_in_diff_dep:
+                if found_in_this_dep:
+                    err_str += str(_("in multiple departments of your school."))
+                else:
+                    err_str += str(_("in other departments of your school."))
+            elif found_in_this_dep:
+                # don't show "in this department of your school."
+                err_str += str(_("."))
+
+        if has_error:
+            if notfound_is_error:
+                error_list.append(err_str)
+            else:
+                if is_import:
+                    skipped_str = upload_fullname + str(_(' will be skipped.')) if is_test else str(_(' is skipped.'))
+                    error_list.append(' '.join((skipped_str, err_str)))
+                else:
+                    error_list.append(err_str)
+        if logging_on:
+            logger.debug('student: ' + str(student))
+            logger.debug('not_found: ' + str(not_found))
+            logger.debug('err_str: ' + str(err_str))
+            logger.debug('----------- end of lookup_student_by_idnumber ---- ')
+
+    return student, not_found, has_error
+# --- end of lookup_student_by_idnumber
+
+
+# ========  get_prefix_lastname_comma_firstname  ======= PR2021-06-19
+def get_prefix_lastname_comma_firstname(lastname_stripped, firstname_stripped, prefix_stripped):
+    full_name = '---'
+
+    if lastname_stripped:
+        full_name = lastname_stripped
+    if prefix_stripped:  # put prefix before last_name
+        full_name = prefix_stripped + ' ' + full_name
+    if firstname_stripped:  # put first_name after last_name
+        full_name += ', ' + firstname_stripped
+
+    return full_name
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
 # ========  validate_studentsubjects  ======= PR2021-07-09
@@ -42,24 +193,23 @@ def validate_studentsubjects(student):
                 level_missing = department.level_req and student.level is None
                 sector_missing = department.sector_req and student.sector is None
 
-            caption = ''
+            not_entered_str = ''
             if dep_missing:
-                caption = _('the department')
+                not_entered_str = _('The department is not entered.')
             else:
                 if level_missing and sector_missing:
                     if has_profiel:
-                        caption = _("the 'leerweg' and 'profiel'")
+                        not_entered_str = _("The 'leerweg' and 'profiel' are not entered.")
                     else:
-                        caption = _("the 'leerweg' and 'sector'")
+                        not_entered_str = _("The 'leerweg' and 'sector' are not entered.")
                 elif level_missing:
-                    caption = _("the 'leerweg'")
+                    not_entered_str = _("The 'leerweg' is not entered.")
                 elif sector_missing:
                     if has_profiel:
-                        caption = _("the 'profiel'")
+                        not_entered_str = _("The 'profiel' is not entered.")
                     else:
-                        caption = _("the sector")
-
-            msg_list.append(_("No subject scheme found. Please enter %(cpt)s.") % {'cpt': caption})
+                        not_entered_str = _("The sector is not entered.")
+            msg_list.append(str(not_entered_str) + '<br>' + str(_("Go to the page <i>Candidates</i> and enter the missing information of the candidate.")))
             if logging_on:
                 logger.debug('msg_list: ' + str(msg_list))
         else:
@@ -110,6 +260,7 @@ def validate_studentsubjects(student):
 
 # - check amount of mvt and combi subjects
             validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+            validate_amount_subjects('wisk', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             validate_amount_subjects('combi', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
 
 # - check amount of subjects per subjecttype
@@ -122,7 +273,7 @@ def validate_studentsubjects(student):
     else:
         pass
         # don't give message 'correct', the rules might not be entered
-        # msg_list = ("<div class='p-2 border_bg_valid'><p>", str(_('The composition of the subjects is correct.')), "</p></div>")
+        msg_list = ("<div class='p-2 border_bg_valid'><p>", str(_('AWP has not found any errors in the composition of the subjects.')), "</p></div>")
 
     msg_html = ''.join(msg_list)
     return msg_html
@@ -177,6 +328,9 @@ def validate_studentsubjects_no_msg(student):
 
 # - check amount of mvt and combi subjects
             validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+            if msg_list:
+                return True
+            validate_amount_subjects('wisk', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             if msg_list:
                 return True
             validate_amount_subjects('combi', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
@@ -317,7 +471,7 @@ def validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict,
 def validate_amount_subjects(field, is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list):
     # - validate amount of subjects PR2021-07-10
     # - skip validate minimum subjects when is_evening_or_lex_student
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  validate_amount_subjects  -----')
         logger.debug('field: ' + str(field))
@@ -338,6 +492,12 @@ def validate_amount_subjects(field, is_evening_or_lex_student, scheme_dict, stud
         subject_list_key = 'mvt_list'
         caption = _('MVT subject')
         captions = _('MVT subjects')
+    elif field == 'wisk':
+        min_subj_key = 'min_wisk'
+        max_subj_key = 'max_wisk'
+        subject_list_key = 'wisk_list'
+        caption = str((_('Wiskunde subject'))).lower()
+        captions = str(_('Wiskunde subjects')).lower()
     elif field == 'core':
         min_subj_key = 'min_core'
         max_subj_key = 'max_core'
@@ -402,9 +562,20 @@ def validate_amount_subjects(field, is_evening_or_lex_student, scheme_dict, stud
                     available_len = len(available_list)
                     if available_len:
                         if available_len == 1:
-                            msg_available = _("The %(cpt)s is: '%(list)s'.") % {'cpt': caption, 'list': available_list}
+                            msg_available = _("The %(cpt)s is: '%(list)s'.") % {'cpt': caption, 'list': available_list[0]}
                         else:
                             available_list.sort()
+                            available_str = ''
+                            for i, val in enumerate(available_list):
+                                available_str += "'" + val + "'"
+                                if i:
+                                    if i == available_len - 1:
+                                        available_str += str(_(' and ')) + "'" + val + "'"
+                                    else:
+                                        available_str += ", '" + val + "'"
+                                else:
+                                    available_str = "'" + val + "'"
+
                             if logging_on:
                                 logger.debug('available_list.sort: ' + str(available_list))
                             list_str = ''
@@ -456,9 +627,8 @@ def validate_minmax_count(field, is_evening_or_lex_student, scheme_dict, subject
 
     if sjtp_name:
         msg_count = ''.join((str(msg_count), str(_(' with character ')), "'", sjtp_name, "'"))
-    else:
-        msg_count += '.'
 
+    msg_count += '.'
     if logging_on:
         logger.debug('msg_count: ' + str(msg_count))
 
@@ -539,6 +709,8 @@ def get_scheme_si_sjtp_dict(scheme):
     max_subj = getattr(scheme, 'max_subjects')
     min_mvt = getattr(scheme, 'min_mvt')
     max_mvt = getattr(scheme, 'max_mvt')
+    min_wisk = getattr(scheme, 'min_wisk')
+    max_wisk = getattr(scheme, 'max_wisk')
     min_combi = getattr(scheme, 'min_combi')
     max_combi = getattr(scheme, 'max_combi')
 
@@ -563,9 +735,11 @@ def get_scheme_si_sjtp_dict(scheme):
             }
 
 # - get info from schemeitems
-    req_list = []
+    mand_list = []
+    mand_subj_list = []
     combi_list = []
     mvt_list = []
+    wisk_list = []
     core_list = []
 
     subject_code = {}
@@ -577,11 +751,15 @@ def get_scheme_si_sjtp_dict(scheme):
         subject_code[subj_pk] = subj_code
 
         if si.is_mandatory:
-            req_list.append(subj_pk)
+            mand_list.append(subj_pk)
+        if si.is_mand_subj:
+            mand_subj_list.append(subj_pk)
         if si.is_combi:
             combi_list.append(subj_pk)
         if si.is_mvt:
             mvt_list.append(subj_pk)
+        if si.is_wisk:
+            wisk_list.append(subj_pk)
         if si.is_core_subject:
             core_list.append(subj_pk)
 
@@ -591,14 +769,18 @@ def get_scheme_si_sjtp_dict(scheme):
         'max_subj': max_subj,
         'min_mvt': min_mvt,
         'max_mvt': max_mvt,
+        'min_wisk': min_wisk,
+        'max_wisk': max_wisk,
         'min_combi': min_combi,
         'max_combi': max_combi,
 
         'sjtp_dict': sjtp_dict,
 
-        'req_list': req_list,
+        'mand_list': mand_list,
+        'mand_subj_list': mand_subj_list,
         'combi_list': combi_list,
         'mvt_list': mvt_list,
+        'wisk_list': wisk_list,
         'core_list': core_list,
 
         'subj_code': subject_code
@@ -618,9 +800,11 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
 
     sjtp_dict = {}
 
-    req_list = []
+    mand_list = []
+    mand_subj_list = []
     combi_list = []
     mvt_list = []
+    wisk_list = []
     core_list = []
 
 # - create dict with studentsubject values that are used in validator
@@ -636,6 +820,7 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
             if logging_on:
                 logger.debug('studsubj: ' + str(studsubj))
                 logger.debug('studsubj.schemeitem.subject.name: ' + str(studsubj.schemeitem.subject.name))
+
             si = studsubj.schemeitem
             if si.scheme_id != stud_scheme.pk:
                 value = si.subject.base.code
@@ -684,11 +869,15 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
                         elective_list.append(subj_pk)
 
                     if si.is_mandatory:
-                        req_list.append(subj_pk)
+                        mand_list.append(subj_pk)
+                    if si.is_mand_subj:
+                        mand_subj_list.append(subj_pk)
                     if si.is_combi:
                         combi_list.append(subj_pk)
                     if si.is_mvt:
                         mvt_list.append(subj_pk)
+                    if si.is_wisk:
+                        wisk_list.append(subj_pk)
                     if si.is_core_subject:
                         core_list.append(subj_pk)
 
@@ -702,9 +891,11 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
 
         'sjtp_dict': sjtp_dict,
 
-        'req_list': req_list,
+        'mand_list': mand_list,
+        'mand_subj_list': mand_subj_list,
         'combi_list': combi_list,
         'mvt_list': mvt_list,
+        'wisk_list': wisk_list,
         'core_list': core_list
     }
 
@@ -876,11 +1067,108 @@ def get_examnumberlist_from_database(sel_school, sel_department):
 # - end of get_examnumberlist_from_database
 
 
+
+# ========  get_double_schoolcode_usernamelist_from_uploadfile  ======= PR2021-08-04
+def get_double_schoolcode_usernamelist_from_uploadfile(data_list):
+    # function returns list of (schoolcode, username) tuples that occur multiple times in data_list
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' -----  get_double_schoolcode_usernamelist_from_uploadfile  -----')
+
+    double_username_list, double_email_list = [], []
+    # user_list is list of of (schoolcode, username) tuples  of all users in data_list.
+    # email_list is list of of (schoolcode, email) tuples  of all users in data_list.
+    username_list, email_list = [], []
+    for data_dict in data_list:
+        datadict_schoolcode = data_dict.get('schoolcode')
+        datadict_schoolcode_stripped = datadict_schoolcode.strip() if datadict_schoolcode else None
+        datadict_schoolcode_lc = datadict_schoolcode_stripped.lower() if datadict_schoolcode_stripped else ''
+
+        datadict_username = data_dict.get('username')
+        datadict_username_stripped = datadict_username.strip() if datadict_username else None
+        datadict_username_underscore = datadict_username_stripped.replace(' ', '_') if datadict_username_stripped else None
+        datadict_username_lc = datadict_username_underscore.lower() if datadict_username_underscore else ''
+
+        datadict_email = data_dict.get('email')
+        datadict_email_stripped = datadict_email.strip() if datadict_email else None
+        datadict_email_lc = datadict_email_stripped.lower() if datadict_email_stripped else ''
+
+        if logging_on:
+            logger.debug('datadict_schoolcode_lc: ' + str(datadict_schoolcode_lc))
+            logger.debug('datadict_username_lc: ' + str(datadict_username_lc))
+            logger.debug('datadict_email_lc: ' + str(datadict_email_lc))
+
+# ---------------------------------------------------------
+
+    # check if schoolcode + username already exists in username_list
+        search_tuple = (datadict_schoolcode_lc, datadict_username_lc)
+    # add to username_list if it is not in that list yet
+        if not found_in_tuple_list(username_list, search_tuple):
+            username_list.append(search_tuple)
+    # if not found_in_double_username_list: add to  found_in_double_username_list
+        elif not found_in_tuple_list(double_username_list, search_tuple):
+            double_username_list.append(search_tuple)
+
+# ---------------------------------------------------------
+    # check if schoolcode + email already exists in username_list
+        search_tuple = (datadict_schoolcode_lc, datadict_email_lc)
+        # add to username_list if it is not in that list yet
+        if not found_in_tuple_list(email_list, search_tuple):
+            email_list.append(search_tuple)
+        # if not found_in_double_username_list: add to  found_in_double_username_list
+        elif not found_in_tuple_list(double_email_list, search_tuple):
+            double_email_list.append(search_tuple)
+
+# ---------------------------------------------------------
+    if logging_on:
+        logger.debug('username_list: ' + str(username_list))
+        logger.debug('email_list: ' + str(email_list))
+        logger.debug('double_username_list: ' + str(double_username_list))
+        logger.debug('double_email_list: ' + str(double_email_list))
+
+    return double_username_list, double_email_list
+# - end of get_double_schoolcode_usernamelist_from_uploadfile
+
+def found_in_tuple_list(tuple_list, search_tuple): # PR2021-08-05
+    found = False
+    if tuple_list:
+        for item_tuple in tuple_list:
+            if search_tuple[0] == item_tuple[0] and search_tuple[1] == item_tuple[1]:
+                found = True
+                break
+    return found
+
+
+# ========  validate_double_schoolcode_username_in_uploadfile  ======= PR2021-07-17
+def validate_double_schoolcode_username_in_uploadfile(schoolcode, username, double_entrieslist, error_list):
+    has_error = False
+    if schoolcode and username and double_entrieslist:
+        search_tuple = (schoolcode.lower(), username.lower())
+        if found_in_tuple_list(double_entrieslist, search_tuple):
+            has_error = True
+            error_list.append(_("This schoolcode + user is found multiple times in this upload file.") )
+    return has_error
+# - end of validate_double_schoolcode_username_in_uploadfile
+
+
+# ========  validate_double_schoolcode_username_in_uploadfile  ======= PR2021-07-17
+def validate_double_schoolcode_email_in_uploadfile(schoolcode, email, double_entrieslist, error_list):
+    has_error = False
+    if schoolcode and email and double_entrieslist:
+        search_tuple = (schoolcode.lower() , email.lower())
+        if found_in_tuple_list(double_entrieslist, search_tuple):
+            has_error = True
+            error_list.append(_("This schoolcode + email address is found multiple times in this upload file."))
+    return has_error
+# - end of validate_double_schoolcode_username_in_uploadfile
+
+
 # ========  get_double_entrieslist_from_uploadfile  ======= PR2021-06-14 PR2021-07-17
 def get_double_entrieslist_from_uploadfile(data_list):
     # function returns list of idnumbers, that occur multiple times in data_list
 
-    logging_on = False  #s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_double_entrieslist_from_uploadfile  -----')
 
@@ -893,33 +1181,33 @@ def get_double_entrieslist_from_uploadfile(data_list):
             logger.debug('id_number: ' + str(id_number) + ' ' + str(type(id_number)))
             logger.debug('isinstance(id_number, int): ' + str(isinstance(id_number, int)))
 
-        id_number_nodots_stripped = get_id_number_nodots_stripped(id_number)
+        idnumber_nodots_stripped = get_idnumber_nodots_stripped(id_number)
 
         found = False
         if student_list:
             for student_id in student_list:
-                if student_id == id_number_nodots_stripped:
+                if student_id == idnumber_nodots_stripped:
                     found = True
-                    if id_number_nodots_stripped not in double_entrieslist:
-                        double_entrieslist.append(id_number_nodots_stripped)
+                    if idnumber_nodots_stripped not in double_entrieslist:
+                        double_entrieslist.append(idnumber_nodots_stripped)
                     break
         if not found:
-            student_list.append(id_number_nodots_stripped)
+            student_list.append(idnumber_nodots_stripped)
 
         if logging_on:
             logger.debug('student_list: ' + str(student_list))
             logger.debug('double_entrieslist: ' + str(double_entrieslist))
     return double_entrieslist
+# - end of get_double_entrieslist_from_uploadfile
 
-
-def get_id_number_nodots_stripped(id_number): # PR2021-07-20
-    id_number_nodots_stripped = ''
+def get_idnumber_nodots_stripped(id_number): # PR2021-07-20
+    idnumber_nodots_stripped = ''
     if id_number:
         if isinstance(id_number, int):
-            id_number_nodots_stripped = str(id_number)
+            idnumber_nodots_stripped = str(id_number)
         else:
-            id_number_nodots_stripped = id_number.replace('.', '').strip()
-    return id_number_nodots_stripped
+            idnumber_nodots_stripped = id_number.replace('.', '').strip()
+    return idnumber_nodots_stripped
 
 # ========  get_double_entrieslist_with_firstlastname_from_uploadfileNIU  ======= PR2021-06-14 PR2021-07-16
 # NOT IN USE
@@ -935,7 +1223,7 @@ def get_double_entrieslist_with_firstlastname_from_uploadfileNIU(data_list):
     student_list = []
     for data_dict in data_list:
         id_number = data_dict.get('idnumber')
-        id_number_nodots_stripped = id_number.replace('.', '').strip()  if id_number else ''
+        idnumber_nodots_stripped = id_number.replace('.', '').strip()  if id_number else ''
 
         last_name = data_dict.get('lastname')
         last_name_stripped = last_name.strip() if last_name else ''
@@ -943,7 +1231,7 @@ def get_double_entrieslist_with_firstlastname_from_uploadfileNIU(data_list):
         first_name = data_dict.get('firstname')
         first_name_stripped = first_name.strip() if first_name else ''
 
-        student_tuple = (id_number_nodots_stripped, last_name_stripped, first_name_stripped)
+        student_tuple = (idnumber_nodots_stripped, last_name_stripped, first_name_stripped)
 
         found = False
         if student_list:
@@ -964,29 +1252,29 @@ def get_double_entrieslist_with_firstlastname_from_uploadfileNIU(data_list):
 
 
 # ========  validate_double_entries_in_uploadfile  ======= PR2021-07-17
-def validate_double_entries_in_uploadfile(id_number_nodots_stripped, double_entrieslist, error_list):
+def validate_double_entries_in_uploadfile(idnumber_nodots_stripped, double_entrieslist, error_list):
 
     has_error = False
-    if id_number_nodots_stripped and double_entrieslist:
-        if id_number_nodots_stripped in double_entrieslist:
+    if idnumber_nodots_stripped and double_entrieslist:
+        if idnumber_nodots_stripped in double_entrieslist:
             has_error = True
             error_list.append(_("ID-number '%(val)s' is found multiple times in this upload file.") \
-                      % {'val': id_number_nodots_stripped})
+                      % {'val': idnumber_nodots_stripped})
     return has_error
 
-
 # ========  validate_double_entries_in_uploadfileNIU  ======= PR2021-06-19
-def validate_double_entries_in_uploadfileNIU(id_number_nodots_stripped, lastname_stripped, firstname_stripped, double_entrieslist, error_list):
+def validate_double_entries_in_uploadfileNIU(idnumber_nodots_stripped, lastname_stripped, firstname_stripped, double_entrieslist, error_list):
 
     has_error = False
-    student_tuple = (id_number_nodots_stripped, lastname_stripped, firstname_stripped )
+    student_tuple = (idnumber_nodots_stripped, lastname_stripped, firstname_stripped )
     if student_tuple and double_entrieslist:
         if student_tuple in double_entrieslist:
             has_error = True
-            caption = ' '.join((id_number_nodots_stripped, firstname_stripped, lastname_stripped))
+            caption = ' '.join((idnumber_nodots_stripped, firstname_stripped, lastname_stripped))
             error_list.append(_("%(fld)s '%(val)s' is found multiple times in this upload file.") \
                       % {'fld': _("Candidate"), 'val': caption})
     return has_error
+
 
 # ========  validate_name_idnumber_length  ======= PR2021-06-19
 def validate_name_idnumber_length(id_number_nodots, lastname_stripped, firstname_stripped, prefix_stripped, error_list):
@@ -1032,6 +1320,29 @@ def validate_name_idnumber_length(id_number_nodots, lastname_stripped, firstname
 # - end of validate_name_idnumber_length
 
 
+# ========  validate_length  ======= PR2021-08-05
+def validate_length(caption, input_value, max_length, blank_allowed):
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('----------- validate_length ----------- ')
+
+    msg_err = None
+    if not input_value:
+        if not blank_allowed:
+            msg_err = _('%(fld)s cannot be blank.') % {'fld': caption}
+
+    elif len(input_value) > c.MAX_LENGTH_IDNUMBER:
+        has_error = True
+        msg_err = _("%(fld)s '%(val)s' is too long, maximum %(max)s characters.") \
+                    % {'fld': _("The ID-number"), 'val': input_value, 'max': max_length}
+
+    if logging_on:
+        logger.debug('msg_err: ' + str(msg_err))
+
+    return msg_err
+# - end of validate_length
+
+
 # +++++++++++++++++++++++++++++++++++++
 
 def validate_idnumber(id_str):
@@ -1060,7 +1371,7 @@ def validate_idnumber(id_str):
                 if date_str.isnumeric():
                     birthdate = calc_bithday_from_id(date_str)
                     # logger.debug('birthdate: ' + str( birthdate) + ' type: ' + str(type(birthdate)))
-
+                    birthdate = af.get_date_from_ISO(date_iso)
             if birthdate is not None:
                 idnumber_clean = id_str
             else:

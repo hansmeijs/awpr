@@ -1,4 +1,13 @@
 // PR2020-07-30 added
+
+
+let selected_btn = "btn_user";
+let setting_dict = {};
+let permit_dict = {};
+let loc = {};
+let urls = {};
+
+
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
@@ -24,8 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let selected_userpermit_pk = null;
     let selected_period = {};
-    let setting_dict = {};
-    let permit_dict = {};
 
     let loc = {};  // locale_dict
     let mod_dict = {};
@@ -49,11 +56,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
-    const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
-    const url_user_upload = get_attr_from_el(el_data, "data-user_upload_url");
-    const url_userpermit_upload = get_attr_from_el(el_data, "data-userpermit_upload_url");
-    const url_download_permits = get_attr_from_el(el_data, "data-user_download_permits_url");
+    urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+    urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    urls.url_user_upload = get_attr_from_el(el_data, "data-user_upload_url");
+    urls.url_userpermit_upload = get_attr_from_el(el_data, "data-userpermit_upload_url");
+    urls.url_download_permits = get_attr_from_el(el_data, "data-user_download_permits_url");
 
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
     let columns_hidden = [];
@@ -101,7 +108,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
 
-
 // === EVENT HANDLERS ===
 // === reset filter when ckicked on Escape button ===
         document.addEventListener("keydown", function (event) {
@@ -137,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 function() {t_MSSSS_Open(loc, "school", school_rows, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         }
 
-   // ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
+// ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
         const el_MSED_input = document.getElementById("id_MSED_input");
         const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
         if (el_MSED_input){
@@ -147,7 +153,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el_MSED_btn_save){
             el_MSED_btn_save.addEventListener("click", function() {t_MSED_Save(el_MSED_btn_save, MSED_Response)}, false);
         }
-
 
 // ---  MSSS MOD SELECT SCHOOL SUBJECT STUDENT ------------------------------
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
@@ -203,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUPM_btn_submit.addEventListener("click", function() {MUPM_Save("save")}, false);
         };
 
-// ---  MODAL UPLOAD PERMITS
+// ---  MODAL IMPORT ------------------------------------
     // --- create EventListener for buttons in btn_container
         const el_MIMP_btn_container = document.getElementById("id_MIMP_btn_container");
         if(el_MIMP_btn_container){
@@ -213,8 +218,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.addEventListener("click", function() {MIMP_btnSelectClicked(data_btn)}, false )
             }
         }
-        const el_filedialog = document.getElementById("id_MIMP_filedialog");
-        if (el_filedialog){el_filedialog.addEventListener("change", function() {MIMP_HandleFiledialog(el_filedialog, loc)}, false)};
+        const el_MIMP_filedialog = document.getElementById("id_MIMP_filedialog");
+        if (el_MIMP_filedialog){el_MIMP_filedialog.addEventListener("change", function() {MIMP_HandleFiledialog(el_MIMP_filedialog)}, false)};
+        const el_MIMP_btn_filedialog = document.getElementById("id_MIMP_btn_filedialog");
+
+        if (el_MIMP_filedialog && el_MIMP_btn_filedialog){
+            el_MIMP_btn_filedialog.addEventListener("click", function() {MIMP_OpenFiledialog(el_MIMP_filedialog)}, false)};
+        const el_MIMP_filename = document.getElementById("id_MIMP_filename");
+
         const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
         if (el_worksheet_list){el_worksheet_list.addEventListener("change", function() {MIMP_SelectWorksheet()}, false)};
         const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
@@ -224,10 +235,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
         if (el_MIMP_btn_next){el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false)};
         const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
-        if (el_MIMP_btn_test){el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test", RefreshDataRowsPermitsAfterUpload)}, false)};
+        if (el_MIMP_btn_test){el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test", RefreshDataRowsAfterUpload)}, false)};
         const el_MUP_btn_upload = document.getElementById("id_MIMP_btn_upload");
-        if (el_MUP_btn_upload){el_MUP_btn_upload.addEventListener("click", function() {MIMP_Save("save", RefreshDataRowsPermitsAfterUpload)}, false)};
-
+        if (el_MUP_btn_upload){el_MUP_btn_upload.addEventListener("click", function() {MIMP_Save("save", RefreshDataRowsAfterUpload)}, false)};
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");
@@ -243,8 +253,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const datalist_request = {
                 setting: {page: "page_user"},
-                schoolsetting: {setting_key: "import_permit"},
-                locale: {page: ["page_user", 'upload']},
+                schoolsetting: {setting_key: "import_username"},
+                locale: {page: ["page_user", "upload"]},
                 user_rows: {get: true},
                 school_rows: {get: true}
             };
@@ -268,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let response = "";
         $.ajax({
             type: "POST",
-            url: url_datalist_download,
+            url: urls.url_datalist_download,
             data: param,
             dataType: 'json',
             success: function (response) {
@@ -281,8 +291,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 let isloaded_loc = false, isloaded_settings = false, isloaded_permits = false;
                 if ("locale_dict" in response) {
                     loc = response.locale_dict;
-                    mimp_loc = loc;
                     isloaded_loc = true;
+        console.log("loc: ", loc)
                 };
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict;
@@ -304,7 +314,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("user_rows" in response) {
                     user_rows = response.user_rows;
                 };
-                if ("permit_rows" in response) { refresh_permit_map(response.permit_rows) };
+                if ("permit_rows" in response) {
+                    permit_rows = response.permit_rows
+                    refresh_permit_map(response.permit_rows) };
 
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
                 if ("school_rows" in response)  {
@@ -327,19 +339,23 @@ document.addEventListener('DOMContentLoaded', function() {
     function CreateSubmenu() {
         //console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
+        // hardcode access of system admin, to get access before action 'crud' is added to permits
+        const permit_system_admin = (permit_dict.requsr_role_system && permit_dict.usergroup_list.includes("admin"));
+        const permit_role_admin = (permit_dict.requsr_role_admin && permit_dict.usergroup_list.includes("admin"));
 
         if (permit_dict.permit_crud_sameschool || permit_dict.permit_crud_otherschool) {
             AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup"]);
             AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup"]);
+            if(permit_system_admin || permit_role_admin){
+                AddSubmenuButton(el_submenu, loc.Upload_usernames, function() {MIMP_Open(loc, "import_username")}, null, "id_submenu_import");
+            }
         }
         // hardcode access of system admin
-        // hardcode access of system admin, to get access before action 'crud' is added to permits
-        const permit_system_admin = (permit_dict.requsr_role_system && permit_dict.usergroup_list.includes("admin"));
         if (permit_system_admin){
             AddSubmenuButton(el_submenu, loc.Add_permission, function() {MUPM_Open("addnew")}, ["tab_show", "tab_btn_userpermit"]);;
-            AddSubmenuButton(el_submenu, loc.Delete_permission, function() {ModConfirmOpen("userpermit","delete")}, ["tab_show", "tab_btn_userpermit"]);;
-            AddSubmenuButton(el_submenu, loc.Download_permissions, null, ["tab_show", "tab_btn_userpermit"], "id_submenu_download_perm", url_download_permits, false);  // true = download
-            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open("import_permit")}, ["tab_show", "tab_btn_userpermit"], "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Delete_permission, function() {ModConfirmOpen("userpermit","delete")}, ["tab_show", "tab_btn_userpermit"]);
+            AddSubmenuButton(el_submenu, loc.Download_permissions, null, ["tab_show", "tab_btn_userpermit"], "id_submenu_download_perm", urls.url_download_permits, false);  // true = download
+            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open(loc, "import_permit")}, ["tab_show", "tab_btn_userpermit"], "id_submenu_import");
         };
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
@@ -348,18 +364,19 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
 //=========  HandleBtnSelect  ================ PR2020-09-19 PR2021-08-01
     function HandleBtnSelect(data_btn, skip_upload) {
-        //console.log( "===== HandleBtnSelect ========= ");
+        console.log( "===== HandleBtnSelect ========= ");
 
 // ---  get  selected_btn
         // set to default "btn_user" when there is no selected_btn
         // this happens when user visits page for the first time
-        selected_btn = (data_btn) ? data_btn : "btn_user"
+        // includes is to catch btn names that are no longer in use
+        selected_btn = (data_btn && ["btn_user", "btn_usergroup", "btn_userpermit"].includes(data_btn)) ? data_btn : "btn_user"
         console.log( "selected_btn: ", selected_btn);
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_user: {sel_btn: selected_btn}};
-            UploadSettings (upload_dict, url_settings_upload);
+            UploadSettings (upload_dict, urls.url_settings_upload);
         };
 
 // ---  highlight selected button
@@ -377,9 +394,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function HandleTableRowClicked(tr_clicked) {
         //console.log("=== HandleTableRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
+        //console.log( "tr_clicked.id: ", tr_clicked, typeof tr_clicked.id);
 
         selected_user_dict = get_datadict_from_mapid(tr_clicked.id);
-        console.log( "selected_user_dict: ", selected_user_dict);
+        //console.log( "selected_user_dict: ", selected_user_dict);
 
         selected_userpermit_pk = null;
 
@@ -388,8 +406,9 @@ document.addEventListener('DOMContentLoaded', function() {
         tr_clicked.classList.add(cls_selected)
 
 // --- get existing data_dict from data_rows
+        console.log( "tr_clicked.id: ", tr_clicked.id);
         const data_dict = get_datadict_from_mapid(tr_clicked.id)
-        console.log( "data_dict: ", data_dict);
+        //console.log( "data_dict: ", data_dict);
 
 // ---  update selected_user_pk
         const tblName = get_tblName_from_mapid(data_dict.mapid);
@@ -398,27 +417,26 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             selected_user_pk = data_dict.id;
         }
-        console.log( "selected_user_pk: ", selected_user_pk, typeof selected_user_pk);
+        //console.log( "selected_userpermit_pk: ", selected_userpermit_pk, typeof selected_userpermit_pk);
+        //console.log( "selected_user_pk: ", selected_user_pk, typeof selected_user_pk);
     }  // HandleTableRowClicked
 
 //========= FillTblRows  =================== PR2021-08-01
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
-        console.log( "user_rows", user_rows);
-
-        console.log("selected_btn", selected_btn)
+        //console.log( "===== FillTblRows  === ");
         const tblName = get_tblName_from_selectedBtn();
-        console.log( "tblName", tblName);
-
 
         const field_setting = field_settings[tblName];
-        console.log( "field_setting", field_setting);
         const data_rows = get_data_rows(tblName);
-        console.log( "data_rows", data_rows);
+
+        //console.log( "selected_btn", selected_btn);
+        //console.log( "tblName", tblName);
+        //console.log( "data_rows", data_rows);
+        //console.log( "field_setting", field_setting);
 
 // --- show columns
         set_columns_hidden();
-        console.log( "columns_hidden", columns_hidden);
+        //console.log( "columns_hidden", columns_hidden);
 
 // --- reset table
         tblHead_datatable.innerText = null;
@@ -434,17 +452,14 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         };
 
-// --- loop through data_map
-
-          // --- filter tblRow
-                //const show_row = t_ShowTableRowExtended(filter_dict, tblRow);
-                //add_or_remove_class(tblRow, cls_hide, !show_row);
-
+// --- filter tblRow
+        // happens in Filter_TableRows
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-03-23  PR2021-08-01
     function CreateTblHeader(field_setting) {
         //console.log("===  CreateTblHeader ===== ");
+        //console.log("field_setting", field_setting);
 
         const column_count = field_setting.field_names.length;
 
@@ -616,11 +631,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else if (["role", "page", "action", "sequence"].includes(field_name)){
                         el.addEventListener("change", function(){HandleInputChange(el)});
                     } else if (field_name.slice(0, 5) === "group") {
-                        // attach eventlisterener and hover to td, not to el. No need to add icon_class here
+                        // attach eventlistener and hover to td, not to el. No need to add icon_class here
                         td.addEventListener("click", function() {UploadToggle(el)}, false)
                         add_hover(td);
                     } else if ( field_name === "activated") {
-                        el.addEventListener("click", function() {ModConfirmOpen("user", "resend_activation_email", el)}, false )
+                        el.addEventListener("click", function() {ModConfirmOpen("user", "send_activation_email", el)}, false )
                     } else if (field_name === "is_active") {
                         el.addEventListener("click", function() {ModConfirmOpen("user", "is_active", el)}, false )
                         el.classList.add("inactive_0_2")
@@ -700,14 +715,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 filter_value = (is_expired) ? "2" : (is_activated) ? "1" : "0"
                 el_div.className = (is_activated) ? "tickmark_2_2" : (is_expired) ? "exclamation_0_2" : "tickmark_0_0" ;
-// ---  add EventListener
-                if(!is_activated){
-                    el_div.addEventListener("click", function() {ModConfirmOpen("user", "resend_activation_email", el_div)}, false )
-                }
+// ---  add pointer when not is_activatd
                 add_or_remove_class(el_div, "pointer_show", !is_activated)
 
 // ---  add title
-                title_text = (is_expired) ? loc.Activationlink_expired + "\n" + loc.Resend_activationlink : null
+                title_text = (is_expired) ? loc.Activationlink_expired + "\n" + loc.Send_activationlink : null
             } else if (field_name === "is_active") {
                 const is_inactive = !( (map_dict[field_name]) ? map_dict[field_name] : false );
                 // give value '0' when inactive, '1' when active
@@ -752,19 +764,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= UploadToggle  ============= PR2020-07-31
     function UploadToggle(el_input) {
-        console.log( " ==== UploadToggle ====");
-        console.log( "el_input", el_input);
-        console.log( "permit_dict", permit_dict);
+        //console.log( " ==== UploadToggle ====");
+        //console.log( "el_input", el_input);
 
         mod_dict = {};
-
-        //if(permit_dict.permit_crud){
-        if(true){
+        const has_permit = (permit_dict.permit_crud_otherschool) ||
+                            (permit_dict.permit_crud_sameschool && selected_btn !== "btn_userpermit");
+        if(has_permit){
             const tblRow = get_tablerow_selected(el_input);
             if(tblRow){
                 const tblName = get_tblName_from_mapid(tblRow.id);
                 const data_dict = get_datadict_from_mapid(tblRow.id)
-    console.log( "data_dict", data_dict);
+        //console.log( "tblName", tblName);
+        //console.log( "data_dict", data_dict);
 
                 if(!isEmpty(data_dict)){
                     const fldName = get_attr_from_el(el_input, "data-field");
@@ -786,7 +798,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
            console.log( "tblName", tblName);
            console.log( "fldName", fldName);
-                        const url_str = (tblName === "userpermit") ? url_userpermit_upload : url_user_upload;
+                        const url_str = (tblName === "userpermit") ? urls.url_userpermit_upload : urls.url_user_upload;
                         const upload_dict = {mode: "update", mapid: data_dict.mapid};
                         if (tblName === "userpermit"){
                             upload_dict.userpermit_pk = data_dict.id;
@@ -839,9 +851,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         const tblName = get_tblName_from_selectedBtn();
                         RefreshDataRows(tblName, response.updated_user_rows, user_rows, true)  // true = update
                     };
-
                     if ("updated_permit_rows" in response){
-                        refresh_permit_map(response.updated_permit_rows);
+                        RefreshDataRows("userpermit", response.updated_permit_rows, permit_rows, true)  // true = is_update
                     }
 
                 },  // success: function (response) {
@@ -979,7 +990,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const disable_btn_save = (!mod_MUA_dict.user_schoolbase_pk || !el_MUA_username.value ||
                                   !el_MUA_last_name.value || !el_MUA_email.value )
         el_MUA_btn_submit.disabled = disable_btn_save;
-        el_MUA_btn_submit.innerText = (mod_MUA_dict.mode === "update") ? loc.Save : loc.Submit;
+        el_MUA_btn_submit.innerText = (mod_MUA_dict.mode === "update") ? loc.Save : loc.Create_user_account;
 
 // ---  hide submit btn when is_ok
         add_or_remove_class(el_MUA_btn_submit, cls_hide, is_ok)
@@ -1057,7 +1068,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let response = "";
             $.ajax({
                 type: "POST",
-                url: url_user_upload,
+                url: urls.url_user_upload,
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
@@ -1122,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let response = "";
             $.ajax({
                 type: "POST",
-                url: url_user_upload,
+                url: urls.url_user_upload,
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
@@ -1527,7 +1538,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const sequence_value = true; //document.getElementById("id_MUPM_sequence").value;
         const permit_sequence_int = 0; //(Number(sequence_value)) ? Number(sequence_value) : 1;
 // ---  create mod_dict
-        const url_str = url_userpermit_upload;
+        const url_str = urls.url_userpermit_upload;
         const upload_dict = {mode: upload_mode,
                             userpermit_pk: mod_MUPM_dict.userpermit_pk,
                             role: role,
@@ -1746,7 +1757,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if(new_value !== map_value){
         // ---  create mod_dict
-                const url_str = url_userpermit_upload;
+                const url_str = urls.url_userpermit_upload;
                 const upload_dict = {mode: "update",
                                     userpermit_pk: userpermit_pk};
                 upload_dict[fldName] = new_value;
@@ -1807,12 +1818,12 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  put text in modal form
         let dont_show_modal = false;
         const is_mode_permission_admin = (mode === "permission_admin");
-        const is_mode_resend_activation_email = (mode === "resend_activation_email");
+        const is_mode_send_activation_email = (mode === "send_activation_email");
         //console.log("mode", mode)
         const inactive_txt = (mod_dict.current_isactive) ? loc.Make_user_inactive : loc.Make_user_active;
         const header_text = (mode === "delete") ? (tblName === "userpermit") ? loc.Delete_permission : loc.Delete_user :
                             (mode === "is_active") ? inactive_txt :
-                            (is_mode_resend_activation_email) ? loc.Resend_activation_email :
+                            (is_mode_send_activation_email) ? loc.Send_activation_email :
                             (is_mode_permission_admin) ? loc.Set_permissions : "";
 
         let msg_list = [];
@@ -1853,14 +1864,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (fldName === "group_admin") {
                         msg_list = [loc.Sysadm_cannot_remove_sysadm_perm]
                     }
-                } else if (is_mode_resend_activation_email) {
+                } else if (is_mode_send_activation_email) {
                     const is_expired = activationlink_is_expired(data_dict.date_joined);
                     dont_show_modal = (data_dict.activated);
                     if(!dont_show_modal){
                         if(is_expired) {
                             msg_list.push(loc.Activationlink_expired);
                         };
-                        msg_list.push(loc.We_will_resend_an_email_to_user + " '" + username + "'.");
+                        msg_list.push(loc.We_will_send_an_email_to_user + " '" + username + "'.");
                         msg_list.push(loc.Do_you_want_to_continue);
                     }
                 }
@@ -1879,7 +1890,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const caption_save = (mode === "delete") ? loc.Yes_delete :
                             (mode === "is_active") ? ( (mod_dict.current_isactive) ? loc.Yes_make_inactive : loc.Yes_make_active ) :
-                            (is_mode_resend_activation_email) ? loc.Yes_send_email : loc.OK;
+                            (is_mode_send_activation_email) ? loc.Yes_send_email : loc.OK;
             el_confirm_btn_save.innerText = caption_save;
             add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
 
@@ -1888,7 +1899,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const caption_cancel = (mode === "delete") ? loc.No_cancel :
                             (mode === "is_active") ? loc.No_cancel :
-                            (is_mode_resend_activation_email) ? loc.No_cancel : loc.Cancel;
+                            (is_mode_send_activation_email) ? loc.No_cancel : loc.Cancel;
             el_confirm_btn_cancel.innerText = (has_selected_item && !is_mode_permission_admin) ? caption_cancel : loc.Close;
 
     // set focus to cancel button
@@ -1916,7 +1927,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(mod_dict.table === "userpermit"){
             if (mod_dict.mode === "delete"){
-                url_str = url_userpermit_upload;
+                url_str = urls.url_userpermit_upload;
                 upload_dict.userpermit_pk = mod_dict.userpermit_pk;
             }
         } else {
@@ -1940,7 +1951,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
     // ---  Upload Changes
-            url_str = url_user_upload;
+            url_str = urls.url_user_upload;
             upload_dict.user_pk = mod_dict.user_pk;
             upload_dict.schoolbase_pk = mod_dict.user_ppk;
             if (mod_dict.mode === "is_active") {
@@ -2000,7 +2011,46 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //###########################################################################
 
+//=========  RefreshDataRowsAfterUpload  ================ PR2021-08-05
+function RefreshDataRowsAfterUpload(response) {
+    console.log(" --- RefreshDataRowsAfterUpload  ---");
+    console.log("response:", response);
+    const is_test = (!!response && !!response.is_test) ;
+    if(!is_test && response && "updated_user_rows" in response) {
+        RefreshDataRows("user", response.updated_user_rows, user_rows, true)  // true = update
+    }
+
+}  // RefreshDataRowsAfterUpload
+
+//=========  RefreshDataRowsPermitsAfterUpload  ================ PR2021-07-20
+    function RefreshDataRowsPermitsAfterUpload(response) {
+        console.log(" --- RefreshDataRowsPermitsAfterUpload  ---");
+        console.log( "response", response);
+
+        const is_test = (response && response.is_test);
+        console.log( "is_test", is_test);
+        if (response && "updated_user_rows" in response) {
+            const updated_user_rows = response.updated_user_rows;
+        }
+
+    }  //  RefreshDataRowsPermitsAfterUpload
+
+// +++++++++++++++++ REFRESH PERMIT MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
+//=========  refresh_permit_map  ================ PR2021-03-18
+    function refresh_permit_map(updated_permitlist) {
+        //console.log(" --- refresh_permit_map  ---");
+        //console.log( "updated_permitlist", updated_permitlist);
+        if (updated_permitlist) {
+            for (let i = 0, update_dict; update_dict = updated_permitlist[i]; i++) {
+               // refresh_usermap_item(permit_map, update_dict);
+               //RefreshDatarowItem(tblName, field_setting, update_dict, data_rows)
+            }
+        }
+    }  //  refresh_permit_map
+
+
 // +++++++++++++++++ REFRESH DATA ROWS ++++++++++++++++++++++++++++++++++++++++++++++++++
+
 //=========  RefreshDataRows  ================ PR2021-08-01
     function RefreshDataRows(page_tblName, update_rows, data_rows, is_update) {
         console.log(" --- RefreshDataRows  ---");
@@ -2019,27 +2069,6 @@ document.addEventListener('DOMContentLoaded', function() {
            data_rows = [];
         }
     }  //  RefreshDataRows
-
-
-//=========  RefreshDataRowsPermitsAfterUpload  ================ PR2021-07-20
-    function RefreshDataRowsPermitsAfterUpload(response) {
-        console.log(" --- RefreshDataRowsPermitsAfterUpload  ---");
-        console.log( "response", response);
-        // TODO
-    }  //  RefreshDataRowsPermitsAfterUpload
-
-// +++++++++++++++++ REFRESH PERMIT MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
-//=========  refresh_permit_map  ================ PR2021-03-18
-    function refresh_permit_map(updated_permitlist) {
-        //console.log(" --- refresh_permit_map  ---");
-        //console.log( "updated_permitlist", updated_permitlist);
-        if (updated_permitlist) {
-            for (let i = 0, update_dict; update_dict = updated_permitlist[i]; i++) {
-               // refresh_usermap_item(permit_map, update_dict);
-               //RefreshDatarowItem(tblName, field_setting, update_dict, data_rows)
-            }
-        }
-    }  //  refresh_permit_map
 
 
 //=========  RefreshDatarowItem  ================ PR2021-08-01
@@ -2204,12 +2233,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= HandleFilterKeyup  ================= PR2021-03-23
     function HandleFilterKeyup(el, event) {
-        console.log( "===== HandleFilterKeyup  ========= ");
+        //console.log( "===== HandleFilterKeyup  ========= ");
         // skip filter if filter value has not changed, update variable filter_text
-        const col_index = get_attr_from_el(el, "data-colindex")
-        console.log( "col_index", col_index, "event.key", event.key);
+
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el.parentNode.cellIndex;
+        //console.log( "col_index", col_index, "event.key", event.key);
+
         const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
-        console.log( "filter_dict", filter_dict);
+        //console.log( "filter_dict", filter_dict);
 
         if (!skip_filter) {
             Filter_TableRows(tblBody_datatable);
@@ -2219,7 +2253,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23
     function HandleFilterToggle(el_input) {
-        console.log( "===== HandleFilterToggle  ========= ");
+        //console.log( "===== HandleFilterToggle  ========= ");
 
     // - get col_index and filter_tag from  el_input
         const col_index = get_attr_from_el(el_input, "data-colindex")
@@ -2248,33 +2282,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // - put new filter value in filter_dict
         filter_dict[col_index] = [filter_tag, new_value]
-        console.log( "filter_dict", filter_dict);
+        //console.log( "filter_dict", filter_dict);
         el_input.className = icon_class;
         Filter_TableRows(tblBody_datatable);
 
     };  // HandleFilterToggle
 
-
-//========= Filter_TableRows  ==================================== PR2020-08-17
-    function Filter_TableRowsXXX(tblBody) {
-        console.log( "===== Filter_TableRows  ========= ");
-
-        const tblName_settings = get_tblName_from_selectedBtn();
-        console.log( "tblName_settings", tblName_settings);
-
-// ---  loop through tblBody.rows
-        for (let i = 0, tblRow, show_row; tblRow = tblBody.rows[i]; i++) {
-        console.log( "tblRow", tblRow);
-            show_row = ShowTableRow(tblRow, tblName_settings)
-        console.log( "show_row", show_row);
-            add_or_remove_class(tblRow, cls_hide, !show_row)
-        }
-    }; // Filter_TableRows
-
+//========= Filter_TableRows  ====================================
     function Filter_TableRows() {  // PR2019-06-09 PR2020-08-31
         //console.log( "===== Filter_TableRows=== ");
         //console.log( "filter_dict", filter_dict);
-                //console.log( "filter_array", filter_array);
+
         // function filters by inactive and substring of fields
         //  - iterates through cells of tblRow
         //  - skips filter of new row (new row is always visible)
@@ -2291,7 +2309,6 @@ document.addEventListener('DOMContentLoaded', function() {
             add_or_remove_class(tblRow, cls_hide, !show_row)
         }
     }; // Filter_TableRows
-
 
 //========= ShowTableRow  ==================================== PR2020-08-17
     function ShowTableRow(tblRow, tblName_settings) {
@@ -2425,8 +2442,8 @@ document.addEventListener('DOMContentLoaded', function() {
 //###########################################################################
 //========= set_columns_hidden  ====== PR2021-04-26
     function set_columns_hidden() {
-        console.log( "===== set_columns_hidden  === ");
-        console.log( "permit_dict", permit_dict);
+        //console.log( "===== set_columns_hidden  === ");
+        //console.log( "permit_dict", permit_dict);
 
         if (permit_dict.requsr_role_system) {
             columns_hidden =  [];
@@ -2463,20 +2480,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= get_datadict_from_mapid  ====== PR2021-08-01
     function get_datadict_from_mapid(map_id) {
-        //console.log( "===== get_datadict_from_mapid  === ");
+        console.log( "===== get_datadict_from_mapid  === ");
         let data_dict = null;
         if(map_id){
             const arr = get_tblName_pk_from_mapid(map_id);
+        console.log( "arr", arr);
             data_dict = get_datadict_from_pk(arr[0], arr[1]);
         };
         return data_dict;
     };  // get_datadict_from_mapid
 
     function get_datadict_from_pk(tblName, pk_int) {
-        //console.log( "===== get_datadict_from_pk  === ");
+        console.log( "===== get_datadict_from_pk  === ");
+        console.log( "tblName", tblName);
+        console.log( "pk_int", pk_int, typeof pk_int );
         let data_dict = null;
         if(tblName && pk_int){
             const data_rows = get_data_rows(tblName) ;
+        console.log( "data_rows", data_rows, typeof data_rows );
             const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
             if (!isEmpty(found_dict)) {data_dict = found_dict};
 
@@ -2493,7 +2514,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function get_data_rows(tblName) {  //PR2021-08-01
-        return  (tblName === "userpermit") ? permit_rows :
+        return (tblName === "userpermit") ? permit_rows :
                 (tblName === "usergroup") ? user_rows :
                 (tblName === "user") ? user_rows : null;
     }

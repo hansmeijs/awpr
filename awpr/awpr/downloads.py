@@ -85,7 +85,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- locale
                 request_item_setting = datalist_request.get('locale')
                 if request_item_setting:
-                    datalists['locale_dict'] = loc.get_locale_dict(request_item_setting, user_lang)
+                    datalists['locale_dict'] = loc.get_locale_dict(request_item_setting, user_lang, request)
 
                 # 9. return datalists
                 # PR2020-05-23 debug: datalists = {} gives parse error.
@@ -93,7 +93,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- get users
                 if datalist_request.get('user_rows'):
-                    datalists['user_rows'] = acc_view.create_user_list(request)
+                    datalists['user_rows'] = acc_view.create_user_rows(request)
                     datalists['permit_rows'] = acc_view.create_permit_list()
 
 # ----- examyears
@@ -125,12 +125,10 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- subjects
                 if datalist_request.get('subject_rows'):
-                    etenorm_only = af.get_dict_value(datalist_request, ('subject_rows', 'etenorm_only'), False)
                     cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
                     datalists['subject_rows'] = sj_vw.create_subject_rows(
                         setting_dict=new_setting_dict,
                         subject_pk=None,
-                        etenorm_only=etenorm_only,
                         cur_dep_only=cur_dep_only)
 
 # ----- schemes

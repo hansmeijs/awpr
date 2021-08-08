@@ -101,37 +101,6 @@ def Loggedin(request):
     return HttpResponseRedirect(reverse_lazy(page_url))
 
 
-# === MANUAL =====================================
-# @method_decorator([login_required], name='dispatch')
-class ManualListView(View):
-    # PR2021-06-10
-
-    def get(self, request, page, paragraph):
-        logger.debug(" =====  ManualListView  =====")
-        logger.debug("page: " + str(page))
-        logger.debug("paragraph: " + str(paragraph))
-        logger.debug("request: " + str(request))
-        logger.debug("request.user: " + str(request.user))
-        logger.debug("request.user.is_anonymous: " + str(request.user.is_anonymous))
-        logger.debug("request.user.is_authenticated: " + str(request.user.is_authenticated))
-
-        # 'AnonymousUser' object has no attribute 'lang'
-        # -  get user_lang
-        user_lang = c.LANG_DEFAULT
-        if request.user.is_authenticated:
-            if request.user.lang:
-                user_lang = request.user.lang
-        activate(user_lang)
-
-        # - get headerbar parameters
-       # page = 'page_manual'
-        #param = {'list': list}
-        #headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
-        param = {'page': page, 'paragraph': paragraph, 'lang': user_lang}
-
-        logger.debug("param: " + str(param))
-
-        return render(request, 'manual.html', param)
 
 # === EXAMYEAR =====================================
 @method_decorator([login_required], name='dispatch')
@@ -207,22 +176,23 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
                     logger.debug('mode:    ' + str(mode))
 
                 if country:
+                    new_examyear_instance = None
 # - get current examyear - when mode is 'create': examyear is None. It will be created at "elif mode == 'create'"
                     # only if examyear.country equals request.user.country
                     examyear_id = upload_dict.get('examyear_pk')
-                    examyear = sch_mod.Examyear.objects.get_or_none(
+                    current_examyear = sch_mod.Examyear.objects.get_or_none(
                         id=examyear_id,
                         country=country
                     )
                     if logging_on:
-                        logger.debug('examyear: ' + str(examyear))
+                        logger.debug('current_examyear: ' + str(current_examyear))
 
-# +++ delete examyear
+# +++ delete current_examyear
                     if mode == 'delete':
-                        if examyear:
-                            this_text = _("Exam year '%(tbl)s' ") % {'tbl': str(examyear.code)}
-        # - check if examyear is closed or schools have activated or locked it
-                            msg_err = av.validate_delete_examyear(examyear)
+                        if current_examyear:
+                            this_text = _("Exam year '%(tbl)s' ") % {'tbl': str(current_examyear.code)}
+        # - check if current_examyear is closed or schools have activated or locked it
+                            msg_err = av.validate_delete_examyear(current_examyear)
                             if msg_err:
                                 error_list.append(msg_err)
                                 if logging_on:
@@ -230,54 +200,57 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
 
                             else:
                                 if logging_on:
-                                    logger.debug('delete examyear: ' + str(examyear))
+                                    logger.debug('delete current_examyear: ' + str(current_examyear))
                                 msg_list = []  # TODO
-                                examyear_pk = examyear.pk
-                                deleted_ok = sch_mod.delete_instance(examyear, msg_list, error_list, request, this_text)
+                                current_examyear_pk = current_examyear.pk
+                                deleted_ok = sch_mod.delete_instance(current_examyear, msg_list, error_list, request, this_text)
                                 if logging_on:
                                     logger.debug('deleted_ok' + str(deleted_ok))
 
                                 if deleted_ok:
-                                    # - add deleted_row to examyear_rows
-                                    examyear_rows.append({'pk': examyear_pk,
-                                                         'mapid': 'examyear_' + str(examyear_pk),
+                                    # - add deleted_row to current_examyear_rows
+                                    examyear_rows.append({'pk': current_examyear_pk,
+                                                         'mapid': 'examyear_' + str(current_examyear_pk),
                                                          'deleted': True})
                                     instance = None
-                                if logging_on:
-                                    logger.debug('examyear_rows' + str(examyear_rows))
+                                    if logging_on:
+                                        logger.debug('examyear_rows' + str(examyear_rows))
 # +++ create new examyear
                     elif mode == 'create':
      # - validate unique examyear_code_int
+                        country = request.user.country
                         examyear_code_int = upload_dict.get('examyear_code')
-                        msg_err = av.validate_unique_examyear(examyear_code_int, request)
+                        msg_err = av.validate_unique_examyear(country, examyear_code_int, request)
                         if msg_err:
                             error_list.append(msg_err)
                             if logging_on:
                                 logger.debug('msg_err: ' + str(msg_err))
                         else:
      # - create new examyear
-                            examyear, msg_err = create_examyear(country, examyear_code_int, request)
-                            if examyear:
+                            new_examyear_instance, msg_err = create_examyear(country, examyear_code_int, request)
+                            if new_examyear_instance:
                                 append_dict['created'] = True
     # - copy all tables from last examyear existing examyear
-                                msg_err = copy_tables_from_last_year(examyear, request)
+                                copy_to_sxm = False
+                                prev_examyear_instance, msg_err = sf.get_previous_examyear_instance(new_examyear_instance)
+                                copy_tables_from_last_year(prev_examyear_instance, new_examyear_instance, copy_to_sxm, request)
                             if msg_err:
                                 error_list.append(msg_err)
                                 if logging_on:
                                     logger.debug('msg_err: ' + str(msg_err))
 
 # +++ update examyear, skip when it is created. All fields are saved in create_examyear
-                    if examyear and mode != 'create':
-                        update_examyear(examyear, upload_dict, error_list, request)
+                    if new_examyear_instance and mode != 'create':
+                        update_examyear(new_examyear_instance, upload_dict, error_list, request)
 
                     if error_list:
                         append_dict['error'] = error_list
 # - add update_dict to update_wrap
-                    if examyear:
+                    if new_examyear_instance:
                         examyear_rows = sd.create_examyear_rows(
                             req_usr=req_usr,
                             append_dict=append_dict,
-                            examyear_pk=examyear.pk
+                            examyear_pk=new_examyear_instance.pk
                         )
                     else:
                         # examyear is None when error on creating examyear. Return msg_err still
@@ -287,6 +260,90 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of ExamyearUploadView
+
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+@method_decorator([login_required], name='dispatch')
+class ExamyearCopyToSxmView(View):  # PR2021-08-06
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+
+        update_wrap = {}
+        error_list = []
+        if request.user is not None and request.user.country is not None:
+            req_usr = request.user
+            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_examyear', req_usr)
+            has_permit = 'permit_crud' in permit_list
+
+            if logging_on:
+                logger.debug(' ')
+                logger.debug(' ============= ExamyearCopyToSxmView ============= ')
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit:  ' + str(has_permit))
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if has_permit and upload_json:
+                upload_dict = json.loads(upload_json)
+                current_examyear_code = upload_dict.get('examyear_code')
+                if logging_on:
+                    logger.debug('current_examyear_code: ' + str(current_examyear_code) + ' ' + str(type(current_examyear_code)))
+                append_dict = {}
+# - get countr cur
+                cur_country = af.get_country_by_abbrev('cur')
+                if logging_on:
+                    logger.debug('cur_country: ' + str(cur_country))
+# - get countr sxm
+                sxm_country = af.get_country_by_abbrev('sxm')
+                if logging_on:
+                    logger.debug('sxm_country: ' + str(sxm_country))
+
+                if cur_country and sxm_country:
+# - get current examyear from Curacao
+                    current_examyear_instance = sch_mod.Examyear.objects.filter(
+                        country=cur_country,
+                        code=current_examyear_code
+                    ).order_by('-pk').first()
+                    if logging_on:
+                        logger.debug('current_examyear_instance: ' + str(current_examyear_instance))
+                        logger.debug('current_examyear_instance: ' + str(current_examyear_instance) + str(current_examyear_instance.country.abbrev))
+
+                    if current_examyear_instance:
+                        examyear_code_int = current_examyear_instance.code
+# - get new examyear of sxm
+                        new_examyear_instance = sch_mod.Examyear.objects.filter(
+                            country=sxm_country,
+                            code=examyear_code_int
+                        ).order_by('-pk').first()
+# - create new examyear if it does not exist yet
+                        if new_examyear_instance is None:
+                            new_examyear_instance, msg_err = create_examyear(sxm_country, examyear_code_int, request)
+                            if msg_err:
+                                error_list.append(msg_err)
+                                if logging_on:
+                                    logger.debug('msg_err: ' + str(msg_err))
+                        if logging_on:
+                            logger.debug('new_examyear_instance: ' + str(new_examyear_instance) + str(
+                                new_examyear_instance.country.abbrev))
+
+                        if new_examyear_instance:
+                            append_dict['created'] = True
+# - copy all tables from current_examyear_instance to new_examyear_instance
+                            copy_to_sxm = True
+                            copy_tables_from_last_year(current_examyear_instance, new_examyear_instance, copy_to_sxm, request)
+
+        update_wrap['error_list'] = error_list
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of ExamyearCopyToSxmView
+
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -345,17 +402,10 @@ def update_examyear(instance, upload_dict, msg_list, request):
                     logger.debug('new_value: ' + str(new_value))
                     logger.debug('saved_value: ' + str(saved_value))
 
-# --- update field 'examyear', required field
+# --- update field 'examyear' is not allowed
                     if field == 'examyear':
                         if new_value != saved_value:
-                            msg_err = av.validate_unique_examyear(new_value, request)
-                            # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
-                            if not msg_err:
-                                # c. save field if changed and no_error
-                                setattr(instance, field, new_value)
-                                save_changes = True
-                            else:
-                                msg_list.append(msg_err)
+                             msg_list.append(str(_('The exam year cannot be changed')))
 
 # --- update fieldpython manage.py runserver
                     # 'published', 'locked'
@@ -383,23 +433,24 @@ def update_examyear(instance, upload_dict, msg_list, request):
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
-
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def copy_tables_from_last_year(new_examyear_instance, request):
-    # --- copy_tables_from_last_year # PR2019-07-30 PR2020-10-05 PR2021-04-25
+def copy_tables_from_last_year(prev_examyear_instance, new_examyear_instance, copy_to_sxm, request):
+    # --- copy_tables_from_last_year # PR2019-07-30 PR2020-10-05 PR2021-04-25 PR2021-08-06
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_tables_from_last_year -------')
+        logger.debug('prev_examyear_instance: ' + str(prev_examyear_instance) + ' ' + str(prev_examyear_instance.country.abbrev))
+        logger.debug('new_examyear_instance: ' + str(new_examyear_instance) + ' ' + str(new_examyear_instance.country.abbrev))
 
-    logger.debug(' ------- copy_tables_from_last_year -------')
-    logger.debug('new_examyear_instance: ' + str(new_examyear_instance) + ' ' + str(type(new_examyear_instance)))
-
-    prev_examyear_instance, msg_err = sf.get_previous_examyear_instance(new_examyear_instance)
     if new_examyear_instance and prev_examyear_instance:
 
         sf.copy_examyear_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
 
         sf.copy_exfilestext_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
         mapped_deps = sf.copy_deps_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
-        sf.copy_schools_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
+
+        if not copy_to_sxm:
+            sf.copy_schools_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
 
         mapped_levels = sf.copy_levels_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
         mapped_sectors = sf.copy_sectors_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
@@ -412,6 +463,7 @@ def copy_tables_from_last_year(new_examyear_instance, request):
         mapped_packages = sf.copy_packages_from_prev_examyear(request, prev_examyear_instance, mapped_schemes)
         sf.copy_packageitems_from_prev_examyear(request, prev_examyear_instance, mapped_packages, mapped_schemeitems)
 
+        # these tables are not copied:
         # Exam
         # Norm
         # School_message
@@ -429,11 +481,8 @@ def copy_tables_from_last_year(new_examyear_instance, request):
         # Studentsubjectnote
         # Noteattachment
         # Grade
-        #
-    # TODO copy  packages
-    #logger.debug(' ----- create_examyear ----- ')
-    return msg_err
 
+# end of copy_tables_from_last_year
 
 # === School =====================================
 @method_decorator([login_required], name='dispatch')

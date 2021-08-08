@@ -4,6 +4,7 @@ from django.urls import reverse_lazy
 from django.utils.translation import activate, ugettext_lazy as _
 from django.utils import timezone
 
+from django.views.generic import View
 #from django.contrib import messages
 
 import json #PR2018-12-21
@@ -28,6 +29,38 @@ pos_y = 18
 #class_unsel = 'fill:#bacee6;stroke:#bacee6;stroke-width:1'
 
 # viewpermits: 'none', 'read', 'write', 'auth', 'admin', 'all'
+
+# === MANUAL =====================================
+# @method_decorator([login_required], name='dispatch')
+class ManualListView(View):
+    # PR2021-06-10
+
+    def get(self, request, page, paragraph):
+        logger.debug(" =====  ManualListView  =====")
+        logger.debug("page: " + str(page))
+        logger.debug("paragraph: " + str(paragraph))
+        logger.debug("request: " + str(request))
+        logger.debug("request.user: " + str(request.user))
+        logger.debug("request.user.is_anonymous: " + str(request.user.is_anonymous))
+        logger.debug("request.user.is_authenticated: " + str(request.user.is_authenticated))
+
+        # 'AnonymousUser' object has no attribute 'lang'
+        # -  get user_lang
+        user_lang = c.LANG_DEFAULT
+        if request.user.is_authenticated:
+            if request.user.lang:
+                user_lang = request.user.lang
+        activate(user_lang)
+
+        # - get headerbar parameters
+       # page = 'page_manual'
+        #param = {'list': list}
+        #headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
+        param = {'page': page, 'paragraph': paragraph, 'lang': user_lang}
+
+        logger.debug("param: " + str(param))
+
+        return render(request, 'manual.html', param)
 
 
 def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25

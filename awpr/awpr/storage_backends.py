@@ -17,7 +17,7 @@ import logging
 #    file_overwrite = False
 
 class PrivateMediaStorage(S3Boto3Storage):
-    # attachments are stored in spaces awpmedia/awpmedia/media/private PR2021-07-27
+    # attachments are stored in spaces awpmedia / awpmedia / media / private PR2021-07-27
     location = settings.AWS_PRIVATE_MEDIA_LOCATION
     default_acl = 'private'
     file_overwrite = False

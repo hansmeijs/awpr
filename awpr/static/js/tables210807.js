@@ -276,8 +276,8 @@
 
 //=========  t_MSSSS_Save  ================ PR2020-01-29 PR2021-01-23
     function t_MSSSS_Save(el_input, MSSSS_Response) {
-        console.log("===  t_MSSSS_Save =========");
-        console.log("el_input", el_input);
+        //console.log("===  t_MSSSS_Save =========");
+        //console.log("el_input", el_input);
     // --- put tblName, sel_pk and value in MSSSS_Response, MSSSS_Response handles uploading
 
         const tblName = get_attr_from_el(el_input, "data-table");
@@ -294,10 +294,10 @@
         const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", selected_pk_int);
         const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
 
-        console.log("selected_pk_int", selected_pk_int);
-        console.log("selected_code", selected_code);
-        console.log("selected_name", selected_name);
-        console.log( "selected_dict", selected_dict);
+        //console.log("selected_pk_int", selected_pk_int);
+        //console.log("selected_code", selected_code);
+        //console.log("selected_name", selected_name);
+        //console.log( "selected_dict", selected_dict);
 
         t_MSSSS_display_in_sbr(tblName, selected_pk_int);
         const other_tblName = (tblName === "subject") ? "student" : (tblName === "student") ? "subject" : null;
@@ -1011,16 +1011,13 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 //========= t_FillOptionsFromList  =======  PR2020-12-17
     function t_FillOptionsFromList(el_select, data_list, value_field, caption_field,
                                     select_text, select_text_none, selected_value, filter_field, filter_value) {
-/*
-        console.log( "=== t_FillOptionsFromList ");
-        console.log( "data_list", data_list);
-        console.log( "value_field", value_field);
-        console.log( "caption_field", caption_field);
-        console.log( "select_text", select_text);
-        console.log( "select_text_none", select_text_none);
-        console.log( "filter_field", filter_field);
-        console.log( "filter_value", filter_value, typeof filter_value);
-*/
+
+        //console.log( "=== t_FillOptionsFromList ");
+        //console.log( "data_list", data_list);
+        //console.log( "value_field", value_field);
+        //console.log( "selected_value", selected_value);
+        //console.log( "filter_field", filter_field);
+        //console.log( "filter_value", filter_value, typeof filter_value);
 
 // ---  fill options of select box
         let option_text = "";
@@ -1573,21 +1570,30 @@ console.log( "show_row", show_row);
     }; // t_create_filter_row
 // ++++++++++++  END OF FILTER PAYROLL TABLES +++++++++++++++++++++++++++++++++++++++
 
+
+
+
+
 // +++++++++++++++++ MODAL SELECT COLUMNS ++++++++++++++++++++++++++++++++++++++++++
+let mod_MCOL_dict = {};
 //=========  MCOL_Open  ================ PR2021-08-02
     function MCOL_Open() {
        //console.log(" -----  MCOL_Open   ----")
+        //console.log("mod_MCOL_dict", mod_MCOL_dict)
 
         const tblName = selected_btn.slice(4);
 
         mod_MCOL_dict = {tblName: tblName, col_hidden: []}
 
         const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
+        //console.log("tblName", tblName)
+        //console.log("col_hidden", col_hidden)
+        //console.log("columns_hidden", columns_hidden)
         for (let i = 0, field; field = col_hidden[i]; i++) {
             mod_MCOL_dict.col_hidden.push(field);
         };
 
-        MCOL_FillSelectTable();
+        t_MCOL_FillSelectTable();
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
         el_MCOL_btn_save.disabled = true
 // ---  show modal, set focus on save button
@@ -1596,7 +1602,7 @@ console.log( "show_row", show_row);
 
 //=========  t_MCOL_Save  ================ PR2021-08-02
     function t_MCOL_Save(url_settings_upload, HandleBtnSelect) {
-        console.log(" -----  t_MCOL_Save   ----")
+        //console.log(" -----  t_MCOL_Save   ----")
 
 // ---  get hidden columns from mod_MCOL_dict.col_hidden and put them  in columns_hidden[tblName]
 
@@ -1604,7 +1610,7 @@ console.log( "show_row", show_row);
             columns_hidden[mod_MCOL_dict.tblName] = [];
         }
         const col_hidden = columns_hidden[mod_MCOL_dict.tblName];
-        console.log("col_hidden", col_hidden)
+        //console.log("col_hidden", col_hidden)
    // clear the array
         b_clear_array(col_hidden);
    // add hidden columns to col_hidden
@@ -1618,7 +1624,7 @@ console.log( "show_row", show_row);
         const tab_str = mod_MCOL_dict.tblName;
         page_dict[tab_str] = col_hidden;
         upload_dict[key_str] = {col_hidden: page_dict }
-        console.log("upload_dict", upload_dict)
+        //console.log("upload_dict", upload_dict)
         UploadSettings (upload_dict, url_settings_upload);
 
         HandleBtnSelect(selected_btn, true)  // true = skip_upload
@@ -1627,11 +1633,12 @@ console.log( "show_row", show_row);
         // in HTML: data-dismiss="modal"
     }  // t_MCOL_Save
 
-//=========  MCOL_FillSelectTable  ================ PR2021-07-07 PR2021-08-02
-    function MCOL_FillSelectTable() {
-        console.log("===  MCOL_FillSelectTable == ");
+//=========  t_MCOL_FillSelectTable  ================ PR2021-07-07 PR2021-08-02
+    function t_MCOL_FillSelectTable() {
+        console.log("===  t_MCOL_FillSelectTable == ");
         console.log("selected_btn", selected_btn);
         console.log("field_settings", field_settings);
+        console.log("mod_MCOL_dict", mod_MCOL_dict);
 
         const el_MCOL_tblBody_available = document.getElementById("id_MCOL_tblBody_available");
         const el_MCOL_tblBody_show = document.getElementById("id_MCOL_tblBody_show");
@@ -1668,14 +1675,13 @@ console.log( "show_row", show_row);
                 td.classList.add("tw_240")
 
                 tblRow.setAttribute("data-field", field_name);
-
             }
         }  // if(field_captions && field_captions.length)
-    } // MCOL_FillSelectTable
+    } // t_MCOL_FillSelectTable
 
 //=========  MCOL_SelectItem  ================ PR2021-07-07
     function MCOL_SelectItem(tr_clicked) {
-        console.log("===  MCOL_SelectItem == ");
+        //console.log("===  MCOL_SelectItem == ");
         if(!!tr_clicked) {
             const field_name = get_attr_from_el(tr_clicked, "data-field")
             const is_hidden = (field_name && mod_MCOL_dict.col_hidden.includes(field_name));
@@ -1684,11 +1690,138 @@ console.log( "show_row", show_row);
             } else {
                 mod_MCOL_dict.col_hidden.push(field_name)
             }
-            MCOL_FillSelectTable();
+            t_MCOL_FillSelectTable();
             // enable sasave btn
             const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
             el_MCOL_btn_save.disabled = false;
         }
     }  // MCOL_SelectItem
+// +++++++++++++++++ END OF MODAL SELECT COLUMNS ++++++++++++++++++++++++++++++++++++++++++
+
+// +++++++++++++++++ SBR SELECT LEVEL SECTOR ++++++++++++++++++++++++++++++++++++++++++
+//=========  t_SBR_select_level_sector  ================ PR2021-08-02
+    function t_SBR_select_level_sector(mode, el_select, FillTblRows) {
+        //console.log("===== t_SBR_select_level_sector =====");
+        //console.log( "el_select.value: ", el_select.value, typeof el_select.value)
+        let upload_dict = {};
+        if (mode === "level"){
+            setting_dict.sel_lvlbase_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
+            setting_dict.sel_level_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].text : null;
+
+            upload_dict = {selected_pk: {sel_lvlbase_pk: setting_dict.sel_lvlbase_pk}};
+        } else if (mode === "sector"){
+            setting_dict.sel_sctbase_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
+            setting_dict.sel_sector_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].text : null;
+
+            upload_dict = {selected_pk: {sel_sctbase_pk: setting_dict.sel_sctbase_pk}};
+        }
+        //console.log( "upload_dict.value: ", upload_dict)
+// ---  upload new setting
+        UploadSettings (upload_dict, urls.url_settings_upload);
+        //UpdateHeaderLeft();
+
+        FillTblRows();
+    }  // t_SBR_select_level_sector
+
+//=========  t_SBR_filloptions_level_sector  ================ PR2021-08-02
+    function t_SBR_filloptions_level_sector(tblName, rows) {
+        //console.log("=== t_SBR_filloptions_level_sector");
+        //console.log("tblName", tblName);
+        //console.log("rows", rows);
+
+        const display_rows = []
+        const has_items = (!!rows && !!rows.length);
+        const has_profiel = setting_dict.sel_dep_has_profiel;
+
+        const caption_all = "&#60" + ( (tblName === "level") ? loc.All_leerwegen :
+                                        (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
+        if (!has_items){
+             const caption_none = (tblName === "level") ? loc.No_leerweg_found :
+                                  (has_profiel) ? loc.No_profiel_found : loc.No_sector_found ;
+            display_rows.push({value: 0, caption: caption_none})
+        } else {
+            if (rows.length === 1){
+                // if only 1 level: make that the selected one
+                if (tblName === "level"){
+                    setting_dict.sel_lvlbase_pk = rows.base_id;
+                } else if (tblName === "sector"){
+                    setting_dict.sel_sctbase_pk = rows.base_id
+                }
+            } else if (rows.length > 1){
+                // add row 'Alle leerwegen' / Alle profielen / Alle sectoren in first row
+                display_rows.push({value: 0, caption: caption_all })
+            }
+        }
+        for (let i = 0, row; row = rows[i]; i++) {
+            display_rows.push({
+            value: row.base_id,
+            caption: (tblName === "sector") ? row.name : row.abbrev
+            })
+        }
+
+        const selected_pk = (tblName === "level") ? setting_dict.sel_lvlbase_pk :
+                            (tblName === "sector") ? setting_dict.sel_sctbase_pk : 0;
+        //console.log("setting_dict", setting_dict);
+        //console.log("selected_pk", selected_pk);
+
+        const id_str = (tblName === "level") ? "id_SBR_select_level" :
+                        (tblName === "sector") ? "id_SBR_select_sector" : null;
+        const el_SBR_select = document.getElementById(id_str)
+        t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
+
+        // put displayed text in setting_dict
+        const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].text : null;
+        if (tblName === "level"){
+            setting_dict.sel_level_abbrev = sel_abbrev;
+        } else if (tblName === "sector"){
+            setting_dict.sel_sector_abbrev = sel_abbrev;
+        }
+        add_or_remove_class(el_SBR_select.parentNode, cls_hide, false);
+
+        const el_SBR_select_showall = document.getElementById("id_SBR_select_showall")
+        add_or_remove_class(el_SBR_select_showall, cls_hide, false);
+        // show select level and sector
+        if (tblName === "sector"){
+            document.getElementById("id_SBR_select_sector_label").innerText = ( (has_profiel) ? loc.Profiel : loc.Sector ) + ":";
+        }
+    }  // t_SBR_filloptions_level_sector
+
+//=========  t_SBR_show_all  ================ PR2021-08-02
+    function t_SBR_show_all(FillTblRows) {
+        //console.log("===== t_SBR_show_all =====");
+
+        setting_dict.sel_lvlbase_pk = null;
+        setting_dict.sel_level_abbrev = null;
+
+        setting_dict.sel_sctbase_pk = null;
+        setting_dict.sel_sector_abbrev = null;
+
+        setting_dict.sel_classname = null;
+
+        setting_dict.sel_student_pk = null;
+
+        const el_SBR_select_level = document.getElementById("id_SBR_select_level");
+        const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");
+        const el_SBR_select_class = document.getElementById("id_SBR_select_class");
+        const el_SBR_select_student = document.getElementById("id_SBR_select_student");
+
+        if (el_SBR_select_level){ el_SBR_select_level.value = null};
+        if (el_SBR_select_sector){ el_SBR_select_sector.value = null};
+        if (el_SBR_select_class){ el_SBR_select_class.value = "0"};
+        if (el_SBR_select_student){ el_SBR_select_student.value = "0"};
+
+// ---  upload new setting
+        const selected_pk_dict = {};
+        if (el_SBR_select_level){selected_pk_dict.sel_lvlbase_pk = null};
+        if (el_SBR_select_sector){selected_pk_dict.sel_sctbase_pk = null};
+        if (el_SBR_select_class){selected_pk_dict.sel_classname = null};
+        if (el_SBR_select_student){selected_pk_dict.sel_student_pk = null};
+
+        const upload_dict = {selected_pk: selected_pk_dict};
+        UploadSettings (upload_dict, urls.url_settings_upload);
+
+        FillTblRows();
+    }  // t_SBR_show_all
 
 
+// +++++++++++++++++ END OF SBR SELECT LEVEL SECTOR ++++++++++++++++++++++++++++++++++++++++++

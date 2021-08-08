@@ -47,7 +47,7 @@ def prepare_ex1_file(request):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
-        logger.debug(' ============= StudentsubjectApproveMultipleView ============= ')
+        logger.debug(' ============= prepare_ex1_file ============= ')
 
 # function sets auth and publish of studentsubject records of current department # PR2021-07-25
     update_wrap = {}
@@ -360,7 +360,7 @@ def create_Ex1(published_instance, sel_examyear, sel_school, sel_department, sav
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
-        logger.debug(' ============= StudentsubjectApproveView ============= ')
+        logger.debug(' ============= create_Ex1 ============= ')
 
 # get text from examyearsetting
     settings = af.get_exform_text(sel_examyear, ['exform', 'ex1'])
@@ -398,5 +398,5 @@ def create_Ex1(published_instance, sel_examyear, sel_school, sel_department, sav
             studsubj_rows=studsubj_rows,
             user_lang=user_lang)
 
-# --- end of StudentsubjectApproveMultipleView
+# --- end of create_Ex1
 

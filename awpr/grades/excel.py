@@ -139,11 +139,20 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
         #    file_dir = s.STATICFILES_MEDIA_DIR
 
         # PR2021-07-28 changed to file_dir = 'published/'
-        # this one gives path:awpmedia/awpmedia/media/private/published
+        # this one gives path: awpmedia / awpmedia / media / private / published
+        # PR2021-08-06 create different folders for country and examyear
+        # this one gives path: awpmedia / awpmedia / media / private / cur / 2022 / published
         # published_instance is None when downloading preliminary Ex1 form
+        file_path = None
         if published_instance:
-            file_dir = 'published/'
-            file_path = ''.join((file_dir, published_instance.filename))
+
+# ---  create file_path
+            # PR2021-08-07 changed to file_dir = 'country/examyear/published/'
+            # this one gives path:awpmedia/awpmedia/media/cur/2022/published
+            country_abbrev = examyear.country.abbrev.lower()
+            examyear_str = str(examyear.code)
+            file_dir = '/'.join((country_abbrev, examyear_str, 'exfiles'))
+            file_path = '/'.join((file_dir, published_instance.filename))
             file_name = published_instance.name
 
             logger.debug('file_dir: ' + str(file_dir))
@@ -362,6 +371,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
             row_index += 1
         book.close()
 
+# +++ save file to disk
         if save_to_disk:
             excel_file = File(temp_file)
 
@@ -1146,7 +1156,7 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
     # get number of columns
     field_names = ['subj_name', 'subj_code', 'sjtp_abbrev', 'gradetype',
                    'weight_se', 'weight_ce',
-                   'is_mandatory',
+                   'is_mandatory', 'is_mand_subj',
                    'is_combi', 'is_core_subject', 'is_mvt',
                    'extra_count_allowed', 'extra_nocount_allowed',
                    'elective_combi_allowed',

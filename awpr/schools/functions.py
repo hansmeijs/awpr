@@ -15,15 +15,28 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-
 def copy_examyear_from_prev_examyear(request, prev_examyear, new_examyear):
     # copy exfilestext from previous examyear PR2021-07-14
+
+    """
+    PR2021-08-05
+    these fields got value in create_examyear
+        country=request.user.country,
+        code=examyear_code_int,
+        createdat=timezone.now()
+    these fields got default value
+        published = False
+        locked = False
+        publishedat = None
+        lockedat = None
+    """
 
     try:
         new_examyear.no_practexam = prev_examyear.no_practexam
         new_examyear.reex_se_allowed = prev_examyear.reex_se_allowed
         new_examyear.no_centralexam = prev_examyear.no_centralexam
         new_examyear.no_thirdperiod = prev_examyear.no_thirdperiod
+
         new_examyear.modifiedby_id = request.user.id,
         new_examyear.modifiedat = timezone.now()
 
@@ -34,7 +47,10 @@ def copy_examyear_from_prev_examyear(request, prev_examyear, new_examyear):
 
 
 def copy_exfilestext_from_prev_examyear(request, prev_examyear, new_examyear):
-    # copy exfilestext from previous examyear PR2021-04-25
+    # copy exfilestext from previous examyear PR2021-04-25 PR2021-08-06
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_exfilestext_from_prev_examyear -------')
 
     modifiedby_id = request.user.id
     modifiedat = timezone.now()
@@ -44,27 +60,44 @@ def copy_exfilestext_from_prev_examyear(request, prev_examyear, new_examyear):
         examyear=prev_examyear
     )
     for prev_eft in prev_exfilestext:
+        if logging_on:
+            logger.debug('prev_eft: ' + str(prev_eft))
         try:
-# - create new exfilestext
-            new_eft = sch_mod.ExfilesText(
+# - first check if ExfilesText already exists - don't overwrite existing ExfilesText
+            new_eft = sch_mod.ExfilesText.objects.filter(
                 examyear=new_examyear,
-
                 key=prev_eft.key,
-                subkey=prev_eft.subkey,
-                setting=prev_eft.setting,
+                subkey=prev_eft.subkey
+            ).order_by('-pk').first()
+            if logging_on:
+                logger.debug('new_eft already exists: ' + str(new_eft))
 
-                modifiedby_id=modifiedby_id,
-                modifiedat=modifiedat
-            )
-# - copy new new_subject to log happens in save(request=request)
-            new_eft.save(request=request)
+            if new_eft is None:
+# - create new exfilestext  it does not exist yet
+                new_eft = sch_mod.ExfilesText(
+                    examyear=new_examyear,
+
+                    key=prev_eft.key,
+                    subkey=prev_eft.subkey,
+                    setting=prev_eft.setting,
+
+                    modifiedby_id=modifiedby_id,
+                    modifiedat=modifiedat
+                )
+    # - copy new new_subject to log happens in save(request=request)
+                new_eft.save(request=request)
+                if logging_on:
+                    logger.debug('new_eft created: ' + str(new_eft))
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
 # - end of copy_exfilestext_from_prev_examyear
 
 
 def copy_deps_from_prev_examyear(request, prev_examyear, new_examyear):
-    # copy departments from previous examyear if it exists # PR2021-04-25
+    # copy departments from previous examyear if it exists # PR2021-04-25  PR2021-08-06
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_deps_from_prev_examyear -------')
 
     mapped_deps = {}
 
@@ -75,36 +108,56 @@ def copy_deps_from_prev_examyear(request, prev_examyear, new_examyear):
     prev_deps = sch_mod.Department.objects.filter(
         examyear=prev_examyear
     )
+
     for prev_dep in prev_deps:
+        if logging_on:
+            logger.debug('prev_dep: ' + str(prev_dep))
         try:
-# - create new_dep
-            new_dep = sch_mod.Department(
+# - first check if dep already exists - don't overwrite existing dep
+            new_dep = sch_mod.Department.objects.filter(
                 base=prev_dep.base,
-                examyear=new_examyear,
+                examyear=new_examyear
+            ).order_by('-pk').first()
+            if logging_on:
+                logger.debug('new_dep already exists: ' + str(new_dep))
 
-                name=prev_dep.name,
-                abbrev=prev_dep.abbrev,
-                sequence=prev_dep.sequence,
-                level_req=prev_dep.level_req,
-                sector_req=prev_dep.sector_req,
-                has_profiel=prev_dep.has_profiel,
+            if new_dep is None:
+    # - create new_dep if it does not exist yet
+                new_dep = sch_mod.Department(
+                    base=prev_dep.base,
+                    examyear=new_examyear,
 
-                modifiedby_id=modifiedby_id,
-                modifiedat=modifiedat
-            )
-# - copy new department to department_log happens in save(request=request)
-            new_dep.save(request=request)
+                    name=prev_dep.name,
+                    abbrev=prev_dep.abbrev,
+                    sequence=prev_dep.sequence,
+
+                    level_req=prev_dep.level_req,
+                    sector_req=prev_dep.sector_req,
+                    has_profiel=prev_dep.has_profiel,
+
+                    modifiedby_id=modifiedby_id,
+                    modifiedat=modifiedat
+                )
+    # - copy new department to department_log happens in save(request=request)
+                new_dep.save(request=request)
+                if logging_on:
+                    logger.debug('new_dep created: ' + str(new_dep))
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
         else:
             if new_dep:
                 mapped_deps[prev_dep.pk] = new_dep.pk
-
+    if logging_on:
+        logger.debug('mapped_deps: ' + str(mapped_deps))
     return mapped_deps
+# - end of copy_deps_from_prev_examyear
 
 
 def copy_levels_from_prev_examyear(request, prev_examyear, new_examyear):
-    # copy levels from previous examyear PR2021-04-25
+    # copy levels from previous examyear PR2021-04-25 PR2021-08-06
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_levels_from_prev_examyear -------')
 
     mapped_levels = {}
 
@@ -116,34 +169,54 @@ def copy_levels_from_prev_examyear(request, prev_examyear, new_examyear):
         examyear=prev_examyear
     )
     for prev_lvl in prev_levels:
+        if logging_on:
+            logger.debug('prev_lvl: ' + str(prev_lvl))
         try:
-# - create new level
-            new_lvl = subj_mod.Level(
+# - first check if level already exists - don't overwrite existing level
+            new_lvl = subj_mod.Level.objects.filter(
                 base=prev_lvl.base,
-                examyear=new_examyear,
+                examyear=new_examyear
+            ).order_by('-pk').first()
+            if logging_on:
+                logger.debug('new_lvl already exists: ' + str(new_lvl))
 
-                name=prev_lvl.name,
-                abbrev=prev_lvl.abbrev,
-                sequence=prev_lvl.sequence,
-                depbases=prev_lvl.depbases,
+            if new_lvl is None:
+# - create new_lvl if it does not exist yet
+                new_lvl = subj_mod.Level(
+                    base=prev_lvl.base,
+                    examyear=new_examyear,
 
-                modifiedby_id=modifiedby_id,
-                modifiedat=modifiedat
-            )
-# - copy new level to log happens in save(request=request)
-            new_lvl.save(request=request)
+                    name=prev_lvl.name,
+                    abbrev=prev_lvl.abbrev,
+                    sequence=prev_lvl.sequence,
+                    depbases=prev_lvl.depbases,
+
+                    modifiedby_id=modifiedby_id,
+                    modifiedat=modifiedat
+                )
+    # - copy new level to log happens in save(request=request)
+                new_lvl.save(request=request)
+
+                if logging_on:
+                    logger.debug('new_lvl created: ' + str(new_lvl))
+
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
         else:
             if new_lvl:
                 mapped_levels[prev_lvl.pk] = new_lvl.pk
 
+    if logging_on:
+        logger.debug('mapped_levels: ' + str(mapped_levels))
     return mapped_levels
 # - end of copy_levels_from_prev_examyear
 
 
 def copy_sectors_from_prev_examyear(request, prev_examyear, new_examyear):
-    # copy sectors from previous examyear PR2021-04-25
+    # copy sectors from previous examyear PR2021-04-25 PR2021-08-06
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_sectors_from_prev_examyear -------')
 
     mapped_sectors = {}
 
@@ -155,34 +228,55 @@ def copy_sectors_from_prev_examyear(request, prev_examyear, new_examyear):
         examyear=prev_examyear
     )
     for prev_sct in prev_sectors:
+        if logging_on:
+            logger.debug('prev_sct: ' + str(prev_sct))
+
         try:
-# - create new sector
-            new_sector = subj_mod.Sector(
+# - first check if sector already exists - don't overwrite existing sectors
+            new_sct = subj_mod.Sector.objects.filter(
                 base=prev_sct.base,
-                examyear=new_examyear,
+                examyear=new_examyear
+            ).order_by('-pk').first()
+            if logging_on:
+                logger.debug('new_sct already exists: ' + str(new_sct))
 
-                name=prev_sct.name,
-                abbrev=prev_sct.abbrev,
-                sequence=prev_sct.sequence,
-                depbases=prev_sct.depbases,
+            if new_sct is None:
+# - create new sector if it does not exist yet
+                new_sct = subj_mod.Sector(
+                    base=prev_sct.base,
+                    examyear=new_examyear,
 
-                modifiedby_id=modifiedby_id,
-                modifiedat=modifiedat
-            )
-# - copy new sector to log happens in save(request=request)
-            new_sector.save(request=request)
+                    name=prev_sct.name,
+                    abbrev=prev_sct.abbrev,
+                    sequence=prev_sct.sequence,
+                    depbases=prev_sct.depbases,
+
+                    modifiedby_id=modifiedby_id,
+                    modifiedat=modifiedat
+                )
+    # - copy new sector to log happens in save(request=request)
+                new_sct.save(request=request)
+
+                if logging_on:
+                    logger.debug('new_sct created: ' + str(new_sct))
+
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
         else:
-            if new_sector:
-                mapped_sectors[prev_sct.pk] = new_sector.pk
+            if new_sct:
+                mapped_sectors[prev_sct.pk] = new_sct.pk
 
+    if logging_on:
+        logger.debug('mapped_sectors: ' + str(mapped_sectors))
     return mapped_sectors
 # - end of copy_sectors_from_prev_examyear
 
 
 def copy_schools_from_prev_examyear(request, prev_examyear, new_examyear):
-    # copy schools from previous examyear PR2021-04-25
+    # copy schools from previous examyear PR2021-04-25 PR2021-08-06
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_schools_from_prev_examyear -------')
 
     mapped_schools = {}
 
@@ -194,43 +288,67 @@ def copy_schools_from_prev_examyear(request, prev_examyear, new_examyear):
         examyear=prev_examyear
     )
     for prev_school in prev_schools:
+        if logging_on:
+            logger.debug('prev_school: ' + str(prev_school))
+
         try:
-# - create new school
-            new_school = sch_mod.School(
+# - first check if school already exists - don't overwrite existing school
+            # Note: schoolbase is different per country, you have to copy it first.
+            # since school will not be copied from cur to sxm this is not necessary
+            new_school = sch_mod.School.objects.filter(
                 base=prev_school.base,
-                examyear=new_examyear,
+                examyear=new_examyear
+            ).order_by('-pk').first()
+            if logging_on:
+                logger.debug('new_school already exists: ' + str(new_school))
 
-                name=prev_school.name,
-                abbrev=prev_school.abbrev,
-                article=prev_school.article,
-                depbases=prev_school.depbases,
+            if new_school is None:
+# - create new school if it does not exist yet
+                new_school = sch_mod.School(
+                    base=prev_school.base,
+                    examyear=new_examyear,
 
-                isdayschool=prev_school.isdayschool,
-                iseveningschool=prev_school.iseveningschool,
-                islexschool=prev_school.islexschool,
+                    name=prev_school.name,
+                    abbrev=prev_school.abbrev,
+                    article=prev_school.article,
+                    depbases=prev_school.depbases,
+                    otherlang=prev_school.otherlang,
 
-                #activated=False,
-                #locked=False,
-                #activatedat=None,
-                #lockedat=None,
+                    isdayschool=prev_school.isdayschool,
+                    iseveningschool=prev_school.iseveningschool,
+                    islexschool=prev_school.islexschool,
 
-                modifiedby_id=modifiedby_id,
-                modifiedat=modifiedat
-            )
-# - copy new school to log happens in save(request=request)
-            new_school.save(request=request)
+                    #These fields get default value:
+                    #    activated=False,
+                    #    locked=False,
+                    #    activatedat=None,
+                    #    lockedat=None,
+
+                    modifiedby_id=modifiedby_id,
+                    modifiedat=modifiedat
+                )
+    # - copy new school to log happens in save(request=request)
+                new_school.save(request=request)
+            if logging_on:
+                logger.debug('new_school created: ' + str(new_school))
+
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
         else:
             if new_school:
                 mapped_schools[prev_school.pk] = new_school.pk
 
+    if logging_on:
+        logger.debug('mapped_schools: ' + str(mapped_schools))
     return mapped_schools
-# - end of copy_sectors_from_prev_examyear
+# - end of copy_schools_from_prev_examyear
 
 
 def copy_subjecttypes_from_prev_examyear(request, prev_examyear, mapped_schemes):
-    # copy subjecttypes from previous examyear PR2021-04-25
+    # copy subjecttypes from previous examyear PR2021-04-25  PR2021-08-06
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_subjecttypes_from_prev_examyear -------')
 
     mapped_subjecttypes = {}
 
@@ -242,44 +360,71 @@ def copy_subjecttypes_from_prev_examyear(request, prev_examyear, mapped_schemes)
         scheme__department__examyear=prev_examyear
     )
     logger.debug('prev_subjecttypes: ' + str(prev_subjecttypes))
-    for prev_sjt in prev_subjecttypes:
+    for prev_sjtp in prev_subjecttypes:
+        if logging_on:
+            logger.debug('prev_sjtp: ' + str(prev_sjtp))
+
         try:
-
 # get mapped values of scheme
-            new_scheme_pk = mapped_schemes.get(prev_sjt.scheme_id)
+            new_scheme_pk = mapped_schemes.get(prev_sjtp.scheme_id)
 
-# - create new subjecttype
-            new_subjecttype = subj_mod.Subjecttype(
-                base=prev_sjt.base,
+# - first check if subjecttype already exists - don't overwrite subjecttypes
+            new_sjtp = subj_mod.Subjecttype.objects.filter(
+                base=prev_sjtp.base,
                 scheme=new_scheme_pk,
+            ).order_by('-pk').first()
+            if logging_on:
+                logger.debug('new_sjtp already exists: ' + str(new_sjtp))
 
-                name=prev_sjt.name,
-                abbrev=prev_sjt.abbrev,
+            if new_sjtp is None:
+# - create new subjecttype
+                new_sjtp = subj_mod.Subjecttype(
+                    base=prev_sjtp.base,
+                    scheme_id=new_scheme_pk,
 
-                has_prac=prev_sjt.has_prac,
-                has_pws=prev_sjt.has_pws,
-                min_subjects=prev_sjt.min_subjects,
-                max_subjects=prev_sjt.max_subjects,
+                    name=prev_sjtp.name,
+                    abbrev=prev_sjtp.abbrev,
 
-                modifiedby_id=modifiedby_id,
-                modifiedat=modifiedat
-            )
-# - copy new subjecttype to log happens in save(request=request)
-            new_subjecttype.save(request=request)
-            logger.debug('new_subjecttype: ' + str(new_subjecttype))
+                    has_prac=prev_sjtp.has_prac,
+                    has_pws=prev_sjtp.has_pws,
+
+                    min_subjects=prev_sjtp.min_subjects,
+                    max_subjects=prev_sjtp.max_subjects,
+
+                    min_extra_nocount=prev_sjtp.min_extra_nocount,
+                    max_extra_nocount=prev_sjtp.max_extra_nocount,
+
+                    min_extra_counts=prev_sjtp.min_extra_counts,
+                    max_extra_counts=prev_sjtp.max_extra_counts,
+
+                    min_elective_combi=prev_sjtp.min_elective_combi,
+                    max_elective_combi=prev_sjtp.max_elective_combi,
+
+                    modifiedby_id=modifiedby_id,
+                    modifiedat=modifiedat
+                )
+    # - copy new subjecttype to log happens in save(request=request)
+                new_sjtp.save(request=request)
+                if logging_on:
+                    logger.debug('new_sjtp created: ' + str(new_sjtp))
+
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
         else:
-            if new_subjecttype:
-                mapped_subjecttypes[prev_sjt.pk] = new_subjecttype.pk
+            if new_sjtp:
+                mapped_subjecttypes[prev_sjtp.pk] = new_sjtp.pk
 
-    logger.debug('mapped_subjecttypes: ' + str(mapped_subjecttypes))
+    if logging_on:
+        logger.debug('mapped_subjecttypes: ' + str(mapped_subjecttypes))
     return mapped_subjecttypes
 # - end of copy_subjecttypes_from_prev_examyear
 
 
 def copy_subjects_from_prev_examyear(request, prev_examyear, new_examyear):
-    # copy subjects from previous examyear PR2021-04-25
+    # copy subjects from previous examyear PR2021-04-25 PR2021-08-06
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_subjects_from_prev_examyear -------')
 
     mapped_subjects = {}
 
@@ -291,37 +436,57 @@ def copy_subjects_from_prev_examyear(request, prev_examyear, new_examyear):
         examyear=prev_examyear
     )
     for prev_subject in prev_subjects:
+        if logging_on:
+            logger.debug('prev_subject: ' + str(prev_subject))
         try:
-# - create new new_subject
-            new_subject = subj_mod.Subject(
+# - first check if sector already exists - don't overwrite existing sector
+            new_subject = subj_mod.Subject.objects.filter(
                 base=prev_subject.base,
-                examyear=new_examyear,
+                examyear=new_examyear
+            ).order_by('-pk').first()
+            if logging_on:
+                logger.debug('new_subject already exists: ' + str(new_subject))
 
-                name=prev_subject.name,
-                sequence=prev_subject.sequence,
-                depbases=prev_subject.depbases,
+            if new_subject is None:
+# - create new new_subject if it does not exist yet
+                new_subject = subj_mod.Subject(
+                    base=prev_subject.base,
+                    examyear=new_examyear,
 
-                etenorm=prev_subject.etenorm,
-                addedbyschool=prev_subject.addedbyschool,
+                    name=prev_subject.name,
+                    sequence=prev_subject.sequence,
+                    depbases=prev_subject.depbases,
 
-                modifiedby_id=modifiedby_id,
-                modifiedat=modifiedat
-            )
-# - copy new new_subject to log happens in save(request=request)
-            new_subject.save(request=request)
+                    otherlang=prev_subject.otherlang,
+                    addedbyschool=prev_subject.addedbyschool,
+
+                    modifiedby_id=modifiedby_id,
+                    modifiedat=modifiedat
+                )
+    # - copy new new_subject to log happens in save(request=request)
+                new_subject.save(request=request)
+
+                if logging_on:
+                    logger.debug('new_subject created: ' + str(new_subject))
+
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
         else:
             if new_subject:
                 mapped_subjects[prev_subject.pk] = new_subject.pk
 
+    if logging_on:
+        logger.debug('mapped_subjects: ' + str(mapped_subjects))
     return mapped_subjects
 # - end of copy_subjects_from_prev_examyear
 
 
 def copy_schemes_from_prev_examyear(request, prev_examyear,
                                     mapped_deps, mapped_levels, mapped_sectors):
-    # copy schemes from previous examyear PR2021-04-25
+    # copy schemes from previous examyear PR2021-04-25  PR2021-08-06
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_schemes_from_prev_examyear -------')
 
     mapped_schemes = {}
 
@@ -333,44 +498,71 @@ def copy_schemes_from_prev_examyear(request, prev_examyear,
         department__examyear=prev_examyear
     )
     for prev_scheme in prev_schemes:
+        if logging_on:
+            logger.debug('prev_scheme: ' + str(prev_scheme))
+
         try:
 # get mapped values of dep. lvl and sct
             new_dep_pk = mapped_deps.get(prev_scheme.department_id)
             new_lvl_pk = mapped_levels.get(prev_scheme.level_id)
             new_sct_pk = mapped_sectors.get(prev_scheme.sector_id)
-# - create new scheme
-            new_scheme = subj_mod.Scheme(
+
+# - first check if scheme already exists - don't overwrite existing schemes
+            new_scheme = subj_mod.Scheme.objects.filter(
                 department_id=new_dep_pk,
                 level_id=new_lvl_pk,
-                sector_id=new_sct_pk,
+                sector_id=new_sct_pk
+            ).order_by('-pk').first()
+            if logging_on:
+                logger.debug('new_scheme already exists: ' + str(new_scheme))
 
-                name=prev_scheme.name,
-                fields=prev_scheme.fields,
+            if new_scheme is None:
+# - create new scheme if it does not exist yet
+                new_scheme = subj_mod.Scheme(
+                    department_id=new_dep_pk,
+                    level_id=new_lvl_pk,
+                    sector_id=new_sct_pk,
 
-                min_subjects=prev_scheme.min_subjects,
-                max_subjects=prev_scheme.max_subjects,
-                min_mvt=prev_scheme.min_mvt,
-                max_mvt=prev_scheme.max_mvt,
-                min_combi=prev_scheme.min_combi,
-                max_combi=prev_scheme.max_combi,
+                    name=prev_scheme.name,
+                    fields=prev_scheme.fields,
 
-                modifiedby_id=modifiedby_id,
-                modifiedat=modifiedat
-            )
-# - copy new scheme to log happens in save(request=request)
-            new_scheme.save(request=request)
+                    min_subjects=prev_scheme.min_subjects,
+                    max_subjects=prev_scheme.max_subjects,
+
+                    min_mvt=prev_scheme.min_mvt,
+                    max_mvt=prev_scheme.max_mvt,
+
+                    min_wisk=prev_scheme.min_wisk,
+                    max_wisk=prev_scheme.max_wisk,
+
+                    min_combi=prev_scheme.min_combi,
+                    max_combi=prev_scheme.max_combi,
+
+                    modifiedby_id=modifiedby_id,
+                    modifiedat=modifiedat
+                )
+    # - copy new scheme to log happens in save(request=request)
+                new_scheme.save(request=request)
+                if logging_on:
+                    logger.debug('new_scheme created: ' + str(new_scheme))
+
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
         else:
             if new_scheme:
                 mapped_schemes[prev_scheme.pk] = new_scheme.pk
 
+    if logging_on:
+        logger.debug('mapped_schemes: ' + str(mapped_schemes))
     return mapped_schemes
 # - end of copy_schemes_from_prev_examyear
 
 
 def copy_schemeitems_from_prev_examyear(request, prev_examyear, mapped_schemes, mapped_subjects, mapped_subjecttypes):
-    # copy schemeitems from previous examyear PR2021-04-25
+    # copy schemeitems from previous examyear PR2021-04-25 PR2021-08-06
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_schemeitems_from_prev_examyear -------')
 
     mapped_schemeitems = {}
 
@@ -382,55 +574,80 @@ def copy_schemeitems_from_prev_examyear(request, prev_examyear, mapped_schemes, 
         scheme__department__examyear=prev_examyear
     )
     for prev_si in prev_schemeitems:
+        if logging_on:
+            logger.debug('prev_si: ' + str(prev_si))
+
         try:
 # get mapped values of dep. lvl and sct
             new_scheme_pk = mapped_schemes.get(prev_si.scheme_id)
             new_subject_pk = mapped_subjects.get(prev_si.subject_id)
             new_subjecttype_pk = mapped_subjecttypes.get(prev_si.subjecttype_id)
-# - create new schemeitem
-            new_si = subj_mod.Schemeitem(
+# - first check if schemeitem already exists - don't overwrite existing schemeitems
+            new_si = subj_mod.Schemeitem.objects.filter(
                 scheme_id=new_scheme_pk,
                 subject_id=new_subject_pk,
-                subjecttype_id=new_subjecttype_pk,
+                subjecttype_id=new_subjecttype_pk
+            ).order_by('-pk').first()
+            if logging_on:
+                logger.debug('new_si already exists: ' + str(new_si))
 
-                gradetype=prev_si.gradetype,
-                weight_se=prev_si.weight_se,
-                weight_ce=prev_si.weight_ce,
+            if new_si is None:
+# - create new schemeitem if it does not exist yet
+                new_si = subj_mod.Schemeitem(
+                    scheme_id=new_scheme_pk,
+                    subject_id=new_subject_pk,
+                    subjecttype_id=new_subjecttype_pk,
 
-                is_mandatory=prev_si.is_mandatory,
-                is_combi=prev_si.is_combi,
+                    ete_exam=prev_si.ete_exam,
 
-                extra_count_allowed=prev_si.extra_count_allowed,
-                extra_nocount_allowed=prev_si.extra_nocount_allowed,
-                elective_combi_allowed=prev_si.elective_combi_allowed,
+                    gradetype=prev_si.gradetype,
+                    weight_se=prev_si.weight_se,
+                    weight_ce=prev_si.weight_ce,
 
-                has_practexam=prev_si.has_practexam,
-                has_pws=prev_si.has_pws,
-                is_core_subject=prev_si.is_core_subject,
-                is_mvt=prev_si.is_mvt,
+                    is_mandatory=prev_si.is_mandatory,
+                    is_mand_subj=prev_si.is_mand_subj,
+                    is_combi=prev_si.is_combi,
 
-                reex_se_allowed=prev_si.reex_se_allowed,
-                max_reex=prev_si.max_reex,
-                no_thirdperiod=prev_si.no_thirdperiod,
-                no_exemption_ce=prev_si.no_exemption_ce,
+                    extra_count_allowed=prev_si.extra_count_allowed,
+                    extra_nocount_allowed=prev_si.extra_nocount_allowed,
+                    elective_combi_allowed=prev_si.elective_combi_allowed,
 
-                modifiedby_id=modifiedby_id,
-                modifiedat=modifiedat
-            )
-    # - copy new schemeitem to log happens in save(request=request)
-            new_si.save(request=request)
+                    has_practexam=prev_si.has_practexam,
+                    has_pws=prev_si.has_pws,
+                    is_core_subject=prev_si.is_core_subject,
+                    is_mvt=prev_si.is_mvt,
+                    is_wisk=prev_si.is_wisk,
+
+                    reex_se_allowed=prev_si.reex_se_allowed,
+                    max_reex=prev_si.max_reex,
+                    no_thirdperiod=prev_si.no_thirdperiod,
+                    no_exemption_ce=prev_si.no_exemption_ce,
+
+                    modifiedby_id=modifiedby_id,
+                    modifiedat=modifiedat
+                )
+        # - copy new schemeitem to log happens in save(request=request)
+                new_si.save(request=request)
+                if logging_on:
+                    logger.debug('new_si created: ' + str(new_si))
+
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
         else:
             if new_si:
                 mapped_schemeitems[prev_si.pk] = new_si.pk
 
+    if logging_on:
+        logger.debug('mapped_schemeitems: ' + str(mapped_schemeitems))
     return mapped_schemeitems
 # - end of copy_schemeitems_from_prev_examyear
 
 
 def copy_packages_from_prev_examyear(request, prev_examyear, mapped_schemes):
-    # copy packages from previous examyear PR2021-04-25
+    # copy packages from previous examyear PR2021-04-25 PR2021-08-06
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_packages_from_prev_examyear -------')
 
     mapped_packages = {}
 
@@ -442,32 +659,51 @@ def copy_packages_from_prev_examyear(request, prev_examyear, mapped_schemes):
         scheme__department__examyear=prev_examyear
     )
     for prev_package in prev_packages:
+        if logging_on:
+            logger.debug('prev_package: ' + str(prev_package))
+
         try:
-# get mapped values of school and scheme
+# get mapped values of scheme
             new_scheme_pk = mapped_schemes.get(prev_package.scheme_id)
-# - create new package
-            new_package = subj_mod.Package(
-                scheme_id=new_scheme_pk,
 
-                name=prev_package.name,
+# - first check if package already exists - don't overwrite existing packages
+            new_package = subj_mod.Package.objects.filter(
+                scheme_id=new_scheme_pk
+            ).order_by('-pk').first()
+            if logging_on:
+                logger.debug('new_package already exists: ' + str(new_package))
 
-                modifiedby_id=modifiedby_id,
-                modifiedat=modifiedat
-            )
-# - copy new package to log happens in save(request=request)
-            new_package.save(request=request)
+            if new_package is None:
+# - create new package if it does not exist yet
+                new_package = subj_mod.Package(
+                    scheme_id=new_scheme_pk,
+
+                    name=prev_package.name,
+
+                    modifiedby_id=modifiedby_id,
+                    modifiedat=modifiedat
+                )
+    # - copy new package to log happens in save(request=request)
+                new_package.save(request=request)
+                if logging_on:
+                    logger.debug('new_package created: ' + str(new_package))
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
         else:
             if new_package:
                 mapped_packages[prev_package.pk] = new_package.pk
 
+    if logging_on:
+        logger.debug('mapped_packages: ' + str(mapped_packages))
     return mapped_packages
 # - end of copy_packages_from_prev_examyear
 
 
 def copy_packageitems_from_prev_examyear(request, prev_examyear, mapped_packages, mapped_schemeitems):
-    # copy packageitems from previous examyear PR2021-04-25
+    # copy packageitems from previous examyear PR2021-04-25 PR2021-08-06
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_sectors_from_prev_examyear -------')
 
     modifiedby_id = request.user.id
     modifiedat = timezone.now()
@@ -477,20 +713,35 @@ def copy_packageitems_from_prev_examyear(request, prev_examyear, mapped_packages
         package__scheme__department__examyear=prev_examyear
     )
     for prev_pi in prev_packageitems:
+        if logging_on:
+            logger.debug('prev_pi: ' + str(prev_pi))
+
         try:
 # get mapped values of packages and schemeitems
             new_package_pk = mapped_packages.get(prev_pi.package_id)
             new_schemeitem_pk = mapped_schemeitems.get(prev_pi.schemeitem_id)
-# - create new packageitems
-            new_pi = subj_mod.Packageitem(
-                package_id=new_package_pk,
-                schemeitem_id=new_schemeitem_pk,
 
-                modifiedby_id=modifiedby_id,
-                modifiedat=modifiedat
-            )
-    # - copy new packageitems to log happens in save(request=request)
-            new_pi.save(request=request)
+# - first check if sector already exists - don't overwrite existing sectors
+            new_pi = subj_mod.Packageitem.objects.filter(
+                package_id=new_package_pk,
+                schemeitem_id=new_schemeitem_pk
+            ).order_by('-pk').first()
+            if logging_on:
+                logger.debug('new_pi already exists: ' + str(new_pi))
+
+            if new_pi is None:
+# - create new packageitem if it does not exist yet
+                new_pi = subj_mod.Packageitem(
+                    package_id=new_package_pk,
+                    schemeitem_id=new_schemeitem_pk,
+
+                    modifiedby_id=modifiedby_id,
+                    modifiedat=modifiedat
+                )
+        # - copy new packageitems to log happens in save(request=request)
+                new_pi.save(request=request)
+                if logging_on:
+                    logger.debug('new_pi created: ' + str(new_pi))
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
 # - end of copy_packageitems_from_prev_examyear
@@ -515,12 +766,11 @@ def get_previous_examyear_instance(new_examyear_instance):
         if logging_on:
             logger.debug('prev_examyear_int: ' + str(prev_examyear_int) + ' ' + str(type(prev_examyear_int)))
             logger.debug('prev_examyear_instance: ' + str(prev_examyear_instance) + ' ' + str(type(prev_examyear_instance)))
+
         if prev_examyear_instance is None:
             prev_examyear_count = sch_mod.Examyear.objects.filter(
                 country=new_examyear_instance.country,
                 code=prev_examyear_int).count()
-            # TOD for testing
-            prev_examyear_count = 2
             if prev_examyear_count:
                 msg_err = _("Multiple instances of previous exam year %(ey_yr) were found. Please delete duplicates first.")
             else:
@@ -554,7 +804,8 @@ def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_de
     setting_key = request_item_setting.get('setting_key')
     schoolsetting_dict = {}
     if setting_key:
-        if setting_key in (c.KEY_IMPORT_SUBJECT, c.KEY_IMPORT_STUDENT, c.KEY_IMPORT_STUDENTSUBJECT, c.KEY_IMPORT_GRADE, c.KEY_IMPORT_PERMITS):
+        if setting_key in (c.KEY_IMPORT_SUBJECT, c.KEY_IMPORT_STUDENT, c.KEY_IMPORT_STUDENTSUBJECT,
+                           c.KEY_IMPORT_GRADE, c.KEY_IMPORT_PERMITS, c.KEY_IMPORT_USERNAME):
             sel_examyear_pk = sel_examyear.pk if sel_examyear else None
             sel_examyear_code = sel_examyear.code if sel_examyear else None
             sel_schoolbase_pk = sel_schoolbase.pk if sel_schoolbase else None
@@ -592,7 +843,7 @@ def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_de
 
 # ===============================
 def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-08-01
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------- get_stored_coldefs_dict ---------------- ')
         logger.debug('setting_key: ' + str(setting_key))
@@ -621,7 +872,7 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
         depbases_str_list = sel_school.depbases.split(';') if sel_school.depbases else None
         sel_school_depbases_list = list(map(int, depbases_str_list)) if depbases_str_list else None
 
-        if len(sel_school_depbases_list) > 1:
+        if sel_school_depbases_list and len(sel_school_depbases_list) > 1:
             school_has_multiple_deps = True
 
         if logging_on:
@@ -674,6 +925,7 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
         if setting_key == c.KEY_IMPORT_STUDENT:
             if not school_has_multiple_deps:
                 index_tobe_removed = None
+
                 for i, coldef_dict in enumerate(default_coldef_list):
                     if coldef_dict.get('awpColdef') == 'department':
                         index_tobe_removed = i

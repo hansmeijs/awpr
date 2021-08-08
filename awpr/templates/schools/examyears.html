@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exam years' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/examyears210711.js' %}"></script>
+    <script src="{% static 'js/examyears210807.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -68,7 +68,7 @@
     <!-- END OF CONTENT HEADER -->
 
     <!-- CONTENT BODY -->
-            <div class="content_body ml-2 mr-0">
+            <div id="id_tbl_container" class="content_body ml-2 mr-0">
     <!-- =================== DATA TABLE  =================== -->
                 <table class="table tsa_tbl">
                     <thead id="id_tblHead_datatable"></thead>
@@ -81,6 +81,7 @@
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_settings_upload="{% url 'url_settings_upload' %}"
                 data-url_examyear_upload="{% url 'url_examyear_upload' %}"
+                data-url_examyear_copytosxm="{% url 'url_examyear_copytosxm' %}"
                 data-url_school_upload="{% url 'url_school_upload' %}"
             >
             </div>

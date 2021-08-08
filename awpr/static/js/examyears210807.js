@@ -47,13 +47,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
     const url_examyear_upload = get_attr_from_el(el_data, "data-url_examyear_upload");
+    const url_examyear_copytosxm = get_attr_from_el(el_data, "data-url_examyear_copytosxm");
     const url_school_upload = get_attr_from_el(el_data, "data-url_school_upload");
 
 // --- get field_settings
     const field_settings = {
         //PR2020-06-02 dont use loc.Employee here, has no value yet. Use "Employee" here and loc in CreateTblHeader
         examyear: {
-                    field_caption: ["", "Examyear", "Created_on", "Published", "Published_on", "Closed", "Closed_on"],
+                    field_caption: ["", "Examyear", "Created_at", "Published", "Published_at", "Closed", "Closed_on"],
                     field_names: ["select", "examyear_code", "createdat", "published", "publishedat", "locked", "lockedat"],
                     filter_tags: ["select", "text", "text", "toggle", "text", "toggle", "text"],
                     field_width:  ["032", "120", "120", "120", "120", "120", "120"],
@@ -192,7 +193,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("locale_dict" in response) {
                     loc = response.locale_dict;
                     isloaded_loc = true;
-                    //mimp_loc = loc;
                 };
 
                 if ("setting_dict" in response) {
@@ -263,6 +263,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Publish_examyear, function() {MEY_Open("publish")});
                 AddSubmenuButton(el_submenu, loc.Close_examyear, function() {MEY_Open("close_admin")});
                 AddSubmenuButton(el_submenu, loc.Delete_examyear, function() {ModConfirmOpen("delete")});
+                if (permit_dict.requsr_role_system){
+                    AddSubmenuButton(el_submenu, loc.Copy_examyear_to_SXM, function() {ModConfirmOpen("copy_to_sxm")});
+                }
             }
 
          el_submenu.classList.remove(cls_hide);
@@ -481,7 +484,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         el_filter.setAttribute("autocomplete", "off");
                         el_filter.setAttribute("ondragstart", "return false;");
                         el_filter.setAttribute("ondrop", "return false;");
-                    } else if (["toggle", "activated", "inactive"].indexOf(filter_tag) > -1) {
+                    } else if (["toggle", "activated"].indexOf(filter_tag) > -1) {
                         // default empty icon necessary to set pointer_show
                         // default empty icon necessary to set pointer_show
                         append_background_class(el_filter,"tickmark_0_0");
@@ -653,7 +656,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 dataType:'json',
                 success: function (response) {
                     // ---  hide loader
-                    el_loader.classList.add(cls_visible_hide)
+                    el_loader.classList.add(cls_visible_hide);
+                    el_confirm_loader.classList.add(cls_visible_hide);
 
                     const el_MEY_loader = document.getElementById("id_MEY_loader");
                     el_MEY_loader.classList.add(cls_visible_hide);
@@ -1018,9 +1022,11 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(" -----  ModConfirmOpen   ----")
         // called by el_MEY_btn_delete and submenu btn delete examyear
         // mode is always 'delete' (for now?)
+        // mode 'copy_to_sxm' added
         console.log("selected", selected)
+        console.log("permit_dict", permit_dict)
 
-        if(!!permit_dict.permit_crud){
+        if(!!permit_dict.permit_userpage){
             const tblName = "examyear";
             const data_map = examyear_map;
             let dont_show_modal = false;
@@ -1033,19 +1039,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("data_map", data_map)
             console.log("map_id", map_id)
             console.log("map_dict", map_dict)
-            // mode
-            /*
-            let mode = null;
-            if(has_selected_item){
-                if(map_dict.locked) {
-                    mode = "locked"
-                } else if(map_dict.published) {
-                    mode = "published"
-                } else if(map_dict.examyear_id) {
-                    mode = "created"
-                }
-            }
-            */
+
     // ---  create mod_dict
             mod_dict = {mode: mode};
 
@@ -1062,6 +1056,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const is_NL = (loc.user_lang === "nl");
             if(mode === "delete"){
                 header_text =  loc.Delete_examyear ;
+            } else if (mode === "copy_to_sxm"){
+                header_text =  loc.Copy_examyear_to_sxm ;
             }
 // ---  put text in modal form
             const item = (tblName === "examyear") ? loc.Examyear : "";
@@ -1071,11 +1067,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if(!has_selected_item){
                 msg_list[0] = loc.No_examyer_selected;
             } else {
-                const username = (map_dict.username) ? map_dict.username  : "-";
                 if(mode === "delete"){
                     msg_list[0] = loc.Examyear + " '" + mod_dict.examyear_code + "'" + loc.will_be_deleted
                     msg_list[1] = loc.Do_you_want_to_continue;
 
+                } else if (mode === "copy_to_sxm"){
+                    msg_list[0] = loc.Examyear + " '" + mod_dict.examyear_code + "'" + loc.will_be_copid_to_sxm
+                    msg_list[1] = loc.Do_you_want_to_continue;
                 }
             }
 
@@ -1086,12 +1084,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const msg_html = msg_list.join("<br>");
                 el_confirm_msg_container.innerHTML = msg_html;
 
-                const caption_save = (mode === "delete") ? loc.Yes_delete : loc.OK;
+                const caption_save = (mode === "delete") ? loc.Yes_delete :
+                                     (mode === "copy_to_sxm")  ? loc.Yes_copy : loc.OK;
                 el_confirm_btn_save.innerText = caption_save;
                 add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
 
-                add_or_remove_class (el_confirm_btn_save, "btn-primary", (mode !== "delete"));
-                add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete"));
+                add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete"), "btn-primary");
 
         // set focus to cancel button
                 setTimeout(function (){
@@ -1118,36 +1116,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 ShowClassWithTimeout(tblRow, "tsa_tr_error");
             }
 
-            if(["delete", 'resend_activation_email'].indexOf(mod_dict.mode) > -1) {
+            if(["delete", "copy_to_sxm"].indexOf(mod_dict.mode) > -1) {
     // show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
-            } else if (mod_dict.mode === "inactive") {
-                mod_dict.new_isactive = !mod_dict.current_isactive
-                close_modal = true;
-                // change inactive icon, before uploading, not when new_inactive = true
-                const el_input = document.getElementById(mod_dict.mapid)
-                for (let i = 0, cell, el; cell = tblRow.cells[i]; i++) {
-                    const cell_fldName = get_attr_from_el(cell, "data-field")
-                    if (cell_fldName === "is_active"){
-    // ---  change icon, before uploading
-                        let el_icon = cell.children[0];
-                        if(el_icon){add_or_remove_class (el_icon, "inactive_1_3", !mod_dict.new_isactive,"inactive_0_2" )};
-                        break;
-                    }
-                }
             }
 
     // ---  Upload Changes
-            let upload_dict = {mode: mod_dict.mode,
-                               mapid: mod_dict.mapid,
-                               examyear_pk: mod_dict.examyear_pk};
-
-            if (mod_dict.mode === "inactive") {
-                upload_dict.is_active = {value: mod_dict.new_isactive, update: true}
-            };
-
-            console.log("upload_dict: ", upload_dict);
-            UploadChanges(upload_dict, url_examyear_upload);
+            let upload_dict = {mode: mod_dict.mode};
+            if (tblRow && mod_dict.mode === "delete"){
+                upload_dict.mapid = mod_dict.mapid;
+                upload_dict.examyear_pk = mod_dict.examyear_pk;
+            } else if (mod_dict.mode === "copy_to_sxm"){
+                upload_dict.examyear_code = mod_dict.examyear_code
+            }
+            const url_str = (mod_dict.mode === "copy_to_sxm") ? url_examyear_copytosxm : url_examyear_upload;
+            UploadChanges(upload_dict, url_str);
         };
 // ---  hide modal
         if(close_modal) {

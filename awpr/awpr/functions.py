@@ -10,6 +10,7 @@ from datetime import date, datetime, time
 from awpr import constants as c
 from awpr import settings as s
 
+from accounts import models as acc_mod
 from accounts import views as acc_view
 from schools import models as sch_mod
 from subjects import models as subj_mod
@@ -648,11 +649,21 @@ def get_this_examyear_int():
     return this_examyear_int
 
 
-def get_todays_examyear_instance(country):  # PR2020-12-24
+def get_todays_examyear_instance(country):  # PR2020-12-24 PR2021-08-06
     # get this year in Jan thru July, get next year in Aug thru Dec PR2020-09-29 PR2020-12-24
-    todays_examyear_int = get_this_examyear_int()
-    todays_examyear_instance = sch_mod.Examyear.objects.get_or_none(country=country, code=todays_examyear_int)
-    return todays_examyear_instance
+    examyear_instance = None
+    if country:
+        try:
+            todays_examyear_int = get_this_examyear_int()
+            examyear_instance = sch_mod.Examyear.objects.filter(
+                country=country,
+                code=todays_examyear_int
+            ).first()
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+    return examyear_instance
+# - end of get_todays_examyear_instance
+
 
 
 def get_todays_examyear_or_latest_instance(country):
@@ -715,13 +726,172 @@ def get_depbase_list_field_sorted_zerostripped(depbase_list):  # PR2018-08-23
 def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
-    pass
+
+    #PR2021-08-05 add SXMSYS school if not exists
+    add_sxmsys_school_if_not_exist(request)
 
     #update_examyearsetting(examyear, request)
     # PR2021-03-26
 
     #transfer_depbases_from_array_to_string()
 # - end of system_updates
+
+
+def add_sxmsys_school_if_not_exist(request):  # PR2021-08-05
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- add_sxmsys_school_if_not_exist -------')
+
+# get SXM country
+    sxm_country = get_country_by_abbrev('sxm')
+
+    if sxm_country:
+# get SXM examyear of today
+        sxm_examyear = None
+        try:
+            sxm_examyear = get_todays_examyear_instance(sxm_country)
+
+# - create SXM examyear of today if it doesnt exist yet
+            if sxm_examyear is None:
+                todays_examyear_int = get_this_examyear_int()
+                sxm_examyear = sch_mod.Examyear(
+                    country=sxm_country,
+                    code=todays_examyear_int
+                )
+                sxm_examyear.save(request=request)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+        if logging_on:
+            logger.debug('sxm_examyear: ' + str(sxm_examyear))
+
+# get SXMSYS schoolbase
+        sxmsys_schoolbase = None
+        try:
+            sxmsys_schoolbase = sch_mod.Schoolbase.objects.filter(
+                country=sxm_country,
+                code__iexact='sxmsys'
+            ).first()
+            if sxmsys_schoolbase is None:
+                sxmsys_schoolbase = sch_mod.Schoolbase(
+                    country=sxm_country,
+                    code='SXMSYS',
+                    defaultrole=128
+                )
+                sxmsys_schoolbase.save()
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+        if logging_on:
+            logger.debug('sxmsys_schoolbase: ' + str(sxmsys_schoolbase))
+
+        if sxmsys_schoolbase and sxm_examyear:
+
+# - get SXMSYS school of this year
+            sxmsys_school = None
+            try:
+                sxmsys_school = sch_mod.School.objects.filter(
+                    base=sxmsys_schoolbase,
+                    examyear=sxm_examyear
+                ).first()
+                if sxmsys_school is None:
+                    sxmsys_school = sch_mod.School(
+                        base=sxmsys_schoolbase,
+                        examyear=sxm_examyear,
+                        name='Panta Rhei',
+                        abbrev='Panta Rhei',
+                        activated=True,
+                        activatedat=timezone.now()
+                    )
+                    sxmsys_school.save(request=request)
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+
+            if logging_on:
+                logger.debug('sxmsys_school: ' + str(sxmsys_school))
+
+            if sxmsys_school:
+# - get SXMSYS user
+                sxmsys_user = None
+                try:
+                    user_name = 'Hans'
+                    last_name = 'Hans Meijs'
+                    email_address = 'hmeijs@gmail.com'
+                    usergroups = 'admin;edit;read'
+
+        # - check if user exists
+                    id_str = '000000' + str(sxmsys_schoolbase.pk)
+                    schoolbase_prefix = id_str[-6:]
+                    prefixed_username = schoolbase_prefix + user_name
+
+                    sxmsys_user = acc_mod.User.objects.filter(
+                        country=sxm_country,
+                        schoolbase=sxmsys_schoolbase,
+                        username__iexact=prefixed_username
+                    ).first()
+
+        # - add user if user does not exists
+                    if sxmsys_user is None:
+                        sxmsys_user = acc_mod.User(
+                            country=sxm_country,
+                            schoolbase=sxmsys_schoolbase,
+                            username=prefixed_username,
+                            last_name=last_name,
+                            email=email_address,
+                            role=c.ROLE_128_SYSTEM,
+                            usergroups=usergroups,
+                            is_active=True,
+                            activated=False,
+                            lang=c.LANG_DEFAULT,
+                            modified_by=request.user,
+                            modified_at=timezone.now())
+                        sxmsys_user.save(request=request)
+
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+
+                if logging_on:
+                    logger.debug('sxmsys_user: ' + str(sxmsys_user))
+# - end of add_sxmsys_school_if_not_exist
+
+def get_country_by_abbrev(abbrev):
+    # get country by abbrev 'sxm' or 'cur' PR2021-08-06
+
+    country = None
+    if abbrev:
+        try:
+            country = sch_mod.Country.objects.filter(
+                abbrev__iexact=abbrev
+            ).first()
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+    return country
+# - end of get_country_by_abbrev
+
+def get_todays_examyear():
+    # get SXM examyear of today
+    sxm_examyear = None
+    try:
+        todays_examyear_int = get_this_examyear_int()
+        sxm_examyear = sch_mod.Examyear.objects.filter(
+            country=sxm_country,
+            code=todays_examyear_int
+        ).order_by('-pk').first()
+        if logging_on:
+            logger.debug('todays_examyear_int: ' + str(todays_examyear_int))
+            logger.debug('sxm_examyear: ' + str(sxm_examyear))
+        if sxm_examyear is None:
+            sxm_examyear = sch_mod.Examyear(
+                country=sxm_country,
+                code=todays_examyear_int
+            )
+            sxm_examyear.save(request=request)
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug('sxm_examyear: ' + str(sxm_examyear))
+
 
 def transfer_depbases_from_array_to_string():
     subjecttypes = subj_mod.Subjecttype.objects.all()

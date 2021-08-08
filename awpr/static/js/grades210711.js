@@ -325,7 +325,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 if ("locale_dict" in response) {
                     loc = response.locale_dict;
-                    // mimp_loc = loc;
                     isloaded_loc = true;
                 };
 
@@ -1671,7 +1670,7 @@ document.addEventListener("DOMContentLoaded", function() {
                            (tblName === "department") ? loc.Department :
                            (tblName === "level") ? loc.Level :
                            (tblName === "sector") ? loc.Sector :
-                           (tblName === "subjecttype") ? loc.Subjecttype :
+                           (tblName === "subjecttype") ? loc.Character :
                            (tblName === "scheme") ? loc.Scheme :
                            (tblName === "package") ? loc.Package : "";
 
