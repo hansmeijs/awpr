@@ -429,9 +429,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let el_submenu = document.getElementById("id_submenu")
         if(permit_dict.permit_crud){
+            AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open(loc, "import_student")}, null, "id_submenu_import");
             AddSubmenuButton(el_submenu, loc.Add_candidate, function() {MSTUD_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete")});
-            AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open(loc, "import_student")}, null, "id_submenu_import");
         };
 
         AddSubmenuButton(el_submenu, loc.Hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")

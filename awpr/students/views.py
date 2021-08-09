@@ -2671,11 +2671,9 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                             msg_html = '<br>'.join((err_01, '<i>' + err_02 + '</i>', err_03))
                             messages.append({'class': "alert-danger", 'msg_html': msg_html})
 
-
 # - create and save Studentsubject
         if not has_error:
             try:
-                a=1/0
                 studsubj = stud_mod.Studentsubject(
                     student=student,
                     schemeitem=schemeitem

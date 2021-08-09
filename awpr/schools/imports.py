@@ -233,7 +233,7 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20
                     if logging_on:
                         logger.debug('is_test: ' + str(is_test))
                         logger.debug('lookup_field: ' + str(lookup_field))
-                        #logger.debug('data_list: ' + str(data_list))
+                        logger.debug('data_list: ' + str(data_list))
                         logger.debug('filename: ' + str(filename))
 
                     updated_rows = []
@@ -2063,29 +2063,46 @@ def get_mapped_subjectbase_code_dict(department):  # PR2021-02-27 PR2021-07-21
 
 
 def get_subjbase_pk_list_per_student_NEW(school, department, double_entrieslist):  # PR2021-07-21
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- get_subjbase_pk_list_per_student_NEW  --------------------')
         logger.debug('double_entrieslist: ' + str(double_entrieslist))
-    # this one uses idnumber as key, this way you vcan skip lookup student
+        logger.debug('school.pk: ' + str(school.pk))
+        logger.debug('department.pk: ' + str(department.pk))
+
+    # this one uses idnumber as key, this way you can skip lookup student
     # don't add idnumber to list when it is found multiple times in upload list
     # function creates a dict with as key student_pk and as value a dict with key: subjbase_pk and value: subject_code
     # output:       dict: { idnumber: {student_id: id, subjectbase_pk: subject_code, ...}, ... }
     # '2004042204': {'stud_id': 3110, 133: 'ne', 134: 'en', 135: 'mm1', 136: 'lo', 138: 'pa', 141: 'wk', 142: 'ns1', 154: 'ns2', 155: 'sws'},
 
+   # sql_keys = {'ey_id': school.examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk}
     sql_keys = {'sch_id': school.pk, 'dep_id': department.pk}
-    sql_list = ["SELECT stud.idnumber, studsubj.student_id, stud.lastname, stud.firstname, stud.prefix, subj.base_id, subjbase.code",
+    sql_studsubj_list = ["SELECT studsubj.student_id, subj.base_id AS subjbase_id, subjbase.code AS subjbase_code",
         "FROM students_studentsubject AS studsubj",
-        "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
         "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
         "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
         "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-        "WHERE stud.school_id = %(sch_id)s::INT AND stud.department_id = %(dep_id)s::INT AND NOT studsubj.tobedeleted"]
+        # "WHERE subj.examyear_id = %(ey_id)s::INT AND NOT studsubj.tobedeleted"]
+        "WHERE NOT studsubj.tobedeleted"]
+    sub_sql = ' '.join(sql_studsubj_list)
+
+    sql_list = ["WITH sub_sql AS (" + sub_sql + ")",
+        "SELECT stud.idnumber, stud.id AS stud_id, stud.lastname, stud.firstname, stud.prefix, ",
+        "sub_sql.subjbase_id, sub_sql.subjbase_code",
+        "FROM students_student AS stud",
+        "LEFT JOIN sub_sql ON (sub_sql.student_id = stud.id)",
+        "WHERE stud.school_id = %(sch_id)s::INT AND stud.department_id = %(dep_id)s::INT"]
     sql = ' '.join(sql_list)
 
+    if logging_on:
+        logger.debug('sql: ' + str(sql))
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
         rows = cursor.fetchall()
+
+    if logging_on:
+        logger.debug('rows: ' + str(rows))
 
     subjectbase_pk_dict = {}
     if rows:
@@ -2291,15 +2308,25 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
         logger.debug('lookup_field_caption: ' + str(lookup_field_caption))
         logger.debug('id_number_nodots: ' + str(id_number_nodots))
         logger.debug('error_list: ' + str(error_list))
+        logger.debug('has_error: ' + str(has_error))
 
     student = None
     if not has_error:
+        if logging_on:
+            logger.debug('subjbase_pk_list_per_student: ' + str(subjbase_pk_list_per_student))
 
 # - lookup student in subjbase_pk_list_per_student ( list only contains students of this dep, doubles in uploadlist are filtered out
         # either student, is_new_student or has_error is trueish
         if id_number_nodots in subjbase_pk_list_per_student:
             subjbase_dict = subjbase_pk_list_per_student.get(id_number_nodots)
+
+            if logging_on:
+                logger.debug('subjbase_dict: ' + str(subjbase_dict))
+
             student_pk = subjbase_dict.get('stud_id')
+            if logging_on:
+                logger.debug('student_pk: ' + str(student_pk))
+
             if student_pk:
                 student = stud_mod.Student.objects.get_or_none(pk=student_pk, school=school, department=department)
                 if student is None:

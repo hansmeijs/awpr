@@ -670,7 +670,7 @@ def get_selected_examperiod_examtype_from_usersetting(request):  # PR2021-01-20
 
 
 def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-06-14
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_ey_school_dep_from_usersetting ----- ' )
     # this function gets sel_examyear, sel_school, sel_department from req_user and usersetting

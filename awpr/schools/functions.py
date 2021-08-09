@@ -843,7 +843,7 @@ def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_de
 
 # ===============================
 def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-08-01
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------- get_stored_coldefs_dict ---------------- ')
         logger.debug('setting_key: ' + str(setting_key))

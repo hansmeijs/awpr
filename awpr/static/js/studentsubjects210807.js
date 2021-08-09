@@ -490,7 +490,9 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("permit_dict", permit_dict);
         let el_submenu = document.getElementById("id_submenu")
         if(el_submenu){
-
+            if(permit_dict.permit_crud){
+                AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open(loc, "import_studsubj")}, null, "id_submenu_import");
+            }
             AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, null, null, "id_submenu_download_ex1", urls.url_grade_download_ex1, false);  // true = download
             if (permit_dict.permit_approve_subject){
                 AddSubmenuButton(el_submenu, loc.Approve_subjects, function() {MASS_Open("approve")});
@@ -498,9 +500,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (permit_dict.permit_submit_subject){
                 AddSubmenuButton(el_submenu, loc.Submit_Ex1_form, function() {MASS_Open("submit")});
             };
-            if(permit_dict.permit_crud){
-                AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open(loc, "import_studsubj")}, null, "id_submenu_import");
-            }
 
             AddSubmenuButton(el_submenu, loc.Hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
          el_submenu.classList.remove(cls_hide);
