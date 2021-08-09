@@ -467,58 +467,12 @@ aXX:hover{
         padding: 2px 4px;
 }
 
-/*
-.c_table_stud tbody td:nth-child(1) {
-        text-align: center;
-        background-color: #F5FAFF; /* RGB 245, 250, 255 #F5FAFF = licht licht blauw; #B8CCE4 = 'TextboxBackColor Default Schema Blauw lichtblauw */
-
-/*}
-*/
-/*
-.c_table_stud tbody tr:nth-child(even) td {
-        /*background-color: #f4fbff; /* RGB(244,251,255) heel licht blauw */
-       /* background-color: #F5FAFF; /* RGB 245, 250, 255 #F5FAFF = licht licht blauw; #B8CCE4 = 'TextboxBackColor Default Schema Blauw lichtblauw */
-
-        /*background-color: rgba(0, 169, 230, 0.1)*/
-/*}
-*/
-
 /* Table Footer */
 .c_table_stud tfoot th {
         background-color: #376191;  /* RGB(55,97,145) FooterBackColor Default Schema Blauw medium blauw  */
         text-align: left;
 }
-/*
-.c_table_stud tfoot th:first-child {
-        text-align: left;
-}
-*/
-/*.c_table_stud tbody td:empty {
-        background-color: #ffcccc;
-}*/
 
-.submit-button {
-    font-size: 14px;
-    font-weight: bold;
-    line-height: 32px;
-    padding: 4px 8px;
-    margin: 4px;
-    line-height: 1.25;
-    color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
-    background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
-    border: 1px solid rgba(0,0,0,0.25);
-    cursor: pointer;
-    width: 6em;
-    display: -ms-grid;
-    display: grid;
-}
-.submit-button:hover {
-    /*background: darken($red, 1.5%);*/
-    border: 1px solid rgba(0,0,0,.05);
-    background-color: #ddd;
-    -webkit-box-shadow: 1px 1px 2px rgba(255,255,255,0.2);
-            box-shadow: 1px 1px 2px rgba(255,255,255,0.2);
-}
 
 .c_footer {
     font-size: 12px;
@@ -691,114 +645,12 @@ aXX:hover{
     color: #ffffff;
 }
 
-.color_tblhead_grey {
-    /*background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
-    /*background-color:  #2d4e77cc;*/
-    /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
-
-    /*background-color: #7e98b5; /*lgreyish lightblue PR2019-01-05*/
-    /*background-color: #2d4e7780;
-    /*background-color: #F5FAFF; */ /*licht licht blauw; */
-
-    /*background-color: #800000; /*dark red*/
-    background-color: #68696b; /*dark grey */
-    /*background-color: #e4e8ec;  /*light grey */
-
-    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
-    /*color: #ffffff;
-    /*color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
-
-    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
-    /*color: #376191;  /* Default Schema Blauw donkerblauw */
-    /*color: #800000;  /* Default Schema Blauw donkerblauw */
-    color: #68696b; /*dark grey */
-}
-
-.color_tblbody_grey {
-
-    /*background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
-    /*background-color:  #2d4e77cc;*/
-    /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
-
-    /*background-color: #7e98b5; /*lgreyish lightblue PR2019-01-05*/
-    /*background-color: #2d4e7780;
-    /*background-color: #F5FAFF; */ /*licht licht blauw; */
-
-    /*background-color: #800000; /*dark red*/
-    /*background-color: #68696b; /*dark grey */
-    background-color: #e4e8ec;  /*light grey */
-
-    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
-    /*color: #ffffff;
-    /*color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
-
-    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
-    /*color: #376191;  /* Default Schema Blauw donkerblauw */
-    /*color: #800000;  /* Default Schema Blauw donkerblauw */
-    color: #68696b; /*dark grey */
-}
-
-
-
-.color_tblbody_blue {
-
-    /*background-color:  #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
-    /*background-color:  #2d4e77cc;*/
-
-    /*background-color: #7e98b5; /*lgreyish lightblue PR2019-01-05*/
-    /*background-color: #2d4e7780;*/
-
-    /*background-color: #e4e8ec;  /*light grey */
-    /*background-color: #800000; /*dark red*/
-    /*background-color: #68696b; /*dark grey */
-    /*background-color: #F5FAFF; */ /*licht licht blauw; */
-    background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
-
-    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
-    /*color: #ffffff;*/
-    color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
-
-    /*color: #E3EBF4; /*HeaderForeColor Default Schema Blauw */
-    /*color: #376191;  /* Default Schema Blauw donkerblauw */
-    /*color: #800000;  /* Default Schema Blauw donkerblauw */
-}
 
 
 
 
 /* ============   popup window  =================== */
-.stp_container_div {
-    width: 100%;
-    height: 100%;
-    z-index:40;
-    position: absolute;
-    visibility:hidden;
-    display:none;
-    background-color: rgba(11,11,11,0.2);
-}
-.stp_container_show {
-    width: 100%;
-    height: 100%;
-    margin: auto;
-    z-index:10;
-    position: relative;
-    visibility: visible;
-    display: block;
-    background-color: rgba(11,11,11,0.2);
-}
 
-.stp_popup {
-    background-color: white;
-    margin: auto;
-    width:300px;
-    position:relative;
-    z-index:11;
-    top: 25%;
-    padding:30px;
-    -webkit-box-shadow:0 0 10px rgba(0,0,0,0.4);
-    -moz-box-shadow:0 0 10px rgba(0,0,0,0.4);
-    box-shadow:0 0 10px rgba(0,0,0,0.4);
-}
 
 .mod_flex {
     display: flex;
@@ -818,29 +670,6 @@ aXX:hover{
   display:block;
   margin-left:auto;
   margin-right:auto;
-}
-
-
-.cell_error_odd {
-    background: #ffcccc;
-}
-.cell_error_even {
-    background: #ffefef;
-}
-
-.cell_saved_odd {
-    background: #ccffcc;
-}
-.cell_saved_even {
-    background: #deffde;
-}
-
-.cell_unchanged_odd {
-    background: #e0e0e0;  /* light grey */
-
-}
-.cell_unchanged_even {
-    background: #f8f8f8;  /* light light grey */
 }
 
 
@@ -1535,8 +1364,6 @@ aXX:hover{
     margin: 4px 4px 4px 4px;
     cursor: pointer;
 }
-
-
 
 .awplogo {
     background-image: url('/static/img/awplogo.png');

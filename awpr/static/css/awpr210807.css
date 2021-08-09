@@ -450,5 +450,103 @@ z_index_1070 {
   animation-name: onOff;
   animation-direction: reverse;
 }
-
 /* end of CSS loader */
+
+/* modal import */
+
+.tsa_tbl_unlinked {
+    /* font-size: 14px; not working on table */
+    color: #ffffff; /*color: #FFFFFF; white */
+    /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+    /*background-color: #f5f5f5; /* #f5f5f5 = 245 245 245  licht licht licht grijs; */
+    background-color: #f5f5f5; /* #f5f5f5 = 245 245 245  licht licht licht grijs; */
+}
+.tsa_tbl_linked {
+    /* font-size: 14px; not working on table */
+    color: #ffffff; /*color: #FFFFFF; white */
+    /*background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+    /*background-color: #f5f5f5; /* #f5f5f5 = 245 245 245  licht licht licht grijs; */
+    background-color:  #d8d8d8;  /* light grey 218 218 218 100%  /*  #e0e0e0; light grey 224 224 224 */
+
+}
+.tsa_tbl_hdr_linked {
+    font-size: 14px;
+    padding: 2px 4px; /*padding: 2px 4px 2px 4px;  /* top, right, bottom, left:*/
+    color: #ffffff; /*color: #FFFFFF; white */
+    background-color: #800000; /* background-color: #800000; dark red*/
+    border-bottom: 1px solid #f3f3f3; /* offwhite */
+}
+.tsa_tbl_hdr_unlinked {
+    font-size: 14px;
+    padding: 2px 4px; /*padding: 2px 4px 2px 4px;  /* top, right, bottom, left:*/
+    color: #ffffff; /*color: #FFFFFF; white */
+    background-color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    border-bottom: 1px solid #f3f3f3; /* offwhite */
+}
+
+/* The child combinator (>) see https://developer.mozilla.org/en-US/docs/Web/CSS/Child_combinator */
+
+.tsa_td_linked {
+        color: #800000;  /*dark red*/
+        background-color: #f9f2f2; /* #f9f2f2 lightlight reddish*/
+        /*width: 50%;*/
+        padding: 2px 8px; /* top right bottom left*/
+            transition: all 150ms ease;
+     -webkit-transition: all 150ms ease;
+     -o-transition: all 150ms ease;
+}
+.tsa_td_unlinked {
+        color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+        background-color: #d7e4f3; /*#d7e4f3 is even lighter blueish  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+        padding: 2px 8px; /* top right bottom left*/
+            transition: all 150ms ease;
+     -webkit-transition: all 150ms ease;
+     -o-transition: all 150ms ease;
+}
+.tsa_td_linked_selected {
+        color: #ffffff; /*!important; /*white*/
+        background-color: #800000;  /*!important; /*dark red*/
+        padding: 2px 8px; /* top right bottom left*/
+    transition: all 150ms ease;
+     -webkit-transition: all 150ms ease;
+     -o-transition: all 150ms ease;
+}
+
+.tsa_td_unlinked_selected {
+        color: #ffffff; /*!important; /*white*/
+        background-color: #2D4E77; /*!important; /* HeaderBackColor Default Schema Blauw donkerblauw */
+        padding: 2px 8px; /* top right bottom left*/
+            transition: all 150ms ease;
+     -webkit-transition: all 150ms ease;
+     -o-transition: all 150 ease;
+}
+
+.tsa_td_linked_hover {
+    color: #ffffff; /*!important;*/
+    /*background-color: #a21313; /*reddish*/
+   /* background-color: #e04040; /* #e04040 rgba: 224-64-64-1 medium red*/
+    background-color: #c56d6d; /* #c56d6d  rgba: 197-109-109-1 medium red*/
+    /*background-color: #c54040; /* #c54040 rgba: 197-64-64-1 medium red*/
+
+    /*background-color: #800000; /*!important; /* rgba: 128-64-64-1 dark red*/
+    transition: all 150ms ease;
+     -webkit-transition: all 150ms ease;
+     -o-transition: all 150ms ease;
+}
+.tsa_td_unlinked_hover {
+    color: #ffffff; /*!important;*/
+    /*background-color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    background-color: #4c74a7; /* #4c74a7 rgba: 76-116-167-1 medium blue*/
+    transition: all 150ms ease;
+     -webkit-transition: all 150ms ease;
+     -o-transition: all 150ms ease;
+}
+
+.tsa_tw_100perc {
+        width: 100%;
+}
+.tsa_tw_50perc {
+        width: 50%;
+}
+
+/* end of modal import */
