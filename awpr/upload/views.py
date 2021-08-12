@@ -30,23 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 
-# ========  UPLOAD  =====================================
-
-@method_decorator([login_required], name='dispatch')
-class UploadListView(View):  # PR2021-06-11
-
-    def get(self, request):
-
-# - set headerbar parameters PR2018-08-06
-        page = 'page_grade'
-        headerbar_param = awpr_menu.get_headerbar_param(request, page)
-
-# - save this page in Usersetting, so at next login this page will open. Used in LoggedIn
-#        # PR2021-06-22 moved to get_headerbar_param
-
-        return render(request, 'upload.html', headerbar_param)
-
-
+# ========  UPLOAD AWP =====================================
 @method_decorator([login_required], name='dispatch')
 class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
 

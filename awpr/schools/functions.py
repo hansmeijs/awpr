@@ -909,7 +909,9 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
         else:
             table_list = ("coldef", "level", "sector", "profiel")
     elif setting_key == c.KEY_IMPORT_STUDENTSUBJECT:
-        table_list = ("coldef", "subject", "subjecttype")
+        # PR2021-08-11 subjecttype NIU was: table_list = ("coldef", "subject", "subjecttype")
+        # 'subject' comes first, subject values are used in coldef to exclude linked subjects from coldef list PR2021-08-11
+        table_list = ("subject", "coldef")
     else:
         table_list = ("coldef",)
 
@@ -976,7 +978,8 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
 
     if table_list:
         for tblName in table_list:
-            if tblName in ('department', 'level', 'sector', 'profiel', 'subject', 'subjecttype'):
+            # PR2021-08-11 subjecttype NIU was: if tblName in ('department', 'level', 'sector', 'profiel', 'subject', 'subjecttype'):
+            if tblName in ('department', 'level', 'sector', 'profiel', 'subject'):
     # - only add list of level / sector when _req is True in sel_department
                 if tblName == 'level':
                     is_req = is_level_req
@@ -1010,9 +1013,10 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
                         instances = subj_mod.Sector.objects.filter(examyear=sel_examyear)
                     elif tblName == 'subject':
                         instances = subj_mod.Subject.objects.filter(examyear=sel_examyear)
-                    elif tblName == 'subjecttype':
-                        # PR2021-07-20 switched to subjecttypebase, because subjecttype is now per scheme
-                        instances = subj_mod.Subjecttypebase.objects.all()
+                    # PR2021-08-11 NIU:
+                    #elif tblName == 'subjecttype':
+                    #    # PR2021-07-20 switched to subjecttypebase, because subjecttype is now per scheme
+                    #    instances = subj_mod.Subjecttypebase.objects.all()
 
         # - loop through instances of this examyear
                     for instance in instances:
@@ -1028,8 +1032,8 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
 
                     # if subjecttype: check if subjecttype.scheme.department is in school_depbasePk_list
                             # PR2021-07-20 switched to subjecttypebase, get all rows
-                            elif tblName == 'subjecttype':
-                                add_to_list = True
+                            #elif tblName == 'subjecttype':
+                            #    add_to_list = True
 
                             elif instance.depbases:
                     # in other tables: only add if sel_depbase.pk is in depbases
@@ -1053,17 +1057,17 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
                                         add_to_list = True
 
                         if add_to_list:
-                            if tblName == 'subjecttype':
-                                instance_basePk = instance.pk
-                            else:
-                                instance_basePk = instance.base.pk
+                            #if tblName == 'subjecttype':
+                            #    instance_basePk = instance.pk
+                            #else:
+                            instance_basePk = instance.base.pk
 
                             instance_value = None
                             if tblName in ('department', 'subject'):
                                 instance_value = instance.base.code if instance.base.code else None
-                            elif tblName in ('level', 'sector', 'profiel', 'subjecttype'):
+                            # NIU was: elif tblName in ('level', 'sector', 'profiel', 'subjecttype'):
+                            elif tblName in ('level', 'sector', 'profiel'):
                                 instance_value = instance.abbrev if instance.abbrev else None
-
                             dict = {'awpBasePk': instance_basePk, 'awpValue': instance_value}
                             if reversed_dict:
                                 #  reversed_dict =  {3: 'EM', 4: 'CM', 7: 'NT'}

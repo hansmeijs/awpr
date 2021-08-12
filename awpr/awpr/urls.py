@@ -254,13 +254,7 @@ urlpatterns = [
     # PR2019-02-25
     path('downloads/', report_views.download, name='downloads_url'),
 
-
-# ===== UPLOAD FROM AWP ========================== PR2021-06-11
-    path('uploads/', include([
-        path('upload', upload_views.UploadListView.as_view(), name='upload_url'),
-    ])),
-
-    # ajax PR2018-12-02
+# ===== IMPORT ==========================
     path('import/', include([
         #path('import_student_load/', student_views.StudentImportUploadDataView.as_view(), name='import_student_load_url'),
         path('importsettings_upload/', school_imports.UploadImportSettingView.as_view(), name='url_import_settings_upload'),

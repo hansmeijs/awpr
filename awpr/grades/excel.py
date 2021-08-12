@@ -11,13 +11,12 @@ from django.views.generic import View
 
 from datetime import date, datetime, timedelta
 
-from subjects import views as subj_vw
-from schools import functions as sch_fnc
+from accounts import models as acc_mod
 from awpr import constants as c
 from awpr import functions as af
 from awpr import downloads as dl
 from awpr import settings as s
-from students import views as stud_vw
+from subjects import views as subj_view
 
 import xlsxwriter
 import io
@@ -26,14 +25,14 @@ logger = logging.getLogger(__name__)
 
 
 @method_decorator([login_required], name='dispatch')
-class StudsubjDownloadEx1View(View):  # PR2021-01-24
+class StudsubjDownloadEx1View(View):  # PR2021-01-24 PR2021-08-09
 
     def get(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
-            logger.debug(' ============= GradeDownloadEx2aView ============= ')
+            logger.debug(' ============= StudsubjDownloadEx1View ============= ')
         # function creates, Ex1 xlsx file based on settings in usersetting
-        # TODO ex form prints colums twice, and totals are not correct,
+
         # TODO text EINDEXAMEN missing the rest, school not showing PR2021-05-30
         response = None
         #try:
@@ -41,22 +40,22 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24
             if request.user and request.user.country and request.user.schoolbase:
                 req_user = request.user
 
-    # - reset language
+# - reset language
                 user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
                 activate(user_lang)
 
-    # - get selected examyear, school and department from usersettings
+# - get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, may_edit, msg_list = \
                     dl.get_selected_ey_school_dep_from_usersetting(request)
 
                 if sel_examyear and sel_school and sel_department :
 
-    # get text from examyearsetting
+# - get text from examyearsetting
                     settings = af.get_exform_text(sel_examyear, ['exform', 'ex1'])
                     if logging_on:
                         logger.debug('settings: ' + str(settings))
 
-    # +++ get mapped_subject_rows
+# +++ get mapped_subject_rows
                     subject_row_count, subject_pk_list, subject_code_list = \
                         create_ex1_mapped_subject_rows(sel_examyear, sel_school, sel_department)
                     #  subject_pk_dict: {34: 0, 29: 1, ...} ( subject_pk: index)
@@ -68,23 +67,25 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24
                         logger.debug('subject_pk_list: ' + str(subject_pk_list))
                         logger.debug('subject_code_list: ' + str(subject_code_list))
 
-    # +++ get dict of subjects of these studsubj_rows
-                    studsubj_rows = create_ex1_rows(sel_examyear, sel_school, sel_department)
+# +++ get dict of subjects of these studsubj_rows
+                    ex1_dict = create_ex1_rows_NEW(sel_examyear, sel_school, sel_department)
 
     # +++ create ex1_xlsx
-                    if studsubj_rows:
+                    if ex1_dict:
                         save_to_disk = False
+                        is_preliminary = True
                         published_instance = None
                         response = create_ex1_xlsx(
                             published_instance=published_instance,
                             examyear=sel_examyear,
                             school=sel_school,
                             department=sel_department,
+                            is_preliminary=is_preliminary,
                             settings=settings,
                             save_to_disk=save_to_disk,
                             subject_pk_list=subject_pk_list,
                             subject_code_list=subject_code_list,
-                            studsubj_rows=studsubj_rows,
+                            ex1_dict=ex1_dict,
                             user_lang=user_lang)
         #except:
         #    raise Http404("Error creating Ex2A file")
@@ -94,13 +95,15 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24
         else:
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
-
+# - end of StudsubjDownloadEx1View
 
 #//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-def create_ex1_xlsx(published_instance, examyear, school, department, settings, save_to_disk,
-                    subject_pk_list, subject_code_list, studsubj_rows, user_lang):  # PR2021-02-13
-    logger.debug(' ----- create_ex1_xlsx -----')
-    #logger.debug('settings: ' + str(settings))
+def create_ex1_xlsx(published_instance, examyear, school, department, is_preliminary, settings, save_to_disk,
+                    subject_pk_list, subject_code_list, ex1_dict, user_lang):  # PR2021-02-13
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_ex1_xlsx -----')
+        logger.debug('settings: ' + str(settings))
 
     # from https://stackoverflow.com/questions/16393242/xlsxwriter-object-save-as-http-response-to-create-download-in-django
     #logger.debug('period_dict: ' + str(period_dict))
@@ -117,33 +120,29 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
         'Regel 8:
         'Regel 9:  header kolommen
         
-        studsubj_row: {'id': 149, 'lastname': 'Abath', 'firstname': 'Markleyson', 'prefix': None, 
-                        'idnumber': '1999112405', 'examnumber': '63', 'classname': None, 
-                        'lvl_abbrev': 'PBL', 'sct_abbrev': 'tech', 
-                        'subj_id_arr': [3, 4, 1, 6, 10, 15, 27, 29, 31, 35, 46]}
-  
+         ex1_dict: 
+        {'total': {1047: 175, ..., 1057: 7}, 
+        'level_86': {'lvl_name': 'Praktisch Basisgerichte Leerweg', 
+                    'total': {1047: ..., 1063: 23}, 
+                    'stud_list': [
+                        {'idnr': '2004101103', 'exnr': '21024', 'name': 'Balentien, Rayviendall', 'lvl': 'PBL', 'sct': 'tech', 'class': '4BH', 
+                            'subj': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}, 
+                        {'idnr': '2002090102', 'exnr': '21025', 'name': 'Baromeo, Norshel', 'lvl': 'PBL', 'sct': 'tech', 'class': '4BH', 
+                            'subj': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}, ...}, 
     """
 
     response = None
 
-    if settings and studsubj_rows:
-
-        # PR2021-03-17 was:
-        #if s.AWS_LOCATION:
-            #file_dir = ''.join((s.AWS_LOCATION, '/published/'))
-        # this one gave path:awpmedia/awpmedia/media/private/media/private/published
-        #if s.AWS_PRIVATE_MEDIA_LOCATION:
-        #    # AWS_PRIVATE_MEDIA_LOCATION = 'media/private'
-        #    file_dir = ''.join((s.AWS_PRIVATE_MEDIA_LOCATION, '/published/'))
-        #else:
-            # STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'media', 'private', 'published') + '/'
-        #    file_dir = s.STATICFILES_MEDIA_DIR
+    if settings and ex1_dict:
 
         # PR2021-07-28 changed to file_dir = 'published/'
         # this one gives path: awpmedia / awpmedia / media / private / published
         # PR2021-08-06 create different folders for country and examyear
         # this one gives path: awpmedia / awpmedia / media / private / cur / 2022 / published
         # published_instance is None when downloading preliminary Ex1 form
+
+        examyear_str = str(examyear.code)
+
         file_path = None
         if published_instance:
 
@@ -151,28 +150,23 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
             # PR2021-08-07 changed to file_dir = 'country/examyear/published/'
             # this one gives path:awpmedia/awpmedia/media/cur/2022/published
             country_abbrev = examyear.country.abbrev.lower()
-            examyear_str = str(examyear.code)
             file_dir = '/'.join((country_abbrev, examyear_str, 'exfiles'))
             file_path = '/'.join((file_dir, published_instance.filename))
             file_name = published_instance.name
 
-            logger.debug('file_dir: ' + str(file_dir))
-            logger.debug('file_name: ' + str(file_name))
-            logger.debug('filepath: ' + str(file_path))
+            if logging_on:
+                logger.debug('file_dir: ' + str(file_dir))
+                logger.debug('file_name: ' + str(file_name))
+                logger.debug('filepath: ' + str(file_path))
 
 # ---  create file Name and worksheet Name
         today_dte = af.get_today_dateobj()
-        today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
+        today_formatted = af.format_DMY_from_dte(today_dte, user_lang, False)  # False = not month_abbrev
         title = ' '.join( ('Ex1', str(examyear), school.base.code, today_dte.isoformat() ) )
         file_name = title + ".xlsx"
         worksheet_name = str(_('Ex1'))
 
-    # create the HttpResponse object ...
-        #response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        #response['Content-Disposition'] = "attachment; filename=" + file_name
-
-# Create an in-memory output file for the new workbook.
-
+# - Create an in-memory output file for the new workbook.
         # from https://docs.python.org/3/library/tempfile.html
         temp_file = tempfile.TemporaryFile()
 
@@ -183,103 +177,29 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
         # 'in_memory' Workbook() constructor option as shown in the docs.
         #  book = xlsxwriter.Workbook(response, {'in_memory': True})
         book = xlsxwriter.Workbook(output)
-        logger.debug('output: ' + str(output))
-
         sheet = book.add_worksheet(worksheet_name)
-        sheet.hide_gridlines(2) # 2 = Hide screen and printed gridlines
+        if logging_on:
+            logger.debug('output: ' + str(output))
+            logger.debug('book: ' + str(book))
+            logger.debug('sheet: ' + str(sheet))
 
-        #cell_format = book.add_format({'bold': True, 'font_color': 'red'})
-        bold_format = book.add_format({'bold': True})
+# --- create format of Ex1 sheet
+        ex1_formats = create_ex1_format_dict(book, sheet, school, department, subject_pk_list, subject_code_list)
+        field_width = ex1_formats.get('field_width')
+        bold_format = ex1_formats.get('bold_format')
+        bold_blue = ex1_formats.get('bold_blue')
+        normal_blue = ex1_formats.get('normal_blue')
+        th_merge = ex1_formats.get('th_merge')
+        th_level = ex1_formats.get('th_level')
+        totalrow_merge = ex1_formats.get('totalrow_merge')
+        col_count = ex1_formats.get('col_count', 0)
+        first_subject_column =  ex1_formats.get('first_subject_column', 0)
 
-        # th_format.set_bg_color('#d8d8d8') #   #d8d8d8;  /* light grey 218 218 218 100%
-        # or: th_format = book.add_format({'bg_color': '#d8d8d8'
-        th_align_center = book.add_format({'font_size': 8, 'border': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
-        th_rotate = book.add_format({'font_size': 8, 'border': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True, 'rotation': 90})
-
-        th_merge = book.add_format({ 'bold': True, 'align': 'center', 'valign': 'vcenter'})
-        th_merge.set_left()
-        th_merge.set_bottom()
-
-        row_align_left = book.add_format({'font_size': 8, 'font_color': 'blue', 'valign': 'vcenter','border': True})
-        row_align_center = book.add_format({'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter','border': True})
-
-        totalrow_align_center = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
-        totalrow_number = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
-        totalrow_merge = book.add_format({'border': True, 'align': 'right', 'valign': 'vcenter'})
-
-# get number of columns
-        # columns are (0: 'examnumber', 1: idnumber, 2: name 3: 'class' 4: level "
-        # columns 5 thru 19 are subject columns. Extend number when more than 15 subjects
-        is_lexschool = school.islexschool
-        level_req = department.level_req
-        sector_req = department.sector_req
-        has_profiel = department.has_profiel
-
-        col_count = 3  # add column exnr, idnumber, name and class
-        field_width = [10, 12, 35]
-        field_names = ['examnumber', 'idnumber', 'fullname']
-        field_captions = ['Ex.nr.', 'ID-nummer', 'Naam en voorletters van de kandidaat\n(in alfabetische volgorde)']
-        header_formats = [th_align_center, th_align_center, th_align_center]
-        row_formats = [row_align_center, row_align_center, row_align_left]
-        totalrow_formats = [totalrow_merge, totalrow_align_center, totalrow_align_center]
-        if not is_lexschool:  # add column class, not when lex school
-            col_count += 1
-            field_width.append(10)
-            field_names.append('classname')
-            field_captions.append('Klas')
-            header_formats.append(th_align_center)
-            row_formats.append(row_align_center)
-            totalrow_formats.append(totalrow_align_center)
-        if level_req:  # add column if level_req
-            col_count += 1
-            field_width.append(5)
-            field_names.append('lvl_abbrev')
-            field_captions.append('Leer-\nweg')
-            header_formats.append(th_align_center)
-            row_formats.append(row_align_center)
-            totalrow_formats.append(totalrow_align_center)
-        if sector_req:  # add column if sector_req ( is always the case
-            col_count += 1
-            field_width.append(7)
-            caption = 'Profiel' if has_profiel else 'Sector'
-            field_names.append('sct_abbrev')
-            field_captions.append(caption)
-            header_formats.append(th_align_center)
-            row_formats.append(row_align_center)
-            totalrow_formats.append(totalrow_align_center)
-
-        first_subject_column = col_count
-        subject_length = len(subject_code_list)
-        subject_col_width = 2.86
-        for x in range(0, subject_length):  # range(start_value, end_value, step), end_value is not included!
-            field_width.append(subject_col_width)
-            subject_code = subject_code_list[x] if subject_code_list[x] else ''
-            subject_pk = subject_pk_list[x]
-            field_captions.append(subject_code)
-            field_names.append(subject_pk)
-            header_formats.append(th_rotate)
-            row_formats.append(row_align_center)
-            totalrow_formats.append(totalrow_number)
-
-            col_count += 1
-
-        if subject_length < 15:
-            for x in range(subject_length, 15):  # range(start_value, end_value, step), end_value is not included!
-                field_width.append(subject_col_width)
-                subject_code = ''
-                subject_pk = 0
-                field_captions.append(subject_code)
-                field_names.append(subject_pk)
-                header_formats.append(th_rotate)
-                row_formats.append(row_align_center)
-                totalrow_formats.append(totalrow_number)
-
-            col_count += 1
-
+# --- set column width
         for i, width in enumerate(field_width):
             sheet.set_column(i, i, width)
 
-    # --- title row
+# --- title row
         # was: sheet.write(0, 0, str(_('Report')) + ':', bold)
         sheet.write(0, 0, settings['minond'], bold_format)
         sheet.write(1, 0, settings['title'], bold_format)
@@ -291,85 +211,142 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
 
         sheet.write(5, 0, settings['submit_before'], bold_format)
         lb_ex_key = 'lex' if school.islexschool else 'eex'
-        sheet.write(6, 0, settings[lb_ex_key], bold_format)
+        lb_ex_key_str = ' '.join((  settings[lb_ex_key], department.abbrev, settings['in_examyear'], examyear_str))
+
+        sheet.write(6, 0, lb_ex_key_str, bold_format)
         lb_school_key = 'school' if school.islexschool else 'school'
         sheet.write(7, 0, settings[lb_school_key], bold_format)
+        sheet.write(7, 2, school.name, bold_blue)
 
 # - put Ex1 in right upper corner
         #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
         sheet.merge_range(0, col_count - 5, 1, col_count -1, 'EX.1', th_merge)
 
-# ---  table header row
         row_index = 9
-        for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
-            sheet.write(row_index, i, field_captions[i], header_formats[i])
+        if is_preliminary:
+            sheet.write(row_index, 0, str(_('PRELIMINARY EX FORM')), bold_format)
+            row_index += 2
 
-        if len(studsubj_rows):
-            totals = {}
-            for row in studsubj_rows:
-                logger.debug('row: ' + str(row))
-                # row: {'id': 155, 'idnumber': '1998092908', 'examnumber': '109', 'lastname': 'Castillo', 'firstname': 'Shurensly', 'prefix': None, 'classname': None,
-                # 'lvl_abbrev': 'PBL', 'sct_abbrev': 'tech',
-                # 'subj_id_arr': [3, 1, 10, 15, 27, 29, 31, 33, 46]}
+# ---  table header row
+        for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
+            sheet.write(row_index, i, ex1_formats['field_captions'][i], ex1_formats['header_formats'][i])
+
+# ++++++++++++++++++++++++++++
+# iterate through levels, if more than 1 exist
+
+        for key, level_dict in ex1_dict.items():
+            # skip ex1_dict_totals
+            if isinstance(key, int):
+                # in subject column 'field_name' is subject_id
+                lvl_name = level_dict.get('lvl_name')
+                stud_list = level_dict.get('stud_list', [])
+                lvl_totals = level_dict.get('total')
+
+# ---  level header row
+                row_index += 2
+                sheet.merge_range(row_index, 0, row_index, col_count - 1, lvl_name, th_level)
+                if len(stud_list):
+                    for row in stud_list:
+
+# ---  student rows
+                        # row: {'idnr': '2004101103', 'exnr': '21024', 'name': 'Balentien, Rayviendall',
+                        # 'lvl': 'PBL', 'sct': 'tech', 'class': '4BH', 'subj': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}
+                        row_index += 1
+                        for i, field_name in enumerate(ex1_formats['field_names']):
+                            value = ''
+                            if isinstance(field_name, int):
+                                # in subject column 'field_name' is subject_id
+                                subj_id_list = row.get('subj', [])
+                                if subj_id_list and field_name in subj_id_list:
+                                    value = 'x'
+                            else:
+                                value = row.get(field_name, '')
+                            sheet.write(row_index, i, value, ex1_formats['row_formats'][i])
+
+# ---  level total row
                 row_index += 1
-                for i, field_name in enumerate(field_names):
+                for i, field_name in enumerate(ex1_formats['field_names']):
+                    #logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
                     value = ''
                     if isinstance(field_name, int):
-                        # in subject column 'field_name' is subject_id
-                        subj_id_list = row.get('subj_id_arr', [])
-                        if subj_id_list and field_name in subj_id_list:
-                            value = 'x'
-                            if field_name not in totals:
-                                totals[field_name] = 1
-                            else:
-                                totals[field_name] += 1
-                    elif field_name == 'fullname':
-                        prefix = row.get('prefix')
-                        lastname = row.get('lastname', '')
-                        firstname = row.get('firstname', '')
-                        if prefix:
-                            lastname = ' '.join((prefix, lastname))
-                        value = ''.join((lastname, ', ', firstname))
-                    else:
-                        value = row.get(field_name, '')
-                    sheet.write(row_index, i, value, row_formats[i])
+                        if field_name in lvl_totals:
+                            value = lvl_totals.get(field_name)
+                        sheet.write(row_index, i, value, ex1_formats['totalrow_formats'][i])
+                        # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
+                    elif field_name == 'exnr':
+                        #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
+                        sheet.merge_range(row_index, 0, row_index, first_subject_column -1, 'TOTAAL ' + lvl_name, totalrow_merge)
+# end of iterate through levels,
+# ++++++++++++++++++++++++++++
 
+        total_dict = ex1_dict.get('total', {})
 # ---  table total row
-            row_index += 1
-            for i, field_name in enumerate(field_names):
-                #logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
-                value = ''
-                if isinstance(field_name, int):
-                    if field_name in totals:
-                        value = totals[field_name]
-                    sheet.write(row_index, i, value, totalrow_formats[i])
-                    # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
-                elif field_name == 'examnumber':
-                    #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
-                    sheet.merge_range(row_index, 0, row_index, first_subject_column -1, 'TOTAAL', totalrow_merge)
+        row_index += 2
+        for i, field_name in enumerate(ex1_formats['field_names']):
+            #logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
+            value = ''
+            if isinstance(field_name, int):
+                if field_name in total_dict:
+                    value = total_dict.get(field_name)
+                sheet.write(row_index, i, value, ex1_formats['totalrow_formats'][i])
+                # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
+            elif field_name == 'exnr':
+                #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
+                sheet.merge_range(row_index, 0, row_index, first_subject_column -1, 'TOTAAL', totalrow_merge)
 
 # ---  table footer row
-            row_index += 1
-            for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
-                if i == 0:
-                    sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, '', totalrow_merge)
-                else:
-                    sheet.write(row_index, i, field_captions[i], header_formats[i])
+        row_index += 1
+        for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
+            if i == 0:
+                sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, '', totalrow_merge)
+            else:
+                sheet.write(row_index, i, ex1_formats['field_captions'][i], ex1_formats['header_formats'][i])
 
 # ---  footnote row
-            row_index += 2
-            sheet.write(row_index, 0, settings['footnote01'], bold_format)
-            row_index += 1
-            sheet.write(row_index, 0, settings['footnote02'], bold_format)
-            row_index += 1
-            sheet.write(row_index, 0, settings['footnote03'], bold_format)
-            row_index += 3
-            sheet.write(row_index, 0, settings['footnote04'], bold_format)
-            row_index += 1
-            sheet.write(row_index, 0, settings['footnote05'], bold_format)
-            row_index += 1
-            sheet.write(row_index, 0, settings['footnote06'], bold_format)
-            row_index += 1
+        row_index += 2
+        first_footnote_row = row_index
+        for i in range(1, 9):
+            if school.islexschool and 'lex_footnote0' + str(i) in settings:
+                key = 'lex_footnote0' + str(i)
+            else:
+                key = 'footnote0' + str(i)
+            if key in settings:
+                value = settings.get(key)
+                if value:
+                    sheet.write(row_index + i - 1, 0, value, bold_format)
+
+
+# ---  digitally signed by
+        if not is_preliminary or is_preliminary:
+            auth_row = first_footnote_row
+            sheet.write(auth_row, first_subject_column, str(_('Digitally signed by')) + ':')
+            auth_row += 2
+            sheet.write(auth_row, first_subject_column, str(_('President')) + ':')
+            auth1_list = ex1_dict.get('auth1')
+            if auth1_list:
+                for auth1_pk in auth1_list:
+                    auth1 = acc_mod.User.objects.get_or_none(pk=auth1_pk)
+                    if auth1:
+                        sheet.write(auth_row, first_subject_column + 4, auth1.last_name, normal_blue)
+                        auth_row += 1
+            auth_row += 2
+            sheet.write(auth_row, first_subject_column, str(_('Secretary')) + ':')
+            auth2_list = ex1_dict.get('auth2')
+            if auth2_list:
+                for auth2_pk in auth2_list:
+                    auth2 = acc_mod.User.objects.get_or_none(pk=auth2_pk)
+                    if auth2:
+                        sheet.write(auth_row, first_subject_column + 4, auth2.last_name, normal_blue)
+                        auth_row += 1
+
+# ---  place, date
+            auth_row += 1
+            sheet.write(auth_row, first_subject_column, 'Plaats:')
+            sheet.write(auth_row, first_subject_column + 4, str(school.examyear.country.name),
+                        normal_blue)
+            sheet.write(auth_row, first_subject_column + 9, 'Datum:')
+            sheet.write(auth_row, first_subject_column + 11, today_formatted, normal_blue)
+
         book.close()
 
 # +++ save file to disk
@@ -399,7 +376,254 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
 # --- end of create_ex1_xlsx
 
 
+def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, subject_code_list): # PR2021-08-10
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_ex1_format_dict -----')
+
+    sheet.hide_gridlines(2) # 2 = Hide screen and printed gridlines
+
+    #cell_format = book.add_format({'bold': True, 'font_color': 'red'})
+    bold_format = book.add_format({'bold': True})
+    bold_blue = book.add_format({'font_color': 'blue', 'bold': True})
+    normal_blue = book.add_format({'font_color': 'blue'})
+
+    # th_format.set_bg_color('#d8d8d8') #   #d8d8d8;  /* light grey 218 218 218 100%
+    # or: th_format = book.add_format({'bg_color': '#d8d8d8'
+    th_align_center = book.add_format({'font_size': 8, 'border': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+    th_rotate = book.add_format({'font_size': 8, 'border': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True, 'rotation': 90})
+
+    th_merge = book.add_format({ 'bold': True, 'align': 'center', 'valign': 'vcenter'})
+    th_merge.set_left()
+    th_merge.set_bottom()
+
+    th_level = book.add_format({'font_size': 8, 'bold': False, 'align': 'left', 'valign': 'vcenter'})
+    th_level.set_border()
+
+    row_align_left = book.add_format({'font_size': 8, 'font_color': 'blue', 'valign': 'vcenter','border': True})
+    row_align_center = book.add_format({'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter','border': True})
+
+    totalrow_align_center = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
+    totalrow_number = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
+    totalrow_merge = book.add_format({'font_size': 8, 'border': True, 'align': 'right', 'valign': 'vcenter'})
+
+    # get number of columns
+    # columns are (0: 'examnumber', 1: idnumber, 2: name 3: 'class' 4: level "
+    # columns 5 thru 19 are subject columns. Extend number when more than 15 subjects
+
+    is_lexschool = school.islexschool
+    level_req = department.level_req
+    sector_req = department.sector_req
+    has_profiel = department.has_profiel
+
+# - add standard columns: exnr, idnumber and fullname
+    col_count = 3
+    field_width = [10, 12, 35]
+
+    ex1_formats = {'field_names': ['exnr', 'idnr', 'name'],
+                   'field_captions': ['Ex.nr.', 'ID-nummer', 'Naam en voorletters van de kandidaat\n(in alfabetische volgorde)'],
+                    'header_formats': [th_align_center, th_align_center, th_align_center],
+                    'row_formats': [row_align_center, row_align_center, row_align_left],
+                    'totalrow_formats': [totalrow_merge, totalrow_align_center, totalrow_align_center],
+                    'bold_format': bold_format,
+                   'bold_blue': bold_blue,
+                   'normal_blue': normal_blue,
+                   'th_merge': th_merge,
+                   'th_level': th_level,
+                   'totalrow_merge': totalrow_merge
+    }
+
+# - add column class, not when lex school
+    if not is_lexschool:
+        col_count += 1
+        field_width.append(10)
+        ex1_formats['field_names'].append('cls')
+        ex1_formats['field_captions'].append('Klas')
+        ex1_formats['header_formats'].append(th_align_center)
+        ex1_formats['row_formats'].append(row_align_center)
+        ex1_formats['totalrow_formats'].append(totalrow_align_center)
+
+# - add column 'Leerweg' if level_req
+    if level_req:  # add column if level_req
+        col_count += 1
+        field_width.append(5)
+        ex1_formats['field_names'].append('lvl')
+        ex1_formats['field_captions'].append('Leer-\nweg')
+        ex1_formats['header_formats'].append(th_align_center)
+        ex1_formats['row_formats'].append(row_align_center)
+        ex1_formats['totalrow_formats'].append(totalrow_align_center)
+
+# - add column 'Profiel' or 'Sector' if sector_req (is always the case)
+    if sector_req:
+        col_count += 1
+        field_width.append(7)
+        caption = 'Profiel' if has_profiel else 'Sector'
+        ex1_formats['field_names'].append('sct')
+        ex1_formats['field_captions'].append(caption)
+        ex1_formats['header_formats'].append(th_align_center)
+        ex1_formats['row_formats'].append(row_align_center)
+        ex1_formats['totalrow_formats'].append(totalrow_align_center)
+
+# - add subject columns. Amount of subject columns = length of subject_pk_list
+    first_subject_column = col_count
+    subject_col_count = len(subject_pk_list)
+    subject_col_width = 2.86
+    for x in range(0, subject_col_count):  # range(start_value, end_value, step), end_value is not included!
+        field_width.append(subject_col_width)
+        subject_pk = subject_pk_list[x]
+        subject_code = subject_code_list[x] if subject_code_list[x] else ''
+        ex1_formats['field_captions'].append(subject_code)
+        ex1_formats['field_names'].append(subject_pk)
+        ex1_formats['header_formats'].append(th_rotate)
+        ex1_formats['row_formats'].append(row_align_center)
+        ex1_formats['totalrow_formats'].append(totalrow_number)
+
+        col_count += 1
+
+    # - add empty subject columns if col_count is less than 15
+    if subject_col_count < 15:
+        for x in range(subject_col_count, 15):  # range(start_value, end_value, step), end_value is not included!
+            field_width.append(subject_col_width)
+            subject_code = ''
+            subject_pk = 0
+            ex1_formats['field_captions'].append(subject_code)
+            ex1_formats['field_names'].append(subject_pk)
+            ex1_formats['header_formats'].append(th_rotate)
+            ex1_formats['row_formats'].append(row_align_center)
+            ex1_formats['totalrow_formats'].append(totalrow_number)
+
+        col_count += 1
+
+    ex1_formats['col_count'] = col_count
+    ex1_formats['first_subject_column'] = first_subject_column
+    ex1_formats['field_width'] = field_width
+
+    return ex1_formats
+
+
+def create_ex1_rows_NEW(examyear, school, department):  # PR2021-08-10
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_ex1_rows_NEW -----')
+    # function creates dictlist of all students of this examyear, school and department
+    #  key 'subj_id_arr' contains list of all studentsubjects of this student, not tobedeleted
+    level_req = department.level_req
+
+# PR2021-08-10 dont include null in  ARRAY_AGG
+# from https://stackoverflow.com/questions/13122912/how-to-exclude-null-values-in-array-agg-like-in-string-agg-using-postgres
+
+    sql_studsubj_agg_list = [
+        "SELECT studsubj.student_id AS student_id,",
+        "ARRAY_AGG(si.subject_id) AS subj_id_arr,",
+        "ARRAY_AGG(DISTINCT studsubj.subj_auth1by_id) FILTER (WHERE studsubj.subj_auth1by_id is not null) AS subj_auth1_arr,",
+        "ARRAY_AGG(DISTINCT studsubj.subj_auth2by_id) FILTER (WHERE studsubj.subj_auth2by_id is not null) AS subj_auth2_arr",
+        "FROM students_studentsubject AS studsubj",
+        "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+        "WHERE NOT studsubj.tobedeleted",
+        "GROUP BY studsubj.student_id"]
+    sql_studsubj_agg = ' '.join(sql_studsubj_agg_list)
+
+    sql_list = ["WITH studsubj AS (" , sql_studsubj_agg, ")",
+        "SELECT st.id, st.idnumber, st.examnumber, st.lastname, st.firstname, st.prefix, st.classname,",
+        "st.level_id, lvl.name AS lvl_name, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
+        "studsubj.subj_id_arr, studsubj.subj_auth1_arr, studsubj.subj_auth2_arr",
+        "FROM students_student AS st",
+        "LEFT JOIN studsubj ON (studsubj.student_id = st.id)",
+        "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
+        "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
+        "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
+    ]
+    if level_req:
+        sql_list.append("ORDER BY LOWER(lvl.abbrev), LOWER(st.lastname), LOWER(st.firstname)")
+    else:
+        sql_list.append("ORDER BY LOWER(st.lastname), LOWER(st.firstname)")
+    sql = ' '.join(sql_list)
+
+    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk}
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        rows = af.dictfetchall(cursor)
+
+    ex1_dict = {'total': {}, 'auth1': [], 'auth2': []}
+    ex1_total = ex1_dict.get('total')
+    ex1_auth1 = ex1_dict.get('auth1')
+    ex1_auth2 = ex1_dict.get('auth2')
+
+    for row in rows:
+
+        #  row: {
+        #  'id': 3309, 'idnumber': '2004101103', 'examnumber': '21024', 'lastname': 'Balentien', 'firstname': 'Rayviendall', 'prefix': None,
+        #  'classname': '4BH', 'level_id': 86, 'sector_id': 180, 'lvl_abbrev': 'PBL', 'sct_abbrev': 'tech',
+        #  'subj_id_arr': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}
+
+        # value is '0' when lvlbase_id = None (Havo/Vwo)
+        level_pk = row.get('level_id', 0)
+        if level_pk:
+            lvl_name = row.get('lvl_name', '---')
+        else:
+            lvl_name = str(_("Candidates, whose 'leerweg' is not entered"))
+
+        if level_pk not in ex1_dict:
+            ex1_dict[level_pk] = {'lvl_name': lvl_name, 'total': {}, 'stud_list': []}
+
+        level_dict = ex1_dict[level_pk]
+        level_total = level_dict.get('total')
+        level_studlist = level_dict.get('stud_list')
+
+        idnumber = row.get('idnumber' ,'---')
+        examnumber = row.get('examnumber' ,'---')
+        classname = row.get('classname' ,'')
+        lvl_abbrev = row.get('lvl_abbrev' ,'---')
+        sct_abbrev = row.get('sct_abbrev' ,'---')
+
+        prefix = row.get('prefix')
+        lastname = row.get('lastname', '')
+        firstname = row.get('firstname', '')
+        if prefix:
+            lastname = ' '.join((prefix, lastname))
+        fullname = ''.join((lastname, ', ', firstname))
+
+        subj_id_arr = row.get('subj_id_arr', [])
+        student_dict = {'idnr': idnumber, 'exnr': examnumber, 'name': fullname,
+                        'lvl': lvl_abbrev, 'sct': sct_abbrev, 'cls': classname, 'subj': subj_id_arr}
+        level_studlist.append(student_dict)
+
+        if subj_id_arr:
+            for subject_pk in subj_id_arr:
+                if subject_pk not in level_total:
+                    level_total[subject_pk] = 1
+                else:
+                    level_total[subject_pk] += 1
+                if subject_pk not in ex1_total:
+                    ex1_total[subject_pk] = 1
+                else:
+                    ex1_total[subject_pk] += 1
+
+        subj_auth1_arr = row.get('subj_auth1_arr', [])
+        if subj_auth1_arr:
+            for auth1_pk in subj_auth1_arr:
+                if auth1_pk not in ex1_auth1:
+                    ex1_auth1.append(auth1_pk)
+
+        subj_auth2_arr = row.get('subj_auth2_arr', [])
+        if subj_auth2_arr:
+            for auth2_pk in subj_auth2_arr:
+                if auth2_pk not in ex1_auth2:
+                    ex1_auth2.append(auth2_pk)
+
+    if logging_on:
+       logger.debug('>>>>>>>>>>>> ex1_dict: ' + str(ex1_dict))
+
+    return ex1_dict
+# --- end of create_ex1_rows_NEW
+
+
 def create_ex1_rows(examyear, school, department):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_ex1_rows -----')
+
     level_req = department.level_req
 
     sql_studsubj_agg_list = [
@@ -431,12 +655,22 @@ def create_ex1_rows(examyear, school, department):
         cursor.execute(sql, sql_keys)
         rows = af.dictfetchall(cursor)
 
+    if logging_on:
+        for row in rows:
+            logger.debug('row: ' + str(row))
+    #  row: {'id': 3309, 'idnumber': '2004101103', 'examnumber': '21024', 'lastname': 'Balentien', 'firstname': 'Rayviendall', 'prefix': None,
+    #  'classname': '4BH', 'level_id': 86, 'sector_id': 180, 'lvl_abbrev': 'PBL', 'sct_abbrev': 'tech',
+    #  'subj_id_arr': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}
+
     return rows
 # --- end of create_ex1_rows
 
 
 def create_ex1_mapped_subject_rows(examyear, school, department):  # PR2021-08-08
-    # function returns:
+    # function gets all subjects of studsubj of this dep, not tobedeleted
+    # sorted by subjbase.code
+    # and creates mapped dict with key: subject_pk and value: index
+    # and list of subject_codes
     #  subject_pk_dict: {34: 0, 29: 1, 4: 2, 36: 3, 31: 4, 27: 5, 33: 6, 35: 7, 1: 8, 15: 9, 3: 10}
     #  subject_code_list: ['bw', 'cav', 'en', 'inst', 'lo', 'mm1', 'mt', 'mvt', 'ne', 'ns1', 'pa']
     #  index = row_count
@@ -454,6 +688,7 @@ def create_ex1_mapped_subject_rows(examyear, school, department):  # PR2021-08-0
 
         "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
         "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
+        "AND NOT studsubj.tobedeleted",
         "GROUP BY subj.id, subjbase.code",
         "ORDER BY LOWER(subjbase.code)"
     ]
@@ -539,7 +774,14 @@ class OrderlistDownloadView(View):  # PR2021-07-04
 # - end of OrderlistDownloadView
 
 
-def create_orderlist_mapped_subject_rows(examyear, examperiod_int, is_ete_exam, otherlang):
+def create_orderlist_mapped_subject_rows(examyear, examperiod_int, is_ete_exam, otherlang):  # PR2021-08-09
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug ('----- create_orderlist_mapped_subject_rows -----')
+        logger.debug('examperiod_int: ' + str(examperiod_int))
+        logger.debug('is_ete_exam: ' + str(is_ete_exam))
+        logger.debug('otherlang: ' + str(otherlang))
+
     # PR2021-07-08 functions creates mapped dict and lists of all subjects
     # function returns:
     #  subject_pk_dict: {34: 0, 29: 1, }  (subj_pk: index)
@@ -609,6 +851,11 @@ def create_orderlist_mapped_subject_rows(examyear, examperiod_int, is_ete_exam, 
         for subject_row in subject_rows:
             subjectbase_pk_list.append(subject_row[0])
             subjectbase_code_list.append(subject_row[1])
+
+    if logging_on:
+        logger.debug ('----- create_orderlist_mapped_subject_rows -----')
+        logger.debug('subjectbase_pk_list: ' + str(subjectbase_pk_list))
+        logger.debug('subjectbase_code_list: ' + str(subjectbase_code_list))
 
     return subjectbase_pk_list, subjectbase_code_list
 # --- end of create_orderlist_subject_rows
@@ -904,14 +1151,14 @@ class SchemeDownloadXlsxView(View):  # PR2021-07-13
                 if sel_examyear :
 
     # +++ get dict of subjects of these studsubj_rows
-                    scheme_rows = subj_vw.create_scheme_rows(
+                    scheme_rows = subj_view.create_scheme_rows(
                         examyear=sel_examyear,
                         scheme_pk=sel_scheme_pk)
-                    subjecttype_rows = subj_vw.create_subjecttype_rows(
+                    subjecttype_rows = subj_view.create_subjecttype_rows(
                         examyear=sel_examyear,
                         scheme_pk=sel_scheme_pk,
                         orderby_sequence=True)
-                    schemeitem_rows = subj_vw.create_schemeitem_rows(
+                    schemeitem_rows = subj_view.create_schemeitem_rows(
                         examyear=sel_examyear,
                         scheme_pk=sel_scheme_pk,
                         orderby_name=True)

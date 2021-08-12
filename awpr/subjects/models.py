@@ -394,7 +394,7 @@ class Subjecttype_log(sch_mod.AwpBaseModel):
 class Subjectbase(Model):
     objects = AwpModelManager()
 
-    country = ForeignKey(sch_mod.Country, related_name='+', on_delete=PROTECT)
+    # PR2021-08-09 removed: country = ForeignKey(sch_mod.Country, related_name='+', on_delete=PROTECT)
     code = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
 
 

@@ -2509,8 +2509,8 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
         //console.log( "el_filter", el_filter);
         //console.log( "col_index", col_index);
-        //const filter_tag = get_attr_from_el(el_filter, "data-filtertag")
-        //console.log( "filter_tag", filter_tag);
+        const filter_tag = get_attr_from_el(el_filter, "data-filtertag")
+        console.log( "filter_tag", filter_tag);
 
 // --- get filter tblRow and tblBody
         const tblRow = get_tablerow_selected(el_filter);
@@ -2556,87 +2556,17 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
         Filter_TableRows();
     }; // HandleFilterField
 
-//========= Filter_TableRows  ==================================== PR2020-08-17
+//========= Filter_TableRows  ==================================== PR2020-08-17  PR2021-08-10
     function Filter_TableRows() {
         //console.log( "===== Filter_TableRows  ========= ");
 
-        const tblName = (selected_btn === "btn_published")? "published" : "studsubj";
-
 // ---  loop through tblBody.rows
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
-            show_row = ShowTableRow(tblRow, tblName_settings)
+            tblRow = tblBody_datatable.rows[i]
+            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row)
         }
     }; // Filter_TableRows
-
-//========= ShowTableRow  ==================================== PR2020-08-17
-    function ShowTableRow(tblRow, tblName_settings) {
-        // only called by Filter_TableRows
-        //console.log( "===== ShowTableRow  ========= ");
-        //console.log( "filter_dict", filter_dict);
-        let hide_row = false;
-        if (tblRow){
-// show all rows if filter_name = ""
-            if (!isEmpty(filter_dict)){
-                for (const [col_index, item_arr] of Object.entries(filter_dict)) {
-                    if (item_arr && item_arr.length){
-                        const el = tblRow.cells[col_index];
-                        const filter_tag = item_arr[0];
-                        const filter_text = item_arr[1];
-                    // skip if no filter on this colums
-                        if(filter_text){
-                            if(filter_tag === "text"){
-                                const blank_only = (filter_text === "#")
-                                const non_blank_only = (filter_text === "@" || filter_text === "!")
-                    // get value from el.value, innerText or data-value
-                                // PR2020-06-13 debug: don't use: "hide_row = (!el_value)", once hide_row = true it must stay like that
-                                let el_value = el.innerText;
-                                if (blank_only){
-                                    // empty value gets '\n', therefore filter asc code 10
-                                    if(el_value && el_value !== "\n" ){
-                                        hide_row = true
-                                    };
-                                } else if (non_blank_only){
-                                    // empty value gets '\n', therefore filter asc code 10
-                                    if(!el_value || el_value === "\n" ){
-                                        hide = true
-                                    }
-                                } else {
-                                    el_value = el_value.toLowerCase();
-                                    // hide row if filter_text not found or el_value is empty
-                                    // empty value gets '\n', therefore filter asc code 10
-                                    if(!el_value || el_value === "\n" ){
-                                        hide_row = true;
-                                    } else if(!el_value.includes(filter_text)){
-                                        hide_row = true;
-                                    }
-                                }
-                            } else if(filter_tag === "toggle"){
-                                const el_value = get_attr_from_el_int(el, "data-value")
-                                if (filter_text === 1){
-                                    if (!el_value ) {hide_row = true};
-                                } else  if (filter_text === -1){
-                                    if (el_value) {hide_row = true};
-                                }
-                            } else if(filter_tag === "inactive"){
-                                const el_value = get_attr_from_el_int(el, "data-value")
-                                if (filter_text === 1){
-                                    if (!el_value ) {hide_row = true};
-                                } else  if (filter_text === -1){
-                                    if (el_value) {hide_row = true};
-                                }
-                            } else if(filter_tag === "activated"){
-                                const el_value = get_attr_from_el_int(el, "data-value")
-                                if (filter_text && el_value !== filter_text ) {hide_row = true};
-                            }
-                        }  //  if(!!filter_text)
-
-                    }  //  if (item_dict){
-                } // for (const [ key, value ] of Object.entries(filter_dict))
-            }  // if if (!isEmpty(filter_dict))
-        }  // if (!!tblRow)
-        return !hide_row
-    }; // ShowTableRow
 
 //========= ResetFilterRows  ====================================
     function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20

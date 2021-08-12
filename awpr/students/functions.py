@@ -1,9 +1,37 @@
 import re # PR2018-12-31
 
 from awpr import settings as s
+from students import models as stud_mod
 
 import logging
 logger = logging.getLogger(__name__)
+
+
+def get_next_examnumber(sel_school, sel_department):  # PR2021-08-11
+    # function gets max exnr of this school and dep and adds 1 to it
+
+    max_exnr = 0
+
+# - loop through students of this school and department
+    students = stud_mod.Student.objects.filter(
+        school=sel_school,
+        department=sel_department
+    ).values('examnumber')
+    if students:
+        for student in students:
+            exnr_str = student.get('examnumber')
+            if exnr_str:
+                # - get first integer part of string
+                # from https://stackoverflow.com/questions/11339210/how-to-get-integer-values-from-a-string-in-python
+                exnr_int = int(re.search(r'\d+', exnr_str).group())
+
+# - update max_exnr when exnr_int is greater
+                if exnr_int and exnr_int > max_exnr:
+                    max_exnr = exnr_int
+    max_exnr += 1
+    max_exnr_str = str(max_exnr)
+    return max_exnr_str
+# - end of get_next_examnumber
 
 
 def calc_regnumber(regnr_school, gender, examyear_int, examnumber_str, depbase, levelbase):
@@ -108,6 +136,7 @@ def get_regnumber_info(regnumber):
     """
     return info_html
 # - end of get_regnumber_info
+
 
 def split_prefix(name, is_lastname): # PR2018-12-06
     #PR2016-04-01 aparte functie van gemaakt

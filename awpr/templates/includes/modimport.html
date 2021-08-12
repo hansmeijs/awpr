@@ -80,7 +80,7 @@
                         <div id="id_MIMP_msg_dontlinksubjects" class="mx-2"><small><b>{% trans "You don't have to link the subjects yet." %}</b> {% trans "They will be linked in the next step." %}</small></div>
                         <div class="mx-2"><small id="id_MIMP_msg_linkrequired"></small></div>
 
-                        <div id="id_MIMP_crosstab_container" >
+                        <div id="id_MIMP_crosstab_container" class="mx-4 mt-2 display_hide">
                             <h6 class="mx-2 mt-2">{% trans "Select if each subject has a separate column, or all subjects are in one column 'Subject':" %}</h6>
                             <span>
                                 <input id="id_MIMP_crosstab" type="checkbox" value="true" class="tw_032">
@@ -183,7 +183,7 @@
                             <div id="id_MIMP_container_level" class="display_hide">
                                 <div class=" flex 1 flex_container mt-2 border_bg_transparent">
                                     <div class="m-2">
-                                        <h5 class="mx-2">{% trans "Link levels" %}</h5>
+                                        <h5 class="mx-2">{% trans "Link 'leerwegen'" %}</h5>
                                         <div class="flex_container mt-2">
                                             <div class="flex_1 m-1">
                                                 <table class="tsa_tbl_unlinked" width="100%">
@@ -356,74 +356,6 @@
                                                 </table>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div id="id_MIMP_container_subjecttype" class="display_hide">
-                                <div class="flex 1 flex_container mt-2 border_bg_transparent">
-                                    <div class="m-2">
-                                        <h5 class="mx-2">{% trans "Link characters" %}</h5>
-                                        <div class="flex_container mt-2">
-                                            <div class="flex_1 m-1">
-                                                <table class="tsa_tbl_unlinked" width="100%">
-                                                    <thead class="tsa_tbl_hdr_unlinked">
-                                                        <tr><th class="ta_c tw_150">{% trans 'AWP values' %}</th></tr>
-                                                    </thead>
-                                                    <tbody id="id_MIMP_tbody_subjecttype_awp" data-AEL="awp" data-table="subjecttype">
-                                                        <tr><td class="px-2">{% trans 'AWP values' %}</td></tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                            <div class="flex_1 m-1">
-                                                <table class="tsa_tbl_unlinked" width="100%">
-                                                    <thead class="tsa_tbl_hdr_unlinked">
-                                                        <tr><th class="ta_c tw_150">{% trans 'Excel values' %}</th></tr>
-                                                    </thead>
-                                                    <tbody id="id_MIMP_tbody_subjecttype_exc" data-AEL="exc" data-table="subjecttype">
-                                                        <tr><td class="px-2">{% trans 'Excel values' %}</td></tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                        <div class="flex_container mt-2">
-                                            <div class="flex_1 m-1">
-                                                 <table class="tsa_tbl_linked" width="100%">
-                                                    <thead class="tsa_tbl_hdr_linked">
-                                                        <tr><th class="ta_c" colspan="2">{% trans 'Linked values' %}</th></tr>
-                                                    </thead>
-                                                    <tbody id="id_MIMP_tbody_subjecttype_lnk" data-AEL="lnk" data-table="subjecttype">
-                                                        <tr>
-                                                            <td class="px-2">{% trans 'AWP values' %}</td>
-                                                            <td class="px-2">{% trans 'Excel values' %}</td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex_container mt-2 ">
-                            <div id="id_MIMP_div_dateformat" class="flex_1 mx-1 display_hideXX">
-                                <h6 class="ta_l mt-4 mx-2">{% trans 'Date format' %}</h6>
-                                <div id="id_MIMP_msg_dateformat"><small class="text-danger mx-2 my-0">
-                                    {% trans "AWP was not able to determine the format of the dates. Please select a date format." %}
-                                </small></div>
-
-                                <div class="content_header">
-                                    <div class="tsa_flex_2  mx-1">
-                                        <select id="id_MIMP_dateformat" size="3"
-                                                autocomplete="off" ondragstart="return false;" ondrop="return false;"
-                                            class="form-control mt-2">
-                                            <option value="yyyy-mm-dd">yyyy-mm-dd</option>
-                                            <option value="dd-mm-yyyy">dd-mm-yyyy</option>
-                                            <option value="mm-dd-yyyy">mm-dd-yyyy</option>
-                                        </select>
-                                    </div>
-                                    <div class="tsa_flex_1 mx-1">
                                     </div>
                                 </div>
                             </div>

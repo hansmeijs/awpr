@@ -2,12 +2,12 @@
     MANUAL STYLE PR2021-06-10 from https://www.w3schools.com/howto/howto_js_dropdown_sidenav.asp
 ----------------------------------------------------- */
  /* Fixed sidenav, full height */
-.sidenav {
+.man_sidenav {
   height: 100%;
   width: 200px;
   position: fixed;
   z-index: 1;
-  top: 0px;
+  top: 48px;
   left: 0;
   background-color: #555e65; /* dark grey RGB 85-94-101 */
   overflow-x: hidden;
@@ -156,45 +156,80 @@
     IMAGES - UPLOAD CANDIDATES
 ----------------------------------------------------- */
 
-.img_upload_stud_menu, .img_upload_stud_step1, .img_upload_stud_step2,
-.img_upload_stud_step3, .img_upload_stud_step4, .img_upload_stud_step5 {
+.img_upload_stud_menu_ne, .img_upload_stud_menu_en,
+.img_upload_stud_step1_ne, .img_upload_stud_step1_en,
+.img_upload_stud_step2_ne, .img_upload_stud_step2_en,
+.img_upload_stud_step3_ne, .img_upload_stud_step3_en,
+.img_upload_stud_step4_ne, .img_upload_stud_step4_en,
+.img_upload_stud_step5_ne, .img_upload_stud_step5_en {
     background-repeat: no-repeat;
     margin-left: 8px;
     /*margin-left: 32px;*/
 }
-.img_upload_stud_menu {
-    height: 130px; /* original is   130; */
-    width: 1075px; /* original is   1075; */
-    background-image: url('/static/manual/stud_upload_menu.png');
-    background-size: 1075px 130px;
+
+.img_upload_stud_menu_ne, .img_upload_stud_menu_en {
+    height: 130px;
+    width: 1080px;
+    background-size: 1080px 130px;
+ }
+.img_upload_stud_menu_ne {
+    background-image: url('/static/manual/stud_upload_menu_ne.png');
 }
-.img_upload_stud_step1 {
-    height: 571px; /* original is   571; */
-    width: 1138px; /* original is   1138; */
-    background-image: url('/static/manual/stud_upload_step1.png');
+.img_upload_stud_menu_en {
+    background-image: url('/static/manual/stud_upload_menu_en.png');
+}
+
+.img_upload_stud_step1_ne, .img_upload_stud_step1_en {
+    height: 571px;
+    width: 1138px;
     background-size: 1138px 571px;
 }
-.img_upload_stud_step2 {
-    height: 750px; /* original is   750; */
-    width: 1138px; /* original is   1138; */
-    background-image: url('/static/manual/stud_upload_step2.png');
+.img_upload_stud_step1_ne {
+    background-image: url('/static/manual/stud_upload_step1_ne.png');
+}
+.img_upload_stud_step1_en {
+    background-image: url('/static/manual/stud_upload_step1_en.png');
+}
+
+.img_upload_stud_step2_ne, .img_upload_stud_step2_en {
+    height: 750px;
+    width: 1138px;
     background-size: 1138px 750px;
 }
-.img_upload_stud_step3 {
-    height: 525px; /* original is   525; */
-    width: 1138px; /* original is   1138; */
-    background-image: url('/static/manual/stud_upload_step3.png');
+.img_upload_stud_step2_ne {
+    background-image: url('/static/manual/stud_upload_step2_ne.png');
+}
+.img_upload_stud_step2_en {
+    background-image: url('/static/manual/stud_upload_step2_en.png');
+}
+
+.img_upload_stud_step3_ne, .img_upload_stud_step3_en {
+    height: 525px;
+    width: 1138px;
     background-size: 1138px 525px;
 }
-.img_upload_stud_step4 {
-    height: 502px; /* original is   655; */
-    width: 801px; /* original is   1160; */
-    background-image: url('/static/manual/stud_upload_step4.png');
-    background-size: 801px 502px;
+.img_upload_stud_step3_ne {
+    background-image: url('/static/manual/stud_upload_step3_ne.png');
 }
-.img_upload_stud_step5 {
-    height: 803px; /* original is   655; */
-    width: 801px; /* original is   1160; */
-    background-image: url('/static/manual/stud_upload_step5.png');
-    background-size: 801px 803px;
+.img_upload_stud_step3_en {
+    background-image: url('/static/manual/stud_upload_step3_en.png');
+}
+
+.img_upload_stud_step4_ne, .img_upload_stud_step4_en,
+.img_upload_stud_step5_ne, .img_upload_stud_step5_en {
+    height: 500px;
+    width: 1138px;
+    background-size: 1138px 500px;
+}
+.img_upload_stud_step4_ne {
+    background-image: url('/static/manual/stud_upload_step4_ne.png');
+}
+.img_upload_stud_step4_en {
+    background-image: url('/static/manual/stud_upload_step4_en.png');
+}
+.img_upload_stud_step5_ne {
+    background-image: url('/static/manual/stud_upload_step5_ne.png');
+}
+.img_upload_stud_step5_en {
+    background-image: url('/static/manual/stud_upload_step5_en.png');
 }

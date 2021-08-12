@@ -1,5 +1,11 @@
 # PR2019-02-17
 
+from django.db import connection
+from django.db.models import Q
+from django.utils.translation import pgettext_lazy, ugettext_lazy as _
+
+from datetime import datetime
+
 from awpr import constants as c
 from awpr import functions as af
 from awpr import settings as s
@@ -7,11 +13,6 @@ from awpr import settings as s
 from students import models as stud_mod
 from subjects import models as subj_mod
 
-from django.utils.translation import pgettext_lazy, ugettext_lazy as _
-
-from django.db import connection
-
-from datetime import datetime
 import logging
 logger = logging.getLogger(__name__)
 
@@ -165,6 +166,20 @@ def get_prefix_lastname_comma_firstname(lastname_stripped, firstname_stripped, p
     return full_name
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def validate_examnumber_exists(student, examnumber):  # PR2021-08-11
+    # - function checks if this examnumber already exists in this school and department
+    # returns has_error when examnumber found in other students
+
+# - filter school and department, exclude this student
+    has_error = stud_mod.Student.objects.filter(
+        school=student.school,
+        department=student.department,
+        examnumber__iexact=examnumber
+    ).exclude(pk=student.pk).exists()
+
+    return has_error
+# - end of validate_examnumber_exists
+
 
 
 # ========  validate_studentsubjects  ======= PR2021-07-09
@@ -1343,6 +1358,9 @@ def validate_length(caption, input_value, max_length, blank_allowed):
 
 
 # +++++++++++++++++++++++++++++++++++++
+
+
+
 def validate_idnumber(id_str):
     # logger.debug('validate_idnumber: ' + id_str)
     # validate idnumber, convert to string without dots PR2019-02-17

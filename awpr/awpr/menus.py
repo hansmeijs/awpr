@@ -30,6 +30,34 @@ pos_y = 18
 
 # viewpermits: 'none', 'read', 'write', 'auth', 'admin', 'all'
 
+
+MENUS_ITEMS = {
+    c.ROLE_128_SYSTEM: ['page_examyear', 'page_subject', 'page_school', 'page_student', 'page_studsubj', 'page_exams', 'page_grade',
+                      'page_result'], #  'page_report', 'page_analysis'],
+    c.ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj', 'page_exams', 'page_grade',
+                     'page_result'],  #, 'page_report', 'page_analysis'],
+    c.ROLE_032_INSP: ['page_examyear', 'page_school', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result'],  #,'page_report', 'page_analysis'],
+    c.ROLE_016_COMM: ['page_examyear', 'page_school', 'page_student', 'page_grade', 'page_result'],
+    c.ROLE_008_SCHOOL: ['page_examyear', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_report']
+}
+
+MENUS_DICT = {
+    'page_examyear': {'caption': _('Exam year'), 'href': 'examyears_url', 'width': 100},
+    'page_school': {'caption': _('School'), 'href': 'schools_url', 'width': 90},
+    'page_subject': {'caption': _('Subjects'), 'href': 'subjects_url', 'width': 100},
+    'page_student': {'caption': _('Candidates'), 'href': 'students_url', 'width': 120},
+    'page_studsubj': {'caption': _('Subjects'), 'href': 'studentsubjects_url', 'width': 100},
+    'page_orderlist': {'caption': _('Orderlist'), 'href': 'orderlists_url', 'width': 130},
+    'page_exams': {'caption': _('Exam questions'), 'href': 'exams_url', 'width': 130},
+    'page_grade': {'caption': _('Grades'), 'href': 'grades_url', 'width': 120},
+    'page_result': {'caption': _('Results'), 'href': 'subjects_url', 'width': 120},
+    'page_report': {'caption': _('Reports'), 'href': 'subjects_url', 'width': 120},
+    'page_analysis': {'caption':  _('Analysis'), 'href': 'subjects_url', 'width': 90}
+}
+
+
+
+
 # === MANUAL =====================================
 # @method_decorator([login_required], name='dispatch')
 class ManualListView(View):
@@ -281,7 +309,7 @@ def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-
     #logger.debug('lookup_page: ' + str(lookup_page))
 
     page_href = None
-    menu = c.MENUS_DICT.get(lookup_page)
+    menu = MENUS_DICT.get(lookup_page)
     if menu:
         page_href = menu.get('href')
     if page_href is None:
@@ -300,22 +328,23 @@ def set_menu_items(sel_page, _class_bg_color, request):
         logger.debug('===== set_menu_items ===== ')
         logger.debug('sel_page: ' + str(sel_page))
 
-# -  get user_lang
-    requsr_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-    activate(requsr_lang)
+# - reset language
+    user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+    activate(user_lang)
+
     if logging_on:
-        logger.debug('requsr_lang: ' + str(requsr_lang))
+        logger.debug('user_lang: ' + str(user_lang))
         logger.debug('Subject: ' + str(_('Subject')))
 
     menu_item_tags = []
 
     # list of menuitems to be shown in page
-    menu_items = c.MENUS_ITEMS.get(request.user.role)
+    menu_items = MENUS_ITEMS.get(request.user.role)
 
     # loop through all menus in menus, to retrieve href from all menu-buttons
     # from https://treyhunner.com/2016/04/how-to-loop-with-indexes-in-python/
     for menu_index, key_str in enumerate(menu_items):
-        menu_item = c.MENUS_DICT[key_str]
+        menu_item = MENUS_DICT[key_str]
 
         # lookup the href that belongs to this index in submenus_tuple
         # function gets first href in href_string, when insp or admin it gets the second item
@@ -323,6 +352,9 @@ def set_menu_items(sel_page, _class_bg_color, request):
 
     # ------------ get menu ------------
         caption = menu_item.get('caption', '-')
+        if logging_on:
+            logger.debug('caption: ' + str(caption))
+
 
         h_ref_reverse = ''
         if menu_href:
@@ -434,13 +466,6 @@ def get_value_from_dict(key_str, dict):
     if dict and key_str:
         value = dict.get(key_str)  # returns None if not found
     return value
-
-
-def get_menu_from_menus(menu_index):
-    menu = {}
-    if menu_index in c.MENUS_DICT:
-        menu = c.MENUS_DICT.get(menu_index, {})
-    return menu
 
 
 def get_depbase_list(request, requsr_school):  # PR2018-08-24  PR2018-11-23 PR2020-11-17

@@ -346,10 +346,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (permit_dict.permit_crud_sameschool || permit_dict.permit_crud_otherschool) {
             if(permit_system_admin || permit_role_admin){
                 AddSubmenuButton(el_submenu, loc.Upload_usernames, function() {MIMP_Open(loc, "import_username")}, null, "id_submenu_import");
-            }   
+            }
             AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup"]);
             AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup"]);
-
         }
         // hardcode access of system admin
         if (permit_system_admin){

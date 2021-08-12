@@ -2210,7 +2210,7 @@ def update_subject_instance(instance, examyear, upload_dict, error_list, request
                     setattr(instance, field, new_value)
                     save_changes = True
 
-            elif field in ('sequence', 'etenorm', 'addedbyschool'):
+            elif field in ('sequence', 'addedbyschool'):
                 saved_value = getattr(instance, field)
                 if new_value != saved_value:
                     setattr(instance, field, new_value)

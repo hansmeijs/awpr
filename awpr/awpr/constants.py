@@ -309,15 +309,17 @@ KEY_COLDEF = {
           {'awpColdef': 'depbases', 'caption': _('Departments, in which this subject occurs')}],
 
     KEY_IMPORT_STUDENTSUBJECT:
-        [{'awpColdef': 'examnumber', 'caption': _('Exam number')},
+        [# PR2021-08-11 NOT IN USE: {  'awpColdef': 'examnumber', 'caption': _('Exam number')},
             {'awpColdef': 'idnumber', 'caption': _('ID-number'), 'linkrequired': True, 'unique': True},
             # TODO pws_title and pws_subjects must be in upload_grades
             #{'awpColdef': 'pws_title', 'caption': _('Title assignment')},
             #{'awpColdef': 'pws_subjects', 'caption': _('Subjects assignment')},
 
+            # PR2021-08-11 NOT IN USE:
             # to be used for tabular upload :
-            {'awpColdef': 'subject', 'caption': _('Subject'), 'tabularfield': True},
-            {'awpColdef': 'subjecttype', 'caption': _('Character'), 'tabularfield': True}
+            #{'awpColdef': 'subject', 'caption': _('Subject'), 'tabularfield': True}
+            # PR2021-08-11 NOT IN USE:
+            #{'awpColdef': 'subjecttype', 'caption': _('Character'), 'tabularfield': True}
          ],
 
     KEY_IMPORT_STUDENT:
@@ -335,9 +337,9 @@ KEY_COLDEF = {
         {'awpColdef': 'bis_exam', 'caption': _('Bis exam')},
         {'awpColdef': 'department', 'caption': _('Department')},
 
-        {'awpColdef': 'level', 'caption': _('Level')},
-        {'awpColdef': 'sector', 'caption': _('Sector')},
-        {'awpColdef': 'profiel', 'caption': _('Profiel')}
+        {'awpColdef': 'level', 'caption': _('Level'), 'linkrequired': True},
+        {'awpColdef': 'sector', 'caption': _('Sector'), 'linkrequired': True},
+        {'awpColdef': 'profiel', 'caption': _('Profiel'), 'linkrequired': True}
          ],
 
     KEY_IMPORT_PERMITS:
@@ -498,29 +500,5 @@ PAGE_LIST = {
     'students': _('Students'),
     'studentsubjects': _('Subjects of students'),
     'grades': _('Grades')
-}
-
-MENUS_ITEMS = {
-    ROLE_128_SYSTEM: ['page_examyear', 'page_subject', 'page_school', 'page_student', 'page_studsubj', 'page_exams', 'page_grade',
-                      'page_result'], #  'page_report', 'page_analysis'],
-    ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj', 'page_exams', 'page_grade',
-                     'page_result'],  #, 'page_report', 'page_analysis'],
-    ROLE_032_INSP: ['page_examyear', 'page_school', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result'],  #,'page_report', 'page_analysis'],
-    ROLE_016_COMM: ['page_examyear', 'page_school', 'page_student', 'page_grade', 'page_result'],
-    ROLE_008_SCHOOL: ['page_examyear', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_report']
-}
-
-MENUS_DICT = {
-    'page_examyear': {'caption': _('Exam year'), 'href': 'examyears_url', 'width': 100},
-    'page_school': {'caption': _('School'), 'href': 'schools_url', 'width': 90},
-    'page_subject': {'caption': _('Subjects'), 'href': 'subjects_url', 'width': 100},
-    'page_student': {'caption': _('Students'), 'href': 'students_url', 'width': 120},
-    'page_studsubj': {'caption': _('Subjects'), 'href': 'studentsubjects_url', 'width': 100},
-    'page_orderlist': {'caption': _('Orderlist'), 'href': 'orderlists_url', 'width': 130},
-    'page_exams': {'caption': _('Exam questions'), 'href': 'exams_url', 'width': 130},
-    'page_grade': {'caption': _('Grades'), 'href': 'grades_url', 'width': 120},
-    'page_result': {'caption': _('Results'), 'href': 'subjects_url', 'width': 120},
-    'page_report': {'caption': _('Reports'), 'href': 'subjects_url', 'width': 120},
-    'page_analysis': {'caption':  _('Analysis'), 'href': 'subjects_url', 'width': 90}
 }
 

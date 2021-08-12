@@ -1,6 +1,7 @@
 # PR2018-09-02
 from datetime import datetime, timedelta
 from random import randint
+from typing import Union, Dict, Any
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
@@ -2215,7 +2216,8 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
             if logging_on:
                 logger.debug('field:     ' + str(field))
                 logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
-            try:
+            #try:
+            if True:
     # - save changes in fields 'lastname', 'firstname'
                 if field in ['lastname', 'firstname']:
                     saved_value = getattr(instance, field)
@@ -2287,9 +2289,9 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                         new_value = str(new_value)
 
                     if new_value:
-
                         if field == 'idnumber':
-                            # when updating single student, idnumber_list is not filled yet. in that case: get idnumber_list
+                            caption = _('ID-number')
+                # when updating single student, idnumber_list is not filled yet. in that case: get idnumber_list
                             if not idnumber_list:
                                 idnumber_list = stud_val.get_idnumberlist_from_database(instance.school)
                 # check if new_value already exists in idnumber_list, but skip idnumber of this instance
@@ -2305,27 +2307,25 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                                                 skip_own_idnumber = True
                                         if not skip_own_idnumber:
                                             has_error = True
-                                            caption = _('ID-number')
                                         break
 
                             if idnumber_list and new_value in idnumber_list:
                                 has_error = True
-                                caption = _('ID-number')
                             else:
                                 # add new_value to idnumber_list if it doesn't exist yet
                                 idnumber_list.append(new_value)
 
                         elif field == 'examnumber':
-                # when updating single student, examnumber_list is not filled yet. in that case: get examnumber_list
-                            if not examnumber_list:
-                                examnumber_list = stud_val.get_examnumberlist_from_database(
-                                    instance.school, instance.department)
-                # check if new_value already exists in examnumber_list
+                            caption = _('Exam number')
+                # when uploading students: examnumber_list is filled, unless there were no examnumbers
                             if examnumber_list and new_value in examnumber_list:
                                 has_error = True
-                                caption = _('Exam number')
                             else:
+                # when updating single student, examnumber_list is not filled. Use validate_examnumber_exists instead
+                                has_error = stud_val.validate_examnumber_exists(instance, new_value)
+
                 # add new_value to examnumber_list if it doesn't exist yet
+                            if not has_error:
                                 examnumber_list.append(new_value)
 
                 # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
@@ -2421,7 +2421,7 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                         logger.debug('new_value:    ' + str(new_value))
                         logger.debug('saved_value:  ' + str(saved_value))
                         logger.debug('save_changes: ' + str(save_changes))
-
+            """
             except Exception as e:
                 err_txt1 = str(_('An error occurred'))
                 err_txt2 = str(e)
@@ -2433,7 +2433,7 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                 msg_list.append(msg_dict)
 
                 logger.error(getattr(e, 'message', str(e)))
-
+            """
 # --- end of for loop ---
 
 # - update scheme if level or sector have changed
@@ -2457,6 +2457,7 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
             # - update scheme in all studsubj of this student
             update_scheme_in_studsubj(instance, request)
 
+# +++ calculate registration number
         if recalc_regnumber:
             school_code, examyear_code, depbase, levelbase = None, None, None, None
 
@@ -2479,6 +2480,16 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
 
             gender = getattr(instance, 'gender')
             examnumber = getattr(instance, 'examnumber')
+
+    # - create examnumber if it does not yet exist
+            if examnumber is None:
+                # get highest examnumber + 1
+                examnumber = stud_func.get_next_examnumber(school, department)
+                setattr(instance, 'examnumber', examnumber)
+                save_changes = True
+                if logging_on:
+                    logger.debug('setattr(instance, examnumber, examnumber: ' + str(examnumber))
+    # - calc_regnumber
             new_regnumber = stud_func.calc_regnumber(school_code, gender, examyear_code, examnumber, depbase, levelbase)
 
             if logging_on:
@@ -2494,6 +2505,7 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                 save_changes = True
                 if logging_on:
                     logger.debug('setattr(instance, regnumber, new_regnumber: ' + str(new_regnumber))
+
 
 # 5. save changes
         if save_changes and not skip_save:
@@ -2998,9 +3010,163 @@ def create_ssnote_attachment_rows(upload_dict, request):  # PR2021-03-17
     return note_rows
 # - end of create_studentsubjectnote_rows
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-#/////////////////////////////////////////////////////////////////
 
+# /////////////////////////////////////////////////////////////////
+def create_orderlist_rowsNEW(sel_examyear): # PR2021-08-09
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_orderlist_rowsNEW ============= ')
+
+    #  create nested dict of all schools of CUR and SXM with submitted subjects # PR2021-08-09
+
+    sql_keys = {'ey_code_int': sel_examyear.code}
+
+    sql_list = ["SELECT si.ete_exam,",
+                "CASE WHEN subj.otherlang IS NULL OR sch.otherlang IS NULL THEN 'ne' ELSE",
+                "CASE WHEN POSITION(sch.otherlang IN subj.otherlang) > 0 THEN sch.otherlang ELSE 'ne' END END AS lang,",
+                "dep.base_id AS depbase_id,",
+                "lvl.base_id AS lvlbase_id,",
+                "sch.base_id AS schoolbase_id,",
+                "subj.base_id AS subjbase_id",
+
+               "FROM students_studentsubject AS studsubj",
+
+               "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+               "INNER JOIN subjects_scheme AS sm ON (sm.id = si.scheme_id)",
+               "INNER JOIN schools_department AS dep ON (dep.id = sm.department_id)",
+               "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+
+               "LEFT JOIN subjects_level AS lvl ON (lvl.id = sm.level_id)",
+
+               "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+               "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+               "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+               "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+               "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+
+               "WHERE ey.code = %(ey_code_int)s::INT",
+               "AND NOT studsubj.tobedeleted",
+                # TODO FIXIT set filter published
+               # "AND studsubj.subj_published_id IS NOT NULL"
+
+               ]
+    sql = ' '.join(sql_list)
+
+    # logger.debug('sql: ' + str(sql))
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        rows = af.dictfetchall(cursor)
+
+        examyear_dict = {'total': {}}
+        for row in rows:
+            exam = 'ete' if row.get('ete_exam', False) else 'duo'
+            if exam not in examyear_dict:
+                examyear_dict[exam] = {'total': {}}
+            exam_dict = examyear_dict[exam]
+
+            lang = row.get('lang', 'ne')
+            if lang not in exam_dict:
+                exam_dict[lang] = {'total': {}}
+            lang_dict = exam_dict[lang]
+
+            depbase_pk = row.get('depbase_id')
+            if depbase_pk not in lang_dict:
+                lang_dict[depbase_pk] = {'total': {}}
+            depbase_dict = lang_dict[depbase_pk]
+
+            # value is '0' when lvlbase_id = None (Havo/Vwo)
+            lvlbase_pk = row.get('lvlbase_id', 0)
+            if lvlbase_pk not in depbase_dict:
+                depbase_dict[lvlbase_pk] = {'total': {}}
+            lvlbase_dict = depbase_dict[lvlbase_pk]
+
+            schoolbase_pk = row.get('schoolbase_id')
+            if schoolbase_pk not in lvlbase_dict:
+                lvlbase_dict[schoolbase_pk] = {}
+            schoolbase_dict = lvlbase_dict[schoolbase_pk]
+
+            subjbase_pk = row.get('subjbase_id')
+            if subjbase_pk not in schoolbase_dict:
+                schoolbase_dict[subjbase_pk] = 1
+            else:
+                schoolbase_dict[subjbase_pk] += 1
+
+            lvlbase_total = lvlbase_dict.get('total')
+            if subjbase_pk not in lvlbase_total:
+                lvlbase_total[subjbase_pk] = 1
+            else:
+                lvlbase_total[subjbase_pk] += 1
+
+            depbase_total = depbase_dict.get('total')
+            if subjbase_pk not in depbase_total:
+                depbase_total[subjbase_pk] = 1
+            else:
+                depbase_total[subjbase_pk] += 1
+
+            lang_total = lang_dict.get('total')
+            if subjbase_pk not in lang_total:
+                lang_total[subjbase_pk] = 1
+            else:
+                lang_total[subjbase_pk] += 1
+
+            exam_total = exam_dict.get('total')
+            if subjbase_pk not in exam_total:
+                exam_total[subjbase_pk] = 1
+            else:
+                exam_total[subjbase_pk] += 1
+
+            examyear_total = examyear_dict.get('total')
+            if subjbase_pk not in examyear_total:
+                examyear_total[subjbase_pk] = 1
+            else:
+                examyear_total[subjbase_pk] += 1
+        """
+        examyear_dict = {
+            'total': {133: 175, 134: 175, 135: 175, 136: 175, 137: 175, 138: 175, 141: 141, 142: 101, 146: 31, 156: 102, 149: 37, 140: 74, 153: 74, 175: 74, 154: 33, 155: 73, 143: 7},
+            'duo': { 'total': {133: 175, 134: 175, 135: 175, 136: 175, 137: 175, 138: 175, 141: 114, 142: 101, 146: 31, 156: 102, 149: 37, 140: 74, 153: 74, 175: 74, 154: 33, 155: 73, 143: 7},
+                'ne': {'total': {133: 175, 134: 175, 135: 175, 136: 175, 137: 175, 141: 114, 142: 101, 146: 31, 156: 102, 149: 37, 140: 74, 153: 74, 175: 74, 154: 33, 155: 73, 143: 7},
+                    1: {'total': {133: 175, 134: 175, 135: 175, 136: 175, 137: 175, 141: 114, 142: 101, 146: 31, 156: 102, 149: 37, 140: 74, 153: 74, 175: 74, 154: 33, 155: 73, 143: 7},
+                        14: {'total': {133: 41, 134: 41, 135: 41, 136: 41, 137: 41, 141: 41, 142: 41, 146: 18, 156: 41, 149: 23},
+                            11: {133: 41, 134: 41, 135: 41, 136: 41, 137: 41, 141: 41, 142: 41, 146: 18, 156: 41, 149: 23}},
+                        13: {'total': {133: 61, 134: 61, 135: 61, 136: 61, 137: 61, 140: 34, 153: 34, 156: 61, 175: 34, 142: 27, 146: 13, 149: 14},
+                            11: {133: 61, 134: 61, 135: 61, 136: 61, 137: 61, 140: 34, 153: 34, 156: 61, 175: 34, 142: 27, 146: 13, 149: 14}},
+                        12: {'total': {133: 73, 134: 73, 135: 73, 136: 73, 137: 73, 141: 73, 142: 33, 154: 33, 155: 73, 140: 40, 153: 40, 175: 40, 143: 7},
+                            11: {133: 73, 134: 73, 135: 73, 136: 73, 137: 73, 141: 73, 142: 33, 154: 33, 155: 73, 140: 40, 153: 40, 175: 40, 143: 7}}}},
+                'pa': {'total': {138: 175},
+                        1: {'total': {138: 175},
+                            14: {'total': {138: 41},
+                                  11: {138: 41}
+                                 },
+                            13: {'total': {138: 61},
+                                11: {138: 61}
+                                 },
+                            12: {'total': {138: 73},
+                                11: {138: 73}
+                                 }
+                            }
+                       }
+            },
+            'ete': {'total': {141: 27},
+                    'ne': {'total': {141: 27}, 
+                    1: {'total': {141: 27}, 
+                        13: {'total': {141: 27}, 
+                            11: {141: 27}}}}
+                    }
+             }
+        """
+
+        if logging_on:
+            logger.debug('examyear_dict: ' + str(examyear_dict))
+
+    return rows
+
+
+# --- end of create_orderlist_rows
+
+
+#/////////////////////////////////////////////////////////////////
 def create_orderlist_rows(sel_examyear_pk):
     # --- create rows of all schools with submeitted subjects PR2021-07-04
     #logger.debug(' =============== create_orderlist_rows ============= ')
@@ -3023,10 +3189,12 @@ def create_orderlist_rows(sel_examyear_pk):
     
     """
     sql_keys = {'ey_id': sel_examyear_pk}
+
     sql_sublist = ["SELECT sch.id AS school_id,",
                 "dep.id AS dep_id, dep.base_id AS depbase_id, depbase.code AS depbase_code, lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev,",
                 "studsubj.subj_published_id,",
-                "subj.id AS subj_id, subjbase.code AS subjbase_code, subj.name AS subj_name, subj.etenorm AS subj_etenorm,",
+                "subj.id AS subj_id, subjbase.code AS subjbase_code, subj.name AS subj_name,",
+                "si.ete_exam AS si_ete_exam,",
                 "CASE WHEN subj.otherlang IS NULL OR sch.otherlang IS NULL THEN 'ne' ELSE",
                 "CASE WHEN POSITION(sch.otherlang IN subj.otherlang) > 0 THEN sch.otherlang ELSE 'ne' END END AS lang",
 
@@ -3053,21 +3221,22 @@ def create_orderlist_rows(sel_examyear_pk):
     sub_sql = ' '.join(sql_sublist)
 
     sql_keys = {'ey_id': sel_examyear_pk}
-    sql_list = ["SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.name AS school_name,",
+
+    sql_list = ["WITH sub AS (" , sub_sql, ")",
+        "SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.name AS school_name,",
         "sub.dep_id, sub.depbase_code, sub.lvl_id, sub.lvl_abbrev,",
-        "sub.subj_id, sub.subjbase_code, sub.subj_name, sub.subj_etenorm,",
+        "sub.subj_id, sub.subjbase_code, sub.subj_name, sub.si_ete_exam,",
         "ARRAY_AGG(DISTINCT sub.subj_published_id) AS subj_published_arr,",
         "sub.lang,",
         "count(*) AS count",
 
-        "FROM (" + sub_sql + ") AS sub",
-
+        "FROM sub",
         "INNER JOIN schools_school AS sch ON (sch.id = sub.school_id)",
         "INNER JOIN schools_schoolbase AS schbase ON (schbase.id = sch.base_id)",
 
         "GROUP BY sch.id, schbase.code, sch.name, sub.dep_id, sub.depbase_id, sub.depbase_code,",
                 "sub.lvl_id, sub.lvl_abbrev, sub.lang, ",
-                "sub.subj_id, sub.subjbase_code, sub.subj_name, sub.subj_etenorm",
+                "sub.subj_id, sub.subjbase_code, sub.subj_name, sub.si_ete_exam",
         "ORDER BY LOWER(schbase.code), sub.depbase_id"
         ]
     sql = ' '.join(sql_list)

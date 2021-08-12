@@ -274,12 +274,12 @@ def get_datetimelocal_from_datetime_utc(datetime_utc):
     return datetime_local
 
 
-def format_WDMY_from_dte(dte, user_lang):  # PR2020-10-20
+def format_WDMY_from_dte(dte, user_lang, month_abbrev=True):  # PR2020-10-20
     # returns 'zo 16 juni 2019'
     date_WDMY = ''
     if dte:
         try:
-            date_DMY = format_DMY_from_dte(dte, user_lang)
+            date_DMY = format_DMY_from_dte(dte, user_lang, month_abbrev)
             # get weekdays translated
             if not user_lang in c.WEEKDAYS_ABBREV:
                 user_lang = c.LANG_DEFAULT
@@ -294,7 +294,7 @@ def format_WDMY_from_dte(dte, user_lang):  # PR2020-10-20
     return date_WDMY
 
 
-def format_DMY_from_dte(dte, lang):  # PR2019-06-09  # PR2020-10-20
+def format_DMY_from_dte(dte, lang, month_abbrev):  # PR2019-06-09  # PR2020-10-20 PR2021-08-10
     #logger.debug('... format_DMY_from_dte: ' + str(dte) + ' type:: ' + str(type(dte)) + ' lang: ' + str(lang))
     # returns '16 juni 2019'
     date_DMY = ''
@@ -302,11 +302,14 @@ def format_DMY_from_dte(dte, lang):  # PR2019-06-09  # PR2020-10-20
         try:
             year_str = str(dte.year)
             day_str = str(dte.day)
-            month_lang = ''
-
-            if lang in c.MONTHS_ABBREV:
-                month_lang = c.MONTHS_ABBREV[lang]
-            month_str = month_lang[dte.month]
+            month_locale = ''
+            if month_abbrev:
+                if lang in c.MONTHS_ABBREV:
+                    month_locale = c.MONTHS_ABBREV[lang]
+            else:
+                if lang in c.MONTHS_LONG:
+                    month_locale = c.MONTHS_LONG[lang]
+            month_str = month_locale[dte.month]
 
             date_DMY = ' '.join([day_str, month_str, year_str])
         except:
@@ -362,7 +365,7 @@ def format_modified_at(modifiedat, user_lang):
         # local timezone is set to 'America/Curacao' by default
         datetime_local = get_datetimelocal_from_datetime_utc(modifiedat)
         last_modified_date = datetime_local.date()
-        date_formatted = format_DMY_from_dte(last_modified_date, user_lang)
+        date_formatted = format_DMY_from_dte(last_modified_date, user_lang, True)  # True = month_abbrev
         time_formatted = format_HM_from_dt_local(datetime_local, True, True, '24h', user_lang)
         datetime_formatted = date_formatted + ', ' + time_formatted
 
@@ -382,7 +385,7 @@ def get_modifiedby_formatted(instance, user_lang):
             # local timezone is set to 'America/Curacao' by default
             datetime_local = get_datetimelocal_from_datetime_utc(instance.modifiedat)
             last_modified_date = datetime_local.date()
-            date_formatted = format_DMY_from_dte(last_modified_date, user_lang)
+            date_formatted = format_DMY_from_dte(last_modified_date, user_lang, True)  # True = month_abbrev
 
             time_formatted = format_HM_from_dt_local(datetime_local, True, True, '24h', user_lang)
             datetime_formatted = date_formatted + ', ' + time_formatted
