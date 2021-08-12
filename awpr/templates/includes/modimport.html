@@ -368,7 +368,7 @@
                             <small>{% trans "Click 'Test upload' to validate the new data and compare it with the existing database. It will not save the new data yet." %}</small>
                         </div>
                         <div class="mx-2 btn_show btn_step5 display_hide">
-                            <small >{% trans "Click 'Upload' to upload and save the new data. Data of existing candidates will be replaced by the new data." %}</small>
+                            <small >{% trans "Click 'Upload' to upload and save the new data." %} {% trans "Candidates, who already exist in the database, will be skipped." %}</small>
                         </div>
                         <div class="content_subheader_left mx-2 my-2 btn_show btn_step4 display_hide">
                             <button id="id_MIMP_btn_test" type="button" class="btn btn-secondary">{% trans 'Test upload' %}</button>

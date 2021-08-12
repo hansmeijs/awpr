@@ -2218,6 +2218,7 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                 logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
             #try:
             if True:
+
     # - save changes in fields 'lastname', 'firstname'
                 if field in ['lastname', 'firstname']:
                     saved_value = getattr(instance, field)
@@ -2344,13 +2345,10 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                             if logging_on:
                                 logger.debug('setattr(instance, field, new_value: ' + str(new_value))
 
-    # 2. save changes in text fields
-                elif field in ('prefix', 'birthdate', 'birthcountry', 'birthcity', 'classname', 'diplomanumber', 'gradelistnumber'):
+    # 2. save changes in birthdate field
+                elif field == 'birthdate':
+                    # new_value has format of Excel field
                     saved_value = getattr(instance, field)
-
-            # 2. convert gender: take first character, make upper case,
-                    #  this comes before new_value != saved_value
-
                     if logging_on:
                         logger.debug('field:     ' + str(field))
                         logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
@@ -2360,20 +2358,27 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                         new_value = str(new_value)
 
                     if new_value != saved_value:
-                        has_error = False
-                        caption = ''
+                        setattr(instance, field, new_value)
+                        save_changes = True
+                        if logging_on:
+                            logger.debug('setattr(instance, field, new_value: ' + str(new_value))
 
-        # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
-                        if has_error:
-                            err_txt = _("%(cpt)s '%(val)s' already exists.") \
-                                      % {'cpt': str(caption), 'val': new_value}
-                            error_list.append(err_txt)
-                            msg_list.append({'class': "border_bg_warning", 'msg_html': err_txt})
-                        else:
-                            setattr(instance, field, new_value)
-                            save_changes = True
-                            if logging_on:
-                                logger.debug('setattr(instance, field, new_value: ' + str(new_value))
+    # 2. save changes in text fields
+                elif field in ('prefix', 'birthdate', 'birthcountry', 'birthcity', 'classname', 'diplomanumber', 'gradelistnumber'):
+                    saved_value = getattr(instance, field)
+                    if logging_on:
+                        logger.debug('field:     ' + str(field))
+                        logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+                        logger.debug('saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
+
+                    if isinstance(new_value, int):
+                        new_value = str(new_value)
+
+                    if new_value != saved_value:
+                        setattr(instance, field, new_value)
+                        save_changes = True
+                        if logging_on:
+                            logger.debug('setattr(instance, field, new_value: ' + str(new_value))
 
     # 3. save changes in department, level or sector
                 # department cannot be changed
@@ -2880,13 +2885,12 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, append_dict, stude
             full_name = lastname_firstname_initials(last_name, first_name, prefix)
             row['fullname'] = full_name if full_name else None
 
-# - add messages to student_row, only when only 1 row added (then studsubj_pk has value)
-        if studsubj_pk:
-            # when student_pk has value there is only 1 row
-            row = rows[0]
-            if row:
-                for key, value in append_dict.items():
-                    row[key] = value
+# - add messages to all studsubj_rows, only when student_pk or studsubj_pk have value
+        if student_pk or studsubj_pk:
+            if rows:
+                for row in rows:
+                    for key, value in append_dict.items():
+                        row[key] = value
 
     return rows
 # --- end of create_studentsubject_rows

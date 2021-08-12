@@ -116,17 +116,21 @@ def get_today_dateobj():  # PR2020-10-20
     return today_dte
 
 
-def get_date_from_arr(arr_int):  # PR2019-11-17  # PR2020-10-20
+def get_date_from_arr(arr_int):  # PR2019-11-17  # PR2020-10-20 PR2021-08-12
     date_obj = None
     if arr_int:
-        date_obj = date(arr_int[0], arr_int[1], arr_int[2])
+        try:
+            date_obj = date(arr_int[0], arr_int[1], arr_int[2])
+        except Exception as e:
+            logger.error(' '.join((getattr(e, 'message', str(e)), '- arr_int:', str(arr_int), str(type(arr_int)))))
+
     return date_obj
 
 
 # ################### DATE STRING  FUNCTIONS ###################
 
 
-def get_dateISO_from_dateOBJ(date_obj):  # PR2019-12-22 from tsa
+def get_dateISO_from_dateOBJ(date_obj):  # PR2019-12-22 from tsa PR2021-08-12
     # use row.rosterdate.isoformat() instead PR2020-06-25
     date_iso = None
     if date_obj:
@@ -136,9 +140,9 @@ def get_dateISO_from_dateOBJ(date_obj):  # PR2019-12-22 from tsa
             date_str = ('0' + str(date_obj.day))[-2:]
             date_iso = '-'.join([year_str, month_str, date_str])
             # today_iso: 2019-11-17 <class 'str'>
-        except:
-            logger.error('ERROR: get_dateISO_from_dateOBJ: date_obj' +
-                         str(date_obj) + ' ' + str(type(date_obj)))
+        except Exception as e:
+            logger.error(' '.join((getattr(e, 'message', str(e)), '- date_obj:', str(date_obj), str(type(date_obj)))))
+
     return date_iso
 
 
@@ -195,8 +199,10 @@ def get_dateISO_from_string(date_string, format=None):  # PR2019-08-06
                     #logger.debug('year_str: ' + str(year_str) + ' month_str: ' + str(month_str) + ' day_str:' + str(day_str))
 
                     new_dat_str = '-'.join([year_str, month_str, day_str])
-        except:
-            logger.error('ERROR: get_dateISO_from_string: ' + str(date_string) + ' new_dat_str: ' + str(new_dat_str))
+
+        except Exception as e:
+            logger.error(' '.join((getattr(e, 'message', str(e)), '- date_string:', str(date_string), str(type(date_string)))))
+
     return new_dat_str
 
 
@@ -211,6 +217,7 @@ def get_date_from_excel_ordinal(excel_ordinal, error_list):
             date_obj = (epoch0 + timedelta(days=excel_ordinal))
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
+            logger.error(' '.join((getattr(e, 'message', str(e)), '- excel_ordinal:', str(excel_ordinal), str(type(excel_ordinal)))))
             error_list.append(' '.join((str(_('An error occurred:')), str(e), str(_("This is not a valid date.")))))
 
     return date_obj

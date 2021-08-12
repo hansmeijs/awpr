@@ -318,9 +318,9 @@ document.addEventListener('DOMContentLoaded', function() {
    const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
         el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false )
    const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
-        el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test", RefreshDataRowsStudsubjAfterUpload, setting_dict)}, false )
+        el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test", RefreshDataRowsAfterUpload, setting_dict)}, false )
    const el_MIMP_btn_upload = document.getElementById("id_MIMP_btn_upload");
-        el_MIMP_btn_upload.addEventListener("click", function() {MIMP_Save("save", RefreshDataRowsStudsubjAfterUpload, setting_dict)}, false )
+        el_MIMP_btn_upload.addEventListener("click", function() {MIMP_Save("save", RefreshDataRowsAfterUpload, setting_dict)}, false )
 
 
 // ---  MOD SELECT COLUMNS  ------------------------------------
@@ -2244,19 +2244,24 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 //###########################################################################
 // +++++++++++++++++ REFRESH DATA ROWS +++++++++++++++++++++++++++++++++++++++
 
-//=========  RefreshDataRowsStudsubjAfterUpload  ================ PR2021-07-20
-    function RefreshDataRowsStudsubjAfterUpload(response) {
-        console.log(" --- RefreshDataRowsStudsubjAfterUpload  ---");
+//=========  RefreshDataRowsAfterUpload  ================ PR2021-07-20
+    function RefreshDataRowsAfterUpload(response) {
+        console.log(" --- RefreshDataRowsAfterUpload  ---");
         console.log( "response", response);
-        // TODO
-    }  //  RefreshDataRowsStudsubjAfterUpload
+        const is_test = (!!response && !!response.is_test) ;
+        if(!is_test && response && "updated_studsubj_rows" in response) {
+            RefreshDataRows("studsubj", response.updated_studsubj_rows, studsubj_rows, true)  // true = update
+
+            DownloadValidationStatusNotes();
+        }
+    }  //  RefreshDataRowsAfterUpload
 
 //=========  RefreshDataRows  ================  PR2021-06-21
     function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
-        //console.log(" --- RefreshDataRows  ---");
-        //console.log("update_rows", update_rows);
-        //console.log("data_rows", data_rows);
-        //console.log("is_update", is_update);
+        console.log(" --- RefreshDataRows  ---");
+        console.log("update_rows", update_rows);
+        console.log("data_rows", data_rows);
+        console.log("is_update", is_update);
 
         const field_names = ["subj_error", "subj_status",
                     "has_exemption", "exm_status", "has_reex", "re2_status", "has_reex03", "re3_status",
@@ -2278,9 +2283,9 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21
     function RefreshDatarowItem(tblName, field_setting, field_names, update_dict, data_rows) {
-    //console.log(" --- RefreshDatarowItem  ---");
-    //console.log("tblName", tblName);
-    //console.log("update_dict", update_dict);
+    console.log(" --- RefreshDatarowItem  ---");
+    console.log("tblName", tblName);
+    console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
 
@@ -2292,7 +2297,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
             let field_error_list = [];
 
             const error_list = get_dict_value(update_dict, ["error"], []);
-    //console.log("error_list", error_list);
+    console.log("error_list", error_list);
 
             if(error_list && error_list.length){
 
@@ -2363,7 +2368,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
                     }
                 } else {
 
-    //console.log(".....field_names", field_names);
+   console.log(".....field_names", field_names);
 
 // +++++++++++ updated row +++++++++++
     // ---  check which fields are updated, add to list 'updated_columns'
@@ -2386,7 +2391,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
                                 };
                             };
                         };
-        //console.log("updated_columns", updated_columns);
+        console.log("updated_columns", updated_columns);
 
 // ---  update fields in data_row
                         for (const [key, new_value] of Object.entries(update_dict)) {

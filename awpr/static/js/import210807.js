@@ -146,7 +146,7 @@
 
         // was: if(mimp.import_table === "import_studsubj" && mimp.is_crosstab){
         if(mimp.import_table === "import_studsubj"){
-            upload_studentsubjects_crosstab(mode)
+            upload_studentsubjects_crosstab(mode, RefreshDataRowsAfterUpload)
         } else if(mimp.import_table === "import_permit"){
             //upload_permits();
             upload_student(mode, RefreshDataRowsAfterUpload);
@@ -199,19 +199,6 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             // mapped_subjects = {5: [143, "bi"], 7: [137, "cav"],  ... }
     //console.log ("mapped_subjects", mapped_subjects);
     //console.log ("mimp",mimp);
-
-// --- put all excValues of studenttypes as key in mapped_subjecttypes, maps excValues to awpBasePk {excValues: awpBasePk}
-            const mapped_subjecttypes = {};
-            if(mimp.linked_awp_values.subjecttype && mimp.linked_awp_values.subjecttype.length){
-                // dict = {awpBasePk: 39, awpValue: "adm&co", excColIndex: 5, excValue: "adm&co", sortby: "adm&co", rowId: "id_tr_subject_awp_21"
-                for (let i = 0, dict; dict = mimp.linked_awp_values.subjecttype[i]; i++) {
-                    if (dict.excValue){ // excValue is string, no need to use excValue != null
-                        mapped_subjecttypes[dict.excValue] = dict.awpBasePk;
-                    }
-                }
-            }
-            // mapped_subjecttypes = {G: 1, S: 2, V: 4, PBL: 7, stage: 9}
-    //console.log ("mapped_subjecttypes", mapped_subjecttypes);
 
 // ---  get list of linked awpColdefs mapped colIndex to awpColdef
             // loop through excel_coldefs to get list of linked awpColdefs
@@ -371,6 +358,9 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
                             } else if (awpColdef === "birthdate"){
                                 mapped_value = Number(value)
+
+
+
                             } else if (["role", "sequence"].includes(awpColdef)){
                                 mapped_value = Number(value)
                             } else {
@@ -2127,20 +2117,25 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 }
 
                 if("updated_student_rows" in response){
-                    RefreshDataRowsAfterUpload(response)
-                }
+                    RefreshDataRowsAfterUpload(response);
+                };
+
+                if("updated_studsubj_rows" in response){
+                    RefreshDataRowsAfterUpload(response);
+                };
+
                 if("updated_user_rows" in response){
                 console.log("RefreshDataRowsAfterUpload >>> updated_user_rows");
-                    RefreshDataRowsAfterUpload(response)
-                }
+                    RefreshDataRowsAfterUpload(response);
+                };
                 if("result" in response){
-                    ResponseResult(response)
-                }
+                    ResponseResult(response);
+                };
 
 //--------- print log file
                 if("log_list" in response){
-                    mimp_logfile = response.log_list
-                }
+                    mimp_logfile = response.log_list;
+                };
             },
             error: function (xhr, msg) {
 
