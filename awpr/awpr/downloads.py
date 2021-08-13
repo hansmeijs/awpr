@@ -37,7 +37,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
     logging.disable(logging.NOTSET)  # logging.NOTSET re-enables logging
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ++++++++++++++++++++ DatalistDownloadView ++++++++++++++++++++ ')
@@ -66,7 +66,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if permit_dict:
                     datalists['permit_dict'] = permit_dict
 
-                # only add setting_dict to  datalists when called by request_item_setting 'setting'
+                # only add setting_dict to datalists when called by request_item_setting 'setting'
                 if request_item_setting and new_setting_dict:
                     datalists['setting_dict'] = new_setting_dict
 
@@ -74,18 +74,18 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['awp_messages'] = awp_messages
 
 # ----- get school settings (includes import settings)
-                request_item_setting = datalist_request.get('schoolsetting')
-                if request_item_setting:
+                request_item_schoolsetting = datalist_request.get('schoolsetting')
+                if request_item_schoolsetting:
                     datalists['schoolsetting_dict'] = sch_fnc.get_schoolsetting(
-                        request_item_setting, sel_examyear, sel_schoolbase, sel_depbase)
+                        request_item_schoolsetting, sel_examyear, sel_schoolbase, sel_depbase)
 
 # ----- run system_updates if necessary
                 af.system_updates(sel_examyear, request)
 
 # ----- locale
-                request_item_setting = datalist_request.get('locale')
-                if request_item_setting:
-                    datalists['locale_dict'] = loc.get_locale_dict(request_item_setting, user_lang, request)
+                request_item_locale = datalist_request.get('locale')
+                if request_item_locale:
+                    datalists['locale_dict'] = loc.get_locale_dict(request_item_locale, user_lang, request)
 
                 # 9. return datalists
                 # PR2020-05-23 debug: datalists = {} gives parse error.
@@ -158,6 +158,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         examyear=sel_examyear,
                         schoolbase=sel_schoolbase,
                         depbase=sel_depbase,
+                        setting_dict=new_setting_dict,
                         append_dict={}
                     )
 # ----- studentsubjectnote
@@ -220,17 +221,17 @@ class DatalistDownloadView(View):  # PR2019-05-23
         return HttpResponse(datalists_json)
 
 
-def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR2020-1-14
+def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 PR2020-1-14 PR2021-08-12
 
-    if request_setting is None:
-        request_setting = {}
+    if request_item_setting is None:
+        request_item_setting = {}
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- download_setting ----- ')
-        logger.debug('request_setting: ' + str(request_setting) )
-    # this function get settingss from request_setting.
-    # if not in request_setting, it takes the saved settings.
+        logger.debug('request_item_setting: ' + str(request_item_setting) )
+    # this function get settingss from request_item_setting.
+    # if not in request_item_setting, it takes the saved settings.
 
     # datalist_request_item 'setting' can have the follwoing keys that will be saved in usersettings:
     #   - key 'page':       required, stored in usersetting sel_page: ( page: 'page_grade'}
@@ -247,7 +248,21 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
 
 # ----- get page
     # request_item with key: 'setting' must always contain key: 'page'
-    page = request_setting.get('page')
+    # format of request_item_setting: {
+    #       'page': 'student',
+    #       'sel_examyear_pk': null,
+    #       'sel_schoolbase_pk': null,
+    #       'sel_depbase_pk': null,
+    #       'sel_examperiod': null,
+    #       'sel_examtype': null,
+    #       'sel_lvlbase_pk': null,
+    #       'sel_sctbase_pk': null,
+    #       'sel_subject_pk': null,
+    #       'sel_student_pk': null,
+    #       'sel_scheme_pk': null, }
+    # stored in usersetting with key 'selected_pk'
+
+    page = request_item_setting.get('page')
 
 # - setting_dict contains all info to be sent to client, permit_dict contains permit related info
     setting_dict = {'user_lang': user_lang, 'sel_page': page}
@@ -289,7 +304,8 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     permit_dict['requsr_schoolbase_pk'] = requsr_schoolbase.pk if requsr_schoolbase else None
     permit_dict['requsr_schoolbase_code'] = requsr_schoolbase.code if requsr_schoolbase else None
 
-    sel_schoolbase_instance, sel_schoolbase_save = af.get_sel_schoolbase_instance(request, request_setting)
+    request_item_schoolbase_pk = request_item_setting.get(c.KEY_SEL_SCHOOLBASE_PK)
+    sel_schoolbase_instance, sel_schoolbase_save = af.get_sel_schoolbase_instance(request, request_item_schoolbase_pk)
     #logger.debug('sel_schoolbase_instance: ' + str(sel_schoolbase_instance) + ' pk: ' + str(sel_schoolbase_instance.pk))
     if sel_schoolbase_save:
         # when sel_schoolbase_save=True, there is always a sel_schoolbase_instance
@@ -306,10 +322,10 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
 
 # ===== EXAMYEAR =======================
     # every user can change examyear, is stored in Usersetting.
-    # request_setting: {'page_school': {'mode': 'get'}, 'sel_examyear_pk': 6}
 
-# - get selected examyear from request_setting, Usersetting, this_examyear or latest
-    sel_examyear_instance, sel_examyear_save, may_select_examyear = af.get_sel_examyear_instance(request, request_setting)
+# - get selected examyear from request_item_setting, Usersetting, this_examyear or latest
+    request_item_examyear_pk = request_item_setting.get(c.KEY_SEL_EXAMYEAR_PK)
+    sel_examyear_instance, sel_examyear_save, may_select_examyear = af.get_sel_examyear_instance(request, request_item_examyear_pk)
 
     permit_dict['may_select_examyear'] = may_select_examyear
 
@@ -319,7 +335,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
         # sel_examyear_instance has always value when selected_pk_dict_has_changed
         selected_pk_dict[c.KEY_SEL_EXAMYEAR_PK] = sel_examyear_instance.pk
         selected_pk_dict_has_changed = True
-        #logger.debug('selected_pk_dict_has_changed: ' + str(selected_pk_dict_has_changed) )
+
 # - add info to setting_dict, will be sent back to client
     if sel_examyear_instance:
         setting_dict[c.KEY_SEL_EXAMYEAR_PK] = sel_examyear_instance.pk
@@ -328,6 +344,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
             setting_dict['sel_examyear_published'] = sel_examyear_instance.published
         if sel_examyear_instance.locked:
             setting_dict['sel_examyear_locked'] = sel_examyear_instance.locked
+
 # - add message when examyear is different from this eaxamyear
     awp_messages = []
     awp_message = val.message_diff_exyr(sel_examyear_instance)  # PR2020-10-30
@@ -362,9 +379,10 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
 # ===== DEPBASE =======================
     # every user can change depbase, if in .sel_school_depbases and in user allowed_depbases
 
-# - get sel_depbase_instance from saved_setting or request_setting or first allowed, check if allowed
+# - get sel_depbase_instance from saved_setting or request_item_setting or first allowed, check if allowed
+    request_item_depbase_pk = request_item_setting.get(c.KEY_SEL_SCHOOLBASE_PK)
     sel_depbase_instance, sel_depbase_save, allowed_depbases = \
-        af.get_sel_depbase_instance(sel_school, request, request_setting)
+        af.get_sel_depbase_instance(sel_school, request, request_item_depbase_pk)
 
     if logging_on:
         logger.debug('sel_depbase_instance: ' + str(sel_depbase_instance))
@@ -381,7 +399,7 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
         logger.debug('may_select_department: ' + str(may_select_department) )
         logger.debug('permit_dict[display_department]: ' + str(permit_dict['display_department']) )
 
-    # - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
+# - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
     if sel_depbase_save:
         # sel_depbase_instance has always value when selected_pk_dict_has_changed
         selected_pk_dict[c.KEY_SEL_DEPBASE_PK] = sel_depbase_instance.pk
@@ -407,16 +425,17 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     # - get saved_examperiod_int
     saved_examperiod_int = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
 
-    # - check if there is a new examperiod_pk in request_setting
-    request_examperiod_pk = af.get_dict_value(request_setting,
-                                              (c.KEY_SELECTED_PK, c.KEY_SEL_EXAMPERIOD))
+    # - check if there is a new examperiod_pk in request_item_setting
+    # TODO : was sub_dict: request_examperiod_pk = af.get_dict_value(request_item_setting, (c.KEY_SELECTED_PK, c.KEY_SEL_EXAMPERIOD))
+    # must check if there is still new_setting with reference to this sub_dict
+    request_item_examperiod_pk = request_item_setting.get(c.KEY_SEL_EXAMPERIOD)
 
-    if saved_examperiod_int is None and request_examperiod_pk is None:
-        request_examperiod_pk = c.EXAMPERIOD_FIRST
+    if saved_examperiod_int is None and request_item_examperiod_pk is None:
+        request_item_examperiod_pk = c.EXAMPERIOD_FIRST
 
     # - use request_examyear when it has value and is different from the saved one
-    if request_examperiod_pk and request_examperiod_pk != saved_examperiod_int:
-        saved_examperiod_int = request_examperiod_pk
+    if request_item_examperiod_pk and request_item_examperiod_pk != saved_examperiod_int:
+        saved_examperiod_int = request_item_examperiod_pk
         # - update selected_pk_dict, will be saved at end of def
         selected_pk_dict_has_changed = True
         selected_pk_dict[c.KEY_SEL_EXAMPERIOD] = saved_examperiod_int
@@ -434,13 +453,16 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
     # - get saved_examtype
     saved_examtype = selected_pk_dict.get(c.KEY_SEL_EXAMTYPE)
 
-    # - check if there is a new examtype in request_setting
-    request_examtype = af.get_dict_value(request_setting,
+    # - check if there is a new examtype in request_item_setting
+    request_item_examtype = af.get_dict_value(request_item_setting,
                                               (c.KEY_SELECTED_PK, c.KEY_SEL_EXAMTYPE))
+    # TODO : was sub_dict: request_examperiod_pk = af.get_dict_value(request_item_setting, (c.KEY_SELECTED_PK, c.KEY_SEL_EXAMPERIOD))
+    # must check if there is still new_setting with reference to this sub_dict
+    request_item_examtype = request_item_setting.get(c.KEY_SEL_EXAMTYPE)
 
     if logging_on:
         logger.debug('saved_examtype: ' + str(saved_examtype))
-        logger.debug('request_examtype: ' + str(request_examtype))
+        logger.debug('request_item_examtype: ' + str(request_item_examtype))
 
 # - check if examtype is allowed in this saved_examperiod_int
 
@@ -466,22 +488,22 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
         if logging_on:
             logger.debug('saved_examtype: ' + str(saved_examtype) + ' is not allowed in this examperiod, replace by: ' + str(default_examtype))
         saved_examtype = default_examtype
-        # - update selected_pk_dict, may be replaced by request_examtype
+        # - update selected_pk_dict, may be replaced by request_item_examtype
         selected_pk_dict[c.KEY_SEL_EXAMTYPE] = saved_examtype
         selected_pk_dict_has_changed = True
 
-# - check if saved request_examtype is allowed in this examperiod, set to None if not
-    if request_examtype and request_examtype not in allowed_examtype_list:
+# - check if saved request_item_examtype is allowed in this examperiod, set to None if not
+    if request_item_examtype and request_item_examtype not in allowed_examtype_list:
         if logging_on:
-            logger.debug('request_examtype: ' + str(request_examtype) + ' is not allowed in this examperiod, set to: None')
-        request_examtype = None
+            logger.debug('request_item_examtype: ' + str(request_item_examtype) + ' is not allowed in this examperiod, set to: None')
+        request_item_examtype = None
 
-# - use request_examtype when it has value and is different from the saved one
-    if request_examtype and request_examtype != saved_examtype:
+# - use request_item_examtype when it has value and is different from the saved one
+    if request_item_examtype and request_item_examtype != saved_examtype:
         if logging_on:
-            logger.debug('Replace saved_examtype: ' + str(saved_examtype) + ' by request_examtype: ' + str(request_examtype))
+            logger.debug('Replace saved_examtype: ' + str(saved_examtype) + ' by request_item_examtype: ' + str(request_item_examtype))
 
-        saved_examtype = request_examtype
+        saved_examtype = request_item_examtype
         # - update selected_pk_dict, will be saved at end of def
         selected_pk_dict[c.KEY_SEL_EXAMTYPE] = saved_examtype
         selected_pk_dict_has_changed = True
@@ -499,35 +521,55 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
         logger.debug('setting_dict[c.KEY_SEL_EXAMTYPE]: ' + str(setting_dict[c.KEY_SEL_EXAMTYPE]))
         logger.debug('setting_dict[c.sel_examtype_caption]: ' + str(setting_dict['sel_examtype_caption']))
 
-# ===== SUBJECT, STUDENT, LEVEL,SECTOR ======================= PR2021-01-23 PR2021-03-14
+# ===== LEVELBASE, SECTORBASE, SCHEME, SUBJECT, STUDENT, ======================= PR2021-01-23 PR2021-03-14 PR2021-08-13
     for key_str in (c.KEY_SEL_LVLBASE_PK, c.KEY_SEL_SCTBASE_PK, c.KEY_SEL_SCHEME_PK, c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK):
-    # - get saved_pk_str
+
+# - get saved_pk_str
+        saved_pk_int = None
         saved_pk_str = selected_pk_dict.get(key_str)
-    # - check if there is a new pk_str in request_setting
-        request_pk_str = af.get_dict_value(request_setting, (c.KEY_SELECTED_PK, key_str))
-    # - use request_pk_str when it has value and is different from the saved one
-        if request_pk_str and request_pk_str != saved_pk_str:
-    # - request_pk_str = "-1" means: show all: convert '-1' to None
-            if request_pk_str == '-1':
-                request_pk_str = None
-            saved_pk_str = request_pk_str
-    # - update selected_pk_dict, will be saved at end of def
-            selected_pk_dict_has_changed = True
-            selected_pk_dict[key_str] = saved_pk_str
-    # - add info to setting_dict, will be sent back to client
         if saved_pk_str:
-            pk_int = int(saved_pk_str)
-            setting_dict[key_str] = int(pk_int)
+            saved_pk_int = int(saved_pk_str)
+
+# - if key_str exists in request_item_setting: get new request_item_pk_int from request_item_setting
+        if key_str in request_item_setting:
+            request_item_pk_int = request_item_setting.get(key_str)
+
+            if logging_on:
+                logger.debug('........... key_str: ' + str(key_str))
+                logger.debug('request_item_pk_int: ' + str(request_item_pk_int) + ' ' + str(type(request_item_pk_int)))
+                logger.debug('saved_pk_int: ' + str(saved_pk_int) + ' ' + str(type(saved_pk_int)))
+
+# - use request_pk_str when it has value and is different from the saved one
+            # also use request_item_pk_int when its value is None, to reset filter
+            if request_item_pk_int != saved_pk_int:
+                saved_pk_int = request_item_pk_int
+
+            if logging_on:
+                logger.debug('>>>>> saved_pk_int: ' + str(saved_pk_int) + ' ' + str(type(saved_pk_int)))
+
+# --- update selected_pk_dict, will be saved at end of def
+                selected_pk_dict_has_changed = True
+                if saved_pk_int:
+                    selected_pk_dict[key_str] = saved_pk_int
+                elif key_str in selected_pk_dict:
+                    selected_pk_dict.pop(key_str)
+
+            if logging_on:
+                logger.debug('>>>>> selected_pk_dict: ' + str(selected_pk_dict) + ' ' + str(type(selected_pk_dict)))
+
+# --- add info to setting_dict, will be sent back to client
+        if saved_pk_int:
+            setting_dict[key_str] = saved_pk_int
             if key_str == c.KEY_SEL_SUBJECT_PK:
                 subject = subj_mod.Subject.objects.get_or_none(
-                    pk=pk_int
+                    pk=saved_pk_int
                 )
                 if subject:
                     setting_dict['sel_subject_code'] = subject.base.code
                     setting_dict['sel_subject_name'] = subject.name
             elif key_str == c.KEY_SEL_STUDENT_PK:
                 student = stud_mod.Student.objects.get_or_none(
-                    pk=pk_int
+                    pk=saved_pk_int
                 )
                 if student:
                     setting_dict['sel_student_name'] = stud_view.get_full_name(student.lastname, student.firstname, student.prefix)
@@ -535,20 +577,22 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
             elif key_str == c.KEY_SEL_LVLBASE_PK:
                 level = subj_mod.Level.objects.get_or_none(
                     examyear=sel_examyear_instance,
-                    base_id=pk_int)
+                    base_id=saved_pk_int)
                 if level:
                     setting_dict['sel_level_abbrev'] = level.abbrev
             elif key_str == c.KEY_SEL_SCTBASE_PK:
                 sector = subj_mod.Sector.objects.get_or_none(
                     examyear=sel_examyear_instance,
-                    base_id=pk_int)
+                    base_id=saved_pk_int)
                 if sector:
                     setting_dict['sel_sector_abbrev'] = sector.abbrev
             elif key_str == c.KEY_SEL_SCHEME_PK:
-                scheme = subj_mod.Scheme.objects.get_or_none(pk=pk_int)
+                scheme = subj_mod.Scheme.objects.get_or_none(pk=saved_pk_int)
                 if scheme:
                     setting_dict['sel_scheme_name'] = scheme.name
 
+            if logging_on:
+                logger.debug('>>>>> setting_dict: ' + str(setting_dict) + ' ' + str(type(setting_dict)))
     # - save settings when they have changed
     if selected_pk_dict_has_changed:
         acc_view.set_usersetting_dict(c.KEY_SELECTED_PK, selected_pk_dict, request)
@@ -568,46 +612,10 @@ def download_setting(request_setting, user_lang, request):  # PR2020-07-01 PR202
             if sel_btn:
                 setting_dict[c.KEY_SEL_BTN] = sel_btn
 
-# - add list of hidde ncolumns PR2021-07-07
+# - add list of hidden columns PR2021-07-07
             col_hidden = page_dict.get(c.KEY_COL_HIDDEN)
             if col_hidden:
                 setting_dict[c.KEY_COL_HIDDEN] = col_hidden
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-    """
-    # - get rest of keys
-    for key, request_dict in request_setting.items():
-        skip_keys = ('selected_pk',)
-        if key not in skip_keys:
-            has_changed = False
-            new_page_dict = {}
-            saved_setting_dict = acc_view.get_usersetting_dict(key, request)
-
-            ################################
-            # get page settings - keys starting with 'page_'
-            if key[:5] == 'page_':
-                # if 'page_' in request: and saved_btn == 'planning': also retrieve period
-                setting_dict['sel_page'] = key
-                # logger.debug('setting_dict: ' + str(setting_dict))
-                sel_keys = ('sel_btn', ) #'period_start', 'period_end', 'grid_range')
-                for sel_key in sel_keys:
-                    saved_value = saved_setting_dict.get(sel_key)
-                    new_value = saved_value
-                    if request_dict and sel_key in request_dict:
-                        request_value = request_dict.get(sel_key)
-                        if request_value is None:
-                            if saved_value is not None:
-                                has_changed = True
-                        elif request_value != saved_value:
-                            new_value = request_value
-                            has_changed = True
-                    if new_value is not None:
-                        new_page_dict[sel_key] = new_value
-                        setting_dict[sel_key] = new_value
-            if has_changed:
-                acc_view.set_usersetting_dict(key, new_page_dict, request)
-    # logger.debug('setting_dict: ' + str(setting_dict))
-    """
 
     if logging_on:
         logger.debug('setting_dict: ' + str(setting_dict))

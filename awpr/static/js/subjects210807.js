@@ -308,9 +308,6 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_confirm_header = document.getElementById("id_modconfirm_header");
         let el_confirm_loader = document.getElementById("id_modconfirm_loader");
         let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
-        let el_confirm_msg01 = document.getElementById("id_modconfirm_msg01")
-        let el_confirm_msg02 = document.getElementById("id_modconfirm_msg02")
-        let el_confirm_msg03 = document.getElementById("id_modconfirm_msg03")
 
         let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
@@ -3680,9 +3677,7 @@ if(j){td.classList.add("border_left")};
         console.log("mode", mode)
 
         if(permit_dict.permit_crud){
-            el_confirm_msg01.innerText = null;
-            el_confirm_msg02.innerText = null;
-            el_confirm_msg03.innerText = null;
+            el_confirm_msg_container.innerHTML = null;
 
     // ---  get selected_pk
             let selected_pk = null;
@@ -3758,10 +3753,13 @@ if(j){td.classList.add("border_left")};
             if(!dont_show_modal){
                 el_confirm_header.innerText = header_text;
                 el_confirm_loader.classList.add(cls_visible_hide)
-                el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
-                el_confirm_msg01.innerText = msg_01_txt;
-                el_confirm_msg02.innerText = msg_02_txt;
-                el_confirm_msg03.innerText = msg_03_txt;
+
+                el_confirm_msg_container.className = "p-3";
+                let msg_html = "";
+                if (msg_01_txt) {msg_html += "<p>" + msg_01_txt + "</p>"};
+                if (msg_02_txt) {msg_html += "<p>" + msg_02_txt + "</p>"};
+                if (msg_03_txt) {msg_html += "<p>" + msg_03_txt + "</p>"};
+                el_confirm_msg_container.innerHTML = msg_html
 
                 const caption_save = (mode === "delete") ? loc.Yes_delete :
                                 (mode === "inactive") ? ( (mod_dict.current_isactive) ? loc.Yes_make_inactive : loc.Yes_make_active ) :
@@ -3857,9 +3855,13 @@ if(j){td.classList.add("border_left")};
             }
         }
         if (show_msg){
-            el_confirm_msg01.innerText = msg01_text;
-            el_confirm_msg02.innerText = msg02_text;
-            el_confirm_msg03.innerText = msg03_text;
+            el_confirm_msg_container.className = "p-3";
+            let msg_html = "";
+            if (msg_01_txt) {msg_html += "<p>" + msg_01_txt + "</p>"};
+            if (msg_02_txt) {msg_html += "<p>" + msg_02_txt + "</p>"};
+            if (msg_03_txt) {msg_html += "<p>" + msg_03_txt + "</p>"};
+            el_confirm_msg_container.innerHTML = msg_html;
+
             el_confirm_btn_cancel.innerText = loc.Close
             el_confirm_btn_save.classList.add(cls_hide);
         } else {

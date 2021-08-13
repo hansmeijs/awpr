@@ -1187,7 +1187,6 @@
         return [middle_index, found_dict, compare];
     };  // b_recursive_lookup
 
-
 //========= b_recursive_tblRow_lookup  ========== PR2020-06-16
     function b_recursive_tblRow_lookup(tblBody, search_value_1, search_value_2, search_value_3, user_lang){
         //console.log( " ----- b_recursive_tblRow_lookup -----");
@@ -1463,12 +1462,32 @@
         }  //   if (awp_messages && awp_messages.length)
     }  // b_render_awp_messages
 
+//========= b_render_msg_containerNEW  ================= PR2021-08-13
+    function b_render_msg_containerNEW(el_msg_container, msg_list, class_list) {
+        // used for el_confirm_msg_container
+        el_msg_container.className = "p-3";
+
+        if (class_list && class_list.length) {
+            // The new spread operator makes it even easier to apply multiple CSS classes as array:
+            el_msg_container.classList.add(...class_list);
+        }
+        let msg_html = "";
+        if (msg_list && msg_list.length){
+            for (let i = 0, msg_txt ; msg_txt = msg_list[i]; i++) {
+                if (msg_txt) {
+                    msg_html += "<p>" + msg_01_txt + "</p>";
+                }
+            }
+        }
+        el_msg_container.innerHTML = msg_html;
+    }  // b_render_msg_containerNEW
+
 //========= b_render_msg_container  ================= PR2021-05-13
     function b_render_msg_container(id_el_msg, msg_list) {
         //console.log( "===== b_render_msg_container -----")
         //console.log( "id_el_msg", id_el_msg)
         //console.log( "msg_list", msg_list)
-
+          // only used in subjects.js MSJT_validate_and_disable and MSUBJ_validate_and_disable
         const el_msg = document.getElementById(id_el_msg);
         //console.log("el_msg", el_msg)
         if (el_msg){

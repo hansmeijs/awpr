@@ -28,7 +28,7 @@ def lookup_student_by_idnumber(school, department, id_number, upload_fullname,
     # also checks for first / lastname if multiple found
     # this one is not used for uploading subjects and grade - those can skip checks
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------- lookup_student_by_idnumber ----------- ')
         logger.debug('--- school:           ' + str(school))

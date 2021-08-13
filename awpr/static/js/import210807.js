@@ -146,7 +146,8 @@
 
         // was: if(mimp.import_table === "import_studsubj" && mimp.is_crosstab){
         if(mimp.import_table === "import_studsubj"){
-            upload_studentsubjects_crosstab(mode, RefreshDataRowsAfterUpload)
+            upload_studentsubjects_crosstab(mode, RefreshDataRowsAfterUpload);
+
         } else if(mimp.import_table === "import_permit"){
             //upload_permits();
             upload_student(mode, RefreshDataRowsAfterUpload);

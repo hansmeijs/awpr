@@ -191,6 +191,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, is_prelimi
         normal_blue = ex1_formats.get('normal_blue')
         th_merge = ex1_formats.get('th_merge')
         th_level = ex1_formats.get('th_level')
+        th_prelim  = ex1_formats.get('th_prelim')
         totalrow_merge = ex1_formats.get('totalrow_merge')
         col_count = ex1_formats.get('col_count', 0)
         first_subject_column =  ex1_formats.get('first_subject_column', 0)
@@ -224,7 +225,9 @@ def create_ex1_xlsx(published_instance, examyear, school, department, is_prelimi
 
         row_index = 9
         if is_preliminary:
-            sheet.write(row_index, 0, str(_('PRELIMINARY EX FORM')), bold_format)
+            prelim_txt = '+++++  ' + str(_('Preliminary Ex1 form')) + '  +++++'
+            #sheet.write(row_index, 0, str(_('PRELIMINARY EX FORM')), bold_format)
+            sheet.merge_range(row_index, 0, row_index, col_count - 1, prelim_txt, th_prelim)
             row_index += 2
 
 # ---  table header row
@@ -315,12 +318,12 @@ def create_ex1_xlsx(published_instance, examyear, school, department, is_prelimi
                 if value:
                     sheet.write(row_index + i - 1, 0, value, bold_format)
 
-
 # ---  digitally signed by
-        if not is_preliminary or is_preliminary:
-            auth_row = first_footnote_row
+        auth_row = first_footnote_row
+        if not is_preliminary:
             sheet.write(auth_row, first_subject_column, str(_('Digitally signed by')) + ':')
             auth_row += 2
+    # - President
             sheet.write(auth_row, first_subject_column, str(_('President')) + ':')
             auth1_list = ex1_dict.get('auth1')
             if auth1_list:
@@ -329,7 +332,10 @@ def create_ex1_xlsx(published_instance, examyear, school, department, is_prelimi
                     if auth1:
                         sheet.write(auth_row, first_subject_column + 4, auth1.last_name, normal_blue)
                         auth_row += 1
-            auth_row += 2
+            else:
+                auth_row += 1
+            auth_row += 1
+    # - Secretary
             sheet.write(auth_row, first_subject_column, str(_('Secretary')) + ':')
             auth2_list = ex1_dict.get('auth2')
             if auth2_list:
@@ -338,14 +344,17 @@ def create_ex1_xlsx(published_instance, examyear, school, department, is_prelimi
                     if auth2:
                         sheet.write(auth_row, first_subject_column + 4, auth2.last_name, normal_blue)
                         auth_row += 1
+            else:
+                auth_row += 1
 
-# ---  place, date
             auth_row += 1
-            sheet.write(auth_row, first_subject_column, 'Plaats:')
-            sheet.write(auth_row, first_subject_column + 4, str(school.examyear.country.name),
-                        normal_blue)
-            sheet.write(auth_row, first_subject_column + 9, 'Datum:')
-            sheet.write(auth_row, first_subject_column + 11, today_formatted, normal_blue)
+
+    # -  place, date
+        sheet.write(auth_row, first_subject_column, 'Plaats:')
+        sheet.write(auth_row, first_subject_column + 4, str(school.examyear.country.name),
+                    normal_blue)
+        sheet.write(auth_row, first_subject_column + 8, 'Datum:')
+        sheet.write(auth_row, first_subject_column + 11, today_formatted, normal_blue)
 
         book.close()
 
@@ -392,6 +401,7 @@ def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, sub
     # or: th_format = book.add_format({'bg_color': '#d8d8d8'
     th_align_center = book.add_format({'font_size': 8, 'border': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
     th_rotate = book.add_format({'font_size': 8, 'border': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True, 'rotation': 90})
+    th_prelim = book.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
 
     th_merge = book.add_format({ 'bold': True, 'align': 'center', 'valign': 'vcenter'})
     th_merge.set_left()
@@ -430,6 +440,7 @@ def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, sub
                    'normal_blue': normal_blue,
                    'th_merge': th_merge,
                    'th_level': th_level,
+                   'th_prelim': th_prelim,
                    'totalrow_merge': totalrow_merge
     }
 
@@ -485,7 +496,8 @@ def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, sub
         for x in range(subject_col_count, 15):  # range(start_value, end_value, step), end_value is not included!
             field_width.append(subject_col_width)
             subject_code = ''
-            subject_pk = 0
+            # was: subject_pk = 0
+            subject_pk = '0'
             ex1_formats['field_captions'].append(subject_code)
             ex1_formats['field_names'].append(subject_pk)
             ex1_formats['header_formats'].append(th_rotate)
@@ -634,11 +646,11 @@ def create_ex1_rows(examyear, school, department):
         "GROUP BY studsubj.student_id"]
     sql_studsubj_agg = ' '.join(sql_studsubj_agg_list)
 
-    sql_list = [
+    sql_list = ["WITH studsubj AS (", sql_studsubj_agg, ")",
         "SELECT st.id, st.idnumber, st.examnumber, st.lastname, st.firstname, st.prefix, st.classname,",
         "st.level_id, st.sector_id, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, studsubj.subj_id_arr",
         "FROM students_student AS st",
-        "INNER JOIN (" + sql_studsubj_agg + ") AS studsubj ON (studsubj.student_id = st.id)",
+        "INNER JOIN studsubj ON (studsubj.student_id = st.id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
         "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
         "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",

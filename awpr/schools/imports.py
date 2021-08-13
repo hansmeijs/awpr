@@ -2457,16 +2457,21 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
 # +++ end of loop through subjects of data_list ++++++++++++++++++++++++++++++++++++++
 
 # - when studsubjects are adde to student: add rows to studsubj_rows
+                # PR2021-08-13 to prevent timeout error: download studentsubject_rows in separate ajax call
                 if has_created_studsubj:
+                    pass
+                    """
                     append_dict = {'created': True}
                     rows = stud_view.create_studentsubject_rows(
                         examyear=school.examyear,
                         schoolbase=school.base,
                         depbase=department.base,
                         append_dict=append_dict,
+                        setting_dict={},
                         student_pk=student.pk)
                     if rows:
                         studsubj_rows.extend(rows)
+                    """
                 else:
                     has_error = True
                     caption_txt = c.STRING_SPACE_05 + (c.STRING_SPACE_10)[:8]

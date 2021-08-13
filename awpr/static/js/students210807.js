@@ -71,9 +71,9 @@ document.addEventListener('DOMContentLoaded', function() {
     //const url_studsubj_upload = get_attr_from_el(el_data, "data-url_studsubj_upload");
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
-
-    //  columns_hidden = {'student': [ "sctbase_id", "classname"]};
-    // declared as global: const columns_hidden = {};
+    columns_tobe_hidden.student = {
+        field_names: ["idnumber", "prefix", "gender", "lvlbase_id", "sctbase_id", "classname", "examnumber", "regnumber", "bis_exam"],
+        field_caption: ["ID_number", "Prefix", "Gender", "Leerweg", "Sector", "Class", "Examnumber", "Regnumber", "Bis_candidate"]}
 
 // --- get field_settings
     // declared as global: let field_settings = {};
@@ -83,11 +83,6 @@ document.addEventListener('DOMContentLoaded', function() {
         filter_tags: ["select", "text", "text",  "text", "text", "text", "text","text", "text", "text", "text", "toggle"],
         field_width:  ["020", "120", "220", "240", "090", "090", "090", "090", "090", "090", "120","090"],
         field_align: ["c", "l", "l", "l", "l", "c", "l", "l", "l", "l", "l","c"]}
-
-    columns_tobe_hidden.student = {
-        field_names: ["idnumber", "prefix", "gender", "lvlbase_id", "sctbase_id", "classname", "examnumber", "regnumber", "bis_exam"],
-        field_caption: ["ID_number", "Prefix", "Gender", "Leerweg", "Sector", "Class", "Examnumber", "Regnumber", "Bis_candidate"]
-    }
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -316,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 student_rows: {cur_dep_only: true}
             };
 
-        DatalistDownload(datalist_request, "DOMContentLoaded");
+        DatalistDownload(datalist_request);
     }
 //  #############################################################################################################
 

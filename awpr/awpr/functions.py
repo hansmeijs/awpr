@@ -443,24 +443,23 @@ def get_selected_examyear_from_usersetting(request):  # PR2021-05-31
 # - end of get_selected_examyear_from_usersetting
 
 
-def get_sel_examyear_instance(request, request_setting=None):  # PR2020-12-25 PR2021-08-01
+def get_sel_examyear_instance(request, request_item_examyear_pk=None):  # PR2020-12-25 PR2021-08-12
     #logger.debug('  -----  get_sel_examyear_instance  -----')
     sel_examyear_instance = None
     sel_examyear_save = False
     multiple_examyears = False
 
     if request.user and request.user.country:
-        req_user= request.user
         requsr_country = request.user.country
 
 # - check if there is a new examyear_pk in request_setting, check if request_examyear exists
-        if request_setting is not None:
-            selected_pk_dict = request_setting.get(c.KEY_SELECTED_PK)
-            if selected_pk_dict:
-                r_eyr_pk = selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK)
-                sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=r_eyr_pk, country=requsr_country)
-                if sel_examyear_instance is not None:
-                    sel_examyear_save = True
+        if request_item_examyear_pk:
+            sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(
+                pk=request_item_examyear_pk,
+                country=requsr_country
+            )
+            if sel_examyear_instance is not None:
+                sel_examyear_save = True
 
 # - if None: get saved_examyear_pk from Usersetting, check if saved_examyear exists
         if sel_examyear_instance is None:
@@ -490,10 +489,8 @@ def get_sel_examyear_instance(request, request_setting=None):  # PR2020-12-25 PR
 # --- end of get_sel_examyear_instance
 
 
-def get_sel_schoolbase_instance(request, request_setting=None):  # PR2020-12-25 PR2021-04-23
+def get_sel_schoolbase_instance(request, request_item_schoolbase_pk=None):  # PR2020-12-25 PR2021-04-23 PR2021-08-12
     #logger.debug('  -----  get_sel_schoolbase_instance  -----')
-
-    # request_setting: {'page': 'page_user', 'sel_schoolbase_pk': 13}
 
     # - get schoolbase from settings / request when role is comm, insp, admin or system, from req_user otherwise
     # req_user.schoolbase cannot be changed
@@ -513,13 +510,14 @@ def get_sel_schoolbase_instance(request, request_setting=None):  # PR2020-12-25 
             sel_schoolbase_instance = req_user.schoolbase
         else:
 
-    # - check if there is a new schoolbase_pk in request_setting, check if request_schoolbase exists
-            if request_setting is not None:
-                r_sb_pk = request_setting.get(c.KEY_SEL_SCHOOLBASE_PK)
-                if r_sb_pk:
-                    sel_schoolbase_instance = sch_mod.Schoolbase.objects.get_or_none(pk=r_sb_pk, country=requsr_country)
-                    if sel_schoolbase_instance is not None:
-                        save_sel_schoolbase = True
+    # - check if there is a new schoolbase_pk in request_item, check if request_item_schoolbase exists
+            if request_item_schoolbase_pk:
+                sel_schoolbase_instance = sch_mod.Schoolbase.objects.get_or_none(
+                    pk=request_item_schoolbase_pk,
+                    country=requsr_country
+                )
+                if sel_schoolbase_instance is not None:
+                    save_sel_schoolbase = True
 
     # - if not: get saved_schoolbase_pk from Usersetting, check if saved_schoolbase exists
             if sel_schoolbase_instance is None:
@@ -537,12 +535,12 @@ def get_sel_schoolbase_instance(request, request_setting=None):  # PR2020-12-25 
 # --- end of get_sel_schoolbase_instance
 
 
-def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR2020-12-26 PR2021-05-07
+def get_sel_depbase_instance(sel_school, request, request_item_depbase_pk=None):  # PR2020-12-26 PR2021-05-07
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_sel_depbase_instance  -----')
         logger.debug('sel_school: ' + str(sel_school))
-        logger.debug('request_setting: ' + str(request_setting))
+        logger.debug('request_item_depbase_pk: ' + str(request_item_depbase_pk))
 
     sel_depbase_instance = None
     save_sel_depbase = False
@@ -570,12 +568,13 @@ def get_sel_depbase_instance(sel_school, request, request_setting=None):  # PR20
                     allowed_depbases.append(depbase_pk)
 
 # - check if there is a new depbase_pk in request_setting,
-        if request_setting is not None:
-            r_depbase_pk = get_dict_value(request_setting, (c.KEY_SELECTED_PK, c.KEY_SEL_DEPBASE_PK))
+        if request_item_depbase_pk:
     # check if it is in allowed_depbases,
-            if r_depbase_pk in allowed_depbases:
+            if request_item_depbase_pk in allowed_depbases:
     # check if request_depbase exists
-                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=r_depbase_pk)
+                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(
+                    pk=request_item_depbase_pk
+                )
                 if sel_depbase_instance is not None:
                     save_sel_depbase = True
         if logging_on:

@@ -793,6 +793,8 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                                             student_saved_error_list.append(studsubj.student_id)
 
         # - add rows to studsubj_rows, to be sent back to page
+                                    # to increase sppeed, dont create return rows but refreash page after finishing this request
+                                    """
                                     if not is_test and is_saved:
                                         rows = create_studentsubject_rows(
                                             examyear=sel_examyear,
@@ -803,6 +805,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                                             studsubj_pk=studsubj.pk)
                                         if rows:
                                               studsubj_rows.append(rows[0])
+                                    """
     # +++++  end of loop through  subjects
 
                             count_dict['count'] = row_count
@@ -1045,7 +1048,6 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                 save_to_disk=save_to_disk,
                 subject_pk_list=subject_pk_list,
                 subject_code_list=subject_code_list,
-                studsubj_rows=studsubj_rows,
                 user_lang=user_lang)
 
     def check_verificationcode(self, logging_on, upload_dict, request ):
@@ -2727,7 +2729,7 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
 
 #/////////////////////////////////////////////////////////////////
 
-def create_studentsubject_rows(examyear, schoolbase, depbase, append_dict, student_pk=None, studsubj_pk=None):
+def create_studentsubject_rows(examyear, schoolbase, depbase, setting_dict, append_dict, student_pk=None, studsubj_pk=None):
     # --- create rows of all students of this examyear / school PR2020-10-27
     #logger.debug(' =============== create_student_rows ============= ')
     #logger.debug('append_dict: ' + str(append_dict))
@@ -2738,7 +2740,12 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, append_dict, stude
     sel_examyear_pk = examyear.pk if examyear else None
     sel_schoolbase_pk = schoolbase.pk if schoolbase else None
     sel_depbase_pk = depbase.pk if depbase else None
-
+    sel_lvlbase_pk = None
+    if c.KEY_SEL_LVLBASE_PK in setting_dict:
+        sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+    sel_sctbase_pk = None
+    if c.KEY_SEL_SCTBASE_PK in setting_dict:
+        sel_sctbase_pk = setting_dict.get(c.KEY_SEL_SCTBASE_PK)
     sql_studsubj_list = ["SELECT studsubj.id AS studsubj_id, studsubj.student_id,",
         "studsubj.cluster_id, si.id AS schemeitem_id, si.scheme_id AS scheme_id,",
         "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_elective_combi,",
@@ -2810,7 +2817,8 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, append_dict, stude
 
     sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
 
-    sql_list = ["SELECT st.id AS stud_id, studsubj.studsubj_id, studsubj.schemeitem_id, studsubj.cluster_id,",
+    sql_list = ["WITH studsubj AS (" + sql_studsubjects + ")",
+        "SELECT st.id AS stud_id, studsubj.studsubj_id, studsubj.schemeitem_id, studsubj.cluster_id,",
         "CONCAT('studsubj_', st.id::TEXT, '_', studsubj.studsubj_id::TEXT) AS mapid, 'studsubj' AS table,",
         "st.lastname, st.firstname, st.prefix, st.examnumber,",
         "st.scheme_id, st.iseveningstudent, st.locked, st.has_reex, st.bis_exam, st.withdrawn,",
@@ -2846,7 +2854,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, append_dict, stude
 
         "studsubj.tobedeleted, studsubj.modifiedat, studsubj.modby_username",
         "FROM students_student AS st",
-        "LEFT JOIN (" + sql_studsubjects + ") AS studsubj ON (studsubj.student_id = st.id)",
+        "LEFT JOIN studsubj ON (studsubj.student_id = st.id)",
         "INNER JOIN schools_school AS school ON (school.id = st.school_id)",
         "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
@@ -2854,6 +2862,13 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, append_dict, stude
         "LEFT JOIN subjects_scheme AS scheme ON (scheme.id = st.scheme_id)",
         "LEFT JOIN subjects_package AS package ON (package.id = st.package_id)",
         "WHERE school.base_id = %(sb_id)s::INT AND school.examyear_id = %(ey_id)s::INT AND dep.base_id = %(db_id)s::INT"]
+
+    if sel_lvlbase_pk:
+        sql_list.append('AND lvl.base_id = %(lvlbase_id)s::INT')
+        sql_keys['lvlbase_id'] = sel_lvlbase_pk
+    if sel_sctbase_pk:
+        sql_list.append('AND sct.base_id = %(sctbase_id)s::INT')
+        sql_keys['sctbase_id'] = sel_sctbase_pk
 
     if studsubj_pk:
         sql_list.append('AND studsubj.studsubj_id = %(studsubj_id)s::INT')

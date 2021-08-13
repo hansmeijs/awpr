@@ -70,6 +70,8 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['will_be_made_inactive'] = pgettext_lazy('singular', ' will be made inactive.')
     dict['will_be_made_active'] = pgettext_lazy('singular', ' will be made active.')
     dict['will_be_printed'] = pgettext_lazy('singular', ' will be printed.')
+    dict['will_be_downloaded'] = pgettext_lazy('singular', ' will be downloaded.')
+
     dict['Do_you_want_to_continue'] = _('Do you want to continue?')
     dict['Yes_delete'] = _('Yes, delete')
     dict['Yes_make_inactive'] = _('Yes, make inactive')
@@ -572,6 +574,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Submit_Ex1_form'] = _('Submit Ex1 form')
 
         dict['Preliminary_Ex1_form'] = _('Preliminary Ex1 form')
+        dict['The_preliminary_Ex1_form'] = _('The preliminary Ex1 form')
+        dict['Download_Ex_form'] = _('Download Ex form')
         dict['Approve'] = _('Approve')
         dict['Check_grades'] = _('Check grades')
         dict['Submit'] = TXT_Submit
