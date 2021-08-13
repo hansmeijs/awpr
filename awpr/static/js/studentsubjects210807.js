@@ -201,11 +201,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
         const el_MSED_input = document.getElementById("id_MSED_input");
-        const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
         if (el_MSED_input){
             el_MSED_input.addEventListener("keyup", function(event){
                 setTimeout(function() {t_MSED_InputName(el_MSED_input)}, 50)});
         }
+        const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
         if (el_MSED_btn_save){
             el_MSED_btn_save.addEventListener("click", function() {t_MSED_Save(MSED_Response)}, false);
         }

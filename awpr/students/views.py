@@ -126,18 +126,29 @@ class OrederlistsListView(View): # PR2021-07-04
 
 def create_student_rows(setting_dict, append_dict, student_pk):
     # --- create rows of all students of this examyear / school PR2020-10-27
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_student_rows -----')
+
     sel_examyear_pk = setting_dict.get('sel_examyear_pk')
     sel_schoolbase_pk = setting_dict.get('sel_schoolbase_pk')
     sel_depbase_pk = setting_dict.get('sel_depbase_pk')
+
+    sel_lvlbase_pk = None
+    if c.KEY_SEL_LVLBASE_PK in setting_dict:
+        sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+
+    sel_sctbase_pk = None
+    if c.KEY_SEL_SCTBASE_PK in setting_dict:
+        sel_sctbase_pk = setting_dict.get(c.KEY_SEL_SCTBASE_PK)
 
     if logging_on:
         logger.debug(' ----- create_student_rows -----')
         logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
         logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
         logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
+        logger.debug('sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+        logger.debug('sel_sctbase_pk: ' + str(sel_sctbase_pk))
 
     sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
     sql_list = ["SELECT st.id, st.base_id, st.school_id AS s_id,",
@@ -176,6 +187,13 @@ def create_student_rows(setting_dict, append_dict, student_pk):
         "LEFT JOIN accounts_user AS au ON (au.id = st.modifiedby_id)",
         "WHERE sch.base_id = %(sb_id)s::INT AND sch.examyear_id = %(ey_id)s::INT AND dep.base_id = %(db_id)s::INT"]
 
+    if sel_lvlbase_pk:
+        sql_list.append('AND lvl.base_id = %(lvlbase_id)s::INT')
+        sql_keys['lvlbase_id'] = sel_lvlbase_pk
+    if sel_sctbase_pk:
+        sql_list.append('AND sct.base_id = %(sctbase_id)s::INT')
+        sql_keys['sctbase_id'] = sel_sctbase_pk
+
     if student_pk:
         sql_list.append('AND st.id = %(st_id)s::INT')
         sql_keys['st_id'] = student_pk
@@ -191,7 +209,8 @@ def create_student_rows(setting_dict, append_dict, student_pk):
 
     if logging_on:
         logger.debug('student_rows: ' + str(student_rows))
-        logger.debug('student_rows: ' + str(student_rows))
+        # logger.debug('connection.queries: ' + str(connection.queries))
+
 # - add lastname_firstname_initials to rows
     if student_rows:
         for row in student_rows:
@@ -2740,12 +2759,15 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, setting_dict, appe
     sel_examyear_pk = examyear.pk if examyear else None
     sel_schoolbase_pk = schoolbase.pk if schoolbase else None
     sel_depbase_pk = depbase.pk if depbase else None
+
     sel_lvlbase_pk = None
     if c.KEY_SEL_LVLBASE_PK in setting_dict:
         sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+
     sel_sctbase_pk = None
     if c.KEY_SEL_SCTBASE_PK in setting_dict:
         sel_sctbase_pk = setting_dict.get(c.KEY_SEL_SCTBASE_PK)
+
     sql_studsubj_list = ["SELECT studsubj.id AS studsubj_id, studsubj.student_id,",
         "studsubj.cluster_id, si.id AS schemeitem_id, si.scheme_id AS scheme_id,",
         "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_elective_combi,",
@@ -2876,8 +2898,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, setting_dict, appe
     if student_pk:
         sql_keys['st_id'] = student_pk
         sql_list.append('AND st.id = %(st_id)s::INT')
-    # studsubj_id can be None, sort them first so it can be given the value of 0 in b_recursive_integer_lookup
-    # field with nulls must be ordered last
+
     sql_list.append('ORDER BY st.id, studsubj.studsubj_id NULLS FIRST')
     sql = ' '.join(sql_list)
 

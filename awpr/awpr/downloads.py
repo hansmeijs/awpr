@@ -380,7 +380,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
     # every user can change depbase, if in .sel_school_depbases and in user allowed_depbases
 
 # - get sel_depbase_instance from saved_setting or request_item_setting or first allowed, check if allowed
-    request_item_depbase_pk = request_item_setting.get(c.KEY_SEL_SCHOOLBASE_PK)
+    request_item_depbase_pk = request_item_setting.get(c.KEY_SEL_DEPBASE_PK)
     sel_depbase_instance, sel_depbase_save, allowed_depbases = \
         af.get_sel_depbase_instance(sel_school, request, request_item_depbase_pk)
 
@@ -567,6 +567,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
                 if subject:
                     setting_dict['sel_subject_code'] = subject.base.code
                     setting_dict['sel_subject_name'] = subject.name
+
             elif key_str == c.KEY_SEL_STUDENT_PK:
                 student = stud_mod.Student.objects.get_or_none(
                     pk=saved_pk_int
@@ -574,18 +575,21 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
                 if student:
                     setting_dict['sel_student_name'] = stud_view.get_full_name(student.lastname, student.firstname, student.prefix)
                     setting_dict['sel_student_name_init'] = stud_view.get_lastname_firstname_initials(student.lastname, student.firstname, student.prefix)
+
             elif key_str == c.KEY_SEL_LVLBASE_PK:
                 level = subj_mod.Level.objects.get_or_none(
                     examyear=sel_examyear_instance,
                     base_id=saved_pk_int)
                 if level:
                     setting_dict['sel_level_abbrev'] = level.abbrev
+
             elif key_str == c.KEY_SEL_SCTBASE_PK:
                 sector = subj_mod.Sector.objects.get_or_none(
                     examyear=sel_examyear_instance,
                     base_id=saved_pk_int)
                 if sector:
                     setting_dict['sel_sector_abbrev'] = sector.abbrev
+
             elif key_str == c.KEY_SEL_SCHEME_PK:
                 scheme = subj_mod.Scheme.objects.get_or_none(pk=saved_pk_int)
                 if scheme:
@@ -593,6 +597,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
 
             if logging_on:
                 logger.debug('>>>>> setting_dict: ' + str(setting_dict) + ' ' + str(type(setting_dict)))
+
     # - save settings when they have changed
     if selected_pk_dict_has_changed:
         acc_view.set_usersetting_dict(c.KEY_SELECTED_PK, selected_pk_dict, request)

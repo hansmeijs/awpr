@@ -344,6 +344,12 @@ class Studentsubject(sch_mod.AwpBaseModel):
     del_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     del_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
+    # TODO add  'tobechanged', when schemeitem (=subjecttype) changes it must be submitted again
+    # tobechanged = BooleanField(default=False)
+    # chn_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    # chn_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    # chn_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT
+
     exem_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     exem_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     exem_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)

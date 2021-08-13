@@ -535,8 +535,8 @@ def get_sel_schoolbase_instance(request, request_item_schoolbase_pk=None):  # PR
 # --- end of get_sel_schoolbase_instance
 
 
-def get_sel_depbase_instance(sel_school, request, request_item_depbase_pk=None):  # PR2020-12-26 PR2021-05-07
-    logging_on = False  # s.LOGGING_ON
+def get_sel_depbase_instance(sel_school, request, request_item_depbase_pk=None):  # PR2020-12-26 PR2021-05-07 PR2021-08-13
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_sel_depbase_instance  -----')
         logger.debug('sel_school: ' + str(sel_school))
@@ -548,7 +548,6 @@ def get_sel_depbase_instance(sel_school, request, request_item_depbase_pk=None):
     # PR2021-07-11 depbase has not a field 'country' any more
     if request.user and request.user.country:
         req_user = request.user
-        requsr_country = req_user.country
 
 # - get allowed depbases from user
         # if req_user.allowed_depbases is empty, all depbases of the school are allowed
@@ -557,15 +556,21 @@ def get_sel_depbase_instance(sel_school, request, request_item_depbase_pk=None):
             # PR2021-05-04 warning. if depbases contains ';2;3;',
             # it will give error:  invalid literal for int() with base 10: ''
             allowed_depbases_list = list(map(int, allowed_depbases_arr))
+            if logging_on:
+                logger.debug('allowed_depbases_list: ' + str(allowed_depbases_list))
 
 # - get allowed depbases from school
             school_depbase_list = list(map(int, sel_school.depbases.split(';')))
+            if logging_on:
+                logger.debug('school_depbase_list: ' + str(school_depbase_list))
             for depbase_pk in school_depbase_list:
                 # skip if depbase not in list of req_user.allowed_depbases
                 # if req_user.allowed_depbases is empty, all depbases of the school are allowed
                 skip = allowed_depbases_list and depbase_pk not in allowed_depbases_list
                 if not skip:
                     allowed_depbases.append(depbase_pk)
+        if logging_on:
+            logger.debug('allowed_depbases: ' + str(allowed_depbases))
 
 # - check if there is a new depbase_pk in request_setting,
         if request_item_depbase_pk:

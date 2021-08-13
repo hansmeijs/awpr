@@ -47,7 +47,7 @@
         }
     }  // t_MSED_Open
 
-    //=========  t_MSED_Save  ================ PR2021-05-10
+    //=========  t_MSED_Save  ================ PR2021-05-10 PR20211-08-13
     function t_MSED_Save(MSED_Response, tblRow) {
         //console.log("===  t_MSED_Save =========");
     // --- put tblName, sel_pk and value in MSED_Response, MSED_Response handles uploading
@@ -56,7 +56,7 @@
         const tblName = get_attr_from_el(el_MSED_input, "data-table");
         const sel_page = get_attr_from_el(el_MSED_input, "data-page");
 
-        // if tblRow exists: fucntion is called by selected tblRow, otherwise by save button
+        // if tblRow exists: function is called by selected tblRow, otherwise by save button
         let selected_pk_int = null;
         if(tblRow){
             selected_pk_int = get_attr_from_el_int(tblRow, "data-pk")
@@ -64,13 +64,12 @@
             selected_pk_int = get_attr_from_el_int(el_MSED_input, "data-pk");
         }
 // ---  upload new selected_pk
-        const selected_pk_dict = {}
+        const new_setting = {page: sel_page};
         if (tblName === "examyear") {
-            selected_pk_dict.sel_examyear_pk = selected_pk_int;
+            new_setting.sel_examyear_pk = (selected_pk_int) ? selected_pk_int : null;
         } else if (tblName === "department") {
-            selected_pk_dict.sel_depbase_pk = selected_pk_int;
+            new_setting.sel_depbase_pk = (selected_pk_int) ? selected_pk_int : null;
         }
-        const new_setting = {page: sel_page, selected_pk: selected_pk_dict};
         //console.log("new_setting", new_setting);
         MSED_Response(new_setting)
 
