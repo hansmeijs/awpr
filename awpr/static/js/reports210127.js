@@ -21,7 +21,7 @@
 
 //========= function test printPDF  ====  PR2020-10-21
     function printPDFlogfile(log_list, file_name, printtoscreen) {
-        console.log("printPDFlogfile")
+        //console.log("printPDFlogfile")
 
         let doc = new jsPDF();
 
@@ -65,7 +65,7 @@
             //     doc.output('datauri');
             // } else {
                 doc.save(file_name);
-                    console.log("doc.save(file_name: ", file_name)
+                    //console.log("doc.save(file_name: ", file_name)
             // }  // if (printtoscreen){
         }  // if (len > 0){
     }  // function printPDFlogfile

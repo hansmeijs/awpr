@@ -708,7 +708,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 
                     if verification_is_ok:
                         sel_lvlbase_pk, sel_sctbase_pk, sel_subject_pk, sel_student_pk = None, None, None, None
-                        # don't filter on sel_lvlbase_pk, sel_sctbase_pk, sel_subject_pk when submitting Ex form
+                        # don't filter on sel_lvlbase_pk, sel_sctbase_pk, sel_subject_pk when is_submit
                         if is_approve:
                             selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                             if selected_dict:
@@ -764,6 +764,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 # +++ create new published_instance. Only save it when it is not a test
                             # file_name will be added after creating Ex-form
                             published_instance = None
+                            published_instance_pk = None
                             if is_submit and not is_test:
                                 now_arr = upload_dict.get('now_arr')
 
@@ -774,6 +775,11 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                                     is_test=is_test,
                                     now_arr=now_arr,
                                     request=request)  # PR2021-07-27
+                                if published_instance:
+                                    published_instance_pk = published_instance.pk
+
+                            if logging_on:
+                                logger.debug('published_instance_pk' + str(published_instance_pk))
 
                             studsubj_rows = []
 
@@ -1494,6 +1500,7 @@ def create_published_Ex1_instance(sel_school, sel_department, sel_examperiod, is
 
         if logging_on:
             logger.debug('published_instance.saved: ' + str(published_instance))
+            logger.debug('published_instance.pk: ' + str(published_instance.pk))
 
     return published_instance
 # - end of create_published_Ex1_instance

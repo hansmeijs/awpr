@@ -98,10 +98,10 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex1_xlsx -----')
-        logger.debug('settings: ' + str(settings))
 
 # +++ get dict of students with list of studsubj_pk, grouped by levle_pk, with totals
-    ex1_rows_dict = create_ex1_rows_dict(examyear, school, department)
+    ex1_rows_dict = create_ex1_rows_dict(examyear, school, department, save_to_disk, published_instance)
+
     """
      ex1_rows_dict: {'total': {1050: 171, ..., 1069: 30},
       'auth1': [48], 'auth2': [57], 
@@ -198,7 +198,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
         bold_blue = ex1_formats.get('bold_blue')
         normal_blue = ex1_formats.get('normal_blue')
         th_merge = ex1_formats.get('th_merge')
-        th_level = ex1_formats.get('th_level')
+        th_exists = ex1_formats.get('th_exists')
         th_prelim  = ex1_formats.get('th_prelim')
         totalrow_merge = ex1_formats.get('totalrow_merge')
         col_count = ex1_formats.get('col_count', 0)
@@ -234,13 +234,17 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
         row_index = 9
         if not save_to_disk:
             prelim_txt = '+++++  ' + str(_('Preliminary Ex1 form')) + '  +++++'
-            #sheet.write(row_index, 0, str(_('PRELIMINARY EX FORM')), bold_format)
             sheet.merge_range(row_index, 0, row_index, col_count - 1, prelim_txt, th_prelim)
             row_index += 2
 
+        #if has_published_ex1_rows(examyear, school, department):
+        #    exists_txt = str(_('Attention: an Ex1 form has already been submitted. The subjects in that form are not included in this form.'))
+        #    sheet.merge_range(row_index, 0, row_index, col_count - 1, exists_txt, th_exists)
+        #    row_index += 1
+
 # ---  table header row
-        for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
-            sheet.write(row_index, i, ex1_formats['field_captions'][i], ex1_formats['header_formats'][i])
+        #for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
+        #    sheet.write(row_index, i, ex1_formats['field_captions'][i], ex1_formats['header_formats'][i])
 
 # ++++++++++++++++++++++++++++
 # iterate through levels, if more than 1 exist
@@ -255,7 +259,10 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
 
 # ---  level header row
                 row_index += 2
-                sheet.merge_range(row_index, 0, row_index, col_count - 1, lvl_name, th_level)
+                #sheet.merge_range(row_index, 0, row_index, col_count - 1, lvl_name, th_level)
+                for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
+                    sheet.write(row_index, i, ex1_formats['field_captions'][i], ex1_formats['header_formats'][i])
+
                 if len(stud_list):
                     for row in stud_list:
 
@@ -274,25 +281,29 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
                                 value = row.get(field_name, '')
                             sheet.write(row_index, i, value, ex1_formats['row_formats'][i])
 
-# ---  level total row
-                row_index += 1
-                for i, field_name in enumerate(ex1_formats['field_names']):
-                    #logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
-                    value = ''
-                    if isinstance(field_name, int):
-                        if field_name in lvl_totals:
-                            value = lvl_totals.get(field_name)
-                        sheet.write(row_index, i, value, ex1_formats['totalrow_formats'][i])
-                        # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
-                    elif field_name == 'exnr':
-                        #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
-                        sheet.merge_range(row_index, 0, row_index, first_subject_column -1, 'TOTAAL ' + lvl_name, totalrow_merge)
+# ---  level subtotal row
+                # skip subtotal row in Havo/vwo,
+                if department.level_req:
+                    row_index += 1
+                    for i, field_name in enumerate(ex1_formats['field_names']):
+                        #logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
+                        value = ''
+                        if isinstance(field_name, int):
+                            if field_name in lvl_totals:
+                                value = lvl_totals.get(field_name)
+                            sheet.write(row_index, i, value, ex1_formats['totalrow_formats'][i])
+                            # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
+                        elif field_name == 'exnr':
+                            #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
+                            sheet.merge_range(row_index, 0, row_index, first_subject_column -1, '???TOTAAL ' + lvl_name, totalrow_merge)
 # end of iterate through levels,
 # ++++++++++++++++++++++++++++
 
         total_dict = ex1_rows_dict.get('total', {})
 # ---  table total row
-        row_index += 2
+        row_index += 1
+        if department.level_req:
+            row_index += 1
         for i, field_name in enumerate(ex1_formats['field_names']):
             #logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
             value = ''
@@ -415,8 +426,7 @@ def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, sub
     th_merge.set_left()
     th_merge.set_bottom()
 
-    th_level = book.add_format({'font_size': 8, 'bold': False, 'align': 'left', 'valign': 'vcenter'})
-    th_level.set_border()
+    th_exists = book.add_format({'bold': False, 'align': 'left', 'valign': 'vcenter'})
 
     row_align_left = book.add_format({'font_size': 8, 'font_color': 'blue', 'valign': 'vcenter','border': True})
     row_align_center = book.add_format({'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter','border': True})
@@ -447,7 +457,7 @@ def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, sub
                    'bold_blue': bold_blue,
                    'normal_blue': normal_blue,
                    'th_merge': th_merge,
-                   'th_level': th_level,
+                   'th_exists': th_exists,
                    'th_prelim': th_prelim,
                    'totalrow_merge': totalrow_merge
     }
@@ -519,18 +529,38 @@ def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, sub
     ex1_formats['field_width'] = field_width
 
     return ex1_formats
+# - end of create_ex1_format_dict
 
 
-def create_ex1_rows_dict(examyear, school, department):  # PR2021-08-10
+def create_ex1_rows_dict(examyear, school, department, save_to_disk, published_instance):  # PR2021-08-15
+    # this function is only called by create_ex1_xlsx
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex1_rows_dict -----')
     # function creates dictlist of all students of this examyear, school and department
     #  key 'subj_id_arr' contains list of all studentsubjects of this student, not tobedeleted
+    #  skip studsubjects that are not fully approved
     level_req = department.level_req
+
+    # dont show students without subjects when Ex-form is submitted
+    exclude_students_without_subjects = save_to_disk
+    inner_or_left_join_studsubj = "INNER JOIN" if exclude_students_without_subjects else "LEFT JOIN"
+
+    # dont filter on published or approved subject when printing preliminary Ex1 (in that case save_to_disk = False
+
 
 # PR2021-08-10 dont include null in  ARRAY_AGG
 # from https://stackoverflow.com/questions/13122912/how-to-exclude-null-values-in-array-agg-like-in-string-agg-using-postgres
+
+    # dont filter on published or approved subject when printing preliminary Ex1 (in that case save_to_disk = False
+
+    # when submitting Ex1 form:
+    # - exclude studsubj that are already published
+    # - exclude studsubj that are not fully approved
+    # - exclude deleted studsubj
+    # TODO find a way to include tobedeleted in Ex form
+
+    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'publ_id': published_instance.pk}
 
     sql_studsubj_agg_list = [
         "SELECT studsubj.student_id AS student_id,",
@@ -539,16 +569,30 @@ def create_ex1_rows_dict(examyear, school, department):  # PR2021-08-10
         "ARRAY_AGG(DISTINCT studsubj.subj_auth2by_id) FILTER (WHERE studsubj.subj_auth2by_id is not null) AS subj_auth2_arr",
         "FROM students_studentsubject AS studsubj",
         "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-        "WHERE NOT studsubj.tobedeleted",
-        "GROUP BY studsubj.student_id"]
+        "WHERE NOT studsubj.tobedeleted"]
+    if save_to_disk:
+        # when submitting an Ex1 form published_instance is already saved, therefore published_instance.pk has a value
+        # filter on published_instance.pk, so only subjects of this submit will ne added to Xe1 form
+        sql_studsubj_agg_list.append("AND studsubj.subj_published_id = %(publ_id)s::INT")
+
+    sql_studsubj_agg_list.append("GROUP BY studsubj.student_id")
+
     sql_studsubj_agg = ' '.join(sql_studsubj_agg_list)
+
+    if logging_on:
+        logger.debug('sql_studsubj_agg: ' + str(sql_studsubj_agg))
+        with connection.cursor() as testcursor:
+            testcursor.execute(sql_studsubj_agg, sql_keys)
+            rows = af.dictfetchall(testcursor)
+            for row in rows:
+                logger.debug('row: ' + str(row))
 
     sql_list = ["WITH studsubj AS (" , sql_studsubj_agg, ")",
         "SELECT st.id, st.idnumber, st.examnumber, st.lastname, st.firstname, st.prefix, st.classname,",
         "st.level_id, lvl.name AS lvl_name, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
         "studsubj.subj_id_arr, studsubj.subj_auth1_arr, studsubj.subj_auth2_arr",
         "FROM students_student AS st",
-        "LEFT JOIN studsubj ON (studsubj.student_id = st.id)",
+        inner_or_left_join_studsubj, "studsubj ON (studsubj.student_id = st.id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
         "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
         "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
@@ -559,11 +603,11 @@ def create_ex1_rows_dict(examyear, school, department):  # PR2021-08-10
         sql_list.append("ORDER BY LOWER(st.lastname), LOWER(st.firstname)")
     sql = ' '.join(sql_list)
 
-    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk}
-
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
         rows = af.dictfetchall(cursor)
+
+        # logger.debug('connection.queries: ' + str(connection.queries))
 
     ex1_rows_dict = {'total': {}, 'auth1': [], 'auth2': []}
     ex1_total = ex1_rows_dict.get('total')
@@ -578,10 +622,14 @@ def create_ex1_rows_dict(examyear, school, department):  # PR2021-08-10
         #  'subj_id_arr': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}
 
         # value is '0' when lvlbase_id = None (Havo/Vwo)
-        level_pk = row.get('level_id', 0)
+        level_pk = row.get('level_id')
+        if level_pk is None:
+            level_pk = 0
+
+        lvl_name = ''
         if level_pk:
             lvl_name = row.get('lvl_name', '---')
-        else:
+        elif level_req:
             lvl_name = str(_("Candidates, whose 'leerweg' is not entered"))
 
         if level_pk not in ex1_rows_dict:
@@ -631,9 +679,13 @@ def create_ex1_rows_dict(examyear, school, department):  # PR2021-08-10
             for auth2_pk in subj_auth2_arr:
                 if auth2_pk not in ex1_auth2:
                     ex1_auth2.append(auth2_pk)
+        if logging_on:
+            logger.debug('row: ' + str(row))
+            logger.debug('subj_id_arr: ' + str(subj_id_arr))
 
     if logging_on:
-       logger.debug('>>>>>>>>>>>> ex1_rows_dict: ' + str(ex1_rows_dict))
+       logger.debug('-----------------------------------------------')
+       #logger.debug('ex1_rows_dict: ' + str(ex1_rows_dict))
 
     return ex1_rows_dict
 # --- end of create_ex1_rows_dict
@@ -1443,3 +1495,37 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
 
     return row_index
 # --- end of create_subjecttype_paragraph_xlsx
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+# NOT IN USE (was for msg on Ex1: 'Attention: an Ex1 form has already been submitted. The subjects in that form are not included in this form.'
+def has_published_ex1_rows(examyear, school, department):  # PR2021-08-15
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- has_published_ex1_rows -----')
+    # function checks if there are already published row, to give message in preliminary Ex1 form
+    # PR2021-08-15
+    # from https://www.postgresqltutorial.com/postgresql-exists/
+
+    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk}
+    sql_list = ["SELECT EXISTS("
+        "SELECT 1",
+        "FROM students_studentsubject AS studsubj",
+        "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+        "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
+        "AND NOT studsubj.tobedeleted AND studsubj.subj_published_id IS NOT NULL"
+        ")",
+    ]
+    sql = ' '.join(sql_list)
+    exists = False
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        row = cursor.fetchone()
+        # row = (False,)
+        if row:
+            exists = row[0]
+    if logging_on:
+       logger.debug(' exists: ' + str(exists))
+
+    return exists
+# --- end of has_published_ex1_rows
+

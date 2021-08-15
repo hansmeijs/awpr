@@ -567,10 +567,10 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
         data_dict['idnumber'] = idnumber_nodots_stripped
 
 # - lookup student in database
-        # either student, is_new_student or has_error is trueish
+       # either student, is_new_student or has_error is trueish
         is_import, found_is_error, notfound_is_error = True, True, False
         student, is_new_student, has_error = stud_val.lookup_student_by_idnumber(
-            school, department, id_number, full_name, is_test, is_import, found_is_error, notfound_is_error)
+            school, department, id_number, full_name, is_test, is_import, error_list, found_is_error, notfound_is_error)
 
         if logging_on:
             logger.debug('student: ' + str(student))
@@ -1776,18 +1776,18 @@ def validate_student_exists_thisschool_thisschoolyear(school, department, id_num
         logger.debug('found_in_this_dep: ' + str(found_in_this_dep))
 
     if row_count > 1:
-        err_str = str(_("ID-number '%(val)s' exists multiple times this year ") % {'val': id_number_nodots})
+        err_str = str(_("ID-number '%(val)s' exists multiple times ") % {'val': id_number_nodots})
         if found_in_diff_dep:
             if found_in_this_dep:
                 err_str = str(_("in multiple departments of your school."))
             else:
                 err_str = str(_("in other departments of your school."))
         elif found_in_this_dep:
-            err_str = str(_("in this department of your school."))
+            err_str = str(_("in this department."))
 
     elif row_count == 1:
         if found_in_diff_dep:
-            err_str = str(_("ID-number '%(val)s' already exists this year in a different department of this school.") % {'val': id_number_nodots})
+            err_str = str(_("ID-number '%(val)s' already exists in a different department.") % {'val': id_number_nodots})
         else:
             # return student_pk when student only occurs once and is in this department
             student_pk = row_pk

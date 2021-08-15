@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_MASS_input_verifcode = document.getElementById("id_MASS_input_verifcode");
         if (el_MASS_input_verifcode){
-            el_MASS_input_verifcode.addEventListener("keyup", function() {MASS_InputVerifcode(el_MASS_input_verifcode)}, false);
+            el_MASS_input_verifcode.addEventListener("keyup", function() {MASS_InputVerifcode(el_MASS_input_verifcode, event.key)}, false);
             el_MASS_input_verifcode.addEventListener("change", function() {MASS_InputVerifcode(el_MASS_input_verifcode)}, false);
         }
 
@@ -470,8 +470,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (check_validation) {
                     DownloadValidationStatusNotes();
                 }
-// hide modal approve_studsubj
-                $("#id_mod_approve_studsubj").modal("hide");
             },
             error: function (xhr, msg) {
 // ---  hide loader
@@ -1854,16 +1852,16 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
 //=========  FillOptionsSelectLevelSectorFromDatarows  ================ PR2021-03-06  PR2021-05-22
     function FillOptionsSelectLevelSectorFromDatarows(tblName, rows) {
-        //console.log("=== FillOptionsSelectLevelSectorFromDatarows");
-        //console.log("tblName", tblName);
-        //console.log("rows", rows);
+        console.log("=== FillOptionsSelectLevelSectorFromDatarows");
+        console.log("tblName", tblName);
+        console.log("rows", rows);
 
     // sector not in use
         const display_rows = []
         const has_items = (!!rows && !!rows.length);
         const has_profiel = setting_dict.sel_dep_has_profiel;
-        //console.log("has_items", has_items);
-        //console.log("has_profiel", has_profiel);
+        console.log("has_items", has_items);
+        console.log("has_profiel", has_profiel);
 
         const caption_all = "&#60" + ( (tblName === "level") ? loc.All_leerwegen : (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
         if (has_items){
@@ -1901,7 +1899,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
         }
         // show select level and sector
         if (tblName === "level"){
-            add_or_remove_class(document.getElementById("id_SBR_container_level"), cls_hide, false);
+            add_or_remove_class(document.getElementById("id_SBR_container_level"), cls_hide, !has_items);
         // set label of profiel
          } else if (tblName === "sector"){
             add_or_remove_class(document.getElementById("id_SBR_container_sector"), cls_hide, false);
@@ -2956,7 +2954,9 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
         //}
         if ( (mod_MASS_dict.is_approve && mod_MASS_dict.step === 3) || (mod_MASS_dict.is_submit && mod_MASS_dict.step === 5)){
                 const datalist_request = { setting: {page: "page_studsubj"},
-                                studentsubject_rows: {cur_dep_only: true}}
+                                studentsubject_rows: {cur_dep_only: true},
+                                published_rows: {get: true}
+                                }
                 DatalistDownload(datalist_request);
         };
     };  // MASS_UpdateFromResponse
@@ -3083,12 +3083,20 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
      } //  MASS_SetInfoboxesAndBtns
 
 //=========  MASS_InputVerifcode  ================ PR2021-07-30
-     function MASS_InputVerifcode(el_input) {
+     function MASS_InputVerifcode(el_input, event_key) {
         console.log("===  MASS_InputVerifcode  =====") ;
+
+        if(event_key && event_key === "Enter"){
+
+        }
         // enable save btn when el_input has value
         const disable_save_btn = !el_input.value;
         console.log("disable_save_btn", disable_save_btn) ;
         el_MASS_btn_save.disabled = disable_save_btn;
+
+        if(!disable_save_btn && event_key && event_key === "Enter"){
+            MASS_Save("save")
+        }
      };  // MASS_InputVerifcode
 
 /////////////////////////////////////////////

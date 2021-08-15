@@ -81,7 +81,7 @@ def lookup_student_by_idnumber(school, department, id_number, upload_fullname,
                 if row.department_id == department.pk:
                     if found_is_error:
                         has_error = True
-                        err_str = str(_("%(cpt)s '%(val)s' already exists.") % msg_keys)
+                        err_str = str(_("%(cpt)s '%(val)s' already exists in this school.") % msg_keys)
                     else:
                         #TODO return student tobe user when updating student info when importing. Not in use yet PR2021-08-07
                         student = row
@@ -89,7 +89,7 @@ def lookup_student_by_idnumber(school, department, id_number, upload_fullname,
 # - return error when student only occurs in different department
                     has_error = True
                     err_str = str(
-                        _("%(cpt)s '%(val)s' already exists this year in a different department of this school.") % msg_keys)
+                        _("%(cpt)s '%(val)s' already exists in a different department.") % msg_keys)
 
         else:  # row_count > 1:
             # - multiple students found with this idnumber in this school (all departments)
@@ -130,16 +130,16 @@ def lookup_student_by_idnumber(school, department, id_number, upload_fullname,
                 else:
                     err_str += str(_("in other departments of your school."))
             elif found_in_this_dep:
-                # don't show "in this department of your school."
-                err_str += str(_("."))
+                err_str += str(_("in this department."))
 
         if has_error:
             if notfound_is_error:
                 error_list.append(err_str)
             else:
                 if is_import:
-                    skipped_str = upload_fullname + str(_(' will be skipped.')) if is_test else str(_(' is skipped.'))
-                    error_list.append(' '.join((skipped_str, err_str)))
+                    #skipped_str = upload_fullname + str(_(' will be skipped.')) if is_test else str(_(' is skipped.'))
+                    #error_list.append(' '.join((skipped_str, err_str)))
+                    error_list.append(err_str)
                 else:
                     error_list.append(err_str)
         if logging_on:
