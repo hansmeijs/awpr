@@ -559,8 +559,8 @@ def create_ex1_rows_dict(examyear, school, department, save_to_disk, published_i
     # - exclude studsubj that are not fully approved
     # - exclude deleted studsubj
     # TODO find a way to include tobedeleted in Ex form
-
-    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'publ_id': published_instance.pk}
+    published_pk = published_instance.pk if published_instance else None
+    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'publ_id': published_pk}
 
     sql_studsubj_agg_list = [
         "SELECT studsubj.student_id AS student_id,",

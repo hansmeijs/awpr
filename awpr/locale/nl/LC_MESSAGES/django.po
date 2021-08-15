@@ -4001,7 +4001,7 @@ msgstr "Het datum formaat is: '%(fld)s'."
 #: .\students\validators.py:1306 .\students\validators.py:1351
 #: .\students\views.py:2153
 msgid "The ID-number"
-msgstr "Het sedulanummer"
+msgstr "Het ID-nummer"
 
 #: .\schools\imports.py:1530 .\students\validators.py:1288
 #, python-format
