@@ -33,7 +33,6 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24 PR2021-08-09
             logger.debug(' ============= StudsubjDownloadEx1View ============= ')
         # function creates, Ex1 xlsx file based on settings in usersetting
 
-        # TODO text EINDEXAMEN missing the rest, school not showing PR2021-05-30
         response = None
         #try:
         if True:
@@ -52,41 +51,36 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24 PR2021-08-09
 
 # - get text from examyearsetting
                     settings = af.get_exform_text(sel_examyear, ['exform', 'ex1'])
-                    if logging_on:
-                        logger.debug('settings: ' + str(settings))
+                    #if logging_on:
+                    #    logger.debug('settings: ' + str(settings))
 
-# +++ get mapped_subject_rows
+# +++ get mapped_subject_rows    '
+                    # function gets all subjects of studsubj of this dep, not tobedeleted
+                    # - creates list of subject_codes and list of subject_pk's
+                    # - both sorted by subjbase.code
+                    # subject_code_list: ['adm&co', 'bi', 'cav', ..., 'sp', 'stg', 'sws', 'wk', 'zwi']
+                    # subject_pk_list: [1067, 1057, 1051, ..., 1054, 1070, 1069, 1055, 1065]
                     subject_row_count, subject_pk_list, subject_code_list = \
                         create_ex1_mapped_subject_rows(sel_examyear, sel_school, sel_department)
-                    #  subject_pk_dict: {34: 0, 29: 1, ...} ( subject_pk: index)
-                    #  subject_code_list: ['bw', 'cav', ]
-                    #  index = row_count
 
                     if logging_on:
                         logger.debug('subject_row_count: ' + str(subject_row_count))
                         logger.debug('subject_pk_list: ' + str(subject_pk_list))
                         logger.debug('subject_code_list: ' + str(subject_code_list))
 
-# +++ get dict of subjects of these studsubj_rows
-                    ex1_dict = create_ex1_rows_NEW(sel_examyear, sel_school, sel_department)
-
     # +++ create ex1_xlsx
-                    if ex1_dict:
-                        save_to_disk = False
-                        is_preliminary = True
-                        published_instance = None
-                        response = create_ex1_xlsx(
-                            published_instance=published_instance,
-                            examyear=sel_examyear,
-                            school=sel_school,
-                            department=sel_department,
-                            is_preliminary=is_preliminary,
-                            settings=settings,
-                            save_to_disk=save_to_disk,
-                            subject_pk_list=subject_pk_list,
-                            subject_code_list=subject_code_list,
-                            ex1_dict=ex1_dict,
-                            user_lang=user_lang)
+                    save_to_disk = False
+                    published_instance = None
+                    response = create_ex1_xlsx(
+                        published_instance=published_instance,
+                        examyear=sel_examyear,
+                        school=sel_school,
+                        department=sel_department,
+                        settings=settings,
+                        save_to_disk=save_to_disk,
+                        subject_pk_list=subject_pk_list,
+                        subject_code_list=subject_code_list,
+                        user_lang=user_lang)
         #except:
         #    raise Http404("Error creating Ex2A file")
 
@@ -98,12 +92,26 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24 PR2021-08-09
 # - end of StudsubjDownloadEx1View
 
 #//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-def create_ex1_xlsx(published_instance, examyear, school, department, is_preliminary, settings, save_to_disk,
-                    subject_pk_list, subject_code_list, ex1_dict, user_lang):  # PR2021-02-13
-    logging_on = False  # s.LOGGING_ON
+def create_ex1_xlsx(published_instance, examyear, school, department, settings, save_to_disk,
+                    subject_pk_list, subject_code_list, user_lang):  # PR2021-02-13 PR2021-08-14
+    # called by create_Ex1_form, StudsubjDownloadEx1View
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex1_xlsx -----')
         logger.debug('settings: ' + str(settings))
+
+# +++ get dict of students with list of studsubj_pk, grouped by levle_pk, with totals
+    ex1_rows_dict = create_ex1_rows_dict(examyear, school, department)
+    """
+     ex1_rows_dict: {'total': {1050: 171, ..., 1069: 30},
+      'auth1': [48], 'auth2': [57], 
+      86: {'lvl_name': 'Praktisch Basisgerichte Leerweg', 
+            'total': {1050: 89, ..., 1058: 56}, 
+            'stud_list': [
+                    {'idnr': '1998041505', 'exnr': 'V021', 'name': 'Albertus, Dinaida Lilian Jearette', 
+                     'lvl': 'PBL', 'sct': 'z&w', 'cls': '4V2', 
+                     'subj': [1050, 1055, 1051, 1047, 1065, 1057, 1054, 1052, 1048, 1070]},  
+    """
 
     # from https://stackoverflow.com/questions/16393242/xlsxwriter-object-save-as-http-response-to-create-download-in-django
     #logger.debug('period_dict: ' + str(period_dict))
@@ -133,7 +141,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, is_prelimi
 
     response = None
 
-    if settings and ex1_dict:
+    if settings and ex1_rows_dict:
 
         # PR2021-07-28 changed to file_dir = 'published/'
         # this one gives path: awpmedia / awpmedia / media / private / published
@@ -224,7 +232,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, is_prelimi
         sheet.merge_range(0, col_count - 5, 1, col_count -1, 'EX.1', th_merge)
 
         row_index = 9
-        if is_preliminary:
+        if not save_to_disk:
             prelim_txt = '+++++  ' + str(_('Preliminary Ex1 form')) + '  +++++'
             #sheet.write(row_index, 0, str(_('PRELIMINARY EX FORM')), bold_format)
             sheet.merge_range(row_index, 0, row_index, col_count - 1, prelim_txt, th_prelim)
@@ -237,8 +245,8 @@ def create_ex1_xlsx(published_instance, examyear, school, department, is_prelimi
 # ++++++++++++++++++++++++++++
 # iterate through levels, if more than 1 exist
 
-        for key, level_dict in ex1_dict.items():
-            # skip ex1_dict_totals
+        for key, level_dict in ex1_rows_dict.items():
+            # skip ex1_rows_dict_totals
             if isinstance(key, int):
                 # in subject column 'field_name' is subject_id
                 lvl_name = level_dict.get('lvl_name')
@@ -282,7 +290,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, is_prelimi
 # end of iterate through levels,
 # ++++++++++++++++++++++++++++
 
-        total_dict = ex1_dict.get('total', {})
+        total_dict = ex1_rows_dict.get('total', {})
 # ---  table total row
         row_index += 2
         for i, field_name in enumerate(ex1_formats['field_names']):
@@ -320,12 +328,12 @@ def create_ex1_xlsx(published_instance, examyear, school, department, is_prelimi
 
 # ---  digitally signed by
         auth_row = first_footnote_row
-        if not is_preliminary:
+        if save_to_disk:
             sheet.write(auth_row, first_subject_column, str(_('Digitally signed by')) + ':')
             auth_row += 2
     # - President
             sheet.write(auth_row, first_subject_column, str(_('President')) + ':')
-            auth1_list = ex1_dict.get('auth1')
+            auth1_list = ex1_rows_dict.get('auth1')
             if auth1_list:
                 for auth1_pk in auth1_list:
                     auth1 = acc_mod.User.objects.get_or_none(pk=auth1_pk)
@@ -337,7 +345,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, is_prelimi
             auth_row += 1
     # - Secretary
             sheet.write(auth_row, first_subject_column, str(_('Secretary')) + ':')
-            auth2_list = ex1_dict.get('auth2')
+            auth2_list = ex1_rows_dict.get('auth2')
             if auth2_list:
                 for auth2_pk in auth2_list:
                     auth2 = acc_mod.User.objects.get_or_none(pk=auth2_pk)
@@ -386,7 +394,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, is_prelimi
 
 
 def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, subject_code_list): # PR2021-08-10
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex1_format_dict -----')
 
@@ -513,10 +521,10 @@ def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, sub
     return ex1_formats
 
 
-def create_ex1_rows_NEW(examyear, school, department):  # PR2021-08-10
+def create_ex1_rows_dict(examyear, school, department):  # PR2021-08-10
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- create_ex1_rows_NEW -----')
+        logger.debug(' ----- create_ex1_rows_dict -----')
     # function creates dictlist of all students of this examyear, school and department
     #  key 'subj_id_arr' contains list of all studentsubjects of this student, not tobedeleted
     level_req = department.level_req
@@ -557,10 +565,10 @@ def create_ex1_rows_NEW(examyear, school, department):  # PR2021-08-10
         cursor.execute(sql, sql_keys)
         rows = af.dictfetchall(cursor)
 
-    ex1_dict = {'total': {}, 'auth1': [], 'auth2': []}
-    ex1_total = ex1_dict.get('total')
-    ex1_auth1 = ex1_dict.get('auth1')
-    ex1_auth2 = ex1_dict.get('auth2')
+    ex1_rows_dict = {'total': {}, 'auth1': [], 'auth2': []}
+    ex1_total = ex1_rows_dict.get('total')
+    ex1_auth1 = ex1_rows_dict.get('auth1')
+    ex1_auth2 = ex1_rows_dict.get('auth2')
 
     for row in rows:
 
@@ -576,10 +584,10 @@ def create_ex1_rows_NEW(examyear, school, department):  # PR2021-08-10
         else:
             lvl_name = str(_("Candidates, whose 'leerweg' is not entered"))
 
-        if level_pk not in ex1_dict:
-            ex1_dict[level_pk] = {'lvl_name': lvl_name, 'total': {}, 'stud_list': []}
+        if level_pk not in ex1_rows_dict:
+            ex1_rows_dict[level_pk] = {'lvl_name': lvl_name, 'total': {}, 'stud_list': []}
 
-        level_dict = ex1_dict[level_pk]
+        level_dict = ex1_rows_dict[level_pk]
         level_total = level_dict.get('total')
         level_studlist = level_dict.get('stud_list')
 
@@ -625,69 +633,19 @@ def create_ex1_rows_NEW(examyear, school, department):  # PR2021-08-10
                     ex1_auth2.append(auth2_pk)
 
     if logging_on:
-       logger.debug('>>>>>>>>>>>> ex1_dict: ' + str(ex1_dict))
+       logger.debug('>>>>>>>>>>>> ex1_rows_dict: ' + str(ex1_rows_dict))
 
-    return ex1_dict
-# --- end of create_ex1_rows_NEW
-
-
-def create_ex1_rows(examyear, school, department):
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ----- create_ex1_rows -----')
-
-    level_req = department.level_req
-
-    sql_studsubj_agg_list = [
-        "SELECT studsubj.student_id AS student_id,",
-        "ARRAY_AGG(si.subject_id) AS subj_id_arr",
-        "FROM students_studentsubject AS studsubj",
-        "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-        "GROUP BY studsubj.student_id"]
-    sql_studsubj_agg = ' '.join(sql_studsubj_agg_list)
-
-    sql_list = ["WITH studsubj AS (", sql_studsubj_agg, ")",
-        "SELECT st.id, st.idnumber, st.examnumber, st.lastname, st.firstname, st.prefix, st.classname,",
-        "st.level_id, st.sector_id, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, studsubj.subj_id_arr",
-        "FROM students_student AS st",
-        "INNER JOIN studsubj ON (studsubj.student_id = st.id)",
-        "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
-        "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
-        "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
-    ]
-    if level_req:
-        sql_list.append("ORDER BY LOWER(lvl.abbrev), LOWER(st.lastname), LOWER(st.firstname)")
-    else:
-        sql_list.append("ORDER BY LOWER(st.lastname), LOWER(st.firstname)")
-    sql = ' '.join(sql_list)
-
-    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk}
-
-    with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
-        rows = af.dictfetchall(cursor)
-
-    if logging_on:
-        for row in rows:
-            logger.debug('row: ' + str(row))
-    #  row: {'id': 3309, 'idnumber': '2004101103', 'examnumber': '21024', 'lastname': 'Balentien', 'firstname': 'Rayviendall', 'prefix': None,
-    #  'classname': '4BH', 'level_id': 86, 'sector_id': 180, 'lvl_abbrev': 'PBL', 'sct_abbrev': 'tech',
-    #  'subj_id_arr': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}
-
-    return rows
-# --- end of create_ex1_rows
+    return ex1_rows_dict
+# --- end of create_ex1_rows_dict
 
 
 def create_ex1_mapped_subject_rows(examyear, school, department):  # PR2021-08-08
     # function gets all subjects of studsubj of this dep, not tobedeleted
-    # sorted by subjbase.code
-    # and creates mapped dict with key: subject_pk and value: index
-    # and list of subject_codes
-    #  subject_pk_dict: {34: 0, 29: 1, 4: 2, 36: 3, 31: 4, 27: 5, 33: 6, 35: 7, 1: 8, 15: 9, 3: 10}
-    #  subject_code_list: ['bw', 'cav', 'en', 'inst', 'lo', 'mm1', 'mt', 'mvt', 'ne', 'ns1', 'pa']
-    #  index = row_count
+    # - creates list of subject_codes and list of subject_pk's
+    # - both sorted by subjbase.code
+    # subject_code_list: ['adm&co', 'bi', 'cav', ..., 'sp', 'stg', 'sws', 'wk', 'zwi']
+    # subject_pk_list: [1067, 1057, 1051, ..., 1054, 1070, 1069, 1055, 1065]
 
-    subject_pk_dict = {}
     subject_code_list = []
     subject_pk_list = []
     sql_list = [
@@ -699,8 +657,7 @@ def create_ex1_mapped_subject_rows(examyear, school, department):  # PR2021-08-0
         "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
         "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-        "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
-        "AND NOT studsubj.tobedeleted",
+        "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT AND NOT studsubj.tobedeleted",
         "GROUP BY subj.id, subjbase.code",
         "ORDER BY LOWER(subjbase.code)"
     ]
@@ -710,15 +667,15 @@ def create_ex1_mapped_subject_rows(examyear, school, department):  # PR2021-08-0
 
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
-        index = 0
+        row_count = 0
         subject_rows = cursor.fetchall()
         for subject_row in subject_rows:
-            subject_pk_dict[subject_row[0]] = index
+            #subject_pk_dict[subject_row[0]] = index
             subject_pk_list.append(subject_row[0])
             subject_code_list.append(subject_row[1])
-            index += 1
+            row_count += 1
 
-    return index, subject_pk_list, subject_code_list
+    return row_count, subject_pk_list, subject_code_list
 # --- end of create_ex1_mapped_subject_rows
 
 

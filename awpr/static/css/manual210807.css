@@ -233,3 +233,34 @@
 .img_upload_stud_step5_en {
     background-image: url('/static/manual/stud_upload_step5_en.png');
 }
+/* ---------------------------------------------------
+    IMAGES - APPOVE SUBJECTS
+----------------------------------------------------- */
+.img_studsubj_approve_menu_ne, .img_studsubj_approve_menu_en,
+.img_studsubj_mod_approve_ne, .img_studsubj_mod_approve_en {
+    background-repeat: no-repeat;
+    margin-left: 8px;
+}
+.img_studsubj_approve_menu_ne, .img_studsubj_approve_menu_en {
+    height: 130px;
+    width: 1138px;
+    background-size: 1138px 130px;
+ }
+.img_studsubj_approve_menu_ne {
+    background-image: url('/static/manual/studsubj_approve_menu_ne.png');
+}
+.img_studsubj_approve_menu_en {
+    background-image: url('/static/manual/studsubj_approve_menu_en.png');
+}
+
+.img_studsubj_mod_approve_ne, .img_studsubj_mod_approve_en {
+    height: 500px;
+    width: 797px;
+    background-size: 797px 500px;
+ }
+.img_studsubj_mod_approve_ne {
+    background-image: url('/static/manual/studsubj_mod_approve_ne.png');
+}
+.img_studsubj_mod_approve_en {
+    background-image: url('/static/manual/studsubj_mod_approve_en.png');
+}

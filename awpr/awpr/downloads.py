@@ -37,7 +37,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
     logging.disable(logging.NOTSET)  # logging.NOTSET re-enables logging
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ++++++++++++++++++++ DatalistDownloadView ++++++++++++++++++++ ')
@@ -226,7 +226,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
     if request_item_setting is None:
         request_item_setting = {}
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- download_setting ----- ')
         logger.debug('request_item_setting: ' + str(request_item_setting) )
@@ -522,40 +522,43 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
         logger.debug('setting_dict[c.sel_examtype_caption]: ' + str(setting_dict['sel_examtype_caption']))
 
 # ===== LEVELBASE, SECTORBASE, SCHEME, SUBJECT, STUDENT, ======================= PR2021-01-23 PR2021-03-14 PR2021-08-13
+
+    if logging_on:
+        logger.debug('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+
     for key_str in (c.KEY_SEL_LVLBASE_PK, c.KEY_SEL_SCTBASE_PK, c.KEY_SEL_SCHEME_PK, c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK):
+        if logging_on:
+            logger.debug('........... key_str: ' + str(key_str))
 
 # - get saved_pk_str
         saved_pk_int = None
         saved_pk_str = selected_pk_dict.get(key_str)
         if saved_pk_str:
             saved_pk_int = int(saved_pk_str)
+        if logging_on:
+            logger.debug('saved_pk_int: ' + str(saved_pk_int) + ' ' + str(type(saved_pk_int)))
 
 # - if key_str exists in request_item_setting: get new request_item_pk_int from request_item_setting
         if key_str in request_item_setting:
             request_item_pk_int = request_item_setting.get(key_str)
-
             if logging_on:
-                logger.debug('........... key_str: ' + str(key_str))
                 logger.debug('request_item_pk_int: ' + str(request_item_pk_int) + ' ' + str(type(request_item_pk_int)))
-                logger.debug('saved_pk_int: ' + str(saved_pk_int) + ' ' + str(type(saved_pk_int)))
 
 # - use request_pk_str when it has value and is different from the saved one
             # also use request_item_pk_int when its value is None, to reset filter
             if request_item_pk_int != saved_pk_int:
+                selected_pk_dict_has_changed = True
                 saved_pk_int = request_item_pk_int
-
-            if logging_on:
-                logger.debug('>>>>> saved_pk_int: ' + str(saved_pk_int) + ' ' + str(type(saved_pk_int)))
+                if logging_on:
+                    logger.debug('>>>>> new_saved_pk_int: ' + str(saved_pk_int) + ' ' + str(type(saved_pk_int)))
 
 # --- update selected_pk_dict, will be saved at end of def
-                selected_pk_dict_has_changed = True
                 if saved_pk_int:
                     selected_pk_dict[key_str] = saved_pk_int
                 elif key_str in selected_pk_dict:
                     selected_pk_dict.pop(key_str)
 
-            if logging_on:
-                logger.debug('>>>>> selected_pk_dict: ' + str(selected_pk_dict) + ' ' + str(type(selected_pk_dict)))
 
 # --- add info to setting_dict, will be sent back to client
         if saved_pk_int:
@@ -595,8 +598,9 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
                 if scheme:
                     setting_dict['sel_scheme_name'] = scheme.name
 
-            if logging_on:
-                logger.debug('>>>>> setting_dict: ' + str(setting_dict) + ' ' + str(type(setting_dict)))
+    if logging_on:
+        logger.debug('..... selected_pk_dict: ' + str(selected_pk_dict) + ' ' + str(type(selected_pk_dict)))
+        logger.debug('..... setting_dict: ' + str(setting_dict) + ' ' + str(type(setting_dict)))
 
     # - save settings when they have changed
     if selected_pk_dict_has_changed:

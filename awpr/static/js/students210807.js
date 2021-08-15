@@ -922,14 +922,16 @@ function RefreshDataRowsAfterUpload(response) {
                     // delete row from data_rows. Splice returns array of deleted rows
                     const deleted_row_arr = data_rows.splice(datarow_index, 1)
                     const deleted_row_dict = deleted_row_arr[0];
-        console.log("deleted_row_dict", deleted_row_dict);
-        console.log("deleted_row_dict.mapid", deleted_row_dict.mapid);
+        //console.log("deleted_row_dict", deleted_row_dict);
+        //console.log("deleted_row_dict.mapid", deleted_row_dict.mapid);
 
         //--- delete tblRow
                     if(deleted_row_dict && deleted_row_dict.mapid){
                         const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
         console.log("tblRow_tobe_deleted", tblRow_tobe_deleted);
-                        if (tblRow_tobe_deleted ){tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)};
+                        if (tblRow_tobe_deleted ){
+                            tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
+                        };
                     }
                 } else {
 
@@ -1862,19 +1864,11 @@ function RefreshDataRowsAfterUpload(response) {
         const tblName = "student";
         const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
 
-        //console.log("col_hidden", col_hidden)
         let is_hidden = col_hidden.includes(mapped_field);
-        //console.log("is_hidden", is_hidden)
 
-/*
-field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
-            "subj_code", "subj_name", "sjtp_abbrev", "subj_status",
-            "has_exemption", "exm_status", "has_reex", "re2_status", "has_reex03", "re3_status",
-            "has_pok", "pok_status", "notes"],
-*/
-
+// skip column 'Leerweg' when not sel_dep_level_req
         if(!is_hidden){
-            if (mapped_field === "lvl_abbrev") {
+            if (mapped_field === "lvlbase_id") {
                 is_hidden = (!setting_dict.sel_dep_level_req);
             };
         }

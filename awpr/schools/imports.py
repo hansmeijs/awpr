@@ -600,7 +600,8 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
                     date_obj = af.get_date_from_arr((year, month, day))
                     if date_obj:
                         birthdate_iso = af.get_dateISO_from_dateOBJ(date_obj)
-                        error_list.append(str(_("The birth date is not entered. AWP will use the birthdate from the ID-number.")))
+                        error_list.append(' '.join((str(_("The birth date is not entered.")),
+                                          str(_("AWP has calculated the birthdate from the ID-number.")))))
 
     # - replace birthdate with birthdate_iso in data_dict
         # PR2021-08-12 debug: must also replace 0 with None, otherwise error occurs in update_student_instance

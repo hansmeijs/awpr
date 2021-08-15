@@ -28,7 +28,6 @@ from awpr import menus as awpr_menus
 from schools import views as school_views
 from schools import imports as school_imports
 from students import views as student_views
-from students import ex1files as student_ex1files
 from subjects import views as subject_views
 from grades import views as grade_views
 from grades import excel as grade_excel

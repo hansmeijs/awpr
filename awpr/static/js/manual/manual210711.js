@@ -1,4 +1,6 @@
 // PR2021-06-10 added
+
+
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
@@ -53,18 +55,19 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "===== LoadPage  ========= ");
         console.log( "page", page);
         console.log( "user_lang", user_lang);
+
         const is_en = (user_lang === "en");
         const header_txt = (page === "home") ? (is_en) ? "Introduction" : "Introductie" :
                         (page === "upload") ?  (is_en) ? "Upload data" : "Gegevens uploaden" :
-                        (page === "approve") ? (is_en) ? "Approve and submit" : "Goedkeuren em indienen" :
+                        (page === "approve") ? (is_en) ? "Approve and submit" : "Goedkeuren em indienen van Ex-formulieren" :
                         null
 
         const html_dict = (page === "home") ? man_home :
                         (page === "upload") ? man_upload :
                         (page === "approve") ? man_approve : null;
-        console.log( "html_dict", html_dict);
-        const html_list= (user_lang === 'en' && html_dict.en) ?  html_dict.en :  html_dict.nl;
-        console.log( "html_list", html_list);
+
+        const html_list = (user_lang === 'en' && html_dict.en) ?  html_dict.en :  html_dict.nl;
+
         const html_str = (html_list && html_list.length) ? html_list.join('') : "<h4 class='p-5'> Deze pagina is nog niet beschikbaar.</h4>";
 
         document.getElementById("id_content").innerHTML = html_str;
@@ -91,4 +94,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if(el_dropdown) {el_dropdown.style.display = "none"};
         }
     } // DeselectAll
+
+
 })  // document.addEventListener('DOMContentLoaded', function()

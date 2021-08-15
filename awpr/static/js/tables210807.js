@@ -1635,9 +1635,9 @@ let mod_MCOL_dict = {};
 //=========  t_MCOL_FillSelectTable  ================ PR2021-07-07 PR2021-08-02
     function t_MCOL_FillSelectTable() {
         console.log("===  t_MCOL_FillSelectTable == ");
-        console.log("selected_btn", selected_btn);
-        console.log("field_settings", field_settings);
-        console.log("mod_MCOL_dict", mod_MCOL_dict);
+        //console.log("selected_btn", selected_btn);
+        //console.log("field_settings", field_settings);
+        //console.log("mod_MCOL_dict", mod_MCOL_dict);
 
         const el_MCOL_tblBody_available = document.getElementById("id_MCOL_tblBody_available");
         const el_MCOL_tblBody_show = document.getElementById("id_MCOL_tblBody_show");
@@ -1652,28 +1652,37 @@ let mod_MCOL_dict = {};
             const len = field_names.length;
             for (let j = 0; j < len; j++) {
                 const field_name = field_names[j];
-                const field_caption = (field_name === "sct_abbrev") ?
-                                (setting_dict.sel_dep_has_profiel) ? loc.Profiel : loc.Sector :
-                                (field_captions[j]) ? loc[field_captions[j]] : null;
 
-                const is_hidden = (field_name && mod_MCOL_dict.col_hidden.includes(field_name));
-                const tBody = (is_hidden) ? el_MCOL_tblBody_available : el_MCOL_tblBody_show;
+        // skip column 'Leerweg' when not sel_dep_level_req  || setting_dict.sel_dep_level_req
+                const skip_level = (field_name === "lvlbase_id" && !setting_dict.sel_dep_level_req);
 
-    //+++ insert tblRow into tBody
-                const tblRow = tBody.insertRow(-1);
-                tblRow.setAttribute("data-field", field_name);
+                if(!skip_level){
 
-        // --- add EventListener to tblRow.
-                tblRow.addEventListener("click", function() {MCOL_SelectItem(tblRow);}, false )
-        //- add hover to tableBody row
-                add_hover(tblRow)
+            // display 'Profiel' when sel_dep_has_profiel
+                    const field_caption = (field_name === "sct_abbrev") ?
+                                    (setting_dict.sel_dep_has_profiel) ? loc.Profiel : loc.Sector :
+                                    (field_captions[j]) ? loc[field_captions[j]] : null;
 
-                const td = tblRow.insertCell(-1);
-                td.innerText = field_caption;
-        //- add data-tag  to tblRow
-                td.classList.add("tw_240")
+                    const is_hidden = (field_name && mod_MCOL_dict.col_hidden.includes(field_name));
+                    const tBody = (is_hidden) ? el_MCOL_tblBody_available : el_MCOL_tblBody_show;
 
-                tblRow.setAttribute("data-field", field_name);
+        //+++ insert tblRow into tBody
+                    const tblRow = tBody.insertRow(-1);
+                    tblRow.setAttribute("data-field", field_name);
+
+            // --- add EventListener to tblRow.
+                    tblRow.addEventListener("click", function() {MCOL_SelectItem(tblRow);}, false )
+            //- add hover to tableBody row
+                    add_hover(tblRow)
+
+                    const td = tblRow.insertCell(-1);
+                    td.innerText = field_caption;
+            //- add data-tag  to tblRow
+                    td.classList.add("tw_240")
+
+                    tblRow.setAttribute("data-field", field_name);
+
+                }  // if(!skip_level)
             }
         }  // if(field_captions && field_captions.length)
     } // t_MCOL_FillSelectTable
@@ -1730,7 +1739,10 @@ let mod_MCOL_dict = {};
 
         const display_rows = []
         const has_items = (!!rows && !!rows.length);
-        const has_profiel = setting_dict.sel_dep_has_profiel;
+        const has_profiel = !!setting_dict.sel_dep_has_profiel;
+        const show_select_element = (tblName !== "level" || setting_dict.sel_dep_level_req);
+
+        //console.log("show_select_element", show_select_element);
 
         const caption_all = "&#60" + ( (tblName === "level") ? loc.All_leerwegen :
                                         (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
@@ -1750,13 +1762,15 @@ let mod_MCOL_dict = {};
                 // add row 'Alle leerwegen' / Alle profielen / Alle sectoren in first row
                 display_rows.push({value: 0, caption: caption_all })
             }
-        }
-        for (let i = 0, row; row = rows[i]; i++) {
-            display_rows.push({
-            value: row.base_id,
-            caption: (tblName === "sector") ? row.name : row.abbrev
-            })
-        }
+            for (let i = 0, row; row = rows[i]; i++) {
+                display_rows.push({
+                value: row.base_id,
+                caption: (tblName === "sector") ? row.name : row.abbrev
+                })
+            }
+        }  // if (!has_items)
+
+        //console.log("display_rows", display_rows);
 
         const selected_pk = (tblName === "level") ? setting_dict.sel_lvlbase_pk :
                             (tblName === "sector") ? setting_dict.sel_sctbase_pk : 0;
@@ -1775,7 +1789,8 @@ let mod_MCOL_dict = {};
         } else if (tblName === "sector"){
             setting_dict.sel_sector_abbrev = sel_abbrev;
         }
-        add_or_remove_class(el_SBR_select.parentNode, cls_hide, false);
+        //console.log("el_SBR_select.parentNode", el_SBR_select.parentNode);
+        add_or_remove_class(el_SBR_select.parentNode, cls_hide, !show_select_element);
 
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall")
         add_or_remove_class(el_SBR_select_showall, cls_hide, false);
@@ -1783,6 +1798,8 @@ let mod_MCOL_dict = {};
         if (tblName === "sector"){
             document.getElementById("id_SBR_select_sector_label").innerText = ( (has_profiel) ? loc.Profiel : loc.Sector ) + ":";
         }
+
+
     }  // t_SBR_filloptions_level_sector
 
 //=========  t_SBR_show_all  ================ PR2021-08-02

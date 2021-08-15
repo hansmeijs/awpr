@@ -126,7 +126,7 @@ class OrederlistsListView(View): # PR2021-07-04
 
 def create_student_rows(setting_dict, append_dict, student_pk):
     # --- create rows of all students of this examyear / school PR2020-10-27
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_student_rows -----')
 
@@ -700,29 +700,28 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 # - when mode = submit_submit: check verificationcode.
                     verification_is_ok = True
                     if is_submit and not is_test:
-                        verification_is_ok, verif_msg_html = self.check_verificationcode(logging_on, upload_dict, request)
+                        verification_is_ok, verif_msg_html = self.check_verificationcode(upload_dict, request)
                         if verif_msg_html:
                             msg_html = verif_msg_html
                         if verification_is_ok:
                             update_wrap['verification_is_ok'] = True
 
                     if verification_is_ok:
-    # - get auth_index (1 = President, 2 = Secretary, 3 = Commissioner)
-                        # PR2021-03-27 auth_index is taken from requsr_usergroups_list, not from upload_dict
-                        #  function may have changed if page is not refreshed in time)
-
                         sel_lvlbase_pk, sel_sctbase_pk, sel_subject_pk, sel_student_pk = None, None, None, None
-                        selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-                        if selected_dict:
-                            sel_lvlbase_pk = selected_dict.get(c.KEY_SEL_LVLBASE_PK)
-                            sel_sctbase_pk = selected_dict.get(c.KEY_SEL_SCTBASE_PK)
-                            sel_subject_pk = selected_dict.get(c.KEY_SEL_SUBJECT_PK)
-                            # TODO filter by cluster
-                        if logging_on:
-                            logger.debug('selected_dict: ' + str(selected_dict))
+                        # don't filter on sel_lvlbase_pk, sel_sctbase_pk, sel_subject_pk when submitting Ex form
+                        if is_approve:
+                            selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                            if selected_dict:
+                                sel_lvlbase_pk = selected_dict.get(c.KEY_SEL_LVLBASE_PK)
+                                sel_sctbase_pk = selected_dict.get(c.KEY_SEL_SCTBASE_PK)
+                                sel_subject_pk = selected_dict.get(c.KEY_SEL_SUBJECT_PK)
+                                # TODO filter by cluster
+                            if logging_on:
+                                logger.debug('selected_dict: ' + str(selected_dict))
 
 # +++ get selected studsubj_rows
-                        # TODO exclude published rows??
+                        # TODO exclude published rows?? Yes, but count them when checkign. You cannot approve or undo approve or submit when submitted
+
                         crit = Q(student__school=sel_school) & \
                                Q(student__department=sel_department)
             # when submit: don't filter on level, sector, subject or cluster
@@ -835,12 +834,12 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                             update_wrap['approve_count_dict'] = count_dict
 
     # - create msg_html with info of rows
-                            msg_html = self.create_msg_list(logging_on, count_dict, requsr_auth, is_approve, is_test)
+                            msg_html = self.create_msg_list(count_dict, requsr_auth, is_approve, is_test)
 
 # +++++ create Ex1 form
                             if row_count:
                                 if is_submit and not is_test:
-                                    self.create_Ex1(
+                                    self.create_Ex1_form(
                                         published_instance=published_instance,
                                         sel_examyear=sel_examyear,
                                         sel_school=sel_school,
@@ -869,7 +868,8 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 
-    def create_msg_list(self, logging_on, count_dict, requsr_auth, is_approve, is_test):
+    def create_msg_list(self, count_dict, requsr_auth, is_approve, is_test):
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ----- create_msg_list -----')
             logger.debug('count_dict: ' + str(count_dict))
@@ -1028,48 +1028,44 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
         return msg_html
     # - end of create_submit_msg_list
 
-    def create_Ex1(self, published_instance, sel_examyear, sel_school, sel_department, save_to_disk, user_lang):
-        #PR2021-07-27
+    def create_Ex1_form(self, published_instance, sel_examyear, sel_school, sel_department, save_to_disk, user_lang):
+        #PR2021-07-27 PR2021-08-14
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
-            logger.debug(' ============= create_Ex1 ============= ')
+            logger.debug(' ============= create_Ex1_form ============= ')
 
 # get text from examyearsetting
         settings = af.get_exform_text(sel_examyear, ['exform', 'ex1'])
-        if logging_on:
-            logger.debug('settings: ' + str(settings))
+        #if logging_on:
+        #    logger.debug('settings: ' + str(settings))
 
 # +++ get mapped_subject_rows
         subject_row_count, subject_pk_list, subject_code_list = \
             grd_exc.create_ex1_mapped_subject_rows(sel_examyear, sel_school, sel_department)
-        #  subject_pk_dict: {34: 0, 29: 1, ...} ( subject_pk: index)
-        #  subject_code_list: ['bw', 'cav', ]
-        #  index = row_count
+        #  subject_code_list: ['adm&co', 'bi', 'cav', ..., 'sp', 'stg', 'sws', 'wk', 'zwi']
+        #  subject_pk_list: [1067, 1057, 1051, ..., 1054, 1070, 1069, 1055, 1065]
 
         if logging_on:
             logger.debug('subject_row_count: ' + str(subject_row_count))
             logger.debug('subject_pk_list: ' + str(subject_pk_list))
             logger.debug('subject_code_list: ' + str(subject_code_list))
 
-# -get dict of subjects of these studsubj_rows
-        studsubj_rows = grd_exc.create_ex1_rows(sel_examyear, sel_school, sel_department)
-
-        if studsubj_rows:
-
 # +++ create Ex1 xlsx file
-            grd_exc.create_ex1_xlsx(
-                published_instance=published_instance,
-                examyear=sel_examyear,
-                school=sel_school,
-                department=sel_department,
-                settings=settings,
-                save_to_disk=save_to_disk,
-                subject_pk_list=subject_pk_list,
-                subject_code_list=subject_code_list,
-                user_lang=user_lang)
+        grd_exc.create_ex1_xlsx(
+            published_instance=published_instance,
+            examyear=sel_examyear,
+            school=sel_school,
+            department=sel_department,
+            settings=settings,
+            save_to_disk=save_to_disk,
+            subject_pk_list=subject_pk_list,
+            subject_code_list=subject_code_list,
+            user_lang=user_lang)
+    # - end of create_Ex1_form
 
-    def check_verificationcode(self, logging_on, upload_dict, request ):
+    def check_verificationcode(self, upload_dict, request ):
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ----- check_verificationcode -----')
 
@@ -1122,6 +1118,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                                 '</p>'))
 
         return is_ok, msg_html
+    # - end of check_verificationcode
 
 # --- end of StudentsubjectApproveOrSubmitEx1View
 
@@ -1228,6 +1225,7 @@ class StudentsubjectApproveSingleView(View):  # PR2021-07-25
                                     examyear=sel_examyear,
                                     schoolbase=sel_school.base,
                                     depbase=sel_department.base,
+                                    setting_dict={},
                                     append_dict=append_dict,
                                     student_pk=student.pk,
                                     studsubj_pk=studsubj.pk
@@ -1699,15 +1697,12 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                             # TODO check value of error_dict
                             if error_dict:
                                 append_dict['error'] = error_dict
-                            setting_dict = {
-                                'sel_examyear_pk': sel_school.examyear.pk,
-                                'sel_schoolbase_pk': sel_school.base_id,
-                                'sel_depbase_pk': sel_department.base_id
-                            }
+
                             rows = create_studentsubject_rows(
                                 examyear=sel_examyear,
                                 schoolbase=sel_school.base,
                                 depbase=sel_department.base,
+                                setting_dict={},
                                 append_dict=append_dict,
                                 studsubj_pk=studsubj.pk
                             )
@@ -2234,9 +2229,6 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
         recalc_regnumber = False
 
         for field, new_value in upload_dict.items():
-            if logging_on:
-                logger.debug('field:     ' + str(field))
-                logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
             #try:
             if True:
 
@@ -2403,7 +2395,10 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
 
     # 3. save changes in department, level or sector
                 # department cannot be changed
-                elif field in ('level', 'sector'):
+                # change 'profiel' into 'sector
+                elif field in ('level', 'sector', 'profiel'):
+                    if field == 'profiel':
+                        field = 'sector'
 
                     saved_value = getattr(instance, field)
                     if logging_on:

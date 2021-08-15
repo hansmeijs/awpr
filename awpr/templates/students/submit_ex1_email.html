@@ -1,9 +1,9 @@
 {% load i18n %}
 
 {% autoescape off %}
-{% trans 'Hello ' %}{{ user.last_name }},
+{% trans 'Hello ' %}{{ user.username_sliced }},
 
-{% trans "You are about to submit the Ex1 form of " %}{{ usr_schoolname }}:
+{% trans "You are about to submit the Ex1 form of:" %}{{ usr_schoolname }}
 
   - {% trans 'School' %}:  {{ school.base.code }} {{ school.name }}
   - {% trans 'Department' %}:  {{ department.name }}
