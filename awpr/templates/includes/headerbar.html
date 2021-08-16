@@ -23,7 +23,11 @@
                     <div>{{examyear_code}}</div>
                 </li>
                 <li id="id_hdrbar_examyear_locked" class="nav-item awp_navbar {{class_bg_color}} ml-0 mt-1">
-                    <div class="stat_0_0"></div>
+                    {% if examyear_locked %}
+                        <div class="stat_0_6"></div>
+                    {% else %}
+                        <div class="stat_0_0"></div>
+                    {% endif %}
                 </li>
                 {% if display_department %}
                     <li id="id_hdrbar_department" class="nav-item awp_navbar_item {{class_bg_color}}">

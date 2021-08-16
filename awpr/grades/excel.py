@@ -233,9 +233,9 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
 
         row_index = 9
         if not save_to_disk:
-            prelim_txt = '+++++  ' + str(_('Preliminary Ex1 form')) + '  +++++'
+            prelim_txt = str(_('PRELIMINARY Ex1 FORM'))
             sheet.merge_range(row_index, 0, row_index, col_count - 1, prelim_txt, th_prelim)
-            row_index += 2
+            row_index += 1
 
         #if has_published_ex1_rows(examyear, school, department):
         #    exists_txt = str(_('Attention: an Ex1 form has already been submitted. The subjects in that form are not included in this form.'))
@@ -259,7 +259,8 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
 
 # ---  level header row
                 row_index += 2
-                #sheet.merge_range(row_index, 0, row_index, col_count - 1, lvl_name, th_level)
+                #sheet.merge_range(row_index, 0, row_index, col_count - 1, lvl_name, th_level)    first_subject_column = col_count
+                # TODO extend header row and total row to 15 columns when teher are less subjects (like in detail rows)
                 for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
                     sheet.write(row_index, i, ex1_formats['field_captions'][i], ex1_formats['header_formats'][i])
 
@@ -295,7 +296,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
                             # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
                         elif field_name == 'exnr':
                             #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
-                            sheet.merge_range(row_index, 0, row_index, first_subject_column -1, '???TOTAAL ' + lvl_name, totalrow_merge)
+                            sheet.merge_range(row_index, 0, row_index, first_subject_column -1, 'TOTAAL ' + lvl_name, totalrow_merge)
 # end of iterate through levels,
 # ++++++++++++++++++++++++++++
 
@@ -420,7 +421,7 @@ def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, sub
     # or: th_format = book.add_format({'bg_color': '#d8d8d8'
     th_align_center = book.add_format({'font_size': 8, 'border': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
     th_rotate = book.add_format({'font_size': 8, 'border': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True, 'rotation': 90})
-    th_prelim = book.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+    th_prelim = book.add_format({'bold': True, 'align': 'left', 'valign': 'vcenter', 'text_wrap': True})
 
     th_merge = book.add_format({ 'bold': True, 'align': 'center', 'valign': 'vcenter'})
     th_merge.set_left()

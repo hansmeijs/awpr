@@ -317,8 +317,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= DatalistDownload  ===================== PR2020-07-31
     function DatalistDownload(datalist_request, called_by) {
-        console.log( "=== DatalistDownload ", called_by)
-        console.log("request: ", datalist_request)
+        //console.log( "=== DatalistDownload ", called_by)
+        //console.log("request: ", datalist_request)
 
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
@@ -335,8 +335,8 @@ document.addEventListener('DOMContentLoaded', function() {
             data: param,
             dataType: 'json',
             success: function (response) {
-                console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
-                console.log(response)
+                //console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
+                //console.log(response)
 
 // ---  hide loader
                 el_loader.classList.add(cls_visible_hide);
@@ -411,7 +411,7 @@ document.addEventListener('DOMContentLoaded', function() {
             error: function (xhr, msg) {
 // ---  hide loader
                 el_loader.classList.add(cls_visible_hide);
-                console.log(msg + '\n' + xhr.responseText);
+                //console.log(msg + '\n' + xhr.responseText);
             }
         });
     }  // function DatalistDownload
@@ -496,8 +496,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= FillTblRows  ============== PR2021-06-16
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
-        console.log( "setting_dict", setting_dict);
+        //console.log( "===== FillTblRows  === ");
+        //console.log( "setting_dict", setting_dict);
 
         const tblName = "student";
         const field_setting = field_settings[tblName];
@@ -770,9 +770,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= UploadChanges  ============= PR2020-08-03
     function UploadChanges(upload_dict, url_str) {
-        console.log("=== UploadChanges");
-        console.log("url_str: ", url_str);
-        console.log("upload_dict: ", upload_dict);
+        //console.log("=== UploadChanges");
+        //console.log("url_str: ", url_str);
+        //console.log("upload_dict: ", upload_dict);
 
         if(!isEmpty(upload_dict)) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -785,8 +785,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 success: function (response) {
                     // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
-                    console.log( "response");
-                    console.log( response);
+                    //console.log( "response");
+                    //console.log( response);
 
                     if ("updated_student_rows" in response) {
                         const el_MSTUD_loader = document.getElementById("id_MSTUD_loader");
@@ -806,7 +806,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 error: function (xhr, msg) {
                     // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
-                    console.log(msg + '\n' + xhr.responseText);
+                    //console.log(msg + '\n' + xhr.responseText);
                 }  // error: function (xhr, msg) {
             });  // $.ajax({
         }  //  if(!!row_upload)
@@ -819,8 +819,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  RefreshDataRowsAfterUpload  ================ PR2021-07-20
 function RefreshDataRowsAfterUpload(response) {
-    console.log(" --- RefreshDataRowsAfterUpload  ---");
-    console.log("response:", response);
+    //console.log(" --- RefreshDataRowsAfterUpload  ---");
+    //console.log("response:", response);
     const is_test = (!!response && !!response.is_test) ;
     if(!is_test && response && "updated_student_rows" in response) {
         RefreshDataRows("student", response.updated_student_rows, student_rows, true)  // true = update
@@ -928,7 +928,7 @@ function RefreshDataRowsAfterUpload(response) {
         //--- delete tblRow
                     if(deleted_row_dict && deleted_row_dict.mapid){
                         const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
-        console.log("tblRow_tobe_deleted", tblRow_tobe_deleted);
+        //console.log("tblRow_tobe_deleted", tblRow_tobe_deleted);
                         if (tblRow_tobe_deleted ){
                             tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
                         };
@@ -1608,7 +1608,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 //========= Filter_TableRows  ==================================== PR2020-08-17
     function Filter_TableRows() {
-        console.log( "===== Filter_TableRows  ========= ");
+        //console.log( "===== Filter_TableRows  ========= ");
 
         const tblName_settings = "student";
         const field_setting = field_settings[tblName_settings];

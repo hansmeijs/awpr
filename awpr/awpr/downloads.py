@@ -63,6 +63,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 new_setting_dict, permit_dict, awp_messages, sel_examyear, sel_schoolbase, sel_depbase = \
                     download_setting(request_item_setting, user_lang, request)
 
+                requsr_same_school = permit_dict.get('requsr_same_school', False)
+
                 if permit_dict:
                     datalists['permit_dict'] = permit_dict
 
@@ -158,6 +160,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         examyear=sel_examyear,
                         schoolbase=sel_schoolbase,
                         depbase=sel_depbase,
+                        requsr_same_school=requsr_same_school,
                         setting_dict=new_setting_dict,
                         append_dict={}
                     )
@@ -314,14 +317,17 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
     if sel_schoolbase_instance:
         setting_dict[c.KEY_SEL_SCHOOLBASE_PK] = sel_schoolbase_instance.pk
         setting_dict['sel_schoolbase_code'] = sel_schoolbase_instance.code
-        setting_dict['sel_schoolbase_equals_requsr_sb'] = (sel_schoolbase_instance.pk == requsr_schoolbase.pk)
 
     # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
     # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Comm can not neter grades
-    permit_dict['requsr_same_school'] = (req_user.role == c.ROLE_008_SCHOOL and requsr_schoolbase.pk == sel_schoolbase_instance.pk)
+    requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and
+                          sel_schoolbase_instance and requsr_schoolbase.pk == sel_schoolbase_instance.pk)
+    permit_dict['requsr_same_school'] = requsr_same_school
+    # this one is used in create_studentsubject_rows and create_grade_rows, to block view of non-submitted subjects and grades
+    setting_dict['requsr_same_school'] = requsr_same_school
 
 # ===== EXAMYEAR =======================
-    # every user can change examyear, is stored in Usersetting.
+    # every user can change examyear, may_select_examyear is False when tehre is only 1 examyear
 
 # - get selected examyear from request_item_setting, Usersetting, this_examyear or latest
     request_item_examyear_pk = request_item_setting.get(c.KEY_SEL_EXAMYEAR_PK)
@@ -688,7 +694,7 @@ def get_selected_examperiod_examtype_from_usersetting(request):  # PR2021-01-20
 
 
 def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-06-14
-    logging_on = False  # s.LOGGING_ON
+    logging_on = False # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_ey_school_dep_from_usersetting ----- ' )
     # this function gets sel_examyear, sel_school, sel_department from req_user and usersetting

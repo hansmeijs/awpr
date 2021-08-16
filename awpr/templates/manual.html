@@ -10,9 +10,9 @@
 
         <link rel="stylesheet" href="https://ajax.aspnetcdn.com/ajax/bootstrap/4.3.1/css/bootstrap.min.css">
         <!-- awpr.css goes after Bootstrap reference to CSS, otherwise, the default scheme will apply. -->
-        <link rel="stylesheet" href="{% static 'css/awpr210807.css' %}">
-        <link rel="stylesheet" href="{% static 'css/tables210807.css' %}">
-        <link rel="stylesheet" href="{% static 'css/sidebar210807.css' %}">
+        <link rel="stylesheet" href="{% static 'css/awpr210816.css' %}">
+        <link rel="stylesheet" href="{% static 'css/tables210816.css' %}">
+        <link rel="stylesheet" href="{% static 'css/sidebar210816.css' %}">
         <link rel="stylesheet" href="{% static 'css/manual210807.css' %}">
 
 <!-- jQuery first, then Popper.js, then Bootstrap.js -->
@@ -26,7 +26,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.1/xlsx.full.min.js"></script>
 
     <!--  PR2019-01-13 js/base.js added, contains csrftoken for ajax-->
-        <script src="{% static 'js/base210807.js' %}"></script>
+        <script src="{% static 'js/base210816.js' %}"></script>
 
         <script src="{% static 'js/manual/man_home210711.js' %}"></script>
         <script src="{% static 'js/manual/man_upload210711.js' %}"></script>
@@ -52,9 +52,6 @@
                             <li class="nav-item awp_navbar_item mr-0 pr-4">
                                 <h5 class="pt-1">{% trans 'Manual' %}</h5>
                             </li>
-                            <li class="nav-item awp_navbar_item mr-0 pr-0">
-                                <h5 id="id_page_header" class="pt-1 pl-5"></h5>
-                            </li>
                         </ul>
                     </div>
                     <button type="button" class="closeX" aria-label="Close">
@@ -68,19 +65,19 @@
  <div id="id_sidenav" class="man_sidenav">
 
   <button id="id_btn_intro" class="dropdown-btn">{% trans 'Introduction' %}<i class="fa fa-caret-down"></i></button>
-        <div id="id_btn_intro_dropdown" class="dropdown-container">
+        <div id="id_btn_intro_dropdownXX" class="dropdown-container display_hide">
             <a href="#">{% trans 'Introduction' %}</a>
         </div>
-  <button id="id_btn_users" class="dropdown-btn">{% trans 'Users' %}<i class="fa fa-caret-down"></i></button>
-        <div id="id_btn_users_dropdown" class="dropdown-container">
+  <button id="id_btn_userXX" class="dropdown-btnXX display_hide">{% trans 'Users' %}<i class="fa fa-caret-down"></i></button>
+        <div id="id_btn_users_dropdownXX" class="dropdown-container display_hide">
             <a href="#">{% trans 'Introduction' %}</a>
         </div>
   <button id="id_btn_upload" class="dropdown-btn">{% trans 'Upload data' %}<i class="fa fa-caret-down"></i></button>
-        <div id="id_btn_upload_dropdown" class="dropdown-container">
+        <div id="id_btn_upload_dropdownXX" class="dropdown-container display_hide">
         <a href="#">{% trans 'Introduction' %}</a>
         </div>
   <button id="id_btn_approve" class="dropdown-btn">{% trans 'Approve and submit Ex forms' %}<i class="fa fa-caret-down"></i></button>
-      <div id="id_btn_approve_dropdown" class="dropdown-container">
+      <div id="id_btn_approve_dropdownXX" class="dropdown-container display_hide">
         <a href="#">{% trans 'Approve' %}</a>
         <a href="#">{% trans 'Submit' %}</a>
         <a href="#">{% trans 'List of submissions' %}</a>

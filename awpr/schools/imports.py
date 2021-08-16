@@ -334,11 +334,13 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # - return html with number of students, existing, new and erros
                     update_dict = { 'is_test': is_test,
-                                    'table': 'student',
+                                    'table': 'studsubj',
                                     'result': crate_result_html(is_test, count_total, count_existing, count_new, count_error),
                                     'log_list': log_list}
-                    if not is_test and updated_rows:
-                        update_dict['updated_studsubj_rows'] = updated_rows
+                    # was: if not is_test and updated_rows:
+                    #    update_dict['updated_studsubj_rows'] = updated_rows
+                    if not is_test:
+                        update_dict['updated_studsubj_rows'] = "tobedownloaded"
 
         return HttpResponse(json.dumps(update_dict, cls=af.LazyEncoder))
 # - end of UploadImportStudentsubjectView

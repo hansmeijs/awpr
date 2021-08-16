@@ -2106,8 +2106,8 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             data: parameters,
             dataType:'json',
             success: function (response) {
-                console.log( "response");
-                console.log(response);
+                //console.log( "response");
+                //console.log(response);
 
 //--------- hide loader
                 add_or_remove_class(document.getElementById("id_MIMP_loader"), cls_hide, true);
@@ -2126,7 +2126,6 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 };
 
                 if("updated_user_rows" in response){
-                console.log("RefreshDataRowsAfterUpload >>> updated_user_rows");
                     RefreshDataRowsAfterUpload(response);
                 };
                 if("result" in response){

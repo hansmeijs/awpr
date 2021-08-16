@@ -95,7 +95,7 @@ class StudentsubjectListView(View): # PR2020-09-29 PR2021-03-25
         page = 'page_studsubj'
         params = awpr_menu.get_headerbar_param(request, page)
 
-# - save this page in Usersetting, so at next login this page will open.  Used in LoggedIn
+# - save this page in Usersetting, so at next login this page will open. Used in LoggedIn
          # PR2021-06-22 moved to get_headerbar_param
 
         return render(request, 'studentsubjects.html', params)
@@ -1231,6 +1231,7 @@ class StudentsubjectApproveSingleView(View):  # PR2021-07-25
                                     examyear=sel_examyear,
                                     schoolbase=sel_school.base,
                                     depbase=sel_department.base,
+                                    requsr_same_school=True,  # check for same_school is included in may_edit
                                     setting_dict={},
                                     append_dict=append_dict,
                                     student_pk=student.pk,
@@ -1533,9 +1534,6 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                 logger.debug('permit_list: ' + str(permit_list))
                 logger.debug('has_permit: ' + str(has_permit))
 
-        # TODO === FIXIT === remove has_permit = True
-        has_permit = True
-
         if has_permit:
 
         # - check for double subjects, double subjects are not allowed -> happens in create_studsubj PR2021-07-11
@@ -1567,16 +1565,9 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                     logger.debug('sel_examyear: ' + str(sel_examyear))
                     logger.debug('sel_school: ' + str(sel_school))
                     logger.debug('sel_department: ' + str(sel_department))
-                    logger.debug('may_edit: ' + str(may_edit))
-                    logger.debug('msg_list: ' + str(msg_list))
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                 student = None
-                # TODO : may_edit = examyear_published and school_activated and requsr_same_school and sel_department and not is_locked
-
-                # TODO === FIXIT === remove may_edit = True
-                msg_list = []
-                may_edit = True
 
                 if len(msg_list):
                     msg_html = '<br>'.join(msg_list)
@@ -1667,7 +1658,8 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                                         logger.debug('deleted_ok: ' + str(deleted_ok))
                                     if deleted_ok:
                                         # - add deleted_row to studsubj_rows
-                                        studsubj_rows.append({'studsubj_id': studsubj_pk,
+                                        studsubj_rows.append({'stud_id': student.pk,
+                                                              'studsubj_id': studsubj_pk,
                                                              'mapid': 'studsubj_' + str(student.pk) + '_' + str(studsubj_pk),
                                                              'deleted': True})
                                         studsubj = None
@@ -1704,21 +1696,30 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                             # TODO check value of error_dict
                             if error_dict:
                                 append_dict['error'] = error_dict
-
                             rows = create_studentsubject_rows(
                                 examyear=sel_examyear,
                                 schoolbase=sel_school.base,
                                 depbase=sel_department.base,
+                                requsr_same_school=True,  # check for same_school is included in may_edit
                                 setting_dict={},
                                 append_dict=append_dict,
+                                student_pk=student.pk,
                                 studsubj_pk=studsubj.pk
                             )
+                            if logging_on:
+                                logger.debug('error_dict: ' + str(error_dict))
+                                logger.debug('rows: ' + str(rows))
+
                             if rows:
                                 studsubj_row = rows[0]
                                 if studsubj_row:
                                     studsubj_rows.append(studsubj_row)
+
 # - end of loop
 # -------------------------------------------------
+                    if logging_on:
+                        logger.debug('studsubj_rows: ' + str(studsubj_rows))
+
                     if studsubj_rows:
                         update_wrap['updated_studsubj_rows'] = studsubj_rows
 
@@ -1726,8 +1727,13 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                         msg_html = stud_val.validate_studentsubjects(student)
                         if msg_html:
                             update_wrap['studsubj_validate_html'] = msg_html
+                        if logging_on:
+                            logger.debug('msg_html: ' + str(msg_html))
         if len(messages):
             update_wrap['messages'] = messages
+        if logging_on:
+            logger.debug('update_wrap: ' + str(update_wrap))
+
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of StudentsubjectUploadView
@@ -1737,7 +1743,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
 def update_studsubj(instance, upload_dict, msg_dict, request):
     # --- update existing and new instance PR2019-06-06
     # add new values to update_dict (don't reset update_dict, it has values)
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_studsubj -------')
         logger.debug('upload_dict' + str(upload_dict))
@@ -1767,14 +1773,18 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
 
         elif field in ['is_extra_nocount','is_extra_counts', 'is_elective_combi']:
             saved_value = getattr(instance, field)
-            logger.debug('saved_value: ' + str(saved_value))
+            if logging_on:
+                logger.debug('saved_value: ' + str(saved_value))
+
             if new_value != saved_value:
                 setattr(instance, field, new_value)
                 save_changes = True
 
         elif field in ['has_exemption', 'has_reex', 'has_reex03']:
             saved_value = getattr(instance, field)
-            logger.debug('saved_value: ' + str(saved_value))
+            if logging_on:
+                logger.debug('saved_value: ' + str(saved_value))
+
             if new_value != saved_value:
                 setattr(instance, field, new_value)
                 save_changes = True
@@ -1819,12 +1829,13 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
         #               'reex_auth1by', 'reex_auth2by', 'reex3_auth1by', 'reex3_auth2by',
         #               'pok_auth1by', 'pok_auth2by'):
         elif '_auth' in field:
-            logger.debug('field: ' + str(field) )
-            logger.debug('new_value: ' + str(new_value))
-
             prefix, authby = field.split('_')
-            logger.debug('prefix: ' + str(prefix) )
-            logger.debug('authby: ' + str(authby) )
+            if logging_on:
+                logger.debug('field: ' + str(field) )
+                logger.debug('new_value: ' + str(new_value))
+
+                logger.debug('prefix: ' + str(prefix) )
+                logger.debug('authby: ' + str(authby) )
 
 # - check if instance is published. Authorization of published instances cannot be changed.
             err_published, err_same_user = False, False
@@ -1837,8 +1848,11 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
                 authby_other = 'auth2by' if authby == 'auth1by' else 'auth1by'
                 fld_other = prefix + '_' + authby_other
                 other_authby = getattr(instance, fld_other)
-                logger.debug('other_authby: ' + str(other_authby) )
-                logger.debug('request.user: ' + str(request.user) )
+
+                if logging_on:
+                    logger.debug('other_authby: ' + str(other_authby) )
+                    logger.debug('request.user: ' + str(request.user) )
+
                 if other_authby and other_authby == request.user:
                     err_same_user = True
             if not err_published and not err_same_user:
@@ -1848,7 +1862,6 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
                     setattr(instance, field, None)
                 save_changes = True
 
-
             #msg_dict['err_' + prefix] = _('This item is published. You cannot change its authorization.')
             # msg_dict['err_' + prefix] = _('The same user cannot authorize both as chairman and secretary.')
     # --- end of for loop ---
@@ -1857,8 +1870,10 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
     if save_changes:
         try:
             instance.save(request=request)
-            logger.debug('The changes have been saved: ' + str(instance))
-        except:
+            if logging_on:
+                logger.debug('The changes have been saved: ' + str(instance))
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
             msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
 # --- end of update_studsubj
 
@@ -2629,7 +2644,7 @@ def update_scheme_in_studsubj(student, request):
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def create_studsubj(student, schemeitem, messages, error_list, request, skip_save):
     # --- create student subject # PR2020-11-21 PR2021-07-21
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_studsubj ----- ')
         logger.debug('student: ' + str(student))
@@ -2750,17 +2765,25 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
 
 #/////////////////////////////////////////////////////////////////
 
-def create_studentsubject_rows(examyear, schoolbase, depbase, setting_dict, append_dict, student_pk=None, studsubj_pk=None):
+def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school, setting_dict, append_dict, student_pk=None, studsubj_pk=None):
     # --- create rows of all students of this examyear / school PR2020-10-27
-    #logger.debug(' =============== create_student_rows ============= ')
-    #logger.debug('append_dict: ' + str(append_dict))
-    #logger.debug('setting_dict: ' + str(setting_dict))
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_studentsubject_rows ============= ')
+        logger.debug('student_pk: ' + str(student_pk))
+        logger.debug('studsubj_pk: ' + str(studsubj_pk))
+        logger.debug('setting_dict: ' + str(setting_dict))
+        logger.debug('append_dict: ' + str(append_dict))
 
     # create list of students of this school / examyear, possibly with filter student_pk or studsubj_pk
     # with left join of studentsubjects with deleted=False
+    # when role is other than school: only when submitted, don't show students without submitted subjects
     sel_examyear_pk = examyear.pk if examyear else None
     sel_schoolbase_pk = schoolbase.pk if schoolbase else None
     sel_depbase_pk = depbase.pk if depbase else None
+
+    # dont show studnets without subject on other users than sameschool
+    left_or_inner_join = "LEFT JOIN" if requsr_same_school else "INNER JOIN"
 
     sel_lvlbase_pk = None
     if c.KEY_SEL_LVLBASE_PK in setting_dict:
@@ -2770,6 +2793,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, setting_dict, appe
     if c.KEY_SEL_SCTBASE_PK in setting_dict:
         sel_sctbase_pk = setting_dict.get(c.KEY_SEL_SCTBASE_PK)
 
+    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
     sql_studsubj_list = ["SELECT studsubj.id AS studsubj_id, studsubj.student_id,",
         "studsubj.cluster_id, si.id AS schemeitem_id, si.scheme_id AS scheme_id,",
         "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_elective_combi,",
@@ -2837,9 +2861,12 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, setting_dict, appe
         "LEFT JOIN schools_published AS pok_published ON (pok_published.id = studsubj.pok_published_id)",
 
         "WHERE NOT studsubj.tobedeleted"]
-    sql_studsubjects = ' '.join(sql_studsubj_list)
 
-    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
+    # only show published subject for other users than sameschool
+    if not requsr_same_school:
+        sql_studsubj_list.append("AND studsubj.subj_published_id IS NOT NULL")
+
+    sql_studsubjects = ' '.join(sql_studsubj_list)
 
     sql_list = ["WITH studsubj AS (" + sql_studsubjects + ")",
         "SELECT st.id AS stud_id, studsubj.studsubj_id, studsubj.schemeitem_id, studsubj.cluster_id,",
@@ -2853,7 +2880,8 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, setting_dict, appe
         "studsubj.pws_title, studsubj.pws_subjects,",
         "studsubj.has_exemption, studsubj.has_reex, studsubj.has_reex03, studsubj.has_pok,",
 
-        "studsubj.is_mandatory, studsubj.is_mand_subj_id, studsubj.is_combi, studsubj.extra_count_allowed, studsubj.extra_nocount_allowed, studsubj.elective_combi_allowed,",
+        "studsubj.is_mandatory, studsubj.is_mand_subj_id, studsubj.is_combi,",
+        "studsubj.extra_count_allowed, studsubj.extra_nocount_allowed, studsubj.elective_combi_allowed,",
         "studsubj.sjtp_id, studsubj.sjtp_abbrev, studsubj.sjtp_has_prac, studsubj.sjtp_has_pws,",
 
         "studsubj.subj_auth1_id, studsubj.subj_auth1_usr,",
@@ -2877,8 +2905,9 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, setting_dict, appe
         "studsubj.pok_publ_id, studsubj.pok_publ_modat,",
 
         "studsubj.tobedeleted, studsubj.modifiedat, studsubj.modby_username",
+
         "FROM students_student AS st",
-        "LEFT JOIN studsubj ON (studsubj.student_id = st.id)",
+        left_or_inner_join, "studsubj ON (studsubj.student_id = st.id)",
         "INNER JOIN schools_school AS school ON (school.id = st.school_id)",
         "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
@@ -2904,14 +2933,14 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, setting_dict, appe
     sql_list.append('ORDER BY st.id, studsubj.studsubj_id NULLS FIRST')
     sql = ' '.join(sql_list)
 
-    #logger.debug('sql_keys: ' + str(sql_keys) + ' ' + str(type(sql_keys)))
-    #logger.debug('sql: ' + str(sql) + ' ' + str(type(sql)))
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
         rows = af.dictfetchall(cursor)
 
-    #logger.debug('rows: ' + str(rows) + ' ' + str(type(rows)))
-
+    #if logging_on:
+    #   logger.debug('sql_keys: ' + str(sql_keys) + ' ' + str(type(sql_keys)))
+    #   logger.debug('sql: ' + str(sql) + ' ' + str(type(sql)))
+    #    logger.debug('rows: ' + str(rows) + ' ' + str(type(rows)))
     #logger.debug('connection.queries: ' + str(connection.queries))
 
 # - full name to rows

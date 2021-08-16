@@ -153,7 +153,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
     # - get selected examyear from Usersetting
         no_examyears, examyear_not_published = False, False
 
-        sel_country_abbrev, sel_country_name, country_locked = None, None, False
+        sel_country_abbrev, sel_country_name, country_locked, examyear_locked = None, None, False, False
         sel_examyear_code = None
         sel_examyear, sel_examyear_save, may_select_examyear = af.get_sel_examyear_instance(request)
         if sel_examyear is None:
@@ -180,6 +180,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             country_locked = sel_examyear.country.locked
 # +++ do not display pages when examyear is not published yet,
             examyear_not_published = not sel_examyear.published
+            examyear_locked = sel_examyear.locked
 # +++ give warning when examyear is different from current examyear,
             # is moved to downloadsettings
 
@@ -256,6 +257,10 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             no_access_message = _("%(country)s has no license to use AWP-online.") % \
                                                  {'country': sel_country_name}
             awp_messages.append(no_access_message)
+        elif examyear_locked:
+            no_access_message = _("Exam year %(ey)s is locked. You cannot make changes.") % \
+                                                 {'ey': str(sel_examyear.code)}
+            awp_messages.append(no_access_message)
         elif examyear_not_published:
             # get latest name of ETE / Div of Exam from schools, if not found: default = MinOnd
             school_admin = sch_mod.School.objects.filter(
@@ -282,6 +287,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 
         headerbar_param = {
             'no_access': no_access,
+            'examyear_locked': examyear_locked,
             'is_requsr_same_school': is_requsr_same_school,
             'is_requsr_admin_or_system': is_requsr_admin_or_system,
             'examyear_code': sel_examyear_str,

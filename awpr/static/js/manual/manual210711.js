@@ -57,21 +57,17 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "user_lang", user_lang);
 
         const is_en = (user_lang === "en");
-        const header_txt = (page === "home") ? (is_en) ? "Introduction" : "Introductie" :
-                        (page === "upload") ?  (is_en) ? "Upload data" : "Gegevens uploaden" :
-                        (page === "approve") ? (is_en) ? "Approve and submit" : "Goedkeuren em indienen van Ex-formulieren" :
-                        null
-
         const html_dict = (page === "home") ? man_home :
+                        (page === "user") ? man_user :
                         (page === "upload") ? man_upload :
                         (page === "approve") ? man_approve : null;
 
-        const html_list = (user_lang === 'en' && html_dict.en) ?  html_dict.en :  html_dict.nl;
+        const html_list = (html_dict) ? (user_lang === 'en' && html_dict.en) ?  html_dict.en :  html_dict.nl : null;
 
-        const html_str = (html_list && html_list.length) ? html_list.join('') : "<h4 class='p-5'> Deze pagina is nog niet beschikbaar.</h4>";
+        const html_str = (html_list && html_list.length) ? html_list.join('') : (is_en) ? "<h4 class='p-5'> This page is not available yet.</h4>" : "<h4 class='p-5'> Deze pagina is nog niet beschikbaar.</h4>";
 
         document.getElementById("id_content").innerHTML = html_str;
-        document.getElementById("id_page_header").innerText = header_txt;
+
 
         id_page_header
 
