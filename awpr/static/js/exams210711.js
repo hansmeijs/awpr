@@ -3074,7 +3074,7 @@ document.addEventListener
             let msg01_text = null, msg02_text = null, msg03_text = null;
             if ("msg_err" in response) {
                 msg01_text = get_dict_value(response, ["msg_err", "msg01"], "");
-                if (mod_dict.mode === "resend_activation_email") {
+                if (mod_dict.mode === "send_activation_email") {
                     msg02_text = loc.Activation_email_not_sent;
                 }
                 el_confirm_msg_container.classList.add("border_bg_invalid");

@@ -140,17 +140,17 @@ class UserUploadView(View):
             # requsr_permitlist: ['view_page', 'crud_otherschool', 'crud', 'crud', 'permit_userpage']
             requsr_permitlist = req_user.permit_list('page_user')
 
-            has_permit_same_school, has_permit_all_schools = False, False
+            has_permit_same_school, has_permit_other_schools = False, False
             if requsr_permitlist:
-                has_permit_all_schools = 'permit_crud_otherschool' in requsr_permitlist
+                has_permit_other_schools = 'permit_crud_otherschool' in requsr_permitlist
                 has_permit_same_school = 'permit_crud_sameschool' in requsr_permitlist
 
             if logging_on:
                 logger.debug('requsr_permitlist: ' + str(requsr_permitlist))
-                logger.debug('has_permit_all_schools: ' + str(has_permit_all_schools))
+                logger.debug('has_permit_other_schools: ' + str(has_permit_other_schools))
                 logger.debug('has_permit_same_school: ' + str(has_permit_same_school))
 
-            if has_permit_same_school or has_permit_all_schools:
+            if has_permit_same_school or has_permit_other_schools:
 # - get upload_dict from request.POST
                 upload_json = request.POST.get("upload")
                 if upload_json:
@@ -191,10 +191,6 @@ class UserUploadView(View):
                     )
                     is_same_schoolbase = (user_schoolbase and user_schoolbase == req_user.schoolbase)
 
-                    if logging_on:
-                        logger.debug('user_schoolbase: ' + str(user_schoolbase))
-                        logger.debug('is_same_schoolbase: ' + str(is_same_schoolbase))
-
                     # <PERMIT> PR2021-04-23
                     # user role can never be higher dan requser role
 
@@ -207,10 +203,17 @@ class UserUploadView(View):
                         if user_schoolbase_defaultrole is None:
                             user_schoolbase_defaultrole = 0
                         if user_schoolbase_defaultrole <= req_user.role:
-                            if has_permit_all_schools:
+                            if has_permit_other_schools:
                                 has_permit = True
                             elif has_permit_same_school:
                                 has_permit = is_same_schoolbase
+
+                        if logging_on:
+                            logger.debug('user_schoolbase: ' + str(user_schoolbase))
+                            logger.debug('user_schoolbase_defaultrole: ' + str(user_schoolbase_defaultrole))
+                            logger.debug('has_permit_other_schools: ' + str(has_permit_other_schools))
+                            logger.debug('has_permit_same_school: ' + str(has_permit_same_school))
+                            logger.debug('has_permit: ' + str(has_permit))
 
                     if not has_permit:
                         err_dict['msg01'] = _("You don't have permission to perform this action.")
@@ -218,14 +221,14 @@ class UserUploadView(View):
                         updated_dict = {}
 
 # ++++  resend activation email ++++++++++++
-                        if mode == 'resend_activation_email':
-                            resend_activation_email(user_pk, update_wrap, err_dict, request)
+                        if mode == 'send_activation_email':
+                            send_activation_email(user_pk, update_wrap, err_dict, request)
 
 # ++++  delete user ++++++++++++
                         elif mode == 'delete':
                             if user_pk:
                                 instance = None
-                                if has_permit_all_schools:
+                                if has_permit_other_schools:
                                     instance = acc_mod.User.objects.get_or_none(
                                         id=user_pk,
                                         country=req_user.country
@@ -323,7 +326,7 @@ class UserUploadView(View):
 
 # - +++++++++ update ++++++++++++
                             instance = None
-                            if has_permit_all_schools:
+                            if has_permit_other_schools:
                                 instance = acc_mod.User.objects.get_or_none(
                                     id=user_pk,
                                     country=req_user.country)
@@ -934,14 +937,20 @@ def UserActivate(request, uidb64, token):
         return render(request, 'account_activation_invalid.html')
 
 
-# === resend_activation_email ===================================== PR2020-08-15
-def resend_activation_email(user_pk, update_wrap, err_dict, request):
-    #  resend_activation_email is called from table Users, field 'activated' when the activation link has expired.
+# === send_activation_email ===================================== PR2020-08-15
+def send_activation_email(user_pk, update_wrap, err_dict, request):
+    #  send_activation_email is called from table Users, field 'activated' when the activation link has expired.
     #  it sends an email to the user
     #  it returns a HttpResponse, with ok_msg or err-msg
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('  ')
+        logger.debug(' ========== send_activation_email ===============')
 
     user = acc_mod.User.objects.get_or_none(id=user_pk, country= request.user.country)
-    #logger.debug('user: ' + str(user))
+    if logging_on:
+        logger.debug('user: ' + str(user))
+
     has_error = False
     if user:
         update_wrap['user'] = {'pk': user.pk, 'username': user.username}
@@ -973,6 +982,9 @@ def resend_activation_email(user_pk, update_wrap, err_dict, request):
                 })
                 # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
                 mail_count = send_mail(subject, message, from_email, [user.email], fail_silently=False)
+                if logging_on:
+                    logger.debug('mail_count: ' + str(mail_count))
+
                 if not mail_count:
                     err_dict['msg01'] = _('An error occurred.')
                     err_dict['msg02'] = _('The activation email has not been sent.')
@@ -1001,7 +1013,7 @@ def resend_activation_email(user_pk, update_wrap, err_dict, request):
             user.modifiedat = now_utc
 
             user.save()
-# === end of resend_activation_email =====================================
+# === end of send_activation_email =====================================
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 

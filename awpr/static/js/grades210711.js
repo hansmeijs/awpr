@@ -1614,7 +1614,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //=========  ModConfirmOpen  ================ PR2020-08-03
     function ModConfirmOpen(mode, el_input) {
         //console.log(" -----  ModConfirmOpen   ----")
-        // values of mode are : "delete", "inactive" or "resend_activation_email", "permission_sysadm"
+        // values of mode are : "delete", "inactive" or "send_activation_email", "permission_sysadm"
 
         if(may_edit){
 
@@ -1726,7 +1726,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 ShowClassWithTimeout(tblRow, "tsa_tr_error");
             }
 
-            if(["delete", 'resend_activation_email'].indexOf(mod_dict.mode) > -1) {
+            if(["delete", "send_activation_email"].indexOf(mod_dict.mode) > -1) {
     // show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
             } else if (mod_dict.mode === "inactive") {
@@ -1786,7 +1786,7 @@ document.addEventListener("DOMContentLoaded", function() {
             let msg01_text = null, msg02_text = null, msg03_text = null;
             if ("msg_err" in response) {
                 msg01_text = get_dict_value(response, ["msg_err", "msg01"], "");
-                if (mod_dict.mode === "resend_activation_email") {
+                if (mod_dict.mode === "send_activation_email") {
                     msg02_text = loc.Activation_email_not_sent;
                 }
                 el_confirm_msg_container.classList.add("border_bg_invalid");

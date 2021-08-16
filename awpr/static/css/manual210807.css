@@ -150,8 +150,24 @@
     background-image: url('/static/manual/home_titlebar.png');
     background-size: 1075px 424px;
 }
-
-
+/* ---------------------------------------------------
+    IMAGES - INTRO
+----------------------------------------------------- */
+.img_page_layout_ne.png{
+    background-repeat: no-repeat;
+    margin-left: 8px;
+}
+.img_page_layout_ne, .img_page_layout_en {
+    height: 424px;
+    width: 1075px;
+    background-size: 1075px 424px;
+ }
+.img_page_layout_ne {
+    background-image: url('/static/manual/page_layout_ne.png');
+}
+.img_upload_stud_menu_en {
+    img_page_layout_en-image: url('/static/manual/page_layout_en.png');
+}
 /* ---------------------------------------------------
     IMAGES - UPLOAD CANDIDATES
 ----------------------------------------------------- */
@@ -164,7 +180,6 @@
 .img_upload_stud_step5_ne, .img_upload_stud_step5_en {
     background-repeat: no-repeat;
     margin-left: 8px;
-    /*margin-left: 32px;*/
 }
 
 .img_upload_stud_menu_ne, .img_upload_stud_menu_en {

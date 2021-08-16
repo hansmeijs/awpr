@@ -10,6 +10,7 @@
                 "<h4 class='px-2'>Gegevens uploaden</h4>",
             "</div>",
         "</div>",
+
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",

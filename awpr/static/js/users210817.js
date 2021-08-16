@@ -265,8 +265,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= DatalistDownload  ===================== PR2020-07-31
     function DatalistDownload(datalist_request, called_by) {
-        console.log( "=== DatalistDownload ", called_by)
-        console.log("request: ", datalist_request)
+        //console.log( "=== DatalistDownload ", called_by)
+        //console.log("request: ", datalist_request)
 
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
@@ -282,8 +282,8 @@ document.addEventListener('DOMContentLoaded', function() {
             data: param,
             dataType: 'json',
             success: function (response) {
-                console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
-                console.log(response)
+                //console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
+                //console.log(response)
 
                 // hide loader
                 el_loader.classList.add(cls_visible_hide)
@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("locale_dict" in response) {
                     loc = response.locale_dict;
                     isloaded_loc = true;
-        console.log("loc: ", loc)
+        //console.log("loc: ", loc)
                 };
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict;
@@ -330,7 +330,7 @@ document.addEventListener('DOMContentLoaded', function() {
             error: function (xhr, msg) {
 // ---  hide loader
                 el_loader.classList.add(cls_visible_hide);
-                console.log(msg + '\n' + xhr.responseText);
+                //console.log(msg + '\n' + xhr.responseText);
             }
         });
     }  // function DatalistDownload
@@ -364,14 +364,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
 //=========  HandleBtnSelect  ================ PR2020-09-19 PR2021-08-01
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ");
+        //console.log( "===== HandleBtnSelect ========= ");
 
 // ---  get  selected_btn
         // set to default "btn_user" when there is no selected_btn
         // this happens when user visits page for the first time
         // includes is to catch btn names that are no longer in use
         selected_btn = (data_btn && ["btn_user", "btn_usergroup", "btn_userpermit"].includes(data_btn)) ? data_btn : "btn_user"
-        console.log( "selected_btn: ", selected_btn);
+        //console.log( "selected_btn: ", selected_btn);
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', function() {
         tr_clicked.classList.add(cls_selected)
 
 // --- get existing data_dict from data_rows
-        console.log( "tr_clicked.id: ", tr_clicked.id);
+        //console.log( "tr_clicked.id: ", tr_clicked.id);
         const data_dict = get_datadict_from_mapid(tr_clicked.id)
         //console.log( "data_dict: ", data_dict);
 
@@ -790,14 +790,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // ---  toggle permission el_input
                         permit_bool = (!permit_bool);
-    console.log( "new permit_bool", permit_bool);
+    //console.log( "new permit_bool", permit_bool);
             // ---  put new permission in el_input
                         el_input.setAttribute("data-filter", (permit_bool) ? "1" : "0")
            // ---  change icon, before uploading
                         el_input.className = (permit_bool) ? "tickmark_1_2" : "tickmark_0_0";
 
-           console.log( "tblName", tblName);
-           console.log( "fldName", fldName);
+           //console.log( "tblName", tblName);
+           //console.log( "fldName", fldName);
                         const url_str = (tblName === "userpermit") ? urls.url_userpermit_upload : urls.url_user_upload;
                         const upload_dict = {mode: "update", mapid: data_dict.mapid};
                         if (tblName === "userpermit"){
@@ -819,9 +819,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= UploadChanges  ============= PR2020-08-03
     function UploadChanges(upload_dict, url_str) {
-        console.log("=== UploadChanges");
-        console.log("url_str: ", url_str);
-        console.log("upload_dict: ", upload_dict);
+        //console.log("=== UploadChanges");
+        //console.log("url_str: ", url_str);
+        //console.log("upload_dict: ", upload_dict);
 
         if(!isEmpty(upload_dict)) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -834,15 +834,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 success: function (response) {
                     // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
-                    console.log( "response");
-                    console.log( response);
+                    //console.log( "response");
+                    //console.log( response);
 
                     if("msg_dictlist" in response){
                         b_ShowModMessages(response.msg_dictlist);
                     }
 
                     const mode = get_dict_value(response, ["mode"]);
-                    if(["delete", 'resend_activation_email'].includes(mode)) {
+                    if(["delete", "send_activation_email"].includes(mode)) {
                         ModConfirmResponse(response);
                     };
 
@@ -869,10 +869,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++ MOD ADD USER ++++++++++++++++ PR2020-09-18
     function MUA_Open(mode, el_input){
-        console.log(" -----  MUA_Open   ---- mode: ", mode)  // modes are: addnew, update
-        console.log("permit_dict: ", permit_dict)
-        console.log("permit_dict.permit_crud_sameschool: ", permit_dict.permit_crud_sameschool)
-        console.log("permit_dict.permit_crud_otherschool: ", permit_dict.permit_crud_otherschool)
+        //console.log(" -----  MUA_Open   ---- mode: ", mode)  // modes are: addnew, update
+        //console.log("permit_dict: ", permit_dict)
+        //console.log("permit_dict.permit_crud_sameschool: ", permit_dict.permit_crud_sameschool)
+        //console.log("permit_dict.permit_crud_otherschool: ", permit_dict.permit_crud_otherschool)
         // mode = 'addnew' when called by SubmenuButton
         // mode = 'update' when called by tblRow event
 
@@ -882,7 +882,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const fldName = get_attr_from_el(el_input, "data-field");
             const is_addnew = (mode === "addnew");
 
-        console.log("fldName: ", fldName)
+        //console.log("fldName: ", fldName)
             if(el_input){
                 const tblRow = get_tablerow_selected(el_input);
                 user_mapid = tblRow.id;
@@ -928,7 +928,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 last_name: (data_dict.last_name) ? data_dict.last_name : null,
                 email: (data_dict.email) ? data_dict.email : null
                 };
-            console.log("mod_MUA_dict: ", mod_MUA_dict)
+            //console.log("mod_MUA_dict: ", mod_MUA_dict)
 
     // ---  show only the elements that are used in this tab
             const container_element = document.getElementById("id_mod_user");
@@ -999,8 +999,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MUA_Save  ============= PR2020-08-02 PR2020-08-15 PR2021-06-30
    function MUA_Save(mode) {
-        console.log("=== MUA_Save === ");
-        console.log("mode: ", mode);
+        //console.log("=== MUA_Save === ");
+        //console.log("mode: ", mode);
         //  mode = 'validate' when called by el_MUA_btn_submit
         //  mode = "save" after response OK
 
@@ -1019,21 +1019,21 @@ document.addEventListener('DOMContentLoaded', function() {
         if(!skip){
             // mod_MUA_dict. modes are: 'addnew', 'update'
 
-            // in ModConfirmSave upload_dict.mode can get value "delete" or "resend_activation_email"
+            // in ModConfirmSave upload_dict.mode can get value "delete" or "send_activation_email"
             // in this function value of 'mode' is only 'save'
 
             const upload_mode = (mode === "validate") ? "validate" :
-                                //(mode === "resend_activation_email" ) ? "resend_activation_email" :
+                                //(mode === "send_activation_email" ) ? "send_activation_email" :
                                 (mode === "save") ? "create" :
                                 (mod_MUA_dict.mode === "update") ? "update" : null;
 
-            console.log("mode: ", mode);
-            console.log("mod_MUA_dict.mode", mod_MUA_dict.mode);
-            console.log("................upload_mode", upload_mode);
+            //console.log("mode: ", mode);
+            //console.log("mod_MUA_dict.mode", mod_MUA_dict.mode);
+            //console.log("................upload_mode", upload_mode);
 
    // ---  create mod_dict
             let upload_dict = {}
-            if (upload_mode === "resend_activation_email" ){
+            if (upload_mode === "send_activation_email" ){
                 upload_dict = { user_pk: map_dict.id,
                                schoolbase_pk: map_dict.schoolbase_pk,
                                mode: upload_mode,
@@ -1056,7 +1056,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 email: el_MUA_email.value
                               };
             }
-            console.log("upload_dict: ", upload_dict);
+            //console.log("upload_dict: ", upload_dict);
 
             // must lose focus, otherwise green / red border won't show
             //el_input.blur();
@@ -1072,8 +1072,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
-                    console.log( "response");
-                    console.log( response);
+                    //console.log( "response");
+                    //console.log( response);
 
                     // hide loader
                     el_MUA_loader.classList.add(cls_hide);
@@ -1103,7 +1103,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MUA_CreateOrUpdate  ============= PR2021-07-05
    function MUA_CreateOrUpdate() {
-        console.log("=== MUA_Save === ");
+        //console.log("=== MUA_Save === ");
         //  mode = 'validate' when called by el_MUA_btn_submit
         //  mode = "save" after response OK
         // create new user or update existing user
@@ -1111,7 +1111,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  skip if one of the fields is blank
         let skip = !(el_MUA_username.value && el_MUA_last_name.value && el_MUA_email.value)
         if(!skip){
-            console.log("mod_MUA_dict.mode", mod_MUA_dict.mode);
+            //console.log("mod_MUA_dict.mode", mod_MUA_dict.mode);
    // ---  create upload_dict
             const upload_mode = (mod_MUA_dict.user_pk) ? "update" : "create";
             const upload_dict = { mode:  upload_mode,
@@ -1121,7 +1121,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 email: el_MUA_email.value
                               };
             if (mod_MUA_dict.user_pk){upload_dict.user_pk = mod_MUA_dict.user_pk}
-            console.log("upload_dict: ", upload_dict);
+            //console.log("upload_dict: ", upload_dict);
 
             // must lose focus, otherwise green / red border won't show
             //el_input.blur();
@@ -1137,8 +1137,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
-                    console.log( "response");
-                    console.log( response);
+                    //console.log( "response");
+                    //console.log( response);
 
                     // hide loader
                     el_MUA_loader.classList.add(cls_hide);
@@ -1161,7 +1161,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MUA_FillSelectTableSchool  ============= PR2020--09-17
     function MUA_FillSelectTableSchool() {
-        console.log("===== MUA_FillSelectTableSchool ===== ");
+        //console.log("===== MUA_FillSelectTableSchool ===== ");
 
         const data_rows = school_rows;
         const tblBody_select = document.getElementById("id_MUA_tbody_select");
@@ -1266,7 +1266,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MUA_SetMsgElements  ============= PR2020-08-02
     function MUA_SetMsgElements(response){
-        console.log( "===== MUA_SetMsgElements  ========= ");
+        //console.log( "===== MUA_SetMsgElements  ========= ");
         // TOD) switch to render msg box
         const err_dict = (response && "msg_err" in response) ? response.msg_err : {}
         const validation_ok = get_dict_value(response, ["validation_ok"], false);
@@ -1291,9 +1291,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // --- loop through input elements
             if("save" in err_dict){
 
-        console.log( "err_dict", err_dict);
+        //console.log( "err_dict", err_dict);
                 const save_dict = err_dict.save
-        console.log( "save_dict", save_dict);
+        //console.log( "save_dict", save_dict);
                 err_save = true;
 
                 document.getElementById("id_msg_01").innerText = get_dict_value(save_dict, ["msg01"]);
@@ -1487,7 +1487,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++ MOD UPLOAD PERMITS ++++++++++++++++ PR2021-04-20
     function MUP_Open(){
-        console.log(" -----  MUP_Open   ----")
+        //console.log(" -----  MUP_Open   ----")
 
     // ---  show modal
         $("#id_mod_upload_permits").modal({backdrop: true});
@@ -1496,7 +1496,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++ MOD GROUP PERMIT ++++++++++++++++ PR2021-03-19
     function MUPM_Open(mode, el_input){
-        console.log(" -----  MUPM_Open   ---- mode: ", mode)  // modes are: addnew, update
+        //console.log(" -----  MUPM_Open   ---- mode: ", mode)  // modes are: addnew, update
         // mode = 'addnew' when called by SubmenuButton
         // mode = 'update' when called by tblRow event
 
@@ -1508,7 +1508,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(el_input){
             const tblRow = get_tablerow_selected(el_input);
             const map_dict = get_mapdict_from_datamap_by_id(permit_map, tblRow.id);
-        console.log("map_dict", map_dict)
+        //console.log("map_dict", map_dict)
             if(!isEmpty(map_dict)){
                 userpermit_pk = map_dict.id;
                 role = map_dict.role;
@@ -1526,7 +1526,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // MUPM_Open
 
     function MUPM_Save(mode){ //PR2021-03-20
-        console.log("=== MUPM_Save === ");
+        //console.log("=== MUPM_Save === ");
         //  mode = 'save', 'delete'
         const upload_mode = (mode === "delete") ? "delete" :
                             (mod_MUPM_dict.mode === "addnew") ? "create" : "update";
@@ -1545,7 +1545,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             page: permit_page,
                             action: permit_action,
                             sequence: permit_sequence_int};
-        console.log("upload_dict: ", upload_dict);
+        //console.log("upload_dict: ", upload_dict);
 
         const parameters = {"upload": JSON.stringify (upload_dict)}
         let response = "";
@@ -1555,8 +1555,8 @@ document.addEventListener('DOMContentLoaded', function() {
             data: parameters,
             dataType:'json',
             success: function (response) {
-                console.log( "response");
-                console.log( response);
+                //console.log( "response");
+                //console.log( response);
 
                 // hide loader
                 el_MUA_loader.classList.add(cls_hide);
@@ -1579,7 +1579,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MUPM_FillSelectTableDepartment  ============= PR2020--09-30
     function MUPM_FillSelectTableDepartment() {
-        console.log("===== MUPM_FillSelectTableDepartment ===== ");
+        //console.log("===== MUPM_FillSelectTableDepartment ===== ");
         //console.log("department_map", department_map);
 
         const data_map = department_map;
@@ -1599,7 +1599,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MUPM_FillSelectRow  ============= PR2020--09-30
     function MUPM_FillSelectRow(tblBody_select, dict, select_all_text) {
-        console.log("===== MUPM_FillSelectRowDepartment ===== ");
+        //console.log("===== MUPM_FillSelectRowDepartment ===== ");
         // add_select_all when not isEmpty(dict)
         //console.log("dict", dict);
         let pk_int = null, map_id = null, abbrev = null
@@ -1651,15 +1651,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MUPM_SelectDepartment  ============= PR2020-10-01
     function MUPM_SelectDepartment(tblRow){
-        console.log( "===== MUPM_SelectDepartment  ========= ");
+        //console.log( "===== MUPM_SelectDepartment  ========= ");
         //console.log( "event_key", event_key);
 
         if(tblRow){
             let is_selected = (!!get_attr_from_el_int(tblRow, "data-selected"));
             let pk_int = get_attr_from_el_int(tblRow, "data-pk");
             const is_select_all = (!pk_int);
-        console.log( "is_selected", is_selected);
-        console.log( "pk_int", pk_int);
+        //console.log( "is_selected", is_selected);
+        //console.log( "pk_int", pk_int);
 // ---  toggle is_selected
             is_selected = !is_selected;
 
@@ -1717,7 +1717,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MUPM_get_selected_depbases  ============= PR2020-10-07
     function MUPM_get_selected_depbases(){
-        console.log( "  ---  MUPM_get_selected_depbases  --- ")
+        //console.log( "  ---  MUPM_get_selected_depbases  --- ")
         const tblBody_select = document.getElementById("id_MUPM_tbody_select");
         let dep_list_arr = [];
         for (let i = 0, row; row = tblBody_select.rows[i]; i++) {
@@ -1731,7 +1731,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         dep_list_arr.sort((a, b) => a - b);
         const dep_list_str = dep_list_arr.join(";");
-        console.log( "dep_list_str", dep_list_str)
+        //console.log( "dep_list_str", dep_list_str)
         return dep_list_str;
     }  // MUPM_get_selected_depbases
 
@@ -1740,13 +1740,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= HandleInputChange  ===============PR2021-03-20
     function HandleInputChange(el_input){
-        console.log(" --- HandleInputChange ---")
+        //console.log(" --- HandleInputChange ---")
 
         const tblRow = get_tablerow_selected(el_input)
         const map_id = tblRow.id
         if (map_id){
             const map_dict = get_mapdict_from_datamap_by_id(permit_map, map_id)
-        console.log("map_dict", map_dict)
+        //console.log("map_dict", map_dict)
             const fldName = get_attr_from_el(el_input, "data-field")
             const userpermit_pk = map_dict.id;
             const map_value = map_dict[fldName];
@@ -1761,7 +1761,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const upload_dict = {mode: "update",
                                     userpermit_pk: userpermit_pk};
                 upload_dict[fldName] = new_value;
-                console.log("upload_dict: ", upload_dict);
+                //console.log("upload_dict: ", upload_dict);
 
         // ---  upload changes
                 UploadChanges(upload_dict, url_str);
@@ -1772,11 +1772,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-30
     function ModConfirmOpen(tblName, mode, el_input) {
-        console.log(" -----  ModConfirmOpen   ----")
-        // values of mode are : "delete", "is_active" or "resend_activation_email", "permission_admin"
+        //console.log(" -----  ModConfirmOpen   ----")
+        // values of mode are : "delete", "is_active" or "send_activation_email", "permission_admin"
 
-        console.log("mode", mode )
-        console.log("tblName", tblName )
+        //console.log("mode", mode )
+        //console.log("tblName", tblName )
 
 // ---  get selected_pk
         let selected_pk = null;
@@ -1787,12 +1787,12 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             selected_pk = (tblName === "userpermit") ? selected_userpermit_pk : selected_user_pk;
         }
-        console.log("tblRow", tblRow )
-        console.log("selected_pk", selected_pk )
+        //console.log("tblRow", tblRow )
+        //console.log("selected_pk", selected_pk )
 
 // --- get data_dict from tblName and selected_pk
         const data_dict = get_datadict_from_pk(tblName, selected_pk)
-        console.log("data_dict", data_dict);
+        //console.log("data_dict", data_dict);
 
 // ---  get info from data_dict
         const is_request_user = (data_dict && permit_dict.requsr_pk && permit_dict.requsr_pk === data_dict.id)
@@ -1871,13 +1871,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         if(is_expired) {
                             msg_list.push(loc.Activationlink_expired);
                         };
-                        msg_list.push(loc.We_will_send_an_email_to_user + " '" + username + "'.");
-                        msg_list.push(loc.Do_you_want_to_continue);
+                        msg_list.push("<p>" + loc.We_will_send_an_email_to_user + " '" + username + "'.</p>");
+                        msg_list.push("<p>" + loc.Do_you_want_to_continue + "</p>");
                     }
                 }
-
-
-
             }
         }
         if(!dont_show_modal){
@@ -1885,8 +1882,10 @@ document.addEventListener('DOMContentLoaded', function() {
             el_confirm_loader.classList.add(cls_visible_hide)
             el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
 
-            const msg_html = (msg_list.length) ? msg_list.join("<br>") : null;
+            const msg_html = (msg_list.length) ? msg_list.join("") : null;
             el_confirm_msg_container.innerHTML = msg_html;
+
+                        el_confirm_msg_container.classList.add("border_bg_transparent");
 
             const caption_save = (mode === "delete") ? loc.Yes_delete :
                             (mode === "is_active") ? ( (mod_dict.current_isactive) ? loc.Yes_make_inactive : loc.Yes_make_active ) :
@@ -1913,8 +1912,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  ModConfirmSave  ================ PR2019-06-23
     function ModConfirmSave() {
-        console.log(" --- ModConfirmSave --- ");
-        console.log("mod_dict: ", mod_dict);
+        //console.log(" --- ModConfirmSave --- ");
+        //console.log("mod_dict: ", mod_dict);
         let tblRow = document.getElementById(mod_dict.mapid);
 
 // ---  when delete: make tblRow red, before uploading
@@ -1931,7 +1930,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 upload_dict.userpermit_pk = mod_dict.userpermit_pk;
             }
         } else {
-            if(["delete", 'resend_activation_email'].includes(mod_dict.mode)) {
+            if(["delete", "send_activation_email"].includes(mod_dict.mode)) {
     // show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
             } else if (mod_dict.mode === "is_active") {
@@ -1968,8 +1967,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  ModConfirmResponse  ================ PR2019-06-23
     function ModConfirmResponse(response) {
-        console.log(" --- ModConfirmResponse --- ");
-        console.log("mod_dict: ", mod_dict);
+        //console.log(" --- ModConfirmResponse --- ");
+        //console.log("mod_dict: ", mod_dict);
         // hide loader
         el_confirm_loader.classList.add(cls_visible_hide)
         const mode = get_dict_value(response, ["mode"])
@@ -1988,18 +1987,21 @@ document.addEventListener('DOMContentLoaded', function() {
             let msg_list = [];
             if ("msg_err" in response) {
                 msg_list.push(get_dict_value(response, ["msg_err", "msg01"], ""));
-                if (mod_dict.mode === "resend_activation_email") {
+                if (mod_dict.mode === "send_activation_email") {
                      msg_list.push(loc.Activation_email_not_sent);
                 }
                 el_confirm_msg_container.classList.add("border_bg_invalid");
             } else if ("msg_ok" in response){
-                msg_list.push(get_dict_value(response, ["msg_ok", "msg01"]));
-                msg_list.push(get_dict_value(response, ["msg_ok", "msg02"]));
-                msg_list.push(get_dict_value(response, ["msg_ok", "msg03"]));
+                const msg01 = get_dict_value(response, ["msg_ok", "msg01"]);
+                const msg02 = get_dict_value(response, ["msg_ok", "msg02"]);
+                const msg03 = get_dict_value(response, ["msg_ok", "msg03"]);
+                if (msg01) { msg_list.push("<p>" + msg01 + "</p>")};
+                if (msg02) msg_list.push("<p>" + msg02 + "</p>");
+                if (msg03) msg_list.push("<p>" + msg03 + "</p>");
                 el_confirm_msg_container.classList.add("border_bg_valid");
             }
 
-            const msg_html = (msg_list.length) ? msg_list.join("<br>") : null;
+            const msg_html = (msg_list.length) ? msg_list.join("") : null;
             el_confirm_msg_container.innerHTML = msg_html;
             el_confirm_btn_cancel.innerText = loc.Close
             el_confirm_btn_save.classList.add(cls_hide);
@@ -2013,8 +2015,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  RefreshDataRowsAfterUpload  ================ PR2021-08-05
 function RefreshDataRowsAfterUpload(response) {
-    console.log(" --- RefreshDataRowsAfterUpload  ---");
-    console.log("response:", response);
+    //console.log(" --- RefreshDataRowsAfterUpload  ---");
+    //console.log("response:", response);
     const is_test = (!!response && !!response.is_test) ;
     if(!is_test && response && "updated_user_rows" in response) {
         RefreshDataRows("user", response.updated_user_rows, user_rows, true)  // true = update
@@ -2024,11 +2026,11 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  RefreshDataRowsPermitsAfterUpload  ================ PR2021-07-20
     function RefreshDataRowsPermitsAfterUpload(response) {
-        console.log(" --- RefreshDataRowsPermitsAfterUpload  ---");
-        console.log( "response", response);
+        //console.log(" --- RefreshDataRowsPermitsAfterUpload  ---");
+        //console.log( "response", response);
 
         const is_test = (response && response.is_test);
-        console.log( "is_test", is_test);
+        //console.log( "is_test", is_test);
         if (response && "updated_user_rows" in response) {
             const updated_user_rows = response.updated_user_rows;
         }
@@ -2053,13 +2055,13 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  RefreshDataRows  ================ PR2021-08-01
     function RefreshDataRows(page_tblName, update_rows, data_rows, is_update) {
-        console.log(" --- RefreshDataRows  ---");
-        console.log("page_tblName", page_tblName);
+        //console.log(" --- RefreshDataRows  ---");
+        //console.log("page_tblName", page_tblName);
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
 
         if (update_rows && update_rows.length ) {
             const field_setting = field_settings[page_tblName];
-            console.log("field_setting", field_setting);
+            //console.log("field_setting", field_setting);
             for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
                 RefreshDatarowItem(page_tblName, field_setting, update_dict, data_rows);
             }
@@ -2073,7 +2075,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  RefreshDatarowItem  ================ PR2021-08-01
     function RefreshDatarowItem(page_tblName, field_setting, update_dict, data_rows) {
-        console.log(" --- RefreshDatarowItem  ---");
+        //console.log(" --- RefreshDatarowItem  ---");
         //console.log("page_tblName", page_tblName);
         //console.log("update_dict", update_dict);
 
@@ -2083,11 +2085,11 @@ function RefreshDataRowsAfterUpload(response) {
             const map_id = update_dict.mapid;
             const is_deleted = (!!update_dict.deleted);
             const is_created = (!!update_dict.created);
-            console.log("is_created", is_created);
+            //console.log("is_created", is_created);
 
             let field_error_list = []
             const error_list = get_dict_value(update_dict, ["error"], []);
-            console.log("error_list", error_list);
+            //console.log("error_list", error_list);
 
             if(error_list && error_list.length){
     // - show modal messages
@@ -2144,13 +2146,13 @@ function RefreshDataRowsAfterUpload(response) {
                     // delete row from data_rows. Splice returns array of deleted rows
                     const deleted_row_arr = data_rows.splice(datarow_index, 1)
                     const deleted_row_dict = deleted_row_arr[0];
-        console.log("deleted_row_dict", deleted_row_dict);
-        console.log("deleted_row_dict.mapid", deleted_row_dict.mapid);
+        //console.log("deleted_row_dict", deleted_row_dict);
+        //console.log("deleted_row_dict.mapid", deleted_row_dict.mapid);
 
         //--- delete tblRow
                     if(deleted_row_dict && deleted_row_dict.mapid){
                         const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
-        console.log("tblRow_tobe_deleted", tblRow_tobe_deleted);
+        //console.log("tblRow_tobe_deleted", tblRow_tobe_deleted);
                         if (tblRow_tobe_deleted ){tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)};
                     }
                 } else {
@@ -2425,7 +2427,7 @@ function RefreshDataRowsAfterUpload(response) {
 //###########################################################################
 //=========  MSSSS_Response  ================ PR2021-04-23  PR2021-07-26
     function MSSSS_Response(tblName, selected_dict, selected_pk) {
-        console.log( "===== MSSSS_Response ========= ");
+        //console.log( "===== MSSSS_Response ========= ");
 
         // Note: when tblName = school: pk_int = schoolbase_pk
         if(selected_pk === -1) { selected_pk = null};
@@ -2480,24 +2482,24 @@ function RefreshDataRowsAfterUpload(response) {
 
 //========= get_datadict_from_mapid  ====== PR2021-08-01
     function get_datadict_from_mapid(map_id) {
-        console.log( "===== get_datadict_from_mapid  === ");
+        //console.log( "===== get_datadict_from_mapid  === ");
         let data_dict = null;
         if(map_id){
             const arr = get_tblName_pk_from_mapid(map_id);
-        console.log( "arr", arr);
+        //console.log( "arr", arr);
             data_dict = get_datadict_from_pk(arr[0], arr[1]);
         };
         return data_dict;
     };  // get_datadict_from_mapid
 
     function get_datadict_from_pk(tblName, pk_int) {
-        console.log( "===== get_datadict_from_pk  === ");
-        console.log( "tblName", tblName);
-        console.log( "pk_int", pk_int, typeof pk_int );
+        //console.log( "===== get_datadict_from_pk  === ");
+        //console.log( "tblName", tblName);
+        //console.log( "pk_int", pk_int, typeof pk_int );
         let data_dict = null;
         if(tblName && pk_int){
             const data_rows = get_data_rows(tblName) ;
-        console.log( "data_rows", data_rows, typeof data_rows );
+        //console.log( "data_rows", data_rows, typeof data_rows );
             const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
             if (!isEmpty(found_dict)) {data_dict = found_dict};
 

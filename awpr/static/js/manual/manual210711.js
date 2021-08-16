@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "user_lang", user_lang);
 
         const is_en = (user_lang === "en");
-        const html_dict = (page === "home") ? man_home :
+        const html_dict = (page === "intro") ? man_home :
                         (page === "user") ? man_user :
                         (page === "upload") ? man_upload :
                         (page === "approve") ? man_approve : null;
@@ -67,9 +67,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const html_str = (html_list && html_list.length) ? html_list.join('') : (is_en) ? "<h4 class='p-5'> This page is not available yet.</h4>" : "<h4 class='p-5'> Deze pagina is nog niet beschikbaar.</h4>";
 
         document.getElementById("id_content").innerHTML = html_str;
-
-
-        id_page_header
 
     };  // LoadPage
 
