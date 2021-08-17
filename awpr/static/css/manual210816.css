@@ -119,6 +119,13 @@
     padding-bottom: 8px;
 }
 
+.mx_auto {
+    margin-right: auto;
+    margin-left: auto;
+}
+
+
+
 /* ---------------------------------------------------
     MEDIAQUERIES
 ----------------------------------------------------- */
@@ -153,7 +160,10 @@
 /* ---------------------------------------------------
     IMAGES - INTRO
 ----------------------------------------------------- */
-.img_page_layout_ne.png{
+.img_page_layout_ne, .img_page_layout_en,
+.img_intro_select_window_ne, .img_intro_select_window_en,
+.img_intro_filterrow_ne, .img_intro_filterrow_en,
+.img_intro_hide_columns_ne, .img_intro_hide_columns_en {
     background-repeat: no-repeat;
     margin-left: 8px;
 }
@@ -166,8 +176,48 @@
     background-image: url('/static/manual/page_layout_ne.png');
 }
 .img_upload_stud_menu_en {
-    img_page_layout_en-image: url('/static/manual/page_layout_en.png');
+    background-image: url('/static/manual/page_layout_en.png');
 }
+
+.img_intro_select_window_ne, .img_intro_select_window_en {
+    width: 797px;
+    height: 313px;
+    background-size: 797px 313px;
+ }
+.img_intro_select_window_ne {
+    background-image: url('/static/manual/intro_select_window_ne.png');
+}
+
+.img_intro_select_window_en {
+    background-image: url('/static/manual/intro_select_window_en.png');
+}
+
+.img_intro_filterrow_ne, .img_intro_filterrow_en {
+    width: 797px;
+    height: 130px;
+    background-size: 797px 130px;
+ }
+.img_intro_filterrow_ne {
+    background-image: url('/static/manual/intro_filterrow_ne.png');
+}
+.img_intro_filterrow_en {
+    background-image: url('/static/manual/intro_filterrow_en.png');
+}
+
+.img_intro_hide_columns_ne, .img_intro_hide_columns_en {
+    width: 797px;
+    height: 391px;
+    background-size: 797px 391px;
+ }
+.img_intro_hide_columns_ne {
+    background-image: url('/static/manual/intro_hide_columns_ne.png');
+}
+.img_intro_hide_columns_en {
+    background-image: url('/static/manual/intro_hide_columns_en.png');
+}
+
+
+
 /* ---------------------------------------------------
     IMAGES - UPLOAD CANDIDATES
 ----------------------------------------------------- */

@@ -108,7 +108,6 @@ const man_approve = {
                             "<div class='mfl'><p class='diamond_3_4'></p></div>",
                             "<div class='mfr'>Dit vak is op het Ex1-formulier ingediend.</div>",
                         "</div>",
-
                     "</div>",
                 "</div>",
 

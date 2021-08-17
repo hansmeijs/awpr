@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-08-16 11:55-0400\n"
+"POT-Creation-Date: 2021-08-16 21:37-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -135,23 +135,6 @@ msgstr "Deze school is vergrendeld. Je kunt deze items niet wijzigen."
 #: .\accounts\models.py:482
 msgid "Error. You cannot view this page."
 msgstr "Is er ee nfout opgetreden. Je kunt deze pagina niet bekijken"
-
-#: .\accounts\templates\account_activation_email.html:4
-#: .\accounts\templates\signup_activation_email.html:4
-#: .\accounts\templates\signup_setpassword.html:64
-#: .\templates\students\submit_ex1_email.html:4
-msgid "Hello "
-msgstr "Hallo "
-
-#: .\accounts\templates\account_activation_email.html:6
-msgid "The AWP-online team has made an account for you with user name:"
-msgstr ""
-"Het AWP-online team heeft voor u een account aangemaakt met de "
-"gebruikersnaam:"
-
-#: .\accounts\templates\account_activation_email.html:8
-msgid "Please click on the link below to activate your AWP-online account:"
-msgstr "Klik op de onderstaande link om je AWP-online account te activeren:"
 
 #: .\accounts\templates\account_activation_invalid.html:5
 msgid "Activate account"
@@ -301,6 +284,12 @@ msgstr ""
 msgid "Send password email"
 msgstr "E-mail versturen"
 
+#: .\accounts\templates\signup_activation_email.html:4
+#: .\accounts\templates\signup_setpassword.html:64
+#: .\templates\students\submit_ex1_email.html:4
+msgid "Hello "
+msgstr "Hallo "
+
 #: .\accounts\templates\signup_activation_email.html:6
 msgid "We have made the following AWP-online account for you at "
 msgstr "We hebben de volgende AWP-online account voor je aangemaakt bij "
@@ -330,7 +319,7 @@ msgstr ""
 msgid "AWP-online"
 msgstr ""
 
-#: .\accounts\templates\signup_setpassword.html:31 .\accounts\views.py:1571
+#: .\accounts\templates\signup_setpassword.html:31 .\accounts\views.py:1588
 msgid "Activate your AWP-online account"
 msgstr "Activeer je AWP-online account"
 
@@ -400,82 +389,82 @@ msgstr "Welkom bij AWP-online"
 msgid "Please enter a password to finish the registration."
 msgstr "Vul je wachtwoord in om de registratie te voltooien."
 
-#: .\accounts\views.py:216 .\grades\views.py:728 .\schools\imports.py:155
+#: .\accounts\views.py:219 .\grades\views.py:728 .\schools\imports.py:155
 #: .\schools\imports.py:214 .\schools\imports.py:387 .\schools\imports.py:926
 #: .\subjects\views.py:1123
 msgid "You don't have permission to perform this action."
 msgstr "Je hebt geen permissie om deze bewerking uit te voeren."
 
-#: .\accounts\views.py:254 .\awpr\locale.py:227
+#: .\accounts\views.py:257 .\awpr\locale.py:227
 msgid "System administrators cannot delete their own account."
 msgstr "Systeembeheerders kunnen hun eigen account niet wissen."
 
-#: .\accounts\views.py:272 .\accounts\views.py:1754 .\schools\imports.py:1165
+#: .\accounts\views.py:275 .\accounts\views.py:1771 .\schools\imports.py:1165
 #: .\schools\models.py:658 .\students\views.py:581 .\students\views.py:595
 #: .\students\views.py:2558 .\subjects\views.py:542 .\subjects\views.py:2111
 #: .\subjects\views.py:2232 .\subjects\views.py:2284 .\subjects\views.py:2684
 msgid "An error occurred"
 msgstr "Er is een fout opgetreden"
 
-#: .\accounts\views.py:273
+#: .\accounts\views.py:276
 #, python-format
 msgid "User account '%(val)s' can not be deleted."
 msgstr "Gebruiker account '%(val)s' kon niet worden aangemaakt."
 
-#: .\accounts\views.py:274
+#: .\accounts\views.py:277
 msgid "Instead, you can make the user account inactive."
 msgstr ""
 "Gebruiker '%(val)s' kan niet worden gewist.\n"
 "In plaats daarvan kun je de gebruiker account niet-aktief maken."
 
-#: .\accounts\views.py:275 .\awpr\locale.py:240
+#: .\accounts\views.py:278 .\awpr\locale.py:240
 msgid "Delete user"
 msgstr "Wis gebruiker"
 
-#: .\accounts\views.py:438 .\accounts\views.py:440 .\awpr\locale.py:199
+#: .\accounts\views.py:441 .\accounts\views.py:443 .\awpr\locale.py:199
 #: .\templates\accounts\users.html:66
 msgid "Permissions"
 msgstr "Permissies"
 
-#: .\accounts\views.py:438 .\awpr\locale.py:877
+#: .\accounts\views.py:441 .\awpr\locale.py:877
 msgid " of "
 msgstr " van "
 
-#: .\accounts\views.py:729
+#: .\accounts\views.py:732
 msgid "Sorry, we could not find your account."
 msgstr "Sorry, we hebben je account niet kunnen vinden."
 
-#: .\accounts\views.py:730
+#: .\accounts\views.py:733
 msgid "Your account cannot be activated."
 msgstr "Je account kan niet geactiveerd worden."
 
-#: .\accounts\views.py:761
+#: .\accounts\views.py:764
 msgid "The link to active your account is no longer valid."
 msgstr "De link om je account te activeren is niet meer geldig."
 
-#: .\accounts\views.py:762
+#: .\accounts\views.py:765
 msgid "Maybe it has expired or has been used already."
 msgstr "Hij is misschien verlopen of al gebruikt."
 
-#: .\accounts\views.py:763
+#: .\accounts\views.py:766
 msgid "The link expires after 7 days."
 msgstr "De link verloopt na 7 dagen."
 
-#: .\accounts\views.py:954
+#: .\accounts\views.py:966
 #, python-format
 msgid "'%(email)s' is not a valid email address."
 msgstr "'%(email)s' is geen geldig e-mail adres."
 
-#: .\accounts\views.py:977 .\accounts\views.py:988 .\awpr\locale.py:151
+#: .\accounts\views.py:994 .\accounts\views.py:1005 .\awpr\locale.py:151
 #: .\schools\views.py:373
 msgid "An error occurred."
 msgstr "Er is een fout opgetreden."
 
-#: .\accounts\views.py:978 .\accounts\views.py:989 .\awpr\locale.py:272
+#: .\accounts\views.py:995 .\accounts\views.py:1006 .\awpr\locale.py:272
 msgid "The activation email has not been sent."
 msgstr "De e-mail met de activerings-link is niet verstuurd."
 
-#: .\accounts\views.py:981
+#: .\accounts\views.py:998
 #, python-format
 msgid ""
 "We have sent an email to the email address '%(email)s' of user '%(usr)s'."
@@ -483,7 +472,7 @@ msgstr ""
 "We hebben een e-mail gestuurd naar e-mail adres '%(email)s' van gebruiker "
 "'%(usr)s'."
 
-#: .\accounts\views.py:983 .\accounts\views.py:1596
+#: .\accounts\views.py:1000 .\accounts\views.py:1613
 msgid ""
 "The user must click the link in that email to verify the email address and "
 "create a password."
@@ -491,59 +480,59 @@ msgstr ""
 "De gebruiker moet op de link in die e-mail klikken om het e-mail adres te "
 "verifiëren en een wachtwoord in te vullen."
 
-#: .\accounts\views.py:1202
+#: .\accounts\views.py:1219
 msgid "Herhaling nieuw wachtwoord"
 msgstr ""
 
-#: .\accounts\views.py:1240
+#: .\accounts\views.py:1257
 msgid "Nieuw wachtwoord aanmaken"
 msgstr ""
 
-#: .\accounts\views.py:1302
+#: .\accounts\views.py:1319
 msgid "Password reset unsuccessful"
 msgstr "Nieuw wachtwoord aanmaken niet gelukt"
 
-#: .\accounts\views.py:1472
+#: .\accounts\views.py:1489
 msgid "Please enter a school."
 msgstr "De school moet ingevuld worden."
 
-#: .\accounts\views.py:1491 .\accounts\views.py:1652 .\subjects\views.py:503
+#: .\accounts\views.py:1508 .\accounts\views.py:1669 .\subjects\views.py:503
 #: .\subjects\views.py:2076 .\subjects\views.py:2657
 msgid "The name"
 msgstr "De naam"
 
-#: .\accounts\views.py:1593
+#: .\accounts\views.py:1610
 #, python-format
 msgid "User '%(usr)s' is registered successfully at %(school)s."
 msgstr "Gebruiker '%(usr)s' is met succes geregistreerd bij %(school)s."
 
-#: .\accounts\views.py:1594
+#: .\accounts\views.py:1611
 #, python-format
 msgid "We have sent an email to the email address '%(email)s'."
 msgstr "We hebben een e-mail verzonden naar het e-mail adres '%(email)s'."
 
-#: .\accounts\views.py:1597
+#: .\accounts\views.py:1614
 msgid ""
 "Check the spam folder, if the email does not appear within a few minutes."
 msgstr ""
 "Als de e-mail niet binnen een paar minuten verschijnt, is hij waarschijnlijk "
 "in de map met spam terecht gekomen."
 
-#: .\accounts\views.py:1733 .\awpr\locale.py:229
+#: .\accounts\views.py:1750 .\awpr\locale.py:229
 msgid "System administrators cannot make their own account inactive."
 msgstr "Systeembeheerders kunnen hun eigen account niet niet-aktief maken."
 
-#: .\accounts\views.py:1750
+#: .\accounts\views.py:1767
 msgid "The changes have been saved successfully."
 msgstr "De wijzigingen zijn met succes opgeslagen."
 
-#: .\accounts\views.py:1755 .\schools\views.py:1030 .\schools\views.py:1041
+#: .\accounts\views.py:1772 .\schools\views.py:1030 .\schools\views.py:1041
 #: .\subjects\views.py:666 .\subjects\views.py:2231 .\subjects\views.py:2233
 #: .\subjects\views.py:2449 .\subjects\views.py:2552 .\subjects\views.py:2891
 msgid "The changes have not been saved."
 msgstr "De wijzigingen zijn niet opgeslagen."
 
-#: .\accounts\views.py:1756
+#: .\accounts\views.py:1773
 msgid "Update user account"
 msgstr "Gebruikersaccount bijwerken"
 
@@ -3404,9 +3393,9 @@ msgid "%(country)s has no license to use AWP-online."
 msgstr "%(country)s heeft nog geen licentie om AWP-online te gebruiken."
 
 #: .\awpr\menus.py:261
+#, python-format
 msgid "Exam year %(ey)s is locked. You cannot make changes."
-msgstr ""
-"Examenjaar %(ey)s is vergrendeld. Je kunt geen wijzigen aanbrengen."
+msgstr "Examenjaar %(ey)s is vergrendeld. Je kunt geen wijzigen aanbrengen."
 
 #: .\awpr\menus.py:277
 msgid "The Ministry of Education"
@@ -5487,8 +5476,12 @@ msgstr "AWP-online handleiding"
 msgid "Manual"
 msgstr "Handleiding"
 
-#: .\templates\manual.html:67 .\templates\manual.html:69
-#: .\templates\manual.html:73 .\templates\manual.html:77
+#: .\templates\manual.html:67
+msgid "Welcome at AWP-online"
+msgstr "Welkom bij AWP-online"
+
+#: .\templates\manual.html:69 .\templates\manual.html:73
+#: .\templates\manual.html:77
 msgid "Introduction"
 msgstr "Inleiding"
 
@@ -5975,6 +5968,14 @@ msgstr "Alle"
 #, python-format
 msgid "An error occurred. '%(fld)s' is not saved."
 msgstr "Er is een fout opgetreden. '%(fld)s' is niet opgeslagen."
+
+#~ msgid "The AWP-online team has made an account for you with user name:"
+#~ msgstr ""
+#~ "Het AWP-online team heeft voor u een account aangemaakt met de "
+#~ "gebruikersnaam:"
+
+#~ msgid "Please click on the link below to activate your AWP-online account:"
+#~ msgstr "Klik op de onderstaande link om je AWP-online account te activeren:"
 
 #~ msgid ""
 #~ "Attention: an Ex1 form has already been submitted. The subjects in that "

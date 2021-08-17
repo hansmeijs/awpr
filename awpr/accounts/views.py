@@ -953,6 +953,9 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
 
     has_error = False
     if user:
+        req_user = request.user.last_name
+        req_school = get_usr_schoolname_with_article(request.user)
+
         update_wrap['user'] = {'pk': user.pk, 'username': user.username}
 
         current_site = get_current_site(request)
@@ -979,6 +982,8 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
                     # was: 'uid': urlsafe_base64_encode(force_bytes(user.pk)).decode(),
                     'uid': urlsafe_base64_encode(force_bytes(user.pk)),
                     'token': account_activation_token.make_token(user),
+                    'req_school': req_school,
+                    'req_user': req_user,
                 })
                 # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
                 mail_count = send_mail(subject, message, from_email, [user.email], fail_silently=False)
@@ -1999,4 +2004,24 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
         logger.error('setting_dict: ', str(new_setting_dict))
 
     return saved_settings_dict
+# - end of set_usersetting_from_upload_subdict
+
+# +++++++++++++++++++  get and set setting +++++++++++++++++++++++
+def get_usr_schoolname_with_article(user):  # PR2019-03-09 PR2021-01-25 PR2021-08-16
+
+# - get schoolname PR2020-12-24
+    examyear = af.get_todays_examyear_or_latest_instance(user.country)
+
+    school = sch_mod.School.objects.get_or_none( base=user.schoolbase, examyear=examyear)
+
+    usr_schoolname_with_article = '---'
+    if school and school.name:
+        if school.article:
+            usr_schoolname_with_article = school.article + ' ' + school.name
+        else:
+            usr_schoolname_with_article = school.name
+    elif user.schoolbase and user.schoolbase.code:
+        usr_schoolname_with_article = user.schoolbase.code
+
+    return get_usr_schoolname_with_article
 # - end of set_usersetting_from_upload_subdict
