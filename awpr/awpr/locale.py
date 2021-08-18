@@ -546,6 +546,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Character'] = _('Character')
         dict['Examnumber'] = TXT_Examnumber
         dict['Examnumber_twolines'] = TXT_Examnumber_twolines
+
+        dict['Abbreviation_twolines'] = _('Abbre-\nviation')
+
         dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
         dict['No_subject_selected'] = _('No subject selected.')
         dict['validation_error'] = _('The composition of the subjects is not correct')
@@ -554,6 +557,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['All_candidates'] = TXT_All_candidates
 
         dict['Notes'] = _('Notes')
+
+        dict['mandatory_subject'] = _('mandatory subject')
+        dict['combination_subject'] = _('combination subject')
 
         dict['Authorized_chairman'] = _('Authorized\nchairman')
         dict['Authorized_secretary'] = _('Authorized\nsecretary')

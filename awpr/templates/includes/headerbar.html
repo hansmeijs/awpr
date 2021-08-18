@@ -73,7 +73,13 @@
             </ul>
             <ul class="navbar-nav">
                 <li>
-                     <a href="{% url 'manual_url' 'intro' 'intro' %}" target="_blank"> <div class="questionmark"></div> </a>
+                     <!-- <a href="{% url 'manual_url' 'intro' 'intro' %}" target="_blank"> <div class="questionmark"></div> </a>-->
+                    {% if page and paragraph %}
+                         <a href="{% url 'manual_url' page paragraph %}" target="_blank"> <div class="questionmark"></div> </a>
+                    {% else %}
+                         <a href="{% url 'manual_url' 'intro' 'intro' %}" target="_blank"> <div class="questionmark"></div> </a>
+                    {% endif %}
+
                 </li>
             </ul>
         </div>

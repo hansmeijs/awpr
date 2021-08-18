@@ -342,15 +342,6 @@ set_paragraph_header("Hide columns", "intro_hide_columns"),
 //========= set_paragraph_header  ============= PR2021-08-16
 function set_paragraph_header(header_txt, header_id){
     const id_html = (header_id) ?  "id='" + header_id + "'"  : "" ;
-
-    const lst = ["<div ", id_html, " class='mfc mt-4'>",
-                "<div class='mfl'></div>",
-                "<div class='mfr'>",
-                "<h4 class='px-2'>", header_txt, "</h4>",
-                "</div>",
-            "</div>"]
-    console.log (lst)
-    console.log (lst.join(""))
     return ["<div ", id_html, " class='mfc mt-4'>",
                 "<div class='mfl'></div>",
                 "<div class='mfr'>",

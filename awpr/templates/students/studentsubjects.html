@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import210816.js' %}"></script>
-    <script src="{% static 'js/studentsubjects210816.js' %}"></script>
+    <script src="{% static 'js/studentsubjects210818.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -127,6 +127,7 @@
                 data-url_student_upload="{% url 'url_student_upload' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
                 data-url_studsubj_validate="{% url 'url_studsubj_validate' %}"
+                data-url_studsubj_validate_test="{% url 'url_studsubj_validate_test' %}"
                 data-url_studsubj_validate_all="{% url 'url_studsubj_validate_all' %}"
                 data-url_studsubj_approve="{% url 'url_studsubj_approve' %}"
                 data-url_studsubj_approve_multiple="{% url 'url_studsubj_approve_multiple' %}"

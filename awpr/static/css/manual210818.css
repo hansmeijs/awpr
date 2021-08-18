@@ -299,8 +299,63 @@
     background-image: url('/static/manual/stud_upload_step5_en.png');
 }
 /* ---------------------------------------------------
+    IMAGES - STUDENT SUBJECTS
+----------------------------------------------------- */
+
+.img_studsubj_tab_subj_ne, .img_studsubj_tab_subj_en,
+.img_studsubj_mod_studsubj_ne, .img_studsubj_mod_studsubj_en,
+.img_studsubj_tab_subj_ok {
+    background-repeat: no-repeat;
+    margin-left: 8px;
+}
+.img_studsubj_tab_subj_ne, .img_studsubj_tab_subj_en {
+    width: 1138px;
+    height: 440px;
+    background-size: 1138px 440px;
+ }
+.img_studsubj_tab_subj_ne {
+    background-image: url('/static/manual/studsubj_tab_subj_ne.png');
+}
+.img_studsubj_tab_subj_en {
+    background-image: url('/static/manual/studsubj_tab_subj_en.png');
+}
+
+.img_studsubj_mod_studsubj_ne, .img_studsubj_mod_studsubj_en {
+    width: 1138px;
+    height: 584px;
+    background-size: 1138px 584px;
+ }
+.img_studsubj_mod_studsubj_ne {
+    background-image: url('/static/manual/studsubj_mod_studsubj_ne.png');
+}
+.img_studsubj_mod_studsubj_en {
+    background-image: url('/static/manual/studsubj_mod_studsubj_en.png');
+}
+
+.img_studsubj_tab_subj_ok {
+    width: 969px;
+    height: 82px;
+    background-size: 969px 82px;
+    background-image: url('/static/manual/studsubj_tab_subj_ok.png');
+ }
+
+.img_studsubj_exclamationsign {
+    background-position: -120px -40px;
+    background-image: url('/static/img/notes210314.png');
+    background-size: 360px 120px;
+
+    background-repeat: no-repeat;
+    height: 40px;
+    width: 40px;
+    margin: auto;
+
+ }
+
+
+/* ---------------------------------------------------
     IMAGES - APPOVE SUBJECTS
 ----------------------------------------------------- */
+
 .img_studsubj_approve_menu_ne, .img_studsubj_approve_menu_en,
 .img_studsubj_mod_approve_ne, .img_studsubj_mod_approve_en {
     background-repeat: no-repeat;

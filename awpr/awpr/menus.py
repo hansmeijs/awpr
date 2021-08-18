@@ -295,7 +295,9 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             'display_department': display_department, 'department': department_name,
             'menu_items': menu_items,
             'awp_messages': awp_messages,
-            'permit_list': permit_list
+            'permit_list': permit_list,
+            'page': sel_page[5:],
+            'paragraph': 'intro'
         }
         if param:
             headerbar_param.update(param)

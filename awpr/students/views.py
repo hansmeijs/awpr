@@ -94,10 +94,6 @@ class StudentsubjectListView(View): # PR2020-09-29 PR2021-03-25
 # - get headerbar parameters
         page = 'page_studsubj'
         params = awpr_menu.get_headerbar_param(request, page)
-
-# - save this page in Usersetting, so at next login this page will open. Used in LoggedIn
-         # PR2021-06-22 moved to get_headerbar_param
-
         return render(request, 'studentsubjects.html', params)
 
 
@@ -419,7 +415,7 @@ class StudentsubjectValidateAllView(View):  # PR2021-07-24
         if upload_json:
             upload_dict = json.loads(upload_json)
 
-            # ----- get selected examyear, school and department from usersettings
+# ----- get selected examyear, school and department from usersettings
             sel_examyear, sel_school, sel_department, may_editNIU, msg_listNIU = \
                 dl.get_selected_ey_school_dep_from_usersetting(request)
 
@@ -446,6 +442,8 @@ class StudentsubjectValidateAllView(View):  # PR2021-07-24
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of StudentsubjectValidateAllView
+
 
 #################################################################################
 @method_decorator([login_required], name='dispatch')
@@ -499,6 +497,63 @@ class StudentsubjectValidateView(View):
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 
 # - end of StudentsubjectValidateView
+
+
+
+#################################################################################
+@method_decorator([login_required], name='dispatch')
+class StudentsubjectValidateTestView(View):
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= StudentsubjectValidateTestView ============= ')
+
+        # function validates studentsubject records before saving, subject are in list PR2021-08-17
+
+        update_wrap = {'is_test': True}
+
+# - get permit - no permit necessary
+
+# - reset language
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+
+# ----- get selected examyear, school and department from usersettings
+            sel_examyear, sel_school, sel_department, may_editNIU, msg_listNIU = \
+                dl.get_selected_ey_school_dep_from_usersetting(request)
+
+            if logging_on:
+                logger.debug('upload_dict' + str(upload_dict))
+                logger.debug('sel_examyear: ' + str(sel_examyear))
+                logger.debug('sel_school: ' + str(sel_school))
+                logger.debug('sel_department: ' + str(sel_department))
+
+# +++ validate subjects of one student, used in modal
+            student_pk = upload_dict.get('student_pk')
+            si_dictlist = upload_dict.get('si_dictlist')
+            if student_pk:
+                student = stud_mod.Student.objects.get_or_none(
+                    id=student_pk,
+                    school=sel_school,
+                    department=sel_department,
+                    locked=False
+                )
+                if student:
+                    msg_html = stud_val.validate_studentsubjects_TEST(student, si_dictlist)
+                    if msg_html:
+                        update_wrap['studsubj_validate_html'] = msg_html
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+# - end of StudentsubjectValidateTestView
+
 
 
 #####################################################################################
@@ -1511,7 +1566,7 @@ def create_published_Ex1_instance(sel_school, sel_department, sel_examperiod, is
 #################################################################################
 
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectUploadView(View):  # PR2020-11-20
+class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -1591,6 +1646,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                     studsubj_list = upload_dict.get('studsubj_list')
                 if studsubj_list:
                     studsubj_rows = []
+
 # -------------------------------------------------
 # - loop through list of uploaded studentsubjects
                     for studsubj_dict in studsubj_list:
@@ -1714,7 +1770,6 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                                 studsubj_row = rows[0]
                                 if studsubj_row:
                                     studsubj_rows.append(studsubj_row)
-
 # - end of loop
 # -------------------------------------------------
                     if logging_on:
@@ -1724,11 +1779,17 @@ class StudentsubjectUploadView(View):  # PR2020-11-20
                         update_wrap['updated_studsubj_rows'] = studsubj_rows
 
 # +++ validate subjects of student
-                        msg_html = stud_val.validate_studentsubjects(student)
-                        if msg_html:
-                            update_wrap['studsubj_validate_html'] = msg_html
-                        if logging_on:
-                            logger.debug('msg_html: ' + str(msg_html))
+                        # no message necessary, done by test before saving
+                        #msg_html = stud_val.validate_studentsubjects(student)
+                        #if msg_html:
+                        #    update_wrap['studsubj_validate_html'] = msg_html
+                        #if logging_on:
+                        #    logger.debug('msg_html: ' + str(msg_html))
+
+                    has_error = stud_val.validate_studentsubjects_no_msg(student)
+                    update_wrap['subj_error'] = has_error
+                    update_wrap['stud_pk'] = student.pk
+
         if len(messages):
             update_wrap['messages'] = messages
         if logging_on:
@@ -2767,7 +2828,7 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
 
 def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school, setting_dict, append_dict, student_pk=None, studsubj_pk=None):
     # --- create rows of all students of this examyear / school PR2020-10-27
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_studentsubject_rows ============= ')
         logger.debug('student_pk: ' + str(student_pk))
