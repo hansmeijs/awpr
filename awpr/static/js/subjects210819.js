@@ -1,4 +1,15 @@
 // PR2020-09-29 added
+
+// PR2021-07-23  declare variables outside function to make them global variables
+let setting_dict = {};
+let permit_dict = {};
+let loc = {};
+let urls = {};
+
+const field_settings = {};
+
+let selected_btn = "btn_subject";
+
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
@@ -14,11 +25,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_visible_hide = "visibility_hide";
     const cls_selected = "tsa_tr_selected";
 
-    let selected_btn = "btn_subject";
-    let setting_dict = {};
-    let permit_dict = {};
-    let loc = {};  // locale_dict
-
     const selected = {
         scheme_dict: null,
         subject_dict:  null,
@@ -32,7 +38,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let mod_dict = {};
     let mod_MSUBJ_dict = {};
     let mod_MSJTP_dict = {};
-    let mod_MCOL_dict = {};
     let mod_MSJTBASE_dict = {};
 
     let mod_MSI_dict = {
@@ -59,36 +64,59 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
-    const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
-    const url_subject_upload = get_attr_from_el(el_data, "data-subject_upload_url");
-    const url_subject_import = get_attr_from_el(el_data, "data-subject_import_url");
-    const url_subjecttype_upload = get_attr_from_el(el_data, "data-subjecttype_upload_url");
-    const url_subjecttypebase_upload = get_attr_from_el(el_data, "data-subjecttypebase_upload_url");
-    const url_scheme_upload = get_attr_from_el(el_data, "data-scheme_upload_url");
-    const url_schemeitem_upload = get_attr_from_el(el_data, "data-schemeitem_upload_url");
-    const url_download_scheme_xlsx = get_attr_from_el(el_data, "data-url_download_scheme_xlsx");
+    urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+    urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    urls.url_subject_upload = get_attr_from_el(el_data, "data-subject_upload_url");
+    urls.url_subject_import = get_attr_from_el(el_data, "data-subject_import_url");
+    urls.url_subjecttype_upload = get_attr_from_el(el_data, "data-subjecttype_upload_url");
+    urls.url_subjecttypebase_upload = get_attr_from_el(el_data, "data-subjecttypebase_upload_url");
+    urls.url_scheme_upload = get_attr_from_el(el_data, "data-scheme_upload_url");
+    urls.url_schemeitem_upload = get_attr_from_el(el_data, "data-schemeitem_upload_url");
+    urls.url_download_scheme_xlsx = get_attr_from_el(el_data, "data-url_download_scheme_xlsx");
 
-    const columns_hidden = {};
+// columns_hidden and columns_tobe_hidden are also used in t_MCOL_Open and t_MCOL_Save
+    columns_tobe_hidden.subject = {
+        fields: ["name", "depbases", "sequence", "otherlang", "addedbyschool"],
+        captions: ["Name", "Departments", "Sequence", "Other_languages", "Added_by_school"]};
+    columns_tobe_hidden.scheme = {
+        fields: ["depbase_code", "lvl_abbrev", "sct_abbrev", "min_subjects", "max_subjects", "min_mvt", "max_mvt", "min_wisk", "max_wisk", "min_combi", "max_combi"],
+        captions: ["Department", "Leerweg",  "SectorProfiel_twolines", "Minimum_subjects",  "Maximum_subjects",
+                    "Minimum_MVT_subjects", "Maximum_MVT_subjects", "Minimum_Wisk_subjects", "Maximum_Wisk_subjects", "Minimum_combi_subjects", "Maximum_combi_subjects"]};
+    columns_tobe_hidden.schemeitem = {
+        fields: ["subj_name", "sjtp_abbrev", "ete_exam",
+                "gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
+                "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
+                "has_practexam",  "has_pws", "reex_se_allowed",
+                "max_reex", "no_thirdperiod",  "no_exemption_ce"],
+        captions: ["Subject", "Character", "ETE_exam",
+                "Grade_type", "SE_weighing",  "CE_weighing", "Mandatory", "Mandatory_if_subject", "Combination_subject", "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
+                "Extra_count_allowed",  "Extra_nocount_allowed",  "Elective_combi_allowed",
+                "Has_practical_exam",  "Has_assignment", "Herkansing_SE_allowed",
+                "Maximum_reex", "No_third_period", "Exemption_without_CE_allowed"]};
+    columns_tobe_hidden.subjecttype = {
+        fields: ["name", "min_subjects",  "max_subjects", "min_extra_nocount" , "max_extra_nocount",
+                "min_extra_counts", "max_extra_counts", "min_elective_combi", "max_elective_combi"],
+        captions: ["Character_name", "Minimum_subjects",  "Maximum_subjects", "Minimum_extra_nocount",  "Maximum_extra_nocount",
+                    "Minimum_extra_counts",  "Maximum_extra_counts", "Minimum_elective_combi",  "Maximum_elective_combi"]};
+    columns_tobe_hidden.subjecttypebase = {
+        fields: [ "name", "abbrev", "sequence"],
+        captions: [ "Name", "Abbrev",  "Sequence"]};
 
 // --- get field_settings
-    const field_settings = {
-        subject: {  field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence", "Other_languages", "Added_by_school"],
+    field_settings.subject = {  field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence", "Other_languages", "Added_by_school"],
                     field_names: ["select", "code", "name", "depbases", "sequence", "otherlang", "addedbyschool"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["select", "text", "text",  "text", "number", "text", "toggle"],
                     field_width:  ["020", "120", "300", "150", "120",  "120", "180", "120"],
-                    field_align: ["c", "l", "l", "l",  "r", "l", "c"]},
-
-        scheme: {   field_caption: ["", "Subject_scheme_name", "Department", "Leerweg",  "SectorProfiel_twolines", "Minimum_subjects",  "Maximum_subjects",
+                    field_align: ["c", "l", "l", "l",  "r", "l", "c"]};
+    field_settings.scheme = {   field_caption: ["", "Subject_scheme_name", "Department", "Leerweg",  "SectorProfiel_twolines", "Minimum_subjects",  "Maximum_subjects",
                                     "Minimum_MVT_subjects", "Maximum_MVT_subjects", "Minimum_Wisk_subjects", "Maximum_Wisk_subjects", "Minimum_combi_subjects", "Maximum_combi_subjects"],
                     field_names: ["select", "name", "depbase_code", "lvl_abbrev", "sct_abbrev", "min_subjects", "max_subjects", "min_mvt", "max_mvt", "min_wisk", "max_wisk", "min_combi", "max_combi" ],
                     field_tags: ["div", "input", "div", "div", "div",  "input", "input", "input", "input", "input","input", "input", "input"],
                     filter_tags: ["select", "text", "text", "text", "text", "number", "number", "number", "number", "number", "number", "number", "number"],
                     field_width:  ["020", "280", "120", "120",  "120",  "150",  "150",  "150",  "150", "150",  "150",  "150",  "150"],
-                    field_align: ["c", "l", "l", "l",  "l", "c", "c", "c", "c", "c", "c", "c", "c"]},
-
-        schemeitem: { field_caption: ["", "Subject_scheme", "Abbreviation", "Subject", "Character", "ETE_exam",
+                    field_align: ["c", "l", "l", "l",  "l", "c", "c", "c", "c", "c", "c", "c", "c"]};
+    field_settings.schemeitem = { field_caption: ["", "Subject_scheme", "Abbreviation", "Subject", "Character", "ETE_exam",
                             "Grade_type", "SE_weighing",  "CE_weighing", "Mandatory", "Mandatory_if_subject", "Combination_subject", "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
                             "Extra_count_allowed",  "Extra_nocount_allowed",  "Elective_combi_allowed",
                             "Has_practical_exam",  "Has_assignment", "Herkansing_SE_allowed",
@@ -118,10 +146,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                     "c", "c", "c",
                                     "c", "c", "c",
                                     "c", "c", "c"]
-                    },
-
-
-        subjecttype: {field_caption: ["", "Subject_scheme", "Base_character", "Character_name",
+                    };
+    field_settings.subjecttype = {field_caption: ["", "Subject_scheme", "Base_character", "Character_name",
                     "Minimum_subjects",  "Maximum_subjects",
                     "Minimum_extra_nocount",  "Maximum_extra_nocount",
                     "Minimum_extra_counts",  "Maximum_extra_counts",
@@ -136,29 +162,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_tags: ["div", "div", "div", "input", "input", "input", "input", "input", "input", "input", "input", "input"],
                     filter_tags: ["select", "text", "text", "text", "number", "number", "number", "number", "number", "number", "number", "number"],
                     field_width:  ["020", "180", "280", "240", "100", "100", "100", "100", "100", "100", "100", "100"],
-                    field_align: ["c", "l", "l", "l", "c", "c", "c", "c", "c", "c", "c", "c"]},
+                    field_align: ["c", "l", "l", "l", "c", "c", "c", "c", "c", "c", "c", "c"]};
 
-        subjecttypebase: {field_caption: ["", "Code", "Name", "Abbrev",  "Sequence"],
+    field_settings.subjecttypebase = {field_caption: ["", "Code", "Name", "Abbrev",  "Sequence"],
                     field_names: ["select", "code", "name", "abbrev", "sequence"],
                     field_tags: ["div", "input", "input", "input", "input"],
                     filter_tags: ["select", "text", "text", "text", "number"],
                     field_width:  ["020", "120", "280", "120", "120"],
-                    field_align: ["c", "l", "l", "l", "l", "c"]},
+                    field_align: ["c", "l", "l", "l", "l", "c"]};
 
-        level: {  field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence"],
+    field_settings.level = {  field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence"],
                     field_names: ["select", "abbrev", "name", "depbases", "sequence"],
                     field_tags: ["div", "div", "div", "div",  "div"],
                     filter_tags: ["select", "text", "text",  "text", "number"],
                     field_width:  ["020", "120", "240", "240",  "120"],
-                    field_align: ["c", "l", "l", "l",  "r", "c"]},
+                    field_align: ["c", "l", "l", "l",  "r", "c"]}
 
-        sector: {  field_caption: ["", "Abbreviation", "Name", "Departments",  "Sequence"],
+    field_settings.sector = {  field_caption: ["", "Abbreviation", "Name", "Departments",  "Sequence"],
                     field_names: ["select", "abbrev", "name", "depbases", "sequence"],
                     field_tags: ["div", "div", "div", "div",  "div"],
                     filter_tags: ["select", "text", "text",  "text", "number"],
                     field_width:  ["020", "120", "240", "240",  "120"],
-                    field_align: ["c", "l", "l", "l",  "r", "c"]},
-        };
+                    field_align: ["c", "l", "l", "l",  "r", "c"]};
+
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
 
@@ -296,13 +322,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_tblBody_subjects = document.getElementById("id_MSI_tblBody_subjects");
         const el_tblBody_schemeitems = document.getElementById("id_MSI_tblBody_schemeitems");
 
-
-// ---  MOD SELECT COLUMNS  ------------------------------------
-        let el_MCOL_tblBody_available = document.getElementById("id_MCOL_tblBody_available");
-        let el_MCOL_tblBody_show = document.getElementById("id_MCOL_tblBody_show");
-
-        const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save");
-            el_MCOL_btn_save.addEventListener("click", function() {ModColumns_Save()}, false );
+// ---  MODAL SELECT COLUMNS ------------------------------------
+        const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
+        if(el_MCOL_btn_save){
+            el_MCOL_btn_save.addEventListener("click", function() {
+                t_MCOL_Save(urls.url_settings_upload, HandleBtnSelect)}, false )
+        };;
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");
@@ -352,7 +377,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let response = "";
         $.ajax({
             type: "POST",
-            url: url_datalist_download,
+            url: urls.url_datalist_download,
             data: param,
             dataType: 'json',
             success: function (response) {
@@ -374,12 +399,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     selected_btn = (setting_dict.sel_btn)
                     selected.scheme_pk = (setting_dict.sel_scheme_pk) ? setting_dict.sel_scheme_pk : null;
                     console.log("selected.scheme_pk", selected.scheme_pk)
-// ---  fill col_hidden
-                    if("col_hidden" in setting_dict){
+
+// ---  fill cols_hidden
+                    if("cols_hidden" in setting_dict){
                        // clear the array columns_hidden
                         b_clear_array(columns_hidden);
                        // fill the array columns_hidden
-                        for (const [key, value] of Object.entries(setting_dict.col_hidden)) {
+                        for (const [key, value] of Object.entries(setting_dict.cols_hidden)) {
                             columns_hidden[key] = value;
                         }
                     }
@@ -452,7 +478,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Add_subject, function() {MSUBJ_Open()}, ["tab_show", "tab_btn_subject"]);
                 AddSubmenuButton(el_submenu, loc.Delete_subject, function() {ModConfirmOpen("subject", "delete")}, ["tab_show", "tab_btn_subject"]);
                 //AddSubmenuButton(el_submenu, loc.Copy_from_previous_year, function() {MSUBJ_Open()}, ["tab_show", "tab_btn_subject"]);
-                //AddSubmenuButton(el_submenu, loc.Upload_subjects, null, ["tab_show", "tab_btn_subject"], "id_submenu_subjectimport", url_subject_import);
+                //AddSubmenuButton(el_submenu, loc.Upload_subjects, null, ["tab_show", "tab_btn_subject"], "id_submenu_subjectimport", urls.url_subject_import);
 
                 AddSubmenuButton(el_submenu, loc.Change_subjects_of_subject_scheme, function() {MSI_Open()}, ["tab_show", "tab_btn_scheme", "tab_btn_schemeitem"]);
                 //AddSubmenuButton(el_submenu, loc.Copy_subject_scheme, function() {MSUBJ_Open()}, ["tab_show", "tab_btn_schemeitem"]);
@@ -464,8 +490,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Delete_characterbase, function() {ModConfirmOpen("subjecttypebase", "delete")}, ["tab_show", "tab_btn_subjecttypebase"]);
 
         }
-        AddSubmenuButton(el_submenu, loc.Download_subject_scheme, null, ["tab_show", "tab_btn_scheme", "tab_btn_schemeitem", "tab_btn_subjecttype" ], "id_submenu_download_schemexlsx", url_download_scheme_xlsx, false);  // true = download
-        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
+        AddSubmenuButton(el_submenu, loc.Download_subject_scheme, null, ["tab_show", "tab_btn_scheme", "tab_btn_schemeitem", "tab_btn_subjecttype" ], "id_submenu_download_schemexlsx", urls.url_download_scheme_xlsx, false);  // true = download
+
+        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open()}, [], "id_submenu_columns")
+
         el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
 
@@ -479,7 +507,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_subject: {sel_btn: selected_btn}};
-            UploadSettings (upload_dict, url_settings_upload);
+            UploadSettings (upload_dict, urls.url_settings_upload);
         };
 
 // ---  highlight selected button
@@ -593,14 +621,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- loop through columns
         for (let j = 0; j < column_count; j++) {
             const field_name = field_setting.field_names[j];
-            const field_caption = (loc[field_setting.field_caption[j]]) ? loc[field_setting.field_caption[j]] : field_setting.field_caption[j] ;
-            const field_tag = field_setting.field_tags[j];
-            const filter_tag = field_setting.filter_tags[j];
-            const class_width = "tw_" + field_setting.field_width[j] ;
-            const class_align = "ta_" + field_setting.field_align[j];
 
-    // - skip columns if in columns_hidden
-            if (!col_hidden.includes(field_name)){
+    // --- skip column if in columns_hidden
+            const col_is_hidden = get_column_is_hidden(field_name);
+            if (!col_is_hidden){
+                const field_caption = (loc[field_setting.field_caption[j]]) ? loc[field_setting.field_caption[j]] : field_setting.field_caption[j] ;
+                const field_tag = field_setting.field_tags[j];
+                const filter_tag = field_setting.filter_tags[j];
+                const class_width = "tw_" + field_setting.field_width[j] ;
+                const class_align = "ta_" + field_setting.field_align[j];
 
 // ++++++++++ insert columns in header row +++++++++++++++
         // --- add th to tblRow_header +++
@@ -720,8 +749,9 @@ if(j){th_filter.classList.add("border_left")};
         for (let j = 0; j < column_count; j++) {
             const field_name = field_names[j];
 
-// skip columns if in columns_hidden
-            if (!col_hidden.includes(field_name)){
+// --- skip columns if in columns_hidden
+            const col_is_hidden = get_column_is_hidden(field_name);
+            if (!col_is_hidden){
                 const field_tag = field_tags[j];
                 const filter_tag = filter_tags[j];
                 const class_width = "tw_" + field_width[j];
@@ -926,10 +956,10 @@ if(j){td.classList.add("border_left")};
                           (tblName === "subjecttypebase") ? subjecttypebase_rows :
                           (tblName === "scheme") ? scheme_rows :
                           (tblName === "schemeitem") ? schemeitem_rows : null;
-        const url_str = (tblName === "subjecttype") ? url_subjecttype_upload :
-                        (tblName === "subjecttypebase") ? url_subjecttypebase_upload :
-                        (tblName === "scheme") ? url_scheme_upload :
-                        (tblName === "schemeitem") ? url_schemeitem_upload : null;
+        const url_str = (tblName === "subjecttype") ? urls.url_subjecttype_upload :
+                        (tblName === "subjecttypebase") ? urls.url_subjecttypebase_upload :
+                        (tblName === "scheme") ? urls.url_scheme_upload :
+                        (tblName === "schemeitem") ? urls.url_schemeitem_upload : null;
 
         if(tblRow && data_rows){
             const map_id = tblRow.id
@@ -978,7 +1008,7 @@ if(j){td.classList.add("border_left")};
         mod_dict = {};
         const tblRow = get_tablerow_selected(el_input);
         const data_rows = (tblName === "subject") ? subject_rows : (tblName === "schemeitem") ? schemeitem_rows : null;
-        const url_str = (tblName === "subject") ? url_subject_upload : (tblName === "schemeitem") ? url_schemeitem_upload : null;
+        const url_str = (tblName === "subject") ? urls.url_subject_upload : (tblName === "schemeitem") ? urls.url_schemeitem_upload : null;
 
         if(tblRow && data_rows){
             const map_id = tblRow.id
@@ -1554,7 +1584,7 @@ if(j){td.classList.add("border_left")};
 // ---  upload new setting
         const upload_dict = {selected_pk: {sel_scheme_pk: selected.scheme_pk}};
 
-        UploadSettings (upload_dict, url_settings_upload);
+        UploadSettings (upload_dict, urls.url_settings_upload);
         //UpdateHeaderRight();
 
         FillTblRows();
@@ -1931,7 +1961,7 @@ if(j){td.classList.add("border_left")};
                     scheme_pk: mod_MSJTP_dict.scheme_pk,
                     sjtp_list: upload_sjtp_list
                 }
-                UploadChanges(upload_dict, url_subjecttype_upload);
+                UploadChanges(upload_dict, urls.url_subjecttype_upload);
             }
         };  // if(permit_dict.permit_crud && mod_MSJTP_dict.stud_id){
 
@@ -2387,7 +2417,7 @@ if(j){td.classList.add("border_left")};
                 upload_dict[fldName] = el_input.value;
 
             };
-            UploadChanges(upload_dict, url_subjecttypebase_upload);
+            UploadChanges(upload_dict, urls.url_subjecttypebase_upload);
         };
 
 // ---  hide modal
@@ -2561,7 +2591,7 @@ if(j){td.classList.add("border_left")};
         }
         if(has_changes){
                 if(el_MSUBJ_loader){ el_MSUBJ_loader.classList.remove(cls_visible_hide)};
-                UploadChanges(upload_dict, url_subject_upload);
+                UploadChanges(upload_dict, urls.url_subject_upload);
             } else {
                 $("#id_mod_subject").modal("hide");
             };
@@ -3068,7 +3098,7 @@ if(j){td.classList.add("border_left")};
                 const scheme_pk = scheme_dict.id
                 const upload_dict = {scheme_pk: scheme_pk, si_list: upload_si_list}
                 console.log("upload_dict: ", upload_dict)
-                UploadChanges(upload_dict, url_schemeitem_upload);
+                UploadChanges(upload_dict, urls.url_schemeitem_upload);
             }
         };  // if(permit_dict.permit_crud && mod_MSI_dict.stud_id){
 
@@ -3559,115 +3589,7 @@ if(j){td.classList.add("border_left")};
 
     }  // MSI_AddPackage
 
-
 // +++++++++ END MOD SCHEMEITEM ++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-// +++++++++++++++++ MODAL SELECT COLUMNS ++++++++++++++++++++++++++++++++++++++++++
-//=========  MCOL_Open  ================ PR2021-07-07
-    function MCOL_Open() {
-       //console.log(" -----  MCOL_Open   ----")
-        mod_MCOL_dict = {col_hidden: []}
-
-        const tblName = get_tblName_from_selectedBtn();
-        const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
-        for (let i = 0, field; field = col_hidden[i]; i++) {
-            mod_MCOL_dict.col_hidden.push(field);
-        };
-
-        MCOL_FillSelectTable();
-
-        el_MCOL_btn_save.disabled = true
-// ---  show modal, set focus on save button
-       $("#id_mod_select_columns").modal({backdrop: true});
-    }  // MCOL_Open
-
-//=========  ModColumns_Save  ================ PR2021-07-07
-    function ModColumns_Save() {
-        console.log(" -----  ModColumns_Save   ----")
-
-// ---  get hidden columns from mod_MCOL_dict.col_hidden and put them  in columns_hidden[tblName]
-        const tblName = get_tblName_from_selectedBtn();
-        console.log("tblName", tblName)
-        if (!(tblName in columns_hidden)){
-            columns_hidden[tblName] = [];
-        }
-        const col_hidden = columns_hidden[tblName];
-        console.log("col_hidden", col_hidden)
-   // clear the array
-        b_clear_array(col_hidden);
-   // add hidden columns to col_hidden
-        for (let i = 0, field; field = mod_MCOL_dict.col_hidden[i]; i++) {
-            col_hidden.push(field);
-        };
-// upload the new list of hidden columns
-        const page_dict = {};
-        page_dict[tblName] = col_hidden;
-        const upload_dict = {page_subject: {col_hidden: page_dict }};
-        console.log("upload_dict", upload_dict)
-        UploadSettings (upload_dict, url_settings_upload);
-
-        HandleBtnSelect(selected_btn, true)  // true = skip_upload
-
-// hide modal
-        // in HTML: data-dismiss="modal"
-    }  // ModColumns_Save
-
-//=========  MCOL_FillSelectTable  ================ PR2021-07-07
-    function MCOL_FillSelectTable() {
-        console.log("===  MCOL_FillSelectTable == ");
-
-        el_MCOL_tblBody_available.innerHTML = null;
-        el_MCOL_tblBody_show.innerHTML = null;
-
-        const tblName = get_tblName_from_selectedBtn();
-        const field_names = field_settings[tblName].field_names;
-        const field_captions = field_settings[tblName].field_caption;
-
-//+++ loop through list of field_names
-        if(field_names && field_names.length){
-            const len = field_names.length;
-            for (let j = 0; j < len; j++) {
-                const field_name = field_names[j];
-                const field_caption = (field_captions[j]) ? loc[field_captions[j]]: null
-                const is_hidden = (field_name && mod_MCOL_dict.col_hidden.includes(field_name));
-                const tBody = (is_hidden) ? el_MCOL_tblBody_available : el_MCOL_tblBody_show;
-
-    //+++ insert tblRow into tBody
-                const tblRow = tBody.insertRow(-1);
-                tblRow.setAttribute("data-field", field_name);
-
-        // --- add EventListener to tblRow.
-                tblRow.addEventListener("click", function() {MCOL_SelectItem(tblRow);}, false )
-        //- add hover to tableBody row
-                add_hover(tblRow)
-
-                const td = tblRow.insertCell(-1);
-                td.innerText = field_caption;
-        //- add data-tag  to tblRow
-                td.classList.add("tw_240")
-
-                tblRow.setAttribute("data-field", field_name);
-            }
-        }  // if(field_captions && field_captions.length)
-    } // MCOL_FillSelectTable
-
-//=========  MCOL_SelectItem  ================ PR2021-07-07
-    function MCOL_SelectItem(tr_clicked) {
-        console.log("===  MCOL_SelectItem == ");
-        if(!!tr_clicked) {
-            const field_name = get_attr_from_el(tr_clicked, "data-field")
-            const is_hidden = (field_name && mod_MCOL_dict.col_hidden.includes(field_name));
-            if (is_hidden){
-                b_remove_item_from_array(mod_MCOL_dict.col_hidden, field_name);
-            } else {
-                mod_MCOL_dict.col_hidden.push(field_name)
-            }
-            MCOL_FillSelectTable();
-            // enable sasave btn
-            el_MCOL_btn_save.disabled = false;
-        }
-    }  // MCOL_SelectItem
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03
@@ -3817,9 +3739,9 @@ if(j){td.classList.add("border_left")};
                 upload_dict.sjtbase_pk = mod_dict.id;
             }
 
-            const url_str = (selected_btn === "btn_subject") ? url_subject_upload :
-                            (selected_btn === "btn_subjecttype") ? url_subjecttype_upload :
-                            (selected_btn === "btn_subjecttypebase") ? url_subjecttypebase_upload : null;
+            const url_str = (selected_btn === "btn_subject") ? urls.url_subject_upload :
+                            (selected_btn === "btn_subjecttype") ? urls.url_subjecttype_upload :
+                            (selected_btn === "btn_subjecttypebase") ? urls.url_subjecttypebase_upload : null;
             UploadChanges(upload_dict, url_str);
         };
 // ---  hide modal
@@ -4040,6 +3962,33 @@ if(j){td.classList.add("border_left")};
     function get_tblName_from_selectedBtn() {
         return (selected_btn) ? selected_btn.substring(4) : null;
     }
+//========= get_column_is_hidden  ====== PR2021-08-18
+    function get_column_is_hidden(field_name) {
+        console.log( "===== get_column_is_hidden  === ");
+        console.log( "selected_btn", selected_btn);
+        console.log( "field_name", field_name);
+
+        //example of mapped field
+        //const mapped_field = (field_name === "subj_status") ? "subj_error" :
+        //                     (field_name === "has_pok") ? "pok_status" : field_name;
+        const mapped_field = field_name;
+
+// --- set cols_hidden
+        const tblName = get_tblName_from_selectedBtn();
+        const cols_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
+
+        let is_hidden = cols_hidden.includes(mapped_field);
+
+// skip column 'Leerweg' when not sel_dep_level_req
+        if(!is_hidden){
+            if (mapped_field === "lvlbase_id") {
+                is_hidden = (!setting_dict.sel_dep_level_req);
+            };
+        }
+        //console.log( "is_hidden", is_hidden);
+        return is_hidden;
+    };  // get_column_is_hidden
+
 
 
 })  // document.addEventListener('DOMContentLoaded', function()

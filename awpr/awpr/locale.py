@@ -588,6 +588,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Approved_by'] = TXT_Approved_by
         dict['_by_'] = TXT__by_
 
+        dict['Approved'] = _('Approved')
         dict['Name_ex_form'] = TXT_Name_ex_form
         dict['Exam_period'] = TXT_Exam_period
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
@@ -832,11 +833,13 @@ def get_locale_dict(table_dict, user_lang, request):
     if 'page_orderlist' in page_list:
         dict['School_code'] = TXT_School_code
         dict['School_name'] = _('School name')
-        dict['Subject'] = _('Subject')
-        dict['Amount'] = _('Amount')
-        dict['Submitted'] = _('Submitted')
-        dict['Download_orderlist_ETE'] = _('Download ETE orderlist')
-        dict['Download_orderlist_DUO'] = _('Download DUO orderlist')
+        dict['Activated'] = _('Activated')
+        dict['Entered_subjects'] = _('Number of entered subjects')
+        dict['Submitted_subjects'] = _('Number of submitted subjects')
+        dict['Date_submitted'] = _('Date submitted')
+
+        dict['Preliminary_orderlist'] = _('Preliminary orderlist')
+        dict['Final_orderlist'] = _('Final orderlist')
 
         dict['Language'] = _('Language')
 

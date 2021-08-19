@@ -88,7 +88,7 @@ const man_studsubj = {
                 "<p>Klik op de naam van de kandidaat om het venster te openen waarmee je de vakken van de kandidaat kunt wijzigen. ",
                 "In de linker lijst staan de beschikbare vakken, de rechter lijst bevat de vakken van de kandidaat. ",
                 "Alleen de afkorting en het karakter van het vak worden in de lijst weergegeven. ",
-                "Als je met de muis boven de afkorting gaat staan, verschijnt er een venster met de volledige naam.",
+                "Als je met de muis boven de afkorting gaat staan, verschijnt er een venster met de volledige naam. ",
                 "Een ^ teken achter het vak betekent dat het een verplicht vak is, een * betekent dat het een combinatievak is.</p>",
 
                 "<p><b>Vakken toevoegen of verwijderen</b><br> ",
@@ -97,7 +97,7 @@ const man_studsubj = {
                 "Je kunt meerdere vakken selecteren.<br>",
                 "Een of meerdere <b>vakken toevoegen</b> gaat als volgt: selecteer de gewenste vakken in de linker lijst en klik op de knop <i>Vakken toevoegen</i>, ",
                 "Je kunt ook op een vak dubbelklikken om het toe te voegen.<br>",
-                "Het <b>verwijderen van vakken</b> gaat op dezelfde manier. Klik op de knop <i>Vakken verwijdreen</i> of dubbelklik op een vak in de rechter lijst. ",
+                "Het <b>verwijderen van vakken</b> gaat op dezelfde manier. Klik op de knop <i>Vakken verwijderen</i> of dubbelklik op een vak in de rechter lijst. ",
                 "Elke keer wanneer vakken zijn toegevoegd of verwijderd berekent AWP opnieuw of de samenstelling van de vakken klopt.<br>",
                 "Klik op de knop <b><i>Opslaan</i></b> om de wijzigingen op te slaan. </p>",
 
@@ -105,7 +105,7 @@ const man_studsubj = {
                 "Klik op een kandidaat in de rechter lijst. In het kader <i>Kenmerken van het vak</i> staan alle kenmerken van dat vak. ",
                 "De algemene kenmerken kun je niet veranderen. Dat zijn bijvboorbeeld: 'Combinatievak', 'Verplicht vak'. ",
                 "Individuele kenmerken kun je wel per kandidaat instellen. het zijn: <b>Extra vak</b> en <b>Keuze-combinatievak</b>. ",
-                "Ook de <b>Titel van het werkstuk en <b>Vakken waarop het werkstuk betrekking heeft</b> zijn voortaan opgenomen als individueel kenmerk van het vak 'Werkstuk'. ",
+                "Ook de <b>Titel van het werkstuk</b> en <b>Vakken waarop het werkstuk betrekking heeft</b> zijn voortaan opgenomen als individueel kenmerk van het vak 'Werkstuk'. ",
                 "Je kunt meerdere vakken selecteren.<br>",
             "</div>",
         "</div>",

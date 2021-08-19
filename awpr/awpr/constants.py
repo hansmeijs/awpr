@@ -284,7 +284,7 @@ KEY_SEL_SUBJECT_PK = 'sel_subject_pk'
 KEY_SEL_STUDENT_PK = 'sel_student_pk'
 KEY_SEL_SCHEME_PK = 'sel_scheme_pk'
 KEY_SEL_BTN = 'sel_btn'
-KEY_COL_HIDDEN = 'col_hidden'
+KEY_COLS_HIDDEN = 'cols_hidden'
 KEY_VERIFICATIONCODE = 'verificationcode'
 
 # SCHOOL SETTING KEYS PR2018-12-03  PR2020-12-04

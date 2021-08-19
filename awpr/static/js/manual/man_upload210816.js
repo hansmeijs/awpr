@@ -83,10 +83,6 @@
                 "<p>Er zijn een paar <b>verplichte velden</b> die altijd gekoppeld moeten worden. ",
                 "Het veld <i>ID-nummer</i> is altijd verplicht. Bij het uploaden van kandidaten zijn ook <i>Achternaam</i>, <i>Voornamen</i> en <i>Profiel</i> of <i>Leerweg</i> en <i>Sector</i> verplicht.</p>",
 
-                "<p>Het veld <b>Afdelingen</b> verschijnt alleen als je school meerdere afdelingen heeft (afdelingen zijn: Vsbo, Havo en Vwo). ",
-                "Je hoeft dit veld alleen de koppelen als in het Excel bestand de kandidaten van meerdere afdelingen staan. AWP uploadt dan alleen de kandidaten van de afdeling, waar je nu aan werkt. ",
-                "ALs je het veld <i>Afdelingen</i> niet koppelt, worden alle kandidaten van het Excel bestand in de huidige afdeling geüpload.</p>",
-
                 "<p>Het <b>ID-nummer</b> mag met en zonder punten geschreven worden. AWP verwijdert eventuele punten in het ID-nummer. ",
                 "Gebruik bij kandidaten zonder ID-nummmer de geboortedatum plus twee letters. ",
                 "Op het diploma en de cijferlijst wordt het ID-nummer met punten weergegeven, eventuele letters worden niet weergegeven.</p>",
@@ -96,6 +92,10 @@
                 "<p>Als het veld <b>Examennummer</b> niet is gekoppeld of als het examennummer niet is ingevuld, vult AWP automatisch het eerstvolgende examennummer in.</p>",
 
                 "<p>Het <b>Registratienummer</b> van de kandidaat wordt automatisch aangemaakt.</p>",
+
+                "<p>Het veld <b>Afdelingen</b> verschijnt alleen als je school meerdere afdelingen heeft (afdelingen zijn: Vsbo, Havo en Vwo). ",
+                "Je hoeft dit veld alleen de koppelen als in het Excel bestand de kandidaten van meerdere afdelingen staan. AWP uploadt dan alleen de kandidaten van de afdeling, waar je nu aan werkt. ",
+                "ALs je het veld <i>Afdelingen</i> niet koppelt, worden alle kandidaten van het Excel bestand in de huidige afdeling geüpload.</p>",
 
                 "<p>Klik op <i>Volgende stap</i> als je de gewenste kolommen hebt gekoppeld. Dit gaat alleen als je alle verplichte velden hebt gekoppeld.</p>",
 
@@ -280,17 +280,18 @@
                 "<p>There are a few <b>mandatory fields</b> that must always be linked.",
                 "The <i>ID Number</i> field is always required. When uploading candidates, <i>Last Name</i>, <i>First Names</i> and <i>Profiel</i> or <i>Leerweg</i> and <i>Sector</i> are also required.</p>",
 
-                "<p>The <b>Departments</b> field only appears if your school has multiple departments (departments are: Vsbo, Havo and Vwo). ",
-                "You only need to link this field if the Excel file contains candidates from multiple departments. AWP will then only upload the candidates from the department you are currently working on. ",
-                "If you don't link the <i>Departments</i> field, all candidates from the Excel file in the current department will be uploaded.</p>",
 
                 "<p>The <b>ID number</b> may be written with or without dots. AWP removes any dots in the ID number. ",
                  "For candidates without an ID number, use the date of birth plus two letters.",
-                 "The ID number with dots is shown on the diploma and the list of marks, any letters are not shown.</p>",
+                 "On the diploma and the grade list the ID number is written with dots, any letters at the end will be hidden.</p>",
 
                  "<p>If the <b>Date of Birth</b> field is not linked or if the date of birth is not filled in, AWP will extract the date of birth from the ID number.</p>",
                  "<p>If the <b>Exam number</b> field is not linked or if the exam number is not filled in, AWP will automatically fill in the next exam number.</p>",
                  "<p>The candidate's <b>Registration Number</b> will be created automatically.</p>",
+
+                "<p>The <b>Departments</b> field only appears if your school has multiple departments (departments are: Vsbo, Havo and Vwo). ",
+                "You only need to link this field if the Excel file contains candidates from multiple departments. AWP will then only upload the candidates from the department you are currently working on. ",
+                "If you don't link the <i>Departments</i> field, all candidates from the Excel file will be uploaded in the current department.</p>",
 
                 "<p>Click on <i>Next step</i> when you have linked the desired columns. This will only work if you have linked all required fields.</p>",
 

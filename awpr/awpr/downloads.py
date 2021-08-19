@@ -171,7 +171,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- orderlists
                 if datalist_request.get('orderlist_rows'):
-                    datalists['orderlist_rows'] = stud_view.create_orderlist_rows(sel_examyear)
+                    # TODO sel_exam_period
+                    sel_exam_period = 1
+                    datalists['orderlist_rows'] = stud_view.create_orderlist_rows(sel_examyear.code, sel_exam_period)
                     datalists['orderlist_rows_new'] = stud_view.create_orderlist_rowsNEW(sel_examyear)
 
 # ----- grade_with_exam_rows
@@ -628,9 +630,9 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
                 setting_dict[c.KEY_SEL_BTN] = sel_btn
 
 # - add list of hidden columns PR2021-07-07
-            col_hidden = page_dict.get(c.KEY_COL_HIDDEN)
-            if col_hidden:
-                setting_dict[c.KEY_COL_HIDDEN] = col_hidden
+            cols_hidden = page_dict.get(c.KEY_COLS_HIDDEN)
+            if cols_hidden:
+                setting_dict[c.KEY_COLS_HIDDEN] = cols_hidden
 
     if logging_on:
         logger.debug('setting_dict: ' + str(setting_dict))

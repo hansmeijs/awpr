@@ -6,6 +6,8 @@ let setting_dict = {};
 let permit_dict = {};
 let loc = {};
 let urls = {};
+
+// selected_btn is also used in t_MCOL_Open
 let selected_btn = "btn_student";
 let selected = {student_pk: null, student_dict: {}};
 
@@ -13,8 +15,6 @@ let student_rows = [];
 let school_rows = [];
 
 const field_settings = {};
-const columns_hidden = {};
-const columns_tobe_hidden = {};
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -71,9 +71,10 @@ document.addEventListener('DOMContentLoaded', function() {
     //const url_studsubj_upload = get_attr_from_el(el_data, "data-url_studsubj_upload");
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
+// columns_hidden and columns_tobe_hidden are also used in t_MCOL_Open and t_MCOL_Save
     columns_tobe_hidden.student = {
-        field_names: ["idnumber", "prefix", "gender", "lvlbase_id", "sctbase_id", "classname", "examnumber", "regnumber", "bis_exam"],
-        field_caption: ["ID_number", "Prefix", "Gender", "Leerweg", "Sector", "Class", "Examnumber", "Regnumber", "Bis_candidate"]}
+        fields: ["idnumber", "prefix", "gender", "lvlbase_id", "sctbase_id", "classname", "examnumber", "regnumber", "bis_exam"],
+        captions: ["ID_number", "Prefix", "Gender", "Leerweg", "Sector", "Class", "Examnumber", "Regnumber", "Bis_candidate"]};
 
 // --- get field_settings
     // declared as global: let field_settings = {};
@@ -172,7 +173,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MODAL SELECT COLUMNS ------------------------------------
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
         if(el_MCOL_btn_save){
-            el_MCOL_btn_save.addEventListener("click", function() {t_MCOL_Save(urls.url_settings_upload, HandleBtnSelect)}, false )
+            el_MCOL_btn_save.addEventListener("click", function() {
+                t_MCOL_Save(urls.url_settings_upload, HandleBtnSelect)}, false )
         };
 
 // ---  MODAL STUDENT
@@ -356,15 +358,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     selected_btn = (setting_dict.sel_btn)
                     isloaded_settings = true;
 
-            // ---  fill col_hidden
-                    if("col_hidden" in setting_dict){
+            // ---  fill cols_hidden
+                    if("cols_hidden" in setting_dict){
                        // clear the array columns_hidden
                        // reset all arrays of key to [], keep the keys.
                         for (const key of Object.keys(columns_hidden)) {
                             b_clear_array(columns_hidden[key]);
                         };
                        // fill the arrays in  columns_hidden
-                        for (const [key, value] of Object.entries(setting_dict.col_hidden)) {
+
+                        for (const [key, value] of Object.entries(setting_dict.cols_hidden)) {
                             columns_hidden[key] = value;
                         }
                     }
@@ -429,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
             AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete")});
         };
 
-        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
+        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open()}, [], "id_submenu_columns")
         el_submenu.classList.remove(cls_hide);
 
     };//function CreateSubmenu
@@ -560,13 +563,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const field_name = field_setting.field_names[j];
 
     // --- skip column if in columns_hidden
-            const col_is_hidden = get_column_hidden(field_name);
+            const col_is_hidden = get_column_is_hidden(field_name);
             if (!col_is_hidden){
 
         // --- get field_caption from field_setting, diplay 'Profiel' in column sctbase_id if has_profiel
                 const key = field_setting.field_caption[j];
                 const field_caption = (field_name === "sctbase_id" && has_profiel) ? loc.Profiel : (loc[key]) ? loc[key] : key;
-
                 const filter_tag = field_setting.filter_tags[j];
                 const class_width = "tw_" + field_setting.field_width[j] ;
                 const class_align = "ta_" + field_setting.field_align[j];
@@ -674,7 +676,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const field_name = field_names[j];
 
     // --- skip columns if in columns_hidden
-            const col_is_hidden = get_column_hidden(field_name);
+            const col_is_hidden = get_column_is_hidden(field_name);
             if (!col_is_hidden){
                 const class_width = "tw_" + field_width[j];
                 const class_align = "ta_" + field_align[j];
@@ -876,8 +878,6 @@ function RefreshDataRowsAfterUpload(response) {
             // close modal MSJ when no error --- already done in modal
                 //$("#id_mod_subject").modal("hide");
             }
-
-            const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
 
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
@@ -1848,9 +1848,9 @@ function RefreshDataRowsAfterUpload(response) {
 */
     };  // get_regnr_info
 
-//========= get_column_hidden  ====== PR2021-08-02
-    function get_column_hidden(field_name) {
-        //console.log( "===== get_column_hidden  === ");
+//========= get_column_is_hidden  ====== PR2021-08-02
+    function get_column_is_hidden(field_name) {
+        //console.log( "===== get_column_is_hidden  === ");
         //console.log( "selected_btn", selected_btn);
         //console.log( "field_name", field_name);
 
@@ -1859,12 +1859,12 @@ function RefreshDataRowsAfterUpload(response) {
         //                     (field_name === "has_pok") ? "pok_status" : field_name;
         const mapped_field = field_name;
 
-// --- set col_hidden
+// --- set cols_hidden
         //const tblName = (selected_btn === "btn_student")? "student" : "student";
         const tblName = "student";
-        const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
+        const cols_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
 
-        let is_hidden = col_hidden.includes(mapped_field);
+        let is_hidden = cols_hidden.includes(mapped_field);
 
 // skip column 'Leerweg' when not sel_dep_level_req
         if(!is_hidden){
@@ -1874,7 +1874,7 @@ function RefreshDataRowsAfterUpload(response) {
         }
         //console.log( "is_hidden", is_hidden);
         return is_hidden;
-    };  // get_column_hidden
+    };  // get_column_is_hidden
 
 
 })  // document.addEventListener('DOMContentLoaded', function()

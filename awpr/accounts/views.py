@@ -656,7 +656,8 @@ def update_grouppermit(instance, upload_dict, msg_dict, request):
 class UserSettingsUploadView(UpdateView):  # PR2019-10-09
 
     def post(self, request, *args, **kwargs):
-        #logger.debug(' ============= UserSettingsUploadView ============= ')
+        logging_on = s.LOGGING_ON
+
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None:
@@ -665,6 +666,10 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
             upload_json = request.POST.get('upload')
             if upload_json:
                 upload_dict = json.loads(upload_json)
+                if logging_on:
+                    logger.debug(' ============= UserSettingsUploadView ============= ')
+                    logger.debug('upload_dict: ' + str(upload_dict))
+
                 set_usersetting_from_uploaddict(upload_dict, request)
 # - add update_dict to update_wrap
                 update_wrap['setting'] = {'result': 'ok'}
@@ -1955,33 +1960,46 @@ def set_usersetting_dict(key_str, setting_dict, request):  # PR2019-03-09 PR2021
 # - end of set_usersetting_dict
 
 def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
-    # logger.debug(' ----- set_usersetting_from_uploaddict ----- ')
+    logger.debug(' ----- set_usersetting_from_uploaddict ----- ')
     # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
     # logger.debug('upload_dict: ' + str(upload_dict))
     # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
     # PR2020-10-04 not any more, don't know why
     # - loop through keys of upload_dict
     for key, new_setting_dict in upload_dict.items():
+        logger.debug('new_setting_dict: ' + str(new_setting_dict))
         set_usersetting_from_upload_subdict(key, new_setting_dict, request)
 
 # - end of set_usersetting_from_uploaddict
 
 def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # PR2021-02-07
-    # logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
     # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
-    # logger.debug('upload_dict: ' + str(upload_dict))
     # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
     # PR2020-10-04 not any more, don't know why
     # - loop through keys of upload_dict
 
     # key = 'page_examyear', dict = {'sel_btn': 'examyears'}
     saved_settings_dict = get_usersetting_dict(key_str, request)
-    # logger.debug('new_setting_dict: ' + str(new_setting_dict))
-    # logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
+
+    logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
+    logger.debug('key_str: ' + str(key_str))
+    logger.debug('new_setting_dict: ' + str(new_setting_dict))
+    logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
 
     try:
     # - loop through subkeys of new settings
         for subkey, value in new_setting_dict.items():
+            logger.debug('subkey: ' + str(subkey))
+            logger.debug('value: ' + str(value))
+
+            # TODO add subsubkey for cols_hidden PR2021-08-18
+            # when subkey = cols_hidden it contains dict: value = {'published': ['examperiod', 'datepublished', 'url']}}
+            #if isinstance(value, dict) :
+            #    for subsubkey, subsubvalue in value.items():
+                    # saved_settings_dict: {'cols_hidden': {'published': ['examperiod', 'datepublished', 'url']}}
+            #else:
+
+
             # new_setting_dict: {'sel_subject_pk': 46}
             # - if subkey has value in saved_settings_dict: replace saved value with new value
             if subkey in saved_settings_dict:
@@ -1994,7 +2012,8 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
                 # - if subkey not found in saved_settings_dict and value is not None: create subkey with value
                 if value:
                     saved_settings_dict[subkey] = value
-        # logger.debug('Usersetting.set_setting from UserSettingsUploadView')
+
+        logger.debug('Usersetting.set_setting from UserSettingsUploadView')
         # - save key in usersetting and return settings_dict
         set_usersetting_dict(key_str, saved_settings_dict, request)
 
@@ -2003,6 +2022,7 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
         logger.error('key_str: ', str(key_str))
         logger.error('setting_dict: ', str(new_setting_dict))
 
+    logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
     return saved_settings_dict
 # - end of set_usersetting_from_upload_subdict
 

@@ -3145,7 +3145,7 @@ def create_ssnote_attachment_rows(upload_dict, request):  # PR2021-03-17
 
 # /////////////////////////////////////////////////////////////////
 def create_orderlist_rowsNEW(sel_examyear): # PR2021-08-09
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_orderlist_rowsNEW ============= ')
 
@@ -3299,13 +3299,16 @@ def create_orderlist_rowsNEW(sel_examyear): # PR2021-08-09
 
 
 #/////////////////////////////////////////////////////////////////
-def create_orderlist_rows(sel_examyear_pk):
-    # --- create rows of all schools with submeitted subjects PR2021-07-04
-    #logger.debug(' =============== create_orderlist_rows ============= ')
-    #logger.debug('append_dict: ' + str(append_dict))
-    #logger.debug('setting_dict: ' + str(setting_dict))
-    # create list of students of this school / examyear, possibly with filter student_pk or studsubj_pk
-    # with left join of studentsubjects with deleted=False
+def create_orderlist_rows(sel_examyear_code, sel_exam_period):
+    # --- create rows of all schools with published subjects PR2021-08-18
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_orderlist_rows ============= ')
+        logger.debug('sel_examyear_code: ' + str(sel_examyear_code) + ' ' + str(type(sel_examyear_code)))
+        logger.debug('sel_exam_period: ' + str(sel_exam_period) + ' ' + str(type(sel_exam_period)))
+
+    # create list of schools of this examyear (CUR and SXM), only where defaultrole = school
+    # with left join of studentsubjects with deleted=False, group by school_id with count(*)
 
     #logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
     #logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
@@ -3315,69 +3318,73 @@ def create_orderlist_rows(sel_examyear_pk):
 #CASE WHEN  POSITION(';" + sch.otherlang + ";' IN CONCAT(';', subj.otherlang, ';')) > 0 THEN ELSE END
 
     """
-    "CASE WHEN subj.otherlang IS NULL OR sch.otherlang THEN 'ne' ELSE", 
-    "CASE WHEN  POSITION('" + sch.otherlang + "' IN subj.otherlang) > 0 THEN sch.otherlang ELSE 'ne' END",
-    "END AS lang,",
+    
+    "si.ete_exam AS si_ete_exam,",
+    CASE WHEN subj.otherlang IS NULL OR sch.otherlang IS NULL  THEN 'ne'   ELSE
+    CASE WHEN POSITION(sch.otherlang IN subj.otherlang) > 0 THEN sch.otherlang ELSE 'ne' END END AS lang
+    
+    or even better with delimiters:
+    CASE WHEN subj.otherlang IS NULL OR sch.otherlang IS NULL 
+        THEN 
+            'ne' 
+        ELSE
+            CASE WHEN POSITION(';" + sch.otherlang + ";' IN CONCAT(';', subj.otherlang, ';')) > 0 
+                THEN 
+                ELSE 
+            END
+    END    
     
     """
-    sql_keys = {'ey_id': sel_examyear_pk}
+    sql_keys = {'ey_code_int': sel_examyear_code, 'ex_period_int': sel_exam_period}
 
-    sql_sublist = ["SELECT sch.id AS school_id,",
-                "dep.id AS dep_id, dep.base_id AS depbase_id, depbase.code AS depbase_code, lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev,",
-                "studsubj.subj_published_id,",
-                "subj.id AS subj_id, subjbase.code AS subjbase_code, subj.name AS subj_name,",
-                "si.ete_exam AS si_ete_exam,",
-                "CASE WHEN subj.otherlang IS NULL OR sch.otherlang IS NULL THEN 'ne' ELSE",
-                "CASE WHEN POSITION(sch.otherlang IN subj.otherlang) > 0 THEN sch.otherlang ELSE 'ne' END END AS lang",
+    sql_sublist = ["SELECT st.school_id AS school_id, count(*) AS publ_count,",
+        "publ.datepublished, publ.examperiod",
 
-                "FROM students_studentsubject AS studsubj",
+        "FROM students_studentsubject AS studsubj",
+        "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
 
-                "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-                "INNER JOIN subjects_scheme AS sm ON (sm.id = si.scheme_id)",
-                "INNER JOIN schools_department AS dep ON (dep.id = sm.department_id)",
-                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+        "INNER JOIN schools_published AS publ ON (publ.id = studsubj.subj_published_id)",
+        "WHERE publ.examperiod = %(ex_period_int)s::INT",
+        "AND NOT studsubj.tobedeleted",
 
-                "LEFT JOIN subjects_level AS lvl ON (lvl.id = sm.level_id)",
-
-                "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-
-                "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-                "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
-                "INNER JOIN schools_schoolbase AS schbase ON (schbase.id = sch.base_id)",
-
-                "WHERE NOT studsubj.tobedeleted",
-                # "AND studsubj.subj_published_id IS NOT NULL"
-
-                ]
+        "GROUP BY st.school_id, publ.datepublished, publ.examperiod"
+    ]
     sub_sql = ' '.join(sql_sublist)
 
-    sql_keys = {'ey_id': sel_examyear_pk}
+    total_sublist = ["SELECT st.school_id AS school_id, count(*) AS total",
+        "FROM students_studentsubject AS studsubj",
+        "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+        "WHERE NOT studsubj.tobedeleted",
+        "GROUP BY st.school_id"
+    ]
+    total_sql = ' '.join(total_sublist)
 
-    sql_list = ["WITH sub AS (" , sub_sql, ")",
-        "SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.name AS school_name,",
-        "sub.dep_id, sub.depbase_code, sub.lvl_id, sub.lvl_abbrev,",
-        "sub.subj_id, sub.subjbase_code, sub.subj_name, sub.si_ete_exam,",
-        "ARRAY_AGG(DISTINCT sub.subj_published_id) AS subj_published_arr,",
-        "sub.lang,",
-        "count(*) AS count",
+    sql_list = ["WITH sub AS (" , sub_sql, "), total AS (" , total_sql, ")",
+        "SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.abbrev AS school_abbrev, sch.activated,",
+        "total.total, sub.publ_count, sub.datepublished, sub.examperiod",
 
-        "FROM sub",
-        "INNER JOIN schools_school AS sch ON (sch.id = sub.school_id)",
+        "FROM schools_school AS sch",
         "INNER JOIN schools_schoolbase AS schbase ON (schbase.id = sch.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
 
-        "GROUP BY sch.id, schbase.code, sch.name, sub.dep_id, sub.depbase_id, sub.depbase_code,",
-                "sub.lvl_id, sub.lvl_abbrev, sub.lang, ",
-                "sub.subj_id, sub.subjbase_code, sub.subj_name, sub.si_ete_exam",
-        "ORDER BY LOWER(schbase.code), sub.depbase_id"
+        "LEFT JOIN sub ON (sub.school_id = sch.id)",
+        "LEFT JOIN total ON (total.school_id = sch.id)",
+
+        "WHERE schbase.defaultrole = ", str(c.ROLE_008_SCHOOL) , " AND ey.code = %(ey_code_int)s::INT",
+        "ORDER BY LOWER(schbase.code)"
         ]
     sql = ' '.join(sql_list)
 
-    #logger.debug('sql: ' + str(sql))
+    if logging_on:
+        logger.debug('sql: ' + str(sql))
 
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
         rows = af.dictfetchall(cursor)
+
+        if logging_on:
+            for row in rows:
+                logger.debug('row: ' + str(row))
 
     return rows
 # --- end of create_orderlist_rows

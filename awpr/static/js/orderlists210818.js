@@ -65,22 +65,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const columns_hidden = {};
 
+    const columns_tobe_hidden = {
+        fields: [ "schbase_code", "activated", "total", "publ_count", "datepublished"],
+        captions: ["School_code", "Activated", "Entered_subjects", "Submitted_subjects", "Date_submitted"]}
+
+
 // --- get field_settings
     const field_settings = {
-        orderlist: {  field_caption: ["", "School_code", "School_name", "Department", "Leerweg", "Subject",
-                                "Language", "ETE_exam", "Amount", "Submitted"],
-                    field_names: ["", "schbase_code", "school_name", "depbase_code", "lvl_abbrev", "subj_name",
-                                "lang", "subj_etenorm", "count", "subj_published_arr"],
-                    field_tags: ["div", "div", "div", "div", "div", "div",
-                                "div","div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text", "text", "text",
-                                  "text", "toggle", "number", "text"],
-                    field_width:  ["020", "090", "280", "090", "090", "280",
-                                    "090", "120", "120", "150"],
-                    field_align: ["c", "l", "l", "l", "l", "l",
-                                    "l", "c", "r", "l"]}
+        orderlist: {field_caption: ["", "School_code", "School_name", "Activated",
+                                 "Entered_subjects", "Submitted_subjects", "Date_submitted"],
+                    field_names: ["", "schbase_code", "school_abbrev", "activated",
+                                "total", "publ_count", "datepublished"],
+                    field_tags: ["div", "div", "div", "div",
+                                 "div", "div", "div"],
+                    filter_tags: ["select", "text", "text", "toggle",
+                                  "number", "number", "text"],
+                    field_width:  ["020", "090", "180", "090",
+                                   "120", "120", "150"],
+                    field_align: ["c", "l", "l", "c",
+                                    "r", "r", "l"]
+                     }
+        }
 
-        };
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
 
@@ -222,16 +228,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  fill col_hidden
                     if("col_hidden" in setting_dict){
-                       // clear the array columns_hidden
                         b_clear_array(columns_hidden);
-                       // fill the array columns_hidden
                         for (const [key, value] of Object.entries(setting_dict.col_hidden)) {
-                            columns_hidden[key] = value;
+                            console.log("key", key)
+                            console.log("value", value)
+                            console.log("!!value", !!value)
+                            if(value){ columns_hidden[key] = value } ;
                         }
                     }
-                    console.log("setting_dict", setting_dict)
-                    console.log("columns_hidden", columns_hidden)
-
                 };
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
@@ -284,8 +288,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("url_orderlist_download", url_orderlist_download);
         console.log("href_ETE", href_ETE);
         console.log("href_DUO", href_DUO);
-            AddSubmenuButton(el_submenu, loc.Download_orderlist_ETE, null, null, "id_submenu_download_orderlist", href_ETE, true);  // true = download
-            AddSubmenuButton(el_submenu, loc.Download_orderlist_DUO, null, null, "id_submenu_download_orderlist", href_DUO, true);  // true = download
+            AddSubmenuButton(el_submenu, loc.Preliminary_orderlist, null, null, "id_submenu_download_orderlist", href_ETE, true);  // true = download
+            AddSubmenuButton(el_submenu, loc.Final_orderlist, null, null, "id_submenu_download_orderlist", href_DUO, true);  // true = download
             AddSubmenuButton(el_submenu, loc.Hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
 
 
@@ -483,6 +487,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const field_align = field_setting.field_align;
         const field_width = field_setting.field_width;
         const column_count = field_names.length;
+        //console.log("field_names", field_names);
 
 // ---  lookup index where this row must be inserted
         const row_index = -1;
@@ -573,63 +578,28 @@ document.addEventListener('DOMContentLoaded', function() {
             const field_name = get_attr_from_el(el_div, "data-field");
             const fld_value = (map_dict[field_name]) ? map_dict[field_name] : null;
 
-        //console.log("field_name", field_name);
-        //console.log("fld_value", fld_value);
-
             if(field_name){
-                let inner_text = null, title_text = null, filter_value = null;
+                let inner_text = null, filter_value = null;
                 if (field_name === "select") {
-                    // TODO add select multiple users option PR2020-08-18
-                 } else if (["schbase_code", "school_name", "depbase_code", "lvl_abbrev", "sct_abbrev", "lang", "subj_code", "subj_name"
-                             ].includes(field_name)){
+                 } else if (["schbase_code", "school_abbrev"].includes(field_name)){
                     inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
 
-                } else if (field_name.includes("count")){
-                    inner_text = fld_value;
+                } else if (["publ_count", "total"].includes(field_name)){
+                    inner_text = f_format_count(setting_dict.user_lang, fld_value);
+                    filter_value = (fld_value) ? fld_value : 0;
+
+                } else if (field_name.includes("datepublished")){
+                    inner_text = format_datetime_from_datetimeISO(loc, fld_value);
                     filter_value = (inner_text) ? inner_text : 0;
 
-                } else if (field_name.includes("subj_published_arr")){
-                    inner_text = fld_value;
-                    filter_value = (inner_text) ? inner_text : 0;
-
-                } else if (field_name.includes("has_")){
-                    filter_value = (fld_value) ? "1" : "0";
-                    el_div.className = (is_etenorm) ? "tickmark_1_2" : "tickmark_0_0";
-
-                } else if (field_name.includes("subj_etenorm")){
-                    filter_value = (fld_value) ? "1" : "0";
-                    el_div.className = (fld_value) ? "tickmark_1_2" : "tickmark_0_0";
-
-                } else if (field_name.includes("_status")){
-                    const prefix_mapped = {btn_studsubj: "subj_", btn_exemption: "exem_", btn_reex: "reex_", btn_reex3: "reex3_", btn_pok: "pok_", }
-                    const field_auth_id = prefix_mapped[selected_btn] + field_name + "_id" // exem_auth1_id
-                    const field_auth_usr = prefix_mapped[selected_btn] + field_name + "_usr" // exem_auth1_usr
-                    const field_auth_mod = prefix_mapped[selected_btn] + field_name + "_modat" // exem_auth1_modat
-
-                    const auth_id = (map_dict[field_auth_id]) ? map_dict[field_auth_id] : null;
-                    //console.log("auth_id", auth_id);
-                    if(auth_id){
-                        const auth_usr = (map_dict[field_auth_usr]) ?  map_dict[field_auth_usr] : "-";
-                        const auth_mod = (map_dict[field_auth_mod]) ? map_dict[field_auth_mod] : null;
-                        let modified_date_formatted = "-"
-                        if(auth_mod){
-                            const modified_dateJS = parse_dateJS_from_dateISO(auth_mod);
-                            modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
-                        }
-                        title_text = loc.Authorized_by + ": " + auth_usr + "\n" + loc.at_ + modified_date_formatted;
-                    //console.log("title_text", title_text);
-                    }
-                    //const data_value = (auth_id) ? "1" : "0";
-                    //el_div.setAttribute("data-value", data_value);
+                } else if (field_name === "activated"){
+                    filter_value = (!!fld_value) ? "1" : "0";
+                    el_div.className = (!!fld_value) ? "tickmark_1_2" : "tickmark_0_0";
                 };  // if (field_name === "select") {
-// ---  put value in innerText and title
-                if (el_div.tagName === "INPUT"){
-                    el_div.value = inner_text;
-                } else {
-                    el_div.innerText = inner_text;
-                };
-                add_or_remove_attr (el_div, "title", !!title_text, title_text);
+
+// ---  put value in innerText
+                el_div.innerText = inner_text;
 
     // ---  add attribute filter_value
                 add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
@@ -744,32 +714,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const field_names = field_settings[tblName].field_names;
         const field_captions = field_settings[tblName].field_caption;
 
-//+++ loop through list of field_names
-        if(field_names && field_names.length){
-            const len = field_names.length;
-            for (let j = 0; j < len; j++) {
-                const field_name = field_names[j];
-                const field_caption = (field_captions[j]) ? loc[field_captions[j]]: null
-                const is_hidden = (field_name && mod_MCOL_dict.col_hidden.includes(field_name));
-                const tBody = (is_hidden) ? el_MCOL_tblBody_available : el_MCOL_tblBody_show;
+//+++ loop through list of columns_tobe_hidden.fields
+        for (let i = 0, field; field = columns_tobe_hidden.fields[i]; i++) {
+            const caption = (columns_tobe_hidden.captions[i]) ? loc[columns_tobe_hidden.captions[i]] : null;
+            const is_hidden = (field && mod_MCOL_dict.col_hidden.includes(field));
+            const tBody = (is_hidden) ? el_MCOL_tblBody_available : el_MCOL_tblBody_show;
 
-    //+++ insert tblRow into tBody
-                const tblRow = tBody.insertRow(-1);
-                tblRow.setAttribute("data-field", field_name);
+    //- insert tblRow into tBody
+            const tblRow = tBody.insertRow(-1);
+            tblRow.setAttribute("data-field", field);
 
-        // --- add EventListener to tblRow.
-                tblRow.addEventListener("click", function() {MCOL_SelectItem(tblRow);}, false )
-        //- add hover to tableBody row
-                add_hover(tblRow)
+    // - add EventListener to tblRow.
+            tblRow.addEventListener("click", function() {MCOL_SelectItem(tblRow);}, false )
 
-                const td = tblRow.insertCell(-1);
-                td.innerText = field_caption;
-        //- add data-tag  to tblRow
-                td.classList.add("tw_240")
+    //- add hover to tableBody row
+            add_hover(tblRow)
 
-                tblRow.setAttribute("data-field", field_name);
-            }
-        }  // if(field_captions && field_captions.length)
+    //- insert td into tblRow
+            const td = tblRow.insertCell(-1);
+            td.innerText = caption;
+            td.classList.add("tw_240")
+        };
     } // MCOL_FillSelectTable
 
 //=========  MCOL_SelectItem  ================ PR2021-07-07

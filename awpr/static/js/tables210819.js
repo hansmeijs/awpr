@@ -1570,60 +1570,65 @@ console.log( "show_row", show_row);
 // ++++++++++++  END OF FILTER PAYROLL TABLES +++++++++++++++++++++++++++++++++++++++
 
 
+// +++++++++++++++++ MODAL SELECT COLUMNS ++++++++++++++++++++++++++++++++++++++++++ PR2021-08-18
+// mod_MCOL_dict is only used in this script for modal. pages use columns_hidden and columns_tobe_hidden
+// mod_MCOL_dict.cols_hidden holds fields in modal before teay are saved, columns_hidden holds saved fields
+// these function use selected_btn, columns_hidden[tblName], columns_tobe_hidden[tblName].fields;
+const mod_MCOL_dict = {tblName: null, cols_hidden: []}
 
+// columns_hidden and columns_tobe_hidden are also used in t_MCOL_Open and t_MCOL_Save
+const columns_hidden = {};
+const columns_tobe_hidden = {};
 
-
-// +++++++++++++++++ MODAL SELECT COLUMNS ++++++++++++++++++++++++++++++++++++++++++
-let mod_MCOL_dict = {};
-//=========  MCOL_Open  ================ PR2021-08-02
-    function MCOL_Open() {
-       //console.log(" -----  MCOL_Open   ----")
-        //console.log("mod_MCOL_dict", mod_MCOL_dict)
-
+//=========  t_MCOL_Open  ================ PR2021-08-02
+    function t_MCOL_Open() {
+        //console.log(" -----  t_MCOL_Open   ----")
+        //console.log("selected_btn", selected_btn)
         const tblName = selected_btn.slice(4);
 
-        mod_MCOL_dict = {tblName: tblName, col_hidden: []}
+        mod_MCOL_dict.tblName = tblName;
+        mod_MCOL_dict.cols_hidden = [];
 
-        const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
-        //console.log("tblName", tblName)
-        //console.log("col_hidden", col_hidden)
-        //console.log("columns_hidden", columns_hidden)
-        for (let i = 0, field; field = col_hidden[i]; i++) {
-            mod_MCOL_dict.col_hidden.push(field);
+        const cols_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
+        for (let i = 0, field; field = cols_hidden[i]; i++) {
+            mod_MCOL_dict.cols_hidden.push(field);
         };
 
         t_MCOL_FillSelectTable();
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
         el_MCOL_btn_save.disabled = true
+
 // ---  show modal, set focus on save button
        $("#id_mod_select_columns").modal({backdrop: true});
-    }  // MCOL_Open
+    }  // t_MCOL_Open
 
 //=========  t_MCOL_Save  ================ PR2021-08-02
     function t_MCOL_Save(url_settings_upload, HandleBtnSelect) {
-        //console.log(" -----  t_MCOL_Save   ----")
+        console.log(" -----  t_MCOL_Save   ----")
 
-// ---  get hidden columns from mod_MCOL_dict.col_hidden and put them  in columns_hidden[tblName]
+// ---  get hidden columns from mod_MCOL_dict.cols_hidden and put them  in columns_hidden[tblName]
 
         if (!(mod_MCOL_dict.tblName in columns_hidden)){
             columns_hidden[mod_MCOL_dict.tblName] = [];
         }
-        const col_hidden = columns_hidden[mod_MCOL_dict.tblName];
-        //console.log("col_hidden", col_hidden)
+        const cols_hidden = columns_hidden[mod_MCOL_dict.tblName];
+        //console.log("cols_hidden", cols_hidden)
    // clear the array
-        b_clear_array(col_hidden);
-   // add hidden columns to col_hidden
-        for (let i = 0, field; field = mod_MCOL_dict.col_hidden[i]; i++) {
-            col_hidden.push(field);
+        b_clear_array(cols_hidden);
+   // add hidden columns to cols_hidden
+        for (let i = 0, field; field = mod_MCOL_dict.cols_hidden[i]; i++) {
+            cols_hidden.push(field);
         };
+
 // upload the new list of hidden columns
-        // format: setting[page_name] = {col_hidden: {student: ["regnumber", "bis_exam"]}}
+        // format: setting[page_name] = {cols_hidden: {student: ["regnumber", "bis_exam"]}}
         const key_str = "page_" + mod_MCOL_dict.tblName;
         const upload_dict = {}, page_dict = {};
         const tab_str = mod_MCOL_dict.tblName;
-        page_dict[tab_str] = col_hidden;
-        upload_dict[key_str] = {col_hidden: page_dict }
-        //console.log("upload_dict", upload_dict)
+        page_dict[tab_str] = cols_hidden;
+        upload_dict[key_str] = {cols_hidden: page_dict }
+        console.log("url_settings_upload", url_settings_upload)
+        console.log("upload_dict", upload_dict)
         UploadSettings (upload_dict, url_settings_upload);
 
         HandleBtnSelect(selected_btn, true)  // true = skip_upload
@@ -1634,57 +1639,44 @@ let mod_MCOL_dict = {};
 
 //=========  t_MCOL_FillSelectTable  ================ PR2021-07-07 PR2021-08-02
     function t_MCOL_FillSelectTable() {
-        console.log("===  t_MCOL_FillSelectTable == ");
+        //console.log("===  t_MCOL_FillSelectTable == ");
         //console.log("selected_btn", selected_btn);
         //console.log("field_settings", field_settings);
         //console.log("mod_MCOL_dict", mod_MCOL_dict);
+        //console.log("columns_tobe_hidden", columns_tobe_hidden);
 
         const el_MCOL_tblBody_available = document.getElementById("id_MCOL_tblBody_available");
         const el_MCOL_tblBody_show = document.getElementById("id_MCOL_tblBody_show");
         el_MCOL_tblBody_available.innerHTML = null;
         el_MCOL_tblBody_show.innerHTML = null;
+        if(mod_MCOL_dict.tblName && columns_tobe_hidden[mod_MCOL_dict.tblName]){
+            const fields = columns_tobe_hidden[mod_MCOL_dict.tblName].fields;
 
-        const field_names = columns_tobe_hidden[mod_MCOL_dict.tblName].field_names;
-        const field_captions = columns_tobe_hidden[mod_MCOL_dict.tblName].field_caption;
+    //+++ loop through list of fields
+            if(fields && fields.length){
+                for (let j = 0, field; field = fields[j]; j++) {
+                const captions = columns_tobe_hidden[mod_MCOL_dict.tblName].captions;
+        // - skip column 'Leerweg' when not sel_dep_level_req  || setting_dict.sel_dep_level_req
+                    const skip_level = (field === "lvlbase_id" && !setting_dict.sel_dep_level_req);
+                    if(!skip_level){
+        // - display 'Profiel' when sel_dep_has_profiel
+                        const caption = (field === "sct_abbrev") ?
+                                        (setting_dict.sel_dep_has_profiel) ? loc.Profiel : loc.Sector :
+                                        (captions[j]) ? loc[captions[j]] : null;
+                        const is_hidden = (field && mod_MCOL_dict.cols_hidden.includes(field));
+                        const tBody = (is_hidden) ? el_MCOL_tblBody_available : el_MCOL_tblBody_show;
 
-//+++ loop through list of field_names
-        if(field_names && field_names.length){
-            const len = field_names.length;
-            for (let j = 0; j < len; j++) {
-                const field_name = field_names[j];
-
-        // skip column 'Leerweg' when not sel_dep_level_req  || setting_dict.sel_dep_level_req
-                const skip_level = (field_name === "lvlbase_id" && !setting_dict.sel_dep_level_req);
-
-                if(!skip_level){
-
-            // display 'Profiel' when sel_dep_has_profiel
-                    const field_caption = (field_name === "sct_abbrev") ?
-                                    (setting_dict.sel_dep_has_profiel) ? loc.Profiel : loc.Sector :
-                                    (field_captions[j]) ? loc[field_captions[j]] : null;
-
-                    const is_hidden = (field_name && mod_MCOL_dict.col_hidden.includes(field_name));
-                    const tBody = (is_hidden) ? el_MCOL_tblBody_available : el_MCOL_tblBody_show;
-
-        //+++ insert tblRow into tBody
-                    const tblRow = tBody.insertRow(-1);
-                    tblRow.setAttribute("data-field", field_name);
-
-            // --- add EventListener to tblRow.
-                    tblRow.addEventListener("click", function() {MCOL_SelectItem(tblRow);}, false )
-            //- add hover to tableBody row
-                    add_hover(tblRow)
-
-                    const td = tblRow.insertCell(-1);
-                    td.innerText = field_caption;
-            //- add data-tag  to tblRow
-                    td.classList.add("tw_240")
-
-                    tblRow.setAttribute("data-field", field_name);
-
-                }  // if(!skip_level)
-            }
-        }  // if(field_captions && field_captions.length)
+    // +++ insert tblRow into tBody
+                        const tblRow = tBody.insertRow(-1);
+                        tblRow.setAttribute("data-field", field);
+                        tblRow.addEventListener("click", function() {MCOL_SelectItem(tblRow);}, false )
+        //- add hover to tableBody row
+                        add_hover(tblRow)
+        // - insert td into tblRow
+                        const td = tblRow.insertCell(-1);
+                        td.innerText = caption;
+                        td.classList.add("tw_240")
+        }}}};
     } // t_MCOL_FillSelectTable
 
 //=========  MCOL_SelectItem  ================ PR2021-07-07
@@ -1692,11 +1684,11 @@ let mod_MCOL_dict = {};
         //console.log("===  MCOL_SelectItem == ");
         if(!!tr_clicked) {
             const field_name = get_attr_from_el(tr_clicked, "data-field")
-            const is_hidden = (field_name && mod_MCOL_dict.col_hidden.includes(field_name));
+            const is_hidden = (field_name && mod_MCOL_dict.cols_hidden.includes(field_name));
             if (is_hidden){
-                b_remove_item_from_array(mod_MCOL_dict.col_hidden, field_name);
+                b_remove_item_from_array(mod_MCOL_dict.cols_hidden, field_name);
             } else {
-                mod_MCOL_dict.col_hidden.push(field_name)
+                mod_MCOL_dict.cols_hidden.push(field_name)
             }
             t_MCOL_FillSelectTable();
             // enable sasave btn
