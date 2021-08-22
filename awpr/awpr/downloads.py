@@ -174,7 +174,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     # TODO sel_exam_period
                     sel_exam_period = 1
                     datalists['orderlist_rows'] = stud_view.create_orderlist_rows(sel_examyear.code, sel_exam_period)
-                    datalists['orderlist_rows_new'] = stud_view.create_orderlist_rowsNEW(sel_examyear)
 
 # ----- grade_with_exam_rows
                 if datalist_request.get('grade_with_exam_rows'):

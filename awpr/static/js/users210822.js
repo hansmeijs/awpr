@@ -282,8 +282,8 @@ document.addEventListener('DOMContentLoaded', function() {
             data: param,
             dataType: 'json',
             success: function (response) {
-                //console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
-                //console.log(response)
+                console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
+                console.log(response)
 
                 // hide loader
                 el_loader.classList.add(cls_visible_hide)
@@ -879,6 +879,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (permit_dict.permit_crud_sameschool || permit_dict.permit_crud_otherschool){
             let data_dict = {}, user_pk = null;
             let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null;
+
+            let modifiedat = null, modby_username = null;
             const fldName = get_attr_from_el(el_input, "data-field");
             const is_addnew = (mode === "addnew");
 
@@ -894,7 +896,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     user_pk = data_dict.id;
                     user_schoolbase_pk = data_dict.schoolbase_id;
                     user_schoolbase_code = data_dict.sb_code;
-                }
+                    modifiedat= data_dict.modifiedat;
+                    modby_username = data_dict.modby_username;
+                };
+
         // when el_input is not defined: function is mode 'addnew'
             } else if (!permit_dict.permit_crud_otherschool){
                 // when new user and not role_admin or role_system: : get user_schoolbase_pk from request_user
@@ -939,6 +944,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const header_text = (is_addnew) ? loc.Add_user : loc.User + ":  " + mod_MUA_dict.username;
             const el_MUA_header = document.getElementById("id_MUA_header");
             el_MUA_header.innerText = header_text;
+
+    // ---  set text last modified
+
+            if (!is_addnew){
+                const el_MUA_msg_modified = document.getElementById("id_MUA_msg_modified");
+                if (el_MUA_msg_modified) {
+                    el_MUA_msg_modified.innerText = f_format_last_modified_txt(loc, modifiedat, modby_username)
+                };
+            };
 
     // ---  fill selecttable
             if(permit_dict.permit_crud_otherschool){

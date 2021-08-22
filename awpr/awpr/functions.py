@@ -757,7 +757,7 @@ def add_sxmsys_school_if_not_exist(request):  # PR2021-08-05
         logger.debug(' ------- add_sxmsys_school_if_not_exist -------')
 
 # get SXM country
-    sxm_country = get_country_by_abbrev('sxm')
+    sxm_country = get_country_instance_by_abbrev('sxm')
 
     if sxm_country:
 # get SXM examyear of today
@@ -868,7 +868,7 @@ def add_sxmsys_school_if_not_exist(request):  # PR2021-08-05
                     logger.debug('sxmsys_user: ' + str(sxmsys_user))
 # - end of add_sxmsys_school_if_not_exist
 
-def get_country_by_abbrev(abbrev):
+def get_country_instance_by_abbrev(abbrev):
     # get country by abbrev 'sxm' or 'cur' PR2021-08-06
 
     country = None
@@ -880,7 +880,7 @@ def get_country_by_abbrev(abbrev):
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
     return country
-# - end of get_country_by_abbrev
+# - end of get_country_instance_by_abbrev
 
 def get_todays_examyear_NIU():
     # get SXM examyear of today

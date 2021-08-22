@@ -202,7 +202,6 @@ class SubjectListView(View):
 
 def create_subject_rows(setting_dict, subject_pk, cur_dep_only=False):
     # --- create rows of all subjects of this examyear  PR2020-09-29 PR2020-10-30 PR2020-12-02
-
     logging_on = False  # s.LOGGING_ON
 
     sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
@@ -212,7 +211,6 @@ def create_subject_rows(setting_dict, subject_pk, cur_dep_only=False):
         logger.debug(' =============== create_subject_rows ============= ')
         logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk) + ' ' + str(type(sel_examyear_pk)))
         logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk) + ' ' + str(type(sel_depbase_pk)))
-        logger.debug('etenorm_only: ' + str(etenorm_only) + ' ' + str(type(etenorm_only)))
 
     # lookup if sel_depbase_pk is in subject.depbases PR2020-12-19
     # use: AND %(depbase_pk)s::INT = ANY(sj.depbases)

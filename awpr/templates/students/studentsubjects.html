@@ -5,8 +5,8 @@
 {% block title %}{% trans 'Subjects of candidates' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import210816.js' %}"></script>
-    <script src="{% static 'js/studentsubjects210819.js' %}"></script>
+    <script src="{% static 'js/import210822.js' %}"></script>
+    <script src="{% static 'js/studentsubjects210822.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -51,6 +51,11 @@
             <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
                 <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all subjects' %}</h6>
             </div>
+
+            <div class="tw_200 m-2">
+                <p id="id_SBR_item_count" class="tw_200 line_height_normal py-1"></p>
+            </div>
+
         {% endif %}
     </nav>
 {% endblock %}

@@ -10,15 +10,11 @@ from django.db.models import Q
 from django.db.models.functions import Lower
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 
-from datetime import datetime
-
 from django.shortcuts import render, redirect #, get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.generic import UpdateView, DeleteView, View, ListView, CreateView, FormView
-
-from schools.models import Country, Country_log, Examyear, Examyear_log, Department, Department_log, Schoolbase, School, School_log
 
 from accounts import views as acc_view
 
@@ -32,9 +28,9 @@ from awpr import downloads as dl
 from schools import functions as sf
 from schools import dicts as sd
 from schools import models as sch_mod
-from accounts import models as acc_mod
+from subjects import models as subj_mod
+from students import models as stud_mod
 
-import pytz
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -287,56 +283,57 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
             user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
             activate(user_lang)
 
-# - get upload_dict from request.POST
+# - get upload_dict from request.POST - upload_dict not in use
             upload_json = request.POST.get('upload', None)
             if has_permit and upload_json:
-                upload_dict = json.loads(upload_json)
-                current_examyear_code = upload_dict.get('examyear_code')
+                # upload_dict = json.loads(upload_json)
+
+# - get examyear_code_int of current examyear
+                sel_examyear_code_int = None
+                sel_examyear, sel_schoolNIU, sel_departmentNIU, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                if sel_examyear:
+                    sel_examyear_code_int = sel_examyear.code
+
+# - get examyear curacao with current examyear_code (logged in with SXM gives different examyear_instance)
+                curacao_country_instance = af.get_country_instance_by_abbrev('cur')
+                curacao_examyear_instance = sch_mod.Examyear.objects.get_or_none(
+                    code=sel_examyear_code_int,
+                    country=curacao_country_instance
+                )
                 if logging_on:
-                    logger.debug('current_examyear_code: ' + str(current_examyear_code) + ' ' + str(type(current_examyear_code)))
-                append_dict = {}
-# - get countr cur
-                cur_country = af.get_country_by_abbrev('cur')
-                if logging_on:
-                    logger.debug('cur_country: ' + str(cur_country))
+                    logger.debug('sel_examyear_code_int: ' + str(sel_examyear_code_int))
+                    logger.debug('curacao_country_instance: ' + str(curacao_country_instance))
+                    logger.debug('curacao_examyear_instance: ' + str(curacao_examyear_instance))
+
 # - get countr sxm
-                sxm_country = af.get_country_by_abbrev('sxm')
+                sxm_country_instance = af.get_country_instance_by_abbrev('sxm')
                 if logging_on:
-                    logger.debug('sxm_country: ' + str(sxm_country))
+                    logger.debug('sxm_country_instance: ' + str(sxm_country_instance))
 
-                if cur_country and sxm_country:
-# - get current examyear from Curacao
-                    current_examyear_instance = sch_mod.Examyear.objects.filter(
-                        country=cur_country,
-                        code=current_examyear_code
-                    ).order_by('-pk').first()
-                    if logging_on:
-                        logger.debug('current_examyear_instance: ' + str(current_examyear_instance))
-                        logger.debug('current_examyear_instance: ' + str(current_examyear_instance) + str(current_examyear_instance.country.abbrev))
+# - get examyear of SXM with  sel_examyear_code_int
+                sxm_examyear_instance = sch_mod.Examyear.objects.get_or_none(
+                    code=sel_examyear_code_int,
+                    country=sxm_country_instance
+                )
+                if logging_on:
+                    logger.debug('sxm_examyear_instance: ' + str(sxm_examyear_instance))
 
-                    if current_examyear_instance:
-                        examyear_code_int = current_examyear_instance.code
-# - get new examyear of sxm
-                        new_examyear_instance = sch_mod.Examyear.objects.filter(
-                            country=sxm_country,
-                            code=examyear_code_int
-                        ).order_by('-pk').first()
 # - create new examyear if it does not exist yet
-                        if new_examyear_instance is None:
-                            new_examyear_instance, msg_err = create_examyear(sxm_country, examyear_code_int, request)
-                            if msg_err:
-                                error_list.append(msg_err)
-                                if logging_on:
-                                    logger.debug('msg_err: ' + str(msg_err))
-                        if logging_on:
-                            logger.debug('new_examyear_instance: ' + str(new_examyear_instance) + str(
-                                new_examyear_instance.country.abbrev))
+                if sxm_examyear_instance is None:
+                    sxm_examyear_instance, msg_err = create_examyear(sxm_country_instance, sel_examyear.code, request)
+                    if msg_err:
+                        error_list.append(msg_err)
+                    if logging_on:
+                        logger.debug('msg_err: ' + str(msg_err))
+                        logger.debug('created sxm_examyear_instance: ' + str(sxm_examyear_instance))
+# - copy all tables from current_examyear_instance to new_sxm_examyear_instance
+                if curacao_examyear_instance and sxm_examyear_instance:
+                    if logging_on:
+                        logger.debug('curacao_examyear_instance and sxm_examyear_instance')
 
-                        if new_examyear_instance:
-                            append_dict['created'] = True
-# - copy all tables from current_examyear_instance to new_examyear_instance
-                            copy_to_sxm = True
-                            copy_tables_from_last_year(current_examyear_instance, new_examyear_instance, copy_to_sxm, request)
+                    copy_to_sxm = True
+                    copy_tables_from_last_year(curacao_examyear_instance, sxm_examyear_instance, copy_to_sxm, request)
 
         update_wrap['error_list'] = error_list
 
@@ -345,10 +342,113 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
 # - end of ExamyearCopyToSxmView
 
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+@method_decorator([login_required], name='dispatch')
+class ExamyearDeleteSubjectsFromSxmView(View):  # PR2021-08-06
+
+    def post(self, request):
+        logging_on = False  #s.LOGGING_ON
+
+        update_wrap = {}
+        error_list = []
+        if request.user is not None and request.user.country is not None:
+            req_usr = request.user
+            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_examyear', req_usr)
+            # only admin of system may do this
+            has_permit = (req_usr.role == c.ROLE_128_SYSTEM and requsr_usergroups_list and 'admin' in requsr_usergroups_list)
+
+            # DISABLE THIS FUNCTION,it will remove all students and subjects of SXM
+            has_permit = False
+            if logging_on:
+                logger.debug(' ')
+                logger.debug(' ============= ExamyearDeleteSubjectsFromSxmView ============= ')
+                logger.debug('has_permit: ' + str(has_permit))
+
+# - reset language
+            user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST - upload_dict not in use
+            upload_json = request.POST.get('upload', None)
+            if has_permit and upload_json:
+                upload_dict = json.loads(upload_json)
+                if logging_on:
+                    logger.debug('upload_dict: ' + str(upload_dict))
+                    # upload_dict: {'mode': 'delete_subjects_from_sxm', 'examyear_code': 2022}
+
+# - get current examyear and check if it is SXM and user country is also SXM
+                sxm_examyear_instance = None
+                sel_examyear, sel_schoolNIU, sel_departmentNIU, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                if logging_on:
+                    logger.debug('sel_examyear: ' + str(sel_examyear))
+
+                if sel_examyear:
+                    sel_country = sel_examyear.country
+                    if logging_on:
+                        logger.debug('sel_country: ' + str(sel_country))
+
+                    if sel_country and req_usr.country == sel_country:
+                        if logging_on:
+                            logger.debug('sel_country and req_usr.country == sel_country')
+                        if sel_country.abbrev and sel_country.abbrev.lower() == 'sxm':
+                            sxm_examyear_instance = sel_examyear
+
+                if logging_on:
+                    logger.debug('sxm_examyear_instance: ' + str(sxm_examyear_instance))
+
+                if sxm_examyear_instance:
+
+# +++ Delete all students of this SXM examyear
+                    # - first make sure that no sudsubjects exist
+                    # relationship studsubj - subj is PROTECT, but better safe than sorry
+                    students = stud_mod.Student.objects.filter(
+                        school__examyear=sxm_examyear_instance
+                    )
+                    for student in students:
+                        if logging_on:
+                            logger.debug('students: ' + str(students))
+                        sch_mod.delete_instance(student, msg_list, error_list, request, '', '')
+
+# +++ Delete all subjects of this SXM examyear
+                    subjects = subj_mod.Subject.objects.filter(
+                        examyear=sxm_examyear_instance
+                    )
+                    for subject in subjects:
+                        if logging_on:
+                            logger.debug('.........subject: ' + str(subject))
+                        sch_mod.delete_instance(subject, msg_list, error_list, request, '', '')
+
+# +++ Delete all level of this SXM examyear
+                    # relationship scheme - lvl is CASCADE, so also schemes, schemitems and subjecttypes will be deleted
+                    levels = subj_mod.Level.objects.filter(
+                        examyear=sxm_examyear_instance
+                    )
+                    for level in levels:
+                        if logging_on:
+                            logger.debug('.........level: ' + str(level))
+                        sch_mod.delete_instance(level, msg_list, error_list, request, '', '')
+
+# +++ Delete all level of this SXM examyear
+                    # relationship scheme - sct is CASCADE, so also schemes, schemitems and subjecttypes will be deleted
+                    sectors = subj_mod.Sector.objects.filter(
+                        examyear=sxm_examyear_instance
+                    )
+                    for sector in sectors:
+                        if logging_on:
+                            logger.debug('.........sector: ' + str(sector))
+                        sch_mod.delete_instance(sector, msg_list, error_list, request, '', '')
+        update_wrap['error_list'] = error_list
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of ExamyearDeleteSubjectsFromSxmView
+
+
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def create_examyear(country, examyear_code_int, request):
-    # --- create examyear # PR2019-07-30 PR2020-10-05 PR2021-07-14
+    # --- create examyear # PR2019-07-30 PR2020-10-05 PR2021-07-14 PR2021-08-21
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_examyear ----- ')
@@ -361,7 +461,7 @@ def create_examyear(country, examyear_code_int, request):
 # - create and save examyear
         try:
             instance = sch_mod.Examyear(
-                country=request.user.country,
+                country=country,
                 code=examyear_code_int,
                 createdat=timezone.now()
             )
@@ -896,7 +996,8 @@ def create_school_instance(examyear, upload_dict, error_dict, request):
 
 # - create and save school
             if error_dict:
-                error_dict['error_create'] = msg_err
+                pass
+                #error_dict['error_create'] = msg_err
             else:
                 try:
                     # First create base record. base.id is used in School. Create also saves new record
@@ -1307,21 +1408,21 @@ def upload_school_NIU(school_list, school_dict, lookup_field, awpKey_list,
                         update_dict[field] = field_dict
 
                # dont save data when it is a test run
-                if not is_test and save_instance:
-                    employee.save(request=request)
-                    update_dict['id']['pk'] = employee.pk
-                    update_dict['id']['ppk'] = employee.company.pk
+                #if not is_test and save_instance:
+                    #employee.save(request=request)
+                    #update_dict['id']['pk'] = employee.pk
+                    #update_dict['id']['ppk'] = employee.company.pk
                     # wagerate wagecode
                     # priceratejson additionjson
-                    try:
-                        employee.save(request=request)
-                        update_dict['id']['pk'] = employee.pk
-                        update_dict['id']['ppk'] = employee.company.pk
-                    except:
+                    #try:
+                        #employee.save(request=request)
+                        #update_dict['id']['pk'] = employee.pk
+                        #update_dict['id']['ppk'] = employee.company.pk
+                    #except:
         # - give error msg when creating employee failed
-                        error_str = str(_("An error occurred. The school data is not saved."))
-                        logfile.append(" ".join((code_text, error_str)))
-                        update_dict['row_error'] = error_str
+                        #error_str = str(_("An error occurred. The school data is not saved."))
+                        #logfile.append(" ".join((code_text, error_str)))
+                        #update_dict['row_error'] = error_str
 
     return update_dict
 # --- end of upload_school_NIU
@@ -1411,7 +1512,7 @@ class Validate_examyear(object):
         _does_not_exist = True
         if user_country is not None:
             if new_examyear_int is not None:
-                if not Examyear.objects.filter(country=user_country, code=new_examyear_int).exists():
+                if not sch_mod.Examyear.objects.filter(country=user_country, code=new_examyear_int).exists():
                     _does_not_exist = True
         return _does_not_exist
 
@@ -1428,9 +1529,9 @@ class Validate_examyear(object):
                 # if examyear is None: selected_country OK (examyear is None, no need to delete)
                 _examyear_country_selected = None
             else:
-                if Examyear.objects.filter(code=user_examyear_int, country=country_selected).exists():
+                if sch_mod.Examyear.objects.filter(code=user_examyear_int, country=country_selected).exists():
                     # examyear exists in selected_country: selected_country OK
-                    _examyear_country_selected = Examyear.objects.filter(code=user_examyear_int, country=country_selected).get()
+                    _examyear_country_selected = sch_mod.Examyear.objects.filter(code=user_examyear_int, country=country_selected).get()
                     #logger.debug('get_examyear_in_selected_country _examyear_country_selected: ' + str(_examyear_country_selected) + ' type: ' + str(type(_examyear_country_selected)))
                 else:
                     # examyear does not exist in country: select country NOT OK: delete user.examyear
@@ -1454,7 +1555,7 @@ class Validate_examyear(object):
                 # if examyear is None: new examyear cannot be added
                 _isOK = False
             else:
-                if Examyear.objects.filter(examyear=examyear, country=country).exists():
+                if sch_mod.Examyear.objects.filter(examyear=examyear, country=country).exists():
                     # examyear exists in country: new examyear cannot be added
                     _isOK = False
                 else:

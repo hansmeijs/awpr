@@ -479,7 +479,7 @@ def validate_studentsubjects_no_msg(student):
 def validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list):
     # - validate amount of subjects PR2021-07-10
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  validate_required_subjects  -----')
 
@@ -1038,7 +1038,7 @@ def get_schemitem_info(stud_scheme, schemeitem,
                        subject_list, doubles_list, sjtp_dict, mand_list, mand_subj_list, combi_list,
                        mvt_list, wisk_list, core_list, msg_list):
     # - get info from schemitem PR2021-08-17
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if schemeitem.scheme_id != stud_scheme.pk:
         value = schemeitem.subject.base.code
         msg_str = '<li>' + str(_("Subject '%(val)s' does not occur in this subject scheme.") % {'val': value}) + '</li>'

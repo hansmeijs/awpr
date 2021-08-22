@@ -104,6 +104,7 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Sectors'] = _('Sectors')
     dict['Abbreviation'] = _('Abbreviation')
 
+    dict['Total'] = _('Total')
     dict['Candidate'] = _('Candidate')
     dict['Candidates'] = _('Candidates')
     dict['a_candidate'] = _('a candidate')
@@ -113,6 +114,8 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Departments'] = _('Departments')
     dict['Inactive'] = _('Inactive')
     dict['Last_modified_on'] = _('Last modified on ')
+    dict['Last_modified'] = _('Last modified ')
+    dict['on'] = _('on ')
     dict['by'] = _(' by ')
 
     dict['Exemption'] = _('Exemption')
@@ -304,6 +307,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Close_examyear'] = _('Close exam year')
         dict['Delete_examyear'] = _('Delete exam year')
         dict['Copy_examyear_to_SXM'] = _('Copy exam year to SXM')
+        dict['Delete_subjects_from_SXM'] = _('Delete subjects from SXM')
+
+        dict['_of_'] = TXT__of_
 
         dict['Create_examyear_part1'] = pgettext_lazy('NL_Examenjaar', 'Create exam year ')
         dict['Create_examyear_part2'] = pgettext_lazy('NL_aanmaken', ' ')
@@ -322,8 +328,6 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Undo_publish_examyear'] = _('Undo publish exam year')
         dict['Undo_closure_examyear'] = _('Undo closure exam year')
-
-        dict['Copy_examyear_to_sxm'] = _('Copy exam year to SXM')
 
         dict['will_be_copid_to_sxm'] = pgettext_lazy('singular', ' will be copied to SXM.')
         dict['Yes_copy'] = _('Yes, copy')
@@ -834,11 +838,16 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['School_code'] = TXT_School_code
         dict['School_name'] = _('School name')
         dict['Activated'] = _('Activated')
-        dict['Entered_subjects'] = _('Number of entered subjects')
-        dict['Submitted_subjects'] = _('Number of submitted subjects')
+        dict['Number_of_candidates'] = _('Number of candidates')
+        dict['Number_of_entered_subjects'] = _('Number of entered subjects')
+        dict['Number_of_submitted_subjects'] = _('Number of submitted subjects')
         dict['Date_submitted'] = _('Date submitted')
 
         dict['Preliminary_orderlist'] = _('Preliminary orderlist')
+
+        dict['The_preliminary_orderlist'] = _('The preliminary orderlist')
+        dict['Downlaod_preliminary_orderlist'] = _('Download preliminary orderlist')
+
         dict['Final_orderlist'] = _('Final orderlist')
 
         dict['Language'] = _('Language')

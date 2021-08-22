@@ -499,6 +499,7 @@ PAGE_LIST = {
     'schools': _('Schools'),
     'students': _('Students'),
     'studentsubjects': _('Subjects of students'),
+    'orderlist': _('Order list'),
     'grades': _('Grades')
 }
 

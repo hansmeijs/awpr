@@ -2275,7 +2275,7 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
                                         double_entrieslist, mapped_subjectbase_pk_dict, subjbase_pk_list_per_student,
                                         log_list, request):  # PR2021-07-21 PR2021-08-12
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- upload_studentsubject_from_datalist  --------------------')
         logger.debug('data_dict: ' + str(data_dict))

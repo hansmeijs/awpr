@@ -14,7 +14,8 @@ const field_settings = {};
 const selected = {
     studsubj_dict: null,
     student_pk: null,
-    subject_pk: null
+    subject_pk: null,
+    item_count: 0
 };
 
 let school_rows = [];
@@ -111,8 +112,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 "div", "div", "div", "div", "div", "div",
                                 "div", "div", "div"],
 
-                    filter_tags: ["select", "text", "text",  "text",  "text",
-                                "text", "text", "text", "toggle",
+                    filter_tags: ["toggle", "text", "text",  "text",  "text",
+                                "text", "text", "text", "multitoggle",
                                  "toggle", "text", "toggle", "text", "toggle", "text",
                                  "toggle", "toggle", "toggle"],
                     field_width:  ["020", "075", "180",  "075", "075",
@@ -200,6 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
             //el_SBR_select_showall.addEventListener("click", function() {t_SBR_show_all(FillTblRows)}, false);
             add_hover(el_SBR_select_showall);
         };
+        const el_SBR_item_count = document.getElementById("id_SBR_item_count");
 
 // ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
         const el_MSED_input = document.getElementById("id_MSED_input");
@@ -500,7 +502,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Submit_Ex1_form, function() {MASS_Open("submit")});
             };
 
-            AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open()}, [], "id_submenu_columns")
+            AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_studsubj")}, [], "id_submenu_columns")
          el_submenu.classList.remove(cls_hide);
         };
     };//function CreateSubmenu
@@ -523,9 +525,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  show only the elements that are used in this tab
         b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
-
-// ---  hide submenu_columns when sel_btn = published (till subsubket in settoings is solved
-        add_or_remove_class(document.getElementById("id_submenu_columns"), cls_hide, selected_btn !== "btn_studsubj")
 
        //console.log("function HandleBtnSelect");
         FillTblRows(true);  // true = refresh_headerrow
@@ -624,6 +623,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
           };
         }  // if(data_rows)
+
+        Filter_TableRows()
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-07-22
@@ -690,12 +691,18 @@ document.addEventListener('DOMContentLoaded', function() {
 // ++++++++++ create filter row +++++++++++++++
 // --- add th to tblRow_filter.
                 const th_filter = document.createElement("th");
+                th_filter.id = "id_th_filter";  // to reset icons when clicked on show_all
 // --- create element with tag from field_tags
                 const el_tag = (filter_tag === "text") ? "input" : "div";
                 const el_filter = document.createElement(el_tag);
 // --- add EventListener to el_filter
-                    const event_str = (filter_tag === "text") ? "keyup" : "click";
-                    el_filter.addEventListener(event_str, function(event){HandleFilterField(el_filter, j, event)});
+                    if (filter_tag === "text") {
+                        el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
+                    } else if (["toggle", "multitoggle"].includes(filter_tag)) {
+                        // add EventListener for icon to th_filter, not el_filter
+                        th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
+                        th_filter.classList.add("pointer_show", "awp_filter_toggle");
+                    }
 // --- add data-field Attribute.
                     el_filter.setAttribute("data-field", field);
                     el_filter.setAttribute("data-filtertag", filter_tag);
@@ -707,7 +714,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         el_filter.setAttribute("autocomplete", "off");
                         el_filter.setAttribute("ondragstart", "return false;");
                         el_filter.setAttribute("ondrop", "return false;");
-                    } else if (["toggle"].includes(filter_tag)) {
+                    } else if (["toggle", "multitoggle"].includes(filter_tag)) {
                         // default empty icon necessary to set pointer_show
                         append_background_class(el_filter,"tickmark_0_0");
                     }
@@ -898,7 +905,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
 
                 } else if (field.includes("_status")){
-                    const [status_className, status_title_text] = UpdateFieldStatus(field, map_dict);
+                    const [status_className, status_title_text, filter_val] = UpdateFieldStatus(field, map_dict);
+                    filter_value = filter_val;
                     el_div.className = status_className;
                     title_text = status_title_text;
 
@@ -931,8 +939,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("=========  UpdateFieldStatus =========");
         //console.log("map_dict", map_dict);
         let className = "diamond_0_4";  // diamond_0_4 is blank img
-        let title_text = null;
-
+        let title_text = null, filter_value = null;
         if (field.includes("_status")){
             // skip when row has no studsubj_id
             if (map_dict.studsubj_id) {
@@ -951,8 +958,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const class_str = (publ_id) ? "diamond_3_4" :
                                   (auth1_id && auth2_id) ? "diamond_3_3" :
-                                  (auth1_id ) ? "diamond_2_1" :
-                                  (auth2_id) ? "diamond_1_2" : "diamond_0_0" // diamond_0_0 is outlined diamond
+                                  (auth1_id) ? "diamond_2_1" :
+                                  (auth2_id) ? "diamond_1_2" : "diamond_0_0"; // diamond_0_0 is outlined diamond
+                // filter_values are: '0'; is show all, 1: not approved, 2: auth1 approved, 3: auth2 approved, 4: auth1+2 approved, 5: submitted,   TODO '6': tobedeleted '7': locked
+
+                filter_value = (publ_id) ? "5" :
+                                  (auth1_id && auth2_id) ? "4" :
+                                  (auth2_id ) ? "3" :
+                                  (auth1_id) ? "2" : "1"; // diamond_0_0 is outlined diamond
+
                 className = class_str;
 
                 const field_auth1by = prefix + "_auth1by" // subj_auth1by
@@ -980,7 +994,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 //el_div.setAttribute("data-value", data_value);
             }
         };  // if (field === "select") {
-        return [className, title_text]
+        return [className, title_text, filter_value]
     }  // UpdateFieldStatus
 
 //========= get_column_is_hidden  ====== PR2021-03-15 PR2021-07-22
@@ -1947,8 +1961,8 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
 //=========  HandleShowAll  ================ PR2020-12-17
     function HandleShowAll() {
-        //console.log("=== HandleShowAll");
-        //console.log("setting_dict", setting_dict);
+        console.log("=== HandleShowAll");
+        console.log("setting_dict", setting_dict);
 
         setting_dict.sel_lvlbase_pk = null;
         setting_dict.sel_level_abbrev = null;
@@ -1961,6 +1975,17 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
         el_SBR_select_level.value = null;
         el_SBR_select_sector.value = null;
+
+        filter_dict = {};
+        const el_th_filter = document.getElementById("id_th_filter");
+        console.log("el_th_filter", el_th_filter);
+        if (el_th_filter){
+             let filter_toggle_elements = el_th_filter.querySelectorAll(".awp_filter_toggle");
+             for (let i = 0, el; el = filter_toggle_elements[i]; i++) {
+        console.log("el", el);
+                el.className = "tickmark_2_2";
+             }
+        }
 
 // ---  upload new setting
         const selected_pk_dict = {sel_lvlbase_pk: null, sel_sctbase_pk: null, sel_subject_pk: null, sel_student_pk: null};
@@ -2321,8 +2346,11 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
     // ---  create row in table., insert in alphabetical order
                 const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
 
-    // ---  scrollIntoView,
                 if(new_tblRow){
+    // --- add1 to item_count and show total in sidebar
+                    selected.item_count += 1;
+                    set_sbr_itemcount_txt();
+    // ---  scrollIntoView,
                     new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
     // ---  make new row green for 2 seconds,
                     ShowOkElement(new_tblRow);
@@ -2348,7 +2376,10 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
                     if(deleted_row_dict && deleted_row_dict.mapid){
                         const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
                         if (tblRow_tobe_deleted ){
-                            tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)
+                            tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
+        // --- subtract 1 from item_count and show total in sidebar
+                            selected.item_count -= 1;
+                            set_sbr_itemcount_txt();
                         };
                     }
                 } else {
@@ -2489,77 +2520,122 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
 //###########################################################################
 // +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
-
-//========= HandleFilterField  ====================================
-    function HandleFilterField(el_filter, col_index, event) {
-        //console.log( "===== HandleFilterField  ========= ");
+//========= HandleFilterKeyup  ================= PR2021-08-21
+    function HandleFilterKeyup(el, event) {
+        //console.log( "===== HandleFilterKeyup  ========= ");
         // skip filter if filter value has not changed, update variable filter_text
 
-        //console.log( "el_filter", el_filter);
-        //console.log( "col_index", col_index);
-        const filter_tag = get_attr_from_el(el_filter, "data-filtertag")
-        //console.log( "filter_tag", filter_tag);
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el.parentNode.cellIndex;
+        //console.log( "col_index", col_index, "event.key", event.key);
 
-// --- get filter tblRow and tblBody
-        const tblRow = get_tablerow_selected(el_filter);
-        const tblName = get_attr_from_el(tblRow, "data-table")
+        const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
+        //console.log( "filter_dict", filter_dict);
 
-// --- reset filter row when clicked on 'Escape'
-        const skip_filter = t_SetExtendedFilterDict(el_filter, col_index, filter_dict, event.key);
-        //console.log( "skip_filter", skip_filter);
-
-        if (filter_tag === "toggle") {
-// ---  toggle filter_checked
-            let filter_checked = (col_index in filter_dict) ? filter_dict[col_index] : 0;
-    // ---  change icon
-            let el_icon = el_filter.children[0];
-            if(el_icon){
-                add_or_remove_class(el_icon, "tickmark_0_0", !filter_checked)
-                if(filter_tag === "toggle"){
-                    add_or_remove_class(el_icon, "tickmark_0_1", filter_checked === -1)
-                    add_or_remove_class(el_icon, "tickmark_0_2", filter_checked === 1)
-                }
-            }
-
-        } else if (filter_tag === "activated") {
-// ---  toggle activated
-            let filter_checked = (col_index in filter_dict) ? filter_dict[col_index] : 0;
-            filter_checked += 1
-            if (filter_checked > 1) { filter_checked = -2 }
-            if (!filter_checked){
-                delete filter_dict[col_index];
-            } else {
-                filter_dict[col_index] = filter_checked;
-            }
-    // ---  change icon
-            let el_icon = el.children[0];
-            if(el_icon){
-                add_or_remove_class(el_icon, "tickmark_0_0", !filter_checked)
-                add_or_remove_class(el_icon, "exclamation_0_2", filter_checked === -2)
-                add_or_remove_class(el_icon, "tickmark_0_1", filter_checked === -1)
-                add_or_remove_class(el_icon, "tickmark_0_2", filter_checked === 1)
-            }
+        if (!skip_filter) {
+            Filter_TableRows(tblBody_datatable);
         }
+    }; // function HandleFilterKeyup
+
+//========= HandleFilterToggle  =============== PR2021-08-21
+    function HandleFilterToggle(el_input) {
+        console.log( "===== HandleFilterToggle  ========= ");
+
+    // - get col_index and filter_tag from  el_input
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el_input.parentNode.cellIndex;
+
+    // - get filter_tag from  el_input
+        const filter_tag = get_attr_from_el(el_input, "data-filtertag")
+        const field_name = get_attr_from_el(el_input, "data-field")
+        console.log( "col_index", col_index);
+        console.log( "filter_tag", filter_tag);
+        console.log( "field_name", field_name);
+
+    // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
+        const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
+        const filter_value = (filter_array[1]) ? filter_array[1] : "0";
+        console.log( "filter_array", filter_array);
+        console.log( "filter_value", field_name);
+
+        let new_value = "0", icon_class = "tickmark_0_0"
+
+        // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+        if (field_name === "subj_error"){
+// - toggle filter value
+            new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
+// - get new icon_class
+            icon_class =  (new_value === "2") ? "note_2_6" : (new_value === "1") ? "note_1_3" : "note_0_0";
+
+        } else if (field_name === "subj_status"){
+            // filter_values are: '0'; is show all, 1: not approved, 2: auth1 approved, 3: auth2 approved, 4: auth1+2 approved, 5: submitted,   TODO '6': tobedeleted '7': locked
+// - toggle filter value
+            let value_int = (Number(filter_value)) ? Number(filter_value) : 0;
+        console.log( "......filter_value", filter_value);
+            value_int += 1;
+        console.log( "......value_int", value_int, typeof  value_int);
+            if (value_int > 5 ) { value_int = 0};
+            // convert 0 to null, otherwise  "0" will not filter correctly
+            new_value = (value_int) ? value_int.toString() : null;
+        console.log( "......new_value", new_value, typeof  new_value);
+// - get new icon_class
+            icon_class =  (new_value === "5") ? "diamond_3_4" :
+                            (new_value === "4") ? "diamond_3_3" :
+                            (new_value === "3") ? "diamond_1_2" :
+                            (new_value === "2") ? "diamond_2_1" :
+                            (new_value === "1") ? "diamond_0_0" : "diamond_0_4";
+        console.log( "......icon_class", icon_class);
+        }
+        console.log( ">>>>>>>> col_index", col_index);
+    // - put new filter value in filter_dict
+        filter_dict[col_index] = [filter_tag, new_value]
+
+
+        el_input.className = icon_class;
 
         Filter_TableRows();
-    }; // HandleFilterField
+
+    };  // HandleFilterToggle
+
+
 
 //========= Filter_TableRows  ==================================== PR2020-08-17  PR2021-08-10
     function Filter_TableRows() {
-        //console.log( "===== Filter_TableRows  ========= ");
-        //console.log( "filter_dict", filter_dict);
+        console.log( "===== Filter_TableRows  ========= ");
+        console.log( "filter_dict", filter_dict);
 
+        selected.item_count = 0
 // ---  loop through tblBody.rows
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
             tblRow = tblBody_datatable.rows[i]
             show_row = t_ShowTableRowExtended(filter_dict, tblRow);
-            add_or_remove_class(tblRow, cls_hide, !show_row)
+            add_or_remove_class(tblRow, cls_hide, !show_row);
+            if (show_row) {selected.item_count += 1};
         }
+// ---  show total in sidebar
+        set_sbr_itemcount_txt();
     }; // Filter_TableRows
 
+//========= set_sbr_itemcount_txt  ======= PR2021-08-21
+    function set_sbr_itemcount_txt() {
+        if (el_SBR_item_count){
+            let inner_text = null;
+            if (selected.item_count){
+                const format_count = f_format_count(setting_dict.user_lang, selected.item_count);
+                const cand_txt = ((selected.item_count === 1) ? loc.Subject : loc.Subjects).toLowerCase();
+                inner_text = [loc.Total, format_count, cand_txt].join(" ");
+            }
+            el_SBR_item_count.innerText = inner_text;
+        };
+    } // set_sbr_itemcount_txt
+
 //========= ResetFilterRows  ====================================
-    function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20
-       //console.log( "===== ResetFilterRows  ========= ");
+    function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20 PR2021-08-21
+        //console.log( "===== ResetFilterRows  ========= ");
 
         selected.studsubj_dict = null;
         selected.student_pk = null;
@@ -2580,14 +2656,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
                         if(el.tagName === "INPUT"){
                             el.value = null
                         } else {
-                            const el_icon = el.children[0];
-                            if(el_icon){
-                                let classList = el_icon.classList;
-                                while (classList.length > 0) {
-                                    classList.remove(classList.item(0));
-                                }
-                                el_icon.classList.add("tickmark_0_0")
-                            }
+                            el.className = "tickmark_0_0";
                         }
                     }
                 }

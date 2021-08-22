@@ -152,6 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_SBR_select_showall.addEventListener("click", function() {t_SBR_show_all(FillTblRows)}, false);
             add_hover(el_SBR_select_showall);
         };
+        const el_SBR_item_count = document.getElementById("id_SBR_item_count")
 
 // ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
         const el_MSED_input = document.getElementById("id_MSED_input");
@@ -337,8 +338,8 @@ document.addEventListener('DOMContentLoaded', function() {
             data: param,
             dataType: 'json',
             success: function (response) {
-                //console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
-                //console.log(response)
+                console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
+                console.log(response)
 
 // ---  hide loader
                 el_loader.classList.add(cls_visible_hide);
@@ -432,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
             AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete")});
         };
 
-        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open()}, [], "id_submenu_columns")
+        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_student")}, [], "id_submenu_columns")
         el_submenu.classList.remove(cls_hide);
 
     };//function CreateSubmenu
@@ -535,6 +536,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             };
         };
+
+        Filter_TableRows();
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-06-15 PR2021-08-02
@@ -1613,12 +1616,22 @@ function RefreshDataRowsAfterUpload(response) {
         const tblName_settings = "student";
         const field_setting = field_settings[tblName_settings];
         const filter_tags = field_setting.filter_tags;
-
+        let item_count = 0
 // ---  loop through tblBody.rows
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
-
             show_row = t_ShowTableRowExtended(filter_dict, tblRow);
-            add_or_remove_class(tblRow, cls_hide, !show_row)
+            add_or_remove_class(tblRow, cls_hide, !show_row);
+            if (show_row) {item_count += 1};
+        }
+// ---  show total in sidebar
+        if (el_SBR_item_count){
+            let inner_text = null;
+            if (item_count){
+                const format_count = f_format_count(setting_dict.user_lang, item_count);
+                const cand_txt = ((item_count === 1) ? loc.Candidate : loc.Candidates).toLowerCase();
+                inner_text = [loc.Total, format_count, cand_txt].join(" ");
+            }
+            el_SBR_item_count.innerText = inner_text;
         }
     }; // Filter_TableRows
 

@@ -35,7 +35,6 @@ from django.views.generic import ListView, View, UpdateView, DeleteView, FormVie
 
 from django.contrib.auth.forms import SetPasswordForm # PR2018-10-14
 
-
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 from django.core.exceptions import ValidationError
@@ -657,7 +656,6 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
 
     def post(self, request, *args, **kwargs):
         logging_on = s.LOGGING_ON
-
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None:
@@ -1335,8 +1333,10 @@ class AwpPasswordResetConfirmView(PasswordContextMixin, FormView):
 
 def create_user_rows(request, user_pk=None):
     # --- create list of all users of this school, or 1 user with user_pk PR2020-07-31
-    #logger.debug(' =============== create_user_rows ============= ')
-    #logger.debug('user_pk: ' + str(user_pk))
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_user_rows ============= ')
+        logger.debug('user_pk: ' + str(user_pk))
 
     #ROLE_008_SCHOOL = 8
     #ROLE_032_INSP = 32
@@ -1355,21 +1355,26 @@ def create_user_rows(request, user_pk=None):
     if request.user.country and request.user.schoolbase:
         if request.user.role >= c.ROLE_008_SCHOOL:
             #if request.user.is_usergroup_admin:
-            if True:
-
+            try:
                 sql_keys = {'country_id': request.user.country.pk, 'max_role': request.user.role}
-                sql_list = ["SELECT u.id, u.schoolbase_id,",
+
+                sql_moduser = "SELECT mod_au.id, SUBSTRING(mod_au.username, 7) AS modby_username FROM accounts_user AS mod_au"
+                sql_list = ["WITH mod_user AS (", sql_moduser, ")",
+                    "SELECT u.id, u.schoolbase_id,",
                     "CONCAT('user_', u.id) AS mapid, 'user' AS table,",
                     "SUBSTRING(u.username, 7) AS username,",
                     "u.last_name, u.email, u.role, u.usergroups,",
 
                     "u.activated, u.activated_at, u.is_active, u.last_login, u.date_joined,",
                     "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
-                    "u.lang, u.modified_by_id, u.modified_at",
+                    "u.lang, u.modified_at AS modifiedat, mod_user.modby_username",
 
                     "FROM accounts_user AS u",
                     "INNER JOIN schools_country AS c ON (c.id = u.country_id)",
                     "LEFT JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
+
+                    "LEFT JOIN mod_user ON (mod_user.id = u.modified_by_id)",
+
                     "WHERE u.country_id = %(country_id)s::INT",
                     "AND role <= %(max_role)s::INT"]
                 if user_pk:
@@ -1385,9 +1390,18 @@ def create_user_rows(request, user_pk=None):
 
                 sql = ' '.join(sql_list)
 
-                newcursor = connection.cursor()
-                newcursor.execute(sql, sql_keys)
-                user_list = af.dictfetchall(newcursor)
+                if logging_on:
+                    logger.debug('sql: ' + str(sql))
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql, sql_keys)
+                    user_list = af.dictfetchall(cursor)
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug('user_list: ' + str(user_list))
+
     return user_list
 
 
@@ -1960,71 +1974,112 @@ def set_usersetting_dict(key_str, setting_dict, request):  # PR2019-03-09 PR2021
 # - end of set_usersetting_dict
 
 def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
-    logger.debug(' ----- set_usersetting_from_uploaddict ----- ')
+    #logger.debug(' ----- set_usersetting_from_uploaddict ----- ')
     # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
     # logger.debug('upload_dict: ' + str(upload_dict))
-    # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
+    # PR2020-07-12 debug. creates multiple rows when key does not exist and newdict has multiple subkeys
     # PR2020-10-04 not any more, don't know why
     # - loop through keys of upload_dict
     for key, new_setting_dict in upload_dict.items():
-        logger.debug('new_setting_dict: ' + str(new_setting_dict))
         set_usersetting_from_upload_subdict(key, new_setting_dict, request)
 
 # - end of set_usersetting_from_uploaddict
 
-def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # PR2021-02-07
+def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # PR2021-02-07 PR2021-08-19
     # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
     # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
     # PR2020-10-04 not any more, don't know why
     # - loop through keys of upload_dict
 
-    # key = 'page_examyear', dict = {'sel_btn': 'examyears'}
+    # keys are: 'sel_page'  = {'page': 'page_student'},
+    #           'selected_pk' = {'sel_depbase_pk': 23'}
+    #           'page_student' = {'sel_btn': 'btn_subject', 'cols_hidden': {'subject': ['name', ...]}
+    # new_setting_dict = 'page_examyear', dict = {'sel_btn': 'examyears'}
+    # get saved_settings_dict. new settings will be put in saved_settings_dict,  saved_settings_dict will be saved
     saved_settings_dict = get_usersetting_dict(key_str, request)
-
-    logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
-    logger.debug('key_str: ' + str(key_str))
-    logger.debug('new_setting_dict: ' + str(new_setting_dict))
-    logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
+    logging_on = False  #s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
+        logger.debug('key_str: ' + str(key_str))
+        logger.debug('new_setting_dict: ' + str(new_setting_dict))
+        logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
 
     try:
+        has_changed = False
     # - loop through subkeys of new settings
-        for subkey, value in new_setting_dict.items():
-            logger.debug('subkey: ' + str(subkey))
-            logger.debug('value: ' + str(value))
+        logger.debug(' --------------------- loop ')
+        for subkey, new_subdict_or_value in new_setting_dict.items():
+            # subkeys can have value: {'page': 'page_student'}, {'sel_depbase_pk': 23'}
+            # or can be a dict:       {'cols_hidden': {'scheme': ['min_mtv', 'max_mvt')}}
 
-            # TODO add subsubkey for cols_hidden PR2021-08-18
-            # when subkey = cols_hidden it contains dict: value = {'published': ['examperiod', 'datepublished', 'url']}}
-            #if isinstance(value, dict) :
-            #    for subsubkey, subsubvalue in value.items():
-                    # saved_settings_dict: {'cols_hidden': {'published': ['examperiod', 'datepublished', 'url']}}
-            #else:
+            if logging_on:
+                logger.debug('subkey: ' + str(subkey))
+                logger.debug('new_subdict_or_value: ' + str(new_subdict_or_value))
 
+            # when subkey = cols_hidden it contains a dict: saved_subdict_or_value = {'published': ['examperiod', 'datepublished', 'url']}}
+            # when subkey = sel_btn it contains a value: 'btn_studsubj'
+            # check if value is dict or sting
+            if isinstance(new_subdict_or_value, dict):
+                # get saved_subdict_or_value exists in saved_settings_dict, create empty dict when not found
+                # when subkey = cols_hidden: saved_subdict_or_value is a dict
+                saved_subdict_or_value = af.get_dict_value(saved_settings_dict, (subkey,))
+                if saved_subdict_or_value is None:
+                    saved_settings_dict[subkey] = {}
+                    saved_subdict_or_value = saved_settings_dict[subkey]
+                if logging_on:
+                    logger.debug('saved_subdict_or_value: ' + str(saved_subdict_or_value))
 
-            # new_setting_dict: {'sel_subject_pk': 46}
-            # - if subkey has value in saved_settings_dict: replace saved value with new value
-            if subkey in saved_settings_dict:
-                if value:
-                    saved_settings_dict[subkey] = value
-                else:
-                    # - if subkey has no value in saved_settings_dict: remove key from dict
-                    saved_settings_dict.pop(subkey)
+                for subsubkey, new_subsubvalue in new_subdict_or_value.items():
+                    saved_subsubvalue = af.get_dict_value(saved_subdict_or_value, (subsubkey,))
+
+                    if logging_on:
+                        logger.debug('..... saved_subsubvalue: ' + str(saved_subsubvalue))
+                        logger.debug('..... subsubkey: ' + str(subsubkey))
+                        logger.debug('       new_subsubvalue: ' + str( new_subsubvalue))
+                    # subsubkey is the table name: 'studsubj', 'published'
+                    # new_subsubvalue is a list: ['examperiod', 'datepublished', 'url']
+
+                    item_has_changed = replace_value_in_dict(saved_subdict_or_value, subsubkey, new_subsubvalue)
+                    if item_has_changed:
+                        has_changed = True
             else:
-                # - if subkey not found in saved_settings_dict and value is not None: create subkey with value
-                if value:
-                    saved_settings_dict[subkey] = value
+                item_has_changed = replace_value_in_dict(saved_settings_dict, subkey, new_subdict_or_value)
+                if item_has_changed:
+                    has_changed = True
 
-        logger.debug('Usersetting.set_setting from UserSettingsUploadView')
-        # - save key in usersetting and return settings_dict
-        set_usersetting_dict(key_str, saved_settings_dict, request)
+        if has_changed:
+            # - save key in usersetting and return settings_dict
+            set_usersetting_dict(key_str, saved_settings_dict, request)
+
+            if logging_on:
+                logger.debug('******. saved_settings_dict: ' + str(saved_settings_dict) )
+                logger.debug('Usersetting.set_setting from UserSettingsUploadView')
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
         logger.error('key_str: ', str(key_str))
         logger.error('setting_dict: ', str(new_setting_dict))
 
-    logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
+    if logging_on:
+        logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
     return saved_settings_dict
 # - end of set_usersetting_from_upload_subdict
+
+
+def replace_value_in_dict(settings_dict, key_str, new_value): #PR2021-08-19
+    item_has_changed = False
+
+    saved_subdict_or_value = af.get_dict_value(settings_dict, (key_str,))
+
+    if new_value is None:
+        if key_str in settings_dict:
+            item_has_changed = True
+            settings_dict.pop(key_str)
+    elif new_value != saved_subdict_or_value:
+        item_has_changed = True
+        settings_dict[key_str] = new_value
+
+    return item_has_changed
 
 # +++++++++++++++++++  get and set setting +++++++++++++++++++++++
 def get_usr_schoolname_with_article(user):  # PR2019-03-09 PR2021-01-25 PR2021-08-16

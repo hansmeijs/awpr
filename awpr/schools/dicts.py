@@ -163,11 +163,13 @@ def create_level_rows(examyear, depbase, cur_dep_only):
 
 def create_sector_rows(examyear, depbase, cur_dep_only):
     # --- create rows of all sectors of this examyear / country PR2020-12-11  PR2021-03-08  PR2021-06-24
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_sector_rows ============= ')
         logger.debug('cur_dep_only: ' + str(cur_dep_only))
         logger.debug('depbase: ' + str(depbase))
+        logger.debug('examyear: ' + str(examyear.code))
+        logger.debug('country: ' + str(examyear.country))
 
     rows =[]
     if examyear:
@@ -201,16 +203,17 @@ def create_sector_rows(examyear, depbase, cur_dep_only):
         sql_list.append("ORDER BY sct.sequence")
         sql = ' '.join(sql_list)
 
+        if logging_on:
+            logger.debug('sql: ' + str(sql))
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
             rows = af.dictfetchall(cursor)
 
+            if logging_on:
+                for row in rows:
+                    logger.debug('row: ' + str(row))
     return rows
 # --- end of create_sector_rows
-
-
-
-
 
 
 

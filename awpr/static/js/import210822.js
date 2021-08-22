@@ -51,9 +51,9 @@
 // +++++++++++++++++ MODAL IMPORT ++++++++++++++++++++
 //=========  MIMP_Open  ================ PR2020-12-03 PR2021-01-12
     function MIMP_Open(loc, import_table) {
-        //console.log( "===== MIMP_Open ========= ");
-        //console.log( "import_table: ", import_table);
-        //console.log( "loc: ", loc);
+        console.log( "===== MIMP_Open ========= ");
+        console.log( "import_table: ", import_table);
+        console.log( "loc: ", loc);
 
          // mimp_stored.coldefs gets value from schoolsetting_dict in i_UpdateSchoolsettingsImport(schoolsetting_dict)
 // reset all values of mimp to null, keep the keys.
@@ -473,7 +473,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
     };
 //=========   MIMP_HandleFiledialog   ======================
     function MIMP_HandleFiledialog(el_filedialog) { // functie wordt alleen doorlopen als file is geselecteerd
-        //console.log(" ========== MIMP_HandleFiledialog ===========");
+        console.log(" ========== MIMP_HandleFiledialog ===========");
 
         mimp.excel_coldefs = [];
         mimp.linked_exc_values = {};
@@ -531,7 +531,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //=========  MIMP_GetWorkbook  ====================================
     function MIMP_GetWorkbook(curFile) {
-        //console.log("======  MIMP_GetWorkbook  =====");
+        console.log("======  MIMP_GetWorkbook  =====");
         // curWorkbook.SheetNames = ["Sheet2", "Compleetlijst", "Sheet1"]
         // curWorkbook.Sheets = { Sheet1: {!margins: {left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0.3, …},
         //                                 !ref: "A1"
@@ -647,7 +647,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //=========  MIMP_SelectWorksheet   ======================
     function MIMP_SelectWorksheet() {
-        //console.log(" ========== MIMP_SelectWorksheet ===========");
+        console.log(" ========== MIMP_SelectWorksheet ===========");
         if(mimp.curWorkbook && mimp.curWorkSheets){
             const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
             if(el_worksheet_list.value){
@@ -1206,12 +1206,12 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //=========  FillExcelValueLists  ================ PR2020-12-26 PR2021-02-23
     function FillExcelValueLists(link_same_names){
-        //console.log(" ===== FillExcelValueLists  =====");
-        //console.log("mimp_stored", mimp_stored);
-        //console.log("mimp.excel_coldefs", mimp.excel_coldefs);
-        //console.log("mimp.awp_coldefs", mimp.awp_coldefs);
-        //console.log("mimp.import_table", mimp.import_table);
-        //console.log("mimp", mimp);
+        console.log(" ===== FillExcelValueLists  =====");
+        console.log("mimp_stored", mimp_stored);
+        console.log("mimp.excel_coldefs", mimp.excel_coldefs);
+        console.log("mimp.awp_coldefs", mimp.awp_coldefs);
+        console.log("mimp.import_table", mimp.import_table);
+        console.log("mimp", mimp);
 
         // function is called by MIMP_GetWorkbook, MIMP_SelectWorksheet, MIMP_CheckboxHasheaderChanged, LinkColumns, UnlinkColumns
         // function fills mimp.linked_exc_values with excel_values of department, level, sector, subject, NIU: subjecttype
@@ -1284,8 +1284,8 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             }  //  for (let x = 0, awp_colName; awp_colName = awp_col_names[x]; x++)
         }  // if(awp_col_names.length){
 
-        //console.log("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
-        //console.log("mimp.linked_awp_values", deepcopy_dict(mimp.linked_awp_values));
+        console.log("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
+        console.log("mimp.linked_awp_values", deepcopy_dict(mimp.linked_awp_values));
     }  // FillExcelValueLists
 
 //=========  create_mimp_linked_values_list  ================   PR2021-02-28

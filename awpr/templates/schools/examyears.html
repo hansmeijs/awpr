@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exam years' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/examyears210816.js' %}"></script>
+    <script src="{% static 'js/examyears210822.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -82,6 +82,8 @@
                 data-url_settings_upload="{% url 'url_settings_upload' %}"
                 data-url_examyear_upload="{% url 'url_examyear_upload' %}"
                 data-url_examyear_copytosxm="{% url 'url_examyear_copytosxm' %}"
+                data-url_examyear_deletesubjectsfromsxm="{% url 'url_examyear_deletesubjectsfromsxm' %}"
+
                 data-url_school_upload="{% url 'url_school_upload' %}"
             >
             </div>

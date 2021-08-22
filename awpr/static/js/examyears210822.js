@@ -1,4 +1,8 @@
 // PR2020-09-29 added
+
+
+const urls = {};
+
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
@@ -44,11 +48,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
-    const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
-    const url_examyear_upload = get_attr_from_el(el_data, "data-url_examyear_upload");
-    const url_examyear_copytosxm = get_attr_from_el(el_data, "data-url_examyear_copytosxm");
-    const url_school_upload = get_attr_from_el(el_data, "data-url_school_upload");
+    urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+    urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    urls.url_examyear_upload = get_attr_from_el(el_data, "data-url_examyear_upload");
+    urls.url_examyear_copytosxm = get_attr_from_el(el_data, "data-url_examyear_copytosxm");
+    urls.url_examyear_deletesubjectsfromsxm = get_attr_from_el(el_data, "data-url_examyear_deletesubjectsfromsxm");
+
+    urls.url_school_upload = get_attr_from_el(el_data, "data-url_school_upload");
 
 // --- get field_settings
     const field_settings = {
@@ -176,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let response = "";
         $.ajax({
             type: "POST",
-            url: url_datalist_download,
+            url: urls.url_datalist_download,
             data: param,
             dataType: 'json',
             success: function (response) {
@@ -265,6 +271,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Delete_examyear, function() {ModConfirmOpen("delete")});
                 if (permit_dict.requsr_role_system){
                     AddSubmenuButton(el_submenu, loc.Copy_examyear_to_SXM, function() {ModConfirmOpen("copy_to_sxm")});
+                    // DISABLE THIS FUNCTION,it will remove all students and subjects of SXM
+                    // AddSubmenuButton(el_submenu, loc.Delete_subjects_from_SXM, function() {ModConfirmOpen("delete_subjects_from_sxm")});
                 }
             }
 
@@ -283,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  upload new selected.btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_examyear: {sel_btn: selected.btn}};
-            UploadSettings (upload_dict, url_settings_upload);
+            UploadSettings (upload_dict, urls.url_settings_upload);
         };
 
 // ---  highlight selected button
@@ -642,9 +650,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= UploadChanges  ============= PR2020-08-03
     function UploadChanges(upload_dict, url_str) {
-        //console.log("=== UploadChanges");
-        //console.log("url_str: ", url_str);
-        //console.log("upload_dict: ", upload_dict);
+        console.log("=== UploadChanges");
+        console.log("url_str: ", url_str);
+        console.log("upload_dict: ", upload_dict);
 
         if(!isEmpty(upload_dict)) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -803,7 +811,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 upload_changes = true
             };
             if(upload_changes){
-                const url_str = (["activate", "close_school"].includes(mode)) ? url_school_upload : url_examyear_upload
+                const url_str = (["activate", "close_school"].includes(mode)) ? urls.url_school_upload : urls.url_examyear_upload
                 const el_MEY_loader =  document.getElementById("id_MEY_loader");
                 if(el_MEY_loader){el_MEY_loader.classList.remove(cls_visible_hide)};
                 UploadChanges(upload_dict, url_str);
@@ -1017,12 +1025,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2020-11-22 PR2021-06-29
+//=========  ModConfirmOpen  ================ PR2020-11-22 PR2021-06-29 PR2021-08-21
     function ModConfirmOpen(mode) {
         //console.log(" -----  ModConfirmOpen   ----")
         // called by el_MEY_btn_delete and submenu btn delete examyear
-        // mode is always 'delete' (for now?)
-        // mode 'copy_to_sxm' added
+        // mode is 'delete', 'copy_to_sxm', 'delete_subjects_from_sxm'
         //console.log("selected", selected)
         //console.log("permit_dict", permit_dict)
 
@@ -1057,7 +1064,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if(mode === "delete"){
                 header_text =  loc.Delete_examyear ;
             } else if (mode === "copy_to_sxm"){
-                header_text =  loc.Copy_examyear_to_sxm ;
+                header_text =  loc.Copy_examyear_to_SXM ;
+            } else if (mode === "delete_subjects_from_sxm"){
+                header_text =  loc.Delete_subjects_from_SXM ;
             }
 // ---  put text in modal form
             const item = (tblName === "examyear") ? loc.Examyear : "";
@@ -1068,11 +1077,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 msg_list[0] = loc.No_examyer_selected;
             } else {
                 if(mode === "delete"){
-                    msg_list[0] = loc.Examyear + " '" + mod_dict.examyear_code + "'" + loc.will_be_deleted
+                    msg_list[0] = loc.Examyear + " '" + mod_dict.examyear_code + "'" + loc.will_be_deleted;
                     msg_list[1] = loc.Do_you_want_to_continue;
 
                 } else if (mode === "copy_to_sxm"){
                     msg_list[0] = loc.Examyear + " '" + mod_dict.examyear_code + "'" + loc.will_be_copid_to_sxm
+                    msg_list[1] = loc.Do_you_want_to_continue;
+
+                } else if (mode === "delete_subjects_from_sxm"){
+                    msg_list[0] = loc.Subjects + loc._of_ + "St. Maarten " + loc._of_ + loc.Examyear.toLowerCase() + " " + mod_dict.examyear_code +  loc.will_be_deleted;
                     msg_list[1] = loc.Do_you_want_to_continue;
                 }
             }
@@ -1084,7 +1097,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const msg_html = msg_list.join("<br>");
                 el_confirm_msg_container.innerHTML = msg_html;
 
-                const caption_save = (mode === "delete") ? loc.Yes_delete :
+                const caption_save = (mode.includes("delete")) ? loc.Yes_delete :
                                      (mode === "copy_to_sxm")  ? loc.Yes_copy : loc.OK;
                 el_confirm_btn_save.innerText = caption_save;
                 add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
@@ -1104,8 +1117,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  ModConfirmSave  ================ PR2019-06-23 PR2021-06-15
     function ModConfirmSave() {
-        //console.log(" --- ModConfirmSave --- ");
-        //console.log("mod_dict: ", mod_dict);
+        console.log(" --- ModConfirmSave --- ");
+        console.log("mod_dict: ", mod_dict);
         let close_modal = (!permit_dict.permit_crud)
 
         if(!!permit_dict.permit_crud){
@@ -1116,7 +1129,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ShowClassWithTimeout(tblRow, "tsa_tr_error");
             }
 
-            if(["delete", "copy_to_sxm"].indexOf(mod_dict.mode) > -1) {
+            if(["delete", "copy_to_sxm", "delete_subjects_from_sxm"].indexOf(mod_dict.mode) > -1) {
     // show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
             }
@@ -1126,10 +1139,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (tblRow && mod_dict.mode === "delete"){
                 upload_dict.mapid = mod_dict.mapid;
                 upload_dict.examyear_pk = mod_dict.examyear_pk;
-            } else if (mod_dict.mode === "copy_to_sxm"){
+            } else if (mod_dict.mode === "copy_to_sxm" || mod_dict.mode === "delete_subjects_from_sxm"){
                 upload_dict.examyear_code = mod_dict.examyear_code
             }
-            const url_str = (mod_dict.mode === "copy_to_sxm") ? url_examyear_copytosxm : url_examyear_upload;
+            const url_str = (mod_dict.mode === "delete_subjects_from_sxm") ? urls.url_examyear_deletesubjectsfromsxm :
+                            (mod_dict.mode === "copy_to_sxm") ? urls.url_examyear_copytosxm : urls.url_examyear_upload;
+
             UploadChanges(upload_dict, url_str);
         };
 // ---  hide modal

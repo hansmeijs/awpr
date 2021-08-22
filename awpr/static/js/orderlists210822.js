@@ -1,12 +1,18 @@
 // PR2020-09-29 added
+
+let selected_btn = "btn_user";
+let setting_dict = {};
+let permit_dict = {};
+let loc = {};
+let urls = {};
+
+const selected = {
+    studentsubject_dict: null,
+    student_pk: null,
+    subject_pk: null
+};
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
-
-    // <PERMIT> PR220-10-02
-    //  - can view page: only 'role_school', 'role_insp', 'role_admin', 'role_system'
-    //  - can add/delete/edit only 'role_admin', 'role_system' plus 'perm_edit'
-    //  roles are:   'role_student', 'role_teacher', 'role_school', 'role_insp', 'role_admin', 'role_system'
-    //  permits are: 'perm_read', 'perm_edit', 'perm_auth1', 'perm_auth2', 'perm_docs', 'perm_admin', 'perm_system'
 
 // ---  check if user has permit to view this page. If not: el_loader does not exist PR2020-10-02
     let el_loader = document.getElementById("id_loader");
@@ -17,21 +23,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_visible_hide = "visibility_hide";
     const cls_selected = "tsa_tr_selected";
 
-// ---  id of selected customer and selected order
-    let selected_btn = "btn_user";
-    let setting_dict = {};
-    let permit_dict = {};
-    let loc = {};
-
-    const selected = {
-        studentsubject_dict: null,
-        student_pk: null,
-        subject_pk: null
-    };
-
     let mod_dict = {};
     let mod_MSTUD_dict = {};
-    let mod_MCOL_dict = {};
 
 // mod_MSTUDSUBJ_dict stores available studsubj for selected candidate in MSTUDSUBJ
     let mod_MSTUDSUBJ_dict = {
@@ -59,31 +52,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
-    const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
-    const url_orderlist_download = get_attr_from_el(el_data, "data-orderlist_download_url");
+    urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+    urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    urls.url_orderlist_download = get_attr_from_el(el_data, "data-orderlist_download_url");
 
-    const columns_hidden = {};
-
-    const columns_tobe_hidden = {
-        fields: [ "schbase_code", "activated", "total", "publ_count", "datepublished"],
-        captions: ["School_code", "Activated", "Entered_subjects", "Submitted_subjects", "Date_submitted"]}
-
+    columns_tobe_hidden.btn_orderlist01 = {
+        fields: [ "school_abbrev", "total_students", "total", "publ_count", "datepublished"],
+        captions: ["School_name", "Number_of_entered_subjects", "Number_of_submitted_subjects", "Date_submitted"]}
+    columns_tobe_hidden.btn_orderlist02 =columns_tobe_hidden.btn_orderlist01;
+    columns_tobe_hidden.btn_orderlist03 =columns_tobe_hidden.btn_orderlist01;
 
 // --- get field_settings
     const field_settings = {
-        orderlist: {field_caption: ["", "School_code", "School_name", "Activated",
-                                 "Entered_subjects", "Submitted_subjects", "Date_submitted"],
-                    field_names: ["", "schbase_code", "school_abbrev", "activated",
-                                "total", "publ_count", "datepublished"],
-                    field_tags: ["div", "div", "div", "div",
-                                 "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "toggle",
-                                  "number", "number", "text"],
-                    field_width:  ["020", "090", "180", "090",
-                                   "120", "120", "150"],
-                    field_align: ["c", "l", "l", "c",
-                                    "r", "r", "l"]
+        orderlist: {field_caption: ["", "School_code", "School_name", "Number_of_candidates",
+                                 "Number_of_entered_subjects", "Number_of_submitted_subjects", "Date_submitted"],
+                    field_names: ["", "schbase_code", "school_abbrev",
+                                "total_students", "total", "publ_count", "datepublished"],
+                    field_tags: ["div", "div", "div",
+                                 "div", "div","div", "div"],
+                    filter_tags: ["select", "text", "text",
+                                  "number", "number", "number", "text"],
+                    field_width:  ["020", "090", "180",
+                                   "120", "120", "120", "150"],
+                    field_align: ["c", "l", "l",
+                                    "r", "r", "r", "l"]
                      }
         }
 
@@ -205,7 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let response = "";
         $.ajax({
             type: "POST",
-            url: url_datalist_download,
+            url: urls.url_datalist_download,
             data: param,
             dataType: 'json',
             success: function (response) {
@@ -282,16 +274,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function CreateSubmenu() {
         console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
-            const href_ETE = (url_orderlist_download) ? url_orderlist_download.replace("-", "ete") : url_orderlist_download;
-            const href_DUO = (url_orderlist_download) ? url_orderlist_download.replace("-", "duo") : url_orderlist_download;
+            const href_ETE = (urls.url_orderlist_download) ? urls.url_orderlist_download.replace("-", "ete") : urls.url_orderlist_download;
+            const href_DUO = (urls.url_orderlist_download) ? urls.url_orderlist_download.replace("-", "duo") : urls.url_orderlist_download;
 
-        console.log("url_orderlist_download", url_orderlist_download);
-        console.log("href_ETE", href_ETE);
-        console.log("href_DUO", href_DUO);
-            AddSubmenuButton(el_submenu, loc.Preliminary_orderlist, null, null, "id_submenu_download_orderlist", href_ETE, true);  // true = download
-            AddSubmenuButton(el_submenu, loc.Final_orderlist, null, null, "id_submenu_download_orderlist", href_DUO, true);  // true = download
-            AddSubmenuButton(el_submenu, loc.Hide_columns, function() {MCOL_Open()}, [], "id_submenu_columns")
-
+            AddSubmenuButton(el_submenu, loc.Preliminary_orderlist, function() {ModConfirmOpen("prelim_orderlist")});
+            //AddSubmenuButton(el_submenu, loc.Final_orderlist, null, null, "id_submenu_download_orderlist", href_DUO, true);  // true = download
+            AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_orderlist")}, [], "id_submenu_columns")
 
         el_submenu.classList.remove(cls_hide);
 
@@ -302,12 +290,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function HandleBtnSelect(data_btn, skip_upload) {
         //console.log( "===== HandleBtnSelect ========= ", data_btn);
         selected_btn = data_btn
-        if(!selected_btn){selected_btn = "btn_student"}
+        if(!selected_btn){selected_btn = "btn_orderlist01"}
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
-            const upload_dict = {page_studsubj: {sel_btn: selected_btn}};
-            UploadSettings (upload_dict, url_settings_upload);
+            const sel_examperiod = (selected_btn === "btn_orderlist03") ? 3 :
+                               (selected_btn === "btn_orderlist02") ? 2 : 1;
+// ---  upload new setting
+            const upload_dict = {page_orderlist: {sel_btn: selected_btn}, selected_pk: {sel_examperiod: sel_examperiod}};
+            UploadSettings (upload_dict, urls.url_settings_upload);
         };
 
 // ---  highlight selected button
@@ -345,7 +336,6 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
     }  // HandleTableRowClicked
-
 
 //========= UpdateHeaderText  ================== PR2020-07-31
     function UpdateHeaderText(){
@@ -585,12 +575,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
 
-                } else if (["publ_count", "total"].includes(field_name)){
+                } else if (["total_students", "publ_count", "total"].includes(field_name)){
                     inner_text = f_format_count(setting_dict.user_lang, fld_value);
                     filter_value = (fld_value) ? fld_value : 0;
 
                 } else if (field_name.includes("datepublished")){
-                    inner_text = format_datetime_from_datetimeISO(loc, fld_value);
+                    inner_text = format_dateISO_vanilla (loc, fld_value, true, false, true, false);
                     filter_value = (inner_text) ? inner_text : 0;
 
                 } else if (field_name === "activated"){
@@ -654,259 +644,56 @@ document.addEventListener('DOMContentLoaded', function() {
         }  //  if(!!row_upload)
     };  // UploadChanges
 
-// +++++++++++++++++ MODAL SELECT COLUMNS ++++++++++++++++++++++++++++++++++++++++++
-//=========  MCOL_Open  ================ PR2021-07-07
-    function MCOL_Open() {
-       //console.log(" -----  MCOL_Open   ----")
-        mod_MCOL_dict = {col_hidden: []}
-
-        const tblName = "orderlist";
-        const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
-        for (let i = 0, field; field = col_hidden[i]; i++) {
-            mod_MCOL_dict.col_hidden.push(field);
-        };
-
-        MCOL_FillSelectTable();
-
-        el_MCOL_btn_save.disabled = true
-// ---  show modal, set focus on save button
-       $("#id_mod_select_columns").modal({backdrop: true});
-    }  // MCOL_Open
-
-//=========  ModColumns_Save  ================ PR2021-07-07
-    function ModColumns_Save() {
-        console.log(" -----  ModColumns_Save   ----")
-
-// ---  get hidden columns from mod_MCOL_dict.col_hidden and put them  in columns_hidden[tblName]
-        const tblName = "orderlist";
-        if (!(tblName in columns_hidden)){
-            columns_hidden[tblName] = [];
-        }
-        const col_hidden = columns_hidden[tblName];
-        console.log("col_hidden", col_hidden)
-   // clear the array
-        b_clear_array(col_hidden);
-   // add hidden columns to col_hidden
-        for (let i = 0, field; field = mod_MCOL_dict.col_hidden[i]; i++) {
-            col_hidden.push(field);
-        };
-// upload the new list of hidden columns
-        const page_dict = {};
-        page_dict[tblName] = col_hidden;
-        const upload_dict = {page_orderlist: {col_hidden: page_dict }};
-        console.log("upload_dict", upload_dict)
-        UploadSettings (upload_dict, url_settings_upload);
-
-        HandleBtnSelect(selected_btn, true)  // true = skip_upload
-
-// hide modal
-        // in HTML: data-dismiss="modal"
-    }  // ModColumns_Save
-
-//=========  MCOL_FillSelectTable  ================ PR2021-07-07
-    function MCOL_FillSelectTable() {
-        console.log("===  MCOL_FillSelectTable == ");
-
-        el_MCOL_tblBody_available.innerHTML = null;
-        el_MCOL_tblBody_show.innerHTML = null;
-
-        const tblName = "orderlist";
-        const field_names = field_settings[tblName].field_names;
-        const field_captions = field_settings[tblName].field_caption;
-
-//+++ loop through list of columns_tobe_hidden.fields
-        for (let i = 0, field; field = columns_tobe_hidden.fields[i]; i++) {
-            const caption = (columns_tobe_hidden.captions[i]) ? loc[columns_tobe_hidden.captions[i]] : null;
-            const is_hidden = (field && mod_MCOL_dict.col_hidden.includes(field));
-            const tBody = (is_hidden) ? el_MCOL_tblBody_available : el_MCOL_tblBody_show;
-
-    //- insert tblRow into tBody
-            const tblRow = tBody.insertRow(-1);
-            tblRow.setAttribute("data-field", field);
-
-    // - add EventListener to tblRow.
-            tblRow.addEventListener("click", function() {MCOL_SelectItem(tblRow);}, false )
-
-    //- add hover to tableBody row
-            add_hover(tblRow)
-
-    //- insert td into tblRow
-            const td = tblRow.insertCell(-1);
-            td.innerText = caption;
-            td.classList.add("tw_240")
-        };
-    } // MCOL_FillSelectTable
-
-//=========  MCOL_SelectItem  ================ PR2021-07-07
-    function MCOL_SelectItem(tr_clicked) {
-        console.log("===  MCOL_SelectItem == ");
-        if(!!tr_clicked) {
-            const field_name = get_attr_from_el(tr_clicked, "data-field")
-            const is_hidden = (field_name && mod_MCOL_dict.col_hidden.includes(field_name));
-            if (is_hidden){
-                b_remove_item_from_array(mod_MCOL_dict.col_hidden, field_name);
-            } else {
-                mod_MCOL_dict.col_hidden.push(field_name)
-            }
-            MCOL_FillSelectTable();
-            // enable sasave btn
-            el_MCOL_btn_save.disabled = false;
-        }
-    }  // MCOL_SelectItem
-
-
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2020-08-03
+//=========  ModConfirmOpen  ================ PR2021-08-22
     function ModConfirmOpen(mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
-        // values of mode are : "delete", "inactive" or "send_activation_email", "permission_sysadm"
+        // values of mode are : "prelim_orderlist"
 
-        if(permit_dict.permit_crud){
+        if (mode === "prelim_orderlist"){
 
+// set focus to cancel button
+            mod_dict = {mode: mode}
+            el_confirm_header.innerText = loc.Downlaod_preliminary_orderlist;
+            el_confirm_loader.classList.add(cls_visible_hide)
+            el_confirm_msg_container.className = "p-3";
 
-    // ---  get selected_pk
-            let tblName = null, selected_pk = null;
-            // tblRow is undefined when clicked on delete btn in submenu btn or form (no inactive btn)
-            const tblRow = get_tablerow_selected(el_input);
-            if(tblRow){
-                tblName = get_attr_from_el(tblRow, "data-table")
-                selected_pk = get_attr_from_el(tblRow, "data-pk")
-            } else {
-                tblName = "studsubj";
-                selected_pk = (tblName === "student") ? selected.student_pk :
-                            (tblName === "department") ? selected_department_pk :
-                            (tblName === "level") ? selected_level_pk :
-                            (tblName === "sector") ? selected_sector_pk :
-                            (tblName === "subjecttype") ? selected_subjecttype_pk :
-                            (tblName === "scheme") ? selected_scheme_pk :
-                            (tblName === "package") ? selected_package_pk : null;
-            }
-            console.log("selected_pk", selected_pk )
-
-    // ---  get info from data_map
-            const data_map = get_datamap_from_tblName(tblName)
-            const map_id =  tblName + "_" + selected_pk;
-            const map_dict = get_mapdict_from_datamap_by_id(subject_map, map_id)
-
-            console.log("data_map", data_map)
-            console.log("map_id", map_id)
-            console.log("map_dict", map_dict)
-
-    // ---  create mod_dict
-            mod_dict = {mode: mode};
-            const has_selected_item = (!isEmpty(map_dict));
-            if(has_selected_item){
-                mod_dict.id = map_dict.id;
-                mod_dict.abbrev = map_dict.abbrev;
-                mod_dict.name = map_dict.name;
-                mod_dict.sequence = map_dict.sequence;
-                mod_dict.depbases = map_dict.depbases;
-                mod_dict.mapid = map_id;
+            const msg_html = "<p>" + loc.The_preliminary_orderlist + loc.will_be_downloaded + "</p><p>" + loc.Do_you_want_to_continue + "</p>"
+            el_confirm_msg_container.innerHTML = msg_html;
+            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
+            if (el_modconfirm_link) {
+                el_modconfirm_link.setAttribute("href", urls.url_orderlist_download);
             };
-            if (mode === "inactive") {
-                  mod_dict.current_isactive = map_dict.is_active;
-            }
-
-    // ---  put text in modal form
-            let dont_show_modal = false;
-
-            let header_text = loc.Delete + " ";
-            const item = (tblName === "subject") ? loc.Subject :
-                           (tblName === "department") ? loc.Department :
-                           (tblName === "level") ? loc.Level :
-                           (tblName === "sector") ? loc.Sector :
-                           (tblName === "subjecttype") ? loc.Character :
-                           (tblName === "scheme") ? loc.Scheme :
-                           (tblName === "package") ? loc.Package : "";
-
-            let msg_01_txt = null, msg_02_txt = null, msg_03_txt = null;
-            let hide_save_btn = false;
-            if(!has_selected_item){
-                msg_01_txt = loc.No_user_selected;
-                hide_save_btn = true;
-            } else {
-                const username = (map_dict.username) ? map_dict.username  : "-";
-                if(mode === "delete"){
-                    msg_01_txt = loc.User + " '" + username + "'" + loc.will_be_deleted
-                    msg_02_txt = loc.Do_you_want_to_continue;
-                }
-            }
-            if(!dont_show_modal){
-                el_confirm_header.innerText = header_text;
-                el_confirm_loader.classList.add(cls_visible_hide)
-                el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
-                el_confirm_msg01.innerText = msg_01_txt;
-                el_confirm_msg02.innerText = msg_02_txt;
-                el_confirm_msg03.innerText = msg_03_txt;
-
-                const caption_save = (mode === "delete") ? loc.Yes_delete :
-                                (mode === "inactive") ? ( (mod_dict.current_isactive) ? loc.Yes_make_inactive : loc.Yes_make_active ) : loc.OK;
-                el_confirm_btn_save.innerText = caption_save;
-                add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
-
-                add_or_remove_class (el_confirm_btn_save, "btn-primary", (mode !== "delete"));
-                add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete"));
-
-        // set focus to cancel button
-                setTimeout(function (){
-                    el_confirm_btn_cancel.focus();
-                }, 500);
-    // show modal
-                $("#id_mod_confirm").modal({backdrop: true});
-            }
+                // set focus to save button
+            setTimeout(function (){
+                el_confirm_btn_save.focus();
+            }, 500);
+        // show modal
+            $("#id_mod_confirm").modal({backdrop: true});
         }
     };  // ModConfirmOpen
 
-//=========  ModConfirmSave  ================ PR2019-06-23
+//=========  ModConfirmSave  ================ PR2021-08-22
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
-        let close_modal = !permit_dict.permit_crud;
-
-        if(permit_dict.permit_crud){
-            let tblRow = document.getElementById(mod_dict.mapid);
-
-    // ---  when delete: make tblRow red, before uploading
-            if (tblRow && mod_dict.mode === "delete"){
-                ShowClassWithTimeout(tblRow, "tsa_tr_error");
-            }
-
-            if(["delete", "send_activation_email"].includes(mod_dict.mode)) {
-    // show loader
+        let close_modal = false;
+        if (mod_dict.mode === "prelim_orderlist"){
+            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
+            if (el_modconfirm_link) {
+                el_modconfirm_link.click();
+            // show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
-            } else if (mod_dict.mode === "inactive") {
-                mod_dict.new_isactive = !mod_dict.current_isactive
-                close_modal = true;
-                // change inactive icon, before uploading, not when new_inactive = true
-                const el_input = document.getElementById(mod_dict.mapid)
-                for (let i = 0, cell, el; cell = tblRow.cells[i]; i++) {
-                    const cell_fldName = get_attr_from_el(cell, "data-field")
-                    if (cell_fldName === "is_active"){
-    // ---  change icon, before uploading
-                        let el_icon = cell.children[0];
-                        if(el_icon){add_or_remove_class (el_icon, "inactive_1_3", !mod_dict.new_isactive,"inactive_0_2" )};
-                        break;
-                    }
-                }
-            }
 
-    // ---  Upload Changes
-            let upload_dict = { id: {pk: mod_dict.user_pk,
-                                     ppk: mod_dict.user_ppk,
-                                     table: "user",
-                                     mode: mod_dict.mode,
-                                     mapid: mod_dict.mapid}};
-            if (mod_dict.mode === "inactive") {
-                upload_dict.is_active = {value: mod_dict.new_isactive, update: true}
+            // close modal after 5 seconds
+                setTimeout(function (){ $("#id_mod_confirm").modal("hide") }, 5000);
             };
+        }
 
-            console.log("upload_dict: ", upload_dict);
-            UploadChanges(upload_dict, url_subject_upload);
-        };
 // ---  hide modal
         if(close_modal) {
             $("#id_mod_confirm").modal("hide");
-        }
+        };
     }  // ModConfirmSave
 
 //=========  ModConfirmResponse  ================ PR2019-06-23

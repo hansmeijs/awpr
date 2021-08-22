@@ -1474,6 +1474,7 @@ console.log( "show_row", show_row);
 
         //console.log( "filter_tag", filter_tag)
         //console.log( "filter_value", filter_value)
+        //console.log( "col_index", col_index)
                     const cell = tblRow.cells[col_index];
         //console.log( "cell", cell)
                     if(cell){
@@ -1491,6 +1492,10 @@ console.log( "show_row", show_row);
                                     // only show rows with tickmark
                                      if (cell_value !== "1") { hide_row = true };
                                 }
+                            } else if(filter_tag === "multitoggle"){  // PR2021-08-21
+                                if (filter_value){
+                                    hide_row = (cell_value !== filter_value);
+                                };
                             } else if(filter_mode === "blanks_only"){  // # : show only blank cells
                                 if (cell_value) { hide_row = true };
                             } else if(filter_mode === "no_blanks"){  // # : show only non-blank cells
@@ -1581,11 +1586,12 @@ const columns_hidden = {};
 const columns_tobe_hidden = {};
 
 //=========  t_MCOL_Open  ================ PR2021-08-02
-    function t_MCOL_Open() {
+    function t_MCOL_Open(page) {
         //console.log(" -----  t_MCOL_Open   ----")
         //console.log("selected_btn", selected_btn)
         const tblName = selected_btn.slice(4);
 
+        mod_MCOL_dict.page = page;
         mod_MCOL_dict.tblName = tblName;
         mod_MCOL_dict.cols_hidden = [];
 
@@ -1604,7 +1610,7 @@ const columns_tobe_hidden = {};
 
 //=========  t_MCOL_Save  ================ PR2021-08-02
     function t_MCOL_Save(url_settings_upload, HandleBtnSelect) {
-        console.log(" -----  t_MCOL_Save   ----")
+        //console.log(" -----  t_MCOL_Save   ----")
 
 // ---  get hidden columns from mod_MCOL_dict.cols_hidden and put them  in columns_hidden[tblName]
 
@@ -1622,13 +1628,12 @@ const columns_tobe_hidden = {};
 
 // upload the new list of hidden columns
         // format: setting[page_name] = {cols_hidden: {student: ["regnumber", "bis_exam"]}}
-        const key_str = "page_" + mod_MCOL_dict.tblName;
         const upload_dict = {}, page_dict = {};
-        const tab_str = mod_MCOL_dict.tblName;
-        page_dict[tab_str] = cols_hidden;
-        upload_dict[key_str] = {cols_hidden: page_dict }
-        console.log("url_settings_upload", url_settings_upload)
-        console.log("upload_dict", upload_dict)
+        page_dict[mod_MCOL_dict.tblName] = cols_hidden;
+        upload_dict[mod_MCOL_dict.page] = {cols_hidden: page_dict }
+
+        //console.log("url_settings_upload", url_settings_upload)
+        //console.log("upload_dict", upload_dict)
         UploadSettings (upload_dict, url_settings_upload);
 
         HandleBtnSelect(selected_btn, true)  // true = skip_upload

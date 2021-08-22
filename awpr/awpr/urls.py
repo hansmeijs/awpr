@@ -169,6 +169,7 @@ urlpatterns = [
         path('examyears', school_views.ExamyearListView.as_view(), name='examyears_url'),
         path('examyear_upload', school_views.ExamyearUploadView.as_view(), name='url_examyear_upload'),
         path('examyear_copytosxm', school_views.ExamyearCopyToSxmView.as_view(), name='url_examyear_copytosxm'),
+        path('examyear_deletesubjectsfromsxm', school_views.ExamyearDeleteSubjectsFromSxmView.as_view(), name='url_examyear_deletesubjectsfromsxm'),
 
         path('school', school_views.SchoolListView.as_view(), name='schools_url'),
         path('school_upload', school_views.SchoolUploadView.as_view(), name='url_school_upload'),

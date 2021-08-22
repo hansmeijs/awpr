@@ -445,9 +445,6 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     gradelist_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
-
-
-
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 

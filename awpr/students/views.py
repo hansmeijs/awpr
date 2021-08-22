@@ -1101,17 +1101,6 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
         #if logging_on:
         #    logger.debug('settings: ' + str(settings))
 
-# +++ get mapped_subject_rows
-        subject_row_count, subject_pk_list, subject_code_list = \
-            grd_exc.create_ex1_mapped_subject_rows(sel_examyear, sel_school, sel_department)
-        #  subject_code_list: ['adm&co', 'bi', 'cav', ..., 'sp', 'stg', 'sws', 'wk', 'zwi']
-        #  subject_pk_list: [1067, 1057, 1051, ..., 1054, 1070, 1069, 1055, 1065]
-
-        if logging_on:
-            logger.debug('subject_row_count: ' + str(subject_row_count))
-            logger.debug('subject_pk_list: ' + str(subject_pk_list))
-            logger.debug('subject_code_list: ' + str(subject_code_list))
-
 # +++ create Ex1 xlsx file
         grd_exc.create_ex1_xlsx(
             published_instance=published_instance,
@@ -1120,8 +1109,6 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
             department=sel_department,
             settings=settings,
             save_to_disk=save_to_disk,
-            subject_pk_list=subject_pk_list,
-            subject_code_list=subject_code_list,
             user_lang=user_lang)
     # - end of create_Ex1_form
 
@@ -2101,10 +2088,16 @@ def delete_student(student, student_rows, msg_list, error_list, request):
     this_txt = _("Candidate '%(tbl)s' ") % {'tbl': student_name}
     header_txt = _("Delete candidate")
 
-# - TODO check if student has submitted subjects
-    student_has_submitted_subjects = False
+# - check if student has approved or submitted subjects PR2021-08-21
+    student_has_submitted_subjects = stud_mod.Studentsubject.objects.filter(
+        student=student
+    ).exclude(
+        subj_auth1by__isnull=False,
+        subj_auth2by__isnull=False,
+        subj_published__isnull=False
+    ).exists()
     if student_has_submitted_subjects:
-        err_txt1 = str(_('%(cpt)s has submitted subjects.') % {'cpt': this_txt})
+        err_txt1 = str(_('%(cpt)s has approved or submitted subjects.') % {'cpt': this_txt})
         err_txt2 = str(_("%(cpt)s could not be deleted.") % {'cpt': _('This candidate')})
         error_list.append(' '.join((err_txt1, err_txt2)))
 
@@ -3143,161 +3136,6 @@ def create_ssnote_attachment_rows(upload_dict, request):  # PR2021-03-17
 # - end of create_studentsubjectnote_rows
 
 
-# /////////////////////////////////////////////////////////////////
-def create_orderlist_rowsNEW(sel_examyear): # PR2021-08-09
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug(' =============== create_orderlist_rowsNEW ============= ')
-
-    #  create nested dict of all schools of CUR and SXM with submitted subjects # PR2021-08-09
-
-    sql_keys = {'ey_code_int': sel_examyear.code}
-
-    sql_list = ["SELECT si.ete_exam,",
-                "CASE WHEN subj.otherlang IS NULL OR sch.otherlang IS NULL THEN 'ne' ELSE",
-                "CASE WHEN POSITION(sch.otherlang IN subj.otherlang) > 0 THEN sch.otherlang ELSE 'ne' END END AS lang,",
-                "dep.base_id AS depbase_id,",
-                "lvl.base_id AS lvlbase_id,",
-                "sch.base_id AS schoolbase_id,",
-                "subj.base_id AS subjbase_id",
-
-               "FROM students_studentsubject AS studsubj",
-
-               "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-               "INNER JOIN subjects_scheme AS sm ON (sm.id = si.scheme_id)",
-               "INNER JOIN schools_department AS dep ON (dep.id = sm.department_id)",
-               "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
-
-               "LEFT JOIN subjects_level AS lvl ON (lvl.id = sm.level_id)",
-
-               "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-               "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-
-               "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-               "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
-               "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
-
-               "WHERE ey.code = %(ey_code_int)s::INT",
-               "AND NOT studsubj.tobedeleted",
-                # TODO FIXIT set filter published
-               # "AND studsubj.subj_published_id IS NOT NULL"
-
-               ]
-    sql = ' '.join(sql_list)
-
-    # logger.debug('sql: ' + str(sql))
-
-    with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
-        rows = af.dictfetchall(cursor)
-
-        examyear_dict = {'total': {}}
-        for row in rows:
-            exam = 'ete' if row.get('ete_exam', False) else 'duo'
-            if exam not in examyear_dict:
-                examyear_dict[exam] = {'total': {}}
-            exam_dict = examyear_dict[exam]
-
-            lang = row.get('lang', 'ne')
-            if lang not in exam_dict:
-                exam_dict[lang] = {'total': {}}
-            lang_dict = exam_dict[lang]
-
-            depbase_pk = row.get('depbase_id')
-            if depbase_pk not in lang_dict:
-                lang_dict[depbase_pk] = {'total': {}}
-            depbase_dict = lang_dict[depbase_pk]
-
-            # value is '0' when lvlbase_id = None (Havo/Vwo)
-            lvlbase_pk = row.get('lvlbase_id', 0)
-            if lvlbase_pk not in depbase_dict:
-                depbase_dict[lvlbase_pk] = {'total': {}}
-            lvlbase_dict = depbase_dict[lvlbase_pk]
-
-            schoolbase_pk = row.get('schoolbase_id')
-            if schoolbase_pk not in lvlbase_dict:
-                lvlbase_dict[schoolbase_pk] = {}
-            schoolbase_dict = lvlbase_dict[schoolbase_pk]
-
-            subjbase_pk = row.get('subjbase_id')
-            if subjbase_pk not in schoolbase_dict:
-                schoolbase_dict[subjbase_pk] = 1
-            else:
-                schoolbase_dict[subjbase_pk] += 1
-
-            lvlbase_total = lvlbase_dict.get('total')
-            if subjbase_pk not in lvlbase_total:
-                lvlbase_total[subjbase_pk] = 1
-            else:
-                lvlbase_total[subjbase_pk] += 1
-
-            depbase_total = depbase_dict.get('total')
-            if subjbase_pk not in depbase_total:
-                depbase_total[subjbase_pk] = 1
-            else:
-                depbase_total[subjbase_pk] += 1
-
-            lang_total = lang_dict.get('total')
-            if subjbase_pk not in lang_total:
-                lang_total[subjbase_pk] = 1
-            else:
-                lang_total[subjbase_pk] += 1
-
-            exam_total = exam_dict.get('total')
-            if subjbase_pk not in exam_total:
-                exam_total[subjbase_pk] = 1
-            else:
-                exam_total[subjbase_pk] += 1
-
-            examyear_total = examyear_dict.get('total')
-            if subjbase_pk not in examyear_total:
-                examyear_total[subjbase_pk] = 1
-            else:
-                examyear_total[subjbase_pk] += 1
-        """
-        examyear_dict = {
-            'total': {133: 175, 134: 175, 135: 175, 136: 175, 137: 175, 138: 175, 141: 141, 142: 101, 146: 31, 156: 102, 149: 37, 140: 74, 153: 74, 175: 74, 154: 33, 155: 73, 143: 7},
-            'duo': { 'total': {133: 175, 134: 175, 135: 175, 136: 175, 137: 175, 138: 175, 141: 114, 142: 101, 146: 31, 156: 102, 149: 37, 140: 74, 153: 74, 175: 74, 154: 33, 155: 73, 143: 7},
-                'ne': {'total': {133: 175, 134: 175, 135: 175, 136: 175, 137: 175, 141: 114, 142: 101, 146: 31, 156: 102, 149: 37, 140: 74, 153: 74, 175: 74, 154: 33, 155: 73, 143: 7},
-                    1: {'total': {133: 175, 134: 175, 135: 175, 136: 175, 137: 175, 141: 114, 142: 101, 146: 31, 156: 102, 149: 37, 140: 74, 153: 74, 175: 74, 154: 33, 155: 73, 143: 7},
-                        14: {'total': {133: 41, 134: 41, 135: 41, 136: 41, 137: 41, 141: 41, 142: 41, 146: 18, 156: 41, 149: 23},
-                            11: {133: 41, 134: 41, 135: 41, 136: 41, 137: 41, 141: 41, 142: 41, 146: 18, 156: 41, 149: 23}},
-                        13: {'total': {133: 61, 134: 61, 135: 61, 136: 61, 137: 61, 140: 34, 153: 34, 156: 61, 175: 34, 142: 27, 146: 13, 149: 14},
-                            11: {133: 61, 134: 61, 135: 61, 136: 61, 137: 61, 140: 34, 153: 34, 156: 61, 175: 34, 142: 27, 146: 13, 149: 14}},
-                        12: {'total': {133: 73, 134: 73, 135: 73, 136: 73, 137: 73, 141: 73, 142: 33, 154: 33, 155: 73, 140: 40, 153: 40, 175: 40, 143: 7},
-                            11: {133: 73, 134: 73, 135: 73, 136: 73, 137: 73, 141: 73, 142: 33, 154: 33, 155: 73, 140: 40, 153: 40, 175: 40, 143: 7}}}},
-                'pa': {'total': {138: 175},
-                        1: {'total': {138: 175},
-                            14: {'total': {138: 41},
-                                  11: {138: 41}
-                                 },
-                            13: {'total': {138: 61},
-                                11: {138: 61}
-                                 },
-                            12: {'total': {138: 73},
-                                11: {138: 73}
-                                 }
-                            }
-                       }
-            },
-            'ete': {'total': {141: 27},
-                    'ne': {'total': {141: 27}, 
-                    1: {'total': {141: 27}, 
-                        13: {'total': {141: 27}, 
-                            11: {141: 27}}}}
-                    }
-             }
-        """
-
-        if logging_on:
-            logger.debug('examyear_dict: ' + str(examyear_dict))
-
-    return rows
-
-
-# --- end of create_orderlist_rows
-
-
 #/////////////////////////////////////////////////////////////////
 def create_orderlist_rows(sel_examyear_code, sel_exam_period):
     # --- create rows of all schools with published subjects PR2021-08-18
@@ -3359,9 +3197,15 @@ def create_orderlist_rows(sel_examyear_code, sel_exam_period):
     ]
     total_sql = ' '.join(total_sublist)
 
-    sql_list = ["WITH sub AS (" , sub_sql, "), total AS (" , total_sql, ")",
-        "SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.abbrev AS school_abbrev, sch.activated,",
-        "total.total, sub.publ_count, sub.datepublished, sub.examperiod",
+    total_students_sublist = ["SELECT st.school_id, count(*) AS total_students",
+        "FROM students_student AS st",
+        "GROUP BY st.school_id"
+    ]
+    total_students_sql = ' '.join(total_students_sublist)
+
+    sql_list = ["WITH sub AS (", sub_sql, "), total AS (", total_sql, "), total_students AS (", total_students_sql, ")",
+        "SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.abbrev AS school_abbrev,",
+        "total.total, total_students.total_students, sub.publ_count, sub.datepublished, sub.examperiod",
 
         "FROM schools_school AS sch",
         "INNER JOIN schools_schoolbase AS schbase ON (schbase.id = sch.base_id)",
@@ -3369,8 +3213,9 @@ def create_orderlist_rows(sel_examyear_code, sel_exam_period):
 
         "LEFT JOIN sub ON (sub.school_id = sch.id)",
         "LEFT JOIN total ON (total.school_id = sch.id)",
+        "LEFT JOIN total_students ON (total_students.school_id = sch.id)",
 
-        "WHERE schbase.defaultrole = ", str(c.ROLE_008_SCHOOL) , " AND ey.code = %(ey_code_int)s::INT",
+        "WHERE schbase.defaultrole = ", str(c.ROLE_008_SCHOOL), " AND ey.code = %(ey_code_int)s::INT",
         "ORDER BY LOWER(schbase.code)"
         ]
     sql = ' '.join(sql_list)

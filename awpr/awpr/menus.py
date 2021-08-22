@@ -37,8 +37,8 @@ MENUS_ITEMS = {
     c.ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj', 'page_exams', 'page_grade',
                      'page_result'],  #, 'page_report', 'page_analysis'],
     c.ROLE_032_INSP: ['page_examyear', 'page_school', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result'],  #,'page_report', 'page_analysis'],
-    c.ROLE_016_COMM: ['page_examyear', 'page_school', 'page_student', 'page_grade', 'page_result'],
-    c.ROLE_008_SCHOOL: ['page_examyear', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_report']
+    c.ROLE_016_COMM: ['page_school', 'page_student', 'page_grade', 'page_result'],
+    c.ROLE_008_SCHOOL: ['page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_report']
 }
 
 MENUS_DICT = {

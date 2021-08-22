@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     setting_dict = response.setting_dict
                     selected_btn = (setting_dict.sel_btn)
                     selected.scheme_pk = (setting_dict.sel_scheme_pk) ? setting_dict.sel_scheme_pk : null;
-                    console.log("selected.scheme_pk", selected.scheme_pk)
+                    //console.log("selected.scheme_pk", selected.scheme_pk)
 
 // ---  fill cols_hidden
                     if("cols_hidden" in setting_dict){
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             columns_hidden[key] = value;
                         }
                     }
-                    console.log("columns_hidden", columns_hidden)
+                    //console.log("columns_hidden", columns_hidden)
                     must_update_headerbar = true;
                 }
 
@@ -492,7 +492,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         AddSubmenuButton(el_submenu, loc.Download_subject_scheme, null, ["tab_show", "tab_btn_scheme", "tab_btn_schemeitem", "tab_btn_subjecttype" ], "id_submenu_download_schemexlsx", urls.url_download_scheme_xlsx, false);  // true = download
 
-        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open()}, [], "id_submenu_columns")
+        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_subject")}, [], "id_submenu_columns")
 
         el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
@@ -570,7 +570,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ FILL TABLE ROWS ++++++++++++++++++++++++++++++++++++++++
 //========= FillTblRows  ===================== PR2021-06-21
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
+        //console.log( "===== FillTblRows  === ");
 
         const tblName = get_tblName_from_selectedBtn();
         const field_setting = field_settings[tblName];
@@ -580,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "tblName", tblName);
         //console.log( "field_setting", field_setting);
         //console.log( "data_rows", data_rows);
-        console.log( "selected.scheme_pk", selected.scheme_pk);
+        //console.log( "selected.scheme_pk", selected.scheme_pk);
 
 // --- set_columns_hidden
         const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
@@ -1002,7 +1002,7 @@ if(j){td.classList.add("border_left")};
 
 //========= UploadToggle  ============= PR2021-05-12  PR2021-06-21
     function UploadToggle(tblName, el_input) {
-        console.log( " ==== UploadToggle ====");
+        //console.log( " ==== UploadToggle ====");
         //console.log("el_input: ", el_input);
 
         mod_dict = {};
@@ -1013,7 +1013,7 @@ if(j){td.classList.add("border_left")};
         if(tblRow && data_rows){
             const map_id = tblRow.id
             const map_dict = b_get_mapdict_from_datarows(data_rows, map_id, setting_dict.user_lang)
-        console.log("map_dict: ", map_dict);
+        //console.log("map_dict: ", map_dict);
             if(!isEmpty(map_dict)){
                 const fldName = get_attr_from_el(el_input, "data-field");
                 let new_value = null, update_dict = {};
@@ -1060,9 +1060,9 @@ if(j){td.classList.add("border_left")};
 
 //========= UploadChanges  ============= PR2020-08-03 PR2021-05-12
     function UploadChanges(upload_dict, url_str) {
-        console.log("=== UploadChanges");
-        console.log("url_str: ", url_str);
-        console.log("upload_dict: ", upload_dict);
+        //console.log("=== UploadChanges");
+        //console.log("url_str: ", url_str);
+        //console.log("upload_dict: ", upload_dict);
 
         if(!isEmpty(upload_dict)) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -1118,9 +1118,9 @@ if(j){td.classList.add("border_left")};
 
 //=========  RefreshDataRows  ================  PR2021-06-21
     function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
-        console.log(" --- RefreshDataRows  ---");
-        console.log("tblName", tblName);
-        console.log("selected.scheme_pk", selected.scheme_pk);
+        //console.log(" --- RefreshDataRows  ---");
+        //console.log("tblName", tblName);
+        //console.log("selected.scheme_pk", selected.scheme_pk);
 
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
         if (update_rows && update_rows.length ) {
@@ -1138,9 +1138,9 @@ if(j){td.classList.add("border_left")};
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
-        console.log(" --- RefreshDatarowItem  ---");
+        //console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
-        console.log("update_dict", update_dict);
+        //console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -1153,7 +1153,7 @@ if(j){td.classList.add("border_left")};
             let field_error_list = []
 
             const error_list = get_dict_value(update_dict, ["error"], []);
-        console.log("error_list", error_list);
+        //console.log("error_list", error_list);
 
             if(error_list && error_list.length){
 
@@ -1167,7 +1167,7 @@ if(j){td.classList.add("border_left")};
                     if ("field" in msg_dict){field_error_list.push(msg_dict.field)};
                 };
 
-        console.log("field_error_list", field_error_list);
+        //console.log("field_error_list", field_error_list);
             //} else {
             // close modal MSJ when no error --- already done in modal
                 //$("#id_mod_subject").modal("hide");
@@ -1248,8 +1248,8 @@ if(j){td.classList.add("border_left")};
                         // note: when updated_columns is empty, then updated_columns is still true.
                         // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
                         if(updated_columns.length || field_error_list.length){
-        console.log("updated_columns", updated_columns);
-        console.log("field_error_list", field_error_list);
+        //console.log("updated_columns", updated_columns);
+        //console.log("field_error_list", field_error_list);
 
 // --- get existing tblRow
                             let tblRow = document.getElementById(map_id);
@@ -1309,7 +1309,7 @@ if(j){td.classList.add("border_left")};
 //=========  fill_data_list  ================ PR2020-10-07
 // TODO deprecate
     function fill_data_list(data_rows, key_field, value_field) {
-        console.log(" --- fill_data_list  ---");
+        //console.log(" --- fill_data_list  ---");
         // datalist maps row.id with row.abbrev
         let data_list = {};
         if (data_rows) {
@@ -1346,7 +1346,7 @@ if(j){td.classList.add("border_left")};
 
 //========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23  PR2021-07-13
     function HandleFilterToggle(el_input) {
-        console.log( "===== HandleFilterToggle  ========= ");
+        //console.log( "===== HandleFilterToggle  ========= ");
 
         // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
         // because data-colindex goes wrong with hidden columns
@@ -1597,7 +1597,7 @@ if(j){td.classList.add("border_left")};
 
 //=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10
     function MSED_Response(new_setting) {
-        console.log( "===== MSED_Response ========= ");
+        //console.log( "===== MSED_Response ========= ");
 
 // ---  upload new selected_pk
 // also retrieve the tables that have been changed because of the change in examyear / dep
@@ -1623,7 +1623,7 @@ if(j){td.classList.add("border_left")};
 
 //=========  ModSelect_Open  ================ PR2020-10-27
     function ModSelect_Open(tblName) {
-        console.log( "===== ModSelect_Open ========= ", tblName);
+        //console.log( "===== ModSelect_Open ========= ", tblName);
 
         // <PERMIT> PR2020-10-27
         // - every user may change examyear and department
@@ -1637,7 +1637,7 @@ if(j){td.classList.add("border_left")};
                      (tblName === "school" && setting_dict.requsr_schoolbase_pk) ? setting_dict.requsr_schoolbase_pk :
                      (tblName === "department" && setting_dict.requsr_depbase_pk) ? setting_dict.requsr_depbase_pk : 0;
 
-        console.log( "base_pk ", base_pk);
+        //console.log( "base_pk ", base_pk);
             mod_dict = {base_pk: base_pk, table: tblName};
             el_ModSelect_input.value = null;
             const item = (tblName === "examyear") ? loc.an_examyear :
@@ -1646,7 +1646,7 @@ if(j){td.classList.add("border_left")};
             const placeholder = loc.Type_few_letters_and_select + item + loc.in_the_list + "..";
             el_ModSelect_input.setAttribute("placeholder", placeholder)
 
-            console.log( "mod_dict ", mod_dict);
+            //console.log( "mod_dict ", mod_dict);
     // ---  fill select table
             ModSelect_FillSelectTable(tblName, 0);
 
@@ -1664,8 +1664,8 @@ if(j){td.classList.add("border_left")};
 
 //=========  ModSelect_Save  ================ PR2020-10-28
     function ModSelect_Save() {
-        console.log("===  ModSelect_Save =========");
-        console.log("mod_dict", mod_dict);
+        //console.log("===  ModSelect_Save =========");
+        //console.log("mod_dict", mod_dict);
 // selected_pk: {sel_examyear_pk: 23, sel_schoolbase_pk: 15, sel_depbase_pk: 1}
 
 // ---  upload new setting
@@ -1695,8 +1695,8 @@ if(j){td.classList.add("border_left")};
 
 //=========  ModSelect_SelectItem  ================ PR2020-10-28
     function ModSelect_SelectItem(tblName, tblRow) {
-        console.log( "===== ModSelect_SelectItem ========= ");
-        console.log( tblRow);
+        //console.log( "===== ModSelect_SelectItem ========= ");
+        //console.log( tblRow);
         // all data attributes are now in tblRow, not in el_select = tblRow.cells[0].children[0];
 // ---  get clicked tablerow
         if(tblRow) {
@@ -1753,8 +1753,8 @@ if(j){td.classList.add("border_left")};
 
 //=========  ModSelect_FillSelectTable  ================ PR2020-08-21
     function ModSelect_FillSelectTable(tblName, selected_pk) {
-        console.log( "===== ModSelect_FillSelectTable ========= ");
-        console.log( "tblName: ", tblName);
+        //console.log( "===== ModSelect_FillSelectTable ========= ");
+        //console.log( "tblName: ", tblName);
 
         const caption_none = (tblName === "examyear") ? loc.No_exam_years :
                              (tblName === "school") ? loc.No_schools :
@@ -1769,7 +1769,7 @@ if(j){td.classList.add("border_left")};
         const data_rows = (tblName === "examyear") ? examyear_rows :
                          (tblName === "school") ? school_rows :
                          (tblName === "department") ? department_rows : null;
-        console.log( "data_rows: ", data_rows);
+        //console.log( "data_rows: ", data_rows);
         for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
             add_to_list = ModSelect_FillSelectRow(data_dict, tblBody_select, tblName, -1, selected_pk);
             if(add_to_list){ row_count += 1};
@@ -1860,7 +1860,7 @@ if(j){td.classList.add("border_left")};
 // +++++++++ MOD SUBJECTTYPE ++++++++++++++++ PR2021-06-22
 // --- also used for level, sector,
     function MSJTP_Open(el_input){
-        console.log(" -----  MSJTP_Open   ----")
+        //console.log(" -----  MSJTP_Open   ----")
 
         if(permit_dict.permit_crud){
             const fldName = get_attr_from_el(el_input, "data-field");
@@ -1890,8 +1890,8 @@ if(j){td.classList.add("border_left")};
                 if(scheme_dict){mod_MSJTP_dict.scheme_dict = scheme_dict}
             }
 
-            console.log("map_dict", map_dict)
-            console.log("mod_MSJTP_dict", mod_MSJTP_dict)
+            //console.log("map_dict", map_dict)
+            //console.log("mod_MSJTP_dict", mod_MSJTP_dict)
 
     // ---  set header text
             MSJT_set_headertext();
@@ -1924,21 +1924,21 @@ if(j){td.classList.add("border_left")};
 
 //========= MSJT_Save  ============= PR2021-06-25
     function MSJT_Save(){
-        console.log(" -----  MSJT_Save   ----")
+        //console.log(" -----  MSJT_Save   ----")
 
         if(permit_dict.permit_crud){
             const sjtp_dictlist = mod_MSJTP_dict.sjtp_dictlist
-            console.log( "sjtp_dictlist: ", sjtp_dictlist);
+            //console.log( "sjtp_dictlist: ", sjtp_dictlist);
 
             const upload_sjtp_list = []
         // loop through sjtp_dictlist
             if (sjtp_dictlist && sjtp_dictlist.length) {
                 for (let i = 0, sjtp_dict; sjtp_dict = sjtp_dictlist[i]; i++) {
-                    console.log( "sjtp_dict: ", sjtp_dict);
+                    //console.log( "sjtp_dict: ", sjtp_dict);
                     const sjtp_pk = sjtp_dict.sjtp_pk;
                     const sjtpbase_pk = sjtp_dict.sjtpbase_pk
-                    console.log( "sjtp_pk: ", sjtp_pk);
-                    console.log( "sjtpbase_pk: ",  sjtpbase_pk);
+                    //console.log( "sjtp_pk: ", sjtp_pk);
+                    //console.log( "sjtpbase_pk: ",  sjtpbase_pk);
                     if(sjtp_dict.iscreated || sjtp_dict.isdeleted){
                         const upload_dict = {
                             sjtpbase_pk: sjtp_dict.sjtpbase_pk,
@@ -1972,10 +1972,10 @@ if(j){td.classList.add("border_left")};
 
 //========= MSJT_SelectChange  ============= PR2021-06-26
     function MSJT_SelectChange(el_input){
-        console.log( "===== MSJT_SelectChange  ========= ");
+        //console.log( "===== MSJT_SelectChange  ========= ");
         //console.log( "el_input", el_input);
         const fldName = get_attr_from_el(el_input, "data-field");
-        console.log( "fldName", fldName);
+        //console.log( "fldName", fldName);
 
         if(["department_pk", "lvl_pk", "sct_pk"].includes(fldName)){
             const fldValue = (Number(el_input.value)) ? Number(el_input.value) : null;
@@ -2003,11 +2003,11 @@ if(j){td.classList.add("border_left")};
 
 //========= MSJT_InputKeyup  ============= PR2021-06-23
     function MSJT_InputKeyup(el_input){
-        console.log( "===== MSJT_InputKeyup  ========= ");
+        //console.log( "===== MSJT_InputKeyup  ========= ");
         //console.log( "el_input", el_input);
         el_input.classList.remove("border_bg_invalid");
         const fldName = get_attr_from_el(el_input, "data-field");
-        console.log( "fldName", fldName);
+        //console.log( "fldName", fldName);
         // lookup scheme
         // only save scheme_dict in mod_MSJTP_dict, other variables are used to store 'old value'
 
@@ -2015,13 +2015,13 @@ if(j){td.classList.add("border_left")};
             const fldValue = (Number(el_input.value)) ? Number(el_input.value) : null;
             mod_MSJTP_dict[fldName] = fldValue;
 
-        console.log( "fldValue", fldValue, typeof fldValue);
+        //console.log( "fldValue", fldValue, typeof fldValue);
             if (fldName === "department_pk"){
                 MSI_MSJT_set_selectbox_level_sector("MSJT", fldValue);
             }
 
             mod_MSJTP_dict.scheme_dict = MSJTP_get_scheme_from_input();
-        console.log("mod_MSJTP_dict.scheme_dict", mod_MSJTP_dict.scheme_dict)
+        //console.log("mod_MSJTP_dict.scheme_dict", mod_MSJTP_dict.scheme_dict)
             MSJT_set_headertext();
 
         } else if (fldName === "base_id"){
@@ -2032,21 +2032,21 @@ if(j){td.classList.add("border_left")};
 
 //=========  MSI_MSJT_set_selectbox_level_sector  ================  PR2021-06-24
     function MSI_MSJT_set_selectbox_level_sector(formName, department_pk) {
-        console.log(" -----  MSI_MSJT_set_selectbox_level_sector   ----")
-        console.log("department_pk", department_pk, typeof department_pk);
-        console.log("department_map", department_map, typeof department_map);
+        //console.log(" -----  MSI_MSJT_set_selectbox_level_sector   ----")
+        //console.log("department_pk", department_pk, typeof department_pk);
+        //console.log("department_map", department_map, typeof department_map);
     // - get depbase_pk etc from department_map
         const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", department_pk);
-        console.log("dep_dict", dep_dict, typeof dep_dict);
+        //console.log("dep_dict", dep_dict, typeof dep_dict);
         const depbase_pk = (dep_dict) ? dep_dict.base_id : null;
         const lvl_req = (dep_dict) ? dep_dict.lvl_req : false;
         const sct_req = (dep_dict) ? dep_dict.sct_req : false;
         const has_profiel = (dep_dict) ? dep_dict.has_profiel : false;
 
-        console.log("depbase_pk", depbase_pk, typeof depbase_pk);
-        console.log("lvl_req", lvl_req, typeof lvl_req);
-        console.log("sct_req", sct_req, typeof sct_req);
-        console.log("has_profiel", has_profiel, typeof has_profiel);
+        //console.log("depbase_pk", depbase_pk, typeof depbase_pk);
+        //console.log("lvl_req", lvl_req, typeof lvl_req);
+        //console.log("sct_req", sct_req, typeof sct_req);
+        //console.log("has_profiel", has_profiel, typeof has_profiel);
 
     // - get lvl_pk and sct_pk from mod_MSI_dict / mod_MSJTP_dict
         //const el_select_level = document.getElementById("id_" + formName + "_level");
@@ -2054,8 +2054,8 @@ if(j){td.classList.add("border_left")};
         const lvl_pk = (formName === "MSI") ? mod_MSI_dict.lvl_pk : (formName === "MSJT") ? mod_MSJTP_dict.lvl_pk : null;
         const sct_pk = (formName === "MSI") ? mod_MSI_dict.sct_pk : (formName === "MSJT") ? mod_MSJTP_dict.sct_pk : null;
 
-        console.log("lvl_pk", lvl_pk, typeof lvl_pk);
-        console.log("sct_pk", sct_pk, typeof sct_pk);
+        //console.log("lvl_pk", lvl_pk, typeof lvl_pk);
+        //console.log("sct_pk", sct_pk, typeof sct_pk);
 
     // - set select options of level and sector
         const el_level_container = document.getElementById("id_" + formName + "_level_container");
@@ -2075,8 +2075,8 @@ if(j){td.classList.add("border_left")};
 
 //========= MSJTP_FillDicts  ============= PR2021-06-26
     function MSJTP_FillDicts(scheme_pk) {
-        console.log("===== MSJTP_FillDicts ===== ");
-        console.log("scheme_pk", scheme_pk);
+        //console.log("===== MSJTP_FillDicts ===== ");
+        //console.log("scheme_pk", scheme_pk);
 
         mod_MSJTP_dict.sjtp_dictlist = [];
 
@@ -2094,14 +2094,14 @@ if(j){td.classList.add("border_left")};
                     } );
             };
         }
-        console.log("mod_MSJTP_dict", mod_MSJTP_dict);
+        //console.log("mod_MSJTP_dict", mod_MSJTP_dict);
     } // MSJTP_FillDicts
 
 //========= MSJTP_FillTbls  ============= PR2021-06-26
     function MSJTP_FillTbls(justclicked_pk) {
-        console.log("===== MSJTP_FillTbls ===== ");
-        console.log("mod_MSJTP_dict", mod_MSJTP_dict);
-        console.log("justclicked_pk", justclicked_pk);
+        //console.log("===== MSJTP_FillTbls ===== ");
+        //console.log("mod_MSJTP_dict", mod_MSJTP_dict);
+        //console.log("justclicked_pk", justclicked_pk);
 
         el_MSJT_tblBody_subjecttype.innerText = null;
         el_MSJT_tblBody_sjtpbase.innerText = null;
@@ -2181,13 +2181,13 @@ if(j){td.classList.add("border_left")};
 
 //========= MSJT_SjtpClicked  ============= PR2021-06-26
     function MSJT_SjtpClicked(tr_clicked) {
-        console.log("  =====  MSJT_SjtpClicked  =====");
+        //console.log("  =====  MSJT_SjtpClicked  =====");
 
         const sjtpbase_pk = get_attr_from_el_int(tr_clicked, "data-pk")
 
         //console.log("tr_clicked", tr_clicked);
         //console.log("sjtpbase_pk", sjtpbase_pk);
-        console.log("mod_MSJTP_dict", mod_MSJTP_dict);
+        //console.log("mod_MSJTP_dict", mod_MSJTP_dict);
 
 
 // lookup sjtp_dict in mod_MSJTP_dict.sjtp_dictlist,
@@ -2255,7 +2255,7 @@ if(j){td.classList.add("border_left")};
 
 //=========  MSJT_set_headertext  ================  PR2021-06-27
     function MSJT_set_headertext() {
-        console.log(" -----  MSJT_set_headertext   ----")
+        //console.log(" -----  MSJT_set_headertext   ----")
     // ---  set header text
         let header_text = loc.Subject_scheme + ": " ;
         if (mod_MSJTP_dict.scheme_dict) {
@@ -2266,7 +2266,7 @@ if(j){td.classList.add("border_left")};
 
 //=========  MSJT_validate_and_disable  ================  PR2021-06-23
     function MSJT_validate_and_disable() {
-        console.log(" -----  MSJT_validate_and_disable   ----")
+        //console.log(" -----  MSJT_validate_and_disable   ----")
         let disable_save_btn = false;
 // ---  loop through input fields on  MSJTP_Open
         let input_elements = el_MSJT_form_controls.querySelectorAll(".form-control")
@@ -2287,12 +2287,12 @@ if(j){td.classList.add("border_left")};
 
 //=========  MSJT_validate_field  ================ PR2021-06-23
     function MSJT_validate_field(el_input, fldName) {
-        console.log(" -----  MSJT_validate_field   ----")
-        console.log("fldName", fldName)
+        //console.log(" -----  MSJT_validate_field   ----")
+        //console.log("fldName", fldName)
         let msg_err = null;
         if (el_input){
             const value = el_input.value;
-            console.log("value", value)
+            //console.log("value", value)
             if (["code", "name"].includes(fldName)) {
                 const caption = (fldName === "code") ? loc.Abbreviation : loc.Name;
                 const max_length = (fldName === "code") ? 8 : 50;
@@ -2317,7 +2317,7 @@ if(j){td.classList.add("border_left")};
 //###########################################################################
 // +++++++++ MOD SUBJECTTYPE BASE ++++++++++++++++ PR2021-06-29
     function MSJTBASE_Open(el_input){
-        console.log(" -----  MSJTBASE_Open   ----")
+        //console.log(" -----  MSJTBASE_Open   ----")
 
         if (permit_dict.permit_crud){
 
@@ -2336,7 +2336,7 @@ if(j){td.classList.add("border_left")};
                 const map_dict = b_get_mapdict_from_datarows(subjecttypebase_rows, tblRow.id, setting_dict.user_lang);
                 mod_MSJTBASE_dict = deepcopy_dict(map_dict);
 
-        console.log("mod_MSJTBASE_dict", mod_MSJTBASE_dict)
+        //console.log("mod_MSJTBASE_dict", mod_MSJTBASE_dict)
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSJTBASE_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MSJTBASE_dict.modby_username) ? mod_MSJTBASE_dict.modby_username : "-";
@@ -2351,7 +2351,7 @@ if(j){td.classList.add("border_left")};
             MSJTBASE_ResetElements(true);  // true = also_remove_values
 
     // - sequence has value 5000 or max_sequence + 1 when  is_addnew
-            console.log("is_addnew", is_addnew)
+            //console.log("is_addnew", is_addnew)
             el_MSUBJ_sequence.value = (mod_MSJTBASE_dict.sequence) ? mod_MSJTBASE_dict.sequence : null;
 
             if (!is_addnew){
@@ -2396,10 +2396,10 @@ if(j){td.classList.add("border_left")};
 
 //========= MSJTBASE_Save  ============= PR2021-06-25
     function MSJTBASE_Save(){
-        console.log(" -----  MSJTBASE_Save   ----")
+        //console.log(" -----  MSJTBASE_Save   ----")
 
         if(permit_dict.permit_crud){
-            console.log( "mod_MSJTBASE_dict: ", mod_MSJTBASE_dict);
+            //console.log( "mod_MSJTBASE_dict: ", mod_MSJTBASE_dict);
 
             const sjtpbase_pk = mod_MSJTBASE_dict.sjtpbase_pk
             const upload_dict = {};
@@ -2427,7 +2427,7 @@ if(j){td.classList.add("border_left")};
 
 //========= MSJTBASE_ResetElements  ============= PR2021-06-29
     function MSJTBASE_ResetElements(also_remove_values){
-        console.log( "===== MSJTBASE_ResetElements  ========= ");
+        //console.log( "===== MSJTBASE_ResetElements  ========= ");
 
 // ---  loop through input fields
         const el_form_controls = document.getElementById("id_MSJTBASE_form_controls")
@@ -2454,13 +2454,13 @@ if(j){td.classList.add("border_left")};
 // +++++++++ MOD SUBJECT ++++++++++++++++ PR2020-09-30
 // --- also used for level, sector,
     function MSUBJ_Open(el_input){
-        console.log(" -----  MSUBJ_Open   ----")
+        //console.log(" -----  MSUBJ_Open   ----")
 
         //if(permit_dict.permit_crud){
         if(true){
             const fldName = get_attr_from_el(el_input, "data-field");
-        console.log("el_input", el_input)
-        console.log("fldName", fldName)
+        //console.log("el_input", el_input)
+        //console.log("fldName", fldName)
 
             // el_input is undefined when called by submenu btn 'Add new'
             const is_addnew = (!el_input);
@@ -2520,7 +2520,7 @@ if(j){td.classList.add("border_left")};
             const el_div_form_controls = document.getElementById("id_MSUBJ_form_controls")
             let el_focus = el_div_form_controls.querySelector("[data-field=" + fldName + "]");
 
-        console.log("el_focus", el_focus)
+        //console.log("el_focus", el_focus)
             if(!el_focus){ el_focus = el_MSUBJ_code};
             setTimeout(function (){el_focus.focus()}, 50);
 
@@ -2542,8 +2542,8 @@ if(j){td.classList.add("border_left")};
 
 //=========  MSUBJ_Save  ================  PR2020-10-01
     function MSUBJ_Save(crud_mode) {
-        console.log(" -----  MSUBJ_save  ----", crud_mode);
-        console.log( "mod_MSUBJ_dict: ", mod_MSUBJ_dict);
+        //console.log(" -----  MSUBJ_save  ----", crud_mode);
+        //console.log( "mod_MSUBJ_dict: ", mod_MSUBJ_dict);
 
         if(permit_dict.permit_crud){
             // delete is handled by ModConfirm("delete")
@@ -2763,8 +2763,8 @@ if(j){td.classList.add("border_left")};
 
 //========= MSUBJ_InputKeyup  ============= PR2020-10-01
     function MSUBJ_InputKeyup(el_input){
-        console.log( "===== MSUBJ_InputKeyup  ========= ");
-        console.log( "el_input", el_input);
+        //console.log( "===== MSUBJ_InputKeyup  ========= ");
+        //console.log( "el_input", el_input);
         el_input.classList.remove("border_bg_invalid");
         MSUBJ_validate_and_disable();
     }; // MSUBJ_InputKeyup
@@ -2788,7 +2788,7 @@ if(j){td.classList.add("border_left")};
 
 //=========  MSUBJ_validate_and_disable  ================  PR2020-10-01
     function MSUBJ_validate_and_disable() {
-        console.log(" -----  MSUBJ_validate_and_disable   ----")
+        //console.log(" -----  MSUBJ_validate_and_disable   ----")
         let disable_save_btn = false;
 // ---  loop through input fields on MSUBJ_Open
         let input_elements = el_MSUBJ_div_form_controls.querySelectorAll(".awp_input_text")
@@ -2809,12 +2809,12 @@ if(j){td.classList.add("border_left")};
 
 //=========  MSUBJ_validate_field  ================  PR2020-10-01 PR2021-05-14
     function MSUBJ_validate_field(el_input, fldName) {
-        console.log(" -----  MSUBJ_validate_field   ----")
-        console.log("fldName", fldName)
+        //console.log(" -----  MSUBJ_validate_field   ----")
+        //console.log("fldName", fldName)
         let msg_err = null;
         if (el_input){
             const value = el_input.value;
-            console.log("value", value)
+            //console.log("value", value)
             if (["code", "name"].includes(fldName)) {
                 const caption = (fldName === "code") ? loc.Abbreviation : loc.Name;
                 const max_length = (fldName === "code") ? 8 : 50;
@@ -2863,13 +2863,13 @@ if(j){td.classList.add("border_left")};
 
 //========= MSUBJ_SetMsgElements  ============= PR2020-08-02
     function MSUBJ_SetMsgElements(response){
-        console.log( "===== MSUBJ_SetMsgElements  ========= ");
+        //console.log( "===== MSUBJ_SetMsgElements  ========= ");
 
         const err_dict = ("msg_err" in response) ? response.msg_err : {}
         const validation_ok = get_dict_value(response, ["validation_ok"], false);
 
-        console.log( "err_dict", err_dict);
-        console.log( "validation_ok", validation_ok);
+        //console.log( "err_dict", err_dict);
+        //console.log( "validation_ok", validation_ok);
 
         const el_msg_container = document.getElementById("id_msg_container")
         let err_save = false;
@@ -2991,9 +2991,9 @@ if(j){td.classList.add("border_left")};
 // +++++++++ MOD SCHEMEITEM ++++++++++++++++ PR2021-06-22
 
     function MSI_Open(el_input){
-        console.log(" -----  MSI_Open   ----")
-        console.log("el_input", el_input)
-        console.log("permit_dict", permit_dict)
+        //console.log(" -----  MSI_Open   ----")
+        //console.log("el_input", el_input)
+        //console.log("permit_dict", permit_dict)
 
         if (permit_dict.permit_crud){
 
@@ -3011,7 +3011,7 @@ if(j){td.classList.add("border_left")};
                 // was: map_dict = selected.schemeitem_dict;
 
             }
-        console.log("map_dict", map_dict)
+        //console.log("map_dict", map_dict)
             const has_scheme = !isEmpty(map_dict);
             if(has_scheme) {
                 mod_MSI_dict.department_pk = map_dict.department_id;
@@ -3030,9 +3030,9 @@ if(j){td.classList.add("border_left")};
 
                 //document.getElementById("id_MSI_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
 
-                console.log("mod_MSI_dict.department_pk", mod_MSI_dict.department_pk)
-                console.log("mod_MSI_dict.lvl_pk", mod_MSI_dict.lvl_pk)
-                console.log("mod_MSI_dict.sct_pk", mod_MSI_dict.sct_pk)
+                //console.log("mod_MSI_dict.department_pk", mod_MSI_dict.department_pk)
+                //console.log("mod_MSI_dict.lvl_pk", mod_MSI_dict.lvl_pk)
+                //console.log("mod_MSI_dict.sct_pk", mod_MSI_dict.sct_pk)
 
                 t_FillSelectOptions(el_MSI_department, department_map, "id", "base_code", false, mod_MSI_dict.department_pk, null, loc.No_department_found, loc.Select_department);
                 el_MSI_level.innerHTML = t_FillOptionLevelSectorFromMap("level", "id", level_map, mod_MSI_dict.depbase_pk, mod_MSI_dict.lvl_pk);
@@ -3041,7 +3041,7 @@ if(j){td.classList.add("border_left")};
                 el_tblBody_subjects.innerText = null;
                 el_tblBody_schemeitems.innerText = null;
                 // hide selecrtboxes dep, lvl, sct when there is a scheme
-                console.log("has_scheme", has_scheme)
+                //console.log("has_scheme", has_scheme)
                 add_or_remove_class(el_MSI_deplvlsct_container, cls_hide, has_scheme)
 
                 MSI_SetInputFields(null, false);
@@ -3065,21 +3065,21 @@ if(j){td.classList.add("border_left")};
 
 //========= MSI_Save  ============= PR2021-06-25
     function MSI_Save(){
-        console.log(" -----  MSI_Save   ----")
+        //console.log(" -----  MSI_Save   ----")
 
 
         if(permit_dict.permit_crud){
             const sjtp_dictlist = mod_MSI_dict.sjtp_dictlist
-            console.log( "sjtp_dictlist: ", sjtp_dictlist);
+            //console.log( "sjtp_dictlist: ", sjtp_dictlist);
 
             const upload_si_list = []
         // loop through sjtp_dictlist
             if (sjtp_dictlist && sjtp_dictlist.length) {
                 for (let i = 0, sjtp_dict; sjtp_dict = sjtp_dictlist[i]; i++) {
-                    console.log( "sjtp_dict: ", sjtp_dict);
+                    //console.log( "sjtp_dict: ", sjtp_dict);
                     const sjtp_pk = sjtp_dict.sjtp_pk;
-                    console.log( "sjtp_pk: ", sjtp_pk);
-                    console.log( "sjtp_pk: ", sjtp_pk);
+                    //console.log( "sjtp_pk: ", sjtp_pk);
+                    //console.log( "sjtp_pk: ", sjtp_pk);
                     if (sjtp_dict.si_list && sjtp_dict.si_list.length){
                         for (let i = 0, si_dict; si_dict = sjtp_dict.si_list[i]; i++) {
                             if(si_dict.iscreated || si_dict.isdeleted){
@@ -3097,7 +3097,7 @@ if(j){td.classList.add("border_left")};
                 const scheme_dict = mod_MSI_dict.scheme_dict;
                 const scheme_pk = scheme_dict.id
                 const upload_dict = {scheme_pk: scheme_pk, si_list: upload_si_list}
-                console.log("upload_dict: ", upload_dict)
+                //console.log("upload_dict: ", upload_dict)
                 UploadChanges(upload_dict, urls.url_schemeitem_upload);
             }
         };  // if(permit_dict.permit_crud && mod_MSI_dict.stud_id){
@@ -3110,7 +3110,7 @@ if(j){td.classList.add("border_left")};
 
 //========= MSI_InputChange  ============= PR2021-06-24 PR2021-07-07
     function MSI_InputChange(){
-        console.log( "===== MSI_InputChange  ========= ");
+        //console.log( "===== MSI_InputChange  ========= ");
 
         const department_pk = (Number(el_MSI_department.value)) ? Number(el_MSI_department.value) : null;
         const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", department_pk);
@@ -3141,7 +3141,7 @@ if(j){td.classList.add("border_left")};
 
 //========= MSI_FillDicts  ============= PR2021-06-22
     function MSI_FillDicts(depbase_pk, department_pk, scheme_pk) {
-        console.log("===== MSI_FillDicts ===== ");
+        //console.log("===== MSI_FillDicts ===== ");
         //console.log("subjecttype_rows", subjecttype_rows);
         //console.log("department_pk", department_pk, typeof department_pk);
         //console.log("depbase_pk", depbase_pk, typeof depbase_pk);
@@ -3155,7 +3155,7 @@ if(j){td.classList.add("border_left")};
         mod_MSI_dict.sjtp_dictlist = [];
 
 // ---  loop through subject_rows, add only subjects from this department
-        console.log("subject_rows", subject_rows);
+        //console.log("subject_rows", subject_rows);
         for (let i = 0, subj_dict; subj_dict = subject_rows[i]; i++) {
 
             if(subj_dict.depbases && depbase_pk){
@@ -3180,7 +3180,7 @@ if(j){td.classList.add("border_left")};
                 });
             };
         }
-        console.log("mod_MSI_dict.sjtp_dictlist", mod_MSI_dict.sjtp_dictlist);
+        //console.log("mod_MSI_dict.sjtp_dictlist", mod_MSI_dict.sjtp_dictlist);
 
 // ---  loop through schemeitem_map, add schemeitems from this scheme to mod_MSI_dict.sjtp_dictlist
          MSI_fill_si_list(scheme_pk)
@@ -3312,12 +3312,12 @@ if(j){td.classList.add("border_left")};
 
 //========= MSI_MSJT_CreateSelectRow  ============= PR2020--09-30
     function MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, map_dict, sjtp_pk, justclicked_pk) {
-        console.log("===== MSI_MSJT_CreateSelectRow ===== ");
-        console.log("..........pk_int", pk_int);
-        console.log("..........tblName", tblName);
-        console.log("map_dict", map_dict);
+        //console.log("===== MSI_MSJT_CreateSelectRow ===== ");
+        //console.log("..........pk_int", pk_int);
+        //console.log("..........tblName", tblName);
+        //console.log("map_dict", map_dict);
 
-        console.log("justclicked_pk", justclicked_pk);
+        //console.log("justclicked_pk", justclicked_pk);
 
         if (!isEmpty(map_dict)){
             let subj_code = (map_dict.code) ? map_dict.code : "";
@@ -3395,8 +3395,8 @@ if(j){td.classList.add("border_left")};
 
 //========= MSI_SubjectClicked  ============= PR2020-10-01 PR2021-03-05 PR2021-06-24
     function MSI_SubjectClicked(tblName, tblRow){
-        console.log( "===== MSI_SubjectClicked  ========= ");
-        console.log( "tblName", tblName);
+        //console.log( "===== MSI_SubjectClicked  ========= ");
+        //console.log( "tblName", tblName);
 
         if(tblRow){
 
@@ -3452,11 +3452,11 @@ if(j){td.classList.add("border_left")};
 
 //========= MSI_SubjecttypeClicked  ============= PR2021-06-24
     function MSI_SubjecttypeClicked(tr_clicked) {
-        console.log("  =====  MSI_SubjecttypeClicked  =====");
-        console.log("tr_clicked", tr_clicked);
+        //console.log("  =====  MSI_SubjecttypeClicked  =====");
+        //console.log("tr_clicked", tr_clicked);
 
         const sel_sjtp_pk = get_attr_from_el_int(tr_clicked, "data-pk")
-        console.log("sel_sjtp_pk", sel_sjtp_pk, typeof sel_sjtp_pk);
+        //console.log("sel_sjtp_pk", sel_sjtp_pk, typeof sel_sjtp_pk);
 
         // mod_MSI_dict.sjtp_dictlist = [ {id: 200, name: "Gemeenschappelijk deel", si: [200, 245]}, ]
 
@@ -3469,16 +3469,16 @@ if(j){td.classList.add("border_left")};
                 sjtp_dict = dict;
             };
         };
-        console.log("sjtp_dict", sjtp_dict);
+        //console.log("sjtp_dict", sjtp_dict);
 
 // ---  loop through tblBody with subjects and add selected subject_pk's to subjecttype list
         const tblBody = el_tblBody_subjects;
         for (let i = 0, tblRow, is_selected, sel_subj_pk_int; tblRow = tblBody.rows[i]; i++) {
             is_selected = !!get_attr_from_el_int(tblRow, "data-selected")
             if (is_selected) {
-        console.log("tblRow", tblRow);
+        //console.log("tblRow", tblRow);
                 sel_subj_pk_int = get_attr_from_el_int(tblRow, "data-pk")
-        console.log("sel_subj_pk_int", sel_subj_pk_int);
+        //console.log("sel_subj_pk_int", sel_subj_pk_int);
 
                 const justclicked_subj_pk = sel_subj_pk_int;
                 MSI_AddSubjectToSubjecttype(sel_subj_pk_int, sjtp_dict, justclicked_subj_pk)
@@ -3490,7 +3490,7 @@ if(j){td.classList.add("border_left")};
             const el = tblRow.cells[0].children[0];
             if (el){el.className = "tickmark_0_0"}
         }
-        console.log("===========mod_MSI_dict", mod_MSI_dict);
+        //console.log("===========mod_MSI_dict", mod_MSI_dict);
 
         //MSI_FillTblSubjects();
         MSI_FillTblSchemeitems();
@@ -3499,15 +3499,15 @@ if(j){td.classList.add("border_left")};
 
 //========= MSI_AddSubjectToSubjecttype  ============= PR2021-06-24
     function MSI_AddSubjectToSubjecttype(subj_pk_int, sjtp_dict, justclicked_subj_pk) {
-        console.log("  =====  MSI_AddSubjectToSubjecttype  =====");
-        console.log("subj_pk_int", subj_pk_int);
-        console.log("sjtp_dict", sjtp_dict);
-        console.log("justclicked_subj_pk", justclicked_subj_pk);
+        //console.log("  =====  MSI_AddSubjectToSubjecttype  =====");
+        //console.log("subj_pk_int", subj_pk_int);
+        //console.log("sjtp_dict", sjtp_dict);
+        //console.log("justclicked_subj_pk", justclicked_subj_pk);
 
 // get subject_dict
         // subject_dict = {id: 759, name: "Franse taal}
         const subject_dict = (mod_MSI_dict.subject_dict[subj_pk_int]) ? mod_MSI_dict.subject_dict[subj_pk_int] : {};
-        console.log("subject_dict", subject_dict);
+        //console.log("subject_dict", subject_dict);
 
 // ---  check if subject_pk already exists in sjtp_dict.si_list list
         let si_dict = null, found = false;
@@ -3521,7 +3521,7 @@ if(j){td.classList.add("border_left")};
                 break;
             };
         };
-        console.log("found", found);
+        //console.log("found", found);
 
         if (!found){
         // add subject to list if it is not in the list yet
@@ -3533,15 +3533,15 @@ if(j){td.classList.add("border_left")};
                   iscreated: true
               };
               sjtp_dict.si_list.push(si_dict)
-        } else
-        console.log("sjtp_dict.si_list", sjtp_dict.si_list);
+        }
+        //console.log("sjtp_dict.si_list", sjtp_dict.si_list);
 
     }  // MSI_AddSubjectToSubjecttype
 
 
 //========= MSI_SchemeitemClicked  ============= PR2021-06-24
     function MSI_SchemeitemClicked(tr_clicked) {
-        console.log("  =====  MSI_SchemeitemClicked  =====");
+        //console.log("  =====  MSI_SchemeitemClicked  =====");
         const tblBody = el_tblBody_schemeitems;
         const sel_schemeitem_pk_list = []
 
@@ -3549,22 +3549,22 @@ if(j){td.classList.add("border_left")};
         const subj_pk_int = get_attr_from_el_int(tr_clicked, "data-pk")
         const sjtp_pk_int = get_attr_from_el_int(tr_clicked, "data-sjtp_pk")
 
-        console.log("tr_clicked", tr_clicked);
-        console.log("subj_pk_int", subj_pk_int);
-        console.log("sjtp_pk_int", sjtp_pk_int);
-        console.log("mod_MSI_dict", mod_MSI_dict);
+        //console.log("tr_clicked", tr_clicked);
+        //console.log("subj_pk_int", subj_pk_int);
+        //console.log("sjtp_pk_int", sjtp_pk_int);
+        //console.log("mod_MSI_dict", mod_MSI_dict);
 
 // lookup sjtp_dict in mod_MSI_dict.sjtp_dictlist
         const sjtp_dict = b_lookup_dict_in_dictlist(mod_MSI_dict.sjtp_dictlist, "sjtp_pk", sjtp_pk_int)
-        console.log("sjtp_dict", sjtp_dict);
+        //console.log("sjtp_dict", sjtp_dict);
         if(sjtp_dict){
 
 // lookup si_dict in sjtp_dict.si_list
             const si_list = sjtp_dict.si_list;
-            console.log("si_list", si_list);
+            //console.log("si_list", si_list);
             const [index, si_dict] = b_lookup_dict_with_index_in_dictlist(si_list, "subj_pk", subj_pk_int)
-            console.log("index", index);
-            console.log("si_dict", si_dict);
+            //console.log("index", index);
+            //console.log("si_dict", si_dict);
             // si_dict = {si_pk: null, sjtp_pk: 202, subj_pk: 759 ,name: "Franse taal", iscreated: true }
             if (si_dict){
 // ---  check if schemeitem_pk already exists in mod_MSI_dict.schemeitem_dict
@@ -3585,7 +3585,7 @@ if(j){td.classList.add("border_left")};
 
 //========= MSI_AddPackage  ============= PR2020-11-18
     function MSI_AddPackage() {
-        console.log("  =====  MSI_AddPackage  =====");
+        //console.log("  =====  MSI_AddPackage  =====");
 
     }  // MSI_AddPackage
 
@@ -3596,7 +3596,7 @@ if(j){td.classList.add("border_left")};
     function ModConfirmOpen(tblName, mode) {
         //console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "delete"
-        console.log("mode", mode)
+        //console.log("mode", mode)
 
         if(permit_dict.permit_crud){
             el_confirm_msg_container.innerHTML = null;
@@ -3616,7 +3616,7 @@ if(j){td.classList.add("border_left")};
             };
 
     // ---  get info from data_map or data_rows
-            console.log("map_dict", map_dict)
+            //console.log("map_dict", map_dict)
 
     // ---  create mod_dict
             mod_dict = {mode: mode, table: tblName};
@@ -3650,9 +3650,9 @@ if(j){td.classList.add("border_left")};
                            (tblName === "scheme") ? loc.Delete_scheme :
                            (tblName === "package") ? loc.Delete_package : "";
 
-            console.log("tblName", tblName)
-            console.log("mod_dict", mod_dict)
-            console.log("item", item)
+            //console.log("tblName", tblName)
+            //console.log("mod_dict", mod_dict)
+            //console.log("item", item)
 
             let msg_01_txt = null, msg_02_txt = null, msg_03_txt = null;
             let hide_save_btn = false;
@@ -3667,7 +3667,7 @@ if(j){td.classList.add("border_left")};
                            (tblName === "package") ? mod_dict.name : "";
 
 
-            console.log("item_name", item_name)
+            //console.log("item_name", item_name)
                 msg_01_txt = item + " '" + item_name + "'" + loc.will_be_deleted
                 msg_02_txt = loc.Do_you_want_to_continue;
 
@@ -3704,8 +3704,8 @@ if(j){td.classList.add("border_left")};
 
 //=========  ModConfirmSave  ================ PR2019-06-23
     function ModConfirmSave() {
-        console.log(" --- ModConfirmSave --- ");
-        console.log("mod_dict: ", mod_dict);
+        //console.log(" --- ModConfirmSave --- ");
+        //console.log("mod_dict: ", mod_dict);
 
         let close_modal = true  // !permit_dict.permit_crud;
 
@@ -3752,8 +3752,8 @@ if(j){td.classList.add("border_left")};
 
 //=========  ModConfirmResponse  ================ PR2019-06-23 PR2020-10-29
     function ModConfirmResponse(updated_row) {
-        console.log(" --- ModConfirmResponse --- ");
-        console.log("updated_row: ", updated_row);
+        //console.log(" --- ModConfirmResponse --- ");
+        //console.log("updated_row: ", updated_row);
 
 //--- hide loader
         el_confirm_loader.classList.add(cls_visible_hide)
@@ -3833,8 +3833,8 @@ if(j){td.classList.add("border_left")};
 
 //=========  ModSelSchOrDep_SelectItem  ================ PR2020-10-28
     function ModSelSchOrDep_SelectItem(tblName, tblRow) {
-        console.log( "===== ModSelSchOrDep_SelectItem ========= ");
-        console.log( tblRow);
+        //console.log( "===== ModSelSchOrDep_SelectItem ========= ");
+        //console.log( tblRow);
         // all data attributes are now in tblRow, not in el_select = tblRow.cells[0].children[0];
 // ---  get clicked tablerow
         if(tblRow) {
@@ -3855,7 +3855,7 @@ if(j){td.classList.add("border_left")};
 
 //=========  ModSelSchOrDep_FillSelectTable  ================ PR2020-08-21
     function ModSelSchOrDep_FillSelectTable(tblName, selected_pk) {
-        console.log( "===== ModSelSchOrDep_FillSelectTable ========= ");
+        //console.log( "===== ModSelSchOrDep_FillSelectTable ========= ");
 
         const header_text = (tblName === "school") ? loc.Select_school :  loc.Select_department ;
         document.getElementById("id_MSED_header_text").innerText = header_text;
@@ -3964,9 +3964,9 @@ if(j){td.classList.add("border_left")};
     }
 //========= get_column_is_hidden  ====== PR2021-08-18
     function get_column_is_hidden(field_name) {
-        console.log( "===== get_column_is_hidden  === ");
-        console.log( "selected_btn", selected_btn);
-        console.log( "field_name", field_name);
+        //console.log( "===== get_column_is_hidden  === ");
+        //console.log( "selected_btn", selected_btn);
+        //console.log( "field_name", field_name);
 
         //example of mapped field
         //const mapped_field = (field_name === "subj_status") ? "subj_error" :

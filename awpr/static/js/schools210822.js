@@ -162,8 +162,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     el.addEventListener("keyup", function() {MSCH_InputKeyup(el)}, false )
                 } else if(el.tagName === "SELECT"){
                     el.addEventListener("change", function() {MSCH_InputSelect(el)}, false )
-                } else if(el.tagName === "DIV"){
-                    el.addEventListener("click", function() {MSCH_InputToggle(el)}, false );
                 };
             };
         };
@@ -1110,8 +1108,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSCH_SelectDepartment  ============= PR2020-10-01
     function MSCH_SelectDepartment(tblRow){
-        //console.log( "===== MSCH_SelectDepartment  ========= ");
-        //console.log( "event_key", event_key);
+        console.log( "===== MSCH_SelectDepartment  ========= ");
+        console.log( "tblRow", tblRow);
 
         if(tblRow){
             let is_selected = (!!get_attr_from_el_int(tblRow, "data-selected"));
@@ -1163,12 +1161,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSCH_set_selected  ============= PR2020-10-01
     function MSCH_set_selected(tblRow, is_selected){
-        //console.log( "  ---  MSCH_set_selected  --- ", is_selected);
+        console.log( "  ---  MSCH_set_selected  --- ", is_selected);
+        console.log( "tblRow", tblRow);
 // ---  put new value in tblRow, show/hide tickmark
         if(tblRow){
             tblRow.setAttribute("data-selected", ( (is_selected) ? 1 : 0) )
             const img_class = (is_selected) ? "tickmark_2_2" : "tickmark_0_0"
             const el = tblRow.cells[0].children[0];
+        console.log( "el", el);
             //if (el){add_or_remove_class(el, "tickmark_2_2", is_selected , "tickmark_0_0")}
             if (el){el.className = img_class}
         }
@@ -1176,7 +1176,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSCH_get_selected_depbases  ============= PR2020-10-07
     function MSCH_get_selected_depbases(){
-        //console.log( "  ---  MSCH_get_selected_depbases  --- ")
+        console.log( "  ---  MSCH_get_selected_depbases  --- ")
         const tblBody_select = document.getElementById("id_MSCH_tbody_select");
         let dep_list_arr = [];
         for (let i = 0, row; row = tblBody_select.rows[i]; i++) {
@@ -1190,7 +1190,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         dep_list_arr.sort((a, b) => a - b);
         const dep_list_str = dep_list_arr.join(";");
-        //console.log( "dep_list_str", dep_list_str)
+        console.log( "dep_list_str", dep_list_str)
         return dep_list_str;
     }  // MSCH_get_selected_depbases
 
@@ -1207,15 +1207,6 @@ document.addEventListener('DOMContentLoaded', function() {
         MSCH_validate_and_disable();
     }; // MSCH_InputSelect
 
-//========= MSCH_InputToggle  ============= PR2021-06-15
-    function MSCH_InputToggle(el_input){
-        //console.log( "===== MSCH_InputToggle  ========= ");
-        const data_value = get_attr_from_el(el_input, "data-value")
-        const new_data_value = (data_value === "1") ? "0" : "1";
-        el_input.setAttribute("data-value", new_data_value);
-        const el_img = el_input.children[0];
-        add_or_remove_class(el_img, "tickmark_2_2", (new_data_value === "1"), "tickmark_1_1")
-    }; // MSCH_InputToggle
 
 //=========  MSCH_validate_and_disable  ================  PR2020-10-01
     function MSCH_validate_and_disable() {

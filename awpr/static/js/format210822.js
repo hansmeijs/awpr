@@ -60,8 +60,6 @@
         return display_value
     }  // function format_dateJS_vanilla
 
-
-
 //=========  format_datetime_from_datetimeJS ================ PR2021-08-18
     function format_datetime_from_datetimeISO(loc, datetimeISO, hide_weekday, hide_year, hide_time, hide_suffix) {
         const datetimeJS = parse_dateJS_from_dateISO(datetimeISO);
@@ -118,6 +116,23 @@
         }
         return time_formatted
     }  // format_datetime_from_datetimeJS
+
+
+//========= f_format_last_modified ======== PR2021-08-21
+    function f_format_last_modified_txt(loc, modifiedat, modified_by) {
+
+        let display_txt = loc.Last_modified;
+        if (modifiedat){
+            const modified_dateJS = parse_dateJS_from_dateISO(modifiedat);
+            const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
+            display_txt += (loc.on + modified_date_formatted)
+        }
+        if (modified_by){
+            display_txt += loc.by + modified_by;
+        }
+        return display_txt;
+    }  // f_format_last_modified
+
 
 //========= f_format_count ======== PR2021-08-18
     // based on TSA f_format_pricerate

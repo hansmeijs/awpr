@@ -542,6 +542,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
     weight_se = PositiveSmallIntegerField(default=1)
     weight_ce = PositiveSmallIntegerField(default=1)
 
+    # is_mand_subj: only mandatoty if student has this subject
     is_mandatory = BooleanField(default=False)
     is_mand_subj = ForeignKey(Subject, related_name='+', null=True, on_delete=SET_NULL)
     is_combi = BooleanField(default=False)
