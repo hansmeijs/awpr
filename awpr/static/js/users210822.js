@@ -1942,6 +1942,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (mod_dict.mode === "delete"){
                 url_str = urls.url_userpermit_upload;
                 upload_dict.userpermit_pk = mod_dict.userpermit_pk;
+                close_modal = true;
             }
         } else {
             if(["delete", "send_activation_email"].includes(mod_dict.mode)) {

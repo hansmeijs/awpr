@@ -854,6 +854,8 @@ def create_permit_dict(req_user):
                     permit_dict['usergroup_auth2'] = True
                 if usergroup == c.USERGROUP_AUTH3_COM:
                     permit_dict['usergroup_auth3'] = True
+                if usergroup == c.USERGROUP_AUTH4_EXAM:
+                    permit_dict['usergroup_auth4'] = True
                 if usergroup == c.USERGROUP_ANALYZE:
                     permit_dict['usergroup_anlz'] = True
                 if usergroup == c.USERGROUP_ADMIN:

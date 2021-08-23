@@ -2292,7 +2292,7 @@ def create_student(school, department, upload_dict, messages, error_list, reques
 def update_student_instance(instance, upload_dict, idnumber_list, examnumber_list, msg_list, error_list, request, skip_save):
     # --- update existing and new instance PR2019-06-06 PR2021-07-19
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_student_instance -------')
         logger.debug('upload_dict' + str(upload_dict))

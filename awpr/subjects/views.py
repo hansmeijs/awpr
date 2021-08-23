@@ -2296,7 +2296,7 @@ def create_schemeitem(examyear, scheme, subj_pk, sjtp_pk, messages, request):
 
 def delete_schemeitem(schemeitem, messages, request):
     # --- delete schemeitem # PR2021-06-25
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_schemeitem ----- ')
         logger.debug('subject: ' + str(schemeitem))

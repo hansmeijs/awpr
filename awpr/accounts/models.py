@@ -533,8 +533,6 @@ class Userpermit(sch_mod.AwpBaseModel):  # PR2021-03-18 PR2021-04-20
     # AwpModelManager already is in AwpBaseModel
     # was: objects = sch_mod.AwpModelManager()
 
-    country = ForeignKey(Country, related_name='+', on_delete=CASCADE)
-
     role = PositiveSmallIntegerField(default=0)
     page = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
     action = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
@@ -552,7 +550,6 @@ class Usergroup(sch_mod.AwpBaseModel):  # PR2021-06-19
     # AwpModelManager already is in AwpBaseModel
     # was: objects = sch_mod.AwpModelManager()
 
-    country = ForeignKey(Country, related_name='+', on_delete=CASCADE)
     name = CharField(max_length=c.USERNAME_SLICED_MAX_LENGTH, null=True)
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
     roles = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)

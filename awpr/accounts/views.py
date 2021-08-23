@@ -395,7 +395,7 @@ class UserDownloadPermitsView(View):
                 user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
                 activate(user_lang)
 
-                permits_rows = create_permits_rows(request)
+                permits_rows = create_permits_rows()
                 response = create_permits_xlsx(permits_rows, user_lang, request)
 
         if response:
@@ -406,18 +406,18 @@ class UserDownloadPermitsView(View):
 # - end of UserDownloadPermitsView
 
 
-def create_permits_rows(request):
+def create_permits_rows():
     # --- create list of permits_rows of this country PR2021-04-20
-
-    sql_keys = {'country_id': request.user.country.pk}
-    sql = ' '.join(("SELECT LOWER(c.abbrev) AS c_abbrev, p.page, p.action, p.role, p.usergroups",
+    # PR2021-08-22 country isremoved, permits are for CUR and SXM
+    # was: sql_keys = {'country_id': request.user.country.pk}
+    sql = ' '.join(("SELECT p.page, p.action, p.role, p.usergroups",
                     "FROM accounts_userpermit AS p",
-                    "INNER JOIN schools_country AS c ON (c.id = p.country_id)",
-                    "WHERE c.id = %(country_id)s::INT",
-                    'ORDER BY LOWER(c.abbrev), p.page, p.action, p.role'))
+                    # was: "INNER JOIN schools_country AS c ON (c.id = p.country_id)",
+                    # was: "WHERE c.id = %(country_id)s::INT",
+                    'ORDER BY p.page, p.action, p.role'))
 
     with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
+        cursor.execute(sql)
         permits_rows = af.dictfetchall(cursor)
 
     return permits_rows
@@ -425,7 +425,7 @@ def create_permits_rows(request):
 
 
 def create_permits_xlsx(permits_rows, user_lang, request):  # PR2021-04-20
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_permits_xlsx -----')
 
@@ -433,11 +433,11 @@ def create_permits_xlsx(permits_rows, user_lang, request):  # PR2021-04-20
     #logger.debug('period_dict: ' + str(period_dict))
 
 # ---  create file Name and worksheet Name
-    country_name = request.user.country.name
+
     today_dte = af.get_today_dateobj()
     today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
 
-    title = ' '.join((str(_('Permissions')), str(_(' of ')), country_name))
+    title = str(_('Permissions'))
     file_name = title + " " + today_dte.isoformat() + ".xlsx"
     worksheet_name = str(_('Permissions'))
 
@@ -445,16 +445,13 @@ def create_permits_xlsx(permits_rows, user_lang, request):  # PR2021-04-20
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = "attachment; filename=" + file_name
 
-    field_names = ('c_abbrev', 'page', 'action', 'usergroups', 'role')
+    field_names = ('page', 'action', 'usergroups', 'role')
 
-    field_width = (10, 20, 25, 40, 10, 10)
+    field_width = (20, 25, 40, 10, 10)
 
 # .. and pass it into the XLSXWriter
     book = xlsxwriter.Workbook(response, {'in_memory': True})
     sheet = book.add_worksheet(worksheet_name)
-
-    #cell_format = book.add_format({'bold': True, 'font_color': 'red'})
-    bold = book.add_format({'bold': True})
 
     tblHead_format = book.add_format({'bold': True})
     tblHead_format.set_bottom()
@@ -463,26 +460,14 @@ def create_permits_xlsx(permits_rows, user_lang, request):  # PR2021-04-20
     for i, width in enumerate(field_width):
         sheet.set_column(i, i, width)
 
-# --- title row
-    # was: sheet.write(0, 0, str(_('Report')) + ':', bold)
-    # sheet.write(0, 0, str(_('Report')) + ':')
-    # sheet.write(0, 1, title)
-    # sheet.write(1, 0, str(_('Country')) + ':')
-    # sheet.write(1, 1, country_name)
-    # sheet.write(2, 0, str(_('Created on ')) + ':')
-    # sheet.write(2, 1, today_formatted)
-    #row_index = 4
-
     row_index = 0
     for i, caption in enumerate(field_names):
         sheet.write(row_index, i, caption, tblHead_format)
 
     rows_length = len(permits_rows)
     if rows_length:
-        #first_detail_row = row_index + 1
-        #last_detail_row = row_index + rows_length
         for row in permits_rows:
-            row_index +=1
+            row_index += 1
             for i, field_name in enumerate(field_names):
                 value = row.get(field_name)
                 if value is not None:
@@ -581,7 +566,6 @@ class UserpermitUploadView(View):
 
                                 for value in role_list:
                                     instance = acc_mod.Userpermit(
-                                        country=request.user.country,
                                         role=value,
                                         page=page,
                                         action=action
@@ -608,7 +592,9 @@ class UserpermitUploadView(View):
                         if instance.pk:
                             permit_row = create_permit_list(instance.pk)
                             if permit_row:
-                                update_wrap['updated_permit_rows'] = permit_row
+                                updated_permit_rows.append(permit_row)
+
+            update_wrap['updated_permit_rows'] = updated_permit_rows
 
 # F. return update_wrap
             return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -1333,7 +1319,7 @@ class AwpPasswordResetConfirmView(PasswordContextMixin, FormView):
 
 def create_user_rows(request, user_pk=None):
     # --- create list of all users of this school, or 1 user with user_pk PR2020-07-31
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_user_rows ============= ')
         logger.debug('user_pk: ' + str(user_pk))
@@ -1907,6 +1893,8 @@ def remove_other_auth_permits(permit_field, permit_list):
         permit_list.remove(c.USERGROUP_AUTH2_SECR)
     if permit_field != "perm_auth3" and c.USERGROUP_AUTH3_COM in permit_list:
         permit_list.remove(c.USERGROUP_AUTH3_COM)
+    if permit_field != "perm_auth4" and c.USERGROUP_AUTH4_EXAM in permit_list:
+        permit_list.remove(c.USERGROUP_AUTH4_EXAM)
 
 
 def has_permit(permits_int, permit_index): # PR2020-10-12 separate function made PR2021-01-18
@@ -2089,7 +2077,7 @@ def get_usr_schoolname_with_article(user):  # PR2019-03-09 PR2021-01-25 PR2021-0
 
     school = sch_mod.School.objects.get_or_none( base=user.schoolbase, examyear=examyear)
 
-    usr_schoolname_with_article = '---'
+    usr_schoolname_with_article = ''
     if school and school.name:
         if school.article:
             usr_schoolname_with_article = school.article + ' ' + school.name
@@ -2098,5 +2086,5 @@ def get_usr_schoolname_with_article(user):  # PR2019-03-09 PR2021-01-25 PR2021-0
     elif user.schoolbase and user.schoolbase.code:
         usr_schoolname_with_article = user.schoolbase.code
 
-    return get_usr_schoolname_with_article
+    return usr_schoolname_with_article
 # - end of set_usersetting_from_upload_subdict
