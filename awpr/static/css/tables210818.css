@@ -672,6 +672,13 @@ aXX:hover{
   margin-right:auto;
 }
 
+.display_hide {
+  display: none;
+}
+
+.display_block {
+  display: block;
+}
 
 
 /*

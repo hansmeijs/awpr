@@ -2985,7 +2985,7 @@ document.addEventListener
             let msg_html = "", msg_list = [];
             let hide_save_btn = false;
             if(!has_selected_item){
-               // msg_01_txt = loc.No_user_selected;
+               // msg01_txt = loc.No_user_selected;
                 hide_save_btn = true;
             } else {
 
@@ -3071,22 +3071,22 @@ document.addEventListener
             };
         }
         if ("msg_err" in response || "msg_ok" in response) {
-            let msg01_text = null, msg02_text = null, msg03_text = null;
+            let msg01_txt = null, msg02_txt = null, msg03_txt = null;
             if ("msg_err" in response) {
-                msg01_text = get_dict_value(response, ["msg_err", "msg01"], "");
+                msg01_txt = get_dict_value(response, ["msg_err", "msg01"], "");
                 if (mod_dict.mode === "send_activation_email") {
-                    msg02_text = loc.Activation_email_not_sent;
+                    msg02_txt = loc.Activation_email_not_sent;
                 }
                 el_confirm_msg_container.classList.add("border_bg_invalid");
             } else if ("msg_ok" in response){
-                msg01_text  = get_dict_value(response, ["msg_ok", "msg01"]);
-                msg02_text = get_dict_value(response, ["msg_ok", "msg02"]);
-                msg03_text = get_dict_value(response, ["msg_ok", "msg03"]);
+                msg01_txt  = get_dict_value(response, ["msg_ok", "msg01"]);
+                msg02_txt = get_dict_value(response, ["msg_ok", "msg02"]);
+                msg03_txt = get_dict_value(response, ["msg_ok", "msg03"]);
                 el_confirm_msg_container.classList.add("border_bg_valid");
             }
-            el_confirm_msg01.innerText = msg01_text;
-            el_confirm_msg02.innerText = msg02_text;
-            el_confirm_msg03.innerText = msg03_text;
+            el_confirm_msg01.innerText = msg01_txt;
+            el_confirm_msg02.innerText = msg02_txt;
+            el_confirm_msg03.innerText = msg03_txt;
             el_confirm_btn_cancel.innerText = loc.Close
             el_confirm_btn_save.classList.add(cls_hide);
         } else {

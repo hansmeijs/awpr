@@ -95,7 +95,7 @@ def copy_exfilestext_from_prev_examyear(request, prev_examyear, new_examyear):
 
 def copy_deps_from_prev_examyear(request, prev_examyear, new_examyear):
     # copy departments from previous examyear if it exists # PR2021-04-25  PR2021-08-06
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- copy_deps_from_prev_examyear -------')
 

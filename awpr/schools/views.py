@@ -268,6 +268,7 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
 
         update_wrap = {}
         error_list = []
+        SXM_added_list = []
         if request.user is not None and request.user.country is not None:
             req_usr = request.user
             permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_examyear', req_usr)
@@ -327,6 +328,11 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
                     if logging_on:
                         logger.debug('msg_err: ' + str(msg_err))
                         logger.debug('created sxm_examyear_instance: ' + str(sxm_examyear_instance))
+
+                SXM_added_list.append('sxm_examyear_instance: ' + str(sxm_examyear_instance))
+                if sxm_examyear_instance:
+                    SXM_added_list.append('sxm_examyear_country: ' + str(sxm_examyear_instance.country))
+
 # - copy all tables from current_examyear_instance to new_sxm_examyear_instance
                 if curacao_examyear_instance and sxm_examyear_instance:
                     if logging_on:
@@ -336,6 +342,8 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
                     copy_tables_from_last_year(curacao_examyear_instance, sxm_examyear_instance, copy_to_sxm, request)
 
         update_wrap['error_list'] = error_list
+        update_wrap['SXM_added_list'] = SXM_added_list
+
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -347,10 +355,11 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
 class ExamyearDeleteSubjectsFromSxmView(View):  # PR2021-08-06
 
     def post(self, request):
-        logging_on = False  #s.LOGGING_ON
+        logging_on = s.LOGGING_ON
 
         update_wrap = {}
         error_list = []
+        SXM_deletedlist = []
         if request.user is not None and request.user.country is not None:
             req_usr = request.user
             permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_examyear', req_usr)
@@ -358,7 +367,7 @@ class ExamyearDeleteSubjectsFromSxmView(View):  # PR2021-08-06
             has_permit = (req_usr.role == c.ROLE_128_SYSTEM and requsr_usergroups_list and 'admin' in requsr_usergroups_list)
 
             # DISABLE THIS FUNCTION,it will remove all students and subjects of SXM
-            has_permit = False
+            # has_permit = False
             if logging_on:
                 logger.debug(' ')
                 logger.debug(' ============= ExamyearDeleteSubjectsFromSxmView ============= ')
@@ -380,22 +389,17 @@ class ExamyearDeleteSubjectsFromSxmView(View):  # PR2021-08-06
                 sxm_examyear_instance = None
                 sel_examyear, sel_schoolNIU, sel_departmentNIU, may_edit, msg_list = \
                     dl.get_selected_ey_school_dep_from_usersetting(request)
-                if logging_on:
-                    logger.debug('sel_examyear: ' + str(sel_examyear))
 
                 if sel_examyear:
                     sel_country = sel_examyear.country
-                    if logging_on:
-                        logger.debug('sel_country: ' + str(sel_country))
 
                     if sel_country and req_usr.country == sel_country:
-                        if logging_on:
-                            logger.debug('sel_country and req_usr.country == sel_country')
                         if sel_country.abbrev and sel_country.abbrev.lower() == 'sxm':
                             sxm_examyear_instance = sel_examyear
 
-                if logging_on:
-                    logger.debug('sxm_examyear_instance: ' + str(sxm_examyear_instance))
+                SXM_deletedlist.append('sxm_examyear_instance: ' + str(sxm_examyear_instance))
+                if sxm_examyear_instance:
+                    SXM_deletedlist.append('sxm_examyear_country: ' + str(sxm_examyear_instance.country))
 
                 if sxm_examyear_instance:
 
@@ -406,38 +410,47 @@ class ExamyearDeleteSubjectsFromSxmView(View):  # PR2021-08-06
                         school__examyear=sxm_examyear_instance
                     )
                     for student in students:
-                        if logging_on:
-                            logger.debug('students: ' + str(students))
                         sch_mod.delete_instance(student, msg_list, error_list, request, '', '')
+                        SXM_deletedlist.append('deleted student: ' + str(student))
 
 # +++ Delete all subjects of this SXM examyear
                     subjects = subj_mod.Subject.objects.filter(
                         examyear=sxm_examyear_instance
                     )
                     for subject in subjects:
-                        if logging_on:
-                            logger.debug('.........subject: ' + str(subject))
                         sch_mod.delete_instance(subject, msg_list, error_list, request, '', '')
+                        SXM_deletedlist.append('deleted subject: ' + str(subject))
+
+# +++ Delete all departments of this SXM examyear
+                    # relationship with Published - CASCADE, PrivateDocument=CASCADE, Scheme=CASCADE,
+                    # relationship with student=PROTECT Exam=PROTECT Cluster=PROTECT
+                    # relationship scheme - lvl is CASCADE, so also schemes, schemitems and subjecttypes will be deleted
+                    departments = sch_mod.Department.objects.filter(
+                        examyear=sxm_examyear_instance
+                    )
+                    for department in departments:
+                        sch_mod.delete_instance(department, msg_list, error_list, request, '', '')
+                        SXM_deletedlist.append('deleted subject: ' + str(department))
 
 # +++ Delete all level of this SXM examyear
-                    # relationship scheme - lvl is CASCADE, so also schemes, schemitems and subjecttypes will be deleted
+                    # relationship with student=SET_NULL Exam=SET_NULL
+                    # relationship scheme=CASCADE, so also schemes, schemitems and subjecttypes will be deleted
                     levels = subj_mod.Level.objects.filter(
                         examyear=sxm_examyear_instance
                     )
                     for level in levels:
-                        if logging_on:
-                            logger.debug('.........level: ' + str(level))
                         sch_mod.delete_instance(level, msg_list, error_list, request, '', '')
+                        SXM_deletedlist.append('deleted level: ' + str(level))
 
-# +++ Delete all level of this SXM examyear
+# +++ Delete all sectors of this SXM examyear
                     # relationship scheme - sct is CASCADE, so also schemes, schemitems and subjecttypes will be deleted
                     sectors = subj_mod.Sector.objects.filter(
                         examyear=sxm_examyear_instance
                     )
                     for sector in sectors:
-                        if logging_on:
-                            logger.debug('.........sector: ' + str(sector))
                         sch_mod.delete_instance(sector, msg_list, error_list, request, '', '')
+                        SXM_deletedlist.append('deleted sector: ' + str(sector))
+        update_wrap['SXM_deletedlist'] = SXM_deletedlist
         update_wrap['error_list'] = error_list
 
 # - return update_wrap
@@ -547,6 +560,7 @@ def copy_tables_from_last_year(prev_examyear_instance, new_examyear_instance, co
         sf.copy_examyear_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
 
         sf.copy_exfilestext_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
+
         mapped_deps = sf.copy_deps_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
 
         if not copy_to_sxm:

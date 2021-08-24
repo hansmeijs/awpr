@@ -1896,7 +1896,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_confirm_loader.classList.add(cls_visible_hide)
             el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
 
-            const msg_html = (msg_list.length) ? msg_list.join("") : null;
+            const msg_html = (msg_list.length) ? msg_list.join("<br>") : null;
             el_confirm_msg_container.innerHTML = msg_html;
 
                         el_confirm_msg_container.classList.add("border_bg_transparent");
@@ -2016,8 +2016,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_confirm_msg_container.classList.add("border_bg_valid");
             }
 
-            const msg_html = (msg_list.length) ? msg_list.join("") : null;
+            const msg_html = (msg_list.length) ? msg_list.join("<br>") : null;
             el_confirm_msg_container.innerHTML = msg_html;
+
             el_confirm_btn_cancel.innerText = loc.Close
             el_confirm_btn_save.classList.add(cls_hide);
         } else {

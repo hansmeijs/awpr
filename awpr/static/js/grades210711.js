@@ -229,9 +229,6 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_confirm_header = document.getElementById("id_modconfirm_header");
         const el_confirm_loader = document.getElementById("id_modconfirm_loader");
         const el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container");
-        const el_confirm_msg01 = document.getElementById("id_modconfirm_msg01");
-        const el_confirm_msg02 = document.getElementById("id_modconfirm_msg02");
-        const el_confirm_msg03 = document.getElementById("id_modconfirm_msg03");
         const el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         const el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if(el_confirm_btn_save){
@@ -1674,25 +1671,28 @@ document.addEventListener("DOMContentLoaded", function() {
                            (tblName === "scheme") ? loc.Scheme :
                            (tblName === "package") ? loc.Package : "";
 
-            let msg_01_txt = null, msg_02_txt = null, msg_03_txt = null;
+            let msg01_txt = null, msg02_txt = null, msg03_txt = null;
             let hide_save_btn = false;
             if(!has_selected_item){
-                msg_01_txt = loc.No_user_selected;
+                msg01_txt = loc.No_user_selected;
                 hide_save_btn = true;
             } else {
                 const username = (map_dict.username) ? map_dict.username  : "-";
                 if(mode === "delete"){
-                    msg_01_txt = loc.User + " '" + username + "'" + loc.will_be_deleted
-                    msg_02_txt = loc.Do_you_want_to_continue;
+                    msg01_txt = loc.User + " '" + username + "'" + loc.will_be_deleted
+                    msg02_txt = loc.Do_you_want_to_continue;
                 }
             }
             if(!dont_show_modal){
                 el_confirm_header.innerText = header_text;
                 el_confirm_loader.classList.add(cls_visible_hide)
                 el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
-                el_confirm_msg01.innerText = msg_01_txt;
-                el_confirm_msg02.innerText = msg_02_txt;
-                el_confirm_msg03.innerText = msg_03_txt;
+
+                let msg_html = "";
+                if (msg01_txt) {msg_html += "<p>" + msg01_txt + "</p>"};
+                if (msg02_txt) {msg_html += "<p>" + msg02_txt + "</p>"};
+                if (msg03_txt) {msg_html += "<p>" + msg03_txt + "</p>"};
+                el_confirm_msg_container.innerHTML = msg_html;
 
                 const caption_save = (mode === "delete") ? loc.Yes_delete :
                                 (mode === "inactive") ? ( (mod_dict.current_isactive) ? loc.Yes_make_inactive : loc.Yes_make_active ) : loc.OK;
@@ -1783,22 +1783,26 @@ document.addEventListener("DOMContentLoaded", function() {
             };
         }
         if ("msg_err" in response || "msg_ok" in response) {
-            let msg01_text = null, msg02_text = null, msg03_text = null;
+            let msg01_txt = null, msg02_txt = null, msg03_txt = null;
             if ("msg_err" in response) {
-                msg01_text = get_dict_value(response, ["msg_err", "msg01"], "");
+                msg01_txt = get_dict_value(response, ["msg_err", "msg01"], "");
                 if (mod_dict.mode === "send_activation_email") {
-                    msg02_text = loc.Activation_email_not_sent;
+                    msg02_txt = loc.Activation_email_not_sent;
                 }
                 el_confirm_msg_container.classList.add("border_bg_invalid");
             } else if ("msg_ok" in response){
-                msg01_text  = get_dict_value(response, ["msg_ok", "msg01"]);
-                msg02_text = get_dict_value(response, ["msg_ok", "msg02"]);
-                msg03_text = get_dict_value(response, ["msg_ok", "msg03"]);
+                msg01_txt  = get_dict_value(response, ["msg_ok", "msg01"]);
+                msg02_txt = get_dict_value(response, ["msg_ok", "msg02"]);
+                msg03_txt = get_dict_value(response, ["msg_ok", "msg03"]);
                 el_confirm_msg_container.classList.add("border_bg_valid");
             }
-            el_confirm_msg01.innerText = msg01_text;
-            el_confirm_msg02.innerText = msg02_text;
-            el_confirm_msg03.innerText = msg03_text;
+
+            let msg_html = "";
+            if (msg01_txt) {msg_html += "<p>" + msg01_txt + "</p>"};
+            if (msg02_txt) {msg_html += "<p>" + msg02_txt + "</p>"};
+            if (msg03_txt) {msg_html += "<p>" + msg03_txt + "</p>"};
+            el_confirm_msg_container.innerHTML = msg_html
+
             el_confirm_btn_cancel.innerText = loc.Close
             el_confirm_btn_save.classList.add(cls_hide);
         } else {
@@ -1947,7 +1951,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // ---  hide loader
         add_or_remove_class(el_MAG_loader, cls_hide, true);
-        let msg_01_txt = null,  msg_02_txt = null, msg_03_txt = null, msg_04_txt = null;
+        let msg01_txt = null,  msg02_txt = null, msg03_txt = null, msg_04_txt = null;
 
 // make message container green when grades can be published, red otherwise
         // msg_dict.saved > 0 when grades are approved or published
@@ -1994,10 +1998,10 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
 
-       // msg_01_txt = "The selection contains " + msg_dict.count + " grades."
-       // if (msg_dict.no_value){msg_02_txt = " -  " + msg_dict.no_value + " grades have no value. They will be skipped."}
-       // if (msg_dict.auth_missing){msg_03_txt = " -  " + msg_dict.auth_missing + " grades are not completely authorized. They will be skipped"}
-        //if (msg_dict.already_published){msg_03_txt = " -  " + msg_dict.already_published + " grades are already submitted.They will be skipped."}
+       // msg01_txt = "The selection contains " + msg_dict.count + " grades."
+       // if (msg_dict.no_value){msg02_txt = " -  " + msg_dict.no_value + " grades have no value. They will be skipped."}
+       // if (msg_dict.auth_missing){msg03_txt = " -  " + msg_dict.auth_missing + " grades are not completely authorized. They will be skipped"}
+        //if (msg_dict.already_published){msg03_txt = " -  " + msg_dict.already_published + " grades are already submitted.They will be skipped."}
 
 // hide modal after submitting, only when is_approve_mode
         if(mod_MAG_dict.step === 2 && mod_MAG_dict.is_approve_mode){
@@ -2974,15 +2978,15 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
             document.getElementById("id_mod_status_shift").innerText = (grade_dict.shiftcode);
             */
 
-            let msg01_text = null;
+            let msg01_txt = null;
             if(has_no_order){
-                msg01_text = loc.You_must_first_select + loc.an_order + loc.select_before_confirm_shift;
+                msg01_txt = loc.You_must_first_select + loc.an_order + loc.select_before_confirm_shift;
             } else if(has_no_employee && !is_fldName_status){
-                msg01_text = loc.You_must_first_select + loc.an_employee + loc.select_before_confirm_shift;
+                msg01_txt = loc.You_must_first_select + loc.an_employee + loc.select_before_confirm_shift;
             } else if(has_overlap && !is_fldName_status){
-                msg01_text = loc.You_cannot_confirm_overlapping_shift;
+                msg01_txt = loc.You_cannot_confirm_overlapping_shift;
             } else if(has_no_time && !is_fldName_status){
-                msg01_text = loc.You_must_first_enter +
+                msg01_txt = loc.You_must_first_enter +
                              ( (fldName === "stat_start_conf") ? loc.a_starttime : loc.an_endtime ) +
                              loc.enter_before_confirm_shift;
             }
@@ -2997,7 +3001,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                 if(field_is_confirmed) {
                     // when field is confirmed: can undo
                     show_confirm_box = true;
-                } else if (!msg01_text){
+                } else if (!msg01_txt){
                     show_confirm_box = true;
                 }
             }
@@ -3009,7 +3013,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 // ---  show modal confirm with message 'First select employee'
                 document.getElementById("id_modconfirm_header").innerText = loc.Confirm + " " + loc.Shift.toLowerCase();
-                document.getElementById("id_modconfirm_msg01").innerText = msg01_text;
+                document.getElementById("id_modconfirm_msg01").innerText = msg01_txt;
                 document.getElementById("id_modconfirm_msg02").innerText = null;
                 document.getElementById("id_modconfirm_msg03").innerText = null;
 

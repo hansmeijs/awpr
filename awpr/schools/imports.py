@@ -381,7 +381,7 @@ class UploadImportStudentView(View):  # PR2020-12-05 PR2021-02-23  PR2021-07-17
                     logger.debug('request.user.role: ' + str(request.user.role))
                     logger.debug('permit_list: ' + str(permit_list))
                     logger.debug('has_permit: ' + str(has_permit))
-                    logger.debug('upload_dict: ' + str(upload_dict))
+                    #logger.debug('upload_dict: ' + str(upload_dict))
 
                 if not has_permit:
                     err_html = _("You don't have permission to perform this action.")
@@ -563,17 +563,27 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
         logger.debug('error_list: ' + str(error_list))
 
     student = None
+    has_changed = False
+
     if not has_error:
 
 # - replace idnumber by idnumber_nodots_stripped
         data_dict['idnumber'] = idnumber_nodots_stripped
 
 # - lookup student in database
-       # either student, is_new_student or has_error is trueish
-        is_import, found_is_error, notfound_is_error = True, True, False
-        student, is_new_student, has_error = stud_val.lookup_student_by_idnumber(
-            school, department, id_number, full_name, is_test, is_import, error_list, found_is_error, notfound_is_error)
-
+       # either student, not_found or has_error is trueish
+        student, not_found, has_error = \
+            stud_val.lookup_student_by_idnumber(
+                school=school,
+                department=department,
+                id_number=id_number,
+                upload_fullname=full_name,
+                is_test=is_test,
+                is_import=True,
+                error_list=error_list,
+                notfound_is_error=False
+            )
+        is_new_student = not_found
         if logging_on:
             logger.debug('student: ' + str(student))
             logger.debug('is_new_student: ' + str(is_new_student))
@@ -588,25 +598,15 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
         if logging_on:
             logger.debug('birthdate_ordinal: ' + str(birthdate_ordinal) + ' ' + str(type(birthdate_ordinal)))
 
-        birthdate_iso = None
-        if birthdate_ordinal:
-            date_obj = af.get_date_from_excel_ordinal(birthdate_ordinal, error_list)
-            if date_obj:
-                birthdate_iso = af.get_dateISO_from_dateOBJ(date_obj)
+        birthdate_iso = af.get_birthdateiso_from_excel_ordinal(birthdate_ordinal, error_list)
         if birthdate_iso is None:
-            if idnumber_nodots_stripped:
-                if len(idnumber_nodots_stripped) >= 8:
-                    year = int(idnumber_nodots_stripped[0:4])
-                    month = int(idnumber_nodots_stripped[4:6])
-                    day = int(idnumber_nodots_stripped[6:8])
-                    date_obj = af.get_date_from_arr((year, month, day))
-                    if date_obj:
-                        birthdate_iso = af.get_dateISO_from_dateOBJ(date_obj)
-                        error_list.append(' '.join((str(_("The birth date is not entered.")),
-                                          str(_("AWP has calculated the birthdate from the ID-number.")))))
+            birthdate_iso = af.get_birthdateiso_from_idnumber(idnumber_nodots_stripped, error_list)
+            if birthdate_iso:
+                error_list.append(str(_("AWP has calculated the birthdate from the ID-number.")))
 
     # - replace birthdate with birthdate_iso in data_dict
         # PR2021-08-12 debug: must also replace 0 with None, otherwise error occurs in update_student_instance
+        # data_dict['birthdate'] = birthdate_iso
         data_dict['birthdate'] = birthdate_iso
 
         if logging_on:
@@ -667,7 +667,7 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
 # - update fields, both in new and existing students
         if student:
             data_dict.pop('rowindex')
-            stud_view.update_student_instance(student, data_dict, idnumber_list, examnumber_list, messages, error_list, request, is_test)
+            has_changed = stud_view.update_student_instance(student, data_dict, idnumber_list, examnumber_list, messages, error_list, request, is_test)
 
             setting_dict = {
                 'sel_examyear_pk': school.examyear.pk,
@@ -689,7 +689,11 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
     elif is_new_student:
         student_header += str(_(' will be added.')) if is_test else str(_(' is added.'))
     elif is_existing_student:
-        student_header += str(_(' already exists.'))
+        if has_changed:
+            changed_txt = _('The changes will be saved.') if is_test else _('The changes have been saved.')
+            student_header += ' '.join((str(_(' already exists.')), str(changed_txt)))
+        else:
+            student_header += str(_(' already exists.'))
     log_list.append(student_header)
     if error_list:
         for err in error_list:
@@ -889,7 +893,6 @@ def update_student_fields(data_dict, awpColdef_list, examyear, school, departmen
 # --- end of update_student_fields
 
 
-
 @method_decorator([login_required], name='dispatch')
 class UploadImportUsernameView(View):  # PR2021-08-04
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
@@ -1028,7 +1031,7 @@ class UploadImportUsernameView(View):  # PR2021-08-04
 def upload_username_from_datalist(data_dict, double_username_list, double_email_list, log_list, is_test, user_lang, request):
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug('----------------- upload_student_from_datalist  --------------------')
+        logger.debug('----------------- upload_username_from_datalist  --------------------')
         logger.debug('data_dict: ' + str(data_dict))
         logger.debug('is_test: ' + str(is_test))
         # data_dict: {'schoolcode': 'CUR01', 'username': 'User 1', 'last_name': 'User 1', 'email': 'user@email.com', 'function': 'v'}

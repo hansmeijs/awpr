@@ -3654,10 +3654,10 @@ if(j){td.classList.add("border_left")};
             //console.log("mod_dict", mod_dict)
             //console.log("item", item)
 
-            let msg_01_txt = null, msg_02_txt = null, msg_03_txt = null;
+            let msg01_txt = null, msg02_txt = null, msg03_txt = null;
             let hide_save_btn = false;
             if(!has_selected_item){
-                msg_01_txt = loc.There_is_no__ + item.toLowerCase() + loc.__selected;
+                msg01_txt = loc.There_is_no__ + item.toLowerCase() + loc.__selected;
                 hide_save_btn = true;
             } else if(mode === "delete"){
                 let item_name = (tblName === "subject") ? mod_dict.name :
@@ -3668,8 +3668,8 @@ if(j){td.classList.add("border_left")};
 
 
             //console.log("item_name", item_name)
-                msg_01_txt = item + " '" + item_name + "'" + loc.will_be_deleted
-                msg_02_txt = loc.Do_you_want_to_continue;
+                msg01_txt = item + " '" + item_name + "'" + loc.will_be_deleted
+                msg02_txt = loc.Do_you_want_to_continue;
 
             }
             if(!dont_show_modal){
@@ -3678,9 +3678,9 @@ if(j){td.classList.add("border_left")};
 
                 el_confirm_msg_container.className = "p-3";
                 let msg_html = "";
-                if (msg_01_txt) {msg_html += "<p>" + msg_01_txt + "</p>"};
-                if (msg_02_txt) {msg_html += "<p>" + msg_02_txt + "</p>"};
-                if (msg_03_txt) {msg_html += "<p>" + msg_03_txt + "</p>"};
+                if (msg01_txt) {msg_html += "<p>" + msg01_txt + "</p>"};
+                if (msg02_txt) {msg_html += "<p>" + msg02_txt + "</p>"};
+                if (msg03_txt) {msg_html += "<p>" + msg03_txt + "</p>"};
                 el_confirm_msg_container.innerHTML = msg_html
 
                 const caption_save = (mode === "delete") ? loc.Yes_delete :
@@ -3757,31 +3757,31 @@ if(j){td.classList.add("border_left")};
 
 //--- hide loader
         el_confirm_loader.classList.add(cls_visible_hide)
-        let show_msg = false, msg01_text = null, msg02_text = null, msg03_text = null;
+        let show_msg = false, msg01_txt = null, msg02_txt = null, msg03_txt = null;
 
         const mode = get_dict_value(updated_row, ["mode"])
         if ("err_delete" in updated_row) {
             show_msg = true;
-            msg01_text  = get_dict_value(updated_row, ["err_delete"]);
+            msg01_txt  = get_dict_value(updated_row, ["err_delete"]);
             el_confirm_msg_container.classList.add("border_bg_invalid");
         } else if ("msg_err" in updated_row ||"msg_ok" in updated_row) {
             show_msg = true;
             if ("msg_err" in updated_row) {
-                msg01_text = get_dict_value(updated_row, ["msg_err", "msg01"], "");
+                msg01_txt = get_dict_value(updated_row, ["msg_err", "msg01"], "");
                 el_confirm_msg_container.classList.add("border_bg_invalid");
             } else if ("msg_ok" in updated_row){
-                msg01_text  = get_dict_value(updated_row, ["msg_ok", "msg01"]);
-                msg02_text = get_dict_value(updated_row, ["msg_ok", "msg02"]);
-                msg03_text = get_dict_value(updated_row, ["msg_ok", "msg03"]);
+                msg01_txt  = get_dict_value(updated_row, ["msg_ok", "msg01"]);
+                msg02_txt = get_dict_value(updated_row, ["msg_ok", "msg02"]);
+                msg03_txt = get_dict_value(updated_row, ["msg_ok", "msg03"]);
                 el_confirm_msg_container.classList.add("border_bg_valid");
             }
         }
         if (show_msg){
             el_confirm_msg_container.className = "p-3";
             let msg_html = "";
-            if (msg_01_txt) {msg_html += "<p>" + msg_01_txt + "</p>"};
-            if (msg_02_txt) {msg_html += "<p>" + msg_02_txt + "</p>"};
-            if (msg_03_txt) {msg_html += "<p>" + msg_03_txt + "</p>"};
+            if (msg01_txt) {msg_html += "<p>" + msg01_txt + "</p>"};
+            if (msg02_txt) {msg_html += "<p>" + msg02_txt + "</p>"};
+            if (msg03_txt) {msg_html += "<p>" + msg03_txt + "</p>"};
             el_confirm_msg_container.innerHTML = msg_html;
 
             el_confirm_btn_cancel.innerText = loc.Close

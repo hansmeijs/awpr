@@ -1475,7 +1475,7 @@
         if (msg_list && msg_list.length){
             for (let i = 0, msg_txt ; msg_txt = msg_list[i]; i++) {
                 if (msg_txt) {
-                    msg_html += "<p>" + msg_01_txt + "</p>";
+                    msg_html += "<p>" + msg_txt + "</p>";
                 }
             }
         }

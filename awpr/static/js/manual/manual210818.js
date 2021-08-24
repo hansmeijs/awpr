@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
 })  // document.addEventListener('DOMContentLoaded', function()
 
 //========= HandleDropdownClicked  ============= PR2021-07-30
-    function HandleDropdownClicked(el){
+    function btn_click(page){
         console.log( "===== HandleDropdownClicked  ========= ");
         DeselectAll();
         SelectBtn(el);
@@ -76,6 +76,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById("id_content").innerHTML = html_str;
 
+        FillSideNav(is_en);
+
         SelectBtnAndDeselctOthers("id_btn_" + page )
 
     };  // LoadPage
@@ -85,8 +87,8 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "===== SelectBtn  ========= ");
         el.classList.add("active");
         const el_dropdown = document.getElementById(el.id + "_dropdown")
-        if(el_dropdown) {el_dropdown.style.display = "block"};
-    } // DeselectAll
+        add_or_remove_class (el_dropdown, "display_block", true, "display_hide");
+    } // SelectBtn
 
 //========= DeselectAll  ============= PR2021-07-30
     function DeselectAll(){
@@ -96,8 +98,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const dropdown_els = el_sidenav.getElementsByClassName("dropdown-btn");
         for (let i = 0, el; el = dropdown_els[i]; i++) {
             el.classList.remove("active");
-            const el_dropdown = document.getElementById(el.id + "_dropdown")
-            if(el_dropdown) {el_dropdown.style.display = "none"};
+            const el_dropdown = document.getElementById(el.id + "_dropdown");
+            add_or_remove_class (el_dropdown, "display_hide", true, "display_block");
         }
     } // DeselectAll
 
@@ -121,3 +123,73 @@ document.addEventListener('DOMContentLoaded', function() {
 
         }
     } // SelectBtnAndDeselctOthers
+
+//========= SelectBtnAndDeselctOthers  ============= PR2021-08-23
+    function FillSideNav(is_en){
+        const sbr_list = (!is_en) ? [
+            get_dropdown_button("intro", "id_btn_intro", "Welkom bij AWP-online"),
+/*
+            get_dropdown_button("user", "id_btn_users", "Gebruikers"),
+            get_dropdown_button("upload", "id_btn_upload", "Gegevens uploaden"),
+            "<div id='id_btn_upload_dropdownXX' class='dropdown-container display_hide'>",
+            "<a href='#'>{% trans 'Introduction' %}</a>",
+            "</div>",
+*/
+            get_dropdown_button("studsubj", "id_btn_studsubj", "Vakken van kandidaten"),
+            "<div id='id_btn_studsubj_dropdownXX' class='dropdown-container display_hide'>",
+            "<a href='#'>{% trans 'Introduction' %}</a>",
+            "</div>",
+
+            get_dropdown_button("approve", "id_btn_approve", "Goedkeuren en indienen van Ex-formulieren", [
+                ["id_digital_signature", "Digitale handtekening"],
+                ["id_digital_signature", "Vakken goedkeuren"],
+                ["id_digital_signature", "Ex-formulier indienen"],
+                ["id_digital_signature", "Lijst met ingediende Ex-formulieren"],
+
+                ]),
+            "</div>"
+            ] : [
+            "--"
+            ]
+
+        console.log("sbr_list", sbr_list)
+    const el_sidenav = document.getElementById("id_sidenav");
+           el_sidenav.innerHTML = sbr_list.join('');
+
+    }
+
+    function GotoParagraph(h_ref){
+        console.log(" ----- GotoParagraph ----- ")
+        console.log("h_ref", h_ref)
+    }
+
+/*
+        if(!hover_class){hover_class = "tr_hover"};
+        if(el){
+            el.addEventListener("mouseenter", function(){
+                if(default_class) {el.classList.remove(default_class)}
+                el.classList.add(hover_class)
+            });
+            el.addEventListener("mouseleave", function(){
+                if(default_class) {el.classList.add(default_class)}
+                el.classList.remove(hover_class)
+            });
+        }
+        el.classList.add("pointer_show")
+*/
+    function get_dropdown_button(page, btn_id, btn_txt, item_list){
+        console.log(" ----- get_dropdown_button ----- ");
+        console.log("btn_txt", btn_txt);
+        console.log("item_list", item_list);
+        let html_str = "<button id='" + btn_id + "' class='dropdown-btn' onclick='LoadPage(&#39" + page + "&#39)'>" + btn_txt + "<i class='fa fa-caret-down'></i></button>";
+       /*
+        if (item_list && item_list.length){
+            html_str += "<div id='" + btn_id + "_dropdown' class='dropdown-container'>";
+            for (let i = 0, arr; arr = item_list[i]; i++) {
+                html_str += "<p class='dropdown_item' onclick='GotoParagraph(&#39" + arr[0] + "&#39)'>" + arr[1] + "</p>";
+            };
+            html_str += "</div>"
+        }
+       */
+        return html_str;
+    }

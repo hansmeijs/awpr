@@ -199,7 +199,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
         th_exists = ex1_formats.get('th_exists')
         th_prelim  = ex1_formats.get('th_prelim')
         totalrow_merge = ex1_formats.get('totalrow_merge')
-        col_count = ex1_formats.get('col_count', 0)
+        col_count = len(ex1_formats['field_width'])
         first_subject_column =  ex1_formats.get('first_subject_column', 0)
 
 # --- set column width
@@ -231,7 +231,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
 
         row_index = 9
         if not save_to_disk:
-            prelim_txt = str(_('PRELIMINARY Ex1 FORM'))
+            prelim_txt = 'VOORLOPIG Ex1 FORMULIER'
             sheet.merge_range(row_index, 0, row_index, col_count - 1, prelim_txt, th_prelim)
             row_index += 1
 
@@ -258,9 +258,10 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
 # ---  level header row
                 row_index += 2
                 #sheet.merge_range(row_index, 0, row_index, col_count - 1, lvl_name, th_level)    first_subject_column = col_count
-                # TODO extend header row and total row to 15 columns when teher are less subjects (like in detail rows)
-                for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
-                    sheet.write(row_index, i, ex1_formats['field_captions'][i], ex1_formats['header_formats'][i])
+
+
+                for i, field_caption in enumerate(ex1_formats['field_captions']):
+                     sheet.write(row_index, i,field_caption, ex1_formats['header_formats'][i])
 
                 if len(stud_list):
                     for row in stud_list:
@@ -285,16 +286,17 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
                 if department.level_req:
                     row_index += 1
                     for i, field_name in enumerate(ex1_formats['field_names']):
-                        #logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
                         value = ''
-                        if isinstance(field_name, int):
-                            if field_name in lvl_totals:
-                                value = lvl_totals.get(field_name)
-                            sheet.write(row_index, i, value, ex1_formats['totalrow_formats'][i])
-                            # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
-                        elif field_name == 'exnr':
+                        if field_name == 'exnr':
                             #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
                             sheet.merge_range(row_index, 0, row_index, first_subject_column -1, 'TOTAAL ' + lvl_name, totalrow_merge)
+                        else:
+                            if isinstance(field_name, int):
+                                if field_name in lvl_totals:
+                                    value = lvl_totals.get(field_name)
+                            sheet.write(row_index, i, value, ex1_formats['totalrow_formats'][i])
+                            # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
+
 # end of iterate through levels,
 # ++++++++++++++++++++++++++++
 
@@ -306,18 +308,20 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
         for i, field_name in enumerate(ex1_formats['field_names']):
             #logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
             value = ''
-            if isinstance(field_name, int):
-                if field_name in total_dict:
-                    value = total_dict.get(field_name)
-                sheet.write(row_index, i, value, ex1_formats['totalrow_formats'][i])
-                # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
-            elif field_name == 'exnr':
+            if field_name == 'exnr':
                 #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
                 sheet.merge_range(row_index, 0, row_index, first_subject_column -1, 'TOTAAL', totalrow_merge)
+            else:
+                if isinstance(field_name, int):
+                    if field_name in total_dict:
+                        value = total_dict.get(field_name)
+                sheet.write(row_index, i, value, ex1_formats['totalrow_formats'][i])
+                # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
+
 
 # ---  table footer row
         row_index += 1
-        for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
+        for i, field_name in enumerate(ex1_formats['field_names']):
             if i == 0:
                 sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, '', totalrow_merge)
             else:
@@ -506,8 +510,6 @@ def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, sub
         ex1_formats['row_formats'].append(row_align_center)
         ex1_formats['totalrow_formats'].append(totalrow_number)
 
-        col_count += 1
-
     # - add empty subject columns if col_count is less than 15
     if subject_col_count < 15:
         for x in range(subject_col_count, 15):  # range(start_value, end_value, step), end_value is not included!
@@ -521,9 +523,6 @@ def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, sub
             ex1_formats['row_formats'].append(row_align_center)
             ex1_formats['totalrow_formats'].append(totalrow_number)
 
-        col_count += 1
-
-    ex1_formats['col_count'] = col_count
     ex1_formats['first_subject_column'] = first_subject_column
     ex1_formats['field_width'] = field_width
 
@@ -1754,6 +1753,7 @@ def create_orderlist_count_dict(sel_examyear_instance, sel_examperiod): # PR2021
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
 
         "WHERE studsubj.subj_published_id IS NOT NULL AND NOT studsubj.tobedeleted",
+        "AND NOT si.weight_ce = 0",
         "GROUP BY st.school_id, dep.base_id, lvl.base_id, sch.otherlang, subj.base_id, si.ete_exam, subj.otherlang"
     ]
     sql_studsubj_agg = ' '.join(sql_studsubj_agg_list)

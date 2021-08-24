@@ -48,7 +48,8 @@ def lookup_student_by_idnumber(school, department, id_number, upload_fullname,
         msg_keys = {'cpt': _('ID-number'), 'val': id_number, 'name': upload_fullname}
 
         err_str = None
-        # - count how many students exist with this idnumber in this school (all departments)
+
+# - count how many students exist with this idnumber in this school (all departments)
         # get all students from this school with this idnumber
         row_count = stud_mod.Student.objects.filter(
             idnumber__iexact=idnumber_nodots_stripped,
@@ -59,10 +60,9 @@ def lookup_student_by_idnumber(school, department, id_number, upload_fullname,
 
         if row_count == 0:
             not_found = True
-            # - when importing subjects or grade: return error when student not found in any department
+            # - when importing studsubjects or grade: return error when student not found in any department
             if notfound_is_error:
                 has_error = True
-                upload_fullname = str(_('Candidate'))
                 err_str = str( _("%(cpt)s '%(val)s' does not exist this year in this school.") % msg_keys)
 
         elif row_count == 1:
@@ -83,7 +83,7 @@ def lookup_student_by_idnumber(school, department, id_number, upload_fullname,
                         has_error = True
                         err_str = str(_("%(cpt)s '%(val)s' already exists in this school.") % msg_keys)
                     else:
-                        #TODO return student tobe user when updating student info when importing. Not in use yet PR2021-08-07
+                        #return student when updating student info when importing PR2021-08-23
                         student = row
                 else:
 # - return error when student only occurs in different department

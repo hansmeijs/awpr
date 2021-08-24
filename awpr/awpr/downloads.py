@@ -749,8 +749,9 @@ def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-
     # - add info to msg_list, will be sent back to client
             if sel_examyear is None:
                 msg_list.append(str(_('No exam year selected.')))
-            elif not sel_examyear.published:
-                msg_list.append(str(_('This exam year is not published yet.')))
+            # TODO FIXIT temporaray disabled
+            #elif not sel_examyear.published:
+            #    msg_list.append(str(_('This exam year is not published yet.')))
             elif sel_examyear.locked:
                 msg_list.append(str(_('This exam year is locked.')))
 

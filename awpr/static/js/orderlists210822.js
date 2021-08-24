@@ -151,10 +151,6 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_confirm_header = document.getElementById("id_modconfirm_header");
         let el_confirm_loader = document.getElementById("id_modconfirm_loader");
         let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
-        let el_confirm_msg01 = document.getElementById("id_modconfirm_msg01")
-        let el_confirm_msg02 = document.getElementById("id_modconfirm_msg02")
-        let el_confirm_msg03 = document.getElementById("id_modconfirm_msg03")
-
         let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if(el_confirm_btn_save){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
@@ -715,22 +711,26 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
         if ("msg_err" in response || "msg_ok" in response) {
-            let msg01_text = null, msg02_text = null, msg03_text = null;
+            let msg01_txt = null, msg02_txt = null, msg03_txt = null;
             if ("msg_err" in response) {
-                msg01_text = get_dict_value(response, ["msg_err", "msg01"], "");
+                msg01_txt = get_dict_value(response, ["msg_err", "msg01"], "");
                 if (mod_dict.mode === "send_activation_email") {
-                    msg02_text = loc.Activation_email_not_sent;
+                    msg02_txt = loc.Activation_email_not_sent;
                 }
                 el_confirm_msg_container.classList.add("border_bg_invalid");
             } else if ("msg_ok" in response){
-                msg01_text  = get_dict_value(response, ["msg_ok", "msg01"]);
-                msg02_text = get_dict_value(response, ["msg_ok", "msg02"]);
-                msg03_text = get_dict_value(response, ["msg_ok", "msg03"]);
+                msg01_txt  = get_dict_value(response, ["msg_ok", "msg01"]);
+                msg02_txt = get_dict_value(response, ["msg_ok", "msg02"]);
+                msg03_txt = get_dict_value(response, ["msg_ok", "msg03"]);
                 el_confirm_msg_container.classList.add("border_bg_valid");
             }
-            el_confirm_msg01.innerText = msg01_text;
-            el_confirm_msg02.innerText = msg02_text;
-            el_confirm_msg03.innerText = msg03_text;
+
+            let msg_html = "";
+            if (msg01_txt) {msg_html += "<p>" + msg01_txt + "</p>"};
+            if (msg02_txt) {msg_html += "<p>" + msg02_txt + "</p>"};
+            if (msg03_txt) {msg_html += "<p>" + msg03_txt + "</p>"};
+            el_confirm_msg_container.innerHTML = msg_html
+
             el_confirm_btn_cancel.innerText = loc.Close
             el_confirm_btn_save.classList.add(cls_hide);
         } else {

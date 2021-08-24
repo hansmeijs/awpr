@@ -206,6 +206,45 @@ def get_dateISO_from_string(date_string, format=None):  # PR2019-08-06
     return new_dat_str
 
 
+# ========  get_birthdateiso_from_idnumber  ======= PR2021-08-23
+def get_birthdateiso_from_idnumber(idnumber_nodots_stripped, error_list):
+    birthdate_iso = None
+    if idnumber_nodots_stripped:
+        if len(idnumber_nodots_stripped) >= 8:
+            year = int(idnumber_nodots_stripped[0:4])
+            month = int(idnumber_nodots_stripped[4:6])
+            day = int(idnumber_nodots_stripped[6:8])
+            date_obj = get_date_from_arr((year, month, day))
+            if date_obj:
+                birthdate_iso = get_dateISO_from_dateOBJ(date_obj)
+                error_list.append(' '.join((str(_("The birth date is not entered.")),
+                                            str(_("AWP has calculated the birthdate from the ID-number.")))))
+
+    return birthdate_iso
+# - end of get_birthdateiso_from_idnumber
+
+
+# ========  get_birthdate_from_excel_ordinal  ======= PR2021-08-23
+def get_birthdateiso_from_excel_ordinal(birthdate_ordinal, error_list):
+    # - check if birthdate is a valid date
+    # birthdate has format of excel ordinal or number '20020823'
+
+    birthdate_iso = None
+    if birthdate_ordinal:
+        # PR2021-08-23 debug: JPD entered '20020823' as a numeber. accept that too
+        if isinstance(birthdate_ordinal, int):
+            if birthdate_ordinal > 19000000:
+                bd = str(birthdate_ordinal)
+                birthdate_iso = '-'.join((bd[0:4], bd[4:6], bd[6:8]))
+        else:
+            date_obj = get_date_from_excel_ordinal(birthdate_ordinal, error_list)
+            if date_obj:
+                birthdate_iso = get_dateISO_from_dateOBJ(date_obj)
+
+    return birthdate_iso
+# - end of get_birthdate_from_excel_ordinal
+
+
 # ========  get_birthdate_from_excel_ordinal  ======= PR2021-07-20
 def get_date_from_excel_ordinal(excel_ordinal, error_list):
     date_obj = None
@@ -221,6 +260,7 @@ def get_date_from_excel_ordinal(excel_ordinal, error_list):
             error_list.append(' '.join((str(_('An error occurred:')), str(e), str(_("This is not a valid date.")))))
 
     return date_obj
+
 
 # >>>>>> This is the right way, I think >>>>>>>>>>>>>
 def get_date_from_ISO(date_iso):  # PR2019-09-18 PR2020-03-20

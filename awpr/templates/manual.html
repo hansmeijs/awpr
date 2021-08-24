@@ -26,7 +26,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.1/xlsx.full.min.js"></script>
 
     <!--  PR2019-01-13 js/base.js added, contains csrftoken for ajax-->
-        <script src="{% static 'js/base210816.js' %}"></script>
+        <script src="{% static 'js/base210823.js' %}"></script>
 
         <script src="{% static 'js/manual/man_home210818.js' %}"></script>
         <script src="{% static 'js/manual/man_upload210816.js' %}"></script>
@@ -62,39 +62,12 @@
             </div>
         </header>
 
-<!-- SIDE BAR -->
- <div id="id_sidenav" class="man_sidenav">
-
-  <button id="id_btn_intro" class="dropdown-btn">{% trans 'Welcome at AWP-online' %}<i class="fa fa-caret-down"></i></button>
-        <div id="id_btn_intro_dropdownXX" class="dropdown-container display_hide">
-            <a href="#">{% trans 'Introduction' %}</a>
-        </div>
-  <button id="id_btn_userXX" class="dropdown-btnXX display_hide">{% trans 'Users' %}<i class="fa fa-caret-down"></i></button>
-        <div id="id_btn_users_dropdownXX" class="dropdown-container display_hide">
-            <a href="#">{% trans 'Introduction' %}</a>
-        </div>
-  <button id="id_btn_upload" class="dropdown-btn">{% trans 'Upload data' %}<i class="fa fa-caret-down"></i></button>
-        <div id="id_btn_upload_dropdownXX" class="dropdown-container display_hide">
-        <a href="#">{% trans 'Introduction' %}</a>
+        <div id="id_sidenav" class="man_sidenav">
         </div>
 
-  <button id="id_btn_studsubj" class="dropdown-btn">{% trans 'Subjects of candidates' %}<i class="fa fa-caret-down"></i></button>
-      <div id="id_btn_studsubj_dropdownXX" class="dropdown-container display_hide">
-        <a href="#">{% trans 'Introduction' %}</a>
-      </div>
-
-  <button id="id_btn_approve" class="dropdown-btn">{% trans 'Approve and submit Ex forms' %}<i class="fa fa-caret-down"></i></button>
-      <div id="id_btn_approve_dropdownXX" class="dropdown-container display_hide">
-        <a href="#">{% trans 'Approve' %}</a>
-        <a href="#">{% trans 'Submit' %}</a>
-        <a href="#">{% trans 'List of submissions' %}</a>
-        <a href="#">{% trans 'Undo' %}</a>
-      </div>
-
-</div>
-<!-- END SIDE BAR -->
         <div id="id_content">
         </div>
+
         <div id="id_data"
             data-page="{{page}}"
             data-paragraph="{{paragraph}}"

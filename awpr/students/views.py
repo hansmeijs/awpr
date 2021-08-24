@@ -2222,18 +2222,32 @@ def create_student(school, department, upload_dict, messages, error_list, reques
         msg_err = av.validate_notblank_maxlength(id_number_stripped, c.MAX_LENGTH_IDNUMBER, _('The ID-number'))
         if msg_err:
             msg_list.append(msg_err)
-
+            if logging_on:
+                logger.debug('msg_err: ' + str(msg_err))
 # - validate if student already exists
-        # either student, is_new_student or has_error is trueish
-        is_test, is_import, found_is_error, notfound_is_error = False, False, True, False
-        student, is_new_student, has_error = stud_val.lookup_student_by_idnumber(
-            school, department, id_number_stripped, full_name, is_test, is_import, msg_list, found_is_error, notfound_is_error)
+        # either student, not_found or has_error is trueish
+        student, not_found, has_error = \
+            stud_val.lookup_student_by_idnumber(
+                school=school,
+                department=department,
+                id_number=id_number_stripped,
+                upload_fullname=full_name,
+                is_test=False,
+                is_import=False,
+                error_list=msg_list,
+                notfound_is_error=False
+            )
+
+        if logging_on:
+            logger.debug('msg_list: ' + str(msg_list))
 
         if len(msg_list) > 0:
             #  messages is list of dicts with format: {'field': fldName, header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
             msg_html = '<br>'.join(msg_list)
             messages.append({'header': _('Add candidate'), 'class': "border_bg_invalid", 'msg_html': msg_html})
             error_list.extend(msg_list)
+            if logging_on:
+                logger.debug('msg_list: ' + str(msg_list))
         else:
 
 # - save studentbase
@@ -2292,10 +2306,12 @@ def create_student(school, department, upload_dict, messages, error_list, reques
 def update_student_instance(instance, upload_dict, idnumber_list, examnumber_list, msg_list, error_list, request, skip_save):
     # --- update existing and new instance PR2019-06-06 PR2021-07-19
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_student_instance -------')
         logger.debug('upload_dict' + str(upload_dict))
+
+    has_changed = False
 
     if instance:
         student_name = ' '.join([instance.firstname, instance.lastname])
@@ -2314,6 +2330,10 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
 
                     if isinstance(new_value, int):
                         new_value = str(new_value)
+
+                    if logging_on and new_value != saved_value:
+                        logger.debug('lastname firstname saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                        logger.debug('lastname firstname new_value: ' + str(new_value)+ ' ' + str(type(new_value)))
 
                     if new_value != saved_value:
                         name_first = None
@@ -2364,6 +2384,11 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                         msg_list.append({'class': "border_bg_warning", 'msg_html': err_txt})
                     else:
                         saved_value = getattr(instance, field)
+
+                        if logging_on and new_gender != saved_value:
+                            logger.debug( 'gender saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                            logger.debug('gender new_gender: ' + str(new_gender) + ' ' + str(type(new_gender)))
+
                         if new_gender != saved_value:
                             setattr(instance, field, new_gender)
                             save_changes = True
@@ -2426,6 +2451,12 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                         msg_list.append({'class': "border_bg_warning", 'msg_html': err_txt})
                     else:
                         saved_value = getattr(instance, field)
+
+                        if logging_on and new_value != saved_value:
+                            logger.debug(
+                                'idnumber examnumber saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                            logger.debug('idnumber examnumber new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+
                         if new_value != saved_value:
                             setattr(instance, field, new_value)
                             save_changes = True
@@ -2436,29 +2467,22 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
 
     # 2. save changes in birthdate field
                 elif field == 'birthdate':
-                    # new_value has format of Excel field
-                    saved_value = getattr(instance, field)
-                    if logging_on:
-                        logger.debug('field:     ' + str(field))
-                        logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
-                        logger.debug('saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                    # new_value has format of date-iso, Excel ordinal format is already converted
+                    saved_dateobj = getattr(instance, field)
 
-                    if isinstance(new_value, int):
-                        new_value = str(new_value)
+                    new_dateobj = af.get_date_from_ISO(new_value)
 
-                    if new_value != saved_value:
+                    if logging_on and new_dateobj != saved_dateobj:
+                        logger.debug('birthdate saved_dateobj: ' + str(saved_dateobj) + ' ' + str(type(saved_dateobj)))
+                        logger.debug('birthdate new_dateobj: ' + str(new_dateobj)+ ' ' + str(type(new_dateobj)))
+
+                    if new_dateobj != saved_dateobj:
                         setattr(instance, field, new_value)
                         save_changes = True
-                        if logging_on:
-                            logger.debug('setattr(instance, field, new_value: ' + str(new_value))
 
     # 2. save changes in text fields
-                elif field in ('prefix', 'birthdate', 'birthcountry', 'birthcity', 'classname', 'diplomanumber', 'gradelistnumber'):
+                elif field in ('prefix', 'birthcountry', 'birthcity', 'classname', 'diplomanumber', 'gradelistnumber'):
                     saved_value = getattr(instance, field)
-                    if logging_on:
-                        logger.debug('field:     ' + str(field))
-                        logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
-                        logger.debug('saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
 
                     if isinstance(new_value, int):
                         new_value = str(new_value)
@@ -2467,7 +2491,7 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                         setattr(instance, field, new_value)
                         save_changes = True
                         if logging_on:
-                            logger.debug('setattr(instance, field, new_value: ' + str(new_value))
+                            logger.debug('save_changes field: ' + field + ' new_value: ' + str(new_value))
 
     # 3. save changes in department, level or sector
                 # department cannot be changed
@@ -2476,39 +2500,50 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                     if field == 'profiel':
                         field = 'sector'
 
-                    saved_value = getattr(instance, field)
-                    if logging_on:
-                        logger.debug('field: ' + str(field))
-                        logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
-                        logger.debug('saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
-                    # new_value is levelbase_pk or sectorbase_pk
-                    if new_value != saved_value:
-                        # TODO delete student_subjects that are not in the new scheme
-                        examyear = None
-                        school = getattr(instance, 'school')
-                        if school:
-                            examyear = getattr(school, 'examyear')
+                    new_lvl_or_sct = None
+                    examyear = None
+                    school = getattr(instance, 'school')
+                    if school:
+                        examyear = getattr(school, 'examyear')
+                        if examyear:
+                            if field == 'level':
+                                new_lvl_or_sct = subj_mod.Level.objects.get_or_none(
+                                    base_id=new_value,
+                                    examyear=examyear
+                                )
+                            elif field == 'sector':
+                                new_lvl_or_sct = subj_mod.Sector.objects.get_or_none(
+                                    base_id=new_value,
+                                    examyear=examyear
+                                )
 
-                        if field == 'level':
-                            level_or_sector = subj_mod.Level.objects.get_or_none(
-                                base_id=new_value,
-                                examyear=examyear
-                            )
-                            recalc_regnumber = True
-                        else:
-                            level_or_sector = subj_mod.Sector.objects.get_or_none(
-                                base_id=new_value,
-                                examyear=examyear
-                            )
-                        setattr(instance, field, level_or_sector)
+                    saved_lvl_or_sct = getattr(instance, field)
+
+                    if logging_on and new_lvl_or_sct != saved_lvl_or_sct:
+                        logger.debug('field: ' + str(field))
+                        logger.debug('saved_lvl_or_sct: ' + str(saved_lvl_or_sct) + ' ' + str(type(saved_lvl_or_sct)))
+                        logger.debug('new_lvl_or_sct: ' + str(new_lvl_or_sct) + ' ' + str(type(new_lvl_or_sct)))
+
+                    # new_value is levelbase_pk or sectorbase_pk
+                    if new_lvl_or_sct != saved_lvl_or_sct:
+                        setattr(instance, field, new_lvl_or_sct)
                         save_changes = True
                         update_scheme = True
 
+                        if field == 'level':
+                            recalc_regnumber = True
+
     # - save changes in field 'bis_exam'
-                elif field in ('bis_exam','has_dyslexie', 'iseveningstudent', 'islexstudent'):
+                elif field in ('bis_exam', 'has_dyslexie', 'iseveningstudent', 'islexstudent'):
                     saved_value = getattr(instance, field)
                     if new_value is None:
                         new_value = False
+
+                    if logging_on and new_value != saved_value:
+                        logger.debug('field: ' + str(field))
+                        logger.debug('saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                        logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+
                     if new_value != saved_value:
                         setattr(instance, field, new_value)
                         save_changes = True
@@ -2603,11 +2638,12 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                 if logging_on:
                     logger.debug('setattr(instance, regnumber, new_regnumber: ' + str(new_regnumber))
 
-
 # 5. save changes
-        if save_changes and not skip_save:
+        if save_changes :
             try:
-                instance.save(request=request)
+                if not skip_save:
+                    instance.save(request=request)
+                has_changed = True
             except Exception as e:
                 err_txt1 = str(_('An error occurred'))
                 err_txt2 = str(e)
@@ -2619,6 +2655,10 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                 msg_list.append(msg_dict)
 
                 logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug('has_changed: ' + str(has_changed))
+    return has_changed
 # - end of update_student_instance
 
 
@@ -2648,8 +2688,8 @@ def update_scheme_in_studsubj(student, request):
         for studsubj in studsubjects:
             if new_scheme is None:
                 # delete studsubj when no scheme
-                # TODO check if studsubj is submitted, set delete = True if submitted
-                studsubj.delete(request=request)
+                # check if studsubj is submitted, set tobedeleted = True if submitted
+                set_studsubj_tobedeleted_or_tobechanged(studsubj, True, None, request)  # True = tobedeleted
             else:
                 old_subject = studsubj.schemeitem.subject
                 old_subjecttype = studsubj.schemeitem.subjecttype
@@ -2663,8 +2703,9 @@ def update_scheme_in_studsubj(student, request):
                         ).count()
                     if not count_subject_in_newscheme:
         # delete studsub when subject does not exist in new_scheme
-                        # TODO check if studsubj is submitted, set delete = True if submitted
-                        studsubj.delete(request=request)
+                        # check if studsubj is submitted, set tobedeleted = True if submitted
+                        set_studsubj_tobedeleted_or_tobechanged(studsubj, True, None, request)  # True = tobedeleted
+
                     elif count_subject_in_newscheme == 1:
         # if subject occurs only once in new_scheme: replace schemeitem by new schemeitem
                         new_schemeitem = subj_mod.Schemeitem.objects.get_or_none(
@@ -2672,8 +2713,8 @@ def update_scheme_in_studsubj(student, request):
                             subject=old_subject
                         )
                         if new_schemeitem:
-                            studsubj.schemeitem = new_schemeitem
-                            studsubj.save(request=request)
+                            # change schemeitem in studsubj, set tobechanged = True if submitted
+                            set_studsubj_tobedeleted_or_tobechanged(studsubj, False, new_schemeitem, request)  # False = tobechanged
                     else:
         # if subject occurs multiple times in new_scheme: check if one exist with same subjecttype
                         new_schemeitem = subj_mod.Schemeitem.objects.get_or_none(
@@ -2694,6 +2735,28 @@ def update_scheme_in_studsubj(student, request):
                                 studsubj.schemeitem = new_schemeitem
                                 studsubj.save(request=request)
 
+
+def set_studsubj_tobedeleted_or_tobechanged(studsubj, tobedeleted, new_schemeitem, request):  # PR2021-08-23
+    # delete studsubj when no scheme
+    # check if studsubj is submitted, set delete = True if submitted
+    subj_published = getattr(studsubj, 'subj_published')
+
+    if tobedeleted:
+        field = 'tobedeleted'
+        if subj_published is None:
+            studsubj.delete(request=request)
+    else:
+        field = 'tobechanged'
+        setattr(studsubj, 'schemeitem', new_schemeitem)
+
+    if subj_published:
+        setattr(studsubj, field, True)
+        setattr(studsubj,'prev_auth1by', getattr(studsubj, 'subj_auth1by'))
+        setattr(studsubj,'prev_auth2by', getattr(studsubj, 'subj_auth2by'))
+        setattr(studsubj,'prev_published', subj_published)
+
+        studsubj.save(request=request)
+# - end of set_studsubj_tobedeleted_or_tobechanged
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def create_studsubj(student, schemeitem, messages, error_list, request, skip_save):

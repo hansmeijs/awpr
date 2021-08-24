@@ -141,10 +141,6 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_confirm_header = document.getElementById("id_modconfirm_header");
         let el_confirm_loader = document.getElementById("id_modconfirm_loader");
         let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
-        let el_confirm_msg01 = document.getElementById("id_modconfirm_msg01")
-        let el_confirm_msg02 = document.getElementById("id_modconfirm_msg02")
-        let el_confirm_msg03 = document.getElementById("id_modconfirm_msg03")
-
         let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if(el_confirm_btn_save){
@@ -271,8 +267,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Delete_examyear, function() {ModConfirmOpen("delete")});
                 if (permit_dict.requsr_role_system){
                     AddSubmenuButton(el_submenu, loc.Copy_examyear_to_SXM, function() {ModConfirmOpen("copy_to_sxm")});
-                    // DISABLE THIS FUNCTION,it will remove all students and subjects of SXM
-                    // AddSubmenuButton(el_submenu, loc.Delete_subjects_from_SXM, function() {ModConfirmOpen("delete_subjects_from_sxm")});
+                    // FIXIT DISABLE THIS FUNCTION,it will remove all students and subjects of SXM
+                    AddSubmenuButton(el_submenu, loc.Delete_subjects_from_SXM, function() {ModConfirmOpen("delete_subjects_from_sxm")});
                 }
             }
 
@@ -670,8 +666,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     const el_MEY_loader = document.getElementById("id_MEY_loader");
                     el_MEY_loader.classList.add(cls_visible_hide);
 
-                    //console.log( "response");
-                    //console.log( response);
+                    console.log( "response");
+                    console.log( response);
                     const mode = get_dict_value(response, ["mode"]);
 
                     if ("updated_examyear_rows" in response) {
@@ -679,6 +675,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                     if ("updated_school_rows" in response) {
                         MEY_update_after_response (response);
+                    };
+                    if ("SXM_added_list" in response) {
+                        $("#id_mod_confirm").modal("hide");
+                    };
+                    if ("SXM_deletedlist" in response) {
+                        $("#id_mod_confirm").modal("hide");
                     };
                 },  // success: function (response) {
                 error: function (xhr, msg) {
@@ -1172,18 +1174,23 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
         if ("msg_err" in response || "msg_ok" in response) {
-            let msg_html = "", msg01_text = "", msg02_text = "",  msg03_text = "";
+            let msg01_txt = "", msg02_txt = "",  msg03_txt = "";
             if ("msg_err" in response) {
-                msg01_text = get_dict_value(response, ["msg_err", "msg01"], "");
+                msg01_txt = get_dict_value(response, ["msg_err", "msg01"], "");
                 el_confirm_msg_container.classList.add("border_bg_invalid");
             } else if ("msg_ok" in response){
-                msg01_text  = get_dict_value(response, ["msg_ok", "msg01"], "");
-                msg02_text = get_dict_value(response, ["msg_ok", "msg02"], "");
-                msg03_text = get_dict_value(response, ["msg_ok", "msg03"], "");
-                msg_html = [msg01_text, msg02_text, msg03_text].join("<br>");
+                msg01_txt  = get_dict_value(response, ["msg_ok", "msg01"], "");
+                msg02_txt = get_dict_value(response, ["msg_ok", "msg02"], "");
+                msg03_txt = get_dict_value(response, ["msg_ok", "msg03"], "");
                 el_confirm_msg_container.classList.add("border_bg_valid");
             }
+
+            let msg_html = "";
+            if (msg01_txt) {msg_html += "<p>" + msg01_txt + "</p>"};
+            if (msg02_txt) {msg_html += "<p>" + msg02_txt + "</p>"};
+            if (msg03_txt) {msg_html += "<p>" + msg03_txt + "</p>"};
             el_confirm_msg_container.innerHTML = msg_html;
+
             el_confirm_btn_cancel.innerText = loc.Close;
             el_confirm_btn_save.classList.add(cls_hide);
         } else {

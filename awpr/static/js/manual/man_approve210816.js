@@ -22,10 +22,10 @@ const man_approve = {
             "</div>",
         "</div>",
 
-        "<div id='id_step01' class='mfc mt-4'>",
+        "<div id='id_digital_signature' class='mfc mt-4'>",
             "<div class='mfl'></div>",
             "<div class='mfr'>",
-                "<h4  class='px-2'>De digitale handtekening</h4>",
+                "<h4 class='px-2'>De digitale handtekening</h4>",
             "</div>",
         "</div>",
         "<div class='mfc mb-2'>",
