@@ -155,7 +155,7 @@ def copy_deps_from_prev_examyear(request, prev_examyear, new_examyear):
 
 def copy_levels_from_prev_examyear(request, prev_examyear, new_examyear):
     # copy levels from previous examyear PR2021-04-25 PR2021-08-06
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- copy_levels_from_prev_examyear -------')
 
@@ -215,7 +215,7 @@ def copy_levels_from_prev_examyear(request, prev_examyear, new_examyear):
 
 def copy_sectors_from_prev_examyear(request, prev_examyear, new_examyear):
     # copy sectors from previous examyear PR2021-04-25 PR2021-08-06
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- copy_sectors_from_prev_examyear -------')
 
@@ -349,7 +349,7 @@ def copy_schools_from_prev_examyear(request, prev_examyear, new_examyear):
 
 def copy_subjecttypes_from_prev_examyear(request, prev_examyear, mapped_schemes):
     # copy subjecttypes from previous examyear PR2021-04-25  PR2021-08-06
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- copy_subjecttypes_from_prev_examyear -------')
 
