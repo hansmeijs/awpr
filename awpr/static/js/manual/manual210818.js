@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             get_dropdown_button("approve", "id_btn_approve", "Goedkeuren en indienen van Ex-formulieren", [
                 ["id_digital_signature", "Digitale handtekening"],
-                ["id_digital_signature", "Vakken goedkeuren"],
+                ["id_approve", "Vakken goedkeuren"],
                 ["id_digital_signature", "Ex-formulier indienen"],
                 ["id_digital_signature", "Lijst met ingediende Ex-formulieren"],
 
@@ -152,15 +152,18 @@ document.addEventListener('DOMContentLoaded', function() {
             "--"
             ]
 
-        console.log("sbr_list", sbr_list)
-    const el_sidenav = document.getElementById("id_sidenav");
-           el_sidenav.innerHTML = sbr_list.join('');
-
+        //console.log("sbr_list", sbr_list)
+        document.getElementById("id_sidenav").innerHTML = sbr_list.join('');
     }
 
-    function GotoParagraph(h_ref){
+    function GotoParagraph(par_id){
         console.log(" ----- GotoParagraph ----- ")
-        console.log("h_ref", h_ref)
+        console.log("par_id", par_id)
+        const el = document.getElementById(par_id);
+        console.log("el", el)
+        if(el){
+                    el.scrollIntoView({ block: 'center',  behavior: 'smooth' })
+                }
     }
 
 /*
@@ -178,11 +181,11 @@ document.addEventListener('DOMContentLoaded', function() {
         el.classList.add("pointer_show")
 */
     function get_dropdown_button(page, btn_id, btn_txt, item_list){
-        console.log(" ----- get_dropdown_button ----- ");
-        console.log("btn_txt", btn_txt);
-        console.log("item_list", item_list);
+        //console.log(" ----- get_dropdown_button ----- ");
+        //console.log("btn_txt", btn_txt);
+        //console.log("item_list", item_list);
         let html_str = "<button id='" + btn_id + "' class='dropdown-btn' onclick='LoadPage(&#39" + page + "&#39)'>" + btn_txt + "<i class='fa fa-caret-down'></i></button>";
-       /*
+
         if (item_list && item_list.length){
             html_str += "<div id='" + btn_id + "_dropdown' class='dropdown-container'>";
             for (let i = 0, arr; arr = item_list[i]; i++) {
@@ -190,6 +193,6 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             html_str += "</div>"
         }
-       */
+
         return html_str;
     }

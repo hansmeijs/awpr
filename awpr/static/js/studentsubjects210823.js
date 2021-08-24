@@ -318,10 +318,10 @@ document.addEventListener('DOMContentLoaded', function() {
         el_MIMP_crosstab.addEventListener("change", function() {MIMP_CheckboxCrosstabTabularChanged(el_MIMP_crosstab)}, false )
     };
 
-    //const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
-    //    el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false);
-   // const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
-   //     el_MIMP_checkboxhasheader.addEventListener("change", MIMP_CheckboxHasheaderChanged) //, false);
+    const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
+        el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false);
+    const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
+        el_MIMP_checkboxhasheader.addEventListener("change", MIMP_CheckboxHasheaderChanged) //, false);
 
    const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
         el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false )

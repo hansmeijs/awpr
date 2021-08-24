@@ -182,8 +182,8 @@ document.addEventListener('DOMContentLoaded', function() {
             data: param,
             dataType: 'json',
             success: function (response) {
-                //console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
-                //console.log(response)
+                console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
+                console.log(response)
 
         // hide loader
                 el_loader.classList.add(cls_visible_hide)

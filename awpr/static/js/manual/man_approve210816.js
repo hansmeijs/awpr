@@ -46,7 +46,8 @@ const man_approve = {
                 "Deze verificatiecode wordt per e-mail naar de gebruiker verstuurd.</p>",
              "</div>",
         "</div>",
-        "<div id='id_step01' class='mfc mt-4'>",
+
+        "<div id='id_approve' class='mfc mt-4'>",
             "<div class='mfl'></div>",
             "<div class='mfr'>",
                 "<h4  class='px-2'>Goedkeuren van vakken, scores of cijfers</h4>",
@@ -134,6 +135,16 @@ const man_approve = {
             "</div>",
         "</div>"]
 }
+
+//========= image_div  ============= PR2021-08-24
+function write_paragraph(par_id, dispay_txt){
+    return ["<div id='", par_id, "' class='mfc mt-4'>",
+            "<div class='mfl'></div>",
+            "<div class='mfr'>",
+                "<h4  class='px-2'>", dispay_txt, "</h4>",
+            "</div>",
+        "</div>"
+        ].join("");
 
 //========= image_div  ============= PR2021-08-14
 function set_image_div(img_class){
