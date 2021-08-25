@@ -1512,7 +1512,7 @@ document.addEventListener
     function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20
        //console.log( "===== ResetFilterRows  ========= ");
 
-        selected_subject_pk = null;
+        //selected_subject_pk = null;
 
         filter_dict = {};
 
