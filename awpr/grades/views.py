@@ -1319,7 +1319,7 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "WHERE ey.id = %(ey_id)s::INT",
                 "AND school.base_id = %(sb_id)s::INT",
                 "AND dep.base_id = %(depbase_id)s::INT",
-                "AND subj.etenorm",
+                "AND si.ete_exam",
                 "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
 
                 "AND grd.examperiod = %(experiod)s::INT"

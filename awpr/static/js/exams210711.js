@@ -245,8 +245,8 @@ document.addEventListener
         if(el_mod_status_btn_save){el_mod_status_btn_save.addEventListener("click", function() {ModalStatusSave()}, false )};
 
 // ---  MOD MESSAGE ------------------------------------
-        const el_modmessage_btn_cancel = document.getElementById("id_modmessage_btn_cancel");
-        const el_mod_message_text = document.getElementById("id_mod_message_text");
+        const el_modmessage_btn_cancel = document.getElementById("id_mod_message_btn_cancel");
+        const el_mod_message_container = document.getElementById("id_mod_message_container");
         if(el_modmessage_btn_cancel){
             el_modmessage_btn_cancel.addEventListener("click", function() {ModMessageClose(el_modmessage_btn_cancel)}, false);
         }
@@ -346,6 +346,10 @@ document.addEventListener
                 //};
                 if ("exam_rows" in response) {
                     b_fill_datamap(exam_map, response.exam_rows)
+
+                    console.log("response.exam_rows:", response.exam_rows);
+                    console.log("exam_map:", exam_map);
+
                 };
                 if ("subject_rows" in response) {
                     b_fill_datamap(subject_map, response.subject_rows)
@@ -1330,7 +1334,7 @@ document.addEventListener
                                     // TODO header, set focus after closing messagebox
                                     // el_mod_message_header.innerText = loc.Enter_grade;
                                     const msg_err = err_dict[el_fldName]
-                                    el_mod_message_text.innerText = msg_err;
+                                    el_mod_message_container.innerText = msg_err;
                                     $("#id_mod_message").modal({backdrop: false});
                                     set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
                                     el.value = null;
@@ -1552,6 +1556,7 @@ document.addEventListener
             const tblName = get_attr_from_el(tblRow, "data-table")
             const map_id = tblRow.id
             const grade_dict = get_mapdict_from_datamap_by_id(grade_with_exam_map, map_id);
+        console.log( "grade_dict", grade_dict);
             if(!isEmpty(grade_dict)){
                 mod_MSEX_dict.exam_pk = grade_dict.exam_id;
                 mod_MSEX_dict.mapid = grade_dict.mapid;
@@ -2535,7 +2540,7 @@ document.addEventListener
                              if (q_number in mod_MEX_dict.keys){
                                 delete mod_MEX_dict.keys[q_number];
                             }
-                            el_mod_message_text.innerHTML = msg_err;
+                            el_mod_message_container.innerHTML = msg_err;
                             $("#id_mod_message").modal({backdrop: false});
                             set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
                         } else {
@@ -2570,7 +2575,7 @@ document.addEventListener
         console.log("is_multiple_choice", is_multiple_choice)
     // answer only has value when multiple choice question. one or more letters, may be followed by a number as minimum score (ca3)
                         if (!is_multiple_choice){
-                            el_mod_message_text.innerHTML = loc.err_list.This_isnota_multiplechoice_question;
+                            el_mod_message_container.innerHTML = loc.err_list.This_isnota_multiplechoice_question;
                             $("#id_mod_message").modal({backdrop: false});
                             set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
                         } else {
@@ -2609,7 +2614,7 @@ document.addEventListener
                                         delete mod_MEX_dict.keys[q_number];
                                     }
 
-                                    el_mod_message_text.innerHTML = msg_err;
+                                    el_mod_message_container.innerHTML = msg_err;
                                     $("#id_mod_message").modal({backdrop: false});
                                     set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
 
@@ -2744,7 +2749,7 @@ document.addEventListener
                             delete mod_MEX_dict.answers[q_number];
                         }
                         el_input.value = null;
-                        el_mod_message_text.innerHTML = msg_err;
+                        el_mod_message_container.innerHTML = msg_err;
                         $("#id_mod_message").modal({backdrop: false});
                         // set focus to current input element
                         el_modmessage_btn_cancel.setAttribute("data-nextid", "id_MEX_q_" + q_number)
@@ -2844,6 +2849,7 @@ document.addEventListener
         console.log(" ===  MEXA_Open  =====") ;
         const is_same_school_mode = (permit_dict.requsr_same_school && permit_dict.permit_crud);
 
+        console.log("is_same_school_mode", is_same_school_mode) ;
         mod_MEX_dict = {};
 
         // el_input must always have value
@@ -2860,8 +2866,8 @@ document.addEventListener
             // get exam questions
                 if(grade_dict.exam_id){
                     const exam_dict = get_mapdict_from_datamap_by_id(exam_map, "exam_" + grade_dict.exam_id);
-                    if(exam_dict){
             console.log( "exam_dict", exam_dict );
+                    if(exam_dict){
                         const fullname = (grade_dict.fullname) ? grade_dict.fullname : "---";
                         const exam_name = (exam_dict.exam_name) ? exam_dict.exam_name : "---";
                         const amount = (exam_dict.amount) ? exam_dict.amount : "---";

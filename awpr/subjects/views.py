@@ -3177,8 +3177,7 @@ class ExamDownloadExamView(View):  # PR2021-05-06
                 #logger.debug('list_dict: ' + str(list_dict))
 
 # - get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, is_locked, \
-                examyear_published, school_activated, requsr_same_schoolNIU = \
+            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
                     dl.get_selected_ey_school_dep_from_usersetting(request)
 
             if logging_on:

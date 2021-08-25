@@ -55,7 +55,7 @@ const man_home = {
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
             "<p>Om eenvoudig een vak of een kandidaten te kunnen selecteren beschikt AWP over een handig <b>selectie venster</b>. ",
-            "Hieronder zie je het venster waarmee je een vak kan selecteren. Links is een lijst met de beschikbare vakken, rechts kun je enkele letters intypen.</p>",
+            "Hieronder zie je het venster waarmee je een vak kunt selecteren. Links is een lijst met de beschikbare vakken, rechts kun je enkele letters intypen.</p>",
             "<p>Er zijn twee manieren om een vak te selecteren: de eerste manier is het gewenste vak in de lijst op te zoeken en dan op het vak te klikken. ",
             "Het vak wordt geselecteerd en het venster sluit.</p>",
             "<p>Je kunt ook een paar letters van het vak intypen. Dan worden alleen de vakken met die letters in de naam of de afkorting in de lijst weergegeven. ",

@@ -844,9 +844,9 @@ def create_orderlist_rows(examyear, examperiod_int, is_ete_exam, otherlang):
         logger.debug('-----  create_orderlist_rows  -----')
 
     if is_ete_exam:
-        ete_clause = "AND subj.etenorm"
+        ete_clause = "AND si.ete_exam"
     else:
-        ete_clause = "AND NOT subj.etenorm"
+        ete_clause = "AND NOT si.ete_exam"
 
     examperiod_clause = ''
     if examperiod_int == c.EXAMPERIOD_SECOND:
