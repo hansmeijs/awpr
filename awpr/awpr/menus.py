@@ -32,7 +32,7 @@ pos_y = 18
 
 
 MENUS_ITEMS = {
-    c.ROLE_128_SYSTEM: ['page_examyear', 'page_subject', 'page_school', 'page_student', 'page_studsubj', 'page_exams', 'page_grade',
+    c.ROLE_128_SYSTEM: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj', 'page_exams', 'page_grade',
                       'page_result'], #  'page_report', 'page_analysis'],
     c.ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj', 'page_exams', 'page_grade',
                      'page_result'],  #, 'page_report', 'page_analysis'],

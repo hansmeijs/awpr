@@ -34,6 +34,17 @@
   font-size: 14px;
 }
 
+/* Dropdown container (hidden by default). Optional: add a lighter background color and some left padding to change the design of the dropdown content */
+.dropdown-container {
+  display: none;
+  background-color: #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+  padding-left: 8px;
+}
+.dropdown-btn:hover {
+  background-color: #e0e0e0 !important; /* licht grijs; tsa_tr_selected*/
+  color: #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+}
+
 .dropdown_item {
   padding: 4px 8px 4px 16px;
   font-size: 16px;
@@ -41,10 +52,10 @@
   cursor: pointer;
 }
 
-dropdown_item:hover {
-  background-color: yellow;
+.dropdown_item:hover {
+  background-color: #e0e0e0 !important; /* licht grijs; tsa_tr_selected*/
+  color: #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
 }
-
 
 /* Main content */
 .main {
@@ -59,12 +70,6 @@ dropdown_item:hover {
   color: white;
 }
 
-/* Dropdown container (hidden by default). Optional: add a lighter background color and some left padding to change the design of the dropdown content */
-.dropdown-container {
-  display: none;
-  background-color: #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
-  padding-left: 8px;
-}
 
 /* Optional: Style the caret down icon */
 .fa-caret-down {
@@ -305,6 +310,7 @@ dropdown_item:hover {
 .img_upload_stud_step5_en {
     background-image: url('/static/manual/stud_upload_step5_en.png');
 }
+
 /* ---------------------------------------------------
     IMAGES - STUDENT SUBJECTS
 ----------------------------------------------------- */
@@ -364,7 +370,10 @@ dropdown_item:hover {
 ----------------------------------------------------- */
 
 .img_studsubj_approve_menu_ne, .img_studsubj_approve_menu_en,
-.img_studsubj_mod_approve_ne, .img_studsubj_mod_approve_en {
+.img_studsubj_mod_approve_ne, .img_studsubj_mod_approve_en,
+.img_studsubj_submit_step1_ne, .img_studsubj_submit_step1_en,
+.img_studsubj_submit_step2_ne, .img_studsubj_submit_step2_en,
+.img_studsubj_submitted_exforms_ne, .img_studsubj_submitted_exforms_en {
     background-repeat: no-repeat;
     margin-left: 8px;
 }
@@ -390,4 +399,40 @@ dropdown_item:hover {
 }
 .img_studsubj_mod_approve_en {
     background-image: url('/static/manual/studsubj_mod_approve_en.png');
+}
+
+.img_studsubj_submit_step1_ne, .img_studsubj_submit_step1_en {
+    height: 527px;
+    width: 797px;
+    background-size: 797px 527px;
+ }
+.img_studsubj_submit_step1_ne {
+    background-image: url('/static/manual/studsubj_submit_step1_ne.png');
+}
+.img_studsubj_submit_step1_en {
+    background-image: url('/static/manual/studsubj_submit_step1_en.png');
+}
+
+.img_studsubj_submit_step2_ne, .img_studsubj_submit_step2_en {
+    height: 379px;
+    width: 797px;
+    background-size: 797px 379px;
+ }
+.img_studsubj_submit_step2_ne {
+    background-image: url('/static/manual/studsubj_submit_step2_ne.png');
+}
+.img_studsubj_submit_step2_en {
+    background-image: url('/static/manual/studsubj_submit_step2_en.png');
+}
+
+.img_studsubj_submitted_exforms_ne, .img_studsubj_submitted_exforms_en {
+    height: 175px;
+    width: 850px;
+    background-size: 850px 175px;
+ }
+.img_studsubj_submitted_exforms_ne {
+    background-image: url('/static/manual/studsubj_submitted_exforms_ne.png');
+}
+.img_studsubj_submitted_exforms_en {
+    background-image: url('/static/manual/studsubj_submitted_exforms_en.png');
 }

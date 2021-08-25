@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_MCOL_tblBody_show = document.getElementById("id_MCOL_tblBody_show");
 
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save");
-            el_MCOL_btn_save.addEventListener("click", function() {ModColumns_Save()}, false );
+        if (el_MCOL_btn_save){ el_MCOL_btn_save.addEventListener("click", function() {ModColumns_Save()}, false )};
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
         let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
-        if(el_confirm_btn_save){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
+        if (el_confirm_btn_save){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
 
 // ---  set selected menu button active
         //SetMenubuttonActive(document.getElementById("id_hdr_users"));

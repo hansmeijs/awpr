@@ -3,14 +3,9 @@
     "use strict";
 
     const man_upload = {
+/////////  NEDERLANDS //////////////////////////////
         nl: [
-        "<div class='mfc mt-4 mb-0'>",
-            "<div class='mfl'><p></p></div>",
-            "<div class='mfr'>",
-                "<h4 class='px-2'>Gegevens uploaden</h4>",
-            "</div>",
-        "</div>",
-
+        write_paragraph_header("id_upload_data", "Gegevens uploaden", true),
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
@@ -28,20 +23,10 @@
                 "<p>De voorbeelden hebben betrekking op het uploaden van kandidaten. Het uploaden van vakken en cijfers gaat op dezelfde manier.</p>",
             "</div>",
         "</div>",
+        set_image_div("img_upload_stud_menu_ne"),
 
-        "<div class='mfc mb-2'>",
-            "<div class='mfl'><p></p></div>",
-            "<div class='mfr'>",
-                "<div class='img_upload_stud_menu_ne'></div>",
-            "</div>",
-        "</div>",
 
-        "<div id='id_step01' class='mfc mt-4'>",
-            "<div class='mfl'><p></p></div>",
-            "<div class='mfr'>",
-                "<h4  class='px-2'>Stap 1: Selecteer een Excel bestand</h4>",
-            "</div>",
-        "</div>",
+        write_paragraph_header("id_upload_step01", "Stap 1: Selecteer een Excel bestand"),
 
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",

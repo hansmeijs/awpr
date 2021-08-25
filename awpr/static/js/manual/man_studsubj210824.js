@@ -4,14 +4,9 @@
 
 const man_studsubj = {
 
+/////////  NEDERLANDS //////////////////////////////
     nl: [
-        "<div class='mfc mt-4 mb-0'>",
-            "<div class='mfl'><p></p></div>",
-            "<div class='mfr'>",
-                "<h4 class='px-2'>Vakken van kandidaten</h4>",
-            "</div>",
-        "</div>",
-
+        write_paragraph_header("id_intro", "Vakken van kandidaten", true),
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
@@ -23,22 +18,22 @@ const man_studsubj = {
                 "<li>De controle op de samenstelling van de vakken bekijken;</li>",
                 "<li>Vakken aan een kandidaat toewijzen;</li>",
                 "<li>Vakken van kandidaten goedkeuren en het Ex1 formulier indienen. ",
-                "Klik <a href='#' class='awp_href' onclick='LoadPage(&#39approve&#39)'>hier</a> voor de handleiding ervan.;</li>",
+                "Klik <a href='#' class='awp_href' onclick='LoadPage(&#39approve&#39)'>hier</a> voor de handleiding ervan;</li>",
                 "<li>Het voorlopige en ingediende Ex1-formulier downloaden.</li></ul>",
                 "<p class='pb-0'>De optie om vakken van vakkenpakketten toe te toewijzen is nog niet beschikbaar.</p>",
             "</div>",
         "</div>",
 
+        write_paragraph_header("id_filter_subjects", "Vakken filteren"),
         "<div class='mfc mb-4'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
-                "<p class='pb-0'><b>Vakken filteren</b></p>",
                 "<p>Op elke regel in de tabel staat een vak van een kandidaat. ",
                 "Je kunt alle vakken van alle kandidaten weergeven, maar dat is niet handig. ",
                 "Het maakt de pagina onoverzichtelijk en bij veel kandidaten ook traag. Beter is het om vakken te filteren.</p>",
 
                 "<p class='pb-0'>Het filteren kan op verschillende manieren:</p>",
-                "<ul class='manual_bullet mb-0'><li>In de vertikale grijze filterbalk links kun je ",
+                "<ul class='manual_bullet mb-0'><li>In de verticale grijze filterbalk links kun je ",
                 "een <b>leerweg</b>, <b>sector</b> of <b>profiel</b> selecteren;</li>",
                 "<li>Je kunt ook een <b>vak</b> of <b>kandidaat</b> selecteren, maar niet beide. ",
                 "<li>Tenslotte kun je vakken filteren met behulp van de <b>filterregel</b>;</li></ul>",
@@ -46,12 +41,7 @@ const man_studsubj = {
         "</div>",
         set_image_div("img_studsubj_tab_subj_ne"),
 
-        "<div class='mfc mt-4 mb-0'>",
-            "<div class='mfl'><p></p></div>",
-            "<div class='mfr'>",
-                "<h4 class='px-2'>Controle op de samenstelling van de vakken</h4>",
-            "</div>",
-        "</div>",
+        write_paragraph_header("id_validate_subjects", "Controle op de samenstelling van de vakken"),
         "<div class='mfc mb-2'>",
             "<div class='mfl mt-2'><div class='img_studsubj_exclamationsign'></div></div>",
             "<div class='mfr'>",
@@ -71,17 +61,9 @@ const man_studsubj = {
                 "In dat geval moet het karakter van het vak handmatig gecorrigeerd worden.</p>",
             "</div>",
         "</div>",
-
         set_image_div("img_studsubj_mod_studsubj_ne"),
 
-
-        "<div id='id_step01' class='mfc mt-4'>",
-            "<div class='mfl'></div>",
-            "<div class='mfr'>",
-                "<h4  class='px-2'>Vakken van kandidaten invoeren</h4>",
-            "</div>",
-        "</div>",
-
+        write_paragraph_header("id_enter_subjects", "Vakken van kandidaten invoeren"),
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
@@ -109,21 +91,19 @@ const man_studsubj = {
                 "Je kunt meerdere vakken selecteren.<br>",
             "</div>",
         "</div>",
-
         set_image_div("img_studsubj_mod_studsubj_ne"),
 
-
-        "<div class='mfc mb-4'>",
-            "<div class='mfl'><p class='mt-2 diamond_3_4'></p></div>",
-            "<div class='mfr'>",
-            "</div>",
-        "</div>",
+        "<div class='p-3 visibility_hide'>-</div>",
     ],
 
-    en:  [ "<div id='id_step01' class='mfc mt-4'>",
+    en:  [
+
+     "<div id='id_step01' class='mfc mt-4'>",
             "<div class='mfl'></div>",
             "<div class='mfr'>",
                 "<h4  class='px-2'>Subjects of candidates</h4>",
             "</div>",
-        "</div>"]
+        "</div>"
+
+        ]
 }

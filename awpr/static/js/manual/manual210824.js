@@ -56,12 +56,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= LoadPage  ============= PR2021-07-30
     function LoadPage(page){
-        //console.log( "===== LoadPage  ========= ");
-        //console.log( "page", page);
-        //console.log( "user_lang", user_lang);
-        //console.log( "man_studsubj", man_studsubj);
+        console.log( "===== LoadPage  ========= ");
+        console.log( "page", page);
+        console.log( "user_lang", user_lang);
 
         const is_en = (user_lang === "en");
+        console.log( "is_en", is_en);
         const html_dict = (page === "intro") ? man_home :
                         (page === "user") ? man_user :
                         (page === "upload") ? man_upload :
@@ -124,36 +124,68 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     } // SelectBtnAndDeselctOthers
 
-//========= SelectBtnAndDeselctOthers  ============= PR2021-08-23
+//========= FillSideNav  ============= PR2021-08-23
     function FillSideNav(is_en){
+        console.log( " ===  FillSideNav  ===");
+        console.log("is_en", is_en)
         const sbr_list = (!is_en) ? [
-            get_dropdown_button("intro", "id_btn_intro", "Welkom bij AWP-online"),
-/*
-            get_dropdown_button("user", "id_btn_users", "Gebruikers"),
-            get_dropdown_button("upload", "id_btn_upload", "Gegevens uploaden"),
-            "<div id='id_btn_upload_dropdownXX' class='dropdown-container display_hide'>",
-            "<a href='#'>{% trans 'Introduction' %}</a>",
-            "</div>",
-*/
-            get_dropdown_button("studsubj", "id_btn_studsubj", "Vakken van kandidaten"),
-            "<div id='id_btn_studsubj_dropdownXX' class='dropdown-container display_hide'>",
-            "<a href='#'>{% trans 'Introduction' %}</a>",
-            "</div>",
 
-            get_dropdown_button("approve", "id_btn_approve", "Goedkeuren en indienen van Ex-formulieren", [
-                ["id_digital_signature", "Digitale handtekening"],
-                ["id_approve", "Vakken goedkeuren"],
-                ["id_digital_signature", "Ex-formulier indienen"],
-                ["id_digital_signature", "Lijst met ingediende Ex-formulieren"],
+/////////  NEDERLANDS //////////////////////////////
+        get_dropdown_button("intro", "id_btn_intro", "Welkom bij AWP-online"),
 
-                ]),
-            "</div>"
-            ] : [
-            "--"
-            ]
+        get_dropdown_button("upload", "id_btn_upload_data", "Gegevens uploaden", [
+            ["id_upload_step01", "Stap 1: Selecteer een Excel bestand"],
+            ["id_validate_subjects", "Controle op de samenstelling van de vakken"],
+            ["id_enter_subjects", "Vakken van kandidaten invoeren"],
+            ]),
 
-        //console.log("sbr_list", sbr_list)
-        document.getElementById("id_sidenav").innerHTML = sbr_list.join('');
+        get_dropdown_button("studsubj", "id_btn_studsubj", "Vakken van kandidaten", [
+            ["id_filter_subjects", "Vakken filteren"],
+            ["id_validate_subjects", "Controle op de samenstelling van de vakken"],
+            ["id_enter_subjects", "Vakken van kandidaten invoeren"],
+            ]),
+
+        get_dropdown_button("approve", "id_btn_approve", "Goedkeuren en indienen van Ex-formulieren", [
+            ["id_digital_signature", "De digitale handtekening"],
+            ["id_approve", "Goedkeuren van vakken, scores of cijfers"],
+            ["id_approve_icon", "Het goedkeurings-icoontje"],
+            ["id_prelim_exform", "Het voorlopige Ex-formulier"],
+            ["id_submit_exform", "Het Ex-formulier indienen"],
+            ["id_submitted_exforms", "Lijst met ingediende Ex-formulieren"],
+
+            ]),
+        "</div>"
+        ] :
+
+/////////  ENGLISH //////////////////////////////
+        [
+        get_dropdown_button("intro", "id_btn_intro", "Welcome at AWP-online"),
+
+        get_dropdown_button("studsubj", "id_btn_studsubj", "Subjects of candidates", [
+            ["id_filter_subjects", "Vakken filteren"],
+            ["id_approve", "Approve courses, scores or grades"],
+            ["id_approve_icon", "The approval icon"],
+            ["id_prelim_exform", "The preliminary Ex-form"],
+            ["id_submit_exform", "Submit the Ex form"],
+            ["id_submitted_exforms", "List of submitted Ex forms"],
+
+            ]),
+
+        get_dropdown_button("approve", "id_btn_approve", "Approve and submit Ex forms", [
+            ["id_digital_signature", "The digital signature"],
+            ["id_approve", "Approve courses, scores or grades"],
+            ["id_approve_icon", "The approval icon"],
+            ["id_prelim_exform", "The preliminary Ex-form"],
+            ["id_submit_exform", "Submit the Ex form"],
+            ["id_submitted_exforms", "List of submitted Ex forms"],
+
+            ]),
+        "</div>"
+        ]
+
+        const el_sidenav =  document.getElementById("id_sidenav");
+        console.log("el_sidenav", el_sidenav)
+        el_sidenav.innerHTML = sbr_list.join('');
     }
 
     function GotoParagraph(par_id){
@@ -162,28 +194,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const el = document.getElementById(par_id);
         console.log("el", el)
         if(el){
-                    el.scrollIntoView({ block: 'center',  behavior: 'smooth' })
-                }
+           el.scrollIntoView({ block: 'start',  behavior: 'smooth' })
+        }
     }
 
-/*
-        if(!hover_class){hover_class = "tr_hover"};
-        if(el){
-            el.addEventListener("mouseenter", function(){
-                if(default_class) {el.classList.remove(default_class)}
-                el.classList.add(hover_class)
-            });
-            el.addEventListener("mouseleave", function(){
-                if(default_class) {el.classList.add(default_class)}
-                el.classList.remove(hover_class)
-            });
-        }
-        el.classList.add("pointer_show")
-*/
     function get_dropdown_button(page, btn_id, btn_txt, item_list){
-        //console.log(" ----- get_dropdown_button ----- ");
-        //console.log("btn_txt", btn_txt);
-        //console.log("item_list", item_list);
+        console.log(" ----- get_dropdown_button ----- ");
+        console.log("btn_txt", btn_txt);
+        console.log("item_list", item_list);
         let html_str = "<button id='" + btn_id + "' class='dropdown-btn' onclick='LoadPage(&#39" + page + "&#39)'>" + btn_txt + "<i class='fa fa-caret-down'></i></button>";
 
         if (item_list && item_list.length){
@@ -196,3 +214,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
         return html_str;
     }
+
+
+//========= write_paragraph_header  ============= PR2021-08-24
+function write_paragraph_header(par_id, dispay_txt, skip_top_margin){
+    return [
+
+        ( (skip_top_margin) ? "" : "<div id='" + par_id + "' class='pb-3 visibility_hide'>-</div>"),
+        "<div class='mfc mt-4'>",
+            "<div class='mfl'></div>",
+            "<div class='mfr'>",
+                "<h4  class='px-2'>", dispay_txt, "</h4>",
+            "</div>",
+        "</div>"
+        ].join("");
+}
+//========= image_div  ============= PR2021-08-14
+function set_image_div(img_class){
+    return ["<div class='mfc mb-2'>",
+            "<div class='mfl'><p></p></div>",
+            "<div class='mfr'>",
+                "<div class='", img_class, "'></div>",
+            "</div>",
+        "</div>"
+        ].join("");
+}

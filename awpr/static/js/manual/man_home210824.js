@@ -45,7 +45,7 @@ const man_home = {
                 "<p class='pb-0'>Onder de pagina balk is de <b>menubalk</b>. Afhankelijk van de pagina en je permissies heeft de menubalk verschillende knoppen, waarmee je bewerkingen kunt uitvoeren.</p>",
                "<p class='pb-0'>Dan is er een balk met een of meer <b>tabs</b>. Elke tab geeft een tabel met andere gegevens weer.",
             "<p class='pb-0'>De tweede regel van de tabel is de <b>filterregel</b> waarmee je de regels van de tabel kunt filteren.",
-            "<p class='pb-0'>Ook op de <b>filterbalk</b>, dit is de grijze vertikale balk links, staan er soms knoppen waarmee je een filter kunt instellen.",
+            "<p class='pb-0'>Ook op de <b>filterbalk</b>, dit is de grijze verticale balk links, staan er soms knoppen waarmee je een filter kunt instellen.",
             "</div>",
         "</div>",
         set_image_div("img_page_layout_ne"),
