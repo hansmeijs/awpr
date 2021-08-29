@@ -534,6 +534,8 @@ class Schemeitem(sch_mod.AwpBaseModel):
     subjecttype = ForeignKey(Subjecttype, related_name='+', on_delete=CASCADE)
 
     ete_exam = BooleanField(default=False)
+    # if no_order: dont count this subject in orderlist when school no_order is also True
+    no_order = BooleanField(default=False)
 
     # delete exam from schemitem, is linked to grade
     # exam = ForeignKey(Exam, related_name='+', null=True, on_delete=SET_NULL)
@@ -542,7 +544,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
     weight_se = PositiveSmallIntegerField(default=1)
     weight_ce = PositiveSmallIntegerField(default=1)
 
-    # is_mand_subj: only mandatoty if student has this subject
+    # is_mand_subj: only mandatory if student has this subject
     is_mandatory = BooleanField(default=False)
     is_mand_subj = ForeignKey(Subject, related_name='+', null=True, on_delete=SET_NULL)
     is_combi = BooleanField(default=False)
@@ -577,7 +579,6 @@ class Schemeitem(sch_mod.AwpBaseModel):
     # no_reex = BooleanField(default=False)
     # no_thirdperiod = BooleanField(default=False)
     # no_exemption_ce = BooleanField(default=False)
-
 
 
 #  ++++++++++  Class methods  +++++++++++++++++++++++++++
@@ -651,6 +652,7 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     subjecttype_log = ForeignKey(Subjecttype_log, null=True,  related_name='+', on_delete=CASCADE)
 
     ete_exam = BooleanField(default=False)
+    no_order = BooleanField(default=False)
 
     # delete exam from schemitem, is linked to grade
     #exam_log = ForeignKey(Exam_log, related_name='+', null=True, on_delete=CASCADE)
@@ -753,25 +755,6 @@ class Cluster_log(sch_mod.AwpBaseModel):
         return self.abbrev
 
 # +++++++++++++++++++++   Functions Department, Level, Sector, Subject  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-def get_depbase_list_tuple(depbase_list):
-    # PR2018-08-28 depbase_list_tuple converts self.depbase_list string into tuple,
-    # This function converts init_list_str string into init_list_tuple,  e.g.: '1;2' will be converted to (1,2)
-    # e.g.: depbase_list='1;2' will be converted to depbase_list=(1,2)
-    # empty list = (0,), e.g: 'None'
-
-    depbase_list_tuple = ()
-    if depbase_list:
-        depbase_list_str = str(depbase_list)
-        depbase_list_list = depbase_list_str.split(';')
-        depbase_list_tuple = tuple(depbase_list_list)
-
-    # select 0 (None) in EditForm when no other departments are selected
-    if not depbase_list_tuple:
-        depbase_list_tuple = (0,)
-
-    return depbase_list_tuple
-
 
 def get_list_str(list, model):
     # PR2018-08-16 get_list_str displays string of depbase_list, level_list or sector_list. e.g.: Vsbo, Havo, Vwo'

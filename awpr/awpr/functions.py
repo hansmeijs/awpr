@@ -207,8 +207,9 @@ def get_dateISO_from_string(date_string, format=None):  # PR2019-08-06
 
 
 # ========  get_birthdateiso_from_idnumber  ======= PR2021-08-23
-def get_birthdateiso_from_idnumber(idnumber_nodots_stripped, error_list):
+def get_birthdateiso_from_idnumber(idnumber_nodots_stripped):
     birthdate_iso = None
+
     if idnumber_nodots_stripped:
         if len(idnumber_nodots_stripped) >= 8:
             year = int(idnumber_nodots_stripped[0:4])
@@ -217,8 +218,6 @@ def get_birthdateiso_from_idnumber(idnumber_nodots_stripped, error_list):
             date_obj = get_date_from_arr((year, month, day))
             if date_obj:
                 birthdate_iso = get_dateISO_from_dateOBJ(date_obj)
-                error_list.append(' '.join((str(_("The birth date is not entered.")),
-                                            str(_("AWP has calculated the birthdate from the ID-number.")))))
 
     return birthdate_iso
 # - end of get_birthdateiso_from_idnumber
@@ -576,9 +575,9 @@ def get_sel_schoolbase_instance(request, request_item_schoolbase_pk=None):  # PR
 
 
 def get_sel_depbase_instance(sel_school, request, request_item_depbase_pk=None):  # PR2020-12-26 PR2021-05-07 PR2021-08-13
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug('  -----  get_sel_depbase_instance  -----')
+        logger.debug('  >>>>>>>>>>> -----  get_sel_depbase_instance  -----')
         logger.debug('sel_school: ' + str(sel_school))
         logger.debug('request_item_depbase_pk: ' + str(request_item_depbase_pk))
 
@@ -599,7 +598,7 @@ def get_sel_depbase_instance(sel_school, request, request_item_depbase_pk=None):
             if logging_on:
                 logger.debug('allowed_depbases_list: ' + str(allowed_depbases_list))
 
-# - get allowed depbases from school
+# - get allowed depbases from school -
             school_depbase_list = list(map(int, sel_school.depbases.split(';')))
             if logging_on:
                 logger.debug('school_depbase_list: ' + str(school_depbase_list))
@@ -921,6 +920,7 @@ def get_country_instance_by_abbrev(abbrev):
             logger.error(getattr(e, 'message', str(e)))
     return country
 # - end of get_country_instance_by_abbrev
+
 
 def get_todays_examyear_NIU():
     # get SXM examyear of today

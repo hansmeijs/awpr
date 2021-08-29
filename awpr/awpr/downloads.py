@@ -230,7 +230,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
     if request_item_setting is None:
         request_item_setting = {}
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- download_setting ----- ')
         logger.debug('request_item_setting: ' + str(request_item_setting) )
@@ -408,7 +408,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
 
 # - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
     if sel_depbase_save:
-        # sel_depbase_instance has always value when selected_pk_dict_has_changed
+        # sel_depbase_instance has always value when sel_depbase_save = True
         selected_pk_dict[c.KEY_SEL_DEPBASE_PK] = sel_depbase_instance.pk
         selected_pk_dict_has_changed = True
 
@@ -528,7 +528,7 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
         logger.debug('setting_dict[c.KEY_SEL_EXAMTYPE]: ' + str(setting_dict[c.KEY_SEL_EXAMTYPE]))
         logger.debug('setting_dict[c.sel_examtype_caption]: ' + str(setting_dict['sel_examtype_caption']))
 
-# ===== LEVELBASE, SECTORBASE, SCHEME, SUBJECT, STUDENT, ======================= PR2021-01-23 PR2021-03-14 PR2021-08-13
+# ===== DEPBASE, LEVELBASE, SECTORBASE, SCHEME, SUBJECT, STUDENT, ======================= PR2021-01-23 PR2021-03-14 PR2021-08-13
 
     if logging_on:
         logger.debug('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
@@ -566,7 +566,6 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
                 elif key_str in selected_pk_dict:
                     selected_pk_dict.pop(key_str)
 
-
 # --- add info to setting_dict, will be sent back to client
         if saved_pk_int:
             setting_dict[key_str] = saved_pk_int
@@ -585,6 +584,13 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
                 if student:
                     setting_dict['sel_student_name'] = stud_view.get_full_name(student.lastname, student.firstname, student.prefix)
                     setting_dict['sel_student_name_init'] = stud_view.get_lastname_firstname_initials(student.lastname, student.firstname, student.prefix)
+
+            elif key_str == c.KEY_SEL_DEPBASE_PK:
+                department = sch_mod.Department.objects.get_or_none(
+                    examyear=sel_examyear_instance,
+                    base_id=saved_pk_int)
+                if department:
+                    setting_dict['sel_depbase_code'] = department.base.code
 
             elif key_str == c.KEY_SEL_LVLBASE_PK:
                 level = subj_mod.Level.objects.get_or_none(

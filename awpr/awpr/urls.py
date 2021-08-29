@@ -209,9 +209,10 @@ urlpatterns = [
 
         path('studentsubject', student_views.StudentsubjectListView.as_view(), name='studentsubjects_url'),
         path('studsubj_upload', student_views.StudentsubjectUploadView.as_view(), name='url_studsubj_upload'),
+        path('studsubj_validate', student_views.StudentsubjectValidateView.as_view(), name='url_student_validate'),
 
+        path('studsubj_validate_scheme', student_views.StudentsubjectValidateSchemeView.as_view(), name='url_studsubj_validate_scheme'),
         path('studsubj_validate_test', student_views.StudentsubjectValidateTestView.as_view(), name='url_studsubj_validate_test'),
-        path('studsubj_validate', student_views.StudentsubjectValidateView.as_view(), name='url_studsubj_validate'),
         path('studsubj_validate_all', student_views.StudentsubjectValidateAllView.as_view(), name='url_studsubj_validate_all'),
 
         path('studsubj_approve', student_views.StudentsubjectApproveSingleView.as_view(), name='url_studsubj_approve'),

@@ -2103,7 +2103,8 @@ function RefreshDataRowsAfterUpload(response) {
             const is_created = (!!update_dict.created);
             //console.log("is_created", is_created);
 
-            let field_error_list = []
+            // field_error_list is not in use (yet)
+            let field_error_list = [];
             const error_list = get_dict_value(update_dict, ["error"], []);
             //console.log("error_list", error_list);
 
@@ -2120,7 +2121,7 @@ function RefreshDataRowsAfterUpload(response) {
                 //$("#id_mod_subject").modal("hide");
             }
 
-            const col_hidden = (columns_hidden[page_tblName]) ? columns_hidden[page_tblName] : [];
+            // NIU: const col_hidden = (columns_hidden[page_tblName]) ? columns_hidden[page_tblName] : [];
 
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
@@ -2162,8 +2163,6 @@ function RefreshDataRowsAfterUpload(response) {
                     // delete row from data_rows. Splice returns array of deleted rows
                     const deleted_row_arr = data_rows.splice(datarow_index, 1)
                     const deleted_row_dict = deleted_row_arr[0];
-        //console.log("deleted_row_dict", deleted_row_dict);
-        //console.log("deleted_row_dict.mapid", deleted_row_dict.mapid);
 
         //--- delete tblRow
                     if(deleted_row_dict && deleted_row_dict.mapid){
@@ -2177,11 +2176,10 @@ function RefreshDataRowsAfterUpload(response) {
     // ---  check which fields are updated, add to list 'updated_columns'
                     if(!isEmpty(data_dict) && field_names){
                         let updated_columns = [];
-        //console.log("update_dict", update_dict);
+
                         // skip first column (is margin)
                         // col_field is the name of the column on page, not the db_field
                         for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
-
                             let has_changed = false;
                             if (col_field.slice(0, 5) === "group") {
                             // data_dict.usergroups example: "anlz;auth1;auth2;auth3;edit;read"
@@ -2199,19 +2197,17 @@ function RefreshDataRowsAfterUpload(response) {
                                 updated_columns.push(col_field)
                             };
                         };
-        //console.log("updated_columns", updated_columns);
-
 // ---  update fields in data_row
                         for (const [key, new_value] of Object.entries(update_dict)) {
                             if (key in data_dict){
                                 if (new_value !== data_dict[key]) {
-                                    data_dict[key] = new_value
+                                    data_dict[key] = new_value;
                         }}};
 
         // ---  update field in tblRow
                         // note: when updated_columns is empty, then updated_columns is still true.
                         // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
-                        if(updated_columns.length){
+                        if(updated_columns.length || field_error_list.length){
 
 // --- get existing tblRow
                             let tblRow = document.getElementById(map_id);
@@ -2242,7 +2238,7 @@ function RefreshDataRowsAfterUpload(response) {
                     };  //  if(!isEmpty(data_dict) && field_names){
                 };  // if(is_deleted){
             };  // if(is_created)
-        };
+        };  // if(!isEmpty(update_dict)){
     }  // RefreshDatarowItem
 
 

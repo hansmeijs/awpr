@@ -78,8 +78,8 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
     urls.url_student_upload = get_attr_from_el(el_data, "data-url_student_upload");
     urls.url_studsubj_upload = get_attr_from_el(el_data, "data-url_studsubj_upload");
-    urls.url_studsubj_validate_test = get_attr_from_el(el_data, "data-url_studsubj_validate_test");
     urls.url_studsubj_validate = get_attr_from_el(el_data, "data-url_studsubj_validate");
+    urls.url_studsubj_validate_test = get_attr_from_el(el_data, "data-url_studsubj_validate_test");
     urls.url_studsubj_validate_all = get_attr_from_el(el_data, "data-url_studsubj_validate_all");
     urls.url_studsubj_approve = get_attr_from_el(el_data, "data-url_studsubj_approve");
     urls.url_studsubj_approve_multiple = get_attr_from_el(el_data, "data-url_studsubj_approve_multiple");
@@ -431,11 +431,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 //};
                 if ("level_rows" in response)  {
                     b_fill_datamap(level_map, response.level_rows)
-                    FillOptionsSelectLevelSectorFromDatarows("level", response.level_rows)
+                    t_SBR_FillSelectOptionsDepartmentLevelSector("level", response.level_rows, setting_dict)
                 };
                 if ("sector_rows" in response) {
                     b_fill_datamap(sector_map, response.sector_rows);
-                    FillOptionsSelectLevelSectorFromDatarows("sector", response.sector_rows);
+                    t_SBR_FillSelectOptionsDepartmentLevelSector("sector", response.sector_rows, setting_dict);
                 };
 
                 if(must_create_submenu){CreateSubmenu()};
@@ -1140,9 +1140,9 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
 //========= UploadChanges  ============= PR2020-08-03 PR2021-07-26
     function UploadChanges(upload_dict, url_str) {
-        //console.log("=== UploadChanges");
-        //console.log("url_str: ", url_str);
-        //console.log("upload_dict: ", upload_dict);
+        console.log("=== UploadChanges");
+        console.log("url_str: ", url_str);
+        console.log("upload_dict: ", upload_dict);
 
         if(!isEmpty(upload_dict)) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -1156,8 +1156,8 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
                     // ---  hide loader
                     el_loader.classList.add(cls_hide)
                     el_hdr_left.classList.remove(cls_hide)
-                    //console.log( "response");
-                    //console.log( response);
+                    console.log( "response");
+                    console.log( response);
                     if ("validate_studsubj_list" in response) {
                         ResponseValidationAll(response.validate_studsubj_list)
                     }
@@ -1186,8 +1186,6 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
                         b_ShowModMessages(response.messages);
                         $("#id_mod_studentsubject").modal("hide");
                     }
-
-
 
                 },  // success: function (response) {
                 error: function (xhr, msg) {
@@ -1263,11 +1261,8 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
                 //MSTUD_validate_and_disable();
         // validate student_subjects
-                if(has_studsubj_rows){
-                    const upload_dict = {student_pk: mod_MSTUDSUBJ_dict.stud_id};
-                    UploadChanges(upload_dict, urls.url_studsubj_validate);
-                    add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, false);
-                }
+                add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, false);
+                MSTUDSUBJ_ValidateSubjects();
 
         // ---  show modal
                 $("#id_mod_studentsubject").modal({backdrop: true});
@@ -1738,7 +1733,16 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
         }  //  for (let i = 0, schemeitem_pk_int; schemeitem_pk_int = sel_schemeitem_pk_list[i]; i++)
         //console.log("mod_MSTUDSUBJ_dict", mod_MSTUDSUBJ_dict);
 
+// create uploaddict to validate subjects PR2021-08-17
         if (must_validate_subjects){
+            MSTUDSUBJ_ValidateSubjects()
+        };
+        MSTUDSUBJ_FillTbls(sel_schemeitem_pk_list);
+    }  // MSTUDSUBJ_AddRemoveSubject
+
+//========= MSTUDSUBJ_ValidateSubjects  ============= PR2021-08-29
+    function MSTUDSUBJ_ValidateSubjects() {
+        console.log("  =====  MSTUDSUBJ_ValidateSubjects  =====");
 // create uploaddict to validate subjects PR2021-08-17
             // ---  loop through studentsubjects
             // studsubj_si_list is list of schemeitem_id's of subjects of this student, that are not deleted
@@ -1763,9 +1767,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
                 si_dictlist: studsubj_si_dictlist
             }
            UploadChanges(upload_dict, urls.url_studsubj_validate_test);
-        };
-        MSTUDSUBJ_FillTbls(sel_schemeitem_pk_list);
-    }  // MSTUDSUBJ_AddRemoveSubject
+    }  // MSTUDSUBJ_ValidateSubjects
 
 //========= MSTUDSUBJ_AddPackage  ============= PR2020-11-18
     function MSTUDSUBJ_AddPackage() {
@@ -1880,12 +1882,11 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
             new_setting.sel_sctbase_pk = setting_dict.sel_sctbase_pk;
         }
-            // ---  upload new setting
 
+// ---  upload new setting - done in DatalistDownload
         //UploadSettings (upload_dict, urls.url_settings_upload);
 
         //UpdateHeaderLeft();
-
        // FillTblRows();
 
 // --- reset table rows, dont delete  header
@@ -1897,67 +1898,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
         };
         //console.log("datalist_request", datalist_request);
         DatalistDownload(datalist_request);
-
-
     }  // HandleSbrLevelSector
-
-//=========  FillOptionsSelectLevelSectorFromDatarows  ================ PR2021-03-06  PR2021-05-22
-    function FillOptionsSelectLevelSectorFromDatarows(tblName, rows) {
-        //console.log("=== FillOptionsSelectLevelSectorFromDatarows");
-        //console.log("tblName", tblName);
-        //console.log("rows", rows);
-
-    // sector not in use
-        const display_rows = []
-        const has_items = (!!rows && !!rows.length);
-        const has_profiel = setting_dict.sel_dep_has_profiel;
-        //console.log("has_items", has_items);
-        //console.log("has_profiel", has_profiel);
-
-        const caption_all = "&#60" + ( (tblName === "level") ? loc.All_leerwegen : (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
-        if (has_items){
-            if (rows.length === 1){
-                // if only 1 level: make that the selected one
-                if (tblName === "level"){
-                    setting_dict.sel_lvlbase_pk = rows.base_id;
-                } else if (tblName === "sector"){
-                    setting_dict.sel_sctbase_pk = rows.base_id
-                }
-            } else if (rows.length > 1){
-                // add row 'Alle leerwegen' / Alle profielen / Alle sectoren in first row
-                // HTML code "&#60" = "<" HTML code "&#62" = ">";
-                display_rows.push({value: 0, caption: caption_all })
-            }
-
-            for (let i = 0, row; row = rows[i]; i++) {
-                display_rows.push({
-                value: row.base_id,
-                caption: (tblName === "sector") ? row.name : row.abbrev
-                })
-            }
-
-            const selected_pk = (tblName === "level") ? setting_dict.sel_lvlbase_pk : (tblName === "sector") ? setting_dict.sel_sctbase_pk : null;
-            const el_SBR_select = (tblName === "level") ? el_SBR_select_level : (tblName === "sector") ? el_SBR_select_sector : null;
-            t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
-
-            // put displayed text in setting_dict
-            const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].text : null;
-            if (tblName === "level"){
-                setting_dict.sel_level_abbrev = sel_abbrev;
-            } else if (tblName === "sector"){
-                setting_dict.sel_sector_abbrev = sel_abbrev;
-            }
-        }
-        // show select level and sector
-        if (tblName === "level"){
-            add_or_remove_class(document.getElementById("id_SBR_container_level"), cls_hide, !has_items);
-        // set label of profiel
-         } else if (tblName === "sector"){
-            add_or_remove_class(document.getElementById("id_SBR_container_sector"), cls_hide, false);
-
-            document.getElementById("id_SBR_select_sector_label").innerText = ( (has_profiel) ? loc.Profiel : loc.Sector ) + ":";
-        }
-    }  // FillOptionsSelectLevelSectorFromDatarows
 
 //=========  HandleShowAll  ================ PR2020-12-17
     function HandleShowAll() {
@@ -2601,13 +2542,12 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
 
     };  // HandleFilterToggle
 
-
-
 //========= Filter_TableRows  ==================================== PR2020-08-17  PR2021-08-10
     function Filter_TableRows() {
-        console.log( "===== Filter_TableRows  ========= ");
-        console.log( "filter_dict", filter_dict);
-
+        //console.log( "===== Filter_TableRows  ========= ");
+        //console.log( "filter_dict", filter_dict);
+        t_Filter_TableRows(tblBody_datatable, filter_dict, selected, loc.Subject, loc.Subjects.toLowerCase() );
+/*
         selected.item_count = 0
 // ---  loop through tblBody.rows
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
@@ -2618,6 +2558,7 @@ field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
         }
 // ---  show total in sidebar
         set_sbr_itemcount_txt();
+*/
     }; // Filter_TableRows
 
 //========= set_sbr_itemcount_txt  ======= PR2021-08-21

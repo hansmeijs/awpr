@@ -192,7 +192,7 @@ def ImportData(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR2
             logger.debug ('school_code: ' + str(school_code))
 
     # - get country based on code 'Cur' in excel file, not requsr_country with this code already exists in this country. If not: create
-            exc_country = sch_mod.get_country(country_code)
+            exc_country = af.get_country_instance_by_abbrev(country_code)
 
     # skip if exc_country is different from requsr_country
             if exc_country and requsr_country and exc_country.pk == requsr_country.pk:

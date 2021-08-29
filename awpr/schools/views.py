@@ -1045,7 +1045,7 @@ def create_school_instance(examyear, upload_dict, error_dict, request):
 def update_school_instance(instance, upload_dict, err_dict, request):
     # --- update existing and new instance PR2019-06-06 PR2021-05-13
     # add new values to update_dict (don't reset update_dict, it has values)
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_school_instance -------')
         logger.debug('upload_dict' + str(upload_dict))
@@ -1106,7 +1106,7 @@ def update_school_instance(instance, upload_dict, err_dict, request):
                     save_changes = True
 
 # 4. save changes in boolean fields
-            elif field in ['activated', 'locked', 'isdayschool', 'iseveningschool', 'islexschool']:
+            elif field in ['activated', 'locked', 'isdayschool', 'iseveningschool', 'islexschool', 'no_order']:
                 saved_value = getattr(instance, field)
                 new_value = False if new_value is None else new_value
 
@@ -1118,7 +1118,7 @@ def update_school_instance(instance, upload_dict, err_dict, request):
                     mod_at_field = None
                     if field == 'activated':
                         mod_at_field = 'activatedat'
-                    elif  field == 'locked':
+                    elif field == 'locked':
                         mod_at_field = 'lockedat'
                     if mod_at_field:
                         mod_at = timezone.now() if new_value else None

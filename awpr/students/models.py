@@ -487,8 +487,8 @@ class Noteattachment(sch_mod.AwpBaseModel):
     filename = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME)
     file = FileField(storage=PrivateMediaStorage())
 
-#==== GRADES ======================================================
 
+#==== GRADES ======================================================
 # PR2018-06-06
 class Grade(sch_mod.AwpBaseModel):
     objects = CustomManager()

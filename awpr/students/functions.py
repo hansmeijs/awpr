@@ -84,20 +84,21 @@ def calc_regnumber(regnr_school, gender, examyear_int, examnumber_str, depbase, 
 
 # - teken 13: 1 = havo, 2 = vwo, 3 = tkl, 4 = pkl, 5 = pbl
     reg05 = '-'
-    if depbase and levelbase:
+    if depbase:
         depbase_code = depbase.code.lower() if depbase else None
         if depbase_code == 'havo':
             reg05 = '1'
         elif depbase_code == 'vwo':
             reg05 = '2'
         elif depbase_code == 'vsbo':
-            levelbase_code = levelbase.code.lower() if levelbase else None
-            if levelbase_code == 'tkl':
-                reg05 = '3'
-            elif levelbase_code == 'pkl':
-                reg05 = '4'
-            elif levelbase_code == 'pbl':
-                reg05 = '5'
+            if levelbase:
+                levelbase_code = levelbase.code.lower() if levelbase else None
+                if levelbase_code == 'tkl':
+                    reg05 = '3'
+                elif levelbase_code == 'pkl':
+                    reg05 = '4'
+                elif levelbase_code == 'pbl':
+                    reg05 = '5'
     regnumber = ''.join((reg01, reg02, reg03, reg04, reg05 ))
 
     if logging_on:

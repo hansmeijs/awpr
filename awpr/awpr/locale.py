@@ -45,6 +45,8 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['No_sector_found'] = _("No sector found")
     dict['All_profielen'] = _("All 'profielen'")
     dict['No_profiel_found'] = _("No 'profiel' found")
+    dict['All_sectors_profielen'] = _("All sectors / profielen")
+    dict['All_sectors_profielen'] = _("All sectors / profielen")
 
     dict['There_is_no__'] = _('There is no ')
     dict['__selected'] = _(' selected.')
@@ -402,6 +404,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Mandatory'] = _('Mandatory')
         dict['Mandatory_if_subject'] = _("'Mandatory-if' subject")
         dict['Mandatory_if_subject_info'] = _("Subject is only mandatory if the candidate has this 'Mandatory-if' subject.")
+        dict['Not_on_orderlist'] = _("Not on orderlist")
+        dict['Not_on_orderlist_info'] = _("When a subject and a school both have 'Not on orderlist' checked,\nthis subject of this school will not be included in the orderlist.")
+
         dict['Combination_subject'] = _('Combination subject')
         dict['Extra_count_allowed'] = _('Extra subject counts allowed')
         dict['Extra_nocount_allowed'] = _('Extra subject does not count allowed')
@@ -544,6 +549,11 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Class'] = _('Class')
         dict['Bis_candidate'] = _('Bis-candidate')
+
+        dict['Schemes_of_candidates_willbe_validated'] = _('Schemes of candidates will be validated.')
+        dict['Validate_candidate_schemes'] = _('Validate candidate schemes')
+        dict['Correct_candidate_schemes'] = _('Correct candidate schemes')
+        dict['Schemes_of_candidates_willbe_corrected'] = _('Schemes of candidates will be corrected.')
 
 # ====== PAGE STUDENTSUBJECTS ========================= PR2020-12-21
     if 'page_studsubj' in page_list:

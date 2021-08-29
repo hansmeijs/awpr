@@ -418,6 +418,8 @@ class School(AwpBaseModel):  # PR2018-08-20 PR2018-11-11
     article = CharField(max_length=c.MAX_LENGTH_SCHOOLARTICLE, null=True)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    # don't count subject of this school in orderlist when subject.no_order and school.no_order are both True
+    no_order = BooleanField(default=False)
 
     isdayschool = BooleanField(default=False)
     iseveningschool = BooleanField(default=False)
@@ -463,6 +465,7 @@ class School_log(AwpBaseModel):
 
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    no_order = BooleanField(default=False)
 
     isdayschool = BooleanField(default=False)
     iseveningschool = BooleanField(default=False)
@@ -472,35 +475,6 @@ class School_log(AwpBaseModel):
     activatedat = DateTimeField(null=True)
     locked = BooleanField(default=False)
     lockedat = DateTimeField(null=True)
-
-    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
-
-
-class Schoolnote(AwpBaseModel):
-    objects = AwpModelManager()
-
-    school = ForeignKey(School, related_name='+', on_delete=CASCADE)
-
-    # intern_schoolbase only has value when it is an intern memo.
-    # It has the value of the school of the user, NOT the school of the student
-    intern_schoolbase = ForeignKey(Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
-
-    note = CharField(max_length=2048, null=True, blank=True)
-    mailto_user = CharField(max_length=2048, null=True, blank=True)
-    note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-
-
-class Schoolnote_log(AwpBaseModel):
-    objects = AwpModelManager()
-
-    studentsubjectnote_id = IntegerField(db_index=True)
-
-    school_log = ForeignKey(School_log, related_name='+', on_delete=CASCADE)
-    intern_schoolbase = ForeignKey(Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
-
-    note = CharField(max_length=2048, null=True, blank=True)
-    mailto_user = CharField(max_length=2048, null=True, blank=True)
-    note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -526,23 +500,6 @@ class Published(AwpBaseModel): # PR2020-12-02
     # published has no published_log because its data don't change
 
 
-# PR2021-03-08 from https://simpleisbetterthancomplex.com/tutorial/2017/08/01/how-to-setup-amazon-s3-in-a-django-project.html
-# PR2021-03-13 test
-class PrivateDocument(AwpBaseModel):
-    objects = AwpModelManager()
-
-    school = ForeignKey(School, related_name='+', on_delete=CASCADE)
-    department = ForeignKey(Department, related_name='+', on_delete=CASCADE)
-
-    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
-    examperiod = PositiveSmallIntegerField(db_index=True) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
-
-    name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
-
-    document = FileField(storage=PrivateMediaStorage())
-
-    datepublished = DateField()
-
 
 # PR2018-06-07
 class Entrylist(AwpBaseModel):
@@ -560,6 +517,7 @@ class Entrylist(AwpBaseModel):
     # field to be excluded from AwpBaseModel
     modifiedby = None
     modifiedat = None
+
 
 class Schoolsetting(Model):  # PR2020-10-20
     # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
@@ -609,35 +567,38 @@ class Schoolsetting(Model):  # PR2020-10-20
             row.save()
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-# +++++++++++++++++++++   Functions Schooldefault  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# +++++++++++++++++++++   Messaging Service  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-def get_depbase_list_tuple(depbase_list):
-    # PR2018-08-28 depbase_list_tuple converts self.depbase_list string into tuple,
-    # e.g.: depbase_list='1;2' will be converted to depbase_list=(1,2)
-    # empty list = (0,), e.g: 'None'
+class Examyearnote(AwpBaseModel):
+    objects = AwpModelManager()
 
-    depbase_list_tuple = ()
-    if depbase_list:
-        depbase_list_str = str(depbase_list)
-        # This function converts init_list_str string into init_list_tuple,  e.g.: '1;2' will be converted to (1,2)
-        depbase_list_list = depbase_list_str.split(';')
-        depbase_list_tuple = tuple(depbase_list_list)
+    examyear = ForeignKey(Examyear, related_name='+', on_delete=CASCADE)
+    sender_user = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    sender_schoolbase = ForeignKey(Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
 
-    # select 0 (None) in EditForm when no other departments are selected
-    if not depbase_list_tuple:
-        depbase_list_tuple = (0,)
-
-    return depbase_list_tuple
+    header = CharField(max_length=80, null=True, blank=True)
+    note = CharField(max_length=2048, null=True, blank=True)
+    mailto_user = CharField(max_length=2048, null=True, blank=True)
+    note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
 
-def dep_initials(dep_name):
-    # PR2018-12-13 calculates 'V.S.B.O.' from full name
-    initials = ''
-    if dep_name:
-        array = dep_name.split()
-        for item in array:
-            initials = item[1].upper() + '.'
-    return initials
+# PR2021-03-08 from https://simpleisbetterthancomplex.com/tutorial/2017/08/01/how-to-setup-amazon-s3-in-a-django-project.html
+class Examyearnoteattachment(AwpBaseModel):
+    objects = AwpModelManager()
+
+    examyearnote = ForeignKey(Examyearnote, related_name='+', on_delete=CASCADE)
+    contenttype = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+    filename = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME)
+    file = FileField(storage=PrivateMediaStorage())
+
+
+class Examyearinbox(AwpBaseModel):
+    objects = AwpModelManager()
+
+    receiver_user = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=CASCADE)
+    examyearnote = ForeignKey(Examyearnote, related_name='+', on_delete=CASCADE)
+    read = BooleanField(default=False)
+    deleted = BooleanField(default=False)
 
 
 def delete_instance(instance, msg_list, error_list, request, this_txt=None, header_txt=None):
@@ -675,17 +636,4 @@ def delete_instance(instance, msg_list, error_list, request, this_txt=None, head
 
     return deleted_ok
 
-
-#######################################
-
-def get_country(country_abbrev):
-    # get existing country PR2020-12-14
-    # don't use get_or_none, it will return None when there are multiple countries with the same name
-    # get the latest one instead (with highest pk)
-    country = None
-    if country_abbrev:
-        country = Country.objects.filter(
-            abbrev__iexact=country_abbrev
-        ).order_by('-pk').first()
-    return country
 

@@ -659,13 +659,6 @@ console.log("=========   handle_table_row_clicked   ======================") ;
        }}}
     };  // handle_EAL_row_clicked
 
-
-
-
-
-
-
-
 //========= function get_index_by_awpkey  ====================================
     function get_index_by_awpkey (objArray, awpKeyValue) {
     // function serches for awpKey "sector" or "level" in excel_columns
@@ -683,7 +676,6 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         }}}}
         return col_index;
     }
-
 
 //========= get_arrayRow_by_keyValue  ====================================
     function get_arrayRow_by_keyValue (dict_list, arrKey, keyValue) {
@@ -715,7 +707,6 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         return row;
     }  // get_arrayRow_by_keyValue
 
-
 //========= function get_object_value_by_key  ====================================
     function get_obj_value_by_key (obj, objKey) {
         // Function returns value of key in obj PR2019-02-19
@@ -728,7 +719,6 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         }
         return obj_value;
     }
-
 
 //========= function found_in_list_str  ======== PR2019-01-22
     function found_in_list_str(value, list_str ){
@@ -778,7 +768,6 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         };
     };
 
-
     //////////////////////////////////
 
 //========= t_get_rowindex_by_sortby  ================= PR2020-06-30
@@ -808,7 +797,6 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         if(row_index >= 0){ row_index -= 1 }
         return row_index
     }  // t_get_rowindex_by_sortby
-
 
 //=========  t_HighlightSelectedTblRowByPk  ================ PR2019-10-05 PR2020-06-01
     function t_HighlightSelectedTblRowByPk(tblBody, selected_pk, cls_selected, cls_background) {
@@ -841,7 +829,6 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         }
         return selected_row
     }  // t_HighlightSelectedTblRowByPk
-
 
 //========= HighlightSelectRow  ============= PR2019-10-22
     function HighlightSelectRow(tblBody_select, selectRow, cls_selected, cls_background){
@@ -911,6 +898,76 @@ console.log("=========   handle_table_row_clicked   ======================") ;
     };
 
 //>>>>>>>>>>> FILL OPTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+//=========  t_SBR_FillSelectOptionsDepartmentLevelSector  ================ PR2021-03-06  PR2021-05-21 PR2021-08-27
+    function t_SBR_FillSelectOptionsDepartmentLevelSector(tblName, rows, setting_dict) {
+        // used in studsubj.js
+        const display_rows = []
+        const has_items = (!!rows && !!rows.length);
+        const has_profiel = setting_dict.sel_dep_has_profiel;
+/*
+        console.log("=== t_SBR_FillSelectOptionsDepartmentLevelSector");
+        console.log("tblName", tblName);
+        console.log("rows", rows);
+        console.log("loc", loc);
+        console.log("setting_dict", setting_dict);
+        console.log("has_items", has_items);
+        console.log("has_profiel", has_profiel);
+*/
+        // when label has no id the text is Sector / Profiel, set in .html file
+        const el_SBR_select_sector_label = document.getElementById("id_SBR_select_sector_label");
+        const all_sectors_profielen_txt = (!el_SBR_select_sector_label) ? loc.All_sectors_profielen : (has_profiel) ? loc.All_profielen :loc.All_sectors;
+        const caption_all = "&#60" + (
+                (tblName === "department") ? loc.All_departments :
+                (tblName === "level") ? loc.All_leerwegen :
+                (tblName === "sector") ? all_sectors_profielen_txt : "---"
+             ) + "&#62";
+
+        if (has_items){
+            if (rows.length === 1){
+                // if only 1 level: make that the selected one
+                if (tblName === "department"){
+                    setting_dict.sel_depbase_pk = rows.base_id;
+                } else if (tblName === "level"){
+                    setting_dict.sel_lvlbase_pk = rows.base_id;
+                } else if (tblName === "sector"){
+                    setting_dict.sel_sctbase_pk = rows.base_id
+                }
+            } else if (rows.length > 1){
+                // add row 'Alle leerwegen' / Alle profielen / Alle sectoren in first row
+                // HTML code "&#60" = "<" HTML code "&#62" = ">";
+                display_rows.push({value: 0, caption: caption_all })
+            };
+            for (let i = 0, row; row = rows[i]; i++) {
+                display_rows.push({
+                value: row.base_id,
+                caption: (tblName === "department") ?  row.base_code :
+                         (tblName === "sector") ? row.name : row.abbrev
+                });
+            };
+            const selected_pk = (tblName === "department") ? setting_dict.sel_depbase_pk : (tblName === "level") ? setting_dict.sel_lvlbase_pk : (tblName === "sector") ? setting_dict.sel_sctbase_pk : null;
+            const id_SBR_select = (tblName === "department") ? "id_SBR_select_department" : (tblName === "level") ? "id_SBR_select_level" : (tblName === "sector") ? "id_SBR_select_sector" : null;
+            const el_SBR_select = (id_SBR_select) ? document.getElementById(id_SBR_select) : null;
+            t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
+
+            // put displayed text in setting_dict
+            const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].text : null;
+            if (tblName === "level"){
+                setting_dict.sel_level_abbrev = sel_abbrev;
+            } else if (tblName === "sector"){
+                setting_dict.sel_sector_abbrev = sel_abbrev;
+            };
+        };
+        // show select level and sector
+        if (tblName === "level"){
+            add_or_remove_class(document.getElementById("id_SBR_container_level"), cls_hide, !has_items);
+        // set label of profiel
+         } else if (tblName === "sector"){
+            add_or_remove_class(document.getElementById("id_SBR_container_sector"), cls_hide, false);
+            // when label has no id the text is Sector / Profiel, set in .html file
+            if(el_SBR_select_sector_label){el_SBR_select_sector_label.innerText = ( (has_profiel) ? loc.Profiel : loc.Sector ) + ":"};
+        };
+    };  // t_SBR_FillSelectOptionsDepartmentLevelSector
+
 //========= t_FillOptionLevelSectorFromMap  ============= PR2020-12-11 from tsa PR2021-07-18
     function t_FillOptionLevelSectorFromMap(tblName, pk_field, data_map, depbase_pk, selected_pk, firstoption_txt) {
          //console.log( "===== t_FillOptionLevelSectorFromMap  ========= ");
@@ -965,8 +1022,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                 option_text += "<option value=\"" + pk_int + "\"";
                 if (pk_int === selected_pk) {option_text += " selected=true" };
                 option_text +=  ">" + display_value + "</option>";
-                row_count += 1
-
+                row_count += 1;
             }
         }  //   if(!!data_map){
         let select_first_option = false;
@@ -1010,14 +1066,14 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 //========= t_FillOptionsFromList  =======  PR2020-12-17
     function t_FillOptionsFromList(el_select, data_list, value_field, caption_field,
                                     select_text, select_text_none, selected_value, filter_field, filter_value) {
-
-        //console.log( "=== t_FillOptionsFromList ");
-        //console.log( "data_list", data_list);
-        //console.log( "value_field", value_field);
-        //console.log( "selected_value", selected_value);
-        //console.log( "filter_field", filter_field);
-        //console.log( "filter_value", filter_value, typeof filter_value);
-
+/*
+        console.log( "=== t_FillOptionsFromList ");
+        console.log( "data_list", data_list);
+        console.log( "value_field", value_field);
+        console.log( "selected_value", selected_value);
+        console.log( "filter_field", filter_field);
+        console.log( "filter_value", filter_value, typeof filter_value);
+*/
 // ---  fill options of select box
         let option_text = "";
         let row_count = 0
@@ -1327,7 +1383,7 @@ console.log( "show_row", show_row);
 // ++++++++++++  END OF FILTER +++++++++++++++++++++++++++++++++++++++
 
 
-// ++++++++++++  FILTER PAYROLL TABLES +++++++++++++++++++++++++++++++++++++++
+// ++++++++++++  FILTER TABLES +++++++++++++++++++++++++++++++++++++++
 //========= t_SetExtendedFilterDict  ======================== PR2020-07-12 PR2020-08-29
     function t_SetExtendedFilterDict(el, col_index, filter_dict, event_key) {
        //console.log( "===== t_SetExtendedFilterDict  ========= ");
@@ -1441,6 +1497,34 @@ console.log( "show_row", show_row);
         //console.log( "filter_dict ", filter_dict);
         return skip_filter;
     }  // t_SetExtendedFilterDict
+
+//========= t_Filter_TableRows  ==================================== PR2020-08-17  PR2021-08-10
+    function t_Filter_TableRows(tblBody_datatable, filter_dict, selected, count_unit_sing, count_unit_plur ) {
+        //console.log( "===== t_Filter_TableRows  ========= ");
+        //console.log( "filter_dict", filter_dict);
+
+        selected.item_count = 0
+// ---  loop through tblBody.rows
+        for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
+            tblRow = tblBody_datatable.rows[i]
+            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
+            add_or_remove_class(tblRow, cls_hide, !show_row);
+            if (show_row) {selected.item_count += 1};
+        }
+// ---  show total in sidebar
+        const el_SBR_item_count = document.getElementById("id_SBR_item_count");
+        if (el_SBR_item_count){
+            let inner_text = null;
+            if (selected.item_count){
+                const format_count = f_format_count(setting_dict.user_lang, selected.item_count);
+                const cand_txt = ((selected.item_count === 1) ? loc.Subject : loc.Subjects).toLowerCase();
+                inner_text = [loc.Total, format_count, cand_txt].join(" ");
+            }
+            el_SBR_item_count.innerText = inner_text;
+        };
+
+    }; // t_Filter_TableRows
+
 
 //========= t_ShowTableRowExtended  ==================================== PR2020-07-12 PR2020-09-12 PR2021-03-23
     function t_ShowTableRowExtended(filter_dict, tblRow) {
@@ -1793,7 +1877,10 @@ const columns_tobe_hidden = {};
         add_or_remove_class(el_SBR_select_showall, cls_hide, false);
         // show select level and sector
         if (tblName === "sector"){
-            document.getElementById("id_SBR_select_sector_label").innerText = ( (has_profiel) ? loc.Profiel : loc.Sector ) + ":";
+
+            // when label has no id the text is Sector / Profiel, set in .html file
+            const el_SBR_select_sector_label = document.getElementById("id_SBR_select_sector_label")
+            if(el_SBR_select_sector_label){el_SBR_select_sector_label.innerText = ( (has_profiel) ? loc.Profiel : loc.Sector ) + ":"};
         }
 
 
@@ -1802,6 +1889,9 @@ const columns_tobe_hidden = {};
 //=========  t_SBR_show_all  ================ PR2021-08-02
     function t_SBR_show_all(FillTblRows) {
         //console.log("===== t_SBR_show_all =====");
+
+        setting_dict.sel_depbase_pk = null;
+        setting_dict.sel_depbase_code = null;
 
         setting_dict.sel_lvlbase_pk = null;
         setting_dict.sel_level_abbrev = null;
@@ -1813,11 +1903,13 @@ const columns_tobe_hidden = {};
 
         setting_dict.sel_student_pk = null;
 
+        const el_SBR_select_department = document.getElementById("id_SBR_select_department");
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
         const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");
         const el_SBR_select_class = document.getElementById("id_SBR_select_class");
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
 
+        if (el_SBR_select_department){ el_SBR_select_department.value = null};
         if (el_SBR_select_level){ el_SBR_select_level.value = null};
         if (el_SBR_select_sector){ el_SBR_select_sector.value = null};
         if (el_SBR_select_class){ el_SBR_select_class.value = "0"};
@@ -1825,12 +1917,14 @@ const columns_tobe_hidden = {};
 
 // ---  upload new setting
         const selected_pk_dict = {};
+        if (el_SBR_select_department){selected_pk_dict.sel_depbase_pk = null};
         if (el_SBR_select_level){selected_pk_dict.sel_lvlbase_pk = null};
         if (el_SBR_select_sector){selected_pk_dict.sel_sctbase_pk = null};
         if (el_SBR_select_class){selected_pk_dict.sel_classname = null};
         if (el_SBR_select_student){selected_pk_dict.sel_student_pk = null};
-
         const upload_dict = {selected_pk: selected_pk_dict};
+console.log("url", urls.url_settings_upload)
+console.log("upload_dict", upload_dict)
         UploadSettings (upload_dict, urls.url_settings_upload);
 
         FillTblRows();

@@ -553,26 +553,26 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
     student_dict = {}
 
 # - check for double occurrence in upload file
-    has_error = stud_val.validate_double_entries_in_uploadfile(idnumber_nodots_stripped, double_entrieslist, error_list)
-    if not has_error:
+    error_idnumber = stud_val.validate_double_entries_in_uploadfile(idnumber_nodots_stripped, double_entrieslist, error_list)
+    if not error_idnumber:
 
 # - validate length of name and idnumber
-        has_error = stud_val.validate_name_idnumber_length(
+        error_idnumber = stud_val.validate_name_idnumber_length(
             idnumber_nodots_stripped, lastname_stripped, firstname_stripped, prefix_stripped, error_list)
     if logging_on:
         logger.debug('error_list: ' + str(error_list))
 
     student = None
-    has_changed = False
+    error_create, changes_are_saved, error_save, field_error = False, False, False, False
 
-    if not has_error:
+    if not error_idnumber:
 
 # - replace idnumber by idnumber_nodots_stripped
         data_dict['idnumber'] = idnumber_nodots_stripped
 
 # - lookup student in database
-       # either student, not_found or has_error is trueish
-        student, not_found, has_error = \
+       # either student, not_found or error_idnumber is trueish
+        student, not_found, error_idnumber = \
             stud_val.lookup_student_by_idnumber(
                 school=school,
                 department=department,
@@ -585,12 +585,14 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
             )
         is_new_student = not_found
         if logging_on:
+            student_pk = student.pk if student else 'None'
+            logger.debug('..........student.pk: ' + str(student_pk))
             logger.debug('student: ' + str(student))
             logger.debug('is_new_student: ' + str(is_new_student))
-            logger.debug('has_error: ' + str(has_error))
+            logger.debug('error_idnumber: ' + str(error_idnumber))
 
-    if not has_error:
-        messages = []
+    if not error_idnumber:
+        messagesNIU = []
 
 # - check if birthdate is a valid date
         # birthdate has format of excel ordinal
@@ -600,9 +602,9 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
 
         birthdate_iso = af.get_birthdateiso_from_excel_ordinal(birthdate_ordinal, error_list)
         if birthdate_iso is None:
-            birthdate_iso = af.get_birthdateiso_from_idnumber(idnumber_nodots_stripped, error_list)
-            if birthdate_iso:
-                error_list.append(str(_("AWP has calculated the birthdate from the ID-number.")))
+            birthdate_iso = af.get_birthdateiso_from_idnumber(idnumber_nodots_stripped)
+            #if birthdate_iso:
+            #    error_list.append(str(_("AWP has calculated the birthdate from the ID-number.")))
 
     # - replace birthdate with birthdate_iso in data_dict
         # PR2021-08-12 debug: must also replace 0 with None, otherwise error occurs in update_student_instance
@@ -625,7 +627,7 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
             # check if student exists in other year is replaced to exemption.
             # here it is not in use
             # base_pk only has vaue when user has ticked of 'same_student' after test_upload
-            # insteaad of creating a new student_base, the pase_pk will be used and 'islinked' will be set True
+            # instead of creating a new student_base, the pase_pk will be used and 'islinked' will be set True
 
             #if base_pk:
             #    base = stud_mod.Studentbase.objects.filter( pk=base_pk,country=request.user.country)
@@ -638,14 +640,16 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
             upload_dict = {'idnumber': idnumber_nodots_stripped, 'lastname': lastname_stripped, 'firstname': firstname_stripped}
 
     # - create student record
-            student = stud_view.create_student(school, department, upload_dict, messages, error_list, request, is_test) # skip_save = is_test
+            student = stud_view.create_student(school, department, upload_dict, messagesNIU, error_list, request, is_test) # skip_save = is_test
             if logging_on:
-                logger.debug('student: ' + str(student))
+                student_pk = student.pk if student else 'None'
+                logger.debug('student:    ' + str(student))
+                logger.debug('student_pk: ' + str(student_pk))
                 logger.debug('error_list: ' + str(error_list))
 
             if student is None:
     # - give error msg when creating student failed - is already done in create_student
-                has_error = True
+                error_create = True
                 is_new_student = False
             else:
                 save_instance = is_test
@@ -667,8 +671,7 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
 # - update fields, both in new and existing students
         if student:
             data_dict.pop('rowindex')
-            has_changed = stud_view.update_student_instance(student, data_dict, idnumber_list, examnumber_list, messages, error_list, request, is_test)
-
+            changes_are_saved, error_save, field_error = stud_view.update_student_instance(student, data_dict, idnumber_list, examnumber_list, messagesNIU, error_list, request, is_test)
             setting_dict = {
                 'sel_examyear_pk': school.examyear.pk,
                 'sel_schoolbase_pk': school.base_id,
@@ -681,28 +684,39 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
             if rows and rows[0]:
                 student_dict = rows[0]
 
+        if logging_on:
+            logger.debug('changes_are_saved: ' + str(changes_are_saved))
+            logger.debug('field_error: ' + str(field_error))
+            logger.debug('error_list: ' + str(error_list))
+
 # create log for this student
 
     student_header = ''.join(((idnumber_nodots_stripped + c.STRING_SPACE_10)[:10], c.STRING_SPACE_05, full_name))
-    if has_error:
+    if error_idnumber or error_create:
         student_header += str(_(' will be skipped.')) if is_test else str(_(' is skipped.'))
     elif is_new_student:
         student_header += str(_(' will be added.')) if is_test else str(_(' is added.'))
     elif is_existing_student:
-        if has_changed:
-            changed_txt = _('The changes will be saved.') if is_test else _('The changes have been saved.')
-            student_header += ' '.join((str(_(' already exists.')), str(changed_txt)))
-        else:
-            student_header += str(_(' already exists.'))
+        student_header += str(_(' already exists.'))
     log_list.append(student_header)
     if error_list:
         for err in error_list:
             if err:
                 log_list.append('- '.join((c.STRING_SPACE_15, err)))
+    if changes_are_saved:
+        changed_txt = _('The changes will be saved.') if is_test else _('The changes have been saved.')
+        log_list.append('- '.join((c.STRING_SPACE_15, str(changed_txt))))
+        if field_error:
+            changed_txt = _('Some fields have errors. They will not be saved.') \
+                if is_test else _('Some fields have errors. They have not been saved.')
+            log_list.append('- '.join((c.STRING_SPACE_15, str(changed_txt))))
+
+    if error_save:
+        changed_txt = _('The changes will not be saved.') if is_test else _('The changes have not been saved.')
+        log_list.append('- '.join((c.STRING_SPACE_15, str(changed_txt))))
 
     return student_dict, is_existing_student, is_new_student, has_error, might_be_bisexam
 # --- end of upload_student_from_datalist
-
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -2364,8 +2378,12 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
             log_list.append(caption_txt + str(_('This candidate has no %(cpt)s.') % {'cpt': caption}))
         if department.level_req and student.level_id is None:
             log_list.append(caption_txt + str(_('This candidate has no %(cpt)s.') % {'cpt': _('leerweg')}))
-        log_list.append(''.join((caption_txt, str(pgettext_lazy('plural', "%(cpt)s will not be added.")
-                                                  % {'cpt': _('The subjects')}) )))
+        cpt = _('The subjects')
+        if is_test:
+            not_added_txt = pgettext_lazy('plural', "%(cpt)s will not be added.") % {'cpt': cpt}
+        else:
+            not_added_txt = pgettext_lazy('plural', "%(cpt)s have not been added.") % {'cpt':cpt}
+        log_list.append(''.join((caption_txt, str(not_added_txt))))
 
     else:
         log_list.append(id_number_nodots + '  ' + student.fullname + ' ' + str(student.scheme))
@@ -2659,7 +2677,7 @@ def upload_permit(data_dict, is_test, logfile, logging_on, request):   # PR2021-
     update_dict = {'table': 'permit', 'rowindex': row_index}
 
 # - get country based on c_abbrev 'Cur' in excel file, not requsr_country
-    country = sch_mod.get_country(c_abbrev)
+    country = af.get_country_instance_by_abbrev(c_abbrev)
     if country is None:
         msg_err = ' '.join((str(_('Country')), "'" + c_abbrev + "'", str(_('is not found'))))
         update_dict['row_error'] = msg_err

@@ -68,6 +68,9 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
     urls.url_student_upload = get_attr_from_el(el_data, "data-url_student_upload");
+    urls.url_student_validate = get_attr_from_el(el_data, "data-url_student_validate");
+    urls.url_studsubj_validate_scheme = get_attr_from_el(el_data, "data-url_studsubj_validate_scheme");
+
     //const url_studsubj_upload = get_attr_from_el(el_data, "data-url_studsubj_upload");
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
@@ -432,7 +435,10 @@ document.addEventListener('DOMContentLoaded', function() {
             AddSubmenuButton(el_submenu, loc.Add_candidate, function() {MSTUD_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete")});
         };
-
+        if(permit_dict.requsr_role_system){
+            AddSubmenuButton(el_submenu, loc.Validate_candidate_schemes, function() {ModConfirmOpen("validate_scheme")});
+            AddSubmenuButton(el_submenu, loc.Correct_candidate_schemes, function() {ModConfirmOpen("correct_scheme")});
+        };
         AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_student")}, [], "id_submenu_columns")
         el_submenu.classList.remove(cls_hide);
 
@@ -775,9 +781,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= UploadChanges  ============= PR2020-08-03
     function UploadChanges(upload_dict, url_str) {
-        //console.log("=== UploadChanges");
-        //console.log("url_str: ", url_str);
-        //console.log("upload_dict: ", upload_dict);
+        console.log("=== UploadChanges");
+        console.log("url_str: ", url_str);
+        console.log("upload_dict: ", upload_dict);
 
         if(!isEmpty(upload_dict)) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -788,10 +794,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
-                    // ---  hide loader
+    // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
-                    //console.log( "response");
-                    //console.log( response);
+                    console.log( "response");
+                    console.log( response);
 
                     if ("updated_student_rows" in response) {
                         const el_MSTUD_loader = document.getElementById("id_MSTUD_loader");
@@ -804,14 +810,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     if("messages" in response){
                         b_ShowModMessages(response.messages);
                     }
-
+                    if ("validate_scheme_response" in response) {
+                        ValidateScheme_Response(response.validate_scheme_response)
+                    }
                     $("#id_mod_student").modal("hide");
 
                 },  // success: function (response) {
                 error: function (xhr, msg) {
                     // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
-                    //console.log(msg + '\n' + xhr.responseText);
+                    console.log(msg + '\n' + xhr.responseText);
                 }  // error: function (xhr, msg) {
             });  // $.ajax({
         }  //  if(!!row_upload)
@@ -1390,99 +1398,119 @@ function RefreshDataRowsAfterUpload(response) {
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-15 PR2021-07-23
     function ModConfirmOpen(mode) {
-        //console.log(" -----  ModConfirmOpen   ----")
+        console.log(" -----  ModConfirmOpen   ----")
         // only called by menubtn Delete_candidate and mod MSTUD btn delete
-        // values of mode is : "delete"
+        // values of mode is : "delete" and "validate_scheme"
 
-        if(permit_dict.permit_crud){
-            const tblName = "student";
+        const tblName = "student";
+        let show_modal = false;
 
 // ---  get selected.student_dict
-            // already done in HandleTableRowClicked
+        // already done in HandleTableRowClicked
 
 // ---  get info from data_map
-            const map_dict = selected.student_dict;
-        //console.log("map_dict", map_dict)
+        const map_dict = selected.student_dict;
+    //console.log("map_dict", map_dict)
 
 // ---  create mod_dict
-            mod_dict = {mode: mode};
-            const has_selected_item = (!isEmpty(map_dict));
-            if(has_selected_item){
+        mod_dict = {mode: mode};
+        const has_selected_item = (!isEmpty(map_dict));
+        if(mode === "delete"){
+            show_modal = permit_dict.permit_crud;
+            if(has_selected_item ){
                 mod_dict.student_pk = map_dict.id;
                 mod_dict.mapid = map_dict.mapid;
                 mod_dict.fullname = map_dict.fullname;
-            };
+            }
+        } else if (["validate_scheme", "correct_scheme"].includes(mode)){
+            show_modal = permit_dict.requsr_role_system;
+        };
 
-// ---  put text in modal form
-            const header_text = loc.Delete_candidate;
+// ---  put text in modal for
+        let header_text = "";
 
-            let msg01_txt = null, msg02_txt = null, msg03_txt = null;
-            let hide_save_btn = false;
+        let msg01_txt = null, msg02_txt = null, msg03_txt = null;
+        let hide_save_btn = false;
+
+        const full_name = (map_dict.fullname) ? map_dict.fullname  : "---";
+        if(mode === "delete"){
+            header_text = loc.Delete_candidate;
             if(!has_selected_item){
                 msg01_txt = loc.Please_select_candidate_first;
                 hide_save_btn = true;
             } else {
                 const full_name = (map_dict.fullname) ? map_dict.fullname  : "---";
-                if(mode === "delete"){
-                    msg01_txt = loc.Candidate + " '" + full_name + "'" + loc.will_be_deleted
-                    msg02_txt = loc.Do_you_want_to_continue;
-                }
+                msg01_txt = loc.Candidate + " '" + full_name + "'" + loc.will_be_deleted
+                msg02_txt = loc.Do_you_want_to_continue;
             }
+        } else if(mode === "validate_scheme"){
+            header_text = loc.Validate_candidate_schemes;
+            msg01_txt = loc.Schemes_of_candidates_willbe_validated;
+            msg02_txt = loc.Do_you_want_to_continue;
 
-            el_confirm_header.innerText = header_text;
-            el_confirm_loader.classList.add(cls_visible_hide)
-            el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
-            //el_confirm_msg01.innerText = msg01_txt;
-            //el_confirm_msg02.innerText = msg02_txt;
-            //el_confirm_msg03.innerText = msg03_txt;
-            let msg_html = "";
-            if (msg01_txt) {msg_html += "<p>" + msg01_txt + "</p>"};
-            if (msg02_txt) {msg_html += "<p>" + msg02_txt + "</p>"};
-            if (msg03_txt) {msg_html += "<p>" + msg03_txt + "</p>"};
-            el_confirm_msg_container.innerHTML = msg_html
+        } else if(mode === "correct_scheme"){
+            header_text = loc.Correct_candidate_schemes;
+            msg01_txt = loc.Schemes_of_candidates_willbe_corrected;
+            msg02_txt = loc.Do_you_want_to_continue;
+        }
 
-            const caption_save = (mode === "delete") ? loc.Yes_delete : loc.OK;
-            el_confirm_btn_save.innerText = caption_save;
-            add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
+        el_confirm_header.innerText = header_text;
+        el_confirm_loader.classList.add(cls_visible_hide)
+        el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
+        //el_confirm_msg01.innerText = msg01_txt;
+        //el_confirm_msg02.innerText = msg02_txt;
+        //el_confirm_msg03.innerText = msg03_txt;
+        let msg_html = "";
+        if (msg01_txt) {msg_html += "<p>" + msg01_txt + "</p>"};
+        if (msg02_txt) {msg_html += "<p>" + msg02_txt + "</p>"};
+        if (msg03_txt) {msg_html += "<p>" + msg03_txt + "</p>"};
+        el_confirm_msg_container.innerHTML = msg_html
 
-            //add_or_remove_class (el_confirm_btn_save, "btn-primary", (mode !== "delete"));
-            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete"), "btn-primary");
+        const caption_save = (mode === "delete") ? loc.Yes_delete : loc.OK;
+        el_confirm_btn_save.innerText = caption_save;
+        add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
 
-            el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
+        //add_or_remove_class (el_confirm_btn_save, "btn-primary", (mode !== "delete"));
+        add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete"), "btn-primary");
 
-    // set focus to cancel button
-            set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
+        el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
+
+// set focus to cancel button
+        set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
 
 // show modal
+        if (show_modal) {
             $("#id_mod_confirm").modal({backdrop: true});
-
         }
+
     };  // ModConfirmOpen
 
 //=========  ModConfirmSave  ================ PR2019-06-23
     function ModConfirmSave() {
-        //console.log(" --- ModConfirmSave --- ");
-        //console.log("mod_dict: ", mod_dict);
+        console.log(" --- ModConfirmSave --- ");
+        console.log("mod_dict: ", mod_dict);
 
-        if(permit_dict.permit_crud){
+
+// ---  Upload Changes
+        let url_str = null;
+        const upload_dict = { table: "student", mode: mod_dict.mode}
+        if(mod_dict.mode === "delete"){
+// ---  when delete: make tblRow red, before uploading
             let tblRow = document.getElementById(mod_dict.mapid);
-
-    // ---  when delete: make tblRow red, before uploading
             ShowClassWithTimeout(tblRow, "tsa_tr_error");
+            url_str = urls.url_student_upload
+            upload_dict.student_pk = mod_dict.student_pk;
+            upload_dict.mapid = mod_dict.mapid;
+        } else if (["validate_scheme", "correct_scheme"].includes(mod_dict.mode)){
+            url_str = urls.url_studsubj_validate_scheme;
+            if(mod_dict.mode === "correct_scheme"){
+                upload_dict.correct_errors = true;
+            };
+        }
+        UploadChanges(upload_dict, url_str);
 
-    // show loader
-            el_confirm_loader.classList.remove(cls_visible_hide)
-
-    // ---  Upload Changes
-            let upload_dict = {
-                             table: "student",
-                             mode: "delete",
-                             student_pk: mod_dict.student_pk,
-                             mapid: mod_dict.mapid};
-
-            //console.log("upload_dict: ", upload_dict);
-            UploadChanges(upload_dict, urls.url_student_upload);
-        };
+// show loader
+        el_confirm_loader.classList.remove(cls_visible_hide)
 // ---  hide modal
         $("#id_mod_confirm").modal("hide");
     }  // ModConfirmSave
@@ -1529,6 +1557,48 @@ function RefreshDataRowsAfterUpload(response) {
             $("#id_mod_confirm").modal("hide");
         }
     }  // ModConfirmResponse
+
+// #################################
+
+//=========   ValidateScheme_Response   ====================== PR2021-08-29
+    function ValidateScheme_Response(response_dict) {
+        console.log(" ========== ValidateScheme_Response ===========");
+        console.log("response_dict", response_dict);
+
+        const today = new Date();
+        const this_month_index = 1 + today.getMonth();
+        const date_str = today.getFullYear() + "-" + this_month_index + "-" + today.getDate();
+        const filename = "ValidateScheme_Response dd " + date_str + ".pdf";
+
+        const response_list = [];
+        if ("stud_row_count" in response_dict) {response_list.push("stud_row_count: " + response_dict.stud_row_count)};
+        if ("stud_row_error" in response_dict) {response_list.push("stud_row_error: " + response_dict.stud_row_error)};
+        if ("student_rows" in response_dict) {
+            if (response_dict.student_rows.length) {
+                for (let i = 0, dict; dict = response_dict.student_rows[i]; i++) {
+                    console.log("dict", dict);
+                    for (const [key, value] of Object.entries(dict)) {
+                    console.log("key", key, 'value', value);
+                        response_list.push("    " + key + ": " + value);
+                    };
+                };
+            };
+        };
+        response_list.push("---------------");
+        if ("studsubj_row_count" in response_dict) {response_list.push("studsubj_row_count: " + response_dict.studsubj_row_count)};
+        if ("studsubj_row_error" in response_dict) {response_list.push("studsubj_row_error: " + response_dict.studsubj_row_error)};
+        if ("studsubj_rows" in response_dict) {
+            if (response_dict.studsubj_rows.length) {
+                for (let i = 0, dict; dict = response_dict.studsubj_rows[i]; i++) {
+                    for (const [key, value] of Object.entries(dict)) {
+                        response_list.push("    " + key + ": " + value);
+                    };
+                };
+            };
+        };
+
+        printPDFlogfile(response_list, filename )
+    };  // ValidateScheme_Response
 
 //###########################################################################
 

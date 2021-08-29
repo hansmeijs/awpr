@@ -2420,7 +2420,7 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, er
 
             if field in ("gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi",
                          "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
-                         "has_practexam", "has_pws", "is_core_subject", "is_mvt", "is_wisk", "ete_exam",
+                         "has_practexam", "has_pws", "is_core_subject", "is_mvt", "is_wisk", "ete_exam", "no_order",
                          "reex_se_allowed", "max_reex",  "no_thirdperiod",  "no_exemption_ce"):
 
                 saved_value = getattr(instance, field)
@@ -2921,6 +2921,7 @@ def create_subjecttype_rows(examyear, scheme_pk=None, depbase=None, cur_dep_only
             "sjtp.min_subjects, sjtp.max_subjects, sjtp.min_extra_nocount, sjtp.max_extra_nocount,",
             "sjtp.min_extra_counts, sjtp.max_extra_counts, sjtp.min_elective_combi, sjtp.max_elective_combi,",
             "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev, sct.id AS sct_id, sct.abbrev AS sct_abbrev,",
+            "dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id,",
             "ey.code AS ey_code,",
             "dep.id AS department_id, depbase.code AS depbase_code, scheme.id AS scheme_id, scheme.name AS scheme_name,",
             "sjtp.modifiedby_id, sjtp.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
@@ -3024,6 +3025,7 @@ def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=Non
             "CONCAT('scheme_', scheme.id::TEXT) AS mapid,",
             "scheme.name, scheme.min_subjects, scheme.max_subjects, scheme.min_mvt, scheme.max_mvt, scheme.min_wisk, scheme.max_wisk, scheme.min_combi, scheme.max_combi,",
             "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code AS ey_code,",
+            "dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id,",
             "depbase.code AS depbase_code,"
             "scheme.modifiedby_id, scheme.modifiedat,",
             "SUBSTRING(au.username, 7) AS modby_username",
@@ -3084,11 +3086,12 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
             "sjtp.min_subjects AS sjtp_min_subjects, sjtp.max_subjects AS sjtp_max_subjects, ",
             "scheme.name AS scheme_name, scheme.fields AS scheme_fields,",
             "depbase.id AS depbase_id, depbase.code AS depbase_code,",
+            "lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id,",
             "lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
 
-            "si.gradetype, si.weight_se, si.weight_ce, si.ete_exam, si.is_mandatory, si.is_mand_subj_id, si.is_combi,",
-            "si.extra_count_allowed, si.extra_nocount_allowed, si.elective_combi_allowed, si.has_practexam,",
-            "si.has_pws, si.is_core_subject, si.is_mvt, si.is_wisk,",
+            "si.gradetype, si.weight_se, si.weight_ce, si.ete_exam, si.no_order, si.is_mandatory, si.is_mand_subj_id,",
+            "si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed, si.elective_combi_allowed,",
+            "si.has_practexam, si.has_pws, si.is_core_subject, si.is_mvt, si.is_wisk,",
             "si.reex_se_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce,",
 
             "si.modifiedby_id, si.modifiedat,",

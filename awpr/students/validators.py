@@ -185,8 +185,9 @@ def validate_examnumber_exists(student, examnumber):  # PR2021-08-11
 def validate_studentsubjects_TEST(student, si_dictlist):
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' -----  validate_studentsubjects  -----')
+        logger.debug(' -----  validate_studentsubjects_TEST  -----')
         logger.debug('student: ' + str(student))
+        logger.debug('si_dictlist: ' + str(si_dictlist))
 
 # - store info of schemeitem in si_dict
 
@@ -260,6 +261,7 @@ def validate_studentsubjects_TEST(student, si_dictlist):
             if logging_on:
                 logger.debug('scheme_dict: ' + str(scheme_dict))
                 logger.debug('studsubj_dict: ' + str(studsubj_dict))
+                logger.debug('msg_list: ' + str(msg_list))
 
 # ++++++++++++++++++++++++++++++++
 # - get eveninstudent or lex student
@@ -268,9 +270,12 @@ def validate_studentsubjects_TEST(student, si_dictlist):
 # -------------------------------
 # - check required subjects
             validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-
+            if logging_on:
+                logger.debug('msg_list: ' + str(msg_list))
 # - check total amount of subjects
             validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+            if logging_on:
+                logger.debug('msg_list: ' + str(msg_list))
 
 # - check amount of mvt and combi subjects
             validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
@@ -279,6 +284,9 @@ def validate_studentsubjects_TEST(student, si_dictlist):
 
 # - check amount of subjects per subjecttype
             validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+
+            if logging_on:
+                logger.debug('msg_list: ' + str(msg_list) + '' + str(type(msg_list)))
 
     if len(msg_list):
         msg_str = ''.join(("<div class='p-2 border_bg_warning'><h6>", str(_('The composition of the subjects is not correct')), ':</h6>', "<ul class='msg_bullet'>"))
@@ -397,6 +405,9 @@ def validate_studentsubjects(student):
 # - check amount of subjects per subjecttype
             validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
 
+    if logging_on:
+        logger.debug('msg_list: ' + str(msg_list))
+
     if len(msg_list):
         msg_str = ''.join(("<div class='p-2 border_bg_warning'><h6>", str(_('The composition of the subjects is not correct')), ':</h6>', "<ul class='msg_bullet'>"))
         msg_list.insert(0, msg_str)
@@ -406,7 +417,13 @@ def validate_studentsubjects(student):
         # don't give message 'correct', the rules might not be entered
         msg_list = ("<div class='p-2 border_bg_valid'><p>", str(_('AWP has not found any errors in the composition of the subjects.')), "</p></div>")
 
+    if logging_on:
+        logger.debug('msg_list: ' + str(msg_list))
+
     msg_html = ''.join(msg_list)
+    if logging_on:
+        logger.debug('msg_html: ' + str(msg_html))
+
     return msg_html
 # --- end of validate_studentsubjects
 
@@ -608,7 +625,7 @@ def validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict,
 def validate_amount_subjects(field, is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list):
     # - validate amount of subjects PR2021-07-10
     # - skip validate minimum subjects when is_evening_or_lex_student
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  validate_amount_subjects  -----')
         logger.debug('field: ' + str(field))
@@ -931,6 +948,7 @@ def get_studsubj_dict_TEST(stud_scheme, student, si_dictlist, doubles_list, msg_
     if logging_on:
         logger.debug('  -----  get_studsubj_dict_TEST  -----')
         logger.debug('scheme: ' + str(student))
+        logger.debug('si_dictlist: ' + str(si_dictlist))
 
     subject_list = []
 

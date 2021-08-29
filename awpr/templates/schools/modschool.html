@@ -93,8 +93,8 @@
                     </div>
 
                     <div class="flex_container">
-                        <div class="flex_3 mx-1 mt-2">
-                            <label class="label_margin_top_m2">{% trans 'Day school' %} / {% trans 'Evening school' %} / {% trans 'Landsexamen' %} / </label>
+                        <div class="flex_2 mx-1 mt-2">
+                            <label class="label_margin_top_m2">{% trans 'Day school / Evening school / Landsexamen' %}</label>
                             <select data-field="dayevelex" class="form-control">
                                 <option value="day">{% trans 'Day school' %}</option>
                                 <option value="eve"> {% trans 'Evening school' %}</option>
@@ -102,12 +102,19 @@
                                 <option value="lex"> {% trans 'Landsexamen' %}</option>
                             </select>
                         </div>
-                        <div class="flex_2 mx-1 mt-2">
+                        <div class="flex_1 mx-1 mt-2">
                             <label for="id_MSCH_otherlang" class="label_margin_top_m2">{% trans 'Other language' %}:</label>
                             <select id="id_MSCH_otherlang" data-field="otherlang" class="form-control">
-                                <option value="">-</option>
+                                <option value="none">{% trans 'None' %}</option>
                                 <option value="en">{% trans 'English' %}</option>
                                 <option value="pa">{% trans 'Papiamentu' %}</option>
+                            </select>
+                        </div>
+                        <div class="flex_1 mx-1 mt-2">
+                            <label for="id_MSCH_no_order" class="label_margin_top_m2">{% trans 'On orderlist' %}:</label>
+                            <select id="id_MSCH_no_order" data-field="no_order" class="form-control">
+                                 <option value="0">{% trans 'On orderlist' %}</option>
+                                <option value="1">{% trans 'Not on orderlist' %}</option>
                             </select>
                         </div>
                     </div>

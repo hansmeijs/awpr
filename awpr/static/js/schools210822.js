@@ -162,12 +162,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     el.addEventListener("keyup", function() {MSCH_InputKeyup(el)}, false )
                 } else if(el.tagName === "SELECT"){
                     el.addEventListener("change", function() {MSCH_InputSelect(el)}, false )
+                } else if(el.tagName === "DIV"){
+                    el.addEventListener("click", function() {MSCH_InputToggle(el)}, false )
                 };
             };
         };
         const el_MSCH_defaultrole_container = document.getElementById("id_MSCH_defaultrole_container");
         const el_MSCH_select_defaultrole = document.getElementById("id_MSCH_defaultrole");
         const el_MSCH_select_otherlang = document.getElementById("id_MSCH_otherlang");
+        const el_MSCH_no_order = document.getElementById("id_MSCH_no_order");
+
 
 
 // ---  MODAL UPLOAD DATA - MIMP
@@ -584,7 +588,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_div.innerText = map_dict[field_name];
                     filter_value = (fld_value) ? fld_value.toLowerCase() : null;
                 } else if ( field_name === "otherlang") {
-                    display_txt = (fld_value === "pa") ? loc.Papiamentu : (fld_value === "en") ? loc.English : fld_value;
+                    display_txt = (fld_value === "pa") ? loc.Papiamentu : (fld_value === "en") ? loc.English : "\n";
                     el_div.innerText = display_txt;
                     filter_value = (display_txt) ? display_txt.toLowerCase() : null;
                 } else if ( field_name === "depbases") {
@@ -752,20 +756,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const is_created = (!!update_dict.created);
 
             const error_list = get_dict_value(update_dict, ["error"], []);
-        console.log("error_list", error_list);
-
-            let updated_columns = [];
+            //console.log("error_list", error_list);
+            // field_error_list is not in use (yet)
             let field_error_list = []
-            if(error_list && error_list.length){
 
+            if(error_list && error_list.length){
     // - show modal messages
                 b_ShowModMessages(error_list);
 
-    // - add fields with error in updated_columns, to put old value back in field
+    // - add fields with error in field_error_list, to put old value back in field
                 for (let i = 0, msg_dict ; msg_dict = error_list[i]; i++) {
                     if ("field" in msg_dict){field_error_list.push(msg_dict.field)};
                 };
-
             //} else {
             // close modal MSJ when no error --- already done in modal
                 //$("#id_mod_subject").modal("hide");
@@ -776,34 +778,31 @@ document.addEventListener('DOMContentLoaded', function() {
             //arr.splice(index, 0, item); will insert item into arr at the specified index
             // (deleting 0 items first, that is, it's just an insert).
 
-        console.log("is_created", is_created);
             if(is_created){
     // ---  first remove key 'created' from update_dict
                 delete update_dict.created;
 
-        console.log("update_dict", update_dict);
-        console.log("data_rows old len: " + data_rows.length);
     // --- lookup index where new row must be inserted in data_rows
                 // PR2021-06-21 not necessary, new row has always pk higher than existing. Add at end of rows
+
     // ---  add new item in data_rows at end
                 data_rows.push(update_dict);
 
-        console.log("data_rows new len: " + data_rows.length);
-        console.log("data_rows", data_rows);
     // ---  create row in table., insert in alphabetical order
                 const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
 
     // ---  scrollIntoView,
                 if(new_tblRow){
                     new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
+
     // ---  make new row green for 2 seconds,
                     ShowOkElement(new_tblRow);
                 }
             } else {
 
-// --- get existing map_dict from data_rows
+// --- get existing data_dict from data_rows
                 const [index, dict, compare] = b_recursive_lookup(school_rows, map_id, setting_dict.user_lang);
-                const map_dict = dict;
+                const data_dict = dict;
                 const datarow_index = index;
 
 // ++++ deleted ++++
@@ -813,34 +812,41 @@ document.addEventListener('DOMContentLoaded', function() {
                     const deleted_row_dict = deleted_row_arr[0];
 
         //--- delete tblRow
-                    const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
+                    if(deleted_row_dict && deleted_row_dict.mapid){
+                        const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
     // ---  when delete: make tblRow red for 2 seconds, before uploading
-                    if (tblRow_tobe_deleted ){tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)};
-
+                        if (tblRow_tobe_deleted ){tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)};
+                    };
                 } else {
 
 // +++++++++++ updated row +++++++++++
-    // ---  check which fields are updated, add to list 'updated_columns'
-                    if(!isEmpty(map_dict) && field_names){
+        // ---  check which fields are updated, add to list 'updated_columns'
+                    if(!isEmpty(data_dict) && field_names){
+                        let updated_columns = [];
 
                         // skip first column (is margin)
+                        // col_field is the name of the column on page, not the db_field
                         for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
-                            if (col_field in map_dict && col_field in update_dict){
-                                if (map_dict[col_field] !== update_dict[col_field] ) {
+                            let has_changed = false;
+                            if (col_field in data_dict && col_field in update_dict){
+                                has_changed = (data_dict[col_field] !== update_dict[col_field] );
+                            };
         // ---  add field to updated_columns list
-                                    updated_columns.push(col_field)
-        // ---  update field in data_row
-                                    map_dict[col_field] = update_dict[col_field];
-                       }}};
-
-                console.log("updated_columns", updated_columns, typeof updated_columns);
+                            if (has_changed){
+                                updated_columns.push(col_field);
+                            };
+                        };
+// ---  update fields in data_row
+                        for (const [key, new_value] of Object.entries(update_dict)) {
+                            if (key in data_dict){
+                                if (new_value !== data_dict[key]) {
+                                    data_dict[key] = new_value;
+                        }}};
 
         // ---  update field in tblRow
                         // note: when updated_columns is empty, then updated_columns is still true.
                         // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
                         if(updated_columns.length || field_error_list.length){
-        console.log("updated_columns", updated_columns);
-        console.log("field_error_list", field_error_list);
 
 // --- get existing tblRow
                             let tblRow = document.getElementById(map_id);
@@ -857,25 +863,24 @@ document.addEventListener('DOMContentLoaded', function() {
                                 for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
                                     el = td.children[0];
                                     if (el){
-        //console.log("el", el);
                                         el_fldName = get_attr_from_el(el, "data-field")
-        //console.log("el_fldName", el_fldName);
                                         UpdateField(el, update_dict);
+                // make field green when field name is in updated_columns
+                                        if(updated_columns.includes(el_fldName)){
+                                            ShowOkElement(el);
+                                        }
                                     }
                                 };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
                             };  // if(tblRow){
                         }; //  if(updated_columns.length){
-
-
-                    };  //  if(!isEmpty(map_dict) && field_names){
+                    };  //  if(!isEmpty(data_dict) && field_names){
                 };  // if(is_deleted){
             };  // if(is_created)
-
         }  // if(!isEmpty(update_dict)){
     }  // RefreshDatarowItem
 
 
-// +++++++++++++++++++++++++++ MOD SCHOOL +++++++++++++++++++++++++ PR2020-09-30
+// +++++++++++++++++++++++++++ MOD SCHOOL +++++++++++++++++++++++++ PR2020-09-30 PR2021-08-26
 // --- also used for level, sector,
     function MSCH_Open(el_input){
         console.log(" -----  MSCH_Open   ----")
@@ -894,6 +899,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 tblName = get_tblName_from_selectedBtn();
                 mod_MSCH_dict.examyear_id = setting_dict.sel_examyear_pk;
                 // default setting: role = school, type = dayschool
+                mod_MSCH_dict.no_order = false;
                 mod_MSCH_dict.defaultrole = 8;
                 mod_MSCH_dict.isdayschool = true;
                 mod_MSCH_dict.iseveningschool = false;
@@ -922,6 +928,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     mod_MSCH_dict.name = map_dict.name;
                     mod_MSCH_dict.depbases = map_dict.depbases;
                     mod_MSCH_dict.otherlang = map_dict.otherlang;
+                    mod_MSCH_dict.no_order = map_dict.no_order;
                     mod_MSCH_dict.defaultrole = map_dict.defaultrole,
 
                     mod_MSCH_dict.isdayschool = map_dict.isdayschool,
@@ -947,14 +954,15 @@ document.addEventListener('DOMContentLoaded', function() {
             //};
             //add_or_remove_class(el_MSCH_defaultrole_container, cls_hide, !permit_dict.requsr_role_system);
             el_MSCH_select_defaultrole.disabled = !permit_dict.requsr_role_system
-        console.log("mod_MSCH_dict", mod_MSCH_dict)
+        //console.log("mod_MSCH_dict", mod_MSCH_dict)
             if (!is_addnew){
                 el_MSCH_code.value = (mod_MSCH_dict.code) ? mod_MSCH_dict.code : null;
                 el_MSCH_abbrev.value = (mod_MSCH_dict.abbrev) ? mod_MSCH_dict.abbrev : null;
                 el_MSCH_name.value = (mod_MSCH_dict.name) ? mod_MSCH_dict.name : null;
                 el_MSCH_article.value = (mod_MSCH_dict.article) ? mod_MSCH_dict.article : null;
                 el_MSCH_select_defaultrole.value = (mod_MSCH_dict.defaultrole) ? mod_MSCH_dict.defaultrole : null;
-                el_MSCH_select_otherlang.value = (mod_MSCH_dict.otherlang) ? mod_MSCH_dict.otherlang : null;
+                el_MSCH_select_otherlang.value = (mod_MSCH_dict.otherlang) ? mod_MSCH_dict.otherlang : "none";
+                el_MSCH_no_order.value = (mod_MSCH_dict.no_order) ? "1" : "0";
 
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSCH_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
@@ -1014,6 +1022,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (new_islexschool !== mod_MSCH_dict.islexschool) {
                         upload_dict.islexschool = new_islexschool;
                     }
+                } else if(fldName === "otherlang"){;
+            console.log("fldName", fldName)
+                    old_value = (!!mod_MSCH_dict[fldName])
+                    new_value = (el.value === "none") ? null : el.value;
+            console.log("new_value", new_value)
+                    if (new_value !== old_value) {
+                        upload_dict[fldName] = new_value
+                    };
+            console.log("upload_dict", upload_dict)
+                } else if(fldName === "no_order"){;
+                    old_value = (!!mod_MSCH_dict[fldName])
+                    new_value = (el.value === "1") ? true : false;
+                    if (new_value !== old_value) {
+                        upload_dict[fldName] = new_value
+                    };
+
                 } else {
                     old_value = (mod_MSCH_dict[fldName]) ? mod_MSCH_dict[fldName] : null;
                     new_value = (el.value) ? el.value : null;
@@ -1207,6 +1231,15 @@ document.addEventListener('DOMContentLoaded', function() {
         MSCH_validate_and_disable();
     }; // MSCH_InputSelect
 
+//========= MSCH_InputToggle  ============= PR2021-08-26
+    function MSCH_InputToggle(el_input){
+        console.log( "===== MSCH_InputToggle  ========= ");
+        const data_value = get_attr_from_el(el_input, "data-value")
+        const new_data_value = (data_value === "1") ? "0" : "1";
+        el_input.setAttribute("data-value", new_data_value);
+        const el_img = el_input.children[0];
+        add_or_remove_class(el_img, "tickmark_2_2", (new_data_value === "1"), "tickmark_1_1")
+    }; // MSCH_InputToggle
 
 //=========  MSCH_validate_and_disable  ================  PR2020-10-01
     function MSCH_validate_and_disable() {
