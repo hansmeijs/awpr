@@ -101,12 +101,14 @@ def create_level_rows(examyear, depbase, cur_dep_only):
     if examyear:
         sql_keys = {'ey_id': examyear.pk}
 
-        sql_list = ["SELECT lvl.id, lvl.base_id, lvl.examyear_id, ey.code AS examyear_code, ey.country_id,",
+        sql_list = ["SELECT lvl.id, lvl.base_id, lvlbase.code AS lvlbase_code, lvl.examyear_id, ey.code AS examyear_code, ey.country_id,",
             "CONCAT('level_', lvl.id::TEXT) AS mapid,",
             "lvl.name, lvl.abbrev, lvl.sequence, lvl.depbases,",
             "lvl.modifiedby_id, lvl.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
 
             "FROM subjects_level AS lvl ",
+            "INNER JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
+
             "INNER JOIN schools_examyear AS ey ON (ey.id = lvl.examyear_id)",
             "LEFT JOIN accounts_user AS au ON (au.id = lvl.modifiedby_id)",
 
@@ -163,7 +165,7 @@ def create_level_rows(examyear, depbase, cur_dep_only):
 
 def create_sector_rows(examyear, depbase, cur_dep_only):
     # --- create rows of all sectors of this examyear / country PR2020-12-11  PR2021-03-08  PR2021-06-24
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_sector_rows ============= ')
         logger.debug('cur_dep_only: ' + str(cur_dep_only))
@@ -174,12 +176,13 @@ def create_sector_rows(examyear, depbase, cur_dep_only):
     rows =[]
     if examyear:
         sql_keys = {'ey_id': examyear.pk}
-        sql_list = ["SELECT sct.id, sct.base_id, sct.examyear_id, ey.code AS examyear_code, ey.country_id,",
+        sql_list = ["SELECT sct.id, sct.base_id, sctbase.code AS sctbase_code, sct.examyear_id, ey.code AS examyear_code, ey.country_id,",
                     "CONCAT('sector_', sct.id::TEXT) AS mapid,",
                     "sct.name, sct.abbrev, sct.sequence, sct.depbases,",
                     "sct.modifiedby_id, sct.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
 
                     "FROM subjects_sector AS sct ",
+                    "INNER JOIN subjects_sectorbase AS sctbase ON (sctbase.id = sct.base_id)",
                     "INNER JOIN schools_examyear AS ey ON (ey.id = sct.examyear_id)",
                     "LEFT JOIN accounts_user AS au ON (au.id = sct.modifiedby_id)",
 

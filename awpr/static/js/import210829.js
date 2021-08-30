@@ -166,7 +166,7 @@
 
 //=========   upload_studentsubjects   ======================
     function upload_studentsubjects_crosstab(mode, RefreshDataRowsAfterUpload) {
-        //console.log(" ========== upload_studentsubjects_crosstab ===========");
+        console.log(" ========== upload_studentsubjects_crosstab ===========");
 /*
 upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1,
             'sel_depbase_code': 'Vsbo', 'sel_school_abbrev': 'ATC',
@@ -299,20 +299,20 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //=========   upload_student   ======================
     function upload_student(mode, RefreshDataRowsAfterUpload) {
-        //console.log(" ========== upload_student ===========");
+        console.log(" ========== upload_student ===========");
 
         const is_test_upload = (mode === "test")
         let rowLength = 0, colLength = 0;
         if(mimp.curWorksheetData){rowLength = mimp.curWorksheetData.length;};
         if(mimp_stored.coldefs){colLength = mimp_stored.coldefs.length;};
 
-            //console.log ("mimp.rowLength", rowLength);
-            //console.log ("colLength", colLength);
+    //console.log ("mimp.rowLength", rowLength);
+    //console.log ("colLength", colLength);
 
         if(rowLength > 0 && colLength > 0){
 
-            //console.log ("mimp.excel_coldefs", deepcopy_dict(mimp.excel_coldefs));
-            //console.log ("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
+    console.log ("mimp.excel_coldefs", deepcopy_dict(mimp.excel_coldefs));
+    console.log ("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
 
 // ---  loop through excel_coldefs to get linked awpColdefs
         // excel_coldefs = [ {excColIndex: 1, excColdef: "exnr", rowId: "id_tr_coldef_exc_1", awpColdef: "examnumber", awpCaption: "Examennummer"} ]
@@ -330,8 +330,8 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 let dict_list = [];
                 for (let i = 0; i < rowLength; i++) {
                     let row = mimp.curWorksheetData[i];
+        console.log ("row", deepcopy_dict(row));
 
-            //console.log ("row", deepcopy_dict(row));
 //------ loop through excel_coldefs
                     // rowindex is index of tablerow. Index 0 is header, therefore rowindex starts with 1
                     let dict = {rowindex: i};
@@ -352,15 +352,13 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                                     mapped_value = excel_row.awpBasePk;
                                 }
 
-                                //console.log("------- awpColdef:", awpColdef)
-                                //console.log("      linked_values:", linked_values)
-                                //console.log("      excel_row:", excel_row)
-                                //console.log("      mapped_value:", mapped_value)
+                console.log("------- awpColdef:", awpColdef)
+                console.log("      linked_values:", linked_values)
+                console.log("      excel_row:", excel_row)
+                console.log("      mapped_value:", mapped_value)
 
                             } else if (awpColdef === "birthdate"){
                                 mapped_value = Number(value)
-
-
 
                             } else if (["role", "sequence"].includes(awpColdef)){
                                 mapped_value = Number(value)
@@ -372,7 +370,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                     }; //for (let col = 1 ; col <colLength; col++)
                     dict_list.push(dict);
                 }
-                //console.log("======== dict_list:", dict_list)
+        console.log("======== dict_list:", dict_list)
                 if(!dict_list || !dict_list.length){
                     alert("No data found")
                 } else {
@@ -753,10 +751,10 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 } else {
                     const cellName = GetCellName (col_number,row_number);
                     const excColdef = GetExcelValue(mimp.curWorkSheet, cellName, "w");
-        console.log(">>>>>excColdef", excColdef);
+        //console.log(">>>>>excColdef", excColdef);
                     colName = replaceChar(excColdef);
-        console.log(">>>>>colName", colName);
-        console.log(">>>>>has_subject_field", has_subject_field);
+        //console.log(">>>>>colName", colName);
+        //console.log(">>>>>has_subject_field", has_subject_field);
                     // set has_subject_field = True when colName 'Subject' or 'Subjects' exist
                     if(!has_subject_field && colName){
                         const colName_lc = colName.toLowerCase();
@@ -768,15 +766,15 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 idx += 1;
         }}
 
-        console.log(">>>>>mimp.excel_coldefs", mimp.excel_coldefs);
+        //console.log(">>>>>mimp.excel_coldefs", mimp.excel_coldefs);
 
 // ---  loop through array mimp_stored.coldefs
         // mimp_stored.coldefs gets value from schoolsetting_dict in i_UpdateSchoolsettingsImport(schoolsetting_dict)
         if(mimp_stored.coldefs) {
         //console.log("loop through array mimp_stored.coldefs");
             for (let i = 0, stored_coldef; stored_coldef = mimp_stored.coldefs[i]; i++) {
-        console.log("stored_coldef", stored_coldef);
-        console.log("awpColdef", stored_coldef.awpColdef, "excColdef", stored_coldef.excColdef);
+        //console.log("stored_coldef", stored_coldef);
+        //console.log("awpColdef", stored_coldef.awpColdef, "excColdef", stored_coldef.excColdef);
                 let is_linked = false;
                 // when table = 'column': awpColdef = field name "examnumber" etc
                 // when table = department, level or sector etc: awpColdef = base_id
@@ -794,7 +792,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 // ---  if excColdef is found in excel_coldefs: add awpColdef and awpCaption to excel_row
                         excel_row_byKey.awpColdef = stored_coldef.awpColdef;
                         excel_row_byKey.awpCaption = stored_coldef.caption;
-        console.log(">>> excColdef is found in excel_coldefs");
+        //console.log(">>> excColdef is found in excel_coldefs");
                         is_linked = true;
                     } else {
 // ---  if excColdef is not found in excel_coldefs remove excColdef from stored_coldef
@@ -803,7 +801,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 // ---  if column not linked, check if awpCaption and Excel name are the same, if so: link anyway
                 if (!is_linked && !skip_link_same_values){
                     let excel_row_byCaption = get_arrayRow_by_keyValue (mimp.excel_coldefs, "excColdef", stored_coldef.caption)
-        console.log("excel_row_byCaption", excel_row_byCaption);
+        //console.log("excel_row_byCaption", excel_row_byCaption);
                     if (excel_row_byCaption){
                         stored_coldef.excColdef = excel_row_byCaption.excColdef;
                         excel_row_byCaption.awpColdef = stored_coldef.awpColdef;
@@ -1977,7 +1975,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //========= UPLOAD  =====================================
     function UploadImportSetting (tbodyTblName) {
-        console.log ("==========  UploadImportSetting ========= tbodyTblName: ", tbodyTblName);
+        //console.log ("==========  UploadImportSetting ========= tbodyTblName: ", tbodyTblName);
 
 
         let awp_rows = (tbodyTblName === "coldef") ? mimp_stored.coldefs : (mimp.linked_awp_values[tbodyTblName]) ? mimp.linked_awp_values[tbodyTblName] : null;
@@ -2032,8 +2030,8 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             const el_data = document.getElementById("id_MIMP_data")
             const url_str = get_attr_from_el(el_data, "data-url_import_settings_upload");
 
-            console.log("url_str", url_str)
-            console.log("upload_dict", upload_dict)
+            //console.log("url_str", url_str)
+            //console.log("upload_dict", upload_dict)
 
             let response = "";
             $.ajax({
@@ -2042,7 +2040,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
-                    console.log("UploadImportSetting response: ", response);
+                    //console.log("UploadImportSetting response: ", response);
                     //if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
 
                 },
@@ -2094,9 +2092,9 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
     }  // i_UpdateSchoolsettingsImport
 
     function UploadData(url_str, upload_dict, RefreshDataRowsAfterUpload){
-        //console.log ("==========  UploadData ==========");
-        //console.log("url_str", url_str);
-        //console.log("upload_dict", upload_dict);
+        console.log ("==========  UploadData ==========");
+        console.log("url_str", url_str);
+        console.log("upload_dict", upload_dict);
 
 // --- reset logfile
         mimp_logfile = []

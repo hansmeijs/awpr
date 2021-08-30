@@ -618,7 +618,7 @@ def create_ex1_rows_dict(examyear, school, department, save_to_disk, published_i
         #       'subj_auth1_arr': [67],
         #       'subj_auth2_arr': [101]}
 
-        # value is '0' when lvlbase_id = None (Havo/Vwo)
+        # value is '0' when level_id = None (Havo/Vwo)
         level_pk = row.get('level_id')
         if level_pk is None:
             level_pk = 0

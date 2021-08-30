@@ -563,8 +563,7 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
         logger.debug('error_list: ' + str(error_list))
 
     student = None
-    error_create, changes_are_saved, error_save, field_error = False, False, False, False
-
+    is_new_student, error_create, changes_are_saved, error_save, field_error = False, False, False, False, False
     if not error_idnumber:
 
 # - replace idnumber by idnumber_nodots_stripped
@@ -583,12 +582,10 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
                 error_list=error_list,
                 notfound_is_error=False
             )
-        is_new_student = not_found
         if logging_on:
             student_pk = student.pk if student else 'None'
             logger.debug('..........student.pk: ' + str(student_pk))
             logger.debug('student: ' + str(student))
-            logger.debug('is_new_student: ' + str(is_new_student))
             logger.debug('error_idnumber: ' + str(error_idnumber))
 
     if not error_idnumber:
@@ -618,7 +615,6 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
             is_existing_student = True
             student_dict['student_pk'] = student.pk
         else:
-            # is_new_student = True
 
 # +++ create new student when student not found in database
             #base = None
@@ -650,9 +646,10 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
             if student is None:
     # - give error msg when creating student failed - is already done in create_student
                 error_create = True
-                is_new_student = False
+
             else:
-                save_instance = is_test
+                is_new_student = True
+
                 student_dict['created'] = True
 
 # -- check for doubles, only when is new student
@@ -704,8 +701,9 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
             if err:
                 log_list.append('- '.join((c.STRING_SPACE_15, err)))
     if changes_are_saved:
-        changed_txt = _('The changes will be saved.') if is_test else _('The changes have been saved.')
-        log_list.append('- '.join((c.STRING_SPACE_15, str(changed_txt))))
+        if not is_new_student:
+            changed_txt = _('The changes will be saved.') if is_test else _('The changes have been saved.')
+            log_list.append('- '.join((c.STRING_SPACE_15, str(changed_txt))))
         if field_error:
             changed_txt = _('Some fields have errors. They will not be saved.') \
                 if is_test else _('Some fields have errors. They have not been saved.')
@@ -2221,7 +2219,7 @@ def get_subjbase_pk_list_per_student(school, department):  # PR2021-07-21
 
 
 def map_subjectbase_pk_to_schemeitem_pk(school, department):  # PR2021-07-21
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- map_subjectbase_pk_to_schemeitem_pk  --------------------')
     # function creates a dict per scheme of subjects with the lowest sequence

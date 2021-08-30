@@ -3121,7 +3121,6 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
             sql_keys['scheme_pk'] = scheme_pk
             sql_list.append("AND scheme.id = %(scheme_pk)s::INT")
 
-
         elif cur_dep_only:
             if depbase:
                 sql_keys['depbase_pk'] = depbase.pk
