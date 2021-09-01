@@ -68,7 +68,6 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
     urls.url_student_upload = get_attr_from_el(el_data, "data-url_student_upload");
-    urls.url_student_validate = get_attr_from_el(el_data, "data-url_student_validate");
     urls.url_studsubj_validate_scheme = get_attr_from_el(el_data, "data-url_studsubj_validate_scheme");
 
     //const url_studsubj_upload = get_attr_from_el(el_data, "data-url_studsubj_upload");
@@ -391,6 +390,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 // both 'loc' and 'setting_dict' are needed for CreateSubmenu
                 if (isloaded_loc && isloaded_settings) {CreateSubmenu()};
                 if(isloaded_settings || isloaded_permits){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school)};
+
+                if ("messages" in response) {
+                    console.log(response)
+                    b_ShowModMessages(response.messages);
+                }
+
+
 
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows)};
                 if ("school_rows" in response)  {
@@ -1398,7 +1404,7 @@ function RefreshDataRowsAfterUpload(response) {
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-15 PR2021-07-23
     function ModConfirmOpen(mode) {
-        console.log(" -----  ModConfirmOpen   ----")
+        //console.log(" -----  ModConfirmOpen   ----")
         // only called by menubtn Delete_candidate and mod MSTUD btn delete
         // values of mode is : "delete" and "validate_scheme"
 
@@ -1412,11 +1418,13 @@ function RefreshDataRowsAfterUpload(response) {
         const map_dict = selected.student_dict;
     //console.log("map_dict", map_dict)
 
+        const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
+
 // ---  create mod_dict
         mod_dict = {mode: mode};
         const has_selected_item = (!isEmpty(map_dict));
         if(mode === "delete"){
-            show_modal = permit_dict.permit_crud;
+            show_modal = may_edit;
             if(has_selected_item ){
                 mod_dict.student_pk = map_dict.id;
                 mod_dict.mapid = map_dict.mapid;
@@ -1487,30 +1495,36 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  ModConfirmSave  ================ PR2019-06-23
     function ModConfirmSave() {
-        console.log(" --- ModConfirmSave --- ");
-        console.log("mod_dict: ", mod_dict);
+        //console.log(" --- ModConfirmSave --- ");
+        //console.log("mod_dict: ", mod_dict);
 
-
+        const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
 // ---  Upload Changes
         let url_str = null;
         const upload_dict = { table: "student", mode: mod_dict.mode}
         if(mod_dict.mode === "delete"){
+            if(may_edit){
 // ---  when delete: make tblRow red, before uploading
-            let tblRow = document.getElementById(mod_dict.mapid);
-            ShowClassWithTimeout(tblRow, "tsa_tr_error");
-            url_str = urls.url_student_upload
-            upload_dict.student_pk = mod_dict.student_pk;
-            upload_dict.mapid = mod_dict.mapid;
+                let tblRow = document.getElementById(mod_dict.mapid);
+                ShowClassWithTimeout(tblRow, "tsa_tr_error");
+                url_str = urls.url_student_upload;
+                upload_dict.student_pk = mod_dict.student_pk;
+                upload_dict.mapid = mod_dict.mapid;
+                UploadChanges(upload_dict, url_str);
+        // show loader
+                el_confirm_loader.classList.remove(cls_visible_hide)
+            }
         } else if (["validate_scheme", "correct_scheme"].includes(mod_dict.mode)){
-            url_str = urls.url_studsubj_validate_scheme;
-            if(mod_dict.mode === "correct_scheme"){
-                upload_dict.correct_errors = true;
+            if(permit_dict.requsr_role_system){
+                url_str = urls.url_studsubj_validate_scheme;
+                if(mod_dict.mode === "correct_scheme"){
+                    upload_dict.correct_errors = true;
+                };
+                UploadChanges(upload_dict, url_str);
+        // show loader
+                el_confirm_loader.classList.remove(cls_visible_hide)
             };
-        }
-        UploadChanges(upload_dict, url_str);
-
-// show loader
-        el_confirm_loader.classList.remove(cls_visible_hide)
+        };
 // ---  hide modal
         $("#id_mod_confirm").modal("hide");
     }  // ModConfirmSave

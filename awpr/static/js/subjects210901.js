@@ -83,12 +83,12 @@ document.addEventListener('DOMContentLoaded', function() {
         captions: ["Department", "Leerweg",  "SectorProfiel_twolines", "Minimum_subjects",  "Maximum_subjects",
                     "Minimum_MVT_subjects", "Maximum_MVT_subjects", "Minimum_Wisk_subjects", "Maximum_Wisk_subjects", "Minimum_combi_subjects", "Maximum_combi_subjects"]};
     columns_tobe_hidden.schemeitem = {
-        fields: ["subj_name", "sjtp_abbrev", "ete_exam", "no_order",
+        fields: ["subj_name", "sjtp_abbrev", "ete_exam",
                 "gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
                 "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
                 "has_practexam",  "has_pws", "reex_se_allowed",
                 "max_reex", "no_thirdperiod",  "no_exemption_ce"],
-        captions: ["Subject", "Character", "ETE_exam", "Not_on_orderlist",
+        captions: ["Subject", "Character", "ETE_exam",
                 "Grade_type", "SE_weighing",  "CE_weighing", "Mandatory", "Mandatory_if_subject", "Combination_subject", "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
                 "Extra_count_allowed",  "Extra_nocount_allowed",  "Elective_combi_allowed",
                 "Has_practical_exam",  "Has_assignment", "Herkansing_SE_allowed",
@@ -116,32 +116,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     filter_tags: ["select", "text", "text", "text", "text", "number", "number", "number", "number", "number", "number", "number", "number"],
                     field_width:  ["020", "280", "120", "120",  "120",  "150",  "150",  "150",  "150", "150",  "150",  "150",  "150"],
                     field_align: ["c", "l", "l", "l",  "l", "c", "c", "c", "c", "c", "c", "c", "c"]};
-    field_settings.schemeitem = { field_caption: ["", "Subject_scheme", "Abbreviation", "Subject", "Character", "ETE_exam", "Not_on_orderlist",
+    field_settings.schemeitem = { field_caption: ["", "Subject_scheme", "Abbreviation", "Subject", "Character", "ETE_exam",
                             "Grade_type", "SE_weighing",  "CE_weighing", "Mandatory", "Mandatory_if_subject", "Combination_subject", "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
                             "Extra_count_allowed",  "Extra_nocount_allowed",  "Elective_combi_allowed",
                             "Has_practical_exam",  "Has_assignment", "Herkansing_SE_allowed",
                             "Maximum_reex", "No_third_period", "Exemption_without_CE_allowed"],
-                    field_names: ["select", "scheme_name", "subj_code", "subj_name", "sjtp_abbrev", "ete_exam", "no_order",
+                    field_names: ["select", "scheme_name", "subj_code", "subj_name", "sjtp_abbrev", "ete_exam",
                             "gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
                             "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
                             "has_practexam",  "has_pws", "reex_se_allowed",
                             "max_reex",  "no_thirdperiod",  "no_exemption_ce"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                    field_tags: ["div", "div", "div", "div", "div", "div",
                                 "div", "div", "div", "div", "div", "div", "div", "div", "div",
                                 "div", "div", "div",
                                 "div", "div", "div",
                                  "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text",  "text", "toggle", "toggle",
+                    filter_tags: ["select", "text", "text", "text",  "text", "toggle",
                                 "toggle", "toggle","toggle", "toggle", "toggle",  "toggle", "toggle",  "toggle",  "toggle",
                                 "toggle",  "toggle", "toggle",
                                 "toggle",  "toggle", "toggle",
                                 "toggle", "toggle",  "toggle"],
-                    field_width:  ["020", "180", "090", "300", "120", "090", "090",
+                    field_width:  ["020", "180", "090", "300", "120", "090",
                                     "090", "090", "090", "090","090", "090", "090", "090", "090",
                                     "090", "090", "090",
                                     "090", "090", "090",
                                      "090", "090", "090"],
-                    field_align: ["c", "l", "l","l", "l", "c", "c",
+                    field_align: ["c", "l", "l","l", "l", "c",
                                     "l", "r", "r", "c", "c", "c","c", "c", "c",
                                     "c", "c", "c",
                                     "c", "c", "c",
@@ -667,8 +667,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- add title
                         if(field_name === "is_mand_subj"){
                             el_header.title = loc.Mandatory_if_subject_info;
-                        } if(field_name === "no_order"){
-                            el_header.title = loc.Not_on_orderlist_info;
                         }
         // --- add width, text_align
                         // not necessary: th_header.classList.add(class_width, class_align);
@@ -940,7 +938,7 @@ if(j){td.classList.add("border_left")};
                 } else if ( field_name === "depbases") {
                     inner_text = b_get_depbases_display(department_map, "base_code", fld_value);
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
-                } else if (["ete_exam", "no_order", "addedbyschool", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
+                } else if (["ete_exam", "addedbyschool", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
                             "extra_count_allowed", "extra_nocount_allowed", "elective_combi_allowed",
                             "has_practexam", "has_pws", "reex_se_allowed", "reex_combi_allowed",
                             "no_reex", "no_exemption_ce"].includes(field_name)) {

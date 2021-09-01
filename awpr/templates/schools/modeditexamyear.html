@@ -1,0 +1,86 @@
+ {% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL EDIT EXAMYEAR  =================== -->
+    <div class="modal" id="id_mod_edit_examyear" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg " role="document">
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <div class="flex_container">
+                        <div id="id_MEDEY_img_locked" class="diamond_3_4XX tickmark_0_0"> </div>
+                        <h4 id="id_MEDEY_header" class="modal-title mx-2" ></h4>
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div id="id_MEDEY_form_controls" class="modal-body py-2">
+                    <div class="flex_container">
+                        <div class="flex_1 mx-1">
+                            <label for="id_MEDEY_published" class="label_margin_top_m3">{% trans 'Published' %}:</label>
+                            <div data-field="published" class="form-control pt-2 pointer_show">
+                                <div id="id_MEDEY_published" data-field= "published" class="tickmark_0_0 awp_input_checkbox">
+                            </div>
+                            </div>
+                        </div>
+                        <div class="flex_1 mx-1">
+                            <label for="id_MEDEY_locked" class="label_margin_top_m3">{% trans 'Locked' %}:</label>
+                            <div data-field="locked" class="form-control pt-2 pointer_show">
+                                <div id="id_MEDEY_locked" data-field= "locked" class="tickmark_0_0 awp_input_checkbox">
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex_container">
+                        <div class="flex_1 mx-1">
+                            <label for="id_MEDEY_no_practexam" class="label_margin_top_m3">{% trans 'No practical exams' %}:</label>
+                            <div data-field="no_practexam" class="form-control pt-2 pointer_show">
+                                <div id="id_MEDEY_no_practexam" data-field= "no_practexam" class="tickmark_0_0 awp_input_checkbox">
+                            </div>
+                            </div>
+                        </div>
+                        <div class="flex_1 mx-1">
+                            <label for="id_MEDEY_reex_se_allowed" class="label_margin_top_m3">{% trans 'Herkansing SE allowed' %}:</label>
+                            <div data-field="reex_se_allowed" class="form-control pt-2 pointer_show">
+                                <div id="id_MEDEY_reex_se_allowed" data-field= "reex_se_allowed" class="tickmark_0_0 awp_input_checkbox">
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex_container">
+
+                        <div class="flex_1 mx-1">
+                            <label for="id_MEDEY_no_centralexam" class="label_margin_top_m3">{% trans 'No central exam' %}:</label>
+                            <div data-field="no_centralexam" class="form-control pt-2 pointer_show">
+                                <div id="id_MEDEY_no_centralexam" data-field= "no_centralexam" class="tickmark_0_0 awp_input_checkbox">
+                            </div>
+                            </div>
+                        </div>
+                        <div class="flex_1 mx-1">
+                            <label for="id_MEDEY_no_thirdperiod" class="label_margin_top_m3">{% trans 'No third exam period' %}:</label>
+                            <div data-field="no_thirdperiod" class="form-control pt-2 pointer_show">
+                                <div id="id_MEDEY_no_thirdperiod" data-field= "no_thirdperiod" class="tickmark_0_0 awp_input_checkbox">
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mx-3 mt-2">
+                        <small id="id_MEDEY_modified"></small>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <div class="content_subheader_left mx-1 tab_show tab_update display_hideX">
+                        <button id="id_MEDEY_btn_delete" type="button" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete exam year' %}</button>
+                    </div>
+                    <div class="content_subheader_right">
+                        <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MEDEY_btn_save" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>

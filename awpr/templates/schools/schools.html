@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import210829.js' %}"></script>
-    <script src="{% static 'js/schools210829.js' %}"></script>
+    <script src="{% static 'js/schools210901.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -26,15 +26,13 @@
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
+            {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'schools/modschool.html' %}
             {% include 'includes/moduploadawp.html' %}
 
             <div class="content_margin_top78">
     <!-- CONTENT HEADER - LOADER -->
-            <!-- content_header -->
-                {% include 'includes/messages.html' %}
-    <!-- header_text left -->
                 <div class="flex_4 mx-4 visibility_hide">
                     <h5 id="id_hdr_left"></h5>
                 </div>

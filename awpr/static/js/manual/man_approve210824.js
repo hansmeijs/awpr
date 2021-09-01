@@ -63,7 +63,7 @@ const man_approve = {
 
         write_paragraph_header("id_approve_icon", "Het goedkeurings-icoontje"),
         "<div class='mfc mb-2'>",
-            "<div class='mfl'><p class='mt-2XX diamond_3_4XX'></p></div>",
+            "<div class='mfl'><p class='mt-2XX diamond_0_4XX'></p></div>",
             "<div class='mfr'>",
                 "<p class='pb-0'>In de lijst met vakken of cijfers van kandidaten staat een icoontje in de vorm van een ruit. ",
                 "De betekenis ervan is als volgt:</p>",
@@ -88,7 +88,7 @@ const man_approve = {
                         "</div>",
 
                         "<div class='mfc'>",
-                            "<div class='mfl'><p class='diamond_3_4'></p></div>",
+                            "<div class='mfl'><p class='diamond_0_4'></p></div>",
                             "<div class='mfr'>Dit vak is op het Ex1-formulier ingediend.</div>",
                         "</div>",
                     "</div>",
@@ -255,7 +255,7 @@ const man_approve = {
                         "</div>",
 
                         "<div class='mfc'>",
-                            "<div class='mfl'><p class='diamond_3_4'></p></div>",
+                            "<div class='mfl'><p class='diamond_0_4'></p></div>",
                             "<div class='mfr'>This subject was submitted on the Ex1 form.</div>",
                         "</div>",
                     "</div>",

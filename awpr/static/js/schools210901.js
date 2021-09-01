@@ -62,11 +62,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     const field_settings = {
-        school: {field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments", "Day_Evening_LEXschool",  "Other_language",  "Activated",  "Locked"],
-                 field_names: ["select", "sb_code", "article", "name", "abbrev", "depbases", "dayevelex", "otherlang", "activated", "locked"],
-                 filter_tags: ["select", "text", "text",  "text", "text",  "text", "text", "text","toggle", "toggle"],
-                 field_width:  ["020", "075", "075", "360", "180", "120","120", "090","100","100"],
-                 field_align: ["c", "l", "l", "l","l", "l", "l", "l", "c", "c"]}
+        school: {field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments", "Day_Evening_LEXschool",  "Other_language",  "Not_on_DUOorderlist_2lines",  "Activated",  "Locked"],
+                 field_names: ["select", "sb_code", "article", "name", "abbrev", "depbases", "dayevelex", "otherlang", "no_order", "activated", "locked"],
+                 filter_tags: ["select", "text", "text",  "text", "text",  "text", "text", "text", "toggle", "toggle", "toggle"],
+                 field_width:  ["020", "075", "075", "360", "180", "120","120", "090","100", "100", "100"],
+                 field_align: ["c", "l", "l", "l","l", "l", "l", "l", "c", "c", "c"]}
         };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', function() {
             td.appendChild(el);
 
     // --- add EventListener to td
-            if (["code", "abbrev", "name", "last_name", "depbases", "dayevelex", "otherlang"].includes(field_name)){
+            if (["code", "abbrev", "name", "last_name", "depbases", "dayevelex", "otherlang", "no_order"].includes(field_name)){
                 td.addEventListener("click", function() {MSCH_Open(el)}, false)
                 td.classList.add("pointer_show");
                 add_hover(td);
@@ -581,7 +581,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let filter_value = null, display_txt = null;
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
-                } else if (["activated", "locked"].includes(field_name)){
+                } else if (["activated", "locked", "no_order"].includes(field_name)){
                     el_div.className = (fld_value) ? "tickmark_2_2" : "tickmark_0_0";
                     filter_value = (fld_value) ? "1" : "0";
                 } else if (["sb_code", "article", "name", "abbrev"].indexOf(field_name) > -1){
@@ -605,7 +605,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }  // if(field_name)
         }  // if(el_div)
     };  // UpdateField
-
 
 //========= set_columns_hidden  ====== PR2021-07-05
     function set_columns_hidden() {

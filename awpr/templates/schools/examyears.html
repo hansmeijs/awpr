@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exam years' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/examyears210822.js' %}"></script>
+    <script src="{% static 'js/examyears210901.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -35,12 +35,12 @@
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
+            {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
-            {% include 'schools/modexamyear.html' %}
+            {% include 'schools/modcreateexamyear.html' %}
+            {% include 'schools/modeditexamyear.html' %}
 
             <div class="content_margin_top78">
-                {% include 'includes/messages.html' %}
-
                 <div class="content_header flex_container">
         <!-- header_text -->
                     <div class="flex_4 mx-4 visibility_hide">

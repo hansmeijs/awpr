@@ -11,6 +11,7 @@ const selected = {
     student_pk: null,
     subject_pk: null
 };
+
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
@@ -55,6 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
     urls.url_orderlist_download = get_attr_from_el(el_data, "data-orderlist_download_url");
+    urls.url_orderlist_parameters = get_attr_from_el(el_data, "data-url_orderlist_parameters");
 
     columns_tobe_hidden.btn_orderlist01 = {
         fields: [ "school_abbrev", "total_students", "total", "publ_count", "datepublished"],
@@ -65,17 +67,17 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get field_settings
     const field_settings = {
         orderlist: {field_caption: ["", "School_code", "School_name", "Number_of_candidates",
-                                 "Number_of_entered_subjects", "Number_of_submitted_subjects", "Date_submitted"],
+                                 "Number_of_entered_subjects", "Number_of_submitted_subjects", "Date_submitted", "Download_Exform"],
                     field_names: ["", "schbase_code", "school_abbrev",
-                                "total_students", "total", "publ_count", "datepublished"],
+                                "total_students", "total", "publ_count", "datepublished", "url"],
                     field_tags: ["div", "div", "div",
-                                 "div", "div","div", "div"],
+                                 "div", "div","div", "div", "a"],
                     filter_tags: ["select", "text", "text",
-                                  "number", "number", "number", "text"],
+                                  "number", "number", "number", "text", "text"],
                     field_width:  ["020", "090", "180",
-                                   "120", "120", "120", "150"],
+                                   "120", "120", "120", "150", "120"],
                     field_align: ["c", "l", "l",
-                                    "r", "r", "r", "l"]
+                                    "r", "r", "r", "l", "c"]
                      }
         }
 
@@ -155,6 +157,10 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if (el_confirm_btn_save){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
 
+// ---  MOD MODAL ORDERLIST EXTRA ------------------------------------
+        let el_MOLEX_btn_save = document.getElementById("id_MOLEX_btn_save");
+        if (el_MOLEX_btn_save){ el_MOLEX_btn_save.addEventListener("click", function() {MOLEX_Save()}) };
+
 // ---  set selected menu button active
         //SetMenubuttonActive(document.getElementById("id_hdr_users"));
     if(may_view_page){
@@ -163,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setting: {page: "page_orderlist"},
                 schoolsetting: {setting_key: "import_studsubj"},
                 locale: {page: ["page_studsubj", "page_subject", "page_student", "upload", "page_orderlist"]},
-                examyear_rows: {get: true},
+                examyear_rows: {cur_ey_only: true},
                 school_rows: {get: true},
                 department_rows: {get: true},
                 level_rows: {cur_dep_only: true},
@@ -268,13 +274,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
-        console.log("===  CreateSubmenu == ");
+        //console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
             const href_ETE = (urls.url_orderlist_download) ? urls.url_orderlist_download.replace("-", "ete") : urls.url_orderlist_download;
             const href_DUO = (urls.url_orderlist_download) ? urls.url_orderlist_download.replace("-", "duo") : urls.url_orderlist_download;
 
             AddSubmenuButton(el_submenu, loc.Preliminary_orderlist, function() {ModConfirmOpen("prelim_orderlist")});
             //AddSubmenuButton(el_submenu, loc.Final_orderlist, null, null, "id_submenu_download_orderlist", href_DUO, true);  // true = download
+            AddSubmenuButton(el_submenu, loc.Variables_for_extra_exams, function() {MOLEX_Open()});
             AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_orderlist")}, [], "id_submenu_columns")
 
         el_submenu.classList.remove(cls_hide);
@@ -347,13 +354,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= FillTblRows  ==================== PR2021-07-01
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
-        console.log( "setting_dict", setting_dict);
+        //console.log( "===== FillTblRows  === ");
+        //console.log( "setting_dict", setting_dict);
 
         const tblName = "orderlist";
         const field_setting = field_settings[tblName]
         const data_rows = orderlist_rows;
-        console.log( "data_rows", data_rows);
+        //console.log( "data_rows", data_rows);
 
 // --- set_columns_hidden
         const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
@@ -435,13 +442,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (["text", "number"].includes(filter_tag)) {
                         el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
                         add_hover(th_filter);
-                    } else if (filter_tag === "toggle") {
-                        // add EventListener for icon to th_filter, not el_filter
-                        th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
-                        th_filter.classList.add("pointer_show");
-
-                        el_filter.classList.add("tickmark_0_0");
-                        add_hover(th_filter);
                     }
 
 // --- add other attributes
@@ -509,30 +509,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- add data-field attribute
                 el.setAttribute("data-field", field_name);
 
-    // --- add EventListener to td
-                if (tblName === "studsubj"){
-                    if (field_name !== "select") {
-                        td.addEventListener("click", function() {MSTUDSUBJ_Open(td)}, false)
-                        td.classList.add("pointer_show");
-                        add_hover(td);
-                    }
-                    if (field_name.includes("has_")){
-                        el.classList.add("tickmark_0_0")
-
-                    } else  if (field_name.includes("_status")){
-                        el.classList.add("stat_0_1")
-                    };
-                };
-
         // --- add width, text_align, right padding in examnumber
                 // not necessary: td.classList.add(class_width, class_align);
-
-                if(["fullname", "subj_name"].includes(field_name)){
-                    // dont set width in field student and subject, to adjust width to length of name
-                    el.classList.add(class_align);
-                } else {
-                    el.classList.add(class_width, class_align);
-                }
+                el.classList.add(class_width, class_align);
 
                 if(filter_tag === "number"){el.classList.add("pr-3")}
                 td.appendChild(el);
@@ -565,7 +544,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const fld_value = (map_dict[field_name]) ? map_dict[field_name] : null;
 
             if(field_name){
-                let inner_text = null, filter_value = null;
+                let inner_text = null, h_ref = null, filter_value = null;
                 if (field_name === "select") {
                  } else if (["schbase_code", "school_abbrev"].includes(field_name)){
                     inner_text = fld_value;
@@ -578,14 +557,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (field_name.includes("datepublished")){
                     inner_text = format_dateISO_vanilla (loc, fld_value, true, false, true, false);
                     filter_value = (inner_text) ? inner_text : 0;
-
-                } else if (field_name === "activated"){
-                    filter_value = (!!fld_value) ? "1" : "0";
-                    el_div.className = (!!fld_value) ? "tickmark_1_2" : "tickmark_0_0";
+                } else if (field_name === "url"){
+                    h_ref = fld_value;
                 };  // if (field_name === "select") {
 
-// ---  put value in innerText
-                el_div.innerText = inner_text;
+// ---  put value in innerText or h_ref in href
+                if (el_div.tagName === "A"){
+                    el_div.href = h_ref;
+                    el_div.innerHTML = (h_ref) ? "download &#8681;" : null;
+                } else {
+                    el_div.innerText = inner_text;
+                }
 
     // ---  add attribute filter_value
                 add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
@@ -616,12 +598,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( "response");
                     console.log( response);
 
-                    if ("updated_student_rows" in response) {
+                    if ("updated_examyear_rows" in response) {
                         const el_MSTUD_loader = document.getElementById("id_MSTUD_loader");
                         if(el_MSTUD_loader){ el_MSTUD_loader.classList.add(cls_visible_hide)};
-                        const tblName = "student";
+                        const tblName = "orderlist";
                         const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                        RefreshDataMap(tblName, field_names, response.updated_student_rows, student_map);
+                        RefreshDataMap(tblName, field_names, response.updated_examyear_rows, examyear_map);
                     };
                     $("#id_mod_student").modal("hide");
 
@@ -642,7 +624,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2021-08-22
-    function ModConfirmOpen(mode, el_input) {
+    function ModConfirmOpen(mode) {
         console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "prelim_orderlist"
 
@@ -654,7 +636,19 @@ document.addEventListener('DOMContentLoaded', function() {
             el_confirm_loader.classList.add(cls_visible_hide)
             el_confirm_msg_container.className = "p-3";
 
-            const msg_html = "<p>" + loc.The_preliminary_orderlist + loc.will_be_downloaded + "</p><p>" + loc.Do_you_want_to_continue + "</p>"
+            //const msg_html = "<p>" + loc.The_preliminary_orderlist + loc.will_be_downloaded + "</p><p>" + loc.Do_you_want_to_continue + "</p>"
+
+            const html_list = ["<div class='flex_1 mx-1'>",
+                            "<label for='id_MCONF_select' class='label_margin_top_m3'> ", loc.Downlaod_preliminary_orderlist, ":</label>",
+                             "<select id='id_MCONF_select' class='form-control'",
+                                   "autocomplete='off' ondragstart='return false;' ondrop='return false;'>",
+                                 "<option value='totals_only'>", loc.Totals_only , "</option>",
+                                 "<option value='extra_separate'>", loc.Extra_separate, "</option>",
+                                 "<option value='no_extra'>", loc.Without_extra, "</option>",
+                            "</select>",
+                         "</div>"]
+            const msg_html =  html_list.join("")
+
             el_confirm_msg_container.innerHTML = msg_html;
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             if (el_modconfirm_link) {
@@ -677,10 +671,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (mod_dict.mode === "prelim_orderlist"){
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             if (el_modconfirm_link) {
-                el_modconfirm_link.click();
-            // show loader
-                el_confirm_loader.classList.remove(cls_visible_hide)
+                    const el_id_MCONF_select = document.getElementById("id_MCONF_select")
+                    if (el_id_MCONF_select){
+                        const href_str = (el_id_MCONF_select.value) ? el_id_MCONF_select.value : "-"
+                        let href = urls.url_orderlist_download.replace("-", href_str);
 
+        console.log("href: ", href);
+                        el_modconfirm_link.href = href;
+                        el_modconfirm_link.click();
+                // show loader
+                        el_confirm_loader.classList.remove(cls_visible_hide)
+                    }
             // close modal after 5 seconds
                 setTimeout(function (){ $("#id_mod_confirm").modal("hide") }, 5000);
             };
@@ -739,6 +740,56 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }  // ModConfirmResponse
 
+// +++++++++++++++++ MODAL ORDERLIST EXTRA EXAMS +++++++++++++++++++++++++++++++++++++++++++
+//=========  MOLEX_Open  ================ PR2021-08-31
+    function MOLEX_Open() {
+        console.log(" -----  MOLEX_Open   ----")
+
+        if(permit_dict.permit_crud && setting_dict.sel_examyear_pk){
+            const map_dict = get_mapdict_from_datamap_by_tblName_pk(examyear_map, "examyear", setting_dict.sel_examyear_pk)
+            mod_dict = deepcopy_dictNEW(map_dict);
+            const el_MOLEX_form_controls = document.getElementById("id_MOLEX_form_controls")
+            if(el_MOLEX_form_controls){
+                const form_elements = el_MOLEX_form_controls.querySelectorAll(".awp_input_number")
+                for (let i = 0, el; el = form_elements[i]; i++) {
+                    const field = get_attr_from_el(el, "data-field");
+                    el.value = mod_dict[field];
+                };
+            };
+        };
+
+// show modal
+        $("#id_mod_orderlist_extra").modal({backdrop: true});
+
+    };  // MOLEX_Open
+
+//=========  MOLEX_Save  ================  PR2021-08-31
+    function MOLEX_Save() {
+        console.log(" -----  MOLEX_Save   ----")
+
+        if(permit_dict.permit_crud && setting_dict.sel_examyear_pk){
+            const upload_dict = {};
+            const el_MOLEX_form_controls = document.getElementById("id_MOLEX_form_controls")
+            if(el_MOLEX_form_controls){
+                const form_elements = el_MOLEX_form_controls.querySelectorAll(".awp_input_number")
+                for (let i = 0, el; el = form_elements[i]; i++) {
+                    const field = get_attr_from_el(el, "data-field");
+                    const value_int = Number(el.value)
+                    if (value_int !== mod_dict[field]){
+                        upload_dict[field] = value_int;
+                    }
+                };
+// ---  Upload Changes
+                if (!isEmpty(upload_dict)){
+                    UploadChanges(upload_dict, urls.url_orderlist_parameters);
+                };
+            };
+        };
+
+// hide modal
+        $("#id_mod_orderlist_extra").modal("hide");
+
+    };  // MOLEX_Save
 //###########################################################################
 // +++++++++++++++++ REFRESH DATA ROWS +++++++++++++++++++++++++++++++++++++++
 
@@ -935,7 +986,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //###########################################################################
 // +++++++++++++++++ REFRESH DATA MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
 
-//=========  RefreshDataMap  ================ PR2020-08-16 PR2020-09-30
+//=========  RefreshDataMap  ================ PR2020-08-16 PR2020-09-30 PR2021-08-31
     function RefreshDataMap(tblName, field_names, data_rows, data_map) {
         //console.log(" --- RefreshDataMap  ---");
         //console.log("data_rows", data_rows);
@@ -947,123 +998,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }  //  RefreshDataMap
 
-//=========  RefreshDatamapItem  ================ PR2020-08-16 PR2020-09-30 PR2021-0315
+//=========  RefreshDatamapItem  ================ PR2020-08-16 PR2020-09-30 PR2021-03-15
     function RefreshDatamapItem(tblName, field_names, update_dict, data_map) {
         //console.log(" --- RefreshDatamapItem  ---");
         //console.log("update_dict", update_dict);
         if(!isEmpty(update_dict)){
-
-// ---  update or add update_dict in subject_map
-            let updated_columns = [];
-    // get existing map_item
-            const tblName = update_dict.table;
             const map_id = update_dict.mapid;
-            let tblRow = document.getElementById(map_id);
-
-            const is_deleted = get_dict_value(update_dict, ["deleted"], false)
-            const is_created = get_dict_value(update_dict, ["created"], false)
-            const err_dict = (update_dict.error) ? update_dict.error : null;
-            //console.log("err_dict", err_dict);
-
-// ++++ created ++++
-            if(is_created){
-    // ---  insert new item
-                data_map.set(map_id, update_dict);
-                updated_columns.push("created")
-    // ---  create row in table., insert in alphabetical order
-                tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_id, update_dict)
-    // ---  scrollIntoView,
-                if(tblRow){
-                    tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
-    // ---  make new row green for 2 seconds,
-                    ShowOkElement(tblRow);
-                }
-    // ---  remove the row without subject, if it exists
-                remove_studsubjrow_without_subject(map_id);
-
-// ++++ deleted ++++
-            } else if(is_deleted){
-                // dont delete row from map if it is the last row of this student. In that case: make subject empty
-                data_map.delete(map_id);
-    //--- delete tblRow
-                if (tblRow){tblRow.parentNode.removeChild(tblRow)};
-            } else {
-                const old_map_dict = (map_id) ? data_map.get(map_id) : null;
-                //console.log("old_map_dict", old_map_dict);
-    // ---  check which fields are updated, add to list 'updated_columns'
-                if(!isEmpty(old_map_dict) && field_names){
-                    // skip first column (is margin)
-                    for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
-                        if (col_field in old_map_dict && col_field in update_dict){
-                            if (old_map_dict[col_field] !== update_dict[col_field] ) {
-                                updated_columns.push(col_field)
-                            }}}}
-
-                //console.log("updated_columns", updated_columns);
-    // ---  update item
-                data_map.set(map_id, update_dict)
-            }
-    // ---  make update
-            // note: when updated_columns is empty, then updated_columns is still true.
-            // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
-            if(tblRow && updated_columns.length){
-    // ---  make entire row green when row is created
-                if(updated_columns.includes("created")){
-                    ShowOkElement(tblRow);
-                } else {
-    // loop through cells of row
-                    for (let i = 1, el_fldName, td, el; td = tblRow.cells[i]; i++) {
-                        if (td){
-                            el = td.children[0];
-                            if (el){
-                                el_fldName = get_attr_from_el(el, "data-field")
-        // update field and make field green when field name is in updated_columns
-                                if(updated_columns.includes(el_fldName)){
-                                    UpdateField(el, update_dict);
-                                    ShowOkElement(el);
-                                }}}}}}
+            data_map.set(map_id, update_dict)
+        //console.log("data_map", data_map);
         }
     }  // RefreshDatamapItem
 
-
-//=========  remove_studsubjrow_without_subject  ================ PR2020-12-20
-    function remove_studsubjrow_without_subject(map_id) {
-        //console.log(" --- remove_studsubjrow_without_subject  ---");
-        //console.log("map_id", map_id);
-        // function removes row of this student without subject (if it exists)
-        if (map_id) {
-            const arr = map_id.split("_");
-            if (arr.length === 3){
-                const mapid_empty_row =  arr[0] + "_" + arr[1] + "_"
-                const tblRow = document.getElementById(mapid_empty_row);
-    //--- delete tblRow
-                if (tblRow){
-                    const tblBody = tblRow.parentNode
-                    if (tblBody){ tblBody.removeChild(tblRow) };
-                }
-            }
-        }
-    }  //  remove_studsubjrow_without_subject
-
-//=========  make_studsubjrow_empty  ================ PR2020-12-23
-    // TODO not in use yet
-    function make_studsubjrow_empty(map_id) {
-        //console.log(" --- make_studsubjrow_empty  ---");
-        //console.log("map_id", map_id);
-        // isteda of deleting last row of a student: make it empty
-        if (map_id) {
-            const arr = map_id.split("_");
-            if (arr.length === 3){
-                const mapid_empty_row =  arr[0] + "_" + arr[1] + "_"
-                const tblRow = document.getElementById(mapid_empty_row);
-    //--- empty tblRow
-                if (tblRow){
-                    //const tblBody = tblRow.parentNode
-                    //if (tblBody){ tblBody.removeChild(tblRow) };
-                }
-            }
-        }
-    }  //  make_studsubjrow_empty
 
 //###########################################################################
 // +++++++++++++++++ FILTER TABLE ROWS ++++++++++++++++++++++++++++++++++++++
@@ -1087,48 +1032,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }; // function HandleFilterKeyup
 
-//========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23
-    function HandleFilterToggle(el_input) {
-        console.log( "===== HandleFilterToggle  ========= ");
-
-        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
-        // because data-colindex goes wrong with hidden columns
-        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
-        const col_index = el_input.parentNode.cellIndex;
-    //console.log( "col_index", col_index, "event.key", event.key);
-
-    // - get filter_tag from  el_input
-        const filter_tag = get_attr_from_el(el_input, "data-filtertag")
-        const field_name = get_attr_from_el(el_input, "data-field")
-    //console.log( "col_index", col_index);
-    //console.log( "filter_tag", filter_tag);
-    //console.log( "field_name", field_name);
-
-    // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
-        const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
-        const filter_value = (filter_array[1]) ? filter_array[1] : "0";
-    //console.log( "filter_array", filter_array);
-    //console.log( "filter_value", field_name);
-        let new_value = "0", icon_class = "tickmark_0_0"
-        if(filter_tag === "toggle") {
-            // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
-    // - toggle filter value
-            new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
-    // - get new icon_class
-            icon_class =  (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "tickmark_2_2" : "tickmark_0_0";
-        }
-    // - put new filter value in filter_dict
-        filter_dict[col_index] = [filter_tag, new_value]
-    console.log( "filter_dict", filter_dict);
-        el_input.className = icon_class;
-        Filter_TableRows();
-
-    };  // HandleFilterToggle
-
-
-
-
-
 //========= HandleFilterField  ====================================
     function HandleFilterField(el_filter, col_index, event) {
         console.log( "===== HandleFilterField  ========= ");
@@ -1146,56 +1049,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- reset filter row when clicked on 'Escape'
         const skip_filter = t_SetExtendedFilterDict(el_filter, col_index, filter_dict, event.key);
-        console.log( "filter_dict", filter_dict);
-        console.log( "skip_filter", skip_filter);
-
-        let new_value = "0", icon_class = "tickmark_0_0"
-        if(filter_tag === "toggle") {
-            // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
-    // - toggle filter value
-            new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
-    // - get new icon_class
-            icon_class =  (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "tickmark_2_2" : "tickmark_0_0";
-        }
-
-
-
-
-
-        if (filter_tag === "toggle") {
-// ---  toggle filter_checked
-            let filter_checked = (col_index in filter_dict) ? filter_dict[col_index] : 0;
-
-        console.log( "filter_checked", filter_checked);
-    // ---  change icon
-            let el_icon = el_filter.children[0];
-            if(el_icon){
-                add_or_remove_class(el_icon, "tickmark_0_0", !filter_checked)
-                if(filter_tag === "toggle"){
-                    add_or_remove_class(el_icon, "tickmark_0_1", filter_checked === -1)
-                    add_or_remove_class(el_icon, "tickmark_0_2", filter_checked === 1)
-                }
-            }
-
-        } else if (filter_tag === "activated") {
-// ---  toggle activated
-            let filter_checked = (col_index in filter_dict) ? filter_dict[col_index] : 0;
-            filter_checked += 1
-            if (filter_checked > 1) { filter_checked = -2 }
-            if (!filter_checked){
-                delete filter_dict[col_index];
-            } else {
-                filter_dict[col_index] = filter_checked;
-            }
-    // ---  change icon
-            let el_icon = el.children[0];
-            if(el_icon){
-                add_or_remove_class(el_icon, "tickmark_0_0", !filter_checked)
-                add_or_remove_class(el_icon, "exclamation_0_2", filter_checked === -2)
-                add_or_remove_class(el_icon, "tickmark_0_1", filter_checked === -1)
-                add_or_remove_class(el_icon, "tickmark_0_2", filter_checked === 1)
-            }
-        }
 
         Filter_TableRows();
     }; // HandleFilterField

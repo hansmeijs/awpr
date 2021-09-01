@@ -403,7 +403,7 @@ def format_HM_from_dt_local(datetime_local, use24insteadof00, use_suffix, timefo
     return display_txt
 
 
-def format_modified_at(modifiedat, user_lang):
+def format_modified_at(modifiedat, user_lang, month_abbrev=True):
     # PR2021-07-13
 
     datetime_formatted = ''
@@ -411,7 +411,7 @@ def format_modified_at(modifiedat, user_lang):
         # local timezone is set to 'America/Curacao' by default
         datetime_local = get_datetimelocal_from_datetime_utc(modifiedat)
         last_modified_date = datetime_local.date()
-        date_formatted = format_DMY_from_dte(last_modified_date, user_lang, True)  # True = month_abbrev
+        date_formatted = format_DMY_from_dte(last_modified_date, user_lang, month_abbrev)  # True = month_abbrev
         time_formatted = format_HM_from_dt_local(datetime_local, True, True, '24h', user_lang)
         datetime_formatted = date_formatted + ', ' + time_formatted
 

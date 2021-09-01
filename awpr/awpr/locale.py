@@ -333,6 +333,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['will_be_copid_to_sxm'] = pgettext_lazy('singular', ' will be copied to SXM.')
         dict['Yes_copy'] = _('Yes, copy')
+        dict['Edit_examyear'] = _('Edit examyear')
 
         dict['msg_info'] = {
         'create': [
@@ -350,8 +351,9 @@ def get_locale_dict(table_dict, user_lang, request):
             str(_("The exam year will be activated now.")),
             str(_("After you have activated the examyear, you will be able to enter data."))
         ],
-        'activate_nopermit': [
-            str(_("You don't have permission to activate the examyear."))
+        'nopermit': [
+            str(_("You don't have permission to activate the examyear.")),
+            str(_("You don't have permission to edit this exam year."))
         ],
         'close': [
             str(_("The exam year will be closed now.")),
@@ -362,6 +364,9 @@ def get_locale_dict(table_dict, user_lang, request):
             str(_("The exam year is closed.")),
             str(_("You can undo the closure of the examyear at any time.")),
             str(_("Click 'Undo closure exam year'."))
+        ],
+        'edit': [
+            str(_("You don't have permission to edit this exam year.")),
         ],
         }
 
@@ -404,8 +409,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Mandatory'] = _('Mandatory')
         dict['Mandatory_if_subject'] = _("'Mandatory-if' subject")
         dict['Mandatory_if_subject_info'] = _("Subject is only mandatory if the candidate has this 'Mandatory-if' subject.")
-        dict['Not_on_orderlist'] = _("Not on orderlist")
-        dict['Not_on_orderlist_info'] = _("When a subject and a school both have 'Not on orderlist' checked,\nthis subject of this school will not be included in the orderlist.")
 
         dict['Combination_subject'] = _('Combination subject')
         dict['Extra_count_allowed'] = _('Extra subject counts allowed')
@@ -512,6 +515,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Other_language'] = _('Other language')
         dict['Papiamentu'] = _('Papiamentu')
         dict['English'] = _('English')
+        dict['Not_on_DUOorderlist_2lines'] = _('Not on \nDUO-orderlist')
 
         #dict['Departments_of_this_school'] = _('Departments of this school')
         dict['All_departments'] = _('All departments')
@@ -857,6 +861,13 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['The_preliminary_orderlist'] = _('The preliminary orderlist')
         dict['Downlaod_preliminary_orderlist'] = _('Download preliminary orderlist')
+        dict['Variables_for_extra_exams'] = _('Variables for extra exams')
+
+        dict['Totals_only'] = _('Show totals per school only')
+        dict['Extra_separate'] = _('Show extra per school separate')
+        dict['Without_extra'] = _("Don't calculate extra exams")
+        dict['File_per_school'] = _('Create Excelfile per school')
+
 
         dict['Final_orderlist'] = _('Final orderlist')
 

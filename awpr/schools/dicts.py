@@ -29,6 +29,9 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk):
         sql_keys['cntr_id'] = req_usr.country.pk
         sql_list = ["SELECT ey.id AS examyear_id, ey.country_id, CONCAT('examyear_', ey.id::TEXT) AS mapid,",
             "ey.code AS examyear_code,  ey.published, ey.locked, ey.createdat, ey.publishedat, ey.lockedat,",
+            "ey.no_practexam, ey.reex_se_allowed, ey.no_centralexam, ey.no_thirdperiod,",
+            "ey.order_extra_fixed, ey.order_extra_perc, ey.order_round_to,",
+            "ey.order_tv2_divisor, ey.order_tv2_multiplier, ey.order_tv2_max,",
             "ey.modifiedby_id, ey.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
             "FROM schools_examyear AS ey",
             "LEFT JOIN accounts_user AS au ON (au.id = ey.modifiedby_id)",

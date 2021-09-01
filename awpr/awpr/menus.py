@@ -114,7 +114,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 
     req_user = request.user
     if req_user.is_authenticated and req_user.country and req_user.schoolbase:
-        awp_messages = []
+        messages = []
 
 # -  get user_lang
         requsr_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
@@ -252,15 +252,15 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 # ------- set message -------- PR2021-03-25
         if no_examyears:
             no_access_message = _("There are no exam years yet.")
-            awp_messages.append(no_access_message)
+            messages.append(no_access_message)
         elif country_locked:
             no_access_message = _("%(country)s has no license to use AWP-online.") % \
                                                  {'country': sel_country_name}
-            awp_messages.append(no_access_message)
+            messages.append(no_access_message)
         elif examyear_locked:
             no_access_message = _("Exam year %(ey)s is locked. You cannot make changes.") % \
                                                  {'ey': str(sel_examyear.code)}
-            awp_messages.append(no_access_message)
+            messages.append(no_access_message)
         elif examyear_not_published:
             # get latest name of ETE / Div of Exam from schools, if not found: default = MinOnd
             school_admin = sch_mod.School.objects.filter(
@@ -277,13 +277,13 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
                 admin_name = _('The Ministry of Education')
             no_access_message = _("%(admin)s has not yet published examyear %(exyr)s. You cannot enter data yet.") % \
                                                  {'admin': admin_name, 'exyr': str(sel_examyear_code)}
-            awp_messages.append(no_access_message)
+            messages.append(no_access_message)
 
         elif not sel_school_activated:
             # block certain pages when not sel_school_activated
             if sel_page in ('page_student', 'page_studsubj', 'page_grade'):
                 no_access_message = _("You must first activate the examyear before you can enter data. Go to the page 'School' and activate the examyear.")
-                awp_messages.append(no_access_message)
+                messages.append(no_access_message)
 
         headerbar_param = {
             'no_access': no_access,
@@ -294,7 +294,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             'display_school': display_school, 'school': school_name,
             'display_department': display_department, 'department': department_name,
             'menu_items': menu_items,
-            'awp_messages': awp_messages,
+            'messages': messages,
             'permit_list': permit_list,
             'page': sel_page[5:],
             'paragraph': 'intro'

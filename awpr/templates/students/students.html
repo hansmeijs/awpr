@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import210829.js' %}"></script>
-    <script src="{% static 'js/students210829.js' %}"></script>
+    <script src="{% static 'js/students210901.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -71,9 +71,6 @@
 
     <!-- CONTENT HEADER - LOADER -->
             <div class="content_margin_top78">
-            <!-- content_header -->
-                {% include 'includes/messages.html' %}
-    <!-- header_text left -->
                 <div class="flex_4 mx-4 visibility_hide">
                     <h5 id="id_hdr_left"></h5>
                 </div>
@@ -110,7 +107,6 @@
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_settings_upload="{% url 'url_settings_upload' %}"
                 data-url_student_upload="{% url 'url_student_upload' %}"
-                data-url_student_validate="{% url 'url_student_validate' %}"
                 data-url_studsubj_validate_scheme="{% url 'url_studsubj_validate_scheme' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
             >

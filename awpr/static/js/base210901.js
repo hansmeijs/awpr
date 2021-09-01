@@ -778,7 +778,7 @@
     let deepcopy_dictNEW = function copy_fnc(data_dict) {
         //console.log(" === Deepcopy_Dict ===")
         let dict_clone = {};
-        for (const [key, value] of Object.entries(mod_studentsubject_dict)) {
+        for (const [key, value] of Object.entries(data_dict)) {
             if (typeof value==='object' && value!==null && !(value instanceof Array) && !(value instanceof Date)) {
                dict_clone[key] = copy_fnc(value);
             } else {
@@ -787,7 +787,6 @@
         };
         return dict_clone;
     }  // deepcopy_dict
-
 
 
 //#########################################################################
@@ -1359,7 +1358,6 @@
         };
     };  // b_clear_array
 
-
 //========= b_get_statusindex_of_requsr  ======== // PR2021-03-26 PR2021-07-26
     function b_get_statusindex_of_requsr(loc, permit_dict){
         // function returns status_index of auth user, returns 0 when user has none or multiple auth usergroups
@@ -1397,10 +1395,8 @@
     return status_index;
     }  // b_get_statusindex_of_requsr
 
-
 //#########################################################################
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++
-
     function b_show_mod_message(msg_html, header_text){  // PR2021-01-26 PR2021-03-25 PR2021-07-03
         // TODO header, set focus after closing messagebox
 
@@ -1456,7 +1452,7 @@
                 const el_modmessage_btn_cancel = document.getElementById("id_modmessage_btn_cancel");
                 set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 50);
 // ---  show modal
-                    $("#id_mod_awpmessages").modal({backdrop: true});
+                    $("#id_mod_message").modal({backdrop: true});
                 }
             }
         }  //   if (awp_messages && awp_messages.length)
@@ -1508,11 +1504,10 @@
         }
     }  // b_render_msg_container
 
-
 //=========  b_ShowModMessages  ================ PR2021-06-27  PR2021-07-03
     function b_ShowModMessages(msg_dictlist) {
-        //console.log("==== b_ShowModMessages  ======")
-        //console.log("msg_dictlist", msg_dictlist)
+        console.log("==== b_ShowModMessages  ======")
+        console.log("msg_dictlist", msg_dictlist)
 
         //  [ { class: "alert-warning", header: 'Update this',
         //      msg_html: "Deze loonperiode heeft 7 diensten."]
@@ -1525,10 +1520,13 @@
                 el_container.innerHTML = null;
                 for (let i = 0, msg_dict; msg_dict = msg_dictlist[i]; i++) {
                     const class_str = (msg_dict.class) ? msg_dict.class : "border_bg_transparent";
+            console.log("class_str", class_str)
                     if(!header_text && msg_dict.header){
                         header_text = msg_dict.header;
                     }
+            console.log("header_text", header_text)
                     const msg_html = msg_dict.msg_html;
+            console.log("msg_html", msg_html)
 
                     if (msg_html){
             // --- create div element with alert border for each message in messages
@@ -1551,7 +1549,6 @@
             $("#id_mod_message").modal({backdrop: true});
         };
     }  // b_ShowModMessages
-
 
 //#########################################################################
 // +++++++++++++++++ SVG  +++++++++++++++++++++++++++++++++++++++++++

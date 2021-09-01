@@ -447,7 +447,7 @@ class StudentsubjectValidateAllView(View):  # PR2021-07-24
 
 #################################################################################
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectValidateView(View):
+class StudentsubjectValidateViewNIU(View):
 
     def post(self, request):
         logging_on = False  # s.LOGGING_ON
@@ -507,9 +507,10 @@ class StudentsubjectValidateTestView(View):
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
+            logger.debug(' ')
             logger.debug(' ============= StudentsubjectValidateTestView ============= ')
 
-        # function validates studentsubject records before saving, subject are in list PR2021-08-17
+        # function validates studentsubject records after oepning modal, subject are in list PR2021-08-17 PR2021-08-31
 
         update_wrap = {'is_test': True}
 
@@ -537,6 +538,10 @@ class StudentsubjectValidateTestView(View):
 # +++ validate subjects of one student, used in modal
             student_pk = upload_dict.get('student_pk')
             si_dictlist = upload_dict.get('si_dictlist')
+            if logging_on:
+                logger.debug('student_pk' + str(student_pk))
+                logger.debug('si_dictlist: ' + str(si_dictlist))
+
             if student_pk:
                 student = stud_mod.Student.objects.get_or_none(
                     id=student_pk,
@@ -962,7 +967,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
             logger.debug('.....double_approved: ' + str(double_approved))
 
         show_warning_msg = False
-
+        show_msg_first_approve_by_pres_secr = False
         if is_test:
             if is_approve:
                 class_str = 'border_bg_valid' if committed else 'border_bg_invalid'
@@ -1000,8 +1005,9 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                 msg_list.append('<li>' + str(_("%(subj)s already submitted") %
                                              {'subj': get_subjects_are_text(already_published)}) + ';</li>')
             if auth_missing:
-                msg_list.append('<li>' + str(_("%(subj)s not completely approved") %
+                msg_list.append('<li>' + str(_("%(subj)s not fully approved") %
                                              {'subj': get_subjects_are_text(auth_missing)}) + ';</li>')
+                show_msg_first_approve_by_pres_secr = True
             if already_approved_by_auth:
                 msg_list.append('<li>' + get_subjects_are_text(already_approved_by_auth) + str(_(' already approved')) + ';</li>')
             if double_approved:
@@ -1086,10 +1092,14 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
             msg_list.append(str(_('Are you sure you want to submit the Ex1 form?')))
             msg_list.append('</p>')
 
+# - add line 'both prseident and secretary must first approve all subjects before you can submit the Ex form
+        if show_msg_first_approve_by_pres_secr:
+            msg_txt = ''.join(('<p>', str(_('The president and the secretary must approve all subjects before you can submit the Ex1 form.')), '</p>'))
+            msg_list.append(msg_txt)
+
         msg_list.append('</div>')
 
         msg_html = ''.join(msg_list)
-
         return msg_html
     # - end of create_submit_msg_list
 
@@ -3499,7 +3509,7 @@ def create_ssnote_attachment_rows(upload_dict, request):  # PR2021-03-17
 #/////////////////////////////////////////////////////////////////
 def create_orderlist_rows(sel_examyear_code, sel_exam_period):
     # --- create rows of all schools with published subjects PR2021-08-18
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== students.view create_orderlist_rows ============= ')
         logger.debug('sel_examyear_code: ' + str(sel_examyear_code) + ' ' + str(type(sel_examyear_code)))
@@ -3535,7 +3545,7 @@ def create_orderlist_rows(sel_examyear_code, sel_exam_period):
     """
     sql_keys = {'ey_code_int': sel_examyear_code, 'ex_period_int': sel_exam_period}
 
-    sql_sublist = ["SELECT st.school_id AS school_id, count(*) AS publ_count,",
+    sql_sublist = ["SELECT st.school_id AS school_id, publ.id AS subj_published_id, count(*) AS publ_count,",
         "publ.datepublished, publ.examperiod",
 
         "FROM students_studentsubject AS studsubj",
@@ -3545,7 +3555,7 @@ def create_orderlist_rows(sel_examyear_code, sel_exam_period):
         "WHERE publ.examperiod = %(ex_period_int)s::INT",
         "AND NOT studsubj.tobedeleted",
 
-        "GROUP BY st.school_id, publ.datepublished, publ.examperiod"
+        "GROUP BY st.school_id, publ.id, publ.datepublished, publ.examperiod"
     ]
     sub_sql = ' '.join(sql_sublist)
 
@@ -3564,7 +3574,7 @@ def create_orderlist_rows(sel_examyear_code, sel_exam_period):
     total_students_sql = ' '.join(total_students_sublist)
 
     sql_list = ["WITH sub AS (", sub_sql, "), total AS (", total_sql, "), total_students AS (", total_students_sql, ")",
-        "SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.abbrev AS school_abbrev,",
+        "SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.abbrev AS school_abbrev, sub.subj_published_id,",
         "total.total, total_students.total_students, sub.publ_count, sub.datepublished, sub.examperiod",
 
         "FROM schools_school AS sch",
@@ -3587,9 +3597,14 @@ def create_orderlist_rows(sel_examyear_code, sel_exam_period):
         cursor.execute(sql, sql_keys)
         rows = af.dictfetchall(cursor)
 
-        if logging_on:
-            for row in rows:
-                logger.debug('row: ' + str(row))
+        for row in rows:
+            published_pk = row.get('subj_published_id')
+            if published_pk:
+    # can't use sql because of file field
+                published = sch_mod.Published.objects.get_or_none(pk=published_pk)
+                if published and published.file:
+                    row['file_name'] = str(published.file)
+                    row['url'] = published.file.url
 
     return rows
 # --- end of create_orderlist_rows

@@ -534,6 +534,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
     subjecttype = ForeignKey(Subjecttype, related_name='+', on_delete=CASCADE)
 
     ete_exam = BooleanField(default=False)
+    # TODO remove no_order from subjects
     # if no_order: dont count this subject in orderlist when school no_order is also True
     no_order = BooleanField(default=False)
 
@@ -652,6 +653,8 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     subjecttype_log = ForeignKey(Subjecttype_log, null=True,  related_name='+', on_delete=CASCADE)
 
     ete_exam = BooleanField(default=False)
+
+    # TODO remove no_order from subjects
     no_order = BooleanField(default=False)
 
     # delete exam from schemitem, is linked to grade

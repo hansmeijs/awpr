@@ -44,7 +44,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
         starttime = timer()
         datalists = {}
-        awp_messages = []
+        messages = []
         if request.user and request.user.country and  request.user.schoolbase:
             if request.POST['download']:
 
@@ -60,7 +60,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- get user permits and settings -- first get settings, these are used in other downloads
                 # download_setting will update usersetting with items in request_item_setting, and retrieve saved settings
                 request_item_setting = datalist_request.get('setting')
-                new_setting_dict, permit_dict, awp_messages, sel_examyear, sel_schoolbase, sel_depbase = \
+                new_setting_dict, permit_dict, messages, sel_examyear, sel_schoolbase, sel_depbase = \
                     download_setting(request_item_setting, user_lang, request)
 
                 requsr_same_school = permit_dict.get('requsr_same_school', False)
@@ -72,8 +72,28 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if request_item_setting and new_setting_dict:
                     datalists['setting_dict'] = new_setting_dict
 
-                if awp_messages:
-                    datalists['awp_messages'] = awp_messages
+                if messages:
+                    # messages" [{'msg_list':
+                    # ['Waarschuwing: het geselecteerde examenjaar 2021 is niet gelijk aan het huidige examenjaar.'],
+                    # 'class': 'border_bg_warning'}]
+                    message_html = ''
+                    msg_dictlist = []
+                    logger.debug('messages: ' + str(messages))
+                    for message in messages:
+                        msg_list = message.get('msg_list')
+                        logger.debug('msg_list: ' + str(msg_list))
+                        class_str = message.get('class', '')
+                        logger.debug('class_str: ' + str(class_str))
+                        if msg_list:
+                            msg_html =' '.join(("<div class'm-2 p-2", class_str, "'>"))
+                            logger.debug('msg_html: ' + str(msg_html))
+                            for msg_txt in msg_list:
+                                logger.debug('msg_txt: ' + str(msg_txt))
+                                msg_html += ''.join(("<p>", msg_txt, "</p>"))
+                            msg_html += "</div>"
+                            message_html += msg_html
+
+                    datalists['messages'] = messages
 
 # ----- get school settings (includes import settings)
                 request_item_schoolsetting = datalist_request.get('schoolsetting')
@@ -100,7 +120,11 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- examyears
                 if datalist_request.get('examyear_rows'):
-                    datalists['examyear_rows'] = school_dicts.create_examyear_rows(request.user, {}, None)
+                    cur_ey_only = af.get_dict_value(datalist_request, ('examyear_rows', 'cur_ey_only'), False)
+                    sel_examyear_pk = None
+                    if cur_ey_only and sel_examyear:
+                        sel_examyear_pk = sel_examyear.pk
+                    datalists['examyear_rows'] = school_dicts.create_examyear_rows(request.user, {}, sel_examyear_pk)
 # ----- schools
                 if datalist_request.get('school_rows'):
                     datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear, permit_dict)
@@ -649,8 +673,8 @@ def download_setting(request_item_setting, user_lang, request):  # PR2020-07-01 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 def get_selected_examyear_examperiod_from_usersetting(request):  # PR2021-07-08
-    # - get selected examyear.code and examperiod from usersettings
-    # used in OrderlistDownloadView
+    # - get selected examyear.code and examperiod from usersettings, only examyear from request.user.country
+    # used in ExamyearUploadView, OrderlistDownloadView
     # note: examyear.code is integer '2021'
     sel_examyear, sel_examperiod = None, None
     req_user = request.user
@@ -755,9 +779,8 @@ def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-
     # - add info to msg_list, will be sent back to client
             if sel_examyear is None:
                 msg_list.append(str(_('No exam year selected.')))
-            # TODO FIXIT temporaray disabled
-            #elif not sel_examyear.published:
-            #    msg_list.append(str(_('This exam year is not published yet.')))
+            elif not sel_examyear.published:
+                msg_list.append(str(_('This exam year is not published yet.')))
             elif sel_examyear.locked:
                 msg_list.append(str(_('This exam year is locked.')))
 

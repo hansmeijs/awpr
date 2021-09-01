@@ -189,117 +189,129 @@ def validate_studentsubjects_TEST(student, si_dictlist):
         logger.debug('student: ' + str(student))
         logger.debug('si_dictlist: ' + str(si_dictlist))
 
-# - store info of schemeitem in si_dict
+    try:
+        msg_list = []
+        msg_html = None
 
-    msg_list = []
-    if student:
-        stud_scheme = student.scheme
-        if logging_on:
-            logger.debug('stud_scheme: ' + str(stud_scheme))
-
-        if stud_scheme is None:
-            dep_missing, level_missing, sector_missing, has_profiel = False, False, False, False
-
-            department = student.department
-            if department is None:
-                dep_missing = True
-            else:
-                has_profiel = department.has_profiel
-                level_missing = department.level_req and student.level is None
-                sector_missing = department.sector_req and student.sector is None
-
-            not_entered_str = ''
-            if dep_missing:
-                not_entered_str = _('The department is not entered.')
-            else:
-                if level_missing and sector_missing:
-                    if has_profiel:
-                        not_entered_str = _("The 'leerweg' and 'profiel' are not entered.")
-                    else:
-                        not_entered_str = _("The 'leerweg' and 'sector' are not entered.")
-                elif level_missing:
-                    not_entered_str = _("The 'leerweg' is not entered.")
-                elif sector_missing:
-                    if has_profiel:
-                        not_entered_str = _("The 'profiel' is not entered.")
-                    else:
-                        not_entered_str = _("The sector is not entered.")
-            msg_list.append(str(not_entered_str) + '<br>' + str(_("Go to the page <i>Candidates</i> and enter the missing information of the candidate.")))
+        if student:
+            stud_scheme = student.scheme
             if logging_on:
-                logger.debug('msg_list: ' + str(msg_list))
-        else:
+                logger.debug('stud_scheme: ' + str(stud_scheme))
 
-# ++++++++++++++++++++++++++++++++
-# - get min max subjects and mvt from scheme
-            scheme_dict = get_scheme_si_sjtp_dict(stud_scheme)
-# ++++++++++++++++++++++++++++++++
-# - get info from studsubjects
-            doubles_pk_list = []
-            doubles_code_list = []
-            studsubj_dict = get_studsubj_dict_TEST(stud_scheme, student, si_dictlist, doubles_pk_list, msg_list)
-            doubles_pk_len = len(doubles_pk_list)
-            if doubles_pk_len:
-                subject_code_dict = scheme_dict.get('subj_code')
-                for pk_int in doubles_pk_list:
-                    doubles_code_list.append(subject_code_dict.get(pk_int, '-'))
-                display_str = convert_code_list_to_display_str(doubles_code_list)
-                if doubles_pk_len == 1:
-                    msg_list.append(''.join(
-                        ("<li>",
-                         str(_("The subject %(list)s occurs twice and must be deleted.") % {'list': display_str}),
-                         "<br>",
-                         str(_("It will be disregarded in the rest of the validation.")),
-                         "</li>")))
+            if stud_scheme is None:
+                dep_missing, level_missing, sector_missing, has_profiel = False, False, False, False
+
+                department = student.department
+                if department is None:
+                    dep_missing = True
                 else:
-                    msg_list.append(''.join((
-                        "<li>",
-                        str(_("The subjects %(list)s occur multiple times and must be deleted.") % {'list': display_str}),
-                        "<br>",
-                        str(_("They will be disregarded in the rest of the validation.")),
-                        "</li>")))
+                    has_profiel = department.has_profiel
+                    level_missing = department.level_req and student.level is None
+                    sector_missing = department.sector_req and student.sector is None
 
-            if logging_on:
-                logger.debug('scheme_dict: ' + str(scheme_dict))
-                logger.debug('studsubj_dict: ' + str(studsubj_dict))
-                logger.debug('msg_list: ' + str(msg_list))
+                not_entered_str = ''
+                if dep_missing:
+                    not_entered_str = _('The department is not entered.')
+                else:
+                    if level_missing and sector_missing:
+                        if has_profiel:
+                            not_entered_str = _("The 'leerweg' and 'profiel' are not entered.")
+                        else:
+                            not_entered_str = _("The 'leerweg' and 'sector' are not entered.")
+                    elif level_missing:
+                        not_entered_str = _("The 'leerweg' is not entered.")
+                    elif sector_missing:
+                        if has_profiel:
+                            not_entered_str = _("The 'profiel' is not entered.")
+                        else:
+                            not_entered_str = _("The sector is not entered.")
+                msg_list.append(str(not_entered_str) + '<br>' + str(_("Go to the page <i>Candidates</i> and enter the missing information of the candidate.")))
+                if logging_on:
+                    logger.debug('msg_list: ' + str(msg_list))
+            else:
+                if si_dictlist:
+        # ++++++++++++++++++++++++++++++++
+        # - get min max subjects and mvt from scheme
+                    scheme_dict = get_scheme_si_sjtp_dict(stud_scheme)
+        # ++++++++++++++++++++++++++++++++
+        # - get info from studsubjects
+                    doubles_pk_list = []
+                    doubles_code_list = []
+                    studsubj_dict = get_studsubj_dict_from_modal(stud_scheme, student, si_dictlist, doubles_pk_list, msg_list)
+                    doubles_pk_len = len(doubles_pk_list)
+                    if doubles_pk_len:
+                        subject_code_dict = scheme_dict.get('subj_code')
+                        for pk_int in doubles_pk_list:
+                            doubles_code_list.append(subject_code_dict.get(pk_int, '-'))
+                        display_str = convert_code_list_to_display_str(doubles_code_list)
+                        if doubles_pk_len == 1:
+                            msg_list.append(''.join(
+                                ("<li>",
+                                 str(_("The subject %(list)s occurs twice and must be deleted.") % {'list': display_str}),
+                                 "<br>",
+                                 str(_("It will be disregarded in the rest of the validation.")),
+                                 "</li>")))
+                        else:
+                            msg_list.append(''.join((
+                                "<li>",
+                                str(_("The subjects %(list)s occur multiple times and must be deleted.") % {'list': display_str}),
+                                "<br>",
+                                str(_("They will be disregarded in the rest of the validation.")),
+                                "</li>")))
 
-# ++++++++++++++++++++++++++++++++
-# - get eveninstudent or lex student
-            is_evening_or_lex_student = student.iseveningstudent or student.islexstudent
+                    if logging_on:
+                        logger.debug('scheme_dict: ' + str(scheme_dict))
+                        logger.debug('studsubj_dict: ' + str(studsubj_dict))
+                        logger.debug('msg_list: ' + str(msg_list))
 
-# -------------------------------
-# - check required subjects
-            validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-            if logging_on:
-                logger.debug('msg_list: ' + str(msg_list))
-# - check total amount of subjects
-            validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-            if logging_on:
-                logger.debug('msg_list: ' + str(msg_list))
+        # ++++++++++++++++++++++++++++++++
+        # - get eveninstudent or lex student
+                    is_evening_or_lex_student = student.iseveningstudent or student.islexstudent
 
-# - check amount of mvt and combi subjects
-            validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-            validate_amount_subjects('wisk', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-            validate_amount_subjects('combi', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+        # -------------------------------
+        # - check required subjects
+                    validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+                    if logging_on:
+                        logger.debug('msg_list: ' + str(msg_list))
+        # - check total amount of subjects
+                    validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+                    if logging_on:
+                        logger.debug('msg_list: ' + str(msg_list))
 
-# - check amount of subjects per subjecttype
-            validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+        # - check amount of mvt and combi subjects
+                    validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+                    validate_amount_subjects('wisk', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+                    validate_amount_subjects('combi', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
 
-            if logging_on:
-                logger.debug('msg_list: ' + str(msg_list) + '' + str(type(msg_list)))
+        # - check amount of subjects per subjecttype
+                    validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
 
-    if len(msg_list):
-        msg_str = ''.join(("<div class='p-2 border_bg_warning'><h6>", str(_('The composition of the subjects is not correct')), ':</h6>', "<ul class='msg_bullet'>"))
-        msg_list.insert(0, msg_str)
-        msg_list.append("</ul></div>")
-    else:
-        pass
-        # don't give message 'correct', the rules might not be entered
-        msg_list = ("<div class='p-2 border_bg_valid'><p>", str(_('AWP has not found any errors in the composition of the subjects.')), "</p></div>")
+                    if logging_on:
+                        logger.debug('msg_list: ' + str(msg_list) + '' + str(type(msg_list)))
 
-    msg_html = ''.join(msg_list)
+                    if len(msg_list):
+                        msg_str = ''.join(("<div class='p-2 border_bg_warning'><h6>", str(_('The composition of the subjects is not correct')), ':</h6>', "<ul class='msg_bullet'>"))
+                        msg_list.insert(0, msg_str)
+                        msg_list.append("</ul></div>")
+                    else:
+                        msg_list = ["<div class='p-2 border_bg_valid'><p>", str(_('AWP has not found any errors in the composition of the subjects.')), "</p></div>"]
+                    if logging_on:
+                        logger.debug('msg_list: ' + str(msg_list))
+                else:
+                    msg_list = ["<div class='p-2 border_bg_warning'><p>", str(_('This candidate has no subjects.')), "</p></div>"]
+
+        msg_html = ''.join(msg_list)
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+        msg_html = ' '.join(("<div class='p-2 border_bg_invalid'><p>",
+                    str(_('An error occurred.')), str(_('AWP has not checked the composition of the subjects.')),"</p></div>"))
+
+    if logging_on:
+        logger.debug('msg_html: ' + str(msg_html))
     return msg_html
-# --- end of validate_studentsubjects
+# --- end of validate_studentsubjects_TEST
 
 
 
@@ -307,7 +319,7 @@ def validate_studentsubjects_TEST(student, si_dictlist):
 
 
 # ========  validate_studentsubjects  ======= PR2021-07-09
-def validate_studentsubjects(student):
+def validate_studentsubjects_NIU(student):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  validate_studentsubjects  -----')
@@ -942,11 +954,12 @@ def get_scheme_si_sjtp_dict(scheme):
     return scheme_dict
 # - end of get_scheme_si_sjtp_dict
 
-def get_studsubj_dict_TEST(stud_scheme, student, si_dictlist, doubles_list, msg_list):
+def get_studsubj_dict_from_modal(stud_scheme, student, si_dictlist, doubles_list, msg_list):
     # - get info from student subjects PR2021-08-17
+    # si_dictlist contains studentsubject values from studsubj modal, not from the database
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug('  -----  get_studsubj_dict_TEST  -----')
+        logger.debug('  -----  get_studsubj_dict_from_modal  -----')
         logger.debug('scheme: ' + str(student))
         logger.debug('si_dictlist: ' + str(si_dictlist))
 
@@ -959,15 +972,12 @@ def get_studsubj_dict_TEST(stud_scheme, student, si_dictlist, doubles_list, msg_
     combi_list = []
     mvt_list = []
     wisk_list = []
+
+
     core_list = []
 
-# - create dict with studentsubject values that are used in validator
-    rows = stud_mod.Studentsubject.objects.filter(
-        student=student,
-        tobedeleted=False
-    )
     if not si_dictlist:
-        msg_list.append(_("Candidate has no subjects."))
+        msg_list.append(str(_("This candidate has no subjects.")))
     else:
         for si_dict in si_dictlist:
             # si_dict = {schemeitem_id: 2089, is_extra_counts: false, is_extra_nocount: false, is_elective_combi: false}
@@ -998,7 +1008,7 @@ def get_studsubj_dict_TEST(stud_scheme, student, si_dictlist, doubles_list, msg_
     if logging_on:
         logger.debug('studsubj_dict: ' + str(studsubj_dict))
     return studsubj_dict
-# - end of get_studsubj_dict_TEST
+# - end of get_studsubj_dict_from_modal
 
 
 def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
@@ -1025,7 +1035,7 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
         tobedeleted=False
     )
     if rows is None:
-        msg_list.append(_("Candidate has no subjects."))
+        msg_list.append(_("This candidate has no subjects."))
     else:
         for studsubj in rows:
             get_schemitem_info(stud_scheme, studsubj.schemeitem,

@@ -128,9 +128,9 @@ class ExamyearListView(View):
 
 
 @method_decorator([login_required], name='dispatch')
-class ExamyearUploadView(UpdateView):  # PR2020-10-04
+class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         logging_on = s.LOGGING_ON
 
         update_wrap = {}
@@ -146,7 +146,8 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
                 logger.debug(' ============= ExamyearUploadView ============= ')
                 logger.debug('permit_list: ' + str(permit_list))
                 logger.debug('has_permit:  ' + str(has_permit))
-        # - reset language
+
+# - reset language
             user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
             activate(user_lang)
 
@@ -174,21 +175,17 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
                 if country:
                     new_examyear_instance = None
 # - get current examyear - when mode is 'create': examyear is None. It will be created at "elif mode == 'create'"
-                    # only if examyear.country equals request.user.country
-                    examyear_id = upload_dict.get('examyear_pk')
-                    current_examyear = sch_mod.Examyear.objects.get_or_none(
-                        id=examyear_id,
-                        country=country
-                    )
+                    current_examyear_instance, sel_examperiodNIU = \
+                        dl.get_selected_examyear_examperiod_from_usersetting(request)
                     if logging_on:
-                        logger.debug('current_examyear: ' + str(current_examyear))
+                        logger.debug('current_examyear_instance: ' + str(current_examyear_instance))
 
-# +++ delete current_examyear
+# +++ delete current_examyear_instance
                     if mode == 'delete':
-                        if current_examyear:
-                            this_text = _("Exam year '%(tbl)s' ") % {'tbl': str(current_examyear.code)}
-        # - check if current_examyear is closed or schools have activated or locked it
-                            msg_err = av.validate_delete_examyear(current_examyear)
+                        if current_examyear_instance:
+                            this_text = _("Exam year '%(tbl)s' ") % {'tbl': str(current_examyear_instance.code)}
+        # - check if current_examyear_instance is closed or schools have activated or locked it
+                            msg_err = av.validate_delete_examyear(current_examyear_instance)
                             if msg_err:
                                 error_list.append(msg_err)
                                 if logging_on:
@@ -196,17 +193,17 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
 
                             else:
                                 if logging_on:
-                                    logger.debug('delete current_examyear: ' + str(current_examyear))
+                                    logger.debug('delete current_examyear_instance: ' + str(current_examyear_instance))
                                 msg_list = []  # TODO
-                                current_examyear_pk = current_examyear.pk
-                                deleted_ok = sch_mod.delete_instance(current_examyear, msg_list, error_list, request, this_text)
+                                current_examyear_instance_pk = current_examyear_instance.pk
+                                deleted_ok = sch_mod.delete_instance(current_examyear_instance, msg_list, error_list, request, this_text)
                                 if logging_on:
                                     logger.debug('deleted_ok' + str(deleted_ok))
 
                                 if deleted_ok:
-                                    # - add deleted_row to current_examyear_rows
-                                    examyear_rows.append({'pk': current_examyear_pk,
-                                                         'mapid': 'examyear_' + str(current_examyear_pk),
+                                    # - add deleted_row to current_examyear_instance_rows
+                                    examyear_rows.append({'pk': current_examyear_instance_pk,
+                                                         'mapid': 'examyear_' + str(current_examyear_instance_pk),
                                                          'deleted': True})
                                     instance = None
                                     if logging_on:
@@ -228,8 +225,8 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
                                 append_dict['created'] = True
     # - copy all tables from last examyear existing examyear
                                 copy_to_sxm = False
-                                prev_examyear_instance, msg_err = sf.get_previous_examyear_instance(new_examyear_instance)
-                                copy_tables_from_last_year(prev_examyear_instance, new_examyear_instance, copy_to_sxm, request)
+                                # prev_examyear_instance, msg_err = sf.get_previous_examyear_instance(new_examyear_instance)
+                                copy_tables_from_last_year(current_examyear_instance, new_examyear_instance, copy_to_sxm, request)
                             if msg_err:
                                 error_list.append(msg_err)
                                 if logging_on:
@@ -257,6 +254,70 @@ class ExamyearUploadView(UpdateView):  # PR2020-10-04
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of ExamyearUploadView
+
+
+############ ORDER LIST ##########################
+@method_decorator([login_required], name='dispatch')
+class OrderlistsParametersView(View):  # PR2021-08-31
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug('OrderlistsParametersView')
+
+        # function updates orderlist parameters in examyear table
+        update_wrap = {}
+        examyear_rows = []
+        messages = []
+        error_list = []
+        # - get permit
+        has_permit = False
+        req_usr = request.user
+        if req_usr and req_usr.country and req_usr.schoolbase:
+            permit_list = req_usr.permit_list('page_orderlist')
+            if permit_list:
+                has_permit = 'permit_crud' in permit_list
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
+            # - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+            # - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if has_permit and upload_json:
+                upload_dict = json.loads(upload_json)
+
+                # - get selected examyear,from usersettings
+                # exames are only ordered in first exam period
+                sel_examyear_instance, sel_examperiodNIU = \
+                    dl.get_selected_examyear_examperiod_from_usersetting(request)
+                if logging_on:
+                    logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance))
+
+                if sel_examyear_instance:
+                    update_examyear(sel_examyear_instance, upload_dict, error_list, request)
+
+# - create examyear_row
+                    updated_rows = sd.create_examyear_rows(
+                        req_usr=req_usr,
+                        append_dict={},
+                        examyear_pk=sel_examyear_instance.pk
+                    )
+                    update_wrap['updated_examyear_rows'] = updated_rows
+
+        if len(messages):
+            update_wrap['messages'] = messages
+        if logging_on:
+            logger.debug('update_wrap: ' + str(update_wrap))
+
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+
+# --- end of OrderlistsParametersView
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -333,7 +394,7 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
                 if sxm_examyear_instance:
                     SXM_added_list.append('sxm_examyear_country: ' + str(sxm_examyear_instance.country))
 
-# - copy all tables from current_examyear_instance to new_sxm_examyear_instance
+# - copy all tables from current_examyear_instance_instance to new_sxm_examyear_instance
                 if curacao_examyear_instance and sxm_examyear_instance:
                     if logging_on:
                         logger.debug('curacao_examyear_instance and sxm_examyear_instance')
@@ -499,45 +560,59 @@ def update_examyear(instance, upload_dict, msg_list, request):
 
     # FIELDS_EXAMYEAR = ('country', 'examyear', 'published', 'locked',
     #                   'createdat', 'publishedat', 'lockedat', 'modifiedby', 'modifiedat')
+    # order_extra_fixed, order_extra_perc, order_round_to, order_tv2_divisor, order_tv2_max, order_tv2_multiplier
+
     # upload_dict: {'table': 'examyear', 'country_pk': 1, 'examyear_pk': 58, 'mapid': 'examyear_58', 'mode': 'update', 'published': True}
 
     if instance:
         try:
             save_changes = False
-            for field in ('examyear', 'published', 'locked'):
+            for field in upload_dict:
                 logger.debug('field: ' + str(field))
 
-# --- get new_value from  upload_dict  if it exists
-                if field in upload_dict:
-                    new_value = upload_dict.get(field)
-                    saved_value = getattr(instance, field)
+                new_value = upload_dict.get(field)
+                saved_value = getattr(instance, field)
 
-                    logger.debug('new_value: ' + str(new_value))
-                    logger.debug('saved_value: ' + str(saved_value))
+                logger.debug('new_value: ' + str(new_value))
+                logger.debug('saved_value: ' + str(saved_value))
 
 # --- update field 'examyear' is not allowed
-                    if field == 'examyear':
-                        if new_value != saved_value:
-                             msg_list.append(str(_('The exam year cannot be changed')))
+                if field == 'examyear':
+                    if new_value != saved_value:
+                         msg_list.append(str(_('The exam year cannot be changed')))
 
 # --- update fieldpython manage.py runserver
+                # 'published', 'locked'
+                elif field in ('published', 'locked'):
+                    if new_value is None:
+                        new_value = False
+                    #logger.debug('inactive saved_value]: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                    if new_value != saved_value:
+                        setattr(instance, field, new_value)
+                        save_changes = True
+                        # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+                        new_date = timezone.now()
+                        date_field = field + 'at'
+                        setattr(instance, date_field, new_date)
+
+                    # --- update fieldpython manage.py runserver
                     # 'published', 'locked'
-                    elif field in ('published', 'locked'):
-                        if new_value is None:
-                            new_value = False
-                        #logger.debug('inactive saved_value]: ' + str(saved_value) + ' ' + str(type(saved_value)))
-                        if new_value != saved_value:
-                            setattr(instance, field, new_value)
-                            save_changes = True
-                            # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
-                            new_date = timezone.now()
-                            date_field = field + 'at'
-                            setattr(instance, date_field, new_date)
+                elif field in ('order_extra_fixed', 'order_extra_perc', 'order_round_to',
+                               'order_tv2_divisor', 'order_tv2_max', 'order_tv2_multiplier'):
+                    if new_value is None:
+                        if field in ('order_round_to', 'order_tv2_divisor'):
+                            new_value = 1
+                        else:
+                            new_value = 0
+
+                    if new_value != saved_value:
+                        setattr(instance, field, new_value)
+                        save_changes = True
 # --- end of for loop ---
 
 # --- save changes
             if save_changes:
-                    instance.save(request=request)
+                instance.save(request=request)
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
@@ -552,8 +627,10 @@ def copy_tables_from_last_year(prev_examyear_instance, new_examyear_instance, co
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- copy_tables_from_last_year -------')
-        logger.debug('prev_examyear_instance: ' + str(prev_examyear_instance) + ' ' + str(prev_examyear_instance.country.abbrev))
-        logger.debug('new_examyear_instance: ' + str(new_examyear_instance) + ' ' + str(new_examyear_instance.country.abbrev))
+        logger.debug('prev_examyear_instance: ' + str(prev_examyear_instance))
+        logger.debug('prev_examyear_country: ' + str(prev_examyear_instance.country.abbrev))
+        logger.debug('new_examyear_instance: ' + str(new_examyear_instance))
+        logger.debug('new_examyear_country: ' + str(new_examyear_instance.country.abbrev))
 
     if new_examyear_instance and prev_examyear_instance:
 

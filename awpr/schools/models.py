@@ -178,6 +178,14 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
     publishedat = DateTimeField(null=True)
     lockedat = DateTimeField(null=True)
 
+# parameters to calculate extra examns and tv2 exams PR2021-08-31
+    order_extra_fixed = PositiveSmallIntegerField(default=2)
+    order_extra_perc = PositiveSmallIntegerField(default=5)
+    order_round_to = PositiveSmallIntegerField(default=5)
+    order_tv2_divisor = PositiveSmallIntegerField(default=25)
+    order_tv2_multiplier = PositiveSmallIntegerField(default=5)
+    order_tv2_max = PositiveSmallIntegerField(default=25)
+
     class Meta:
         ordering = ['-code',]
 
@@ -215,6 +223,13 @@ class Examyear_log(AwpBaseModel):
     publishedat = DateTimeField(null=True)
     lockedat = DateTimeField(null=True)
 
+    # parameters to calculate extra examns and tv2 exams PR2021-08-31
+    order_extra_fixed = PositiveSmallIntegerField(default=2)
+    order_extra_perc = PositiveSmallIntegerField(default=5)
+    order_round_to = PositiveSmallIntegerField(default=5)
+    order_tv2_divisor = PositiveSmallIntegerField(default=25)
+    order_tv2_multiplier = PositiveSmallIntegerField(default=5)
+    order_tv2_max = PositiveSmallIntegerField(default=25)
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
@@ -418,6 +433,8 @@ class School(AwpBaseModel):  # PR2018-08-20 PR2018-11-11
     article = CharField(max_length=c.MAX_LENGTH_SCHOOLARTICLE, null=True)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+
+    # TODO remname no_order to no_duo_order
     # don't count subject of this school in orderlist when subject.no_order and school.no_order are both True
     no_order = BooleanField(default=False)
 
@@ -465,6 +482,8 @@ class School_log(AwpBaseModel):
 
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+
+    # TODO remname no_order to no_duo_order
     no_order = BooleanField(default=False)
 
     isdayschool = BooleanField(default=False)
