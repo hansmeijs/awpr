@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Orderlists' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/orderlists210901.js' %}"></script>
+    <script src="{% static 'js/orderlists210903.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -112,6 +112,7 @@
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_settings_upload="{% url 'url_settings_upload' %}"
                 data-orderlist_download_url="{% url 'orderlist_download_url' '-' %}"
+                data-orderlist_per_school_download_url="{% url 'orderlist_per_school_download_url' %}"
                 data-url_orderlist_parameters="{% url 'url_orderlist_parameters' %}"
 
             >

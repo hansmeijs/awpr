@@ -575,9 +575,9 @@ def get_sel_schoolbase_instance(request, request_item_schoolbase_pk=None):  # PR
 
 
 def get_sel_depbase_instance(sel_school, request, request_item_depbase_pk=None):  # PR2020-12-26 PR2021-05-07 PR2021-08-13
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug('  >>>>>>>>>>> -----  get_sel_depbase_instance  -----')
+        logger.debug(' -----  get_sel_depbase_instance  -----')
         logger.debug('sel_school: ' + str(sel_school))
         logger.debug('request_item_depbase_pk: ' + str(request_item_depbase_pk))
 

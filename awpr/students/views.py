@@ -784,7 +784,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                                 logger.debug('selected_dict: ' + str(selected_dict))
 
 # +++ get selected studsubj_rows
-                        # TODO exclude published rows?? Yes, but count them when checkign. You cannot approve or undo approve or submit when submitted
+                        # TODO exclude published rows?? Yes, but count them when checking. You cannot approve or undo approve or submit when submitted
 
                         crit = Q(student__school=sel_school) & \
                                Q(student__department=sel_department)
@@ -3509,7 +3509,7 @@ def create_ssnote_attachment_rows(upload_dict, request):  # PR2021-03-17
 #/////////////////////////////////////////////////////////////////
 def create_orderlist_rows(sel_examyear_code, sel_exam_period):
     # --- create rows of all schools with published subjects PR2021-08-18
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== students.view create_orderlist_rows ============= ')
         logger.debug('sel_examyear_code: ' + str(sel_examyear_code) + ' ' + str(type(sel_examyear_code)))

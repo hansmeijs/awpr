@@ -994,7 +994,7 @@
 
 //========= b_recursive_integer_lookup  ========== PR2020-07-14 PR2020-07-25
     function b_recursive_integer_lookup(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int){
-        //console.log(0, " ----- b_recursive_integer_lookup -----", 0);
+        //console.log( " ----- b_recursive_integer_lookup -----");
 
         // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
         // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
@@ -1080,11 +1080,13 @@
 
 //========= b_recursive_lookup  ========== PR2020-06-16
     function b_recursive_lookup(data_rows, search_value, user_lang){
-        //console.log( " ----- b_recursive_lookup -----");
+        console.log( " ----- b_recursive_lookup -----");
         // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
         // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
         // function returns rowindex of searched value, or rowindex of row to be inserted
         // data_rows must be ordered by id (as text field), done by server
+
+        //console.log( "data_rows: ", data_rows);
 
         let compare = null, middle_index = null, found_dict = null;
         if (data_rows && data_rows.length){

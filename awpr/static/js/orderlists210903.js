@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
     urls.url_orderlist_download = get_attr_from_el(el_data, "data-orderlist_download_url");
+    urls.orderlist_per_school_download_url = get_attr_from_el(el_data, "data-orderlist_per_school_download_url");
     urls.url_orderlist_parameters = get_attr_from_el(el_data, "data-url_orderlist_parameters");
 
     columns_tobe_hidden.btn_orderlist01 = {
@@ -276,14 +277,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function CreateSubmenu() {
         //console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
-            const href_ETE = (urls.url_orderlist_download) ? urls.url_orderlist_download.replace("-", "ete") : urls.url_orderlist_download;
-            const href_DUO = (urls.url_orderlist_download) ? urls.url_orderlist_download.replace("-", "duo") : urls.url_orderlist_download;
-
             AddSubmenuButton(el_submenu, loc.Preliminary_orderlist, function() {ModConfirmOpen("prelim_orderlist")});
-            //AddSubmenuButton(el_submenu, loc.Final_orderlist, null, null, "id_submenu_download_orderlist", href_DUO, true);  // true = download
-            AddSubmenuButton(el_submenu, loc.Variables_for_extra_exams, function() {MOLEX_Open()});
-            AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_orderlist")}, [], "id_submenu_columns")
+            AddSubmenuButton(el_submenu, loc.Preliminary_orderlist + loc.per_school, function() {ModConfirmOpen("orderlist_per_school")});
 
+            if (permit_dict.permit_crud){
+                AddSubmenuButton(el_submenu, loc.Variables_for_extra_exams, function() {MOLEX_Open()});
+            };
+            AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_orderlist")}, [], "id_submenu_columns")
         el_submenu.classList.remove(cls_hide);
 
     };//function CreateSubmenu
@@ -626,69 +626,90 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  ModConfirmOpen  ================ PR2021-08-22
     function ModConfirmOpen(mode) {
         console.log(" -----  ModConfirmOpen   ----")
-        // values of mode are : "prelim_orderlist"
+        // values of mode are : "prelim_orderlist", "orderlist_per_school"
 
-        if (mode === "prelim_orderlist"){
-
-// set focus to cancel button
+        if (["prelim_orderlist", "orderlist_per_school"].includes(mode)){
             mod_dict = {mode: mode}
-            el_confirm_header.innerText = loc.Downlaod_preliminary_orderlist;
+
+            let header_txt = null, html_list = null, url_str = null;
+
+            if (mode === "orderlist_per_school"){
+    // set focus to cancel button
+                header_txt = loc.Preliminary_orderlist + loc.per_school;
+                html_list = ["<div class='flex_1 mx-1'>",
+                                "<p>", loc.The_preliminary_orderlist, loc.per_school, loc.will_be_downloaded, "</p>",
+                                "<p>", loc.Do_you_want_to_continue, "</p>",
+                             "</div>"]
+
+                url_str = urls.orderlist_per_school_download_url;
+
+
+            } else if (mode === "prelim_orderlist"){
+
+    // set focus to cancel button
+                header_txt = loc.Downlaod_preliminary_orderlist;
+
+                html_list = ["<div class='flex_1 mx-1'>",
+                                "<label for='id_MCONF_select' class='label_margin_top_m3'> ",
+                                loc.Downlaod_preliminary_orderlist, ":</label>",
+                                 "<select id='id_MCONF_select' class='form-control'",
+                                       "autocomplete='off' ondragstart='return false;' ondrop='return false;'>",
+                                     "<option value='totals_only'>", loc.Totals_only , "</option>",
+                                     "<option value='extra_separate'>", loc.Extra_separate, "</option>",
+                                "</select>",
+                             "</div>"]
+                url_str = urls.url_orderlist_download;
+
+            };
+
+            el_confirm_header.innerText = header_txt;
             el_confirm_loader.classList.add(cls_visible_hide)
             el_confirm_msg_container.className = "p-3";
 
-            //const msg_html = "<p>" + loc.The_preliminary_orderlist + loc.will_be_downloaded + "</p><p>" + loc.Do_you_want_to_continue + "</p>"
-
-            const html_list = ["<div class='flex_1 mx-1'>",
-                            "<label for='id_MCONF_select' class='label_margin_top_m3'> ", loc.Downlaod_preliminary_orderlist, ":</label>",
-                             "<select id='id_MCONF_select' class='form-control'",
-                                   "autocomplete='off' ondragstart='return false;' ondrop='return false;'>",
-                                 "<option value='totals_only'>", loc.Totals_only , "</option>",
-                                 "<option value='extra_separate'>", loc.Extra_separate, "</option>",
-                                 "<option value='no_extra'>", loc.Without_extra, "</option>",
-                            "</select>",
-                         "</div>"]
-            const msg_html =  html_list.join("")
-
+            const msg_html =  html_list.join("");
             el_confirm_msg_container.innerHTML = msg_html;
+
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             if (el_modconfirm_link) {
                 el_modconfirm_link.setAttribute("href", urls.url_orderlist_download);
             };
-                // set focus to save button
+// set focus to save button
             setTimeout(function (){
                 el_confirm_btn_save.focus();
             }, 500);
         // show modal
             $("#id_mod_confirm").modal({backdrop: true});
-        }
+        };
     };  // ModConfirmOpen
 
 //=========  ModConfirmSave  ================ PR2021-08-22
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
-        let close_modal = false;
-        if (mod_dict.mode === "prelim_orderlist"){
-            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
-            if (el_modconfirm_link) {
-                    const el_id_MCONF_select = document.getElementById("id_MCONF_select")
-                    if (el_id_MCONF_select){
-                        const href_str = (el_id_MCONF_select.value) ? el_id_MCONF_select.value : "-"
-                        let href = urls.url_orderlist_download.replace("-", href_str);
-
-        console.log("href: ", href);
-                        el_modconfirm_link.href = href;
-                        el_modconfirm_link.click();
-                // show loader
-                        el_confirm_loader.classList.remove(cls_visible_hide)
-                    }
-            // close modal after 5 seconds
-                setTimeout(function (){ $("#id_mod_confirm").modal("hide") }, 5000);
+        let close_modal_with_timout = false;
+        if (["prelim_orderlist", "orderlist_per_school"].includes(mod_dict.mode)){
+            let href = null;
+            if (mod_dict.mode === "orderlist_per_school"){
+                href = urls.orderlist_per_school_download_url;
+            } else if (mod_dict.mode === "prelim_orderlist"){
+                const el_id_MCONF_select = document.getElementById("id_MCONF_select")
+                const href_str = (el_id_MCONF_select.value) ? el_id_MCONF_select.value : "-"
+                href = urls.url_orderlist_download.replace("-", href_str);
             };
-        }
+            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
+            el_modconfirm_link.href = href;
+            el_modconfirm_link.click();
+    // show loader
+            el_confirm_loader.classList.remove(cls_visible_hide)
+            close_modal_with_timout = true;
 
+
+        };
 // ---  hide modal
-        if(close_modal) {
+        if(close_modal_with_timout) {
+        // close modal after 5 seconds
+            setTimeout(function (){ $("#id_mod_confirm").modal("hide") }, 5000);
+        } else {
             $("#id_mod_confirm").modal("hide");
         };
     }  // ModConfirmSave
@@ -747,12 +768,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(permit_dict.permit_crud && setting_dict.sel_examyear_pk){
             const map_dict = get_mapdict_from_datamap_by_tblName_pk(examyear_map, "examyear", setting_dict.sel_examyear_pk)
+        console.log("examyear_map", examyear_map)
             mod_dict = deepcopy_dictNEW(map_dict);
+        console.log("mod_dict", mod_dict)
             const el_MOLEX_form_controls = document.getElementById("id_MOLEX_form_controls")
             if(el_MOLEX_form_controls){
                 const form_elements = el_MOLEX_form_controls.querySelectorAll(".awp_input_number")
                 for (let i = 0, el; el = form_elements[i]; i++) {
                     const field = get_attr_from_el(el, "data-field");
+        console.log("field", field, " mod_dict[field]",  mod_dict[field])
                     el.value = mod_dict[field];
                 };
             };

@@ -811,7 +811,6 @@ if(j){td.classList.add("border_left")};
                         td.addEventListener("click", function() {MSUBJ_Open(el)}, false)
                         td.classList.add("pointer_show");
                         add_hover(td)
-
                     }
 
                 } else if (tblName === "scheme"){
@@ -1145,7 +1144,7 @@ if(j){td.classList.add("border_left")};
 
 //=========  RefreshDataRows  ================  PR2021-06-21
     function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
-        //console.log(" --- RefreshDataRows  ---");
+        console.log(" --- RefreshDataRows  ---");
         //console.log("tblName", tblName);
         //console.log("selected.scheme_pk", selected.scheme_pk);
 
@@ -1165,9 +1164,9 @@ if(j){td.classList.add("border_left")};
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
-        //console.log(" --- RefreshDatarowItem  ---");
+        console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
-        //console.log("update_dict", update_dict);
+        console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -1354,17 +1353,17 @@ if(j){td.classList.add("border_left")};
 
 //========= HandleFilterKeyup  ================= PR2021-05-12
     function HandleFilterKeyup(el, event) {
-        //console.log( "===== HandleFilterKeyup  ========= ");
+        console.log( "===== HandleFilterKeyup  ========= ");
         // skip filter if filter value has not changed, update variable filter_text
 
         // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
         // because data-colindex goes wrong with hidden columns
         // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
         const col_index = el.parentNode.cellIndex;
-        //console.log( "col_index", col_index, "event.key", event.key);
+        console.log( "col_index", col_index, "event.key", event.key);
 
         const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
-        //console.log( "filter_dict", filter_dict);
+        console.log( "filter_dict", filter_dict);
 
         if (!skip_filter) {
             Filter_TableRows(tblBody_datatable);
@@ -1410,7 +1409,7 @@ if(j){td.classList.add("border_left")};
     };  // HandleFilterToggle
 
     function Filter_TableRows() {  // PR2019-06-09 PR2020-08-31
-        //console.log( "===== Filter_TableRows=== ");
+        console.log( "===== Filter_TableRows=== ");
         //console.log( "filter_dict", filter_dict);
                 //console.log( "filter_array", filter_array);
         // function filters by inactive and substring of fields

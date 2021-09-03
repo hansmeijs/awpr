@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-09-01 06:47-0400\n"
+"POT-Creation-Date: 2021-09-03 07:06-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -610,7 +610,7 @@ msgstr "Niet gepubliceerd"
 msgid "Published"
 msgstr "Gepubliceerd"
 
-#: .\awpr\constants.py:124 .\awpr\locale.py:148 .\grades\excel.py:1818
+#: .\awpr\constants.py:124 .\awpr\locale.py:148 .\grades\excel.py:2227
 msgid "Number"
 msgstr "Nummer"
 
@@ -630,12 +630,12 @@ msgstr ""
 msgid "g/s/i"
 msgstr "g/v/o"
 
-#: .\awpr\constants.py:142 .\awpr\locale.py:409 .\grades\excel.py:1779
+#: .\awpr\constants.py:142 .\awpr\locale.py:409 .\grades\excel.py:2188
 #: .\subjects\forms.py:344 .\subjects\forms.py:364
 msgid "Mandatory"
 msgstr "Verplicht"
 
-#: .\awpr\constants.py:143 .\awpr\locale.py:413 .\grades\excel.py:1780
+#: .\awpr\constants.py:143 .\awpr\locale.py:413 .\grades\excel.py:2189
 #: .\templates\students\modstudentsubject.html:70
 msgid "Combination subject"
 msgstr "Combinatievak"
@@ -799,7 +799,7 @@ msgid "Bis exam"
 msgstr "Bis-examen"
 
 #: .\awpr\constants.py:338 .\awpr\constants.py:374 .\awpr\locale.py:115
-#: .\grades\excel.py:1657 .\subjects\forms.py:324 .\subjects\forms.py:383
+#: .\grades\excel.py:2066 .\subjects\forms.py:324 .\subjects\forms.py:383
 #: .\subjects\forms.py:399 .\templates\students\modstudent.html:134
 #: .\templates\students\submit_ex1_email.html:9
 #: .\templates\subjects\modschemeitem.html:20
@@ -809,7 +809,7 @@ msgid "Department"
 msgstr "Afdeling"
 
 #: .\awpr\constants.py:340 .\awpr\constants.py:375 .\awpr\locale.py:95
-#: .\grades\excel.py:1657 .\subjects\forms.py:324 .\subjects\forms.py:383
+#: .\grades\excel.py:2066 .\subjects\forms.py:324 .\subjects\forms.py:383
 #: .\subjects\forms.py:399 .\templates\students\modapprovegrade.html:34
 #: .\templates\students\modapprovesubject.html:26
 msgid "Level"
@@ -918,8 +918,7 @@ msgid "Division of Examinations"
 msgstr "Dienst Examens"
 
 #: .\awpr\constants.py:465 .\awpr\locale.py:88 .\awpr\menus.py:46
-#: .\grades\excel.py:1406 .\templates\accounts\modpermit.html:24
-#: .\templates\accounts\moduser.html:35
+#: .\templates\accounts\modpermit.html:24 .\templates\accounts\moduser.html:35
 #: .\templates\students\submit_ex1_email.html:8
 msgid "School"
 msgstr ""
@@ -945,11 +944,11 @@ msgstr "Lezen"
 msgid "Edit"
 msgstr "Wijzigen"
 
-#: .\awpr\constants.py:487 .\awpr\locale.py:911 .\grades\excel.py:352
+#: .\awpr\constants.py:487 .\awpr\locale.py:911 .\grades\excel.py:353
 msgid "President"
 msgstr "Voorzitter"
 
-#: .\awpr\constants.py:488 .\awpr\locale.py:912 .\grades\excel.py:364
+#: .\awpr\constants.py:488 .\awpr\locale.py:912 .\grades\excel.py:365
 msgid "Secretary"
 msgstr "Secretaris"
 
@@ -1071,8 +1070,8 @@ msgstr "Er is een fout opgetreden:"
 msgid "This is not a valid date."
 msgstr "Dit is geen geldige datum."
 
-#: .\awpr\functions.py:439 .\grades\excel.py:1662 .\grades\excel.py:1718
-#: .\grades\excel.py:1786
+#: .\awpr\functions.py:439 .\grades\excel.py:2071 .\grades\excel.py:2127
+#: .\grades\excel.py:2195
 msgid "Last modified by"
 msgstr "Laatst gewijzigd door"
 
@@ -1305,8 +1304,8 @@ msgstr "Examenjaar"
 msgid "Subject"
 msgstr "Vak"
 
-#: .\awpr\locale.py:94 .\grades\excel.py:1550 .\grades\excel.py:1552
-#: .\grades\excel.py:1612 .\templates\subjects\subjects.html:87
+#: .\awpr\locale.py:94 .\grades\excel.py:1959 .\grades\excel.py:1961
+#: .\grades\excel.py:2021 .\templates\subjects\subjects.html:87
 msgid "Subject schemes"
 msgstr "Vakschemas"
 
@@ -1314,7 +1313,7 @@ msgstr "Vakschemas"
 msgid "Levels"
 msgstr "Leerwegen"
 
-#: .\awpr\locale.py:100 .\grades\excel.py:1657
+#: .\awpr\locale.py:100 .\grades\excel.py:2066
 msgid "Sector / Profiel"
 msgstr ""
 
@@ -1355,7 +1354,7 @@ msgstr ""
 msgid "Sectors"
 msgstr "Sectoren/Profielen"
 
-#: .\awpr\locale.py:107 .\grades\excel.py:1709 .\grades\excel.py:1776
+#: .\awpr\locale.py:107 .\grades\excel.py:2118 .\grades\excel.py:2185
 #: .\subjects\forms.py:37 .\subjects\forms.py:79 .\subjects\forms.py:133
 #: .\subjects\forms.py:172 .\subjects\forms.py:214 .\subjects\forms.py:263
 #: .\subjects\views.py:620 .\subjects\views.py:1976
@@ -1364,7 +1363,7 @@ msgstr "Sectoren/Profielen"
 msgid "Abbreviation"
 msgstr "Afkorting"
 
-#: .\awpr\locale.py:109 .\grades\excel.py:1430
+#: .\awpr\locale.py:109 .\grades\excel.py:1828
 msgid "Total"
 msgstr "Totaal"
 
@@ -1392,8 +1391,8 @@ msgstr "een kandidaat"
 msgid "Departments"
 msgstr "Afdelingen"
 
-#: .\awpr\locale.py:118 .\grades\excel.py:1662 .\grades\excel.py:1718
-#: .\grades\excel.py:1786
+#: .\awpr\locale.py:118 .\grades\excel.py:2071 .\grades\excel.py:2127
+#: .\grades\excel.py:2195
 msgid "Last modified on "
 msgstr "Laatst gewijzigd op "
 
@@ -2083,7 +2082,7 @@ msgstr "Basiskarakter toevoegen"
 msgid "Delete character base"
 msgstr "Basiskarakter wissen"
 
-#: .\awpr\locale.py:387 .\grades\excel.py:1657
+#: .\awpr\locale.py:387 .\grades\excel.py:2066
 msgid "Subject scheme"
 msgstr "Vakschema"
 
@@ -2132,7 +2131,7 @@ msgctxt "karakter"
 msgid "Character"
 msgstr "Karakter"
 
-#: .\awpr\locale.py:404 .\grades\excel.py:1777 .\subjects\forms.py:341
+#: .\awpr\locale.py:404 .\grades\excel.py:2186 .\subjects\forms.py:341
 #: .\subjects\forms.py:362
 msgid "Grade type"
 msgstr "Cijfertype"
@@ -2145,7 +2144,7 @@ msgstr "SE-weging"
 msgid "CE weighing"
 msgstr "CE-weging"
 
-#: .\awpr\locale.py:410 .\grades\excel.py:1779
+#: .\awpr\locale.py:410 .\grades\excel.py:2188
 msgid "'Mandatory-if' subject"
 msgstr "'Verplicht-als' vak"
 
@@ -2155,31 +2154,31 @@ msgid ""
 msgstr ""
 "Vak is alleen verplicht als de kandidaat dit 'Verplicht-als' vak heeft."
 
-#: .\awpr\locale.py:414 .\grades\excel.py:1781
+#: .\awpr\locale.py:414 .\grades\excel.py:2190
 msgid "Extra subject counts allowed"
 msgstr "Extra vak, telt mee, toegestaan"
 
-#: .\awpr\locale.py:415 .\grades\excel.py:1781
+#: .\awpr\locale.py:415 .\grades\excel.py:2190
 msgid "Extra subject does not count allowed"
 msgstr "Extra vak, telt niet mee, toegestaan"
 
-#: .\awpr\locale.py:416 .\grades\excel.py:1782
+#: .\awpr\locale.py:416 .\grades\excel.py:2191
 msgid "Elective combi subject allowed"
 msgstr "Keuze-combi toegestaan"
 
-#: .\awpr\locale.py:417 .\grades\excel.py:1783 .\subjects\forms.py:347
+#: .\awpr\locale.py:417 .\grades\excel.py:2192 .\subjects\forms.py:347
 msgid "Has practical exam"
 msgstr "Heeft praktijk-examen"
 
-#: .\awpr\locale.py:418 .\grades\excel.py:1783
+#: .\awpr\locale.py:418 .\grades\excel.py:2192
 msgid "Has assignment"
 msgstr "Heeft werkstuk"
 
-#: .\awpr\locale.py:419 .\grades\excel.py:1780
+#: .\awpr\locale.py:419 .\grades\excel.py:2189
 msgid "Core subject"
 msgstr "Kernvak"
 
-#: .\awpr\locale.py:420 .\grades\excel.py:1780 .\students\validators.py:659
+#: .\awpr\locale.py:420 .\grades\excel.py:2189 .\students\validators.py:659
 msgid "MVT subject"
 msgstr "MVT-vak"
 
@@ -2187,20 +2186,20 @@ msgstr "MVT-vak"
 msgid "Wiskunde subject"
 msgstr "Wiskunde vak"
 
-#: .\awpr\locale.py:422 .\grades\excel.py:1784
+#: .\awpr\locale.py:422 .\grades\excel.py:2193
 #: .\templates\schools\modeditexamyear.html:45
 msgid "Herkansing SE allowed"
 msgstr "Herkansing SE toegestaan"
 
-#: .\awpr\locale.py:423 .\grades\excel.py:1784
+#: .\awpr\locale.py:423 .\grades\excel.py:2193
 msgid "Maximum number of re-examinations"
 msgstr "Maximaal aantal herexamens"
 
-#: .\awpr\locale.py:424 .\grades\excel.py:1785
+#: .\awpr\locale.py:424 .\grades\excel.py:2194
 msgid "Subject has no third period"
 msgstr "Vak heeft geen derde tijdvak"
 
-#: .\awpr\locale.py:425 .\grades\excel.py:1785
+#: .\awpr\locale.py:425 .\grades\excel.py:2194
 msgid "Exemption without CE allowed"
 msgstr "Vrijstelling zonder CE toegestaan"
 
@@ -2238,7 +2237,7 @@ msgid "Delete package"
 msgstr "Vakkenpakket wissen"
 
 #: .\awpr\locale.py:436 .\awpr\locale.py:564 .\awpr\validators.py:486
-#: .\awpr\validators.py:526 .\grades\excel.py:1709 .\subjects\views.py:2681
+#: .\awpr\validators.py:526 .\grades\excel.py:2118 .\subjects\views.py:2681
 msgid "Character"
 msgstr "Karakter"
 
@@ -2274,19 +2273,19 @@ msgstr "ETE examen"
 msgid "Added by school"
 msgstr "Door school toegevoegd"
 
-#: .\awpr\locale.py:448 .\grades\excel.py:1658 .\grades\excel.py:1710
+#: .\awpr\locale.py:448 .\grades\excel.py:2067 .\grades\excel.py:2119
 msgid "Minimum amount of subjects"
 msgstr "Minimaal aantal vakken"
 
-#: .\awpr\locale.py:449 .\grades\excel.py:1658 .\grades\excel.py:1711
+#: .\awpr\locale.py:449 .\grades\excel.py:2067 .\grades\excel.py:2120
 msgid "Maximum amount of subjects"
 msgstr "Maximaal aantal vakken"
 
-#: .\awpr\locale.py:451 .\grades\excel.py:1659
+#: .\awpr\locale.py:451 .\grades\excel.py:2068
 msgid "Minimum amount of MVT subjects"
 msgstr "Minimaal aantal MVT-vakken"
 
-#: .\awpr\locale.py:452 .\grades\excel.py:1659
+#: .\awpr\locale.py:452 .\grades\excel.py:2068
 msgid "Maximum amount of MVT subjects"
 msgstr "Maximaal aantal MVT-vakken"
 
@@ -2298,43 +2297,43 @@ msgstr "Minimaal aantal wiskundevakken"
 msgid "Maximum amount of Wiskunde subjects"
 msgstr "Maximaal aantal wiskundevakken"
 
-#: .\awpr\locale.py:455 .\grades\excel.py:1660
+#: .\awpr\locale.py:455 .\grades\excel.py:2069
 msgid "Minimum amount of combination subjects"
 msgstr "Minimaal aantal combinatievakken"
 
-#: .\awpr\locale.py:456 .\grades\excel.py:1661
+#: .\awpr\locale.py:456 .\grades\excel.py:2070
 msgid "Maximum amount of combination subjects"
 msgstr "Maximaal aantal combinatievakken"
 
-#: .\awpr\locale.py:458 .\grades\excel.py:1712
+#: .\awpr\locale.py:458 .\grades\excel.py:2121
 msgid "Minimum extra subject, doesn't count"
 msgstr ""
 "Minimum extra vak,\n"
 "telt niet mee"
 
-#: .\awpr\locale.py:459 .\grades\excel.py:1713
+#: .\awpr\locale.py:459 .\grades\excel.py:2122
 msgid "Maximum extra subject, doesn't count"
 msgstr ""
 "Maximum extra vak,\n"
 "telt niet mee"
 
-#: .\awpr\locale.py:460 .\grades\excel.py:1714
+#: .\awpr\locale.py:460 .\grades\excel.py:2123
 msgid "Minimum extra subject, counts"
 msgstr ""
 "Minimum extra vak,\n"
 "telt mee"
 
-#: .\awpr\locale.py:461 .\grades\excel.py:1715
+#: .\awpr\locale.py:461 .\grades\excel.py:2124
 msgid "Maximum extra subject, counts"
 msgstr ""
 "Maximum extra vak,\n"
 "telt mee"
 
-#: .\awpr\locale.py:462 .\grades\excel.py:1716
+#: .\awpr\locale.py:462 .\grades\excel.py:2125
 msgid "Minimum elective combi subject"
 msgstr "Minimum keuze-combivak"
 
-#: .\awpr\locale.py:463 .\grades\excel.py:1717
+#: .\awpr\locale.py:463 .\grades\excel.py:2126
 msgid "Maximum elective combi subject"
 msgstr "Maximum keuze-combivak"
 
@@ -3183,31 +3182,35 @@ msgstr "Indieningsdatum"
 msgid "Preliminary orderlist"
 msgstr "Voorlopige bestellijst"
 
-#: .\awpr\locale.py:862
+#: .\awpr\locale.py:861
 msgid "The preliminary orderlist"
 msgstr "De voorlopige bestellijst"
 
-#: .\awpr\locale.py:863
+#: .\awpr\locale.py:862
 msgid "Download preliminary orderlist"
 msgstr "Voorlopige bestellijst downloaden"
 
-#: .\awpr\locale.py:864 .\templates\schools\modorderlistextra.html:10
+#: .\awpr\locale.py:863
+msgid " per school"
+msgstr ""
+
+#: .\awpr\locale.py:865 .\templates\schools\modorderlistextra.html:10
 msgid "Variables for extra exams"
 msgstr "Variabelen voor extra examens"
 
-#: .\awpr\locale.py:866
+#: .\awpr\locale.py:867
 msgid "Show totals per school only"
 msgstr "Alleen totaal examens per school weergeven"
 
-#: .\awpr\locale.py:867
+#: .\awpr\locale.py:868
 msgid "Show extra per school separate"
 msgstr "Extra examens per school apart weergeven"
 
-#: .\awpr\locale.py:868
+#: .\awpr\locale.py:869
 msgid "Don't calculate extra exams"
 msgstr "Geen extra examens berekenen"
 
-#: .\awpr\locale.py:869
+#: .\awpr\locale.py:870
 msgid "Create Excelfile per school"
 msgstr "Excel bestand per school aanmaken"
 
@@ -3670,7 +3673,7 @@ msgstr "%(cpt)s '%(val)s' komt al voor."
 msgid "No parent record."
 msgstr "Geen ouder record."
 
-#: .\awpr\validators.py:336 .\grades\excel.py:1406 .\subjects\views.py:620
+#: .\awpr\validators.py:336 .\subjects\views.py:620
 #: .\templates\schools\modschool.html:35
 #: .\templates\subjects\modsubjecttypebase.html:23
 msgid "Code"
@@ -3728,59 +3731,59 @@ msgstr "De score moet een geheel getal zijn tussen 0 en %(max)s."
 msgid "is not allowed."
 msgstr "is niet toegestaan."
 
-#: .\grades\excel.py:176
+#: .\grades\excel.py:177
 msgid "Ex1"
 msgstr ""
 
-#: .\grades\excel.py:349
+#: .\grades\excel.py:350
 msgid "Digitally signed by"
 msgstr "Digitaal ondertekend door"
 
-#: .\grades\excel.py:633
+#: .\grades\excel.py:634
 msgid "Candidates, whose 'leerweg' is not entered"
 msgstr "Kandidaten, bij wie de leerweg niet is ingevuld"
 
-#: .\grades\excel.py:1010
+#: .\grades\excel.py:1252
 msgid "extra exams plus"
 msgstr "extra examens plus"
 
-#: .\grades\excel.py:1011
+#: .\grades\excel.py:1253
 msgid "rounded up to"
 msgstr "naar boven afgerond op"
 
-#: .\grades\excel.py:1012
-msgid "exams per"
-msgstr "examens per"
-
-#: .\grades\excel.py:1013
-msgid "exams first exam period,"
-msgstr "examens eerste tijdvak,"
-
-#: .\grades\excel.py:1014
-msgid "with a maximum of"
-msgstr "met een maximum van"
-
-#: .\grades\excel.py:1020
+#: .\grades\excel.py:1254
 msgid "Calulation of extra exams:"
 msgstr "Berekening van de extra examens:"
 
-#: .\grades\excel.py:1022
+#: .\grades\excel.py:1257
+msgid "exams per"
+msgstr "examens per"
+
+#: .\grades\excel.py:1258
+msgid "exams first exam period,"
+msgstr "examens eerste tijdvak,"
+
+#: .\grades\excel.py:1259
+msgid "with a maximum of"
+msgstr "met een maximum van"
+
+#: .\grades\excel.py:1260
 msgid "Calulation exams second exam period:"
 msgstr "Berekening van de examens tweede tijdvak:"
 
-#: .\grades\excel.py:1776
+#: .\grades\excel.py:2185
 msgid "Subjects of this subject scheme"
 msgstr "Vakken van dit vakschema"
 
-#: .\grades\excel.py:1777 .\subjects\forms.py:340 .\subjects\forms.py:362
+#: .\grades\excel.py:2186 .\subjects\forms.py:340 .\subjects\forms.py:362
 msgid "Subject type"
 msgstr "Vaktype"
 
-#: .\grades\excel.py:1778 .\subjects\forms.py:363
+#: .\grades\excel.py:2187 .\subjects\forms.py:363
 msgid "SE weight"
 msgstr "SE-weging"
 
-#: .\grades\excel.py:1778 .\subjects\forms.py:363
+#: .\grades\excel.py:2187 .\subjects\forms.py:363
 msgid "CE weight"
 msgstr "CE-weging"
 
@@ -4866,6 +4869,7 @@ msgid "%(subj)s already submitted"
 msgstr "%(subj)s al ingediend"
 
 #: .\students\views.py:1008
+#, python-format
 msgid "%(subj)s not fully approved"
 msgstr "%(subj)s niet volledig goedgekeurd"
 
@@ -4978,7 +4982,9 @@ msgstr "Weet je zeker dat je het Ex1-formulier wilt indienen?"
 msgid ""
 "The president and the secretary must approve all subjects before you can "
 "submit the Ex1 form."
-msgstr "De voorzitter en secretaris moeten alle vakken eerst goedkeuren voordat je het Ex1-formulier kunt indienen."
+msgstr ""
+"De voorzitter en secretaris moeten alle vakken eerst goedkeuren voordat je "
+"het Ex1-formulier kunt indienen."
 
 #: .\students\views.py:1155
 msgid "The verificationcode has expired."
@@ -6154,6 +6160,3 @@ msgstr "Alle"
 #, python-format
 msgid "An error occurred. '%(fld)s' is not saved."
 msgstr "Er is een fout opgetreden. '%(fld)s' is niet opgeslagen."
-
-#~ msgid "Percentage extra exams"
-#~ msgstr "Percentage extra examens"

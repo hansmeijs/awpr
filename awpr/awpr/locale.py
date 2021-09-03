@@ -858,16 +858,16 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Date_submitted'] = _('Date submitted')
 
         dict['Preliminary_orderlist'] = _('Preliminary orderlist')
-
         dict['The_preliminary_orderlist'] = _('The preliminary orderlist')
         dict['Downlaod_preliminary_orderlist'] = _('Download preliminary orderlist')
+        dict['per_school'] = _(' per school')
+
         dict['Variables_for_extra_exams'] = _('Variables for extra exams')
 
         dict['Totals_only'] = _('Show totals per school only')
         dict['Extra_separate'] = _('Show extra per school separate')
         dict['Without_extra'] = _("Don't calculate extra exams")
         dict['File_per_school'] = _('Create Excelfile per school')
-
 
         dict['Final_orderlist'] = _('Final orderlist')
 

@@ -200,7 +200,6 @@ urlpatterns = [
 
     ])),
 
-
 # ===== STUDENTS ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
     path('students/', include([
         path('student', student_views.StudentListView.as_view(), name='students_url'),
@@ -230,8 +229,8 @@ urlpatterns = [
 # ===== ORDERLISTS ========================== PR2021-04-04
     path('orderlists/', include([
         path('orderlist', student_views.OrederlistsListView.as_view(), name='orderlists_url'),
-        path('download_orderlist/<list>/', grade_excel.OrderlistDownloadView.as_view(),
-             name='orderlist_download_url'),
+        path('download_orderlist/<list>/', grade_excel.OrderlistDownloadView.as_view(), name='orderlist_download_url'),
+        path('download_orderlist_per_school', grade_excel.OrderlistPerSchoolDownloadView.as_view(), name='orderlist_per_school_download_url'),
         path('orderlist_parameters', school_views.OrderlistsParametersView.as_view(), name='url_orderlist_parameters'),
     ])),
 

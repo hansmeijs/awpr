@@ -6,7 +6,6 @@ let permit_dict = {};
 let loc = {};  // locale_dict
 let urls = {};
 
-let selected_school_pk = null;
 let selected_period = {};
 
 const selected = {
@@ -34,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  id of selected customer and selected order
     let selected_btn = "btn_school";
-    let selected_school_pk = null;
+
     let selected_period = {};
     let setting_dict = {};
     let permit_dict = {};
@@ -203,10 +202,6 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_confirm_header = document.getElementById("id_modconfirm_header");
         let el_confirm_loader = document.getElementById("id_modconfirm_loader");
         let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
-        let el_confirm_msg01 = document.getElementById("id_modconfirm_msg01")
-        let el_confirm_msg02 = document.getElementById("id_modconfirm_msg02")
-        let el_confirm_msg03 = document.getElementById("id_modconfirm_msg03")
-
         let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if (el_confirm_btn_save){el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}, false)};
@@ -363,21 +358,19 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("=== HandleTableRowClicked");
         console.log( "school_rows: ", school_rows);
 
-        selected_school_pk = null;
-
 // ---  deselect all highlighted rows - also tblFoot , highlight selected row
         DeselectHighlightedRows(tr_clicked, cls_selected);
         tr_clicked.classList.add(cls_selected)
+        const pk_int = get_attr_from_el_int(tr_clicked, "data-pk");
+        console.log( "pk_int: ", pk_int, typeof pk_int);
 
-        console.log( "tr_clicked.id: ", tr_clicked.id, typeof tr_clicked.id);
 // ---  update selected_pk
-        const map_dict = b_get_mapdict_from_datarows(school_rows, tr_clicked.id, setting_dict.user_lang);
-        selected_school_pk = (map_dict) ?  map_dict.id : null;
+        const [index, found_dict, compare] = b_recursive_integer_lookup(school_rows, "id", pk_int);
+        selected.school_dict = (found_dict) ?  found_dict : {};
+        selected.school_pk = (selected.school_dict) ?  selected.school_dict.id : null;
 
-        selected.school_dict = (map_dict) ?  map_dict : {};
-
-        //console.log( "map_dict: ", map_dict, typeof map_dict);
-        //console.log( "selected_school_pk: ", selected_school_pk, typeof selected_school_pk);
+        console.log( "selected.school_dict: ", selected.school_dict, typeof selected.school_dict);
+        console.log( "selected.school_pk: ", selected.school_pk, typeof selected.school_pk);
 
     }  // HandleTableRowClicked
 
@@ -504,8 +497,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // NIU:  const ob2 = (map_dict.firstname) ? map_dict.firstname : "";
         // NIU:  const ob3 = (map_dict.firstname) ? map_dict.firstname : "";
 
-        const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
-                                     ob1, "", "", setting_dict.user_lang);
+        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, ob1, "", "", setting_dict.user_lang);
 
 // --- insert tblRow into tblBody at row_index
         let tblRow = tblBody_datatable.insertRow(row_index);
@@ -800,8 +792,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
 
 // --- get existing data_dict from data_rows
-                const [index, dict, compare] = b_recursive_lookup(school_rows, map_id, setting_dict.user_lang);
-                const data_dict = dict;
+                const pk_int = update_dict.pk;
+                const [index, found_dict, compare] = b_recursive_integer_lookup(school_rows, "id", pk_int);
+                const data_dict = (found_dict) ?  found_dict : {};
                 const datarow_index = index;
 
 // ++++ deleted ++++
@@ -1482,28 +1475,30 @@ document.addEventListener('DOMContentLoaded', function() {
         // values of mode are : "delete", "inactive" or "send_activation_email", "permission_sysadm"
 
         if(permit_dict.permit_crud){
-            el_confirm_msg01.innerText = null;
-            el_confirm_msg02.innerText = null;
-            el_confirm_msg03.innerText = null;
+            el_confirm_msg_container.innerHTML = null;
 
     // ---  get selected_pk
             let tblName = null, selected_pk = null;
             // tblRow is undefined when clicked on delete btn in submenu btn or form (no inactive btn)
             const tblRow = get_tablerow_selected(el_input);
-        console.log("tblRow", tblRow)
             if(tblRow){
                 tblName = get_attr_from_el(tblRow, "data-table")
-                selected_pk = get_attr_from_el(tblRow, "data-pk")
+                const pk_int = get_attr_from_el_int(tblRow, "data-pk")
+                const [index, found_dict, compare] = b_recursive_integer_lookup(school_rows, "id", pk_int);
+                selected.school_dict = (found_dict) ?  found_dict : {};
+                selected.school_pk = (selected.school_dict) ?  selected.school_dict.id : null;
+
             } else {
+                // get map_dict from selected.school_dict
                 tblName = get_tblName_from_selectedBtn()
-                selected_pk = (tblName === "school") ? selected_school_pk : null;
             }
             console.log("tblName", tblName )
             console.log("selected_pk", selected_pk )
             // TODO change to selected.school_dict
+
     // ---  get info from data_map
-            const map_id =  tblName + "_" + selected_pk;
-            const map_dict = b_get_mapdict_from_datarows(school_rows, map_id, setting_dict.user_lang);
+            const map_dict = selected.school_dict;
+            const map_id = (selected.school_dict) ? selected.school_dict.mapid : null;;
             console.log("map_id", map_id)
             console.log("map_dict", map_dict)
 
@@ -1545,10 +1540,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if(!dont_show_modal){
                 el_confirm_header.innerText = header_text;
                 el_confirm_loader.classList.add(cls_visible_hide)
+
+                let msg_html = "";
+                if (msg01_txt) {msg_html += "<p>" + msg01_txt + "</p>"};
+                if (msg02_txt) {msg_html += "<p>" + msg02_txt + "</p>"};
+                if (msg03_txt) {msg_html += "<p>" + msg03_txt + "</p>"};
+                el_confirm_msg_container.innerHTML = msg_html
+
                 el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
-                el_confirm_msg01.innerText = msg01_txt;
-                el_confirm_msg02.innerText = msg02_txt;
-                el_confirm_msg03.innerText = msg03_txt;
 
                 const caption_save = (mode === "delete") ? loc.Yes_delete :
                                 (mode === "inactive") ? ( (mod_dict.is_active) ? loc.Yes_make_inactive : loc.Yes_make_active ) :
@@ -1654,9 +1653,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 msg03_txt = get_dict_value(response, ["msg_ok", "msg03"]);
                 el_confirm_msg_container.classList.add("border_bg_valid");
             }
-            el_confirm_msg01.innerText = msg01_txt;
-            el_confirm_msg02.innerText = msg02_txt;
-            el_confirm_msg03.innerText = msg03_txt;
+            let msg_html = "";
+            if (msg01_txt) {msg_html += "<p>" + msg01_txt + "</p>"};
+            if (msg02_txt) {msg_html += "<p>" + msg02_txt + "</p>"};
+            if (msg03_txt) {msg_html += "<p>" + msg03_txt + "</p>"};
+            el_confirm_msg_container.innerHTML = msg_html
+
             el_confirm_btn_cancel.innerText = loc.Close
             el_confirm_btn_save.classList.add(cls_hide);
         } else {
@@ -1962,7 +1964,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20
        //console.log( "===== ResetFilterRows  ========= ");
 
-        selected_school_pk = null;
+        selected.school_pk = null;
 
         filter_dict = {};
 
