@@ -14,30 +14,26 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.conf.urls import url
-from django.contrib import admin
 from django.contrib.auth import views as auth_views
 # PR2018-08-31 see https://docs.djangoproject.com/en/2.0/ref/urls/#path
-from django.urls import include, path, re_path
+from django.urls import include, path
 # PR2018-03-16; PR2018-03-31 don't add doubledot, gives error 'attempted relative import beyond top-level package'
 from django.views.generic import RedirectView
 
 from accounts import views as account_views
 
-from awpr import downloads as awpr_downloads
+from awpr import downloads as awpr_downloads, excel as grade_excel
 from awpr import menus as awpr_menus
 from schools import views as school_views
 from schools import imports as school_imports
 from students import views as student_views
 from subjects import views as subject_views
 from grades import views as grade_views
-from grades import excel as grade_excel
 from grades import exfiles as grade_exfiles
 from reports import views as report_views
 from upload import views as upload_views
 
 from accounts.forms import SchoolbaseAuthenticationForm
-
-from awpr.decorators import user_examyear_is_correct
 
 urlpatterns = [
 # PR2018-03-20
@@ -137,12 +133,15 @@ urlpatterns = [
         path('settings_upload', account_views.UserSettingsUploadView.as_view(), name='url_settings_upload'),
         path('permits_download', account_views.UserDownloadPermitsView.as_view(), name='user_download_permits_url'),
 
+
+
         #url(r'^users/(?P<pk>\d+)/log$', account_views.UserLogView.as_view(), name='user_log_url'),
     ])),
 
     url(r'session_security/', include('session_security.urls')),
 # PR2018-05-11
     url(r'^users/language/(?P<lang>[A-Za-z]{2})/$', account_views.UserLanguageView.as_view(), name='language_set_url'),
+
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
     path('datalist_download', awpr_downloads.DatalistDownloadView.as_view(), name='url_datalist_download'),
@@ -162,8 +161,13 @@ urlpatterns = [
 # ===== MANUAL ==========================  PR2021-06-10
     path('manual/', include([
         path('<page>/<paragraph>/', awpr_menus.ManualListView.as_view(), name='manual_url')
-
     ])),
+
+# ===== MAILBOX ==========================  PR2021-06-10
+    path('mail/', include([
+        path('mailbox/', school_views.MailListView.as_view(), name='page_mailbox_url')
+    ])),
+
 # ===== SCHOOLS ==========================  PR2018-08-23 PR2020-10-20 PR2021-04-26
     path('schools/', include([
         path('examyears', school_views.ExamyearListView.as_view(), name='examyears_url'),
@@ -175,7 +179,7 @@ urlpatterns = [
         path('school_upload', school_views.SchoolUploadView.as_view(), name='url_school_upload'),
         path('school_import', school_views.SchoolImportView.as_view(), name='school_import_url'),
 
-        path('awp_upload', upload_views.UploadAwpView.as_view(), name='school_awpupload_url'),
+        path('old_awp_upload', upload_views.UploadOldAwpView.as_view(), name='url_old_awp_upload'),
 
         path('uploadsetting', school_views.SchoolImportUploadSetting.as_view(), name='school_uploadsetting_url'),
         path('uploaddata', school_views.SchoolImportUploadData.as_view(), name='school_uploaddata_url')
@@ -205,6 +209,7 @@ urlpatterns = [
         path('student', student_views.StudentListView.as_view(), name='students_url'),
 
         path('student_upload', student_views.StudentUploadView.as_view(), name='url_student_upload'),
+        path('student_biscand', student_views.StudentBiscandView.as_view(), name='url_student_biscand'),
 
         path('studentsubject', student_views.StudentsubjectListView.as_view(), name='studentsubjects_url'),
         path('studsubj_upload', student_views.StudentsubjectUploadView.as_view(), name='url_studsubj_upload'),
@@ -213,6 +218,7 @@ urlpatterns = [
         path('studsubj_validate_scheme', student_views.StudentsubjectValidateSchemeView.as_view(), name='url_studsubj_validate_scheme'),
         path('studsubj_validate_test', student_views.StudentsubjectValidateTestView.as_view(), name='url_studsubj_validate_test'),
         path('studsubj_validate_all', student_views.StudentsubjectValidateAllView.as_view(), name='url_studsubj_validate_all'),
+        path('studsubj_multiple_occurrences', student_views.StudentsubjectMultipleOccurrencesView.as_view(), name='url_studsubj_multiple_occurrences'),
 
         path('studsubj_approve', student_views.StudentsubjectApproveSingleView.as_view(), name='url_studsubj_approve'),
         path('studsubj_approve_multiple', student_views.StudentsubjectApproveOrSubmitEx1View.as_view(), name='url_studsubj_approve_multiple'),
@@ -232,6 +238,8 @@ urlpatterns = [
         path('download_orderlist/<list>/', grade_excel.OrderlistDownloadView.as_view(), name='orderlist_download_url'),
         path('download_orderlist_per_school', grade_excel.OrderlistPerSchoolDownloadView.as_view(), name='orderlist_per_school_download_url'),
         path('orderlist_parameters', school_views.OrderlistsParametersView.as_view(), name='url_orderlist_parameters'),
+        path('orderlist_request_verifcode', school_views.OrderlistRequestVerifcodeView.as_view(), name='url_orderlist_request_verifcode'),
+        path('orderlist_publish', school_views.OrderlistsPublishView.as_view(), name='url_orderlist_publish'),
     ])),
 
 # ===== EXAMS ========================== PR2021-04-04

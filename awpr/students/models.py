@@ -90,7 +90,6 @@ class Birthplace_log(sch_mod.AwpBaseModel):
 # =================
 class Studentbase(Model):# PR2018-10-17 PR2020-12-07
     objects = CustomManager()
-    country = ForeignKey(sch_mod.Country, related_name='+', on_delete=PROTECT)
 
 
 class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
@@ -124,29 +123,31 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     has_dyslexie = BooleanField(default=False)
     iseveningstudent = BooleanField(default=False)
     islexstudent = BooleanField(default=False)
-    islinked = BooleanField(default=False)
     bis_exam = BooleanField(default=False)
+    # notlinked contains ';'-delimited list of student_id's with the same idnumber, bit that are not the same stdent
+    islinked = BooleanField(default=False)
+    notlinked = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     has_reex = BooleanField(default=False)
     has_reex3 = BooleanField(default=False)
     has_sere = BooleanField(default=False)
     withdrawn = BooleanField(default=False)
 
-    grade_ce_avg = DecimalField(max_digits=5, decimal_places=2, default = 0)
+    #grade_ce_avg = DecimalField(max_digits=5, decimal_places=2, default = 0)
     grade_ce_avg_text = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
     grade_combi_avg_text = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
-    endgrade_avg = DecimalField(max_digits=5, decimal_places=2, default = 0)
+    #endgrade_avg = DecimalField(max_digits=5, decimal_places=2, default = 0)
     endgrade_avg_text = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
 
-    result = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    resultid_tv01 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    resultid_tv02 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    resultid_tv03 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    resultid_final = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    #result = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    #resultid_tv01 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    #resultid_tv02 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    #resultid_tv03 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    #resultid_final = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
     result_info = CharField(db_index=True, max_length=80, null=True, blank=True)
     result_status = CharField(max_length=c.MAX_LENGTH_12, null=True, blank=True)
 
-    locked = BooleanField(default=False)
+    tobedeleted = BooleanField(default=False)
 
     class Meta:
         ordering = [Lower('lastname'), Lower('firstname')]
@@ -244,29 +245,30 @@ class Student_log(sch_mod.AwpBaseModel):
     has_dyslexie = BooleanField(default=False)
     iseveningstudent = BooleanField(default=False)
     islexstudent = BooleanField(default=False)
-    islinked = BooleanField(default=False)
     bis_exam = BooleanField(default=False)
+    islinked = BooleanField(default=False)
+    notlinked = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     has_reex = BooleanField(default=False)
     has_reex3 = BooleanField(default=False)
     has_sere = BooleanField(default=False)
     withdrawn = BooleanField(default=False)
 
-    grade_ce_avg = DecimalField(max_digits=5, decimal_places=2, default=0)
+    # grade_ce_avg = DecimalField(max_digits=5, decimal_places=2, default=0)
     grade_ce_avg_text = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
     grade_combi_avg_text = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
-    endgrade_avg = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    # endgrade_avg = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
     endgrade_avg_text = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
 
-    result = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    resultid_tv01 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    resultid_tv02 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    resultid_tv03 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    resultid_final = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    #result = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    #resultid_tv01 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    #resultid_tv02 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    #resultid_tv03 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
+    #resultid_final = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
     result_info = CharField(max_length=80, null=True, blank=True)
     result_status = CharField(max_length=c.MAX_LENGTH_12, null=True)
 
-    locked = BooleanField(default=False)
+    tobedeleted = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -332,8 +334,13 @@ class Studentsubject(sch_mod.AwpBaseModel):
     has_sr = BooleanField(default=False)  # has se_reex (herkansing)
     has_reex = BooleanField(default=False)
     has_reex03 = BooleanField(default=False)
-    has_pok = BooleanField(default=False)  # proof of knowledge  (for day school)
-    has_pex = BooleanField(default=False)  # proof of exemption (for evening school, lex school)
+
+    # deprecated, replaced by pok_validthru = NOT NULL
+    #has_pok = BooleanField(default=False)  # proof of knowledge  (for day school)
+    #has_pex = BooleanField(default=False)  # proof of exemption (for evening school, lex school)
+
+    # has proof of knowledge = True when pok_validthru has value PR2021-09-07
+    pok_validthru = PositiveSmallIntegerField(null=True)
 
     subj_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -400,8 +407,13 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     has_sr = BooleanField(default=False)  # has se_reex (herkansing)
     has_reex = BooleanField(default=False)
     has_reex03 = BooleanField(default=False)
-    has_pok = BooleanField(default=False) # proof of knowledge  (for day school)
-    has_pex = BooleanField(default=False)  # proof of exemption (for evening school, lex school)
+
+    # deprecated, replaced by pok_validthru = NOT NULL
+    #has_pok = BooleanField(default=False) # proof of knowledge  (for day school)
+    #has_pex = BooleanField(default=False)  # proof of exemption (for evening school, lex school)
+
+    # has proof of knowledge = True when pok_validthru has value PR2021-09-07
+    pok_validthru = PositiveSmallIntegerField(null=True)
 
     subj_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -558,9 +570,9 @@ class Grade(sch_mod.AwpBaseModel):
     ce_exam_blocked = BooleanField(default=False)
 
     answers = CharField(max_length=2048, null=True)
-    blanks = PositiveSmallIntegerField(null=True)
+    blanks = PositiveSmallIntegerField(null=True) # number of blank questions
     answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
-
+    # TODO deprecate?
     tobedeleted = BooleanField(default=False)
     del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     del_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -642,6 +654,7 @@ class Grade_log(sch_mod.AwpBaseModel):
     blanks = PositiveSmallIntegerField(null=True)
     answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
+    # TODO deprecate?
     tobedeleted = BooleanField(default=False)
     del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     del_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)

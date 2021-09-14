@@ -2,20 +2,22 @@
 {% load i18n %} {% load l10n %}
 {% load static %}
 
-{% block title %}{% trans 'Users' %}{% endblock %}
+{% block title %}{% trans 'Messages' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import210913.js' %}"></script>
-    <script src="{% static 'js/users210913.js' %}"></script>
+    <script src="{% static 'js/mailbox210913.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
 {% block sidebar %}
     <nav id="id_sidebar" class="awp_sidebar">
-        <div class="content_subheader_left tab_show tab_init mx-2 my-4">
-            <h5>{% trans 'Users' %}</h5>
+        <div class="content_subheader_left mx-2 my-4">
+            <h5>{% trans 'Messages' %}</h5>
         </div>
         {% if not no_access %}
+            <div class="tw_200 m-2">
+                <p id="id_SBR_item_count" class="tw_200 line_height_normal py-1"></p>
+            </div>
         {% endif %}
     </nav>
 {% endblock %}
@@ -27,13 +29,8 @@
         {% if no_access %}
             {% include 'includes/message_noaccess.html' %}
         {% else %}
-            {% include 'includes/modselectexamyearordepbase.html' %}
-            {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
-            {% include 'accounts/moduser.html' %}
-            {% include 'accounts/modpermit.html' %}
-            {% include 'includes/modimport.html' %}
 
             <div class="content_margin_top78">
 
@@ -57,11 +54,10 @@
 
 <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="btn_user" class="btn btn-secondary ">{% trans 'Users' %}</button>
-                    <button data-btn="btn_usergroup" class="btn btn-secondary ">{% trans 'User groups' %}</button>
-                    {% if show_btn_userpermit %}
-                        <button data-btn="btn_userpermit" class="btn btn-secondary ">{% trans 'Permissions' %}</button>
-                    {% endif %}
+                    <button data-btn="btn_received" class="btn btn-secondary ">{% trans 'Received messages' %}</button>
+                    <button data-btn="btn_sent" class="btn btn-secondary ">{% trans 'Sent messages' %}</button>
+                    <button data-btn="btn_mailinglist" class="btn btn-secondary display_hide">{% trans 'Mailing lists' %}</button>
+
                 </div>
 <!-- end BUTTON GROUP -->
 
@@ -79,10 +75,6 @@
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_settings_upload="{% url 'url_settings_upload' %}"
-
-                data-user_upload_url="{% url 'user_upload_url' %}"
-                data-userpermit_upload_url="{% url 'userpermit_upload_url' %}"
-                data-user_download_permits_url="{% url 'user_download_permits_url' %}"
             >
         </div>
     {% endif %}

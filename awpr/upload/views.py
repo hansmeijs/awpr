@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 # ========  UPLOAD AWP =====================================
 @method_decorator([login_required], name='dispatch')
-class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
+class UploadOldAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
 
     def post(self,request):
         logging_on = s.LOGGING_ON
@@ -45,7 +45,7 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
 
         if logging_on:
             logger.debug(' ')
-            logger.debug(' ============= UploadAwpView ============= ')
+            logger.debug(' ============= UploadOldAwpView ============= ')
             logger.debug('file: ' + str(uploadedfile) + ' ' + str(type(uploadedfile)))
             logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
 
@@ -128,11 +128,17 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
                                 elif ws_name == 'schemeitem':
                                     ImportSchemeitem(ws_name, row_data, logfile, mapped, sel_examyear, request)
                                 elif ws_name == 'package':
-                                    ImportPackage(ws_name, row_data, logfile, mapped, sel_examyear, request)
+                                    pass
+                                    # don't import package
+                                    #ImportPackage(ws_name, row_data, logfile, mapped, sel_examyear, request)
                                 elif ws_name == 'packageitem':
-                                    ImportPackageitem(ws_name, row_data, logfile, mapped, sel_examyear, request)
+                                    pass
+                                    # don't import packageitem
+                                    # ImportPackageitem(ws_name, row_data, logfile, mapped, sel_examyear, request)
                                 elif ws_name == 'cluster':
-                                    ImportCluster(ws_name, row_data, logfile, mapped, sel_examyear, school, request)
+                                    pass
+                                    # don't import cluster
+                                    # ImportCluster(ws_name, row_data, logfile, mapped, sel_examyear, school, request)
                                 elif ws_name == 'student':
                                     ImportStudent(ws_name, row_data, logfile, mapped, sel_examyear, school, request)
                                 elif ws_name == 'studsubj':
@@ -149,7 +155,7 @@ class UploadAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 
 def ImportData(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR2020-12-13
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
 
     try:
         requsr_country = request.user.country
@@ -184,12 +190,14 @@ def ImportData(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR2
                     logfile.append(row_data)
 
         elif ws_name in ('schoolCUR', 'schoolSXM'):
-            logger.debug ('-------------------  school ----------------- examyear: ' + str(sel_examyear))
             # 0: country  1: code  2: name  3: abbrev  4: article  5: depbases  6: is_template
             country_code = str(row_data[0]) if row_data[0] else None
             school_code = str(row_data[1]) if row_data[1] else None
-            logger.debug ('country_code: ' + str(country_code))
-            logger.debug ('school_code: ' + str(school_code))
+
+            if logging_on:
+                logger.debug ('-------------------  school ----------------- examyear: ' + str(sel_examyear))
+                logger.debug ('country_code: ' + str(country_code))
+                logger.debug ('school_code: ' + str(school_code))
 
     # - get country based on code 'Cur' in excel file, not requsr_country with this code already exists in this country. If not: create
             exc_country = af.get_country_instance_by_abbrev(country_code)
@@ -201,11 +209,14 @@ def ImportData(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR2
                 schoolbase = get_schoolbase(exc_country, school_code)
                 if schoolbase is None:
                     schoolbase = sch_mod.Schoolbase.objects.create(country=exc_country, code=school_code)
-                    logger.debug('schoolbase created: ' + str(schoolbase))
+                    if logging_on:
+                        logger.debug('schoolbase created: ' + str(schoolbase))
 
     # - check if school with this schoolbase already exists in this examyear. If not: create
                 school = get_school(schoolbase, sel_examyear)
-                logger.debug('school found: ' + str(school))
+                if logging_on:
+                    logger.debug('school found: ' + str(school))
+
                 if schoolbase is not None and school is None:
                     # 0: country  1: code  2: name  3: abbrev  4: article  5: depbases  6: is_template
                     name = str(row_data[2]) if row_data[2] else None
@@ -223,13 +234,15 @@ def ImportData(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR2
                         article=article,
                         depbases=depbases
                     )
-                    logger.debug('school: ' + str(school))
+                    if logging_on:
+                        logger.debug('school: ' + str(school))
                     school.save(request=request)
                 logfile.append(row_data)
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
         row_data[0] = _("An error occurred. '%(fld)s' is not saved.") % {'fld': ws_name}
         logfile.append(row_data)
+# - end of ImportData
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
@@ -249,7 +262,7 @@ def ImportDepartment(ws_name, row_data, logfile, mapped, sel_examyear, request):
     # - check if depbase with this code already exists .
                 depbase = sch_mod.Departmentbase.objects.filter(
                     code__iexact=code
-                ).order_by('-pk').first()
+                ).order_by('pk').first()
             # - create depbase if it does not exist
                 if depbase is None:
                     # 'vsbo' becomes 'Vsbo'
@@ -265,7 +278,7 @@ def ImportDepartment(ws_name, row_data, logfile, mapped, sel_examyear, request):
                 department = sch_mod.Department.objects.filter(
                     base=depbase,
                     examyear=sel_examyear
-                ).order_by('-pk').first()
+                ).order_by('pk').first()
 
                 if department is None:
                     name = row_data.get('name')
@@ -320,7 +333,7 @@ def ImportLevel(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR
     # - check if lvlbase with this code (abbrev) already exists
                 lvlbase = subj_mod.Levelbase.objects.filter(
                     code__iexact=abbrev
-                ).order_by('-pk').first()
+                ).order_by('pk').first()
 
         # - create lvlbase if it does not exist
                 if lvlbase is None:
@@ -338,7 +351,7 @@ def ImportLevel(ws_name, row_data, logfile, mapped, sel_examyear, request):  #PR
                 level = subj_mod.Level.objects.filter(
                     base=lvlbase,
                     examyear=sel_examyear
-                ).order_by('-pk').first()
+                ).order_by('pk').first()
 
     # - if levelbase does not exist: create new level record
                 if level is None:
@@ -393,7 +406,7 @@ def ImportSector(ws_name, row_data, logfile, mapped, sel_examyear, request):  #P
     # - check if sctbase with this code (abbrev) already exists
                 sctbase = subj_mod.Sectorbase.objects.filter(
                     code__iexact=abbrev
-                ).order_by('-pk').first()
+                ).order_by('pk').first()
 
     # - create sctbase if it does not exist
                 if sctbase is None:
@@ -409,7 +422,7 @@ def ImportSector(ws_name, row_data, logfile, mapped, sel_examyear, request):  #P
                 sector = subj_mod.Sector.objects.filter(
                     base=sctbase,
                     examyear=sel_examyear
-                ).order_by('-pk').first()
+                ).order_by('pk').first()
 
     # - create new sector record
                 if sector is None:
@@ -491,7 +504,7 @@ def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
     # - check if subjecttypebase with this code already exists
                     sjtpbase = subj_mod.Subjecttypebase.objects.filter(
                         code__iexact=code
-                    ).order_by('-pk').first()
+                    ).order_by('pk').first()
 
                     if logging_on:
                         logger.debug('existing sjtpbase: ' + str(sjtpbase))
@@ -520,7 +533,7 @@ def ImportSubjecttype(ws_name, row_data, logfile, mapped, sel_examyear, request)
                         subjecttype = subj_mod.Subjecttype.objects.filter(
                             base=sjtpbase,
                             scheme=scheme
-                        ).order_by('-pk').first()
+                        ).order_by('pk').first()
 
                         if logging_on:
                             logger.debug('existing subjecttype: ' + str(subjecttype))
@@ -651,7 +664,7 @@ def ImportScheme(ws_name, row_data, logfile, mapped, examyear, request):  #PR202
                     department=department,
                     level=level,
                     sector=sector
-                ).order_by('-pk').first()
+                ).order_by('pk').first()
 
     # - create new scheme record
                 if scheme is None:
@@ -705,34 +718,43 @@ def ImportScheme(ws_name, row_data, logfile, mapped, examyear, request):  #PR202
 
 def ImportSubject(ws_name, row_data, logfile, mapped, examyear, request):  #PR2021-05-04
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if ws_name == 'subject' and row_data:
         try:
-            requsr_country = request.user.country
             # row_data keys: subject_id, code, name, sequence, depbases, addedbyuser
             code = row_data.get('code')
+            name = row_data.get('name')
 
             if code:
                 if logging_on:
                     logger.debug('-------------------  subject ----------------- ')
                     logger.debug('row_data: ' + str(row_data))
                     logger.debug('code: ' + str(code))
+                    logger.debug('name: ' + str(name))
                     addedbyuser = row_data.get('addedbyuser')
                     logger.debug('addedbyuser: ' + str(addedbyuser) + ' ' + str(type(addedbyuser)))
                     #  row_data: {'level_id': 1, 'abbrev': 'TKL', 'name': 'Theoretisch Kadergerichte Leerweg', 'depbases': '1;'}
 
         # - check if subject with this code already exists in this examyear. If not: create
+                # subjectbase codes have changed in AWP-online. Map old code to new ones, to link with correct subjectbase
+            # - first check if subject with new_subj_code exists
+                new_subj_code = get_mapped_subject_code(code, name)
                 subject = subj_mod.Subject.objects.filter(
                     examyear=examyear,
-                    base__code__iexact=code
-                ).order_by('-pk').first()
-
-                # - create new subject record
+                    base__code__iexact=new_subj_code
+                ).order_by('pk').first()
+            # - if not found: check if subject with old code existst
                 if subject is None:
-    # - first create new base record.
+                    subject = subj_mod.Subject.objects.filter(
+                        examyear=examyear,
+                        base__code__iexact=code
+                    ).order_by('pk').first()
+            # - if not found: create new subject record with new code
+                if subject is None:
+
+    # - first create new base record with new code
                     base = subj_mod.Subjectbase(
-                        country=requsr_country,
-                        code=code
+                        code=new_subj_code
                     )
                     base.save()
 
@@ -742,7 +764,6 @@ def ImportSubject(ws_name, row_data, logfile, mapped, examyear, request):  #PR20
                         sequence = 9999
                     addedbyschool = True if row_data.get('addedbyuser') == 1 else False
                     depbases = row_data.get('depbases')
-
 
                     subject = subj_mod.Subject(
                         base=base,
@@ -775,6 +796,37 @@ def ImportSubject(ws_name, row_data, logfile, mapped, examyear, request):  #PR20
             logfile.append('Error subject: ' + str(e))
 
 # - end of ImportSubject
+
+
+def get_mapped_subject_code(old_awp_code, old_awp_name):  # PR2021-09-03
+    # subjectbase codes have changed in AWP-online. Map old code to new ones, to link with correct subjectbase
+
+    if old_awp_code == 'adm&co':
+        new_subj_code = 'ac'
+    elif old_awp_code == 'amv':
+        new_subj_code = 'am'
+    elif old_awp_code == 'inst':
+        new_subj_code = 'ie'
+    elif old_awp_code == 'tech alg':
+        new_subj_code = 'ta'
+    elif old_awp_code == 'ns1':
+        new_subj_code = 'nask1'
+    elif old_awp_code == 'ns2':
+        new_subj_code = 'nask2'
+    elif old_awp_code == 'be':
+        new_subj_code = 'bec'
+    elif old_awp_code == 'en':
+        new_subj_code = 'entl' if 'lit' in old_awp_name else 'en'
+    elif old_awp_code == 'fr':
+        new_subj_code = 'frtl' if 'lit' in old_awp_name else 'fr'
+    elif old_awp_code == 'ne':
+        new_subj_code = 'netl' if 'lit' in old_awp_name else 'ne'
+    elif old_awp_code == 'sp':
+        new_subj_code = 'sptl' if 'lit' in old_awp_name else 'sp'
+    else:
+        new_subj_code = old_awp_code
+
+    return new_subj_code
 
 
 def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, request):  #PR2021-05-04
@@ -815,7 +867,7 @@ def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, requ
                     scheme=scheme,
                     subject=subject,
                     subjecttype=subjecttype
-                ).order_by('-pk').first()
+                ).order_by('pk').first()
 
     # - create new schemeitem record
                 if schemeitem is None:
@@ -894,7 +946,7 @@ def ImportPackage(ws_name, row_data, logfile, mapped, examyear, request):  #PR20
                 package = subj_mod.Package.objects.filter(
                     scheme=scheme,
                     name__iexact=name
-                ).order_by('-pk').first()
+                ).order_by('pk').first()
 
     # - create new package record
                 if package is None:
@@ -946,7 +998,7 @@ def ImportPackageitem(ws_name, row_data, logfile, mapped, examyear, request):  #
                 packageitem = subj_mod.Packageitem.objects.filter(
                     package=package,
                     schemeitem=schemeitem
-                ).order_by('-pk').first()
+                ).order_by('pk').first()
 
     # - create new packageitem record
                 if packageitem is None:
@@ -1008,7 +1060,7 @@ def ImportSchool(ws_name, row_data, logfile, mapped, examyear, request):  #PR202
                     schoolbase = sch_mod.Schoolbase.objects.filter(
                         country=requsr_country,
                         code__iexact=code
-                    ).order_by('-pk').first()
+                    ).order_by('pk').first()
                     if logging_on:
                         logger.debug('schoolbase exists: ' + str(schoolbase))
         # - create new schoolbase record
@@ -1024,7 +1076,7 @@ def ImportSchool(ws_name, row_data, logfile, mapped, examyear, request):  #PR202
                         school = sch_mod.School.objects.filter(
                             base=schoolbase,
                             examyear=examyear
-                        ).order_by('-pk').first()
+                        ).order_by('pk').first()
                         if logging_on:
                             logger.debug('school exists: ' + str(school))
 
@@ -1114,7 +1166,7 @@ def ImportCluster(ws_name, row_data, logfile, mapped, examyear, school, request)
                     department=department,
                     subject=subject,
                     name__iexact=name
-                ).order_by('-pk').first()
+                ).order_by('pk').first()
 
     # - create new cluster record
                 if cluster is None:
@@ -1189,7 +1241,7 @@ def ImportStudent(ws_name, row_data, logfile, mapped, examyear, school, request)
                         school=school,
                         department=department,
                         idnumber__iexact=idnumber
-                    ).order_by('-pk').first()
+                    ).order_by('pk').first()
 
         # check if department, level and sector of scheme are the same as those of the student
                     is_ok = False
@@ -1210,11 +1262,8 @@ def ImportStudent(ws_name, row_data, logfile, mapped, examyear, school, request)
                     else:
         # - create new student record if not already exists
                         if student is None:
-                    # - first create new base record.
-                            base = stud_mod.Studentbase(
-                                country=request.user.country
-                            )
-                            base.save()
+                    # - first create and save new base record.
+                            base = stud_mod.Studentbase.objects.create()
 
                     # - create new student record
                             student = stud_mod.Student(
@@ -1264,10 +1313,6 @@ def ImportStudent(ws_name, row_data, logfile, mapped, examyear, school, request)
                             student.grade_combi_avg_text = row_data.get('grade_combi_avg_text')
                             student.endgrade_avg_text = row_data.get('endgrade_avg_text')
 
-                            student.resultid_tv01 = row_data.get('resultid_tv01', 0)
-                            student.resultid_tv02 = row_data.get('resultid_tv02', 0)
-                            student.resultid_tv03 = row_data.get('resultid_tv03', 0)
-                            student.resultid_final = row_data.get('resultid_final', 0)
                             student.result_info = row_data.get('result_info', 0)
 
                             student.save(request=request)
@@ -1326,7 +1371,7 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                 studentsubject = stud_mod.Studentsubject.objects.filter(
                     student=student,
                     schemeitem=schemeitem
-                ).order_by('-pk').first()
+                ).order_by('pk').first()
 
                 if logging_on:
                     logger.debug('studentsubject: ' + str(studentsubject))
@@ -1346,21 +1391,42 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                 if studentsubject:
 
     # - update info in studentsubject, both in new and existing records
-                    studentsubject.cluster = get_cluster_from_mapped(row_data, mapped)
+                    # dont import cluster
+                    #studentsubject.cluster = get_cluster_from_mapped(row_data, mapped)
                     studentsubject.is_extra_nocount = True if row_data.get('is_extra_nocount') == 1 else False
                     studentsubject.is_extra_counts = True if row_data.get('is_extra_counts') == 1 else False
                     studentsubject.is_elective_combi = True if row_data.get('is_elective_combi') == 1 else False
 
-                    studentsubject.pws_title = pws_title
-                    studentsubject.pws_subjects = pws_subjects
+                    # only import pws title and subjects when subjecttype = werkstuk
+                    if pws_title or pws_subjects:
+                        if schemeitem.subjecttype.has_pws:
+                            studentsubject.pws_title = pws_title
+                            studentsubject.pws_subjects = pws_subjects
 
                     studentsubject.has_exemption = True if row_data.get('has_exemption') == 1 else False
                     studentsubject.has_sr = True if row_data.get('has_sr') == 1 else False
                     studentsubject.has_reex = True if row_data.get('has_reex') == 1 else False
                     studentsubject.has_reex03 = True if row_data.get('has_reex03') == 1 else False
-                    studentsubject.has_pok = True if row_data.get('has_pok') == 1 else False
-                    studentsubject.has_pex = True if row_data.get('has_pex') == 1 else False
+                    if row_data.get('has_pok') == 1 or row_data.get('has_pex') == 1:
+                        years_valid = 10 if student.iseveningstudent or student.islexstudent else 1
+                        studentsubject.pok_validthru = examyear_instance.code + years_valid
 
+                    # TODO check if these max fields are used
+                    studentsubject.ex_max_segrade = row_data.get('ex_max_segrade')
+                    studentsubject.ex_max_pecegrade = row_data.get('ex_max_pecegrade')
+                    studentsubject.ex_max_finalgrade = row_data.get('ex_max_finalgrade')
+
+                    studentsubject.reex_max_segrade = row_data.get('reex_max_segrade')
+                    studentsubject.reex_max_pecegrade = row_data.get('reex_max_pecegrade')
+                    studentsubject.reex_max_finalgrade = row_data.get('reex_max_finalgrade')
+
+                    studentsubject.reex3_max_segrade = row_data.get('reex3_max_segrade')
+                    studentsubject.reex3_max_pecegrade = row_data.get('reex3_max_pecegrade')
+                    studentsubject.reex3_max_finalgrade = row_data.get('reex3_max_finalgrade')
+
+                    studentsubject.gradelist_segrade = row_data.get('gradelist_segrade')
+                    studentsubject.gradelist_pecegrade = row_data.get('gradelist_pecegrade')
+                    studentsubject.gradelist_finalgrade = row_data.get('gradelist_finalgrade')
                     studentsubject.save(request=request)
 
         except Exception as e:
@@ -1479,9 +1545,7 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                     logger.error(getattr(e, 'message', str(e)))
                     logfile.append('Error studentsubject: ' + str(e))
 
-
 # - end of ImportStudentsubject
-
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@

@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             lvl_abbrev: true, sct_abbrev: true,
                             subj_code: true, subj_name: true,
                             pescore: true, cescore: true,
-                            segrade: true, se_status: true,
+                            sesrgrade: true, se_status: true,
                             pegrade: true, pe_status: true,
                             cegrade: true, ce_status: true,
                             pecegrade: true, weighing: true, finalgrade: true, note_status: true,
@@ -86,6 +86,66 @@ document.addEventListener("DOMContentLoaded", function() {
                             filename: true, url: true
                            };
     const field_settings = {
+        btn_exemption: { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Abbreviation", "Subject",
+                                  "Exem_SESR_twolines", "", "Exem_PECE_twolines", "", "Exem_FINAL_twolines", ""],
+                    field_names: ["select", "examnumber", "fullname",  "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name",
+                                  "sesrgrade", "se_status", "pecegrade", "ce_status", "finalgrade", "note_status"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                                "input", "div", "input",  "div", "div", "div"],
+                    filter_tags: ["text", "text","text", "text", "text", "text", "text",
+                                 "text", "text", "text","text", "text", "text"],
+                    field_width: ["020", "060", "240", "060", "060", "075", "240",
+                                 "090", "020", "090","020", "090", "020"],
+                    field_align: ["c", "r", "l", "l", "l", "l", "l",
+                                 "c", "c", "c", "c", "c", "c"]},
+        btn_se: { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Abbreviation", "Subject",
+                                  "Exem_SESR_twolines", "", "Exem_PECE_twolines", "", "Exem_FINAL_twolines", ""],
+                    field_names: ["select", "examnumber", "fullname",  "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name",
+                                  "segrade", "se_status", "cegrade","ce_status", "finalgrade", "note_status"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                                "input", "div", "input",  "div", "div", "div"],
+                    filter_tags: ["text", "text","text", "text", "text", "text", "text",
+                                 "text", "text", "text","text", "text", "text"],
+                    field_width: ["020", "060", "240", "060", "060", "075", "240",
+                                 "090", "020", "090","020", "090", "020"],
+                    field_align: ["c", "r", "l", "l", "l", "l", "l",
+                                 "r", "c", "r","c", "c", "c"]},
+        btn_ce: { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Abbreviation", "Subject",
+                                  "Exem_SESR_twolines", "", "Exem_PECE_twolines", "", "Exem_FINAL_twolines", ""],
+                    field_names: ["select", "examnumber", "fullname",  "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name",
+                                  "segrade", "se_status", "cegrade","ce_status", "finalgrade", "note_status"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                                "input", "div", "input",  "div", "div", "div"],
+                    filter_tags: ["text", "text","text", "text", "text", "text", "text",
+                                 "text", "text", "text","text", "text", "text"],
+                    field_width: ["020", "060", "240", "060", "060", "075", "240",
+                                 "090", "020", "090","020", "090", "020"],
+                    field_align: ["c", "r", "l", "l", "l", "l", "l",
+                                 "r", "c", "r","c", "c", "c"]},
+        btn_reex: { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Abbreviation", "Subject",
+                                  "Exem_SESR_twolines", "", "Exem_PECE_twolines", "", "Exem_FINAL_twolines", ""],
+                    field_names: ["select", "examnumber", "fullname",  "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name",
+                                  "segrade", "se_status", "cegrade","ce_status", "finalgrade", "note_status"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                                "input", "div", "input",  "div", "div", "div"],
+                    filter_tags: ["text", "text","text", "text", "text", "text", "text",
+                                 "text", "text", "text","text", "text", "text"],
+                    field_width: ["020", "060", "240", "060", "060", "075", "240",
+                                 "090", "020", "090","020", "090", "020"],
+                    field_align: ["c", "r", "l", "l", "l", "l", "l",
+                                 "r", "c", "r","c", "c", "c"]},
+        btn_reex3: { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Abbreviation", "Subject",
+                                  "Exem_SESR_twolines", "", "Exem_PECE_twolines", "", "Exem_FINAL_twolines", ""],
+                    field_names: ["select", "examnumber", "fullname",  "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name",
+                                  "segrade", "se_status", "cegrade","ce_status", "finalgrade", "note_status"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                                "input", "div", "input",  "div", "div", "div"],
+                    filter_tags: ["text", "text","text", "text", "text", "text", "text",
+                                 "text", "text", "text","text", "text", "text"],
+                    field_width: ["020", "060", "240", "060", "060", "075", "240",
+                                 "090", "020", "090","020", "090", "020"],
+                    field_align: ["c", "r", "l", "l", "l", "l", "l",
+                                 "r", "c", "r","c", "c", "c"]},
         grades: { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Abbreviation", "Subject",
                                   "SE_grade_twolines", "",
                                   "PE_score_twolines", "PE_grade_twolines", "",
@@ -349,11 +409,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (isloaded_loc && isloaded_permits) {CreateSubmenu()};
                 if(isloaded_settings || isloaded_permits){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
 
-                // call b_render_awp_messages also when there are no messages, to remove existing messages
-                if ("awp_messages" in response) {
-                    b_render_awp_messages(response.awp_messages);
-                };
-
+                if ("messages" in response) {
+                    b_ShowModMessages(response.messages);
+                }
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
                 if ("school_rows" in response)  {
                     school_rows = response.school_rows
@@ -409,31 +467,55 @@ document.addEventListener("DOMContentLoaded", function() {
 //###########################################################################
 //=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14  PR2021-03-15
     function HandleBtnSelect(data_btn, skip_upload) {
-        //console.log( "===== HandleBtnSelect ========= ", data_btn);
+        console.log( "===== HandleBtnSelect ========= ", data_btn);
+        console.log( "===== setting_dict ========= ", setting_dict);
         // function is called by HandleShowAll, MSSSS_Response, select_btn.click, DatalistDownload after response.setting_dict
 
+        // data_btn only has value when called by clicking btn
         if(data_btn){
             selected_btn = data_btn;
         } else {
-            // data_btn only has no value response.setting_dict. Retrieve value from settings
-            if(setting_dict.sel_subject_pk ) {
-                selected_btn = "grade_by_subject"
-                setting_dict.sel_student_pk = null;
-                setting_dict.sel_student_name = null;
-            } else if(setting_dict.sel_student_pk ) {
-                selected_btn = "grade_by_student"
-                setting_dict.sel_subject_pk = null;
-                setting_dict.sel_subject_code = null;
-            } else {
-                selected_btn = setting_dict.sel_btn
-            }
-            if(!selected_btn){selected_btn = "grade_by_all"}
+            // get selected_btn from settings when called by DatalistDownload
+            selected_btn = setting_dict.sel_btn;
+        };
+        //  PR2021-09-07 debug: gave error because old btn name was still in saved setting
+        if (selected_btn && ["btn_exemption", "btn_se", "btn_ce", "btn_reex", "btn_reex3", "btn_all", "btn_published"].includes(selected_btn)) {
+            // pass
+        } else {
+            selected_btn = "btn_se";
+        };
+
+        if(setting_dict.sel_subject_pk ) {
+            setting_dict.sel_student_pk = null;
+            setting_dict.sel_student_name = null;
+        } else if(setting_dict.sel_student_pk ) {
+            setting_dict.sel_subject_pk = null;
+            setting_dict.sel_subject_code = null;
         }
 
-// ---  upload new selected_btn, not after DatalistDownload or HandleShowAll (then skip_upload = true)
-        if(!skip_upload){
-            const upload_dict = {page_grade: {sel_btn: selected_btn}};
-            UploadSettings (upload_dict, url_settings_upload);
+        if(skip_upload){
+        // skip_upload = true when called by DatalistDownload.
+        //  - don't call DatalistDownload, otherwise it cretaed an indefinite loop
+        //  - but fill table with new data
+
+    // --- update header text
+            MSSSS_display_in_sbr();
+
+    // --- update header text - comes after MSSSS_display_in_sbr
+            UpdateHeader();
+
+    // ---  fill datatable
+            FillTblRows();
+        } else {
+            const sel_examperiod = (selected_btn === "btn_exemption") ? 4 :
+                                    (selected_btn === "btn_reex3") ? 3 :
+                                    (selected_btn === "btn_reex") ? 2: 1;
+            const datalist_request = {
+                setting: {page: "page_grade", sel_btn: selected_btn, sel_examperiod: sel_examperiod},
+                grade_rows: {get: true},
+            };
+            DatalistDownload(datalist_request);
+
         };
 
 // ---  highlight selected button
@@ -444,15 +526,6 @@ document.addEventListener("DOMContentLoaded", function() {
         // modapprovegrade does. Make sure they have different names
         //b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
-// --- update header text
-        MSSSS_display_in_sbr();
-
-// --- update header text - comes after MSSSS_display_in_sbr
-        UpdateHeaderLeft();
-        UpdateHeaderRight();
-
-// ---  fill datatable
-        FillTblRows();
 
     }  // HandleBtnSelect
 
@@ -547,7 +620,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // ---  upload new setting
         const upload_dict = {selected_pk: {sel_examtype: setting_dict.sel_examtype}};
-        UploadSettings (upload_dict, url_settings_upload);
+        b_UploadSettings (upload_dict, url_settings_upload);
 
         FillTblRows();
     }  // HandleSbrExamtype
@@ -576,7 +649,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  upload new setting
         const upload_dict = {selected_pk: sel_dict};
         //console.log( "upload_dict: ", upload_dict)
-        UploadSettings (upload_dict, url_settings_upload);
+        b_UploadSettings (upload_dict, url_settings_upload);
 
         UpdateHeaderRight();
 
@@ -677,55 +750,61 @@ document.addEventListener("DOMContentLoaded", function() {
         const selected_pk_dict = {sel_level_pk: null, sel_sector_pk: null, sel_subject_pk: null, sel_student_pk: null};
         const page_grade_dict = {sel_btn: "grade_by_all"}
         const upload_dict = {selected_pk: selected_pk_dict, page_grade: page_grade_dict};
-        UploadSettings (upload_dict, url_settings_upload);
+        b_UploadSettings (upload_dict, url_settings_upload);
 
         HandleBtnSelect("grade_by_all", true) // true = skip_upload
         // also calls: FillTblRows(), MSSSS_display_in_sbr(), UpdateHeader()
 
     }  // HandleShowAll
 
-//========= UpdateHeaderLeft  ================== PR2021-03-14
-    function UpdateHeaderLeft(){
-        //console.log(" --- UpdateHeaderLeft ---" )
+//========= UpdateHeader  ================== PR2021-03-14
+    function UpdateHeader(){
+        console.log(" --- UpdateHeader ---" )
         //console.log("setting_dict", setting_dict)
         // sel_subject_txt gets value in MSSSS_display_in_sbr, therefore UpdateHeader comes after MSSSS_display_in_sbr
-        const header_left = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_txt :
-                            (setting_dict.sel_student_pk) ? setting_dict.sel_student_name : loc.All_subjects_and_candidates;
-        document.getElementById("id_hdr_left").innerText = header_left
-    }   //  UpdateHeaderLeft
 
-//========= UpdateHeaderRight  ================== PR2021-03-14
-    function UpdateHeaderRight(){
         //console.log(" --- UpdateHeaderRight ---" )
-        let header_right = "";
-        if (setting_dict.sel_level_pk) { header_right = setting_dict.sel_level_abbrev }
+        let level_sector_txt = "";
+        if (setting_dict.sel_level_pk) { level_sector_txt = setting_dict.sel_level_abbrev }
         if (setting_dict.sel_sector_pk) {
-            if(header_right) { header_right += " - " };
-            header_right += setting_dict.sel_sector_abbrev
+            if(level_sector) { level_sector_txt += " - " };
+            level_sector_txt += setting_dict.sel_sector_abbrev
         }
-        if(header_right) { header_right += " - " };
+        const exam_txt = (setting_dict.sel_btn === "btn_exemption") ? loc.Exemptions :
+                        (setting_dict.sel_btn === "btn_reex3") ? loc.Re_examination_3rd_period :
+                        (setting_dict.sel_btn === "btn_reex") ? loc.Re_examination :
+                        (setting_dict.sel_btn === "btn_se") ? loc.School_exam :
+                        (setting_dict.sel_btn === "btn_ce") ? loc.Central_exam : "";
 
-        if (setting_dict.sel_examperiod === 1){
-            header_right += setting_dict.sel_examperiod_caption
-        } else if (setting_dict.sel_examperiod === 2){
-            header_right += loc.Re_examination
-        } else if (setting_dict.sel_examperiod === 3){
-            header_right += loc.Re_examination_3rd_period
-        } else if (setting_dict.sel_examperiod === 4){
-            header_right += setting_dict.sel_examperiod_caption
-        } else {
-            header_right += "---"
+        const subject_student_txt = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_txt :
+                                (setting_dict.sel_student_pk) ? setting_dict.sel_student_name : "";
+        let header_txt = "";
+        if(level_sector_txt) {
+            header_txt += level_sector_txt;
         }
-        document.getElementById("id_hdr_textright1").innerText = header_right;
-    }   //  UpdateHeaderRight
+        if(exam_txt) {
+            if (header_txt) { header_txt += " - "}
+            header_txt += exam_txt;
+        }
+        if(subject_student_txt) {
+            if (header_txt) { header_txt += " - "}
+            header_txt += subject_student_txt;
+        }
+        document.getElementById("id_hdr_left").innerText = header_txt;
+
+    }   //  UpdateHeader
 
 //========= FillTblRows  ====================================
     function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
+        console.log( "===== FillTblRows  === ");
+        console.log( "selected_btn", selected_btn);
 
         const tblName = get_tblName_from_selectedBtn()
-        const field_setting = field_settings[tblName];
+        console.log( "tblName", tblName);
+        const field_setting = field_settings[selected_btn];
+        console.log( "field_setting", field_setting);
         const data_map = get_datamap_from_tblName(tblName);
+        console.log( "data_map", data_map);
 
 // --- show columns
         set_columns_shown();
@@ -763,7 +842,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  CreateTblHeader  === PR2020-12-03 PR2020-12-18 PR2021-01-022
     function CreateTblHeader(field_setting) {
-        //console.log("===  CreateTblHeader ===== ");
+        console.log("===  CreateTblHeader ===== ");
 
         const column_count = field_setting.field_names.length;
 
@@ -782,31 +861,14 @@ document.addEventListener("DOMContentLoaded", function() {
             const key = field_setting.field_caption[j];
             let caption = (loc[key]) ? loc[key] : key;
 
+        console.log("columns_shown", columns_shown);
+        console.log("field_name", field_name);
+        console.log("columns_shown[field_name]", columns_shown[field_name]);
     // - skip columns if columns_shown[field_name]) = true;
             if (columns_shown[field_name]){
 
                 const key = field_setting.field_caption[j];
                 let field_caption = (loc[key]) ? loc[key] : key;
-
-                if (field_name === "segrade") {
-                    if (setting_dict.sel_examperiod === 4){
-                        field_caption = "Vrijstelling\nSE-cijfer"
-                    }
-                } else if (field_name === "cescore") {
-                    if (setting_dict.sel_examperiod === 2){
-                        field_caption = "Herexamen\nscore"
-                    } else if (setting_dict.sel_examperiod === 3){
-                        field_caption = "Her 3e tv\nscore"
-                    }
-                } else if (field_name === "cegrade") {
-                    if (setting_dict.sel_examperiod === 2){
-                        field_caption = "Herexamen cijfer"
-                    } else if (setting_dict.sel_examperiod === 3){
-                        field_caption = "Her 3e tv cijfer"
-                    } else if (setting_dict.sel_examperiod === 4){
-                        field_caption = "Vrijstelling\nCE-cijfer"
-                    }
-                }
 
                 const field_tag = field_setting.field_tags[j];
                 const filter_tag = field_setting.filter_tags[j];
@@ -1018,7 +1080,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  UpdateTblRow  ================ PR2020-08-01
     function UpdateTblRow(tblRow, tblName, map_dict) {
-        //console.log("=========  UpdateTblRow =========");
+        console.log("=========  UpdateTblRow =========");
+        console.log("map_dict", map_dict);
         if (tblRow && tblRow.cells){
             for (let i = 0, td; td = tblRow.cells[i]; i++) {
                 UpdateField(td.children[0], map_dict);
@@ -1029,10 +1092,11 @@ document.addEventListener("DOMContentLoaded", function() {
 //=========  UpdateField  ================ PR2020-12-18 PR2021-05-30
     function UpdateField(el_div, map_dict) {
         //console.log("=========  UpdateField =========");
-        //console.log("map_dict", map_dict);
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
             const fld_value = map_dict[field_name];
+        //console.log("field_name", field_name);
+        //console.log("fld_value", fld_value);
 
             if(field_name){
                 let title_text = null, filter_value = null;
@@ -1084,6 +1148,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= set_columns_shown  ====== PR2021-03-08
     function set_columns_shown() {
+        return false;
         //console.log( "===== set_columns_shown  === ");
         /*/
             const columns_shown = {select: true, examnumber: true, fullname: true,
@@ -1450,6 +1515,8 @@ document.addEventListener("DOMContentLoaded", function() {
                         const tblName = "grade";
                         const fldName = get_attr_from_el(el_input, "data-field");
                         if(fldName in map_dict ){
+
+                            // TODO remove requsr_pk from client
                             const req_usr_pk = permit_dict.requsr_pk;
                             const examtype = fldName.substring(0,2);
                             const is_published = (!!map_dict[examtype + "_published_id"]);
@@ -2784,7 +2851,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         if (tblName === "school") {
 
         } else {
-            UploadSettings ({selected_pk: selected_pk_dict}, url_settings_upload);
+            b_UploadSettings ({selected_pk: selected_pk_dict}, url_settings_upload);
             if (new_selected_btn) {
         // change selected_button
                 HandleBtnSelect(new_selected_btn, true)  // true = skip_upload
@@ -2794,7 +2861,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                 FillTblRows();
                 MSSSS_display_in_sbr()
         // --- update header text - comes after MSSSS_display_in_sbr
-                UpdateHeaderLeft();
+                UpdateHeader();
             }
         }
     }  // MSSSS_Response

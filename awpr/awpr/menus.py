@@ -57,7 +57,6 @@ MENUS_DICT = {
 
 
 
-
 # === MANUAL =====================================
 # @method_decorator([login_required], name='dispatch')
 class ManualListView(View):

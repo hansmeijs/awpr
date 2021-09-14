@@ -5,8 +5,8 @@
 {% block title %}{% trans 'Subjects of candidates' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import210829.js' %}"></script>
-    <script src="{% static 'js/studentsubjects210901.js' %}"></script>
+    <script src="{% static 'js/import210913.js' %}"></script>
+    <script src="{% static 'js/studentsubjects210913.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -73,6 +73,7 @@
             {% include 'includes/modconfirm.html' %}
             {% include 'students/modapprovesubject.html' %}
             {% include 'students/modstudentsubject.html' %}
+            {% include 'students/modmultipleoccurrences.html' %}
             {% include 'includes/modimport.html' %}
 
     <!-- CONTENT HEADER - LOADER -->
@@ -104,7 +105,7 @@
     <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="btn_studsubj" class="btn btn-secondary ">{% trans 'Subjects' %}</button>
-                    <button data-btn="btn_exemption" class="btn btn-secondary display_hide">{% trans 'Exemptions' %}</button>
+                    <button data-btn="btn_exemption" class="btn btn-secondary">{% trans 'Exemptions' %}</button>
                     <button data-btn="btn_reex" class="btn btn-secondary display_hide">{% trans 'Re-examinations' %}</button>
                     <button data-btn="btn_reex3" class="btn btn-secondary display_hide">{% trans 'Re-exam 3rd period' %}</button>
                     <button data-btn="btn_pok" class="btn btn-secondary display_hide">{% trans 'Proof_of_knowledge' %}</button>
@@ -128,11 +129,12 @@
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_settings_upload="{% url 'url_settings_upload' %}"
-                data-url_student_upload="{% url 'url_student_upload' %}"
+                data-url_student_biscand="{% url 'url_student_biscand' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
                 data-url_studsubj_validate_scheme="{% url 'url_studsubj_validate_scheme' %}"
                 data-url_studsubj_validate_test="{% url 'url_studsubj_validate_test' %}"
                 data-url_studsubj_validate_all="{% url 'url_studsubj_validate_all' %}"
+                data-url_studsubj_multiple_occurrences="{% url 'url_studsubj_multiple_occurrences' %}"
                 data-url_studsubj_approve="{% url 'url_studsubj_approve' %}"
                 data-url_studsubj_approve_multiple="{% url 'url_studsubj_approve_multiple' %}"
                 data-url_studsubj_send_email_exform="{% url 'url_studsubj_send_email_exform' %}"

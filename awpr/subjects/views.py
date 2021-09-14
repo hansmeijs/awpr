@@ -264,7 +264,7 @@ def create_subject_rows(setting_dict, subject_pk, cur_dep_only=False):
 class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= SubjectUploadView ============= ')
@@ -354,7 +354,8 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
                             update_subject_instance(subject, examyear, upload_dict, error_list, request)
 
 # - create subject_row, also when deleting failed (when deleted ok there is no subject, subject_row is made above)
-                    if not deleted_ok:
+                    # PR2021-089-04 debug. gave error on subject.pk: 'NoneType' object has no attribute 'pk'
+                    if not deleted_ok and subject:
                         setting_dict = {'sel_examyear_pk': examyear.pk}
                         updated_rows = create_subject_rows(
                             setting_dict=setting_dict,
@@ -390,7 +391,7 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
 class SubjecttypebaseUploadView(View):  # PR2021-06-29
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= SubjecttypebaseUploadView ============= ')
@@ -477,7 +478,7 @@ class SubjecttypebaseUploadView(View):  # PR2021-06-29
 
 def create_subjecttypebase(upload_dict, error_list, request):
     # --- create subjecttype # PR2021-06-29
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_subjecttypebase ----- ')
 
@@ -524,9 +525,8 @@ def create_subjecttypebase(upload_dict, error_list, request):
         error_list.append({'header': str(msg_header), 'class': "border_bg_invalid", 'msg_html': msg_html})
     else:
         try:
-            # Don't create base record. Only use the default base records
+            # Don't create base record. Only use the default subjecttypebase records
             subjecttypebase = sbj_mod.Subjecttypebase(
-                country=request.user.country,
                 code=code,
                 name=name,
                 abbrev=abbrev,
@@ -551,7 +551,7 @@ def create_subjecttypebase(upload_dict, error_list, request):
 
 def delete_subjecttypebase(subjecttypebase, subjecttypebase_rows, messages, request):
     # --- delete subjecttype # PR2021-06-29
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_subjecttypebase ----- ')
         logger.debug('subjecttypebase: ' + str(subjecttypebase))
@@ -596,7 +596,7 @@ def delete_subjecttypebase(subjecttypebase, subjecttypebase_rows, messages, requ
 
 def update_subjecttypebase_instance(instance, upload_dict, error_list, request):
     # --- update existing and new instance PR2021-06-29
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_subjecttypebase_instance -----')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -677,7 +677,7 @@ def update_subjecttypebase_instance(instance, upload_dict, error_list, request):
 class SubjecttypeUploadView(View):  # PR2021-06-23
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= SubjecttypeUploadView ============= ')
@@ -785,7 +785,7 @@ class SubjecttypeUploadView(View):  # PR2021-06-23
 class SchemeUploadView(View):  # PR2021-06-27
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= SchemeUploadView ============= ')
@@ -871,7 +871,7 @@ class SchemeUploadView(View):  # PR2021-06-27
 class SchemeitemUploadView(View):  # PR2021-06-25
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= SchemeitemUploadView ============= ')
@@ -947,7 +947,7 @@ class SchemeitemUploadView(View):  # PR2021-06-25
 
 def get_permit_crud_page_subject(request):
     # --- get crud permit for page subject # PR2021-06-26
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     if logging_on:
         logger.debug(' ----- get_permit_crud_page_subject ----- ')
@@ -967,6 +967,9 @@ def get_permit_crud_page_subject(request):
 def get_sel_examyear(message_header, msg_dictlist, request):
     # --- get selected examyear from usersetting # PR2021-06-26
     # - get selected examyear from Usersetting
+    # return None when examyear is locked, give msg_err
+    # function is only used for updating subjects etx
+    # in SchemeUploadView, SchemeitemUploadView and SubjecttypeUploadView
     selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
     selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
     examyear = None
@@ -991,7 +994,10 @@ def get_sel_examyear(message_header, msg_dictlist, request):
         msg_dictlist.append({'class': "border_bg_warning",
                          'header': str(message_header),
                          'msg_html': str(_("Exam year %(exyr)s is locked.") % {'exyr': str(examyear.code)})})
+        examyear = None
+
     return examyear
+# - end of get_sel_examyear
 
 
 def get_scheme_instance(examyear, scheme_pk, error_list, msg_header):
@@ -1035,8 +1041,7 @@ def get_subjecttypebase_instance(sjtpbase_pk, error_list, message_header, loggin
 
     if sjtpbase_pk:
         subjecttypebase = sbj_mod.Subjecttypebase.objects.get_or_none(
-            id=sjtpbase_pk,
-            country=request.user.country
+            id=sjtpbase_pk
         )
 
     if logging_on:
@@ -1094,7 +1099,7 @@ class ExamListView(View):  # PR2021-04-04
 class ExamUploadView(View):
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= ExamUploadView ============= ')
@@ -1146,7 +1151,10 @@ class ExamUploadView(View):
                 selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
                 examyear = None
                 if examyear_pk == selected_examyear_pk:
-                    examyear = sch_mod.Examyear.objects.get_or_none(id=examyear_pk, country=req_usr.country)
+                    examyear = sch_mod.Examyear.objects.get_or_none(
+                        id=examyear_pk,
+                        country=req_usr.country
+                    )
 
                 # note: exams can be changed before publishing examyear, therefore don't filter on examyear.published
                 if examyear and not examyear.locked:
@@ -1241,7 +1249,7 @@ class ExamApproveView(View):  # PR2021-04-04
 
 
 def create_exam_instance(subject, department, level, examperiod_int, examtype, request):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' --- create_exam_instance --- ')
         logger.debug('subject: ' + str(subject))
@@ -1279,7 +1287,7 @@ def create_exam_instance(subject, department, level, examperiod_int, examtype, r
 
 def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' --- delete_exam_instance --- ')
         logger.debug('instance: ' + str(instance))
@@ -1305,7 +1313,7 @@ def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05
 # - end of delete_exam_instance
 
 def update_exam_instance(instance, upload_dict, error_list, examyear, request):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' --------- update_exam_instance -------------')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -1804,7 +1812,6 @@ def upload_subject(subject_list, subject_dict, lookup_field, awpKey_list,
         if subjectbase is None:
             try:
                 subjectbase = subj_mod.Subjectbase(
-                    country=request.user.country,
                     code=new_code
                 )
                 if subjectbase:
@@ -1924,10 +1931,6 @@ def upload_subject(subject_list, subject_dict, lookup_field, awpKey_list,
 # --- end of upload_subject
 
 
-
-
-
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def lookup_subjectbase(lookup_value, request):  # PR2020-10-20
     logger.debug('----------- lookup_subjectbase ----------- ')
@@ -1938,7 +1941,10 @@ def lookup_subjectbase(lookup_value, request):  # PR2020-10-20
     multiple_found = False
 
 # check if 'code' exists multiple times in Subjectbase
-    row_count = subj_mod.Subjectbase.objects.filter(code__iexact=lookup_value, country=request.user.country).count()
+    row_count = subj_mod.Subjectbase.objects.filter(
+        code__iexact=lookup_value
+    ).count()
+
     if row_count > 1:
         multiple_found = True
     elif row_count == 1:
@@ -2091,7 +2097,6 @@ def create_subject(examyear, upload_dict, messages, request):
             try:
                 # First create base record. base.id is used in Subject. Create also saves new record
                 base = sbj_mod.Subjectbase.objects.create(
-                    country=examyear.country,
                     code=code
                 )
 
@@ -2122,7 +2127,7 @@ def create_subject(examyear, upload_dict, messages, request):
 
 def update_subject_instance(instance, examyear, upload_dict, error_list, request):
     # --- update existing and new instance PR2019-06-06 PR2021-05-10
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_subject_instance -----')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -2240,7 +2245,7 @@ def update_subject_instance(instance, examyear, upload_dict, error_list, request
 
 def create_schemeitem(examyear, scheme, subj_pk, sjtp_pk, messages, request):
     # --- create schemeitem # PR2021-06-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_schemeitem ----- ')
 
@@ -2348,7 +2353,7 @@ def delete_schemeitem(schemeitem, messages, request):
 
 def update_si_list(examyear, scheme, si_list, updated_rows, messages, error_list, request):
     # --- delete schemeitem # PR2021-06-26
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_si_list ----- ')
         logger.debug('si_list: ' + str(si_list))
@@ -2407,7 +2412,7 @@ def update_si_list(examyear, scheme, si_list, updated_rows, messages, error_list
 
 def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, error_list, request):
     # --- update existing and new instance PR2021-06-26
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_schemeitem_instance -----')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -2453,7 +2458,7 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, er
 
 def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_list, request):
     # --- update existing and new instance PR2021-06-27
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_scheme_instance -----')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -2567,7 +2572,7 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
 
 def update_sjtp_list(examyear, scheme, sjtp_list, updated_rows, messages, request):
     # --- update_sjtp_list # PR2021-06-26
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_sjtp_list ----- ')
         logger.debug('sjtp_list: ' + str(sjtp_list))
@@ -2627,7 +2632,7 @@ def update_sjtp_list(examyear, scheme, sjtp_list, updated_rows, messages, reques
 
 def create_subjecttype(sjtpbase_pk, scheme, upload_dict, messages, msg_header, request):
     # --- create subjecttype # PR2021-06-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_subjecttype ----- ')
 
@@ -2693,7 +2698,7 @@ def create_subjecttype(sjtpbase_pk, scheme, upload_dict, messages, msg_header, r
 
 def delete_subjecttype(subjecttype, messages, request):
     # --- delete subjecttype # PR2021-06-23 PR2021-07-13
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_subjecttype ----- ')
         logger.debug('subjecttype: ' + str(subjecttype))
@@ -2742,7 +2747,7 @@ def delete_subjecttype(subjecttype, messages, request):
 
 def update_subjecttype_instance(instance, scheme, upload_dict, error_list, request):
     # --- update existing and new instance PR2021-06-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_subjecttype_instance -----')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -2764,8 +2769,7 @@ def update_subjecttype_instance(instance, scheme, upload_dict, error_list, reque
                 base = None
                 if new_value:
                     base = sbj_mod.Subjecttypebase.objects.get_or_none(
-                        id=new_value,
-                        country=request.user.country
+                        id=new_value
                     )
                 if logging_on:
                     logger.debug('new_subjecttypebase: ' + str(base) + ' ' + str(type(base)))
@@ -3074,74 +3078,77 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
         logger.debug('depbase: ' + str(depbase) + ' ' + str(type(depbase)))
 
     schemeitem_rows = []
+    try:
+        if examyear :
+            sql_keys = {'ey_id': examyear.pk}
+            sql_list = ["SELECT si.id, si.scheme_id, scheme.department_id, scheme.level_id, scheme.sector_id,",
+                "CONCAT('schemeitem_', si.id::TEXT) AS mapid,",
+                "si.subject_id AS subj_id, subj.name AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
+                "sjtpbase.code AS sjtpbase_code, sjtpbase.sequence AS sjtpbase_sequence,",
+                "sjtp.id AS sjtp_id, sjtp.name AS sjtp_name, sjtp.abbrev AS sjtp_abbrev,",
+                "sjtp.has_prac AS sjtp_has_prac, sjtp.has_pws AS sjtp_has_pws, ",
+                "sjtp.min_subjects AS sjtp_min_subjects, sjtp.max_subjects AS sjtp_max_subjects, ",
+                "scheme.name AS scheme_name, scheme.fields AS scheme_fields,",
+                "depbase.id AS depbase_id, depbase.code AS depbase_code,",
+                "lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id,",
+                "lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
 
-    if examyear :
-        sql_keys = {'ey_id': examyear.pk}
-        sql_list = ["SELECT si.id, si.scheme_id, scheme.department_id, scheme.level_id, scheme.sector_id,",
-            "CONCAT('schemeitem_', si.id::TEXT) AS mapid,",
-            "si.subject_id AS subj_id, subj.name AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
-            "sjtpbase.code AS sjtpbase_code, sjtpbase.sequence AS sjtpbase_sequence,",
-            "sjtp.id AS sjtp_id, sjtp.name AS sjtp_name, sjtp.abbrev AS sjtp_abbrev,",
-            "sjtp.has_prac AS sjtp_has_prac, sjtp.has_pws AS sjtp_has_pws, ",
-            "sjtp.min_subjects AS sjtp_min_subjects, sjtp.max_subjects AS sjtp_max_subjects, ",
-            "scheme.name AS scheme_name, scheme.fields AS scheme_fields,",
-            "depbase.id AS depbase_id, depbase.code AS depbase_code,",
-            "lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id,",
-            "lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
+                "si.gradetype, si.weight_se, si.weight_ce, si.ete_exam, si.no_order, si.is_mandatory, si.is_mand_subj_id,",
+                "si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed, si.elective_combi_allowed,",
+                "si.has_practexam, si.has_pws, si.is_core_subject, si.is_mvt, si.is_wisk,",
+                "si.reex_se_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce,",
 
-            "si.gradetype, si.weight_se, si.weight_ce, si.ete_exam, si.no_order, si.is_mandatory, si.is_mand_subj_id,",
-            "si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed, si.elective_combi_allowed,",
-            "si.has_practexam, si.has_pws, si.is_core_subject, si.is_mvt, si.is_wisk,",
-            "si.reex_se_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce,",
+                "si.modifiedby_id, si.modifiedat,",
+                "SUBSTRING(au.username, 7) AS modby_username",
 
-            "si.modifiedby_id, si.modifiedat,",
-            "SUBSTRING(au.username, 7) AS modby_username",
+                "FROM subjects_schemeitem AS si",
+                "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
+                "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+                "INNER JOIN subjects_subjecttype AS sjtp ON (sjtp.id = si.subjecttype_id)",
+                "INNER JOIN subjects_subjecttypebase AS sjtpbase ON (sjtpbase.id = sjtp.base_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
+                "LEFT JOIN subjects_sector AS sct ON (sct.id = scheme.sector_id)",
+                "LEFT JOIN accounts_user AS au ON (au.id = si.modifiedby_id)",
 
-            "FROM subjects_schemeitem AS si",
-            "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
-            "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
-            "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
-            "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
-            "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-            "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-            "INNER JOIN subjects_subjecttype AS sjtp ON (sjtp.id = si.subjecttype_id)",
-            "INNER JOIN subjects_subjecttypebase AS sjtpbase ON (sjtpbase.id = sjtp.base_id)",
-            "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
-            "LEFT JOIN subjects_sector AS sct ON (sct.id = scheme.sector_id)",
-            "LEFT JOIN accounts_user AS au ON (au.id = si.modifiedby_id)",
+                "WHERE dep.examyear_id = %(ey_id)s::INT"]
 
-            "WHERE dep.examyear_id = %(ey_id)s::INT"]
+            if schemeitem_pk:
+                # when schemeitem_pk has value: skip other filters
+                sql_keys['si_pk'] = schemeitem_pk
+                sql_list.append('AND si.id = %(si_pk)s::INT')
 
-        if schemeitem_pk:
-            # when schemeitem_pk has value: skip other filters
-            sql_keys['si_pk'] = schemeitem_pk
-            sql_list.append('AND si.id = %(si_pk)s::INT')
+            elif scheme_pk:
+                sql_keys['scheme_pk'] = scheme_pk
+                sql_list.append("AND scheme.id = %(scheme_pk)s::INT")
 
-        elif scheme_pk:
-            sql_keys['scheme_pk'] = scheme_pk
-            sql_list.append("AND scheme.id = %(scheme_pk)s::INT")
+            elif cur_dep_only:
+                if depbase:
+                    sql_keys['depbase_pk'] = depbase.pk
+                    sql_list.append('AND depbase.id = %(depbase_pk)s::INT')
+                else:
+                    sql_list.append("AND FALSE")
 
-        elif cur_dep_only:
-            if depbase:
-                sql_keys['depbase_pk'] = depbase.pk
-                sql_list.append('AND depbase.id = %(depbase_pk)s::INT')
+            if orderby_name:
+                sql_list.append('ORDER BY LOWER(scheme.name), LOWER(subj.name)')
+            elif orderby_sjtpbase_sequence:
+                sql_list.append('ORDER BY sjtpbase.sequence')
             else:
-                sql_list.append("AND FALSE")
+                sql_list.append('ORDER BY si.id')
 
-        if orderby_name:
-            sql_list.append('ORDER BY LOWER(scheme.name), LOWER(subj.name)')
-        elif orderby_sjtpbase_sequence:
-            sql_list.append('ORDER BY sjtpbase.sequence')
-        else:
-            sql_list.append('ORDER BY si.id')
+            sql = ' '.join(sql_list)
 
-        sql = ' '.join(sql_list)
+            if logging_on:
+                logger.debug('sql: ' + str(sql))
+            newcursor = connection.cursor()
+            newcursor.execute(sql, sql_keys)
+            schemeitem_rows = af.dictfetchall(newcursor)
 
-        if logging_on:
-            logger.debug('sql: ' + str(sql))
-        newcursor = connection.cursor()
-        newcursor.execute(sql, sql_keys)
-        schemeitem_rows = af.dictfetchall(newcursor)
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
 
     return schemeitem_rows
 # --- end of create_schemeitem_rows
@@ -3151,7 +3158,7 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
 class ExamDownloadExamView(View):  # PR2021-05-06
 
     def get(self, request, list):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('===== ExamDownloadExamView ===== ')
             logger.debug('list: ' + str(list) + ' ' + str(type(list)))
@@ -3244,7 +3251,7 @@ class ExamDownloadExamView(View):  # PR2021-05-06
 class ExamDownloadExamJsonView(View):  # PR2021-05-06
 
     def get(self, request, list):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('===== ExamDownloadExamJsonView ===== ')
             logger.debug('list: ' + str(list) + ' ' + str(type(list)))
@@ -3339,7 +3346,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
 # - end of ExamDownloadExamJsonView
 
 def get_assignment_keys_dict(amount, assignment, keys):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_assignment_keys_dict -----')
 
@@ -3582,3 +3589,402 @@ def get_level_abbrevs(exam_instance, examyear):
                             level_names += ', '
                         level_names += level.abbrev
     return level_names
+
+##########################################################
+
+def create_departmentbase_dictlist(examyear_instance):  # PR2021-09-01
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- create_departmentbase_dictlist -----')
+
+    # PR2021-08-20 functions creates ordered dictlist of all departments of this exam year of all countries
+    # NOTE: use examyear.code (integer field) to filter on examyear. This way depbases from SXM and CUR are added to list
+    # PR2021-09-02 debug: filter on examyear.code returned each depbase twice. Select ey_pk, same depbase is uses in Cur and SXM
+    sql_keys = {'ey_pk': examyear_instance.pk}
+    sql_list = [
+        "SELECT depbase.id AS depbase_id, depbase.code AS depbase_code, dep.name AS dep_name, dep.level_req AS dep_level_req ",
+
+        "FROM schools_department AS dep",
+        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
+
+        "WHERE ey.id = %(ey_pk)s::INT",
+        "ORDER BY dep.sequence"]
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        dictlist = af.dictfetchall(cursor)
+
+    if logging_on:
+        logger.debug('dictlist: ' + str(dictlist))
+
+    return dictlist
+# --- end of create_departmentbase_dictlist
+
+
+def create_levelbase_dictlist(examyear_instance):  # PR2021-09-01
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- create_levelbase_dictlist -----')
+
+    # PR2021-09-01 functions creates ordered dictlist of all levels of this exam year of all countries
+    # NOTE: use examyear.code (integer field) to filter on examyear. This way lvlbases from SXM and CUR are added to list
+    # also add row with pk = 0 for Havo / Vwo
+
+    # PR2021-09-02 debug: filter on examyear.code returned each depbase twice. Select ey_pk, same depbase is uses in Cur and SXM
+
+    # fields are lvlbase_id, lvlbase_code, lvl_name",
+    sql_keys = {'ey_pk': examyear_instance.pk}
+    sql_list = [
+        "SELECT lvlbase.id AS lvlbase_id, lvlbase.code AS lvlbase_code, lvl.name AS lvl_name ",
+
+        "FROM subjects_level AS lvl",
+        "INNER JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = lvl.examyear_id)",
+
+        "WHERE ey.id = %(ey_pk)s::INT",
+        "ORDER BY lvl.sequence"]
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        dictlist = af.dictfetchall(cursor)
+
+    # add row with pk = 0 for Havo / Vwo
+    dictlist.append({'lvlbase_id': 0, 'lvlbase_code': '', 'lvl_name': ''})
+
+    if logging_on:
+        logger.debug('dictlist: ' + str(dictlist))
+
+    return dictlist
+# --- end of create_levelbase_dictlist
+
+
+def create_schoolbase_dictlist(examyear):  # PR2021-08-20
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug ('----- create_schoolbase_dictlist -----')
+
+    # PR2021-08-20 functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name
+    # - of this exam year, of all countries
+    # - skip schools of other organizations than schools
+    # NOTE: use examyear.code (integer field) to filter on examyear. This way schoolbases from SXM and CUR are added to list
+
+    sql_keys = {'ey_code_int': examyear.code}
+    sql_list = [
+        "SELECT sbase.id AS sbase_id, sbase.code AS sbase_code, sch.article AS sch_article, sch.name AS sch_name, sch.abbrev AS sch_abbrev",
+
+        "FROM schools_school AS sch",
+        "INNER JOIN schools_schoolbase AS sbase ON (sbase.id = sch.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+
+        "WHERE ey.code = %(ey_code_int)s::INT AND sbase.defaultrole =", str(c.ROLE_008_SCHOOL),
+        "ORDER BY LOWER(sbase.code)"]
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        dictlist = af.dictfetchall(cursor)
+
+    if logging_on:
+        logger.debug('schoolbase_dictlist: ' + str(dictlist))
+
+    return dictlist
+# --- end of create_schoolbase_dictlist
+
+
+def create_subjectbase_dictlist(examyear):  # PR2021-08-20
+    logging_on = False  # s.LOGGING_ON
+
+    # PR2021-08-20 functions creates ordered dictlist of all subjectbase pk and code of this exam year of all countries
+    # NOTE: use examyear.code (integer field) to filter on examyear. This way subjects from SXM and CUR are added to list
+
+    sql_keys = {'ey_int': examyear.code}
+    sql_list = [
+        "SELECT subjbase.id, subjbase.code ",
+
+        "FROM subjects_subject AS subj",
+        "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
+
+        "WHERE ey.code = %(ey_int)s::INT",
+        "GROUP BY subjbase.id, subjbase.code",
+        "ORDER BY LOWER(subjbase.code)"]
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        subjectbase_dictlist = af.dictfetchall(cursor)
+
+    if logging_on:
+        logger.debug ('----- create_subjectbase_dictlist -----')
+        logger.debug('subjectbase_dictlist: ' + str(subjectbase_dictlist))
+
+    return subjectbase_dictlist
+# --- end of create_subjectbase_dictlist
+
+
+# /////////////////////////////////////////////////////////////////
+def create_studsubj_count_dict(sel_examyear_instance, schoolbase_pk,
+                               order_extra_fixed, order_extra_perc, order_round_to,
+                               order_tv2_divisor, order_tv2_multiplier, order_tv2_max):  # PR2021-08-19
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_studsubj_count_dict ----- ')
+
+    #  create nested dict with subjects count per exam, lang, dep, lvl, school and subjbase_id
+    #  all schools of CUR and SXM only submitted subjects, not deleted # PR2021-08-19
+
+    sql_keys = {'ey_code_int': sel_examyear_instance.code}
+
+    sql_studsubj_agg_list = [
+        "SELECT st.school_id, dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, sch.otherlang AS sch_otherlang,",
+
+        "lvl.abbrev AS lvl_abbrev,",  # for testing only, must also delete from group_by
+        "subj.base_id AS subjbase_id, si.ete_exam, subj.otherlang AS subj_otherlang, count(*) AS subj_count",
+
+        "FROM students_studentsubject AS studsubj",
+        "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+        "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+
+        "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+        "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+        "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
+        "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
+
+# - show only exams that are not deleted
+        "WHERE NOT studsubj.tobedeleted",
+# - show only published exams
+        "AND studsubj.subj_published_id IS NOT NULL",
+# - show only exams that have a central exam
+        "AND NOT si.weight_ce = 0",
+# - skip DUO exams for SXM schools
+        "AND (si.ete_exam OR NOT sch.no_order)"
+
+        "GROUP BY st.school_id, dep.base_id, lvl.base_id, lvl.abbrev, sch.otherlang, subj.base_id, si.ete_exam, subj.otherlang"
+    ]
+    sql_studsubj_agg = ' '.join(sql_studsubj_agg_list)
+
+    sql_list = ["WITH studsubj AS (", sql_studsubj_agg, ")",
+                "SELECT studsubj.subjbase_id, studsubj.ete_exam,",
+                "CASE WHEN studsubj.subj_otherlang IS NULL OR studsubj.sch_otherlang IS NULL THEN 'ne' ELSE",
+                "CASE WHEN POSITION(studsubj.sch_otherlang IN studsubj.subj_otherlang) > 0 ",
+                "THEN studsubj.sch_otherlang ELSE 'ne' END END AS lang,",
+
+                "sb.code AS sb_code, studsubj.lvl_abbrev,",  # for testing only
+                "sch.base_id AS schoolbase_id, studsubj.depbase_id, studsubj.lvlbase_id, studsubj.subj_count",
+
+                "FROM schools_school AS sch",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+                "INNER JOIN studsubj ON (studsubj.school_id = sch.id)",
+# - show only exams of this exam year
+                "WHERE ey.code = %(ey_code_int)s::INT"
+                ]
+# - filter on schoolbase_pk when it has value
+    if schoolbase_pk:
+        sql_keys['sb_pk'] = schoolbase_pk
+        sql_list.append("AND sb.id = %(sb_pk)s::INT")
+
+    sql = ' '.join(sql_list)
+
+    if logging_on:
+        logger.debug('sql_keys: ' + str(sql_keys))
+        logger.debug('sql: ' + str(sql))
+        #logger.debug('connection.queries: ' + str(connection.queries))
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        rows = af.dictfetchall(cursor)
+
+    count_dict = {'total': {}}
+
+    for row in rows:
+        if logging_on:
+            logger.debug('row: ' + str(row))
+        sb_code = row.get('sb_code', '-')  # for testing only
+
+        exam = 'ETE' if row.get('ete_exam', False) else 'DUO'
+        if exam not in count_dict:
+            count_dict[exam] = {'total': {}}
+        exam_dict = count_dict[exam]
+
+        lang = row.get('lang', 'ne')
+        if lang not in exam_dict:
+            exam_dict[lang] = {'total': {}}
+        lang_dict = exam_dict[lang]
+
+        depbase_pk = row.get('depbase_id')
+        if depbase_pk not in lang_dict:
+            lang_dict[depbase_pk] = {'total': {}}
+        depbase_dict = lang_dict[depbase_pk]
+
+        # value is '0' when lvlbase_id = None (Havo/Vwo)
+        lvlbase_pk = row.get('lvlbase_id', 0)
+        if lvlbase_pk is None:
+            lvlbase_pk = 0
+        lvl_abbrev = row.get('lvl_abbrev', '-')
+        if lvlbase_pk not in depbase_dict:
+            depbase_dict[lvlbase_pk] = {'c': lvl_abbrev, 'total': {}}
+        lvlbase_dict = depbase_dict[lvlbase_pk]
+
+        schoolbase_pk = row.get('schoolbase_id')
+        if schoolbase_pk not in lvlbase_dict:
+            lvlbase_dict[schoolbase_pk] = {'c': sb_code}
+        schoolbase_dict = lvlbase_dict[schoolbase_pk]
+
+        # - count extra exams and examns tv2
+        subjbase_pk = row.get('subjbase_id')
+        subj_count = row.get('subj_count', 0)
+
+        extra_count = 0
+        tv2_count = 0
+        if subj_count:
+            extra_not_rounded = order_extra_fixed + (subj_count * order_extra_perc / 100)
+            extra_count = (int(((
+                                            subj_count + extra_not_rounded - 1) / order_round_to) + 1) * order_round_to) - subj_count
+            tv2_count = int(((subj_count - 1) / order_tv2_divisor) + 1) * order_tv2_multiplier
+            if tv2_count > order_tv2_max:
+                tv2_count = order_tv2_max
+
+        #if logging_on:
+        #    logger.debug('subj_count: ' + str(subj_count))
+        #    logger.debug('extra_count: ' + str(extra_count))
+       #     logger.debug('tv2_count: ' + str(tv2_count))
+
+        if subjbase_pk not in schoolbase_dict:
+            schoolbase_dict[subjbase_pk] = [subj_count, extra_count, tv2_count]
+        else:
+            schoolbase_dict[subjbase_pk][0] += subj_count
+            schoolbase_dict[subjbase_pk][1] += extra_count
+            schoolbase_dict[subjbase_pk][2] += tv2_count
+
+        lvlbase_total = lvlbase_dict.get('total')
+        if subjbase_pk not in lvlbase_total:
+            lvlbase_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
+        else:
+            lvlbase_total[subjbase_pk][0] += subj_count
+            lvlbase_total[subjbase_pk][1] += extra_count
+            lvlbase_total[subjbase_pk][2] += tv2_count
+
+        depbase_total = depbase_dict.get('total')
+        if subjbase_pk not in depbase_total:
+            depbase_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
+        else:
+            depbase_total[subjbase_pk][0] += subj_count
+            depbase_total[subjbase_pk][1] += extra_count
+            depbase_total[subjbase_pk][2] += tv2_count
+
+        lang_total = lang_dict.get('total')
+        if subjbase_pk not in lang_total:
+            lang_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
+        else:
+            lang_total[subjbase_pk][0] += subj_count
+            lang_total[subjbase_pk][1] += extra_count
+            lang_total[subjbase_pk][2] += tv2_count
+
+        exam_total = exam_dict.get('total')
+        if subjbase_pk not in exam_total:
+            exam_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
+        else:
+            exam_total[subjbase_pk][0] += subj_count
+            exam_total[subjbase_pk][1] += extra_count
+            exam_total[subjbase_pk][2] += tv2_count
+
+        examyear_total = count_dict.get('total')
+        if subjbase_pk not in examyear_total:
+            examyear_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
+        else:
+            examyear_total[subjbase_pk][0] += subj_count
+            examyear_total[subjbase_pk][1] += extra_count
+            examyear_total[subjbase_pk][2] += tv2_count
+        """
+        examyear_dict_sample = {'total': {137: 513, 134: 63, 156: 63, 175: 63},
+            'DUO': {'total': {137: 513, 134: 63, 156: 63, 175: 63},  # exam_dict: { 'total': {}, lang_dict: {}
+                'ne': {'total': {137: 513, 134: 63, 156: 63, 175: 63},  # lang_dict: { 'total': {}, depbase_dict: {}
+                    1: {'total': {137: 513, 134: 63, 156: 63, 175: 63},  # depbase_dict: { 'total': {}, lvlbase_dict: {}
+                        12: {'total': {137: 90},  # lvlbase_dict: { 'total': {}, schoolbase_pk: {}
+                             2: {137: [90, 5]}  #  schoolbase_pk: { subjbase_pk: [ subj_count, extra_count, tv2_count]
+                             },
+                        13: {'total': {134: 63, 137: 156, 156: 63, 175: 63},
+                             2: {134: 63, 137: 156, 156: 63, 175: 63}
+                             },
+                        14: {'total': {137: 267},
+                             2: {137: [267, 10]}
+                             }
+                    }
+                }
+            }
+        }
+        """
+    #if logging_on:
+    #    logger.debug('studsubj_count_dict: ' + str(count_dict))
+
+    return count_dict
+# --- end of create_studsubj_count_dict
+
+
+# from https://github.com/jmcnamara/XlsxWriter/blob/main/xlsxwriter/utility.py PR2021-08-30
+
+def xl_rowcol_to_cell(row, col, row_abs=False, col_abs=False):
+    """
+    Convert a zero indexed row and column cell reference to a A1 style string.
+    Args:
+       row:     The cell row.    Int.
+       col:     The cell column. Int.
+       row_abs: Optional flag to make the row absolute.    Bool.
+       col_abs: Optional flag to make the column absolute. Bool.
+    Returns:
+        A1 style string.
+    """
+    if row < 0:
+        return None
+
+    if col < 0:
+        return None
+
+    row += 1  # Change to 1-index.
+    row_abs = '$' if row_abs else ''
+
+    col_str = xl_col_to_name(col, col_abs)
+
+    return col_str + row_abs + str(row)
+
+
+def xl_col_to_name(col, col_abs=False):
+    """
+    Convert a zero indexed column cell reference to a string.
+    Args:
+       col:     The cell column. Int.
+       col_abs: Optional flag to make the column absolute. Bool.
+    Returns:
+        Column style string.
+    """
+    col_num = col
+    if col_num < 0:
+        return None
+
+    col_num += 1  # Change to 1-index.
+    col_str = ''
+    col_abs = '$' if col_abs else ''
+
+    while col_num:
+        # Set remainder from 1 .. 26
+        remainder = col_num % 26
+
+        if remainder == 0:
+            remainder = 26
+
+        # Convert the remainder to a character.
+        col_letter = chr(ord('A') + remainder - 1)
+
+        # Accumulate the column letters, right to left.
+        col_str = col_letter + col_str
+
+        # Get the next order of magnitude.
+        col_num = int((col_num - 1) / 26)
+
+    return col_abs + col_str
+
+##############################################################

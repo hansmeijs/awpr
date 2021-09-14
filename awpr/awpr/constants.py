@@ -413,7 +413,7 @@ FIELDS_STUDENT = ('base', 'school', 'department', 'level', 'sector', 'scheme', '
                   'classname', 'examnumber', 'regnumber', 'diplomanumber', 'gradelistnumber', 'iseveningstudent',
                   'locked', 'has_reex', 'bis_exam', 'withdrawn', 'modifiedby', 'modifiedat')
 FIELDS_STUDENTSUBJECT = ('student', 'schemeitem', 'cluster', 'is_extra_nocount', 'is_extra_counts', 'is_elective_combi',
-                'pws_title', 'pws_subjects', 'has_exemption', 'has_reex', 'has_reex03', 'has_pok',
+                'pws_title', 'pws_subjects', 'has_exemption', 'has_reex', 'has_reex03', 'pok_validthru',  'pex_validthru',
                'subj_auth1by', 'subj_auth2by', 'subj_published',
                'exem_auth1by', 'exem_auth2by', 'exem_published',
                'reex_auth1by', 'reex_auth2by', 'reex_published',

@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
     urls.url_school_upload = get_attr_from_el(el_data, "data-url_school_upload");
     //urls.url_school_import = get_attr_from_el(el_data, "data-school_import_url");
-    urls.url_school_awpupload = get_attr_from_el(el_data, "data-school_awpupload_url");
+    urls.url_school_awpupload = get_attr_from_el(el_data, "data-url_old_awp_upload");
 
     let columns_hidden = {};
 
@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_school: {sel_btn: selected_btn}};
-            UploadSettings (upload_dict, urls.url_settings_upload);
+            b_UploadSettings (upload_dict, urls.url_settings_upload);
         };
 
 // ---  highlight selected button
@@ -625,6 +625,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let permit_value = get_attr_from_el_int(el_input, "data-value");
                 let has_permit = (!!permit_value);
 
+                // TODO remove requsr_pk from client
                 const is_request_user = (permit_dict.requsr_pk === map_dict.id)
 
 // show message when sysadmin tries to delete sysadmin permit or add readonly
@@ -899,14 +900,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
             } else {
                 const tblRow = get_tablerow_selected(el_input);
+
+        // --- call HandleTableRowClicked
+                // This happened in page studsubject, dont know if it also happens here
+                // becasue of submenu btn 'Delete school' HandleTableRowClicked must stay as tblRow event
+                    // PR2021-08-31 debug. modal didnt open becausue sometimes it comes before HandleTableRowClicked.
+                    // In that case there is no map_dict yet and modal will not open.
+                    // solved by moving function HandleTableRowClicked to MSTUSUBJ_Open,
+
+                HandleTableRowClicked(tblRow);
+
+
                 //tblName = get_attr_from_el(tblRow, "data-table")
                 tblName = "school"
-                const map_dict = b_get_mapdict_from_datarows(school_rows, tblRow.id, setting_dict.user_lang);
-                mod_MSCH_dict = deepcopy_dict(map_dict);
+                // PR2021-09-08 debug: don't use mapid with b_get_mapdict_from_datarows.
+                // It doesn't lookup mapid correctly: school_rows is sorted by id, therefore school_100 comes after school_99
+                // instead use id with b_recursive_integer_lookup.
+                // this is done in HandleTableRowClicked, map_dict is stored in selected.school_dict and  selected.school_pk
+                // was: const map_dict = b_get_mapdict_from_datarows(school_rows, tblRow.id, setting_dict.user_lang);
+                // was: mod_MSCH_dict = deepcopy_dict(map_dict);
+                const map_dict  = deepcopy_dict(selected.school_dict);
 
             console.log("tblName", tblName)
             console.log("school_rows", school_rows)
-            console.log("map_dict", map_dict)
+            console.log("mod_MSCH_dict", map_dict)
                 if(!isEmpty(map_dict)){
 
                     mod_MSCH_dict.id = map_dict.id;
@@ -2038,7 +2055,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let datalist_request = {setting: {page: "page_grade", sel_schoolbase_pk: selected_pk}};
             DatalistDownload(datalist_request);
         } else {
-            UploadSettings ({selected_pk: selected_pk_dict}, urls.url_settings_upload);
+            b_UploadSettings ({selected_pk: selected_pk_dict}, urls.url_settings_upload);
             if (new_selected_btn) {
         // change selected_button
                 HandleBtnSelect(new_selected_btn, true)  // true = skip_upload
@@ -2055,7 +2072,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //###########################################################################
 
-//========= MOD NOTE Open====================================
+//========= MOD UPLOAD OLD AWP ====================================
     function ModUploadAwp_open () {
         console.log("===  ModUploadAwp_open  =====") ;
 // reset filedialog

@@ -1222,7 +1222,7 @@ aXX:hover{
 .note_0_0, .note_0_1, .note_0_2, .note_0_3, .note_0_4, .note_0_5, .note_0_6, .note_0_7, .note_0_8,
 .note_1_0, .note_1_1, .note_1_2, .note_1_3, .note_1_4, .note_1_5, .note_1_6, .note_1_7, .note_1_8,
 .note_2_0, .note_2_1, .note_2_2, .note_2_3, .note_2_4, .note_2_5, .note_2_6,  .note_2_7, .note_2_8 {
-    background-image: url('/static/img/notes210314.png');
+    background-image: url('/static/img/notes210911.png');
     background-size: 180px 60px;
 }
 .note_0_0 { background-position: -0px -0px;}
@@ -1283,15 +1283,6 @@ aXX:hover{
 .diamond_3_3 { background-position: -60px -60px;}
 .diamond_3_4 { background-position: -80px -60px;}
 
-.xmark_0_0, .xmark_0_1, .xmark_0_2, .xmark_0_3 {
-    background-image: url('/static/img/xmark.png');
-    background-size: 80px 20px;
-}
-.xmark_0_0 { background-position: -0px -0px;}
-.xmark_0_1 { background-position: -20px -0px;}
-.xmark_0_2 { background-position: -40px -0px;}
-.xmark_0_3 { background-position: -60px -0px;}
-
 .exclamation_0_0, .exclamation_0_1, .exclamation_0_2 {
     background-image: url('/static/img/exclamation.png');
     background-size: 60px 20px;
@@ -1341,8 +1332,6 @@ aXX:hover{
 .btn_del_0_1 { background-position: -28px -0px;}
 .btn_del_0_2 { background-position: -56px -0px;}
 
-
-
 .flag_0_0, .flag_0_1, .flag_0_2,
 .flag_1_0, .flag_1_1, .flag_1_2 {
     background-image: url('/static/img/flags.png');
@@ -1360,7 +1349,6 @@ aXX:hover{
 .flag_1_1 { background-position: -36px -24px;}
 .flag_1_2 { background-position: -72px -24px;}
 
-
 .questionmark {
     background-image: url('/static/img/questionmark.png');
     background-size: 32px 32px;
@@ -1370,6 +1358,19 @@ aXX:hover{
     margin: 4px 4px 4px 4px;
     cursor: pointer;
 }
+
+.envelope_0_0, .envelope_0_1, .envelope_0_2 {
+    background-image: url('/static/img/envelope.png');
+    background-size: 96px 32px;
+    background-repeat: no-repeat;
+    height: 32px;
+    width: 32px;
+    margin: 4px 4px 4px 4px;
+    cursor: pointer;
+}
+.envelope_0_0 { background-position: -0px -0px;}
+.envelope_0_1 { background-position: -32px -0px;}
+.envelope_0_2 { background-position: -64px -0px;}
 
 .awplogo {
     background-image: url('/static/img/awplogo.png');

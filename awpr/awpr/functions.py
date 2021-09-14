@@ -1,19 +1,23 @@
 # PR2018-05-28
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from random import randint
 
+from django.core.mail import send_mail
 from django.db import connection
+from django.template.loader import render_to_string
 from django.utils.translation import activate, ugettext_lazy as _
 from django.utils import timezone
-from datetime import date, datetime, time
 
 from awpr import constants as c
 from awpr import settings as s
+from awpr import downloads as dl
 
 from accounts import models as acc_mod
 from accounts import views as acc_view
 from schools import models as sch_mod
 from subjects import models as subj_mod
+
 import pytz
 import logging
 logger = logging.getLogger(__name__)
@@ -29,6 +33,140 @@ class LazyEncoder(DjangoJSONEncoder):
         if isinstance(obj, Promise):
             return force_text(obj)
         return super(LazyEncoder, self).default(obj)
+
+
+def send_email_verifcode(formname, email_template, request, sel_examyear, sel_school=None, sel_department=None ):
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' ----- send_email_verifcode  -----')
+        logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
+
+    verifcode_key, exception_str = None, None
+
+    req_usr = request.user
+
+    try:
+        # create _verificationcode and key, store in usersetting, send key to client, set expiration to 30 minutes
+        # get random number between 1,000,000 en 1,999,999, convert to string and get last 6 characters
+        # this way you get string from '000000' thru '999999'
+        # key is sent to client, code must be entered by user
+        # key_code is stored in usersettings, with
+        _verificationcode = str(randint(1000000, 1999999))[-6:]
+        verifcode_key = str(randint(1000000, 1999999))[-6:]
+
+        key_code = '_'.join((verifcode_key, _verificationcode))
+
+        now = datetime.now()  # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+        expirationtime = now + timedelta(seconds=1800)
+        expirationtime_iso = expirationtime.isoformat()
+
+        verification_dict = {'form': formname, 'key_code': key_code, 'expirationtime': expirationtime_iso}
+        acc_view.set_usersetting_dict(c.KEY_VERIFICATIONCODE, verification_dict, request)
+
+        if logging_on:
+            logger.debug('verification_dict: ' + str(verification_dict))
+
+        subject = str(_('AWP-online verificationcode'))
+        from_email = 'AWP-online <noreply@awponline.net>'
+        msg_dict = {
+            'user': req_usr,
+            'examyear': sel_examyear,
+            'verificationcode': _verificationcode
+        }
+        if sel_school:
+            msg_dict['school'] = sel_school
+        if sel_department:
+            msg_dict['department'] = sel_department
+
+        if logging_on:
+            logger.debug('msg_dict: ' + str(msg_dict))
+            logger.debug('email_template: ' + str(email_template))
+
+        message_str = render_to_string(email_template, msg_dict)
+
+        if logging_on:
+            logger.debug('message_str: ' + str(message_str) + ' ' + str(type(message_str)))
+            logger.debug('from_email: ' + str(from_email) + ' ' + str(type(from_email)))
+            logger.debug('[req_usr.email: ' + str([req_usr.email]) + ' ' + str(type([req_usr.email])))
+
+        # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
+        mail_count = send_mail(subject, message_str, from_email, [req_usr.email], fail_silently=False)
+        if logging_on:
+            logger.debug('mail_count: ' + str(mail_count))
+
+        if not mail_count:
+            verifcode_key = None
+
+    except Exception as e:
+        verifcode_key = None
+        exception_str = str(e)
+        logger.error(getattr(e, 'message', str(e)))
+
+    return verifcode_key, exception_str
+
+
+def check_verificationcode(upload_dict, formname, request ):  # PR2021-09-8
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('  ----- check_verificationcode -----')
+
+    _verificationkey = upload_dict.get('verificationkey')
+    _verificationcode = upload_dict.get('verificationcode')
+
+    if logging_on:
+        logger.debug('_verificationkey: ' + str(_verificationkey))
+        logger.debug('_verificationcode: ' + str(_verificationcode))
+
+    is_ok, is_expired = False, False
+    msg_err = None
+
+    if _verificationkey and _verificationcode:
+        key_code = '_'.join((_verificationkey, _verificationcode))
+    # - get saved key_code
+        saved_dict = acc_view.get_usersetting_dict(c.KEY_VERIFICATIONCODE, request)
+        if logging_on:
+            logger.debug('saved_dict: ' + str(saved_dict))
+
+        if saved_dict:
+# - check if code is expired:
+            saved_expirationtime = saved_dict.get('expirationtime')
+            # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+            now_iso = datetime.now().isoformat()
+            if logging_on:
+                logger.debug('saved_expirationtime: ' + str(saved_expirationtime))
+                logger.debug('now_iso: ' + str(now_iso))
+
+            if now_iso > saved_expirationtime:
+                is_expired = True
+                msg_err = _("The verificationcode has expired.")
+            else:
+# - check if code is correct:
+                saved_form = saved_dict.get('form')
+                saved_key_code = saved_dict.get('key_code')
+                if logging_on:
+                    logger.debug('saved_form: ' + str(saved_form))
+                    logger.debug('saved_key_code: ' + str(saved_key_code))
+
+                if saved_form == formname and key_code == saved_key_code:
+                    is_ok = True
+                else:
+                    msg_err = _("The verificationcode you have entered is not correct.")
+
+# - delete setting when expired or ok
+            if is_ok or is_expired:
+                acc_view.set_usersetting_dict(c.KEY_VERIFICATIONCODE, None, request)
+        else:
+            msg_err = _("The verificationcode is not found.")
+    else:
+        msg_err = _("The verificationcode is not entered.")
+
+    if logging_on:
+        logger.debug('is_ok: ' + str(is_ok))
+        logger.debug('is_expired: ' + str(is_expired))
+
+    return msg_err
+# - end of check_verificationcode
 
 
 ############################################################
@@ -692,6 +830,79 @@ def is_allowed_depbase_school(depbase_pk, school):  # PR2021-06-14
     return is_allowed_depbase
 
 
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+def get_sel_examperiod(selected_pk_dict, request_item_examperiod):  # PR2021-09-07
+    #logger.debug('  -----  get_sel_examperiod  -----')
+
+# - get saved_examperiod from Usersetting, default 1 if not found
+    sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+    if sel_examperiod is None:
+        sel_examperiod = c.EXAMPERIOD_FIRST
+
+# - check if there is a new examperiod in request_setting, check if its is the same as the saved one
+    save_changes = False
+    if request_item_examperiod:
+        if request_item_examperiod != sel_examperiod:
+            sel_examperiod = request_item_examperiod
+            save_changes = True
+
+    return sel_examperiod, save_changes
+# --- end of get_sel_examperiod
+
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+def get_sel_examtype(selected_pk_dict, request_item_examtype, sel_examperiod):  # PR2021-09-07
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('  -----  get_sel_examtype  -----')
+        logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+        logger.debug('request_item_examtype: ' + str(request_item_examtype))
+
+# - get saved_examtype from Usersetting, default 1 if not found
+    sel_examtype = selected_pk_dict.get(c.KEY_SEL_EXAMTYPE)
+    if sel_examtype is None:
+        sel_examtype = 'se'
+
+# - check if there is a new saved_examtype in request_setting, check if its is the same as the saved one
+    save_changes = False
+    if request_item_examtype:
+        if request_item_examtype != sel_examtype:
+            sel_examtype = request_item_examtype
+            save_changes = True
+
+    if logging_on:
+        logger.debug('sel_examtype: ' + str(sel_examtype))
+
+# - check if examtype is allowed in this saved_examperiod_int
+    # make list of examtypes that are allowed in this examperiod
+    # - also get the default_examtype of this examperiod
+    allowed_examtype_list = []
+    default_examtype = None
+    for examtype_dict in c.EXAMTYPE_OPTIONS:
+        # filter examtypes of this examperiod
+        if examtype_dict.get('filter', -1) == sel_examperiod:
+            value = examtype_dict.get('value')
+            if value:
+                allowed_examtype_list.append(value)
+
+            # make first examtype the default_examtype
+            if default_examtype is None:
+                default_examtype = value
+    if logging_on:
+        logger.debug('allowed_examtype_list: ' + str(allowed_examtype_list))
+
+# - check if saved examtype is allowed in this examperiod, set to default if not, make selected_pk_dict_has_changed = True
+    if sel_examtype not in allowed_examtype_list:
+        sel_examtype = default_examtype
+        save_changes = True
+
+    # - update selected_pk_dict
+    selected_pk_dict[c.KEY_SEL_EXAMTYPE] = sel_examtype
+    selected_pk_dict_has_changed = True
+
+    return sel_examtype, save_changes
+# --- end of get_sel_examtype
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def get_this_examyear_int():
     # get this year in Jan thru July, get next year in Aug thru Dec PR2020-09-29 PR2020-12-24
@@ -718,7 +929,6 @@ def get_todays_examyear_instance(country):  # PR2020-12-24 PR2021-08-06
 # - end of get_todays_examyear_instance
 
 
-
 def get_todays_examyear_or_latest_instance(country):
     # get this year in Jan thru July, get next year in Aug thru Dec PR2020-09-29 PR2020-12-24
     examyear_instance = get_todays_examyear_instance(country)
@@ -728,7 +938,7 @@ def get_todays_examyear_or_latest_instance(country):
     return examyear_instance
 
 
-def get_saved_sel_depbase_instance(request):  # PR2020-12-24
+def get_saved_sel_depbase_instance(request):  # PR2020-12-24 PR2021-09-04
     #logger.debug('  -----  get_saved_sel_depbase_instance  -----')
     sel_depbase_instance = None
 # - get saved selected_pk's from Usersetting, key: selected_pk
@@ -740,8 +950,7 @@ def get_saved_sel_depbase_instance(request):  # PR2020-12-24
             s_db_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
     # - get selected examyear
             if s_db_pk:
-                #TODO XXXXXXXXXXXXXXXXXXXXXXXXXXX wrong : country=request.user.country
-                sel_depbase_instance = sch_mod.Department.objects.get_or_none(pk=s_db_pk, country=request.user.country)
+                sel_depbase_instance = sch_mod.Department.objects.get_or_none(pk=s_db_pk)
     return sel_depbase_instance
 
 
@@ -907,6 +1116,7 @@ def add_sxmsys_school_if_not_exist(request):  # PR2021-08-05
                     logger.debug('sxmsys_user: ' + str(sxmsys_user))
 # - end of add_sxmsys_school_if_not_exist
 
+
 def get_country_instance_by_abbrev(abbrev):
     # get country by abbrev 'sxm' or 'cur' PR2021-08-06
 
@@ -920,31 +1130,6 @@ def get_country_instance_by_abbrev(abbrev):
             logger.error(getattr(e, 'message', str(e)))
     return country
 # - end of get_country_instance_by_abbrev
-
-
-def get_todays_examyear_NIU():
-    # get SXM examyear of today
-    sxm_examyear = None
-    try:
-        todays_examyear_int = get_this_examyear_int()
-        sxm_examyear = sch_mod.Examyear.objects.filter(
-            country=sxm_country,
-            code=todays_examyear_int
-        ).order_by('-pk').first()
-        if logging_on:
-            logger.debug('todays_examyear_int: ' + str(todays_examyear_int))
-            logger.debug('sxm_examyear: ' + str(sxm_examyear))
-        if sxm_examyear is None:
-            sxm_examyear = sch_mod.Examyear(
-                country=sxm_country,
-                code=todays_examyear_int
-            )
-            sxm_examyear.save(request=request)
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
-
-    if logging_on:
-        logger.debug('sxm_examyear: ' + str(sxm_examyear))
 
 
 def transfer_depbases_from_array_to_string():
@@ -1139,6 +1324,7 @@ def update_examyearsetting(examyear, request):
         else:
             instance.setting = key_value[2]
         instance.save()
+
 
 def get_exform_text(examyear, key_list):  # PR2021-03-10
     # get text for exform etc from ExfilesText

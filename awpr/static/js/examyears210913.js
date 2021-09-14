@@ -137,6 +137,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MEY_btn_cancel = document.getElementById("id_MEY_btn_cancel");
 
 // ---  MODAL EDIT EXAMYEAR
+        const el_MEDEY_form_controls = document.getElementById("id_MEDEY_form_controls")
+        if(el_MEDEY_form_controls){
+            const form_elements = el_MEDEY_form_controls.querySelectorAll(".awp_input_checkbox")
+            for (let i = 0, el; el = form_elements[i]; i++) {
+                el.addEventListener("click", function() {MEDEY_Toggle(el)}, false);
+            };
+        };
+
         const el_MEDEY_btn_delete = document.getElementById("id_MEDEY_btn_delete");
         if(el_MEDEY_btn_delete){
             el_MEDEY_btn_delete.addEventListener("click", function() {MEDEY_Save("delete")}, false )};
@@ -154,6 +162,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if(el_confirm_btn_save){
             el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()});
         };
+
+// ---  MOD UPLOAD AWP-upload FILE ------------------------------------
+        const el_ModUploadAwp_filedialog = document.getElementById("id_ModUploadAwp_filedialog");
+        const el_ModUploadAwp_btn_save = document.getElementById("id_ModUploadAwp_btn_save");
+        if (el_ModUploadAwp_btn_save){el_ModUploadAwp_btn_save.addEventListener("click", function() {ModUploadAwp_Save()}, false)};
 
 // ---  set selected menu button active
     SetMenubuttonActive(document.getElementById("id_hdr_users"));
@@ -226,20 +239,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
-
-        // call b_render_awp_messages also when there are no messages, to remove existing messages
-                const awp_messages = (response.awp_messages) ? response.awp_messages : {};
-                b_render_awp_messages(response.awp_messages);
-
-                if("messages" in response){
+                if ("messages" in response) {
+                    console.log("response.messages", response.messages)
                     b_ShowModMessages(response.messages);
-                }
-
+                };
                 if ("examyear_rows" in response) {
                     const tblName = "examyear";
                     const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
                     RefreshDataMap(tblName, field_names, response.examyear_rows, examyear_map)
-                }
+                };
                 if ("school_rows" in response) {
 
                 //console.log("response.school_rows", response.school_rows)
@@ -281,9 +289,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     AddSubmenuButton(el_submenu, loc.Copy_examyear_to_SXM, function() {ModConfirmOpen("copy_to_sxm")});
                     // FIXIT DISABLE THIS FUNCTION,it will remove all students and subjects of SXM
                     // AddSubmenuButton(el_submenu, loc.Delete_subjects_from_SXM, function() {ModConfirmOpen("delete_subjects_from_sxm")});
-                }
-            }
-
+                    AddSubmenuButton(el_submenu, loc.Upload_awpdata, function() {ModUploadAwp_open()}, null, "id_submenu_importawp");
+                };
+            };
          el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
 
@@ -299,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  upload new selected.btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_examyear: {sel_btn: selected.btn}};
-            UploadSettings (upload_dict, urls.url_settings_upload);
+            b_UploadSettings (upload_dict, urls.url_settings_upload);
         };
 
 // ---  highlight selected button
@@ -694,6 +702,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ("SXM_deletedlist" in response) {
                         $("#id_mod_confirm").modal("hide");
                     };
+
+                    if ("messages" in response) {
+                        console.log("response.messages", response.messages)
+                        b_ShowModMessages(response.messages);
+                    }
+
                 },  // success: function (response) {
                 error: function (xhr, msg) {
                     // ---  hide loader
@@ -959,7 +973,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- set input element
         el_MEY_input_code.value = (mod_MEY_dict.examyear_code) ? mod_MEY_dict.examyear_code : null;
 
-
 // set msg elements
         const msg_list = (mode === "create") ? loc.msg_info.create :
                               (mode === "publish")  ? loc.msg_info.publish :
@@ -1080,6 +1093,51 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
     };  // MEDEY_Open
+//=========  MEDEY_Save  ================  PR2020-10-01
+    function MEDEY_Save(crud_mode) {
+        console.log(" -----  MEDEY_Save  ----", crud_mode);
+        console.log( "mod_MEY_dict: ", mod_MEY_dict);
+
+        if (permit_dict.permit_crud){
+            const is_create = (mod_MEY_dict.is_addnew);
+            const is_delete = (crud_mode === "delete");
+            const upload_mode = (is_create) ? "create" : (is_delete) ? "delete" : "update"
+
+            let upload_dict = {table: 'examyear', mode: upload_mode}
+            if(mod_MEY_dict.examyear_id){upload_dict.examyear_pk = mod_MEY_dict.examyear_id};
+            if(mod_MEY_dict.mapid){upload_dict.mapid = mod_MEY_dict.mapid};
+
+    // ---  put changed values of input elements in upload_dict
+            let has_changed = false;
+            if(el_MEDEY_form_controls){
+                const form_elements = el_MEDEY_form_controls.querySelectorAll(".awp_input_checkbox")
+                for (let i = 0, el; el = form_elements[i]; i++) {
+                    const fldName = get_attr_from_el(el, "data-field");
+                    const data_value = get_attr_from_el(el, "data-value");
+                    const new_value = !(data_value !== "1");
+                    const old_value = (mod_MEY_dict[fldName]) ? mod_MEY_dict[fldName] : false;
+                    if (new_value !== old_value) {
+                        upload_dict[fldName] = new_value;
+                        has_changed = true;
+                    };
+                };
+            };
+            if (has_changed){
+                UploadChanges(upload_dict, urls.url_examyear_upload);
+            };
+        };
+// ---  hide modal
+        $("#id_mod_edit_examyear").modal("hide");
+    }  // MEDEY_Save
+
+//========= MEDEY_Toggle  ============= PR2021-09-03
+    function MEDEY_Toggle(el_input){
+        console.log( "===== MEDEY_Toggle  ========= ");
+
+        el_MEDEY_btn_save.disabled=false;
+        t_InputToggle(el_input);
+
+    };  // MEDEY_Toggle
 
 //========= MEDEY_SetElements  ============= PR2021-08-30
     function MEDEY_SetElements(){
@@ -1089,21 +1147,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MEDEY_header = document.getElementById("id_MEDEY_header");
         el_MEDEY_header.innerText = loc.Examyear + " " + mod_MEY_dict.examyear_code;
 
-        const el_MEDEY_form_controls = document.getElementById("id_MEDEY_form_controls")
         if(el_MEDEY_form_controls){
             const form_elements = el_MEDEY_form_controls.querySelectorAll(".awp_input_checkbox")
             for (let i = 0, el; el = form_elements[i]; i++) {
                 const field = get_attr_from_el(el, "data-field");
-                const data_dict_value = mod_MEY_dict[field];
-                if (data_dict_value)
-                add_or_remove_class(el, "tickmark_2_2", data_dict_value, "tickmark_0_0")
-        console.log( "field", field);
-        console.log( "data_dict_value", data_dict_value);
-
+                const value_bool = mod_MEY_dict[field];
+                el.setAttribute("data-value", (value_bool) ? "1" : "0");
+                add_or_remove_class(el.children[0], "tickmark_2_2", value_bool, "tickmark_1_1")
             };
         };
-
-
 
 // ---  set text on msg_modified
         let modified_text = null;
@@ -1116,7 +1168,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById("id_MEDEY_modified").innerText = modified_text;
 
 // ---  set text on btn Save Cancel, hide btn save on error  or after save
-
+        el_MEDEY_btn_save.disabled=true;
         //MEY_SetBtnOkCancel(mode, hide_btn_save);
 
     }  // MEDEY_SetElements
@@ -1688,8 +1740,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         return add_to_list;
     }  // ModSelSchOrDep_FillSelectRow
+//###########################################################################
 
-//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //========= get_permits  ======== // PR2021-04-24
     function get_permits(permit_list) {
         //console.log(" --- get_permits ---" )

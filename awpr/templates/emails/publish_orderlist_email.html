@@ -1,0 +1,21 @@
+{% load i18n %}{% autoescape off %}
+{{ school_attn }},
+{% trans "Attn." %}:{% for sendto_name in sendto_name_list %}
+    {{ sendto_name }}{% endfor %}
+
+{% trans "We hereby send you the orderlist of the exams " %}{% if not is_total_orderlist %}{% trans "of your school " %}{% endif %}{% trans "of this exam year" %}:
+
+{% if not is_total_orderlist %}  - {% trans "School code" %}:  {{ school_code }}{% endif %}
+{% if not is_total_orderlist %}  - {% trans "School" %}:  {{ school_name }}{% endif %}
+  - {% trans "Exam year" %}:  {{ examyear_str }}
+
+{% trans "Click 'Enable editing' if the totals in the Excel sheet are zero." %}
+
+{% trans "Please review this orderlist and contact us if necessary." %}
+
+
+{{ sender_organisation }}
+{{ sender_name }}
+
+{% endautoescape %}
+

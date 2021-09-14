@@ -9,6 +9,52 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def create_mailbox_rows(examyear_pk, request):
+    # --- create mail_inbox rows of this user this examyear PR2021-09-11
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_mailbox_rows ============= ')
+
+    mailbox_rows = None
+
+    try:
+        sql_keys = {'req_usr_id': request.user.pk, 'ey_id': examyear_pk}
+
+        sub_sql_list = ["SELECT msg.id,",
+                    "msg.header, msg.body, msg.status,",
+                    "msg.modifiedby_id, msg.modifiedat, sch.name AS school_name, sch.abbrev AS school_abbrev, au.last_name AS sender_name",
+
+                    "FROM schools_mailmessage AS msg",
+                    "LEFT JOIN schools_school AS sch ON (sch.id = msg.sender_school_id)",
+                    "LEFT JOIN accounts_user AS au ON (au.id = msg.sender_user_id)",
+                    "WHERE msg.examyear_id = %(ey_id)s::INT"]
+        sub_sql = ' '.join(sub_sql_list)
+
+        sql_list = ["SELECT mailbox.id, CONCAT('mailbox_', mailbox.id::TEXT) AS mapid,",
+                    "mailbox.read, mailbox.deleted, mailbox.issentmail,",
+                    "msg.id AS mailmessage_id, msg.header, msg.body, msg.status,",
+                    "msg.modifiedby_id, msg.modifiedat, sch.name AS school_name, sch.abbrev AS school_abbrev, au.last_name AS user_lastname",
+
+                    "FROM schools_mailbox AS mailbox",
+                    "INNER JOIN schools_mailmessage AS msg ON (msg.id = mailbox.mailmessage_id)",
+                    "LEFT JOIN schools_school AS sch ON (sch.id = msg.sender_school_id)",
+                    "LEFT JOIN accounts_user AS au ON (au.id = msg.sender_user_id)",
+
+                    "WHERE msg.examyear_id = %(ey_id)s::INT AND mailbox.user_id = %(req_usr_id)s::INT",
+                    "ORDER BY mailbox.id"
+                    ]
+        sql = ' '.join(sql_list)
+
+        newcursor = connection.cursor()
+        newcursor.execute(sql, sql_keys)
+        mailbox_rows = af.dictfetchall(newcursor)
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+    return mailbox_rows
+# --- end of create_mailbox_rows
+
 def create_examyear_rows(req_usr, append_dict, examyear_pk):
     # --- create rows of all examyears of this country PR2020-10-04
     #logger.debug(' =============== create_examyear_rows ============= ')
@@ -59,8 +105,6 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk):
                 row[key] = value
 
     return examyear_rows
-
-
 # --- end of create_examyear_rows
 
 

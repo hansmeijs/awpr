@@ -797,7 +797,10 @@ def get_department(old_examyear, new_examyear):
     prev_examyear = None
     if new_examyear is not None:
         prev_examyear_int = int(new_examyear.code) - 1
-        prev_examyear = sch_mod.Department.objects.filter(country=new_examyear.country, examyear=prev_examyear_int).first()
+        prev_examyear = sch_mod.Department.objects.filter(
+            country=new_examyear.country,
+            examyear=prev_examyear_int
+        ).first()
     return prev_examyear
 
 

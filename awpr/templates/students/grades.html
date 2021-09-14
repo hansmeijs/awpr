@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Grades' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/grades210711.js' %}"></script>
+    <script src="{% static 'js/grades210913.js' %}"></script>
     <script src="{% static 'js/download210816.js' %}"></script>
 {% endblock %}
 
@@ -87,10 +87,14 @@
             <div class="content_margin_top78">
     <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="grade_by_subject" class="btn btn-secondary ">{% trans 'Grades by subject' %}</button>
-                    <button data-btn="grade_by_student" class="btn btn-secondary ">{% trans 'Grades by candidate' %}</button>
-                    <button data-btn="grade_by_all" class="btn btn-secondary ">{% trans 'All grades' %}</button>
-                    <button data-btn="grade_published" class="btn btn-secondary ">{% trans 'Submitted Ex forms' %}</button>
+
+                    <button data-btn="btn_exemption" class="btn btn-secondary ">{% trans 'Exemptions' %}</button>
+                    <button data-btn="btn_se" class="btn btn-secondary ">{% trans 'School exam' %}</button>
+                    <button data-btn="btn_ce" class="btn btn-secondary ">{% trans 'Central exam' %}</button>
+                    <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Re-examination' %}</button>
+                    <button data-btn="btn_reex3" class="btn btn-secondary ">{% trans 'Third exam period' %}</button>
+                    <button data-btn="btn_all" class="btn btn-secondary ">{% trans 'All grades' %}</button>
+                    <button data-btn="btn_published" class="btn btn-secondary ">{% trans 'Submitted Ex forms' %}</button>
                 </div>
     <!-- end BUTTON GROUP -->
 

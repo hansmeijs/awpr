@@ -166,7 +166,7 @@
 
 //=========   upload_studentsubjects   ======================
     function upload_studentsubjects_crosstab(mode, RefreshDataRowsAfterUpload) {
-        console.log(" ========== upload_studentsubjects_crosstab ===========");
+        //console.log(" ========== upload_studentsubjects_crosstab ===========");
 /*
 upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1,
             'sel_depbase_code': 'Vsbo', 'sel_school_abbrev': 'ATC',
@@ -299,7 +299,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //=========   upload_student   ======================
     function upload_student(mode, RefreshDataRowsAfterUpload) {
-        console.log(" ========== upload_student ===========");
+        //console.log(" ========== upload_student ===========");
 
         const is_test_upload = (mode === "test")
         let rowLength = 0, colLength = 0;
@@ -311,8 +311,8 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
         if(rowLength > 0 && colLength > 0){
 
-    console.log ("mimp.excel_coldefs", deepcopy_dict(mimp.excel_coldefs));
-    console.log ("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
+    //console.log ("mimp.excel_coldefs", deepcopy_dict(mimp.excel_coldefs));
+    //console.log ("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
 
 // ---  loop through excel_coldefs to get linked awpColdefs
         // excel_coldefs = [ {excColIndex: 1, excColdef: "exnr", rowId: "id_tr_coldef_exc_1", awpColdef: "examnumber", awpCaption: "Examennummer"} ]
@@ -330,7 +330,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 let dict_list = [];
                 for (let i = 0; i < rowLength; i++) {
                     let row = mimp.curWorksheetData[i];
-        console.log ("row", deepcopy_dict(row));
+        //console.log ("row", deepcopy_dict(row));
 
 //------ loop through excel_coldefs
                     // rowindex is index of tablerow. Index 0 is header, therefore rowindex starts with 1
@@ -352,10 +352,10 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                                     mapped_value = excel_row.awpBasePk;
                                 }
 
-                console.log("------- awpColdef:", awpColdef)
-                console.log("      linked_values:", linked_values)
-                console.log("      excel_row:", excel_row)
-                console.log("      mapped_value:", mapped_value)
+                //console.log("------- awpColdef:", awpColdef)
+                //console.log("      linked_values:", linked_values)
+                //console.log("      excel_row:", excel_row)
+                //console.log("      mapped_value:", mapped_value)
 
                             } else if (awpColdef === "birthdate"){
                                 mapped_value = Number(value)
@@ -370,7 +370,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                     }; //for (let col = 1 ; col <colLength; col++)
                     dict_list.push(dict);
                 }
-        console.log("======== dict_list:", dict_list)
+        //console.log("======== dict_list:", dict_list)
                 if(!dict_list || !dict_list.length){
                     alert("No data found")
                 } else {
@@ -726,7 +726,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //=========  FillExcelColdefArray  ===========
     function FillExcelColdefArray(skip_update_iscrosstab, skip_link_same_values) {
-        console.log("=========  FillExcelColdefArray ========= ");
+        //console.log("=========  FillExcelColdefArray ========= ");
         // function - creates list mimp.excel_coldefs: [{index: idx, excColdef: colName}, ...]
         //          - loops through stored_coldef and excel_coldefs and add links and caption in these arrays
         // PR20221-02-24 debug: when is_crosstab must not link col subject and subjecttype
@@ -2092,9 +2092,9 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
     }  // i_UpdateSchoolsettingsImport
 
     function UploadData(url_str, upload_dict, RefreshDataRowsAfterUpload){
-        console.log ("==========  UploadData ==========");
-        console.log("url_str", url_str);
-        console.log("upload_dict", upload_dict);
+        //console.log ("==========  UploadData ==========");
+        //console.log("url_str", url_str);
+        //console.log("upload_dict", upload_dict);
 
 // --- reset logfile
         mimp_logfile = []

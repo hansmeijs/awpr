@@ -1,24 +1,31 @@
 # PR2018-04-14
 from django.contrib.auth.decorators import login_required # PR2018-04-01
+from django.core.files import File
+from django.core.mail import EmailMessage
+from mimetypes import guess_type
+from os.path import basename
 
+from django.core.serializers.json import DjangoJSONEncoder
+from django.template.loader import render_to_string
 from django.utils.functional import Promise
 from django.utils.encoding import force_text
-from django.core.serializers.json import DjangoJSONEncoder
 
 from django.db import connection
 from django.db.models import Q
 from django.db.models.functions import Lower
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.http import HttpResponse, HttpResponseRedirect
 
-from django.shortcuts import render, redirect #, get_object_or_404
+from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.views.generic import UpdateView, DeleteView, View, ListView, CreateView, FormView
+from django.views.generic import View
 
 from accounts import views as acc_view
+from accounts import models as acc_mod
 
 from awpr import settings as s
+from awpr import excel as awpr_excel
 from awpr import functions as af
 from awpr import constants as c
 from awpr import validators as av
@@ -28,9 +35,12 @@ from awpr import downloads as dl
 from schools import functions as sf
 from schools import dicts as sd
 from schools import models as sch_mod
-from subjects import models as subj_mod
 from students import models as stud_mod
+from subjects import models as subj_mod
+from subjects import views as subj_view
 
+import xlsxwriter
+import tempfile
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -42,7 +52,7 @@ class LazyEncoder(DjangoJSONEncoder):
         return super(LazyEncoder, self).default(obj)
 
 # PR2018-05-06
-from django.utils.translation import activate, get_language_info, ugettext_lazy as _
+from django.utils.translation import activate, pgettext_lazy, ugettext_lazy as _
 
 
 def home(request):
@@ -96,6 +106,36 @@ def Loggedin(request):
 
     return HttpResponseRedirect(reverse_lazy(page_url))
 
+
+
+
+# === MAIL =====================================
+@method_decorator([login_required], name='dispatch')
+class MailListView(View):
+    # PR2021-09-11
+
+    def get(self, request):
+
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(" =====  MailListView  =====")
+
+# -  get user_lang
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get headerbar parameters
+        page = 'page_mailbox'
+        # don't show dep and school on page examyear
+        # Note: set display_school / display_dep also in download_setting
+        display_school = True  # (request and request.user and request.user.role <= c.ROLE_008_SCHOOL)
+        display_department = True
+        param = {'display_school': display_school, 'display_department': display_department}
+        headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
+
+        # - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
+        # PR2021-06-22 moved to get_headerbar_param
+        return render(request, 'mailbox.html', headerbar_param)
 
 
 # === EXAMYEAR =====================================
@@ -174,9 +214,11 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30
 
                 if country:
                     new_examyear_instance = None
-# - get current examyear - when mode is 'create': examyear is None. It will be created at "elif mode == 'create'"
-                    current_examyear_instance, sel_examperiodNIU = \
-                        dl.get_selected_examyear_examperiod_from_usersetting(request)
+
+# - get current examyear from upload_dict - when mode is 'create': examyear is None. It will be created at "elif mode == 'create'"
+                    examyear_pk = upload_dict.get('examyear_pk')
+                    current_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=examyear_pk)
+
                     if logging_on:
                         logger.debug('current_examyear_instance: ' + str(current_examyear_instance))
 
@@ -233,11 +275,23 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30
                                     logger.debug('msg_err: ' + str(msg_err))
 
 # +++ update examyear, skip when it is created. All fields are saved in create_examyear
-                    if new_examyear_instance and mode != 'create':
-                        update_examyear(new_examyear_instance, upload_dict, error_list, request)
+                    if logging_on:
+                        logger.debug('new_examyear_instance: ' + str(new_examyear_instance))
+                        logger.debug('mode: ' + str(mode))
+
+                    if current_examyear_instance and mode == 'update':
+                        updated = update_examyear(current_examyear_instance, upload_dict, error_list, request)
+                        if updated:
+                            examyear_rows = sd.create_examyear_rows(
+                                req_usr=req_usr,
+                                append_dict={},
+                                examyear_pk=current_examyear_instance.pk
+                            )
+                    if logging_on:
+                        logger.debug('error_list: ' + str(error_list))
 
                     if error_list:
-                        append_dict['error'] = error_list
+                        update_wrap['messages'] = error_list
 # - add update_dict to update_wrap
                     if new_examyear_instance:
                         examyear_rows = sd.create_examyear_rows(
@@ -319,6 +373,964 @@ class OrderlistsParametersView(View):  # PR2021-08-31
 
 # --- end of OrderlistsParametersView
 
+
+############ PUBLISH ORDER LIST ##########################
+
+@method_decorator([login_required], name='dispatch')
+class OrderlistRequestVerifcodeView(View):  # PR2021-09-08
+    def post(self, request):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug(' ============= OrderlistRequestVerifcodeView ============= ')
+
+        update_wrap = {}
+        has_error = False
+
+# - get permit
+        has_permit = False
+        req_usr = request.user
+        if req_usr and req_usr.country:
+            permit_list = req_usr.permit_list('page_orderlist')
+            if permit_list:
+                has_permit = 'permit_submit_orderlist' in permit_list
+            if logging_on:
+                logger.debug('req_usr.usergroup_list:: ' + str(req_usr.usergroup_list))
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
+# - reset language
+        user_lang = req_usr.lang if req_usr and req_usr.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+        msg_list = []
+        class_str = 'border_bg_transparent'
+        if not has_permit:
+            class_str = 'border_bg_invalid'
+            msg_list.append(str(_("You don't have permission to perform this action.")))
+            has_error = True
+        else:
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                sel_examyear, may_edit, msg_list = \
+                    dl.get_selected_examyear_from_usersetting(request)
+
+                if not may_edit:
+                    class_str = 'border_bg_warning'
+                    has_error = True
+                else:
+                    verifcode_key, exception_str = af.send_email_verifcode(
+                        formname='orderlist',
+                        email_template='email_send_verifcode_orderlist.html',
+                        request=request,
+                        sel_examyear=sel_examyear
+                    )
+                    if verifcode_key:
+                        update_wrap['verificationkey'] = verifcode_key
+                        msg_list += (str(_("We have sent an email with a 6 digit verification code to the email address:")),
+                                     '<br>', req_usr.email, '<br>',
+                                     str(_("Enter the verification code and click 'Submit Ex form' to submit the Ex1 form.")))
+                    else:
+                        class_str = 'border_bg_invalid'
+                        has_error = True
+                        if exception_str:
+                            msg_list += (str(_('An error occurred')), ':<br><i>', exception_str, '</i><br>')
+                        else:
+                            msg_list += (str(_('An error occurred')), '. ')
+                        msg_list += (str(_('The email with the verification code has not been sent.')), '</p>')
+
+        if has_error:
+            update_wrap['error'] = True
+
+        if msg_list:
+            msg_wrap_start = ["<div class='p-2 ", class_str, "'>"]
+            msg_wrap_end = ['</p>']
+
+            msg_html = ''.join(msg_wrap_start + msg_list + msg_wrap_end)
+
+            update_wrap['publish_orderlist_msg_html'] = msg_html
+
+    # - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of OrderlistRequestVerifcodeView
+
+
+@method_decorator([login_required], name='dispatch')
+class OrderlistsPublishView(View):  # PR2021-09-08
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug('  ===== OrderlistsPublishView =====')
+
+        # function publishes orderlist and sends email to schools
+
+        update_wrap = {}
+        has_error = False
+
+# - get permit
+        has_permit = False
+        req_usr = request.user
+        if req_usr and req_usr.country and req_usr.schoolbase:
+            permit_list = req_usr.permit_list('page_orderlist')
+            if permit_list:
+                has_permit = 'permit_submit_orderlist' in permit_list
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
+# - reset language
+        user_lang = req_usr.lang if req_usr and req_usr else c.LANG_DEFAULT
+        activate(user_lang)
+
+        log_list = []
+        msg_list = []
+        class_str = 'border_bg_transparent'
+        if not has_permit:
+            class_str = 'border_bg_invalid'
+            msg_list.append(str(_("You don't have permission to perform this action.")))
+            has_error = True
+        else:
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload')
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+
+                if logging_on:
+                    logger.debug('upload_dict' + str(upload_dict))
+
+                sel_examyear_instance, may_edit, msg_list = \
+                    dl.get_selected_examyear_from_usersetting(request)
+
+                if not may_edit:
+                    class_str = 'border_bg_warning'
+                    has_error = True
+                else:
+
+# - check verificationcode.
+                    formname = 'orderlist'
+                    msg_err = af.check_verificationcode(upload_dict, formname, request)
+                    if logging_on:
+                        logger.debug('msg_err' + str(msg_err))
+                    if msg_err:
+                        has_error = True
+                        class_str = 'border_bg_invalid'
+                        msg_list.append(str(msg_err))
+                    else:
+                        update_wrap['verification_is_ok'] = True
+
+# - get selected examyear,from usersettings
+                        # exames are only ordered in first exam period
+                        sel_examyear_instance, sel_examperiodNIU = \
+                            dl.get_selected_examyear_examperiod_from_usersetting(request)
+                        if logging_on:
+                            logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance))
+
+# - create log_list
+                        today_dte = af.get_today_dateobj()
+                        today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
+                        log_list = [c.STRING_DOUBLELINE_80,
+                                    str(_('Publish orderlist exams')) + ' ' + str(_('date')) + ': ' + str(
+                                        today_formatted),
+                                    c.STRING_DOUBLELINE_80]
+                        log_list.append(
+                            c.STRING_SPACE_10 + str(_("Exam year : %(ey)s") % {'ey': str(sel_examyear_instance.code)}))
+                        log_list.append(c.STRING_SPACE_05)
+
+# - get orderlist variables from examyear
+                        order_extra_fixed = getattr(sel_examyear_instance, 'order_extra_fixed')
+                        order_extra_perc = getattr(sel_examyear_instance, 'order_extra_perc')
+                        order_round_to = getattr(sel_examyear_instance, 'order_round_to')
+                        order_tv2_divisor = getattr(sel_examyear_instance, 'order_tv2_divisor')
+                        order_tv2_multiplier = getattr(sel_examyear_instance, 'order_tv2_multiplier')
+                        order_tv2_max = getattr(sel_examyear_instance, 'order_tv2_max')
+
+# get count_dict only once and create orserlists from this dict,
+# to make sure that the published orderlist and the excel files per schoolcontain the same amout of subjects
+
+# get text from examyearsetting
+                        settings = af.get_exform_text(sel_examyear_instance, ['exform', 'ex1'])
+
+# - get department_dictlist, lvlbase_dictlist, subjectbase_dictlist, schoolbase_dictlist
+                        department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear_instance)
+                        lvlbase_dictlist = subj_view.create_levelbase_dictlist(sel_examyear_instance)
+                        subjectbase_dictlist = subj_view.create_subjectbase_dictlist(sel_examyear_instance)
+                        schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance)
+
+# +++ get nested dicts of subjects per school, dep, level, lang, ete_exam
+                        count_dict = subj_view.create_studsubj_count_dict(sel_examyear_instance, None,
+                                                  order_extra_fixed, order_extra_perc, order_round_to,
+                                                  order_tv2_divisor, order_tv2_multiplier, order_tv2_max)
+                        total_dict = count_dict.get('total')
+                        if logging_on:
+                            logger.debug('total_dict: ' + str(total_dict))
+
+                        if not total_dict:
+                            has_error = True
+                            class_str = 'border_bg_warning'
+                            msg_str = str(_("There are no submitted subjects."))
+                            msg_list.append(msg_str)
+
+                            log_list.append(''.join((c.STRING_SPACE_10, msg_str)))
+                        else:
+
+# - get school of request_user, for storing in Published table and as sender in emails
+                            requsr_school = sch_mod.School.objects.get_or_none(
+                                examyear=sel_examyear_instance,
+                                base=req_usr.schoolbase
+                            )
+                            requsr_school_name = requsr_school.name
+                            min_ond = settings['minond']
+                            now_arr = upload_dict.get('now_arr', [])
+
+                            published_instance, temp_file, file_path, filename_ext = \
+                                create_published_instance_orderlist(
+                                    now_arr=now_arr,
+                                    examyear=sel_examyear_instance,
+                                    school=requsr_school,
+                                    request=request,
+                                    user_lang=user_lang)
+
+                            msg_err = create_final_orderlist_xlsx(temp_file, sel_examyear_instance,
+                                                        department_dictlist, lvlbase_dictlist, subjectbase_dictlist,
+                                                        schoolbase_dictlist, count_dict,
+                                                        requsr_school_name, min_ond, user_lang)
+                            if msg_err:
+                                has_error = True
+                                class_str = 'border_bg_invalid'
+                                err_str01 = str(_('An error occurred'))
+                                err_str02 = str(_('The orderlist is not created.'))
+                                msg_str = ''.join((err_str01, ': ', msg_err, '<br>', err_str02))
+                                msg_list.append(msg_str)
+
+                                log_list.append(''.join((c.STRING_SPACE_10, err_str01, ':')))
+                                log_list.append(''.join((c.STRING_SPACE_10, msg_err)))
+                                log_list.append(''.join((c.STRING_SPACE_10, err_str02)))
+                                log_list.append(c.STRING_SPACE_05)
+                            else:
+                                msg_err = save_published_instance(published_instance, file_path, temp_file, request)
+                                if msg_err:
+                                    class_str = 'border_bg_invalid'
+                                    err_str01 = str(_('An error occurred'))
+                                    err_str02 = str(_('The orderlist is not saved.'))
+                                    msg_str = ''.join((err_str01, ': ', msg_err, '<br>', err_str02))
+                                    msg_list.append(msg_str)
+
+                                    log_list.append(''.join((c.STRING_SPACE_10, err_str01, ':')))
+                                    log_list.append(''.join((c.STRING_SPACE_10, msg_err)))
+                                    log_list.append(''.join((c.STRING_SPACE_10, err_str02)))
+                                    log_list.append(c.STRING_SPACE_05)
+
+                                else:
+                                    class_str = 'border_bg_valid'
+                                    msg_str = str(_("An orderlist is created with the filename:"))
+                                    msg_list.append('<br>'.join((msg_str, filename_ext)))
+
+                                    log_list.append(''.join((c.STRING_SPACE_10, msg_str)))
+                                    log_list.append(''.join((c.STRING_SPACE_15, filename_ext)))
+                                    log_list.append(c.STRING_SPACE_05)
+
+        # get list of 'auth1' and 'auth2' users of requsr_school, for sending email with total_torderlist and cc to schools
+                                    allowed_usergroups = ('auth1', 'auth2')
+                                    cc_pk_str_list, cc_name_list, cc_email_list = get_school_emailto_list(requsr_school, allowed_usergroups)
+                                    if logging_on:
+                                        logger.debug('cc_pk_str_list: ' + str(cc_pk_str_list))
+                                        logger.debug('cc_name_list: ' + str(cc_name_list))
+                                        logger.debug('cc_email_list: ' + str(cc_email_list))
+# - send email
+                                    sendto_pk_str_list = cc_pk_str_list
+                                    sendto_name_list = cc_name_list
+                                    sendto_email_list = cc_email_list
+                                    mail_sent = send_email_orderlist(
+                                        examyear=sel_examyear_instance,
+                                        school=requsr_school,
+                                        is_total_orderlist=True,
+                                        sendto_pk_str_list=sendto_pk_str_list,
+                                        sendto_name_list=sendto_name_list,
+                                        sendto_email_list=sendto_email_list,
+                                        cc_pk_str_list=None,
+                                        cc_email_list=None,
+                                        published_instance=published_instance,
+                                        request=request
+                                    )
+                                    if not mail_sent:
+                                        log_list.append(''.join((c.STRING_SPACE_10, str(_('An error occurred while sending the email.')), ' ', str(_('The email is not sent.')))))
+                                    else:
+                                        log_list.append(''.join((c.STRING_SPACE_10, str(_('An email with the orderlist is sent to')), ':')))
+                                        log_list.append(''.join((c.STRING_SPACE_15, ', '.join((sendto_name_list)) )))
+                                    log_list.append(c.STRING_SPACE_05)
+
+                                    if logging_on:
+                                        logger.debug('mail_sent: ' + str(mail_sent))
+
+#######################################
+# create separate orderlist for each school, also when no exams found
+                                    # schoolbase_dictlist: [{'sbase_id': 2, 'sbase_code': 'CUR01', 'sch_name': 'Ancilla Domini Vsbo'},
+                                    count_school_orderlists = 0
+                                    for schoolbase_dict in schoolbase_dictlist:
+                                        sbase_id = schoolbase_dict.get('sbase_id')
+                                        sbase_code = schoolbase_dict.get('sbase_code', '')
+                                        sch_name = schoolbase_dict.get('sch_name', '')
+                                        sch_abbrev = schoolbase_dict.get('sch_abbrev', '')
+
+                                        # filter on examyear.code (is integer), not on examyear to get SXM schools also
+                                        school = sch_mod.School.objects.get_or_none(
+                                            examyear__code=sel_examyear_instance.code,
+                                            base_id=sbase_id
+                                        )
+
+                                        if school:
+                                            log_list.append(''.join(
+                                                ((sbase_code + c.STRING_SPACE_10)[:10], sch_name)))
+
+                                # - get list of 'auth1' and 'auth2'users of this school, for sending email
+                                            allowed_usergroups = ('auth1', 'auth2')
+                                            sendto_pk_str_list, sendto_name_list, sendto_email_list = \
+                                                get_school_emailto_list(school, allowed_usergroups)
+
+                                            count_total, subjbasepk_inuse_list = count_total_exams(count_dict, sbase_id)
+
+                                            if not count_total:
+                                                log_list.append(''.join((c.STRING_SPACE_10,
+                                                                         str(_("This school has no submitted subjects.")))))
+
+                                                log_list.append(c.STRING_SPACE_05)
+                                            else:
+                                                if logging_on:
+                                                    logger.debug('..... school: ' + str(school))
+                                                    logger.debug('sendto_pk_str_list: ' + str(sendto_pk_str_list))
+                                                    logger.debug('sendto_name_list: ' + str(sendto_name_list))
+                                                    logger.debug('sendto_email_list: ' + str(sendto_email_list))
+                                                    logger.debug('count_total: ' + str(count_total))
+                                                    logger.debug('subjbasepk_inuse_list: ' + str(subjbasepk_inuse_list))
+
+                                            # create published instance for this school
+                                                published_instance, temp_file, file_path, filename_ext = \
+                                                    create_published_instance_orderlist(
+                                                        now_arr=now_arr,
+                                                        examyear=sel_examyear_instance,
+                                                        school=school,
+                                                        request=request,
+                                                        user_lang=user_lang,
+                                                        school_code=sbase_code,
+                                                        school_abbrev=sch_abbrev)
+
+                                                msg_err = create_final_orderlist_perschool_xlsx(
+                                                    output=temp_file,
+                                                    sel_examyear_instance=sel_examyear_instance,
+                                                    department_dictlist=department_dictlist,
+                                                    lvlbase_dictlist=lvlbase_dictlist,
+                                                    subjectbase_dictlist=subjectbase_dictlist,
+                                                    count_dict=count_dict,
+                                                    subjbasepk_inuse_dict=subjbasepk_inuse_list,
+                                                    school_code=sbase_code,
+                                                    school_name=sch_name,
+                                                    requsr_school_name=requsr_school_name,
+                                                    min_ond=min_ond,
+                                                    user_lang=user_lang)
+
+                                                if msg_err:
+                                                    err_str01 = str(_('An error occurred'))
+                                                    err_str02 = str(_('The orderlist of this school is not created.'))
+                                                    log_list.append(''.join((c.STRING_SPACE_10, err_str01, ':')))
+                                                    log_list.append(''.join((c.STRING_SPACE_10, msg_err)))
+                                                    log_list.append(''.join((c.STRING_SPACE_10, err_str02)))
+                                                    log_list.append(c.STRING_SPACE_05)
+                                                else:
+                                                    msg_err = save_published_instance(published_instance, file_path, temp_file, request)
+                                                    if msg_err:
+                                                        err_str01 = str(_('An error occurred'))
+                                                        err_str02 = str(
+                                                            _('The orderlist of this school is not saved.'))
+                                                        log_list.append(''.join((c.STRING_SPACE_10, err_str01, ':')))
+                                                        log_list.append(''.join((c.STRING_SPACE_10, msg_err)))
+                                                        log_list.append(''.join((c.STRING_SPACE_10, err_str02)))
+                                                        log_list.append(c.STRING_SPACE_05)
+                                                    else:
+                                                        count_school_orderlists += 1
+                                                        log_list.append(''.join((c.STRING_SPACE_10,
+                                                            str(_('An orderlist of this school is created with the filename:')))))
+                                                        log_list.append(''.join((c.STRING_SPACE_10, filename_ext)))
+                                                        log_list.append(c.STRING_SPACE_05)
+
+                                # get list of users of this school, for sending email
+                                                        mail_sent = send_email_orderlist(
+                                                            examyear=sel_examyear_instance,
+                                                            school=school,
+                                                            is_total_orderlist=False,
+                                                            sendto_pk_str_list=sendto_pk_str_list,
+                                                            sendto_name_list=sendto_name_list,
+                                                            sendto_email_list=sendto_email_list,
+                                                            cc_pk_str_list=cc_pk_str_list,
+                                                            cc_email_list=cc_email_list,
+                                                            published_instance=published_instance,
+                                                            request=request
+                                                        )
+                                                        if not mail_sent:
+                                                            log_list.append(''.join((c.STRING_SPACE_10, str(_(
+                                                                'An error occurred while sending the email.')), ' ',
+                                                                                     str(_('The email is not sent.')))))
+                                                        else:
+                                                            log_list.append(''.join((c.STRING_SPACE_10, str(_(
+                                                                'An email with the orderlist is sent to')), ':')))
+                                                            log_list.append(''.join((c.STRING_SPACE_15, ', '.join((sendto_name_list)))))
+                                                            log_list.append(''.join((c.STRING_SPACE_10, str(_(
+                                                                'with cc to')), ':')))
+                                                            log_list.append(''.join((c.STRING_SPACE_15, ', '.join((cc_name_list)))))
+                                                        log_list.append(c.STRING_SPACE_05)
+                                                        if logging_on:
+                                                            logger.debug('mail_sent: ' + str(mail_sent))
+
+                                    if count_school_orderlists == 1:
+                                        msg_list.append(str(_("There is one orderlist per school created.")))
+                                    else:
+                                        counst_str = str(count_school_orderlists) if count_school_orderlists else pgettext_lazy('geen', 'no')
+                                        msg_list.append(str(_("There are %(count)s orderlists per school created.") % {'count': counst_str}))
+
+        update_wrap['log_list'] = log_list
+
+        if logging_on:
+            logger.debug('msg_list: ' + str(msg_list))
+
+        if has_error:
+            update_wrap['error'] = True
+
+        msg_wrap_start = ["<div class='p-2 ", class_str, "'>"]
+        msg_list_html = []
+        for item in msg_list:
+            msg_list_html.append(''.join(("<p>", item, "</p>")))
+
+        msg_openlogfile = ['<p>', str(_("Click")),
+                             " <a id='id_MPUBORD_OpenLogfile' href='#' class='awp_href'>",
+                                str(_("here")), "</a> ",
+                             str(_("to download the logfile with the details.")),
+                             "</p>"]
+        msg_wrap_end = ['</p>']
+
+        msg_html = ''.join(msg_wrap_start + msg_list_html + msg_openlogfile + msg_wrap_end)
+
+        if logging_on:
+            logger.debug('msg_html: ' + str(msg_html))
+
+        update_wrap['publish_orderlist_msg_html'] = msg_html
+
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# --- end of OrderlistsPublishView
+
+def count_total_exams(count_dict, sbase_id):  # PR2021-09-10
+    count_total = 0
+    # subjbasepk_inuse_dict must have same stryucture as 'total' in count_dict
+    subjbasepk_inuse_dict = {}
+    # count total subjects of school with schoolbase_pk = sbase_id
+    for ete_duo_key in count_dict:
+        if ete_duo_key != 'total':
+            ete_duo_dict = count_dict[ete_duo_key]
+            for lang_key in ete_duo_dict:
+                if lang_key != 'total':
+                    lang_dict = ete_duo_dict[lang_key]
+                    for depbase_pk in lang_dict:
+                        if isinstance(depbase_pk, int):
+                            depbase_dict = lang_dict[depbase_pk]
+                            for lvlbase_pk in depbase_dict:
+                                if isinstance(lvlbase_pk, int):
+                                    lvlbase_dict = depbase_dict[lvlbase_pk]
+                                    for schoolbase_pk in lvlbase_dict:
+                                        if schoolbase_pk == sbase_id:
+                                            schoolbase_dict = lvlbase_dict[schoolbase_pk]
+                                            for subjbase_pk in schoolbase_dict:
+                                                if isinstance(subjbase_pk, int):
+                                                    subjbase_list = schoolbase_dict[subjbase_pk]
+                                                    exams_plus_extra = subjbase_list[0] + subjbase_list[1]
+                                                    if exams_plus_extra:
+                                                        count_total += exams_plus_extra
+                                                        if subjbase_pk not in subjbasepk_inuse_dict:
+                                                            subjbasepk_inuse_dict[subjbase_pk] = []
+    return count_total, subjbasepk_inuse_dict
+# - end of count_total_exams
+
+
+def get_school_emailto_list(school, allowed_usergroups):  # PR2021-09-09
+
+    sendto_pk_str_list, sendto_email_list, sendto_name_list = [], [], []
+    # get list of users of this school, for sending email
+    # only users with allowed_usergroups will be added
+    school_users = acc_mod.User.objects.filter(
+        schoolbase=school.base,
+        activated=True,
+        is_active=True,
+        usergroups__isnull=False
+    )
+    for school_user in school_users:
+        is_allowed = False
+        if school_user.usergroups:
+            user_usergroup_arr = school_user.usergroups.split(';')
+            is_allowed = False
+            for user_usergroup in user_usergroup_arr:
+                for allowed_usergroup in allowed_usergroups:
+                    if allowed_usergroup == user_usergroup:
+                        is_allowed = True
+                        break
+                if is_allowed:
+                    break
+        if is_allowed:
+            sendto_pk_str_list.append(str(school_user.pk))
+            sendto_email_list.append(school_user.email)
+            sendto_name_list.append(school_user.last_name)
+
+    return sendto_pk_str_list, sendto_name_list, sendto_email_list
+# - end of get_school_emailto_list
+
+
+def send_email_orderlist(examyear, school, is_total_orderlist,
+                         sendto_pk_str_list, sendto_name_list, sendto_email_list,
+                         cc_pk_str_list, cc_email_list, published_instance, request):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' ----- send_email_orderlist  -----')
+        logger.debug('sel_examyear: ' + str(examyear) + ' ' + str(type(examyear)))
+        logger.debug('sel_school: ' + str(school) + ' ' + str(type(school)))
+
+    mail_sent = False
+    req_usr = request.user
+    if sendto_email_list:
+        #try:
+        if True:
+            subject_str = ' '.join((str(_('Orderlist')), str(_('Exams')).lower(), str(examyear.code), school.base.code, school.name))
+            school_article = school.article if school.article else ''
+            school_attn = ' '.join(( str(_('To')), school_article, school.name ))
+            from_email = 'AWP-online <noreply@awponline.net>'
+
+            requsr_school = sch_mod.School.objects.get_or_none(
+                base=req_usr.schoolbase,
+                examyear=examyear
+            )
+            requsr_school_article = requsr_school.article.capitalize() if requsr_school.article else ''
+            sender_organisation = ''.join((requsr_school_article, ' ', requsr_school.name, ','))
+            sender_name = req_usr.last_name
+            msg_dict = {
+                'examyear_str': str(examyear.code),
+                'school_attn': school_attn,
+                'school_code': school.base.code,
+                'school_name': school.name,
+                'sender_organisation': sender_organisation,
+                'sender_name': sender_name,
+                'sendto_name_list': sendto_name_list,
+                'is_total_orderlist': is_total_orderlist
+            }
+
+            if logging_on:
+                logger.debug('msg_dict: ' + str(msg_dict))
+
+            email_template_name = 'publish_orderlist_email.html',
+            body_str = render_to_string(email_template_name, msg_dict)
+
+            if logging_on:
+                #logger.debug('body_str: ' + str(body_str) + ' ' + str(type(body_str)))
+                logger.debug('sendto_email_list: ' + str(sendto_email_list))
+                logger.debug('cc_email_list: ' + str([cc_email_list]))
+
+            # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
+            reply_to = (request.user.email,)
+            email_message = EmailMessage(
+                subject=subject_str,
+                body=body_str,
+                from_email=from_email,
+                to=sendto_email_list,
+                cc=cc_email_list,
+                reply_to=reply_to)
+
+            if published_instance and published_instance.file:
+                f = published_instance.file
+                f.open()
+                # msg.attach(filename, content, mimetype)
+                #content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                email_message.attach(basename(f.name), f.read(), guess_type(f.name)[0])
+                f.close()
+
+                if logging_on:
+                    logger.debug('published_instance.name: ' + str(published_instance.name))
+
+            mail_count = email_message.send()
+            if logging_on:
+                logger.debug('mail_count: ' + str(mail_count) + ' ' + str(type(mail_count)))
+
+            if mail_count:
+                mail_sent = True
+
+                mailto_user_str = ';'.join(sendto_pk_str_list) if sendto_pk_str_list else None
+                mailcc_user_str = ';'.join(cc_pk_str_list) if cc_pk_str_list else None
+
+                if logging_on:
+                    logger.debug('mailto_user_str: ' + str(mailto_user_str))
+                    logger.debug('mailcc_user_str: ' + str(mailcc_user_str))
+
+# - add message to Mailmessage
+                mailmessage = sch_mod.Mailmessage(
+                    examyear=examyear,
+                    sender_user=req_usr,
+                    sender_school=requsr_school,
+                    header=subject_str,
+                    body=body_str,
+                    mailto_user=mailto_user_str,
+                    mailcc_user=mailcc_user_str
+                )
+                mailmessage.save(request=request)
+
+                if logging_on:
+                    logger.debug('mailmessage: ' + str(mailmessage))
+                    logger.debug('mailmessage.pk: ' + str(mailmessage.pk))
+
+# - add published_instance as Mailattachment
+                mailattachment = sch_mod.Mailattachment.objects.create(
+                    mailmessage=mailmessage,
+                    filename = published_instance.filename,
+                    file=published_instance.file
+                )
+                # save to add modifiedat and modifiedby to mailattachment
+                mailattachment.save(request=request)
+
+                if logging_on:
+                    logger.debug('mailattachment: ' + str(mailattachment))
+                    logger.debug('mailattachment.pk: ' + str(mailattachment.pk))
+
+# - add message in Mailbox of mailto_user and mailcc_user
+                # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+                now_iso = timezone.now().isoformat()
+                sender_pk_str = str(req_usr.pk)
+
+                other_values = ','.join((str(examyear.pk), str(mailmessage.pk), 'FALSE', 'FALSE', sender_pk_str, "'" + now_iso + "'"))
+                sql_list = [
+                    "INSERT INTO schools_mailbox (user_id, issentmail, examyear_id, mailmessage_id, read, deleted, modifiedby_id, modifiedat) VALUES"
+                     ]
+
+        # - add mail in inbox of recipients
+                value_str = ''
+                is_sent_mail_str = 'FALSE,'
+                if sendto_pk_str_list:
+                    for pk_str in sendto_pk_str_list:
+                        if value_str:
+                            value_str += ','
+                        value_str += ''.join(('(', pk_str, ',',  is_sent_mail_str,  other_values, ')'))
+
+                if cc_pk_str_list:
+                    for pk_str in cc_pk_str_list:
+                        if value_str:
+                            value_str += ','
+                        value_str += ''.join(('(', pk_str, ',', is_sent_mail_str, other_values, ')'))
+
+        # - add mail in mailbox sent
+                is_sent_mail_str = 'TRUE,'
+                if value_str:
+                    value_str += ','
+                value_str += ''.join(('(', sender_pk_str, ',',  is_sent_mail_str,  other_values, ')'))
+
+                sql_list.append(value_str)
+                sql_list.append('RETURNING *;')
+                sql = ' '.join(sql_list)
+
+                if logging_on:
+                    logger.debug('sql: ' + str(sql))
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql)
+                    rows = af.dictfetchall(cursor)
+                    if logging_on:
+                        for row in rows:
+                            logger.debug('row: ' + str(row))
+
+        #except Exception as e:
+        #    mail_sent = False
+        #    logging_on.error(getattr(e, 'message', str(e)))
+
+        if logging_on:
+            logger.debug('mail_sent: ' + str(mail_sent))
+    return mail_sent
+# - end of send_email_orderlist
+
+###################################################
+
+def create_published_instance_orderlist(now_arr, examyear, school, request, user_lang, school_code=None, school_abbrev=None):
+    # PR2021-09-09
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' ============= create_published_instance_orderlist ============= ')
+
+# +++ create new published_instance.
+    # file  will be added after creating Ex-form
+    year_str = str(now_arr[0])
+    month_str = ("00" + str(now_arr[1]))[-2:]
+    date_str = ("00" + str(now_arr[2]))[-2:]
+    hour_str = ("00" + str(now_arr[3]))[-2:]
+    minute_str = ("00" + str(now_arr[4]))[-2:]
+    now_formatted = ''.join([year_str, "-", month_str, "-", date_str, " ", hour_str, "u", minute_str])
+    today_date = af.get_date_from_arr(now_arr)
+    exams_str = str(_('Exams')).lower()
+    examyear_str = str(examyear.code)
+    if school_code:
+        examyear_str += ' ' + school_code
+    if school_abbrev:
+        examyear_str += ' ' + school_abbrev
+    file_name = ' '.join( (str(_('Orderlist')), exams_str, examyear_str, 'dd', now_formatted))
+    filename_ext = file_name + '.xlsx'
+    published_instance = sch_mod.Published(
+        school=school,
+        department=None,
+        examtype=None,
+        examperiod=c.EXAMPERIOD_FIRST,
+        name=file_name,
+        filename=filename_ext,
+        datepublished=today_date,
+        modifiedat=timezone.now,
+        modifiedby=request.user
+    )
+    # Note: filefield 'file' gets value after creating orderlist
+
+    #published_instance.filename = file_name + '.xlsx'
+    # PR2021-09-06 debug: request.user is not saved in instance.save, don't know why
+    published_instance.save(request=request)
+
+    if logging_on:
+        logger.debug(' request.user: ' + str(request.user))
+        logger.debug('published_instance.saved: ' + str(published_instance))
+        logger.debug('published_instance.pk: ' + str(published_instance.pk))
+        logger.debug('published_instance.modifiedby: ' + str(published_instance.modifiedby))
+
+# ---  create file_path
+    # PR2021-08-07 changed to file_dir = 'country/examyear/published/'
+    # this one gives path:awpmedia/awpmedia/media/cur/2022/published
+    country_abbrev = examyear.country.abbrev.lower()
+    examyear_str = str(examyear.code)
+    file_dir = '/'.join((country_abbrev, examyear_str, 'exfiles'))
+    file_path = '/'.join((file_dir, published_instance.filename))
+    file_name = published_instance.name
+
+    if logging_on:
+        logger.debug('file_dir: ' + str(file_dir))
+        logger.debug('file_name: ' + str(file_name))
+        logger.debug('filepath: ' + str(file_path))
+
+# ---  create file Name and worksheet Name
+    today_dte = af.get_today_dateobj()
+    today_formatted = af.format_DMY_from_dte(today_dte, user_lang, False)  # False = not month_abbrev
+    title = ' '.join((str(_('Orderlist')), exams_str, examyear_str, 'dd', today_dte.isoformat()))
+    file_name = title + ".xlsx"
+    worksheet_name = str(_('Ex1'))
+
+# - Create an in-memory output file for the new workbook.
+    # from https://docs.python.org/3/library/tempfile.html
+    output = tempfile.TemporaryFile()
+
+    return published_instance, output, file_path, filename_ext
+# - end of create_published_instance_orderlist
+
+
+def save_published_instance(published_instance, file_path, output, request):
+    # PR2021-09-09
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' ============= save_published_instance ============= ')
+
+
+# +++ save file to disk
+    msg_err = None
+    try:
+        excel_file = File(output)
+        published_instance.file.save(file_path, excel_file)
+
+        # published_instance.file.save saves without modifiedby_id. Save again to add modifiedby_id
+        published_instance.save(request=request)
+    except Exception as e:
+        msg_err = getattr(e, 'message', str(e))
+        logger.error(msg_err)
+
+    return msg_err
+# - end of save_published_instance
+
+
+def create_final_orderlist_xlsx(output, sel_examyear_instance,
+                                department_dictlist, lvlbase_dictlist, subjectbase_dictlist, schoolbase_dictlist,
+                                count_dict, requsr_school_name, min_ond, user_lang):  # PR2021-09-09
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_final_orderlist_xlsx -----')
+        logger.debug('count_dict: ' + str(count_dict))
+
+    # check for empty count_dict is done outside this function
+
+# - get orderlist variables from examyear
+    order_extra_fixed = getattr(sel_examyear_instance, 'order_extra_fixed')
+    order_extra_perc = getattr(sel_examyear_instance, 'order_extra_perc')
+    order_round_to = getattr(sel_examyear_instance, 'order_round_to')
+    order_tv2_divisor = getattr(sel_examyear_instance, 'order_tv2_divisor')
+    order_tv2_multiplier = getattr(sel_examyear_instance, 'order_tv2_multiplier')
+    order_tv2_max = getattr(sel_examyear_instance, 'order_tv2_max')
+
+    msg_err = None
+    try:
+        list = 'totals_only'
+# ---  create file Name and worksheet Name
+        now_formatted = af.format_modified_at(timezone.now(), user_lang, False)  # False = not month_abbrev
+
+# Create an in-memory output file for the new workbook.
+        # Even though the final file will be in memory the module uses temp
+        # files during assembly for efficiency. To avoid this on servers that
+        # don't allow temp files, for example the Google APP Engine, set the
+        # 'in_memory' Workbook() constructor option as shown in the docs.
+        #  book = xlsxwriter.Workbook(response, {'in_memory': True})
+        book = xlsxwriter.Workbook(output)
+
+# create dict with cell formats
+        formats = awpr_excel.create_formats(book)
+
+# ++++++++++++ loop through sheets  ++++++++++++++++++++++++++++
+        for ete_duo in ('ETE', 'DUO'):
+            for summary_detail in ('overzicht', 'details', 'herexamens'):
+                is_herexamens = (summary_detail == 'herexamens')
+
+                if ete_duo in count_dict:
+                    ete_duo_dict = count_dict.get(ete_duo)
+                    ete_duo_dict_total = ete_duo_dict.get('total')
+
+            # get number of subject columns from DEO/ETE total dict
+                    # 'DUO': {'total': {137: 513, 134: 63, 156: 63, 175: 63},
+                    # columns are (0: 'schoolbase_code', 1: school_name"
+                    # columns 2 etc  are subject columns. Extend number when more than 15 subjects
+
+                    col_count, first_subject_column, col_width, field_names, field_captions, \
+                        col_header_formats, detail_row_formats, summary_row_formats, totalrow_formats = \
+                            awpr_excel.create_row_formats(subjectbase_dictlist, ete_duo_dict_total, formats)
+
+    # +++++ create worksheet +++++
+                    sheet_name = ' '.join((ete_duo, summary_detail))
+                    sheet = book.add_worksheet(sheet_name)
+                    sheet.hide_gridlines(2) # 2 = Hide screen and printed gridlines
+
+            # --- set column width
+                    for i, width in enumerate(col_width):
+                        sheet.set_column(i, i, width)
+
+            # --- title row
+                    exam_str = summary_detail if (summary_detail == 'herexamens') else 'examens'
+                    title = ' '.join(('Bestellijst', ete_duo, exam_str, str(sel_examyear_instance.code)))
+                    sheet.write(0, 0, min_ond, formats['bold_format'])
+                    sheet.write(1, 0, requsr_school_name)
+                    sheet.write(2, 0, now_formatted)
+                    if summary_detail in ('overzicht', 'details'):
+                        exta_txt = ' '.join (('   -  ', str(order_extra_fixed), str(_('extra exams plus')),
+                                              str(order_extra_perc) + '%,', str(_('rounded up to')),str(order_round_to) + '.'))
+                        sheet.write(4, 0, str(_('Calulation of extra exams:')))
+                        sheet.write(5, 0, exta_txt)
+                    elif summary_detail == 'herexamens':
+                        tv2_txt = ' '.join (('   -  ',str(order_tv2_multiplier), str(_('exams per')),
+                                              str(order_tv2_divisor), str(_('exams first exam period,')),
+                                             str(_('with a maximum of')), str(order_tv2_max), '.'))
+                        sheet.write(4, 0, str(_('Calulation exams second exam period:')))
+                        sheet.write(5, 0, tv2_txt)
+
+                    row_index = 8
+#########################################################################
+                    if summary_detail == 'details':
+                        awpr_excel.write_orderlist_with_details(
+                            sheet, ete_duo_dict, is_herexamens, department_dictlist, lvlbase_dictlist, schoolbase_dictlist,
+                            row_index, col_count, first_subject_column, list, title, field_names, field_captions,
+                            formats, col_header_formats, detail_row_formats,
+                            totalrow_formats)
+                    else:
+                        awpr_excel.write_orderlist_summary(
+                            sheet, ete_duo_dict, is_herexamens, department_dictlist, lvlbase_dictlist, schoolbase_dictlist,
+                            row_index, col_count, first_subject_column, list, title, field_names, field_captions,
+                            formats, col_header_formats, detail_row_formats,
+                            totalrow_formats)
+#########################################################################
+        book.close()
+
+    # Rewind the buffer.
+        # seek(0) sets the pointer position at 0.
+        output.seek(0)
+
+    except Exception as e:
+        msg_err = getattr(e, 'message', str(e))
+        logger.error(msg_err)
+
+    return msg_err
+# - end of create_final_orderlist_xlsx
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+def create_final_orderlist_perschool_xlsx(output, sel_examyear_instance,
+                                department_dictlist, lvlbase_dictlist, subjectbase_dictlist, count_dict,
+                                subjbasepk_inuse_dict, school_code, school_name, requsr_school_name, min_ond, user_lang):  # PR2021-09-10
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_final_orderlist_perschool_xlsx -----')
+        logger.debug('count_dict: ' + str(count_dict))
+
+    msg_err = None
+    try:
+# ---  create file Name and worksheet Name
+        now_formatted = af.format_modified_at(timezone.now(), user_lang, False)  # False = not month_abbrev
+
+# Create an in-memory output file for the new workbook.
+        # Even though the final file will be in memory the module uses temp
+        # files during assembly for efficiency. To avoid this on servers that
+        # don't allow temp files, for example the Google APP Engine, set the
+        # 'in_memory' Workbook() constructor option as shown in the docs.
+        #  book = xlsxwriter.Workbook(response, {'in_memory': True})
+        book = xlsxwriter.Workbook(output)
+
+# create dict with cell formats
+        formats = awpr_excel.create_formats(book)
+        # subjbasepk_inuse_dict contains subjectsa in use by thisschool, in format of ete_duo_dict_total
+        ete_duo_dict_total = subjbasepk_inuse_dict
+        col_count, first_subject_column, col_width, field_names, field_captions, \
+            col_header_formats, detail_row_formats, summary_row_formats, totalrow_formats = \
+                awpr_excel.create_row_formats(subjectbase_dictlist, ete_duo_dict_total, formats)
+
+# +++++ create worksheet +++++
+        sheet_name = ' '.join((str(_('Orderlist')), str(_('Exams')).lower()))
+        sheet = book.add_worksheet(sheet_name)
+        sheet.hide_gridlines(2) # 2 = Hide screen and printed gridlines
+
+# --- set column width
+        for i, width in enumerate(col_width):
+            sheet.set_column(i, i, width)
+
+# --- title row
+        title = ' '.join(('Bestelling examens', str(sel_examyear_instance.code), ' - ', school_code, school_name))
+        sheet.write(0, 0, min_ond, formats['bold_format'])
+        sheet.write(1, 0, requsr_school_name)
+
+        sheet.write(3, 0, title, formats['bold_format'])
+        sheet.write(4, 0, now_formatted)
+
+        row_index = 7
+
+#########################################################################
+        awpr_excel.write_orderlist_per_school(
+            sheet, count_dict, department_dictlist, lvlbase_dictlist,
+            row_index, col_count, first_subject_column, title, field_names, field_captions,
+            formats, detail_row_formats, totalrow_formats)
+#########################################################################
+        book.close()
+
+# Rewind the buffer.
+        # seek(0) sets the pointer position at 0.
+        output.seek(0)
+
+    except Exception as e:
+        msg_err = getattr(e, 'message', str(e))
+        logger.error(msg_err)
+
+    return msg_err
+# - end of create_final_orderlist_perschool_xlsx
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 @method_decorator([login_required], name='dispatch')
@@ -552,7 +1564,7 @@ def create_examyear(country, examyear_code_int, request):
 
 #######################################################
 def update_examyear(instance, upload_dict, msg_list, request):
-    # --- update existing and new instance PR2019-06-06
+    # --- update existing examyear instance PR2019-06-06 PR2021-09-03
     # add new values to update_dict (don't reset update_dict, it has values)
     logger.debug(' ------- update_examyear -------')
     logger.debug('upload_dict: ' + str(upload_dict))
@@ -564,41 +1576,51 @@ def update_examyear(instance, upload_dict, msg_list, request):
 
     # upload_dict: {'table': 'examyear', 'country_pk': 1, 'examyear_pk': 58, 'mapid': 'examyear_58', 'mode': 'update', 'published': True}
 
+    updated = False
     if instance:
         try:
             save_changes = False
             for field in upload_dict:
                 logger.debug('field: ' + str(field))
 
-                new_value = upload_dict.get(field)
-                saved_value = getattr(instance, field)
-
-                logger.debug('new_value: ' + str(new_value))
-                logger.debug('saved_value: ' + str(saved_value))
-
+                if field in ('table', 'mode', 'mapid',):
+                    pass
 # --- update field 'examyear' is not allowed
-                if field == 'examyear':
-                    if new_value != saved_value:
-                         msg_list.append(str(_('The exam year cannot be changed')))
+                elif field == 'examyear':
+                    pass
 
-# --- update fieldpython manage.py runserver
-                # 'published', 'locked'
-                elif field in ('published', 'locked'):
+# --- update field 'published', 'locked'
+                elif field in ('published', 'locked', 'no_practexam', 'reex_se_allowed', 'no_centralexam', 'no_thirdperiod'):
+                    new_value = upload_dict.get(field)
+                    saved_value = getattr(instance, field)
+
+                    logger.debug('new_value: ' + str(new_value))
+
                     if new_value is None:
                         new_value = False
-                    #logger.debug('inactive saved_value]: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                    logger.debug('field]: ' + str(field) + ' ' + str(type(field)))
+                    logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+                    logger.debug('saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
                     if new_value != saved_value:
                         setattr(instance, field, new_value)
                         save_changes = True
-                        # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
-                        new_date = timezone.now()
-                        date_field = field + 'at'
-                        setattr(instance, date_field, new_date)
+                        logger.debug('save_changes]: ' + str(save_changes) + ' ' + str(type(save_changes)))
+
+                        if field in ('published', 'locked'):
+                            # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+                            new_date = timezone.now()
+                            date_field = field + 'at'
+                            setattr(instance, date_field, new_date)
 
                     # --- update fieldpython manage.py runserver
                     # 'published', 'locked'
                 elif field in ('order_extra_fixed', 'order_extra_perc', 'order_round_to',
                                'order_tv2_divisor', 'order_tv2_max', 'order_tv2_multiplier'):
+                    new_value = upload_dict.get(field)
+                    saved_value = getattr(instance, field)
+
+                    logger.debug('new_value: ' + str(new_value))
+                    logger.debug('saved_value: ' + str(saved_value))
                     if new_value is None:
                         if field in ('order_round_to', 'order_tv2_divisor'):
                             new_value = 1
@@ -613,13 +1635,16 @@ def update_examyear(instance, upload_dict, msg_list, request):
 # --- save changes
             if save_changes:
                 instance.save(request=request)
+                updated = True
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-            msg_list.append(str(_('An error occurred. The changes have not been saved.')))
-
-
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+            msg_html = ''.join((
+                str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
+                str(_("The changes have not been saved."))))
+            msg_dict = {'header': str(_('Update exam year')), 'class': 'border_bg_invalid','msg_html': msg_html}
+            msg_list.append(msg_dict)
+    return updated
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def copy_tables_from_last_year(prev_examyear_instance, new_examyear_instance, copy_to_sxm, request):
@@ -1383,6 +2408,7 @@ def upload_school_NIU(school_list, school_dict, lookup_field, awpKey_list,
 
 # - check if schoolbase with this code exists in request.user.country. schoolbase has value when only one found
         # lookup_value = school_dict.get(lookup_field)
+
         schoolbase, school, msg_err_multiple_found = lookup_schoolbase(lookup_value, request)
         if msg_err_multiple_found:
             log_str = msg_err_multiple_found

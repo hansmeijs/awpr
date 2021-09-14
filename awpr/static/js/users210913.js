@@ -74,23 +74,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_width:  ["020", "090", "150", "150",  "180", "240",  "100", "180", "090"],
                     field_align: ["c", "l", "l", "l","l",  "l",  "c", "l", "c"]},
         usergroup: {
-                    field_caption: ["", "School", "User", "Read_only_2lines", "Edit",
+                    field_caption: ["", "School_code", "School", "User", "Read_only_2lines", "Edit",
                                     "President", "Secretary", "Commissioner_2lines",
                                     "Analyze",  "System_manager_2lines"],
-                    field_names: ["select", "sb_code", "username", "group_read", "group_edit",
+                    field_names: ["select", "sb_code", "school_abbrev", "username", "group_read", "group_edit",
                                     "group_auth1", "group_auth2", "group_auth3", "group_anlz", "group_admin"],
-                    field_tags: ["div", "div", "div", "div", "div",
-                                    "div", "div", "div",
-                                    "div", "div"],
-                    filter_tags: ["select", "text", "text",  "toggle", "toggle",
-                                    "toggle", "toggle", "toggle",
-                                     "toggle", "toggle"],
-                    field_width:  ["020", "075", "150", "090", "090",
-                                    "090", "090", "090",
-                                    "090", "090"],
-                    field_align: ["c", "l", "l", "c", "c",
-                     "c", "c", "c",
-                     "c", "c"]},
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["select", "text", "text", "text",  "toggle", "toggle",
+                                    "toggle", "toggle", "toggle",  "toggle", "toggle"],
+                    field_width:  ["020", "090", "150", "150", "090", "090", "090", "090", "090", "090", "090"],
+                    field_align: ["c", "l", "l","l", "c", "c", "c", "c", "c", "c", "c"]},
         userpermit: {
                     field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
                                     "President", "Secretary", "Commissioner_2lines",
@@ -369,14 +362,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  get  selected_btn
         // set to default "btn_user" when there is no selected_btn
         // this happens when user visits page for the first time
-        // includes is to catch btn names that are no longer in use
+        // includes is to catch saved btn names that are no longer in use
         selected_btn = (data_btn && ["btn_user", "btn_usergroup", "btn_userpermit"].includes(data_btn)) ? data_btn : "btn_user"
         //console.log( "selected_btn: ", selected_btn);
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_user: {sel_btn: selected_btn}};
-            UploadSettings (upload_dict, urls.url_settings_upload);
+            b_UploadSettings (upload_dict, urls.url_settings_upload);
         };
 
 // ---  highlight selected button
@@ -783,6 +776,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     let permit_bool = (get_attr_from_el(el_input, "data-filter") === "1");
 
     // show message when sysadmin tries to delete sysadmin permit
+                    // TODO remove requsr_pk from client
                     const is_request_user = (permit_dict.requsr_pk && permit_dict.requsr_pk === data_dict.id);
                     if(fldName === "group_admin" && is_request_user && permit_bool ){
                         ModConfirmOpen("uergroup", "permission_admin", el_input)
@@ -1809,6 +1803,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("data_dict", data_dict);
 
 // ---  get info from data_dict
+        // TODO remove requsr_pk from client
         const is_request_user = (data_dict && permit_dict.requsr_pk && permit_dict.requsr_pk === data_dict.id)
         //console.log("permit_map", permit_map)
         //console.log("data_dict", data_dict)
@@ -2462,7 +2457,7 @@ function RefreshDataRowsAfterUpload(response) {
         if (permit_dict.requsr_role_system) {
             columns_hidden =  [];
         } else if (permit_dict.requsr_role_admin) {
-            columns_hidden = ["group_auth1", "group_auth2", "group_auth3"];
+            columns_hidden = ["group_auth3"];
         } else if (permit_dict.requsr_role_insp) {
             columns_hidden =  ["group_auth3"];
         } else if (permit_dict.requsr_role_comm) {

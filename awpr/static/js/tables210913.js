@@ -188,7 +188,7 @@
             el_div = document.createElement("div");
                 const class_locked = (locked) ? "appr_2_6" : (activated) ? "appr_0_1" : "appr_0_0";
                 el_div.classList.add("tw_032", class_locked)
-                el_div.title = (locked) ? loc.This_school_is_locked : (activated) ? loc.This_school_is_activated : "";
+                el_div.title = (locked) ? loc.This_school + loc.is_locked : (activated) ? loc.This_school + loc.is_activated : "";
             td.appendChild(el_div);
         }
     }  // t_MSED_CreateSelectRow
@@ -364,7 +364,6 @@ function t_MSSSS_AddAll_dict(tblName){
         //console.log("..........tblName", tblName);
         //console.log("map_dict", map_dict);
 
-
 //--- get info from map_dict
         // when tblName = school: pk_int = schoolbase_pk
         const pk_int = (tblName === "student") ? map_dict.id :
@@ -447,7 +446,7 @@ function t_MSSSS_AddAll_dict(tblName){
             el_div = document.createElement("div");
                 const class_locked = (locked) ? "appr_2_6" : (activated) ? "appr_0_1" : "appr_0_0";
                 el_div.classList.add("tw_032", class_locked)
-                el_div.title = (locked) ? loc.This_school_is_locked : (activated) ? loc.This_school_is_activated : "";
+                el_div.title = (locked) ? loc.This_school + loc.is_locked : (activated) ? loc.This_school + loc.is_activated : "";
             td.appendChild(el_div);
         }
 
@@ -1663,7 +1662,7 @@ console.log( "show_row", show_row);
 // mod_MCOL_dict is only used in this script for modal. pages use columns_hidden and columns_tobe_hidden
 // mod_MCOL_dict.cols_hidden holds fields in modal before teay are saved, columns_hidden holds saved fields
 // these function use selected_btn, columns_hidden[tblName], columns_tobe_hidden[tblName].fields;
-const mod_MCOL_dict = {tblName: null, cols_hidden: []}
+const mod_MCOL_dict = {selected_btn: null, cols_hidden: []}
 
 // columns_hidden and columns_tobe_hidden are also used in t_MCOL_Open and t_MCOL_Save
 const columns_hidden = {};
@@ -1673,13 +1672,13 @@ const columns_tobe_hidden = {};
     function t_MCOL_Open(page) {
         //console.log(" -----  t_MCOL_Open   ----")
         //console.log("selected_btn", selected_btn)
-        const tblName = selected_btn.slice(4);
 
         mod_MCOL_dict.page = page;
-        mod_MCOL_dict.tblName = tblName;
+        mod_MCOL_dict.selected_btn = selected_btn;
         mod_MCOL_dict.cols_hidden = [];
 
-        const cols_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
+        const cols_hidden = (selected_btn && columns_hidden[selected_btn]) ? columns_hidden[selected_btn] : [];
+        //console.log("cols_hidden", cols_hidden)
         for (let i = 0, field; field = cols_hidden[i]; i++) {
             mod_MCOL_dict.cols_hidden.push(field);
         };
@@ -1696,12 +1695,12 @@ const columns_tobe_hidden = {};
     function t_MCOL_Save(url_settings_upload, HandleBtnSelect) {
         //console.log(" -----  t_MCOL_Save   ----")
 
-// ---  get hidden columns from mod_MCOL_dict.cols_hidden and put them  in columns_hidden[tblName]
+// ---  get hidden columns from mod_MCOL_dict.cols_hidden and put them  in columns_hidden[selected_btn]
 
-        if (!(mod_MCOL_dict.tblName in columns_hidden)){
-            columns_hidden[mod_MCOL_dict.tblName] = [];
+        if (!(mod_MCOL_dict.selected_btn in columns_hidden)){
+            columns_hidden[mod_MCOL_dict.selected_btn] = [];
         }
-        const cols_hidden = columns_hidden[mod_MCOL_dict.tblName];
+        const cols_hidden = columns_hidden[mod_MCOL_dict.selected_btn];
         //console.log("cols_hidden", cols_hidden)
    // clear the array
         b_clear_array(cols_hidden);
@@ -1713,12 +1712,12 @@ const columns_tobe_hidden = {};
 // upload the new list of hidden columns
         // format: setting[page_name] = {cols_hidden: {student: ["regnumber", "bis_exam"]}}
         const upload_dict = {}, page_dict = {};
-        page_dict[mod_MCOL_dict.tblName] = cols_hidden;
+        page_dict[mod_MCOL_dict.selected_btn] = cols_hidden;
         upload_dict[mod_MCOL_dict.page] = {cols_hidden: page_dict }
 
         //console.log("url_settings_upload", url_settings_upload)
         //console.log("upload_dict", upload_dict)
-        UploadSettings (upload_dict, url_settings_upload);
+        b_UploadSettings (upload_dict, url_settings_upload);
 
         HandleBtnSelect(selected_btn, true)  // true = skip_upload
 
@@ -1738,13 +1737,15 @@ const columns_tobe_hidden = {};
         const el_MCOL_tblBody_show = document.getElementById("id_MCOL_tblBody_show");
         el_MCOL_tblBody_available.innerHTML = null;
         el_MCOL_tblBody_show.innerHTML = null;
-        if(mod_MCOL_dict.tblName && columns_tobe_hidden[mod_MCOL_dict.tblName]){
-            const fields = columns_tobe_hidden[mod_MCOL_dict.tblName].fields;
+        if(mod_MCOL_dict.selected_btn && columns_tobe_hidden[mod_MCOL_dict.selected_btn]){
+            const fields = columns_tobe_hidden[mod_MCOL_dict.selected_btn].fields;
 
     //+++ loop through list of fields
             if(fields && fields.length){
                 for (let j = 0, field; field = fields[j]; j++) {
-                const captions = columns_tobe_hidden[mod_MCOL_dict.tblName].captions;
+                const captions = columns_tobe_hidden[mod_MCOL_dict.selected_btn].captions;
+
+        //console.log("columns_tobe_hidden", columns_tobe_hidden)
         // - skip column 'Leerweg' when not sel_dep_level_req  || setting_dict.sel_dep_level_req
                     const skip_level = (field === "lvlbase_id" && !setting_dict.sel_dep_level_req);
                     if(!skip_level){
@@ -1806,7 +1807,7 @@ const columns_tobe_hidden = {};
         }
         //console.log( "upload_dict.value: ", upload_dict)
 // ---  upload new setting
-        UploadSettings (upload_dict, urls.url_settings_upload);
+        b_UploadSettings (upload_dict, urls.url_settings_upload);
         //UpdateHeaderLeft();
 
         FillTblRows();
@@ -1925,10 +1926,23 @@ const columns_tobe_hidden = {};
         const upload_dict = {selected_pk: selected_pk_dict};
 console.log("url", urls.url_settings_upload)
 console.log("upload_dict", upload_dict)
-        UploadSettings (upload_dict, urls.url_settings_upload);
+        b_UploadSettings (upload_dict, urls.url_settings_upload);
 
         FillTblRows();
     }  // t_SBR_show_all
 
 
 // +++++++++++++++++ END OF SBR SELECT LEVEL SECTOR ++++++++++++++++++++++++++++++++++++++++++
+
+//========= t_InputToggle  ============= PR2021-09-03
+    function t_InputToggle(el_input){
+        //console.log( "===== t_InputToggle  ========= ");
+        //console.log( "el_input", el_input);
+        if (el_input){
+            const data_value = get_attr_from_el(el_input, "data-value")
+            const new_data_value = (data_value === "1") ? "0" : "1";
+            el_input.setAttribute("data-value", new_data_value);
+        //console.log( "el_input.children[0]", el_input.children[0]);
+            add_or_remove_class(el_input.children[0], "tickmark_2_2", new_data_value === "1", "tickmark_1_1")
+        };
+    }; // t_InputToggle

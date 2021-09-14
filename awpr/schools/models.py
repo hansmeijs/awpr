@@ -114,6 +114,7 @@ class Country(AwpBaseModel):
     name = CharField(max_length=c.MAX_LENGTH_NAME, unique=True)
     abbrev = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, unique=True)
 
+    # Not in use. Block accounts instead PR2021-09-03
     locked = BooleanField(default=False)
 
     class Meta:
@@ -501,8 +502,8 @@ class School_log(AwpBaseModel):
 class Published(AwpBaseModel): # PR2020-12-02
     objects = AwpModelManager()
 
-    school = ForeignKey(School, related_name='+', on_delete=CASCADE)
-    department = ForeignKey(Department, related_name='+', on_delete=CASCADE)
+    school = ForeignKey(School, related_name='+', db_index=True, null=True, on_delete=SET_NULL)
+    department = ForeignKey(Department, related_name='+', db_index=True, null=True, on_delete=SET_NULL)
 
     examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True, null=True)
     examperiod = PositiveSmallIntegerField(db_index=True) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
@@ -588,36 +589,40 @@ class Schoolsetting(Model):  # PR2020-10-20
 
 # +++++++++++++++++++++   Messaging Service  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-class Examyearnote(AwpBaseModel):
+class Mailmessage(AwpBaseModel):
     objects = AwpModelManager()
 
     examyear = ForeignKey(Examyear, related_name='+', on_delete=CASCADE)
     sender_user = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
-    sender_schoolbase = ForeignKey(Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
+    sender_school = ForeignKey(School, related_name='+', null=True, on_delete=SET_NULL)
 
     header = CharField(max_length=80, null=True, blank=True)
-    note = CharField(max_length=2048, null=True, blank=True)
+    body = CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
-    note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    mailcc_user = CharField(max_length=2048, null=True, blank=True)
+    status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
 
 # PR2021-03-08 from https://simpleisbetterthancomplex.com/tutorial/2017/08/01/how-to-setup-amazon-s3-in-a-django-project.html
-class Examyearnoteattachment(AwpBaseModel):
+class Mailattachment(AwpBaseModel):
     objects = AwpModelManager()
 
-    examyearnote = ForeignKey(Examyearnote, related_name='+', on_delete=CASCADE)
+    mailmessage = ForeignKey(Mailmessage, related_name='+', on_delete=CASCADE)
     contenttype = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
     filename = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME)
     file = FileField(storage=PrivateMediaStorage())
 
 
-class Examyearinbox(AwpBaseModel):
+class Mailbox(AwpBaseModel):
     objects = AwpModelManager()
 
-    receiver_user = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=CASCADE)
-    examyearnote = ForeignKey(Examyearnote, related_name='+', on_delete=CASCADE)
+    examyear = ForeignKey(Examyear, related_name='+', on_delete=CASCADE)
+    # user is recipient when issentmail = False, is sender when issentmail = True
+    user = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=CASCADE)
+    mailmessage = ForeignKey(Mailmessage, related_name='+', on_delete=CASCADE)
     read = BooleanField(default=False)
     deleted = BooleanField(default=False)
+    issentmail = BooleanField(default=False)
 
 
 def delete_instance(instance, msg_list, error_list, request, this_txt=None, header_txt=None):

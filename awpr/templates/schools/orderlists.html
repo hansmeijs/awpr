@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Orderlists' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/orderlists210903.js' %}"></script>
+    <script src="{% static 'js/orderlists210913.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -65,6 +65,7 @@
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'schools/modorderlistextra.html' %}
+            {% include 'schools/modpublishorderlist.html' %}
 
             <div class="content_margin_top78">
     <!-- CONTENT HEADER - LOADER -->
@@ -91,7 +92,7 @@
             <!-- end content_header -->
     <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="btn_orderlist01" class="btn btn-secondary ">{% trans 'Orderlist' %}</button>
+                    <button data-btn="btn_orderlist" class="btn btn-secondary ">{% trans 'Orderlist' %}</button>
                 </div>
     <!-- end BUTTON GROUP -->
     <!-- END OF CONTENT HEADER -->
@@ -114,6 +115,10 @@
                 data-orderlist_download_url="{% url 'orderlist_download_url' '-' %}"
                 data-orderlist_per_school_download_url="{% url 'orderlist_per_school_download_url' %}"
                 data-url_orderlist_parameters="{% url 'url_orderlist_parameters' %}"
+                data-url_orderlist_request_verifcode="{% url 'url_orderlist_request_verifcode' %}"
+                data-url_orderlist_publish="{% url 'url_orderlist_publish' %}"
+
+
 
             >
             </div>

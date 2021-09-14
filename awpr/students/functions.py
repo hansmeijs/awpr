@@ -238,3 +238,92 @@ def split_fullname(fullname): # PR2018-12-06
             lastname = fullname
 
     return lastname, firstname, prefix
+
+
+# oooooooooooooo Functions  Student name ooooooooooooooooooooooooooooooooooooooooooooooooooo
+
+def get_full_name(last_name, first_name, prefix):  # PR2021-07-26 PR2021-09-05
+    _lastname, _firstname, _prefix = '', '', ''
+    if last_name:
+        _lastname = last_name.strip() + ','
+    if first_name:
+        _firstname = first_name.strip()
+    if prefix:
+        _prefix = prefix.strip()
+
+    return ' '.join((_prefix, _lastname, _firstname))
+
+
+def get_firstname_initials(first_name):  # PR2021-07-26
+    firstname_initials = ''
+    first_name = first_name.strip() if first_name else ''
+    if first_name:
+        # strings '', ' ' and '   ' give empty list [] which is False
+        firstnames_arr = first_name.split()
+        if firstnames_arr:
+            skip = False
+            for item in firstnames_arr:
+                if not skip:
+                    firstname_initials += item + ' '  # write first firstname in full
+                    skip = True
+                else:
+                    if item:
+                        # PR2017-02-18 VB debug. bij dubbele spatie in voornaam krijg je lege err(x)
+                        firstname_initials += item[:1]  # write of the next firstnames only the first letter
+    return firstname_initials
+
+
+def get_lastname_firstname_initials(last_name, first_name, prefix):  # PR2021-07-26
+    firstname_initials = get_firstname_initials(first_name)
+    return get_full_name(last_name, firstname_initials, prefix)
+
+# NOT IN USE
+def SplitPrefix(name, is_firstname):
+    # PR2020-11-15 from AWP PR2016-04-01 aparte functie van gemaakt
+    # Functie splits tussenvoegsel voor Achternaam (IsPrefix=True) of achter Voornamen (IsPrefix=False)
+
+    found = False
+
+    remainder = ''
+    prefix = ''
+
+    prefixes = ("voor den", "van den", "van der", "van de", "van 't", "de la",
+                "del", "den", "der", "dos", "ten", "ter", "van",
+                "al", "d'", "da", "de", "do", "el", "l'", "la", "le", "te")
+
+    # search in reverse order of prefix length: check "van den" first,
+    # when you check 'van' first, 'van den' will not be reached
+    # when booIsPrefix: put space after prefix, but also check "d'" and "l'" without space after prefix
+    # when not booIsPrefix: put space before prefix
+
+    prefixes_without_space = ("d'", " l'")
+
+    name_stripped = name.strip()  # 'PR 13 apr 13 Trim toegevoegd
+    if name_stripped:
+        name_len = len(name_stripped)
+        for value in prefixes:
+            search_prefix = ' ' + value if is_firstname else value + ' '
+            search_len = len(search_prefix)
+            if name_len >= search_len:
+                if is_firstname:
+                    # check for prefix at end of firstname
+                    lookup_str = name_stripped[0:search_len]
+                else:
+                    # check for prefix in front of lastname
+                    lookup_str = name_stripped[-name_len]
+                if lookup_str == search_prefix:
+                    found = True
+                    prefix = lookup_str.strip()
+                    if is_firstname:
+                        remainder = name_stripped[len].strip()
+                    else:
+                        remainder_len = name_len - search_len
+                        remainder = name_stripped[0:remainder_len].strip()
+                    break
+    # Voornamen met tussenvoegsel erachter
+    # van groot naar klein, anders wordt 'van den' niet bereikt, maar 'den' ingevuld
+
+    return found, prefix, remainder  # found returns True when name is split
+# End of SplitPrefix
+
+# oooooooooooooo End of Functions Student name ooooooooooooooooooooooooooooooooooooooooooooooooooo

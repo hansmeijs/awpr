@@ -69,11 +69,11 @@
         el_div.appendChild(el_a);
     };//function AddSubmenuButton
 
-//========= UploadSettings  ============= PR2019-10-09
-    function UploadSettings (upload_dict, url_str) {
-        //console.log("=== UploadSettings");
-        //console.log("url_str", url_str);
-        //console.log("upload_dict", upload_dict);
+//========= b_UploadSettings  ============= PR2019-10-09
+    function b_UploadSettings (upload_dict, url_str) {
+        console.log("=== b_UploadSettings");
+        console.log("url_str", url_str);
+        console.log("upload_dict", upload_dict);
         if(!!upload_dict) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
             let response = "";
@@ -83,15 +83,15 @@
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
-                    //console.log( "response");
-                    //console.log( response);
+                    console.log( "response");
+                    console.log( response);
                 },  // success: function (response) {
                 error: function (xhr, msg) {
                     console.log(msg + '\n' + xhr.responseText);
                 }
             });
         }
-    };  // UploadSettings
+    };  // b_UploadSettings
 
 //========= UpdateHeaderbar  ================== PR2020-11-14 PR2020-12-02
     function b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school){
@@ -1001,8 +1001,8 @@
         // function returns rowindex of searched value, or rowindex of row to be inserted
         // data_rows must be ordered by id (as text field), done by server
 
-        //console.log( ".....lookup_1_field: ", lookup_1_field, search_1_int);
-        //console.log( ".....lookup_2_field: ", lookup_2_field,  search_2_int);
+    //console.log( ".....lookup_1_field: ", lookup_1_field, search_1_int);
+    //console.log( ".....lookup_2_field: ", lookup_2_field,  search_2_int);
 
         let compare = null, middle_index = null, found_dict = null;
         if (data_rows && data_rows.length){
@@ -1022,17 +1022,17 @@
                     middle_index = last_index;
                     break;
                 } else {
-        //console.log( i, "LOOP : ", min_index, " - ", max_index, " > ", middle_index);
-        //console.log( ".....middle_index: ", middle_index);
+    //console.log( i, "LOOP : ", min_index, " - ", max_index, " > ", middle_index);
+    //console.log( ".....middle_index: ", middle_index);
                     const middle_dict = data_rows[middle_index];
-        //console.log( ".....middle_dict: ", middle_dict);
+    //console.log( ".....middle_dict: ", middle_dict);
 
                     // studsubj_id can be None, it is ordered first so it can be given the value of 0 in lookup
                     const middle_1_value = (middle_dict[lookup_1_field]) ? middle_dict[lookup_1_field] : 0;
                     const middle_2_value = (middle_dict[lookup_2_field]) ? middle_dict[lookup_2_field] : 0;
 
-        //console.log( ".....middle_value: ", middle_1_value, typeof middle_1_value, " --- ", middle_2_value, typeof middle_2_value);
-        //console.log( ".....search_int  : ", search_1_int, typeof search_1_int , " --- ", search_2_int, typeof search_2_int);
+    //console.log( ".....middle_value: ", middle_1_value, typeof middle_1_value, " --- ", middle_2_value, typeof middle_2_value);
+    //console.log( ".....search_int  : ", search_1_int, typeof search_1_int , " --- ", search_2_int, typeof search_2_int);
                     // NULL values are sorted last in default ascending order.
                     const compare_1 = (search_1_int === middle_1_value) ? 0 :
                                 (search_1_int  >  middle_1_value) ? 1 : -1;
@@ -1043,7 +1043,7 @@
                     } else {
                         compare = compare_1;
                     }
-        //console.log( "compare : ", compare);
+    //console.log( "compare : ", compare);
                     if (!compare) {
                         found_dict = middle_dict;
                         break;
@@ -1072,21 +1072,21 @@
             };  // for (let i = 0,
         };  //  if (data_rows && data_rows.length){
 
-        //console.log( "found_dict: ", found_dict);
-        //console.log( "compare: ", compare);
+    //console.log( "found_dict: ", found_dict);
+    //console.log( "compare: ", compare);
 
         return [middle_index, found_dict, compare];
     };  // b_recursive_integer_lookup
 
 //========= b_recursive_lookup  ========== PR2020-06-16
     function b_recursive_lookup(data_rows, search_value, user_lang){
-        console.log( " ----- b_recursive_lookup -----");
+        //console.log( " ----- b_recursive_lookup -----");
         // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
         // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
         // function returns rowindex of searched value, or rowindex of row to be inserted
         // data_rows must be ordered by id (as text field), done by server
 
-        //console.log( "data_rows: ", data_rows);
+    //console.log( "data_rows: ", data_rows);
 
         let compare = null, middle_index = null, found_dict = null;
         if (data_rows && data_rows.length){
@@ -1097,8 +1097,8 @@
             middle_index =  Math.floor( (min_index + max_index) / 2);
 
             if(!search_value){search_value = ""};
-        //console.log( "search_value: ", search_value);
-        //console.log( "lookup_field: ", lookup_field);
+    //console.log( "search_value: ", search_value);
+    //console.log( "lookup_field: ", lookup_field);
 
             const max_loop = 25;
             for (let i = 0; i < max_loop; i++) {
@@ -1111,8 +1111,8 @@
                     const middle_dict = data_rows[middle_index];
                     const middle_value = middle_dict[lookup_field];
 
-        //console.log( i, "LOOP : ", min_index, " - ", max_index, " > ", middle_index);
-        //console.log( "middle_value: ", middle_value);
+    //console.log( i, "LOOP : ", min_index, " - ", max_index, " > ", middle_index);
+    //console.log( "middle_value: ", middle_value);
 
                     // PR2021-06-08 note: toLowerCase is not necessary, because sensitivity: 'base' ignores lower- / uppercase and accents;
                     // sort function from https://stackoverflow.com/questions/51165/how-to-sort-strings-in-javascript
@@ -1121,9 +1121,9 @@
                     // 'mcb'.localeCompare('giro') = 1
                     // note: value of compare can be 2 or -2 in some browsers, teherfore use compare < 0 instead of compare === -1
                     compare = search_value.localeCompare(middle_value, user_lang, {sensitivity: 'base'});
-        //console.log( "compare : ", compare);
-        //console.log( "min_index : ", min_index);
-        //console.log( "max_index : ", max_index);
+    //console.log( "compare : ", compare);
+    //console.log( "min_index : ", min_index);
+    //console.log( "max_index : ", max_index);
                     if (!compare) {
                         //  search_value === middle_value
                         // exit, return middle_index (compare = 0 means item is found at index: middle_index
@@ -1137,7 +1137,7 @@
                             // if returnvalue of compare < 0: value not found in list, must be inserted just before middle_index
                             // if returnvalue of compare > 0: value not found in list, must be inserted just after middle_index
 
-        //console.log( "compare = 0, middle_index === max_index");
+    //console.log( "compare = 0, middle_index === max_index");
 
                             break;
                         } else {
@@ -1146,7 +1146,7 @@
                                 if (middle_index === min_index){
                                     // exit if middle_index equals min_index and comapre is negative: means that value is not found
 
-        //console.log( "compare < 0, middle_index === max_index");
+    //console.log( "compare < 0, middle_index === max_index");
                                     break;
                                 } else {
                                     //  search_value < middle_value
@@ -1155,13 +1155,13 @@
                                     // rounddown to integer
                                     max_index = middle_index - 1;
                                     middle_index =  Math.floor( (min_index + max_index) / 2);
-        //console.log( "new middle_index", middle_index);
+    //console.log( "new middle_index", middle_index);
                                 }
                             } else if (compare > 0) {
                                 if (middle_index === max_index){
                                     // exit if middle_index equals max_index and comapre is positive: means that value is not found
 
-        //console.log( "compare > 0, middle_index === max_index");
+    //console.log( "compare > 0, middle_index === max_index");
 
                                     break;
                                 } else {
@@ -1172,19 +1172,19 @@
                                     min_index = middle_index + 1;
                                     middle_index =  Math.ceil( (min_index + max_index) / 2);
 
-        //console.log( "min_index", min_index);
-        //console.log( "new middle_index", middle_index);
+    //console.log( "min_index", min_index);
+    //console.log( "new middle_index", middle_index);
                                 }
                             }
-        //console.log( "GOTO NEXT LOOP 2 : ", min_index, " - ", max_index, " >< ", middle_index);
+    //console.log( "GOTO NEXT LOOP 2 : ", min_index, " - ", max_index, " >< ", middle_index);
                         }
                     }
                 };  // if (i > 23)
             };  // for (let i = 0,
         };  //  if (data_rows && data_rows.length){
 
-        //console.log( "found_dict: ", found_dict);
-        //console.log( "compare: ", compare);
+    //console.log( "found_dict: ", found_dict);
+    //console.log( "compare: ", compare);
         return [middle_index, found_dict, compare];
     };  // b_recursive_lookup
 
@@ -1414,51 +1414,6 @@
         $("#id_mod_message").modal({backdrop: false});
     }  // show_mod_message
 
-//========= b_render_awp_messages  =================
-    function b_render_awp_messages(awp_messages) {
-        //console.log( "===== b_render_awp_messages -----")
-        //console.log( "awp_messages", awp_messages)
-        // PR2020-10-30 renders messages PR2021-04-27
-        // PR2021-05-13 only messages with key 'class' must be shown, other messages have key 'field' and must be shown in modal 'subject' etc
-
-        if (awp_messages && awp_messages.length) {
-            const el_mod_awpmessages = document.getElementById("id_awpmessage_container")
-            if (el_mod_awpmessages){
-                el_mod_awpmessages.innerHTML = null;
-                let show_modal = false;
-
-                for (let i = 0, msg_dict ; msg_dict = awp_messages[i]; i++) {
-                    if (msg_dict && msg_dict.class){
-                        const msg_class = msg_dict.class;
-                        const msg_list = msg_dict.msg_list;
-                        show_modal = true;
-// --- insert el_div
-                        let el_div = document.createElement("div");
-                        el_div.classList.add("m-2", "p-2")
-                        el_div.classList.add(msg_class)
-
-                        if(msg_list && msg_list.length){
-                            for (let j = 0, msg, el_p; msg = msg_list[j]; j++) {
-                                if(msg){
-                                    el_p = document.createElement("p");
-                                    el_p.innerHTML = msg
-                                    el_div.appendChild(el_p);
-                                }
-                            }
-                        }
-                        el_mod_awpmessages.appendChild(el_div);
-                    }  // if (msg_dict && msg_dict.class)
-                }  // for (let i = 0, msg_dict ; msg_dict = awp_messages[i]; i++)
-                if (show_modal){
-// ---  set focus to close button - not working
-                const el_modmessage_btn_cancel = document.getElementById("id_modmessage_btn_cancel");
-                set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 50);
-// ---  show modal
-                    $("#id_mod_message").modal({backdrop: true});
-                }
-            }
-        }  //   if (awp_messages && awp_messages.length)
-    }  // b_render_awp_messages
 
 //========= b_render_msg_containerNEW  ================= PR2021-08-13
     function b_render_msg_containerNEW(el_msg_container, msg_list, class_list) {
@@ -1508,8 +1463,8 @@
 
 //=========  b_ShowModMessages  ================ PR2021-06-27  PR2021-07-03
     function b_ShowModMessages(msg_dictlist) {
-        console.log("==== b_ShowModMessages  ======")
-        console.log("msg_dictlist", msg_dictlist)
+        //console.log("==== b_ShowModMessages  ======")
+        //console.log("msg_dictlist", msg_dictlist)
 
         //  [ { class: "alert-warning", header: 'Update this',
         //      msg_html: "Deze loonperiode heeft 7 diensten."]
@@ -1517,18 +1472,18 @@
         if(msg_dictlist && msg_dictlist.length){
             const el_container = document.getElementById("id_mod_message_container");
             let header_text = null
-            console.log("el_container", el_container)
+            //console.log("el_container", el_container)
             if(el_container){
                 el_container.innerHTML = null;
                 for (let i = 0, msg_dict; msg_dict = msg_dictlist[i]; i++) {
                     const class_str = (msg_dict.class) ? msg_dict.class : "border_bg_transparent";
-            console.log("class_str", class_str)
+            //console.log("class_str", class_str)
                     if(!header_text && msg_dict.header){
                         header_text = msg_dict.header;
                     }
-            console.log("header_text", header_text)
+            //console.log("header_text", header_text)
                     const msg_html = msg_dict.msg_html;
-            console.log("msg_html", msg_html)
+            //console.log("msg_html", msg_html)
 
                     if (msg_html){
             // --- create div element with alert border for each message in messages

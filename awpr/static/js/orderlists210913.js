@@ -6,12 +6,6 @@ let permit_dict = {};
 let loc = {};
 let urls = {};
 
-const selected = {
-    studentsubject_dict: null,
-    student_pk: null,
-    subject_pk: null
-};
-
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
@@ -26,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let mod_dict = {};
     let mod_MSTUD_dict = {};
+    let mod_MPUBORD_dict = {};
 
 // mod_MSTUDSUBJ_dict stores available studsubj for selected candidate in MSTUDSUBJ
     let mod_MSTUDSUBJ_dict = {
@@ -58,12 +53,12 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_orderlist_download = get_attr_from_el(el_data, "data-orderlist_download_url");
     urls.orderlist_per_school_download_url = get_attr_from_el(el_data, "data-orderlist_per_school_download_url");
     urls.url_orderlist_parameters = get_attr_from_el(el_data, "data-url_orderlist_parameters");
+    urls.url_orderlist_request_verifcode = get_attr_from_el(el_data, "data-url_orderlist_request_verifcode");
+    urls.url_orderlist_publish = get_attr_from_el(el_data, "data-url_orderlist_publish");
 
-    columns_tobe_hidden.btn_orderlist01 = {
+    columns_tobe_hidden.btn_orderlist = {
         fields: [ "school_abbrev", "total_students", "total", "publ_count", "datepublished"],
-        captions: ["School_name", "Number_of_entered_subjects", "Number_of_submitted_subjects", "Date_submitted"]}
-    columns_tobe_hidden.btn_orderlist02 =columns_tobe_hidden.btn_orderlist01;
-    columns_tobe_hidden.btn_orderlist03 =columns_tobe_hidden.btn_orderlist01;
+        captions: ["School_name", "Number_of_entered_subjects", "Number_of_submitted_subjects", "Date_submitted"]};
 
 // --- get field_settings
     const field_settings = {
@@ -142,6 +137,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 function() {t_MSSSS_Open(loc, "student", student_map, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if(el_SBR_select_showall){el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false)};
+
+// ---  MOD PUBLISH ORDERLIST ------------------------------------
+        const el_MPUBORD_info_container = document.getElementById("id_MPUBORD_info_container");
+        const el_MPUBORD_loader = document.getElementById("id_MPUBORD_loader");
+        const el_MPUBORD_input_verifcode = document.getElementById("id_MPUBORD_input_verifcode");
+        if (el_MPUBORD_input_verifcode){
+            el_MPUBORD_input_verifcode.addEventListener("keyup", function() {MPUBORD_InputVerifcode(el_MPUBORD_input_verifcode, event.key)}, false);
+            el_MPUBORD_input_verifcode.addEventListener("change", function() {MPUBORD_InputVerifcode(el_MPUBORD_input_verifcode)}, false);
+        };
+        const el_MPUBORD_btn_save = document.getElementById("id_MPUBORD_btn_save");
+        if (el_MPUBORD_btn_save){
+            el_MPUBORD_btn_save.addEventListener("click", function() {MPUBORD_Save("save")}, false )
+        };
+        const el_MPUBORD_btn_cancel = document.getElementById("id_MPUBORD_btn_cancel");
 
 // ---  MOD SELECT COLUMNS  ------------------------------------
         let el_MCOL_tblBody_available = document.getElementById("id_MCOL_tblBody_available");
@@ -277,14 +286,20 @@ document.addEventListener('DOMContentLoaded', function() {
     function CreateSubmenu() {
         //console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
+        if(el_submenu){
             AddSubmenuButton(el_submenu, loc.Preliminary_orderlist, function() {ModConfirmOpen("prelim_orderlist")});
             AddSubmenuButton(el_submenu, loc.Preliminary_orderlist + loc.per_school, function() {ModConfirmOpen("orderlist_per_school")});
 
+            if (permit_dict.permit_submit_orderlist){
+                AddSubmenuButton(el_submenu, loc.Publish_orderlist, function() {MPUBORD_Open()});
+            };
             if (permit_dict.permit_crud){
                 AddSubmenuButton(el_submenu, loc.Variables_for_extra_exams, function() {MOLEX_Open()});
             };
             AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_orderlist")}, [], "id_submenu_columns")
-        el_submenu.classList.remove(cls_hide);
+
+            el_submenu.classList.remove(cls_hide);
+        };
 
     };//function CreateSubmenu
 
@@ -293,16 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function HandleBtnSelect(data_btn, skip_upload) {
         //console.log( "===== HandleBtnSelect ========= ", data_btn);
         selected_btn = data_btn
-        if(!selected_btn){selected_btn = "btn_orderlist01"}
-
-// ---  upload new selected_btn, not after loading page (then skip_upload = true)
-        if(!skip_upload){
-            const sel_examperiod = (selected_btn === "btn_orderlist03") ? 3 :
-                               (selected_btn === "btn_orderlist02") ? 2 : 1;
-// ---  upload new setting
-            const upload_dict = {page_orderlist: {sel_btn: selected_btn}, selected_pk: {sel_examperiod: sel_examperiod}};
-            UploadSettings (upload_dict, urls.url_settings_upload);
-        };
+        if(!selected_btn){selected_btn = "btn_orderlist"}
 
 // ---  highlight selected button
         highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
@@ -326,18 +332,6 @@ document.addEventListener('DOMContentLoaded', function() {
         DeselectHighlightedRows(tr_clicked, cls_selected);
         tr_clicked.classList.add(cls_selected)
 
-// ---  update selected student_pk
-        selected.studentsubject_dict = null;
-        selected.student_pk = null;
-        selected.subject_pk = null
-
-        if(selected_btn === "btn_studsubj"){
-            selected.studentsubject_dict = b_get_mapdict_from_datarows(studentsubject_rows, tr_clicked.id, setting_dict.user_lang);
-            if(selected.studentsubject_dict){
-                selected.student_pk = selected.studentsubject_dict.stud_id;
-                selected.subject_pk = selected.studentsubject_dict.subj_id;
-            };
-        }
     }  // HandleTableRowClicked
 
 //========= UpdateHeaderText  ================== PR2020-07-31
@@ -612,6 +606,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         RefreshDataRows(tblName, response.updated_studsubj_rows, studentsubject_rows, true)  // true = update
                     }
 
+                    if ("publish_orderlist_msg_html" in response) {
+                        MPUBORD_UpdateFromResponse(response);
+                    };
+
                 },  // success: function (response) {
                 error: function (xhr, msg) {
                     // ---  hide loader
@@ -761,22 +759,205 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }  // ModConfirmResponse
 
+
+//========= MODAL PUBLISH ORDERLIST ================ PR2021-09-08
+    function MPUBORD_Open (open_mode ) {
+        console.log("===  MPUBORD_Open  =====") ;
+        console.log("setting_dict", setting_dict) ;
+        mod_MPUBORD_dict = {}
+
+        if (permit_dict.permit_submit_orderlist) {
+
+            mod_MPUBORD_dict = {step: -1} // increases value 1 in MPUBORD_Save
+
+// ---  reset and hide el_MPUBORD_input_verifcode
+            add_or_remove_class(el_MPUBORD_input_verifcode.parentNode, cls_hide, true);
+            el_MPUBORD_input_verifcode.value = null;
+
+// ---   hide loader
+            // PR2021-01-21 debug 'display_hide' not working when class 'image_container' is in same div
+            add_or_remove_class(el_MPUBORD_loader, cls_hide, true);
+
+            MPUBORD_Save ("save", true);  // true = is_test
+            // this one is also in MPUBORD_Save:
+            // MPUBORD_SetInfoboxesAndBtns();
+
+            $("#id_mod_publish_orderlist").modal({backdrop: true});
+        }
+    }  // MPUBORD_Open
+
+//=========  MPUBORD_Save  ================ PR2021-09-08
+    function MPUBORD_Save () {
+        //console.log("===  MPUBORD_Save  =====") ;
+
+        if (permit_dict.permit_submit_orderlist) {
+            mod_MPUBORD_dict.step += 1;
+            const upload_dict = { table: "orderlist", now_arr: get_now_arr()};
+            if (mod_MPUBORD_dict.step === 1){
+                UploadChanges(upload_dict, urls.url_orderlist_request_verifcode);
+            } else if (mod_MPUBORD_dict.step === 3){
+                upload_dict.mode = "submit_submit";
+                upload_dict.verificationcode = el_MPUBORD_input_verifcode.value
+                upload_dict.verificationkey = mod_MPUBORD_dict.verificationkey;
+                UploadChanges(upload_dict, urls.url_orderlist_publish);
+            }
+            MPUBORD_SetInfoboxesAndBtns() ;
+        } ;
+    };  // MPUBORD_Save
+
+
+//========= MPUBORD_UpdateFromResponse ================ PR2021-09-08
+    function MPUBORD_UpdateFromResponse(response) {
+        console.log( " ==== MPUBORD_UpdateFromResponse ====");
+        console.log( "response", response);
+        //console.log("mod_MPUBORD_dict", mod_MPUBORD_dict);
+        mod_MPUBORD_dict.step += 1;
+
+        mod_MPUBORD_dict.error = !!response.error;
+        mod_MPUBORD_dict.verificationkey = response.verificationkey;
+        mod_MPUBORD_dict.verification_is_ok = !!response.verification_is_ok;
+
+        if ("log_list" in response){
+            mod_MPUBORD_dict.log_list = response.log_list;
+        };
+
+       // mod_MPUBORD_dict.submit_is_ok = (!!count_dict.saved)
+        //mod_MPUBORD_dict.has_already_published = (!!msg_dict.already_published)
+        //mod_MPUBORD_dict.has_saved = !!msg_dict.saved;
+
+        MPUBORD_SetInfoboxesAndBtns (response);
+
+        //if ("updated_studsubj_approve_rows" in response){
+        //    RefreshDataRows("studsubj", response.updated_studsubj_approve_rows, studsubj_rows, true);
+        //}
+        if ( (mod_MPUBORD_dict.is_approve && mod_MPUBORD_dict.step === 3) || (mod_MPUBORD_dict.is_submit && mod_MPUBORD_dict.step === 5)){
+                const datalist_request = { setting: {page: "page_studsubj"},
+                                studentsubject_rows: {cur_dep_only: true},
+                                published_rows: {get: true}
+                                }
+                DatalistDownload(datalist_request);
+        };
+    };  // MPUBORD_UpdateFromResponse
+
+//=========  MPUBORD_SetInfoboxesAndBtns  ================ PR2021-09-08
+     function MPUBORD_SetInfoboxesAndBtns(response) {
+        console.log("===  MPUBORD_SetInfoboxesAndBtns  =====") ;
+        const step = mod_MPUBORD_dict.step;
+        const is_response = (!!response);
+        const has_error = (is_response && response.error);
+
+        console.log("step", step) ;
+        console.log("response", response) ;
+
+// ---  info_container, loader, info_verifcode and input_verifcode
+        let msg_html = null, msg_info_txt = null, show_loader = false;
+        let show_info_request_verifcode = false, show_input_verifcode = false;
+        let disable_save_btn = false, save_btn_txt = null;
+
+        if (response && response.publish_orderlist_msg_html) {
+            msg_html = response.publish_orderlist_msg_html;
+        };
+        console.log("msg_html", msg_html);
+
+        if (step === 0) {
+            // step 0: when form opens
+            msg_info_txt = [loc.MPUBORD_info.request_verifcode_01,
+                loc.MPUBORD_info.request_verifcode_02,
+                loc.MPUBORD_info.request_verifcode_03,
+                " ",
+                loc.MPUBORD_info.request_verifcode_04,
+                loc.MPUBORD_info.request_verifcode_05,
+                loc.MPUBORD_info.request_verifcode_06
+            ].join("<br>");
+            save_btn_txt = loc.Apply_verificationcode;
+        } else if (step === 1) {
+            // when clicked on 'Apply_verificationcode'
+            // tekst: 'AWP is sending an email with the verification code'
+            // show textbox with 'You need a 6 digit verification code to submit the Ex form'
+            msg_info_txt = loc.MPUBORD_info.requesting_verifcode + "...";
+            disable_save_btn = true;
+            save_btn_txt = loc.Apply_verificationcode;
+        } else if (step === 2) {
+            // when response 'email sent' is received
+            // msg_html is in response
+            show_info_request_verifcode = mod_MPUBORD_dict.test_is_ok;
+            show_input_verifcode = !has_error;
+            disable_save_btn = !el_MPUBORD_input_verifcode.value;
+            if (!has_error){save_btn_txt = loc.MPUBORD_info.Publish_orderlist};
+        } else if (step === 3) {
+            // when clicked on 'Publish orderlist'
+            msg_info_txt = loc.MPUBORD_info.Publishing_orderlist + "...";
+            show_loader = true;
+        } else if (step === 4) {
+            // when response 'orderlist submitted' is received
+            // msg_html is in response
+
+            show_loader = false;
+            show_input_verifcode = false;
+
+        }
+
+        console.log("save_btn_txt", save_btn_txt) ;
+        console.log("msg_info_txt", msg_info_txt) ;
+        if (msg_info_txt){
+            msg_html = "<div class='p-2 border_bg_transparent'><p class='pb-2'>" +  msg_info_txt + "</p></div>";
+        }
+        //console.log("msg_html", msg_html) ;
+        el_MPUBORD_info_container.innerHTML = msg_html;
+        add_or_remove_class(el_MPUBORD_info_container, cls_hide, !msg_html)
+
+        add_or_remove_class(el_MPUBORD_loader, cls_hide, !show_loader)
+
+        add_or_remove_class(el_MPUBORD_input_verifcode.parentNode, cls_hide, !show_input_verifcode);
+        if (show_input_verifcode){set_focus_on_el_with_timeout(el_MPUBORD_input_verifcode, 150); };
+
+// - hide save button when there is no save_btn_txt
+        add_or_remove_class(el_MPUBORD_btn_save, cls_hide, !save_btn_txt)
+// ---  disable save button till test is finished or input_verifcode has value
+        el_MPUBORD_btn_save.disabled = disable_save_btn;;
+// ---  set innerText of save_btn
+        el_MPUBORD_btn_save.innerText = save_btn_txt;
+
+// ---  set innerText of cancel_btn
+        el_MPUBORD_btn_cancel.innerText = (step === 0 || !!save_btn_txt) ? loc.Cancel : loc.Close;
+
+// ---  add eventlistener to href element
+        if (step === 4) {
+            const el_MPUBORD_OpenLogfile = document.getElementById("id_MPUBORD_OpenLogfile");
+            if(el_MPUBORD_OpenLogfile){
+                el_MPUBORD_OpenLogfile.addEventListener("click", function() {MPUBORD_OpenLogfile()}, false);
+            };
+        };
+
+// ---  set innerText of cancel_btn
+     } //  MPUBORD_SetInfoboxesAndBtns
+
+//=========  MPUBORD_InputVerifcode  ================ PR2021-09-08
+     function MPUBORD_InputVerifcode(el_input, event_key) {
+        //console.log("===  MPUBORD_InputVerifcode  =====") ;
+// enable save btn when el_input has value
+        el_MPUBORD_btn_save.disabled = !el_input.value;
+        if(!el_MPUBORD_btn_save.disabled && event_key && event_key === "Enter"){
+            MPUBORD_Save("save")
+        }
+     };  // MPUBORD_InputVerifcode
+/////////////////////////////////////////////
+
 // +++++++++++++++++ MODAL ORDERLIST EXTRA EXAMS +++++++++++++++++++++++++++++++++++++++++++
 //=========  MOLEX_Open  ================ PR2021-08-31
     function MOLEX_Open() {
-        console.log(" -----  MOLEX_Open   ----")
+        //console.log(" -----  MOLEX_Open   ----")
 
         if(permit_dict.permit_crud && setting_dict.sel_examyear_pk){
             const map_dict = get_mapdict_from_datamap_by_tblName_pk(examyear_map, "examyear", setting_dict.sel_examyear_pk)
-        console.log("examyear_map", examyear_map)
+
             mod_dict = deepcopy_dictNEW(map_dict);
-        console.log("mod_dict", mod_dict)
+
             const el_MOLEX_form_controls = document.getElementById("id_MOLEX_form_controls")
             if(el_MOLEX_form_controls){
                 const form_elements = el_MOLEX_form_controls.querySelectorAll(".awp_input_number")
                 for (let i = 0, el; el = form_elements[i]; i++) {
                     const field = get_attr_from_el(el, "data-field");
-        console.log("field", field, " mod_dict[field]",  mod_dict[field])
                     el.value = mod_dict[field];
                 };
             };
@@ -1093,9 +1274,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20
        //console.log( "===== ResetFilterRows  ========= ");
 
-        selected.studentsubject_dict = null;
-        selected.student_pk = null;
-        selected.subject_pk = null;
         selected_school_depbases = [];
         filter_dict = {};
         filter_mod_employee = false;
@@ -1126,7 +1304,25 @@ document.addEventListener('DOMContentLoaded', function() {
             }
        };
         FillTblRows();
-    }  // function ResetFilterRows
+    };  // function ResetFilterRows
+
+///////////////////////////////////////////////////////////////////
+
+//=========   MPUBORD_OpenLogfile   ====================== PR2021-07-17
+    function MPUBORD_OpenLogfile() {
+        console.log(" ========== MPUBORD_OpenLogfile ===========");
+
+        if (!!mod_MPUBORD_dict.log_list && mod_MPUBORD_dict.log_list) {
+            const today = new Date();
+            const this_month_index = 1 + today.getMonth();
+            const date_str = today.getFullYear() + "-" + this_month_index + "-" + today.getDate();
+            let filename = "Log bestellijst dd " + date_str + ".pdf";
+        //console.log("filename", filename);
+            printPDFlogfile(mod_MPUBORD_dict.log_list, filename )
+        };
+    }; //MPUBORD_OpenLogfile
+
+//////////////////////////////////////////////////////////////////////
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // +++++++++++++++++ MODAL SELECT EXAMYEAR OR DEPARTMENT  ++++++++++++++++++++

@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
 // columns_hidden and columns_tobe_hidden are also used in t_MCOL_Open and t_MCOL_Save
-    columns_tobe_hidden.student = {
+    columns_tobe_hidden.btn_student = {
         fields: ["idnumber", "prefix", "gender", "lvlbase_id", "sctbase_id", "classname", "examnumber", "regnumber", "bis_exam"],
         captions: ["ID_number", "Prefix", "Gender", "Leerweg", "Sector", "Class", "Examnumber", "Regnumber", "Bis_candidate"]};
 
@@ -321,9 +321,9 @@ document.addEventListener('DOMContentLoaded', function() {
 //  #############################################################################################################
 
 //========= DatalistDownload  ===================== PR2020-07-31
-    function DatalistDownload(datalist_request, called_by) {
-        //console.log( "=== DatalistDownload ", called_by)
-        //console.log("request: ", datalist_request)
+    function DatalistDownload(datalist_request) {
+        console.log( "=== DatalistDownload ")
+        console.log("request: ", datalist_request)
 
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
@@ -368,12 +368,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         for (const key of Object.keys(columns_hidden)) {
                             b_clear_array(columns_hidden[key]);
                         };
-                       // fill the arrays in  columns_hidden
-
+                    // fill the arrays in  columns_hidden
                         for (const [key, value] of Object.entries(setting_dict.cols_hidden)) {
                             columns_hidden[key] = value;
-                        }
-                    }
+                        };
+                    };
                     must_update_headerbar = true;
                 };
 
@@ -392,11 +391,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(isloaded_settings || isloaded_permits){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school)};
 
                 if ("messages" in response) {
-                    console.log(response)
                     b_ShowModMessages(response.messages);
                 }
-
-
 
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows)};
                 if ("school_rows" in response)  {
@@ -460,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_student: {sel_btn: selected_btn}};
-            UploadSettings (upload_dict, urls.url_settings_upload);
+            b_UploadSettings (upload_dict, urls.url_settings_upload);
         };
 
 // ---  highlight selected button
@@ -548,7 +544,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             };
         };
-
+// --- filter tblRows
         Filter_TableRows();
     }  // FillTblRows
 
@@ -1041,7 +1037,7 @@ function RefreshDataRowsAfterUpload(response) {
                     db_code: setting_dict.sel_depbase_code}
             } else {
                 const tblRow = get_tablerow_selected(el_input);
-                const map_dict = b_get_mapdict_from_datarows(student_rows, tblRow.id, setting_dict.user_lang);
+                const map_dict = get_recursive_integer_lookup(tblRow);
                 mod_MSTUD_dict = deepcopy_dict(map_dict);
             }
 
@@ -1069,6 +1065,9 @@ function RefreshDataRowsAfterUpload(response) {
             const el_MSTUD_sector_div = document.getElementById("id_MSTUD_sector_div")
             add_or_remove_class(el_MSTUD_sector_div, cls_hide, !sct_req)
             add_or_remove_class(el_MSTUD_sector_div, "flex_2", !lvl_req, "flex_1")
+
+// show fields iseveningstudent or islexstudent only when school is both dayschool and eveningschool
+            // NOT IN USE yet
 
     // ---  remove value from el_mod_employee_input, set focus to selected field
             MSTUD_SetElements(focus_fldName);
@@ -1169,10 +1168,9 @@ function RefreshDataRowsAfterUpload(response) {
             UploadChanges(upload_dict, urls.url_student_upload);
         };
 
-    // ---  show modal
+    // ---  hide modal
             $("#id_mod_student").modal("hide");
     }  // MSTUD_Save
-
 
 //========= MSTUD_get_selected_depbases  ============= PR2020-10-07
     function MSTUD_get_selected_depbases(){
@@ -1225,7 +1223,7 @@ function RefreshDataRowsAfterUpload(response) {
         for (let i = 0, el_input; el_input = form_elements[i]; i++) {
             const fldName = get_attr_from_el(el_input, "data-field");
             const msg_err = MSTUD_validate_field(el_input, fldName);
-// ---  show / hide error message
+// ---  show / hide error message NOT IN USE
             const el_msg = document.getElementById("id_MSTUD_msg_" + fldName);
             if(el_msg){
                 el_msg.innerText = msg_err;
@@ -1706,19 +1704,21 @@ function RefreshDataRowsAfterUpload(response) {
         const field_setting = field_settings[tblName_settings];
         const filter_tags = field_setting.filter_tags;
         let item_count = 0
+
 // ---  loop through tblBody.rows
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
             show_row = t_ShowTableRowExtended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row);
             if (show_row) {item_count += 1};
         }
+
 // ---  show total in sidebar
         if (el_SBR_item_count){
             let inner_text = null;
             if (item_count){
                 const format_count = f_format_count(setting_dict.user_lang, item_count);
-                const cand_txt = ((item_count === 1) ? loc.Candidate : loc.Candidates).toLowerCase();
-                inner_text = [loc.Total, format_count, cand_txt].join(" ");
+                const unit_txt = ((item_count === 1) ? loc.Candidate : loc.Candidates).toLowerCase();
+                inner_text = [loc.Total, format_count, unit_txt].join(" ");
             }
             el_SBR_item_count.innerText = inner_text;
         }
@@ -1766,7 +1766,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10
     function MSED_Response(new_setting) {
-        //console.log( "===== MSED_Response ========= ");
+        console.log( "===== MSED_Response ========= ");
 
 // ---  upload new selected_pk
 // also retrieve the tables that have been changed because of the change in examyear / dep
@@ -1904,6 +1904,21 @@ function RefreshDataRowsAfterUpload(response) {
         return [count, count_same_subjecttype, new_schemeitem_pk ]
     }
 
+//========= get_recursive_integer_lookup  ========  PR2021-09-08
+    function get_recursive_integer_lookup(tblRow) {
+        // PR2021-09-08 debug: don't use b_get_mapdict_from_datarows with field 'mapid'.
+        // It doesn't lookup mapid correctly: school_rows is sorted by id, therefore school_100 comes after school_99
+        // instead b_recursive_integer_lookup with field 'id'.
+
+// ---  lookup data_dict in data_rows, search by id
+        const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+        const data_rows = (selected_btn === "btn_student") ? student_rows : null;
+        const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
+
+        return found_dict;
+    };  // get_recursive_integer_lookup
+
+
 //========= get_schemeitem_with_same_subjtype  ======== // PR2021-03-13
     function get_schemeitem_with_same_subjtype(scheme_pk, subject_pk) {
         //console.log( " =====  get_schemeitem_with_same_subjtype  ===== ");
@@ -1958,7 +1973,7 @@ function RefreshDataRowsAfterUpload(response) {
 
         //example of mapped field
         //const mapped_field = (field_name === "subj_status") ? "subj_error" :
-        //                     (field_name === "has_pok") ? "pok_status" : field_name;
+        //                     (field_name === "pok_validthru") ? "pok_status" : field_name;
         const mapped_field = field_name;
 
 // --- set cols_hidden

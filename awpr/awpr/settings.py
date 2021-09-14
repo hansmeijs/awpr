@@ -78,12 +78,14 @@ TEMPLATES = [
         'DIRS': [
             os.path.join(BASE_DIR, 'templates'),
             os.path.join(BASE_DIR, 'templates/accounts'),
-            os.path.join(BASE_DIR, 'templates/upload'),
+            os.path.join(BASE_DIR, 'templates/emails'),
+            os.path.join(BASE_DIR, 'templates/includes'),
             os.path.join(BASE_DIR, 'templates/reports'),
             os.path.join(BASE_DIR, 'templates/schools'),
             os.path.join(BASE_DIR, 'templates/students'),
             os.path.join(BASE_DIR, 'templates/subjects'),
             os.path.join(BASE_DIR, 'accounts/templates'),
+            # os.path.join(BASE_DIR, 'templates/upload'),
         ],
         'APP_DIRS': True,
         'OPTIONS': {

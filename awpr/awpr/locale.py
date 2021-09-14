@@ -62,8 +62,11 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['School_notfound_thisexamyear'] = _('School not found in this exam year')
     dict['Department_notfound_thisexamyear'] = _('Department not found in this exam year')
 
-    dict['This_school_is_locked'] = _('This school is locked.')
-    dict['This_school_is_activated'] = _('This school is activated.')
+    dict['This_examyear'] = _('This exam year')
+    dict['This_school'] = _('This school')
+    dict['is_locked'] = _(' is locked.')
+    dict['is_activated'] = _(' is activated.')
+    dict['You_cannot_make_changes'] = _('You cannot make changes.')
 
     dict['Hide_columns'] = _('Hide columns')
 
@@ -120,10 +123,13 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['on'] = _('on ')
     dict['by'] = _(' by ')
 
+    dict['School_exam'] = _('School exam')
+    dict['Central_exam'] = _('Central exam')
     dict['Exemption'] = _('Exemption')
     dict['Exemptions'] = _('Exemptions')
     dict['Re_examination'] = _('Re-examination')
     dict['Re_examinations'] = _('Re-examinations')
+    dict['Re_examination_3rd_period'] = _('Re-exam third period')
     dict['Re_exam_3rd_2lns'] = _('Re-exam\n3rd period')
     dict['Proof_of_knowledge_2lns'] = _('Proof of\nknowledge')
 
@@ -195,7 +201,6 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Link_sectors'] = _('Link sectors')
         dict['Link_profielen'] = _('Link profielen')
-
 
 # ====== PAGE USER ========================= PR2019-11-19
     if 'page_user' in page_list:
@@ -281,6 +286,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Send_activation_email'] = _('Send activation email')
 
         dict['Yes_send_email'] = _('Yes, send email')
+
+
 
 # ====== PAGE EXAM YEAR ========================= PR2020-10-04
     if 'page_examyear' in page_list:
@@ -369,6 +376,25 @@ def get_locale_dict(table_dict, user_lang, request):
             str(_("You don't have permission to edit this exam year.")),
         ],
         }
+
+# ====== PAGE MAILBOX ========================= PR2021-09-12
+    if 'page_mailbox' in page_list:
+
+        dict['Sender'] = _('Sender')
+        dict['Organization'] = _('Organization')
+        dict['From'] = _('From')
+        dict['Subject'] = pgettext_lazy('onderwerp', ' Subject')
+
+        dict['Sent_to'] = _('Sent to')
+        dict['Date_sent'] = _('Date sent')
+        dict['Attn'] = _('Attn.')
+        dict['Attachment'] = _('Attachment')
+        dict['Status'] = _('Status')
+        dict['Create_message'] = _('Create message')
+
+        dict['Message'] = _('Message')
+        dict['Messages'] = _('Messages')
+
 
 # ====== PAGE SUBJECTS ========================= PR2020-09-30
     if 'page_subject' in page_list:
@@ -725,8 +751,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
 
-        dict['Re_examination'] = _('Re-examination')
-        dict['Re_examination_3rd_period'] = _('Re-exam third period')
 
         dict['Submit_Ex2A_form'] = _('Submit Ex2A form')
         dict['Approve_grades'] = _('Approve grades')
@@ -768,8 +792,11 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['CE_grade_twolines'] = _('CE-\ngrade')
         dict['PECE_grade_twolines'] = _('PE-CE\ngrade')
         dict['SECE_weighing'] = _('SE-CE\nweighing')
-
         dict['Final_grade_twolines'] = _('Final\ngrade')
+
+        dict['Exem_SESR_twolines'] = '\n'.join((str('Exemption'), str(_('SE-grade'))))
+        dict['Exem_PECE_twolines'] = '\n'.join((str('Exemption'), str(_('CE-grade'))))
+        dict['Exem_FINAL_twolines'] = '\n'.join((str('Exemption'), str(_('Final grade'))))
 
         dict['No_subject_selected'] = _('No subject selected.')
 
@@ -862,16 +889,29 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Downlaod_preliminary_orderlist'] = _('Download preliminary orderlist')
         dict['per_school'] = _(' per school')
 
+        dict['Publish_orderlist'] = _('Publish orderlist')
+
         dict['Variables_for_extra_exams'] = _('Variables for extra exams')
 
         dict['Totals_only'] = _('Show totals per school only')
         dict['Extra_separate'] = _('Show extra per school separate')
         dict['Without_extra'] = _("Don't calculate extra exams")
         dict['File_per_school'] = _('Create Excelfile per school')
-
-        dict['Final_orderlist'] = _('Final orderlist')
-
         dict['Language'] = _('Language')
+
+        dict['MPUBORD_info'] = {
+            'request_verifcode_01': _("When you publish the orderlist, AWP will create an Excel file with the total exams, plus an Excel file for each school."),
+            'request_verifcode_02': _("AWP will send an email to each 'voorzitter' and 'secretaris' with the orderlist of their school attached."),
+            'request_verifcode_03': _("The orderlists will also be saved on the sever and can be found at the tab 'Published files'"),
+            'request_verifcode_04': _("You need a 6 digit verification code to publish the orderlist."),
+            'request_verifcode_05': _("Click 'Request verification code' and we will send you an email with the verification code."),
+            'request_verifcode_06': _("The verification code expires in 30 minutes."),
+            'requesting_verifcode': _('AWP is sending an email with the verification code'),
+            'Publish_orderlist': _("Publish orderlist"),
+            'Publishing_orderlist': _("AWP is publishing the orderlist"),
+            'publish_ok': _("The orderlist is published succesfully."),
+        }
+
 
     return dict
 

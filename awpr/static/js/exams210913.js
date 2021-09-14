@@ -325,11 +325,9 @@ document.addEventListener
                     b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                     FillOptionsExamperiodExamtype();
                 };
-
-                // call b_render_awp_messages also when there are no messages, to remove existing messages
-                const awp_messages = (response.awp_messages) ? response.awp_messages : {};
-                b_render_awp_messages(response.awp_messages);
-
+                if ("messages" in response) {
+                    b_ShowModMessages(response.messages);
+                }
                 if ("examyear_rows" in response) {
                     b_fill_datamap(examyear_map, response.examyear_rows)
                 };
@@ -490,7 +488,7 @@ document.addEventListener
 
 // ---  upload new setting
         //const upload_dict = {selected_pk: {sel_examperiod: setting_dict.sel_examperiod}};
-        //UploadSettings (upload_dict, url_settings_upload);
+        //b_UploadSettings (upload_dict, url_settings_upload);
 
 // ---  upload new setting
         let new_setting = {page_exams: {mode: "get"},
@@ -516,7 +514,7 @@ document.addEventListener
 
 // ---  upload new setting
         const upload_dict = {selected_pk: {sel_examtype: setting_dict.sel_examtype}};
-        UploadSettings (upload_dict, url_settings_upload);
+        b_UploadSettings (upload_dict, url_settings_upload);
 
         FillTblRows();
     }  // HandleSbrExamtype
@@ -531,7 +529,7 @@ document.addEventListener
 
 // ---  upload new setting
         const upload_dict = {selected_pk: {sel_lvlbase_pk: setting_dict.sel_lvlbase_pk}};
-        UploadSettings (upload_dict, url_settings_upload);
+        b_UploadSettings (upload_dict, url_settings_upload);
 
         UpdateHeaderLeft();
 
@@ -560,7 +558,7 @@ document.addEventListener
                 setting_dict.sel_examtype = first_option;
     // ---  upload new setting
                 const upload_dict = {selected_pk: {sel_examtype: setting_dict.sel_examtype}};
-                UploadSettings (upload_dict, url_settings_upload);
+                b_UploadSettings (upload_dict, url_settings_upload);
             }
         }
 
@@ -654,7 +652,7 @@ document.addEventListener
         //const page_grade_dict = {sel_btn: "grade_by_all"}
        //const upload_dict = {selected_pk: selected_pk_dict, page_grade: page_grade_dict};
         const upload_dict = {selected_pk: selected_pk_dict};
-        UploadSettings (upload_dict, url_settings_upload);
+        b_UploadSettings (upload_dict, url_settings_upload);
 
         HandleBtnSelect("grade_by_all", true) // true = skip_upload
         // also calls: FillTblRows(), MSSSS_display_in_sbr(), UpdateHeader()
@@ -1087,7 +1085,9 @@ document.addEventListener
                                 const new_status_bool_at_index = !status_bool_at_index;
 
             // give message when status_bool = true and grade already approved bu this user in different function
-                                let double_approved = false
+
+                                // TODO remove requsr_pk from client
+                                let double_approved = false;
                                 if(new_status_bool_at_index){
                                     if (status_index === 1){
                                         double_approved = (map_dict.se_auth2by_id === setting_dict.requsr_pk || map_dict.se_auth3by_id === setting_dict.requsr_pk);
@@ -3228,7 +3228,7 @@ document.addEventListener
         if (tblName === "school") {
             // not enabled on this page
         } else {
-            UploadSettings ({selected_pk: selected_pk_dict}, url_settings_upload);
+            b_UploadSettings ({selected_pk: selected_pk_dict}, url_settings_upload);
             if (new_selected_btn) {
         // change selected_button
                 HandleBtnSelect(new_selected_btn, true)  // true = skip_upload
@@ -3262,7 +3262,7 @@ document.addEventListener
             }
 
         }
-        UploadSettings ({selected_pk: selected_pk_dict}, url_settings_upload);
+        b_UploadSettings ({selected_pk: selected_pk_dict}, url_settings_upload);
 
         if (new_selected_btn) {
     // change selected_button
