@@ -10,17 +10,16 @@
 // ++++++++++++  MODAL SELECT EXAMYEAR OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
 
 //=========  t_MSED_Open  ================ PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10
-    function t_MSED_Open(loc, tblName, data_map, setting_dict, permit_dict, MSED_Response) {
-        //console.log( "===== t_MSED_Open ========= ", tblName);
-        //console.log( "setting_dict", setting_dict);
-        //console.log( "permit_dict", permit_dict);
-
+    function t_MSED_Open(loc, tblName, data_map, setting_dict, permit_dict, MSED_Response, all_countries) {
+        console.log( "===== t_MSED_Open ========= ", tblName);
+        console.log( "setting_dict", setting_dict);
+        console.log( "permit_dict", permit_dict);
+        // PR2021-09-24 all_countries is added for copy subjects to other examyear/ country
         if (!isEmpty(loc)) {
             let may_open_modal = false, selected_pk = null;
             if (tblName === "examyear") {
                 may_open_modal = permit_dict.may_select_examyear;
                 selected_pk = setting_dict.sel_examyear_pk;
-
             } else if (tblName === "department") {
                 const allowed_depbases_count = (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
                 may_open_modal = (allowed_depbases_count > 1);
@@ -30,47 +29,42 @@
             //console.log( "may_open_modal", may_open_modal);
             //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
             if (may_open_modal) {
-// ---  fill select table
-                t_MSED_FillSelectTable(loc, tblName, data_map, permit_dict, MSED_Response, selected_pk);
-// - reset input box
-                const el_MSED_input = document.getElementById("id_MSED_input");
-                el_MSED_input.value = null;
-// store tblName and selected page in el_MSED_input
-                el_MSED_input.setAttribute("data-table", tblName)
-                el_MSED_input.setAttribute("data-page", setting_dict.sel_page)
 
-// ---  set focus to input element
-                set_focus_on_el_with_timeout(el_MSED_input, 50);
+// set header text
+                const el_MSED_header_text = document.getElementById("id_MSED_header_text");
+                const header_text = (tblName === "examyear") ? loc.Copy_to_examyear :
+                                    (tblName === "department") ? loc.Select_department : null;
+                el_MSED_header_text.innerText = header_text;
+
+// ---  fill select table
+                t_MSED_FillSelectTable(loc, tblName, data_map, permit_dict, MSED_Response, selected_pk, all_countries);
+
 // ---  show modal
                 $("#id_mod_select_examyear_or_depbase").modal({backdrop: true});
             }
         }
     }  // t_MSED_Open
 
-    //=========  t_MSED_Save  ================ PR2021-05-10 PR20211-08-13
+    //=========  t_MSED_Save  ================ PR2021-05-10 PR2021-08-13 PR2021-09-24
     function t_MSED_Save(MSED_Response, tblRow) {
-        //console.log("===  t_MSED_Save =========");
+        console.log("===  t_MSED_Save =========");
     // --- put tblName, sel_pk and value in MSED_Response, MSED_Response handles uploading
 
-        const el_MSED_input = document.getElementById("id_MSED_input");
-        const tblName = get_attr_from_el(el_MSED_input, "data-table");
-        const sel_page = get_attr_from_el(el_MSED_input, "data-page");
+        const tblName = get_attr_from_el(tblRow, "data-table");
+        const selected_pk_int = get_attr_from_el_int(tblRow, "data-pk");
+        const all_countries = get_attr_from_el(tblRow, "data-all_countries", false);
 
-        // if tblRow exists: function is called by selected tblRow, otherwise by save button
-        let selected_pk_int = null;
-        if(tblRow){
-            selected_pk_int = get_attr_from_el_int(tblRow, "data-pk")
-        } else if(el_MSED_input){
-            selected_pk_int = get_attr_from_el_int(el_MSED_input, "data-pk");
-        }
 // ---  upload new selected_pk
-        const new_setting = {page: sel_page};
+        // new_setting = {page: sel_page}; sel_page will be added in MSED_Response PR2021-09-24
+        const new_setting = {};
         if (tblName === "examyear") {
-            new_setting.sel_examyear_pk = (selected_pk_int) ? selected_pk_int : null;
+            new_setting.copyto_examyear_pk = (selected_pk_int) ? selected_pk_int : null;
+            if(all_countries){new_setting.all_countries = true};
         } else if (tblName === "department") {
             new_setting.sel_depbase_pk = (selected_pk_int) ? selected_pk_int : null;
         }
-        //console.log("new_setting", new_setting);
+
+        console.log("new_setting", new_setting);
         MSED_Response(new_setting)
 
 // hide modal
@@ -78,39 +72,9 @@
 
     }  // t_MMSED_Save
 
-//=========  t_MSED_InputName  ================ PR2021-04-27 PR2021-05-10
-    function t_MSED_InputName(el_input) {
-        //console.log( "===== t_MSED_InputName  ========= ");
-
-        if(el_input){
-// ---  filter rows in table select_school
-            const filter_dict = t_MSED_Filter_SelectRows(el_input.value);
-            //console.log( "filter_dict", filter_dict);
-// ---  if filter results have only one item: make it selected_pk
-            const selected_pk = Number(filter_dict.selected_pk);
-            if (selected_pk) {
-                el_input.value = filter_dict.selected_value
-
-// --- store selected_pk in el_MSED_input
-                const el_MSED_input = document.getElementById("id_MSED_input");
-                el_MSED_input.setAttribute("data-pk", selected_pk)
-// ---  set focus to OK button
-                const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
-                //set_focus_on_el_with_timeout(el_MSED_btn_save, 50);
-                el_MSED_btn_save.focus()
-            };
-        }
-    }; // t_MSED_InputName
-
-
-//=========  t_MSED_FillSelectTable  ================ PR2020-08-21 PR2020-12-18 PR2021-05-10
-    function t_MSED_FillSelectTable(loc, tblName, data_map, permit_dict, MSED_Response, selected_pk) {
-        //console.log( "===== t_MSED_FillSelectTable ========= ");
-
-// set header text
-        const header_text = (tblName === "examyear") ? loc.Select_examyear :
-                            (tblName === "department") ? loc.Select_department : null;
-        document.getElementById("id_MSED_header_text").innerText = header_text;
+//=========  t_MSED_FillSelectTable  ================ PR2020-08-21 PR2020-12-18 PR2021-05-10 PR2021-09-24
+    function t_MSED_FillSelectTable(loc, tblName, data_map, permit_dict, MSED_Response, selected_pk, all_countries) {
+        console.log( "===== t_MSED_FillSelectTable ========= ");
 
         const tblBody_select = document.getElementById("id_MSED_tblBody_select");
         tblBody_select.innerText = null;
@@ -121,18 +85,26 @@
                 const pk_int = (tblName === "examyear") ? map_dict.examyear_id :
                                (tblName === "department") ? map_dict.base_id : null;
 
-                let code_value = "---";
+    // permit_dict.requsr_country_pk
+                let code_value = "---", country = "---";
                 const locked = (map_dict.locked) ? map_dict.locked : false;
                 const activated = (map_dict.activated) ? map_dict.activated : false;
 
                 if(tblName === "examyear") {
                     code_value = (map_dict.examyear_code) ? map_dict.examyear_code : "---";
+                    if (all_countries && map_dict.country) {country = map_dict.country};
                 } else if(tblName === "department") {
                     code_value = (map_dict.base_code) ? map_dict.base_code : "---"
                 }
 
                 let skip_row = false;
-                if(tblName === "department"){
+                if(tblName === "examyear") {
+                    if(all_countries){
+                        skip_row = (setting_dict.sel_examyear_pk === map_dict.examyear_id || map_dict.locked);
+                    } else {
+                        skip_row = (permit_dict.requsr_country_pk !== map_dict.country_id);
+                    };
+                } else if(tblName === "department"){
                     if (permit_dict.allowed_depbases){
                         skip_row = !permit_dict.allowed_depbases.includes(pk_int);
                     } else {
@@ -140,7 +112,7 @@
                     }
                 }
                 if(!skip_row){
-                    t_MSED_CreateSelectRow(loc, tblName, tblBody_select, pk_int, code_value, activated, locked, MSED_Response, selected_pk);
+                    t_MSED_CreateSelectRow(loc, tblName, tblBody_select, pk_int, code_value, country, all_countries, activated, locked, MSED_Response, selected_pk);
                 }
             };
         }  // if(!!data_map)
@@ -148,20 +120,23 @@
         if(!row_count){
             const caption_none = (tblName === "examyear") ? loc.No_examyears :
                                  (tblName === "department") ? loc.No_departments : null;
-            t_MSED_CreateSelectRow(loc, tblName, tblBody_select, null, caption_none, false, false, MSED_Response, selected_pk);
+            t_MSED_CreateSelectRow(loc, tblName, tblBody_select, null, caption_none, null, false, false, MSED_Response, selected_pk);
         }
     }  // t_MSED_FillSelectTable
 
-//=========  t_MSED_CreateSelectRow  ================ PR2020-10-27 PR2020-12-18 PR2021-05-10
-    function t_MSED_CreateSelectRow(loc, tblName, tblBody_select, pk_int, code_value, activated, locked, MSED_Response, selected_pk) {
+//=========  t_MSED_CreateSelectRow  ================ PR2020-10-27 PR2020-12-18 PR2021-05-10 PR2021-09-24
+    function t_MSED_CreateSelectRow(loc, tblName, tblBody_select, pk_int, code_value, country, all_countries, activated, locked, MSED_Response, selected_pk) {
         //console.log( "===== t_MSED_CreateSelectRow ========= ");
 
         const is_selected_pk = (selected_pk != null && pk_int === selected_pk)
 
 // ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
         let tblRow = tblBody_select.insertRow(-1);
+        tblRow.setAttribute("data-table", tblName)
         tblRow.setAttribute("data-pk", pk_int);
-        tblRow.setAttribute("data-value", code_value);  // used for filtering
+        if(all_countries){
+            tblRow.setAttribute("data-all_countries", true);
+        };
 
 // ---  add EventListener to tblRow
         if(pk_int){
@@ -171,18 +146,25 @@
 // ---  highlight clicked row
             if (is_selected_pk){ tblRow.classList.add(cls_selected)}
         }
-// ---  add first td to tblRow.
-        let td = tblRow.insertCell(-1);
+        const col_width = "tw_120"
+// ---  add country td to tblRow, only when may_select_all_countries
+        let td = null, el_div = null;
+        if(all_countries){
+            td = tblRow.insertCell(-1);
+            el_div = document.createElement("div");
+                el_div.innerText = country;
+                el_div.classList.add(col_width, "px-2")
+            td.appendChild(el_div);
+        }
 
-// --- add a element to td., necessary to get same structure as item_table, used for filtering
-        const col_width = (tblName === "examyear") ? "tw_120" :
-                          (tblName === "department") ? "tw_120" : null;
-        let el_div = document.createElement("div");
+// --- add a element with code_value to td
+        td = tblRow.insertCell(-1);
+        el_div = document.createElement("div");
             el_div.innerText = code_value;
             el_div.classList.add(col_width, "px-2")
         td.appendChild(el_div);
 
-// --- add second td to tblRow with icon locked, published or activated.
+// --- add td to tblRow with icon locked, published or activated.
         if  (tblName === "examyear") {
             td = tblRow.insertCell(-1);
             el_div = document.createElement("div");
@@ -192,53 +174,6 @@
             td.appendChild(el_div);
         }
     }  // t_MSED_CreateSelectRow
-
-
-//========= t_MSED_Filter_SelectRows  ======== PR2021-04-27
-    function t_MSED_Filter_SelectRows(filter_text) {
-        //console.log( "===== t_MSED_Filter_SelectRows  ========= ");
-        //console.log( "filter_text: <" + filter_text + ">");
-        const filter_text_lower = (filter_text) ? filter_text.toLowerCase() : "";
-        let has_selection = false, has_multiple = false;
-        let sel_value = null, sel_pk = null, sel_mapid = null;
-        let row_count = 0;
-        //console.log( "filter_text_lower: <" + filter_text_lower + ">");
-
-        let tblBody_select = document.getElementById("id_MSED_tblBody_select");
-        for (let i = 0, tblRow; tblRow = tblBody_select.rows[i]; i++) {
-            if (tblRow){
-                let hide_row = false
-// ---  show all rows if filter_text = ""
-                if (filter_text_lower){
-                    const data_value = get_attr_from_el(tblRow, "data-value")
-        //console.log( "data_value: <" + data_value + ">");
-// ---  show row if filter_text_lower is found in data_value, hide when data_value is blank
-                    hide_row = (data_value) ? hide_row = (!data_value.toLowerCase().includes(filter_text_lower)) : true;
-        //console.log( "hide_row: <" + hide_row + ">");
-                };
-                if (hide_row) {
-                    tblRow.classList.add(cls_hide)
-                } else {
-                    tblRow.classList.remove(cls_hide);
-                    row_count += 1;
-// ---  put values from first row that is shown in select_value etc
-                    if(!has_selection ) {
-                        sel_pk = get_attr_from_el(tblRow, "data-pk");
-                        sel_value = get_attr_from_el(tblRow, "data-value");
-                        sel_mapid = tblRow.id;
-                    } else {
-                        has_multiple = true;
-                    }
-                    has_selection = true;
-        }}};
-// ---  set select_value etc null when multiple items found
-        if (has_multiple){
-            sel_pk = null;
-            sel_value = null,
-            sel_mapid = null;
-        }
-        return {selected_pk: sel_pk, selected_value: sel_value, selected_mapid: sel_mapid};
-    }; // t_MSED_Filter_SelectRows
 
 // ++++++++++++  END OF MODAL SELECT SCHOOL OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
 
@@ -531,7 +466,7 @@ function t_MSSSS_AddAll_dict(tblName){
             let display_txt = null;
             // selected_pk = -1 when clicked on All
             if(selected_pk > 0){
-                const data_dict = b_get_mapdict_by_integer_from_datarows(data_rows, "id", selected_pk)
+                const data_dict = b_get_datadict_by_integer_from_datarows(data_rows, "id", selected_pk)
         //console.log( "data_dict", data_dict);
                 const name_field = (tblName === "student") ? "fullname" : "name";
                 const code_field = (tblName === "student") ? "name_first_init" : "code";

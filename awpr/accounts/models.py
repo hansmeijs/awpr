@@ -63,7 +63,7 @@ class User(AbstractUser):
             'and \'/./-/_ characters.'), 'invalid'),
         ],)
     email = EmailField( _('email address'),)
-    # PR2018-08-01 role choices cannot be set in Model, because allowed values depend on request_user. Use role_list in Form instead
+
     role = PositiveSmallIntegerField(default=0)
 
     usergroups = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)

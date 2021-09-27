@@ -844,7 +844,7 @@ def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, requ
     # scheme, subject, subjecttype, norm ,
     # gradetype, weight_se, weight_ce,
     # is_mandatory,  is_combi, extra_count_allowed,  extra_nocount_allowed,  elective_combi_allowed,  has_practexam,  has_pws,
-    # reex_se_allowed,  reex_combi_allowed, no_centralexam, no_reex, no_thirdperiod, no_exemption_ce,
+    # sr_allowed,  reex_combi_allowed, no_centralexam, no_reex, no_thirdperiod, no_exemption_ce,
 
     if ws_name == 'schemeitem' and row_data:
         try:
@@ -1353,6 +1353,29 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
         logger.debug('examyear_instance: ' + str(examyear_instance) + ' ' + str(type(examyear_instance)))
         logger.debug('school_instance: ' + str(school_instance) + ' ' + str(type(school_instance)))
 
+
+    """
+    fields of awpupload13_studsubj are:
+    student_id, 
+    schemeitem_id,
+    subject_id,
+    cluster_id, 
+    is_extra_nocount, 
+    is_extra_counts, 
+    is_elective_combi,
+    has_exemption, has_sr, has_reex, has_reex03, 
+    has_pok,  has_pex, 
+    tv01_pescore, 
+    tv01_cescore,
+    tv01_segrade, tv01_srgrade, tv01_sesrgrade, 
+    tv01_pegrade, tv01_cegrade, tv01_pecegrade, tv01_finalgrade, 
+    tv02_cescore, tv02_cegrade,tv02_pecegrade, tv02_finalgrade, 
+    tv03_cescore, tv03_cegrade, tv03_pecegrade, tv03_finalgrade, 
+    tvvrst_segrade, tvvrst_cegrade, tvvrst_finalgrade,
+    gradelist_segrade, gradelist_pecegrade, gradelist_finalgrade
+   
+    """
+
     if ws_name == 'studsubj' and row_data:
         studentsubject = None
         try:
@@ -1440,7 +1463,7 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                     grade_tv01 = stud_mod.Grade.objects.filter(
                         studentsubject=studentsubject,
                         examperiod=c.EXAMPERIOD_FIRST
-                    ).order_by('-pk').first()
+                    ).order_by('pk').first()
         # - create new grade_tv01 record
                     if grade_tv01 is None:
                         grade_tv01 = stud_mod.Grade(
@@ -1451,17 +1474,19 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                             logger.debug(ws_name + ' grade_tv01 created = ' + str(grade_tv01))
         # - update info in grade, both in new and existing records
                     if grade_tv01:
-                        grade_tv01.pescore = row_data.get('tv01_pescore')
-                        grade_tv01.cescore = row_data.get('tv01_cescore')
+                        grade_tv01.pescore = get_score_from_awpimport(row_data.get('tv01_pescore'))
+                        grade_tv01.cescore = get_score_from_awpimport(row_data.get('tv01_cescore'))
 
-                        grade_tv01.segrade = row_data.get('tv01_segrade')
-                        grade_tv01.srgrade = row_data.get('tv01_srgrade')
-                        grade_tv01.sesrgrade = row_data.get('tv01_sesrgrade')
+                        # make ovg lower case, only in se and sr
+                        grade_tv01.segrade = get_grade_from_awpimport(row_data.get('tv01_segrade'))
+                        grade_tv01.srgrade = get_grade_from_awpimport(row_data.get('tv01_srgrade'))
+                        grade_tv01.sesrgrade = get_grade_from_awpimport(row_data.get('tv01_sesrgrade'))
 
-                        grade_tv01.pegrade = row_data.get('tv01_pegrade')
-                        grade_tv01.cegrade = row_data.get('tv01_cegrade')
-                        grade_tv01.pecegrade = row_data.get('tv01_pecegrade')
-                        grade_tv01.finalgrade = row_data.get('tv01_finalgrade')
+                        grade_tv01.pegrade = get_grade_from_awpimport(row_data.get('tv01_pegrade'))
+                        grade_tv01.cegrade = get_grade_from_awpimport(row_data.get('tv01_cegrade'))
+                        grade_tv01.pecegrade = get_grade_from_awpimport(row_data.get('tv01_pecegrade'))
+
+                        grade_tv01.finalgrade =  get_grade_from_awpimport(row_data.get('tv01_finalgrade'))
 
                         grade_tv01.save(request=request)
 
@@ -1474,7 +1499,7 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                     grade_tv02 = stud_mod.Grade.objects.filter(
                         studentsubject=studentsubject,
                         examperiod=c.EXAMPERIOD_SECOND
-                    ).order_by('-pk').first()
+                    ).order_by('pk').first()
                     if studentsubject.has_reex:
                         if grade_tv02 is None:
                             grade_tv02 = stud_mod.Grade(
@@ -1482,10 +1507,12 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                                 examperiod=c.EXAMPERIOD_SECOND
                             )
                         if grade_tv02:
-                            grade_tv02.cescore = row_data.get('tv02_cescore')
-                            grade_tv02.cegrade = row_data.get('tv02_cegrade')
-                            grade_tv02.pecegrade = row_data.get('tv02_pecegrade')
-                            grade_tv02.finalgrade = row_data.get('tv02_finalgrade')
+                            grade_tv02.cescore = get_score_from_awpimport(row_data.get('tv02_cescore'))
+
+                            grade_tv02.cegrade = get_grade_from_awpimport(row_data.get('tv02_cegrade'))
+                            grade_tv02.pecegrade = get_grade_from_awpimport(row_data.get('tv02_pecegrade'))
+                            grade_tv02.finalgrade = get_grade_from_awpimport(row_data.get('tv02_finalgrade'))
+
                             grade_tv02.save(request=request)
                     else:
                         if grade_tv02:
@@ -1500,7 +1527,7 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                     grade_tv03 = stud_mod.Grade.objects.filter(
                         studentsubject=studentsubject,
                         examperiod=c.EXAMPERIOD_THIRD
-                    ).order_by('-pk').first()
+                    ).order_by('pk').first()
                     if studentsubject.has_reex03:
                         if grade_tv03 is None:
                             grade_tv03 = stud_mod.Grade(
@@ -1508,10 +1535,12 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                                 examperiod=c.EXAMPERIOD_THIRD
                             )
                         if grade_tv03:
-                            grade_tv03.cescore = row_data.get('tv03_cescore')
-                            grade_tv03.cegrade = row_data.get('tv03_cegrade')
-                            grade_tv03.pecegrade = row_data.get('tv03_pecegrade')
-                            grade_tv03.finalgrade = row_data.get('tv03_finalgrade')
+                            grade_tv03.cescore = get_score_from_awpimport(row_data.get('tv03_cescore'))
+
+                            grade_tv03.cegrade = get_grade_from_awpimport(row_data.get('tv03_cegrade'))
+                            grade_tv03.pecegrade = get_grade_from_awpimport(row_data.get('tv03_pecegrade'))
+                            grade_tv03.finalgrade = get_grade_from_awpimport(row_data.get('tv03_finalgrade'))
+
                             grade_tv03.save(request=request)
                     else:
                         if grade_tv03:
@@ -1525,7 +1554,7 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                     grade_tvexem = stud_mod.Grade.objects.filter(
                         studentsubject=studentsubject,
                         examperiod=c.EXAMPERIOD_EXEMPTION
-                    ).order_by('-pk').first()
+                    ).order_by('pk').first()
                     if studentsubject.has_exemption:
                         if grade_tvexem is None:
                             grade_tvexem = stud_mod.Grade(
@@ -1533,7 +1562,14 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                                 examperiod=c.EXAMPERIOD_EXEMPTION
                             )
                         if grade_tvexem:
-                            grade_tvexem.cegrade = row_data.get('tvvrst_cegrade')
+                            tvvrst_segrade
+                            tvvrst_cegrade
+                            tvvrst_finalgrade
+
+                            grade_tvexem.segrade = row_data.get('tvvrst_segrade')
+
+
+
                             grade_tvexem.pecegrade = row_data.get('tvvrst_cegrade')
                             grade_tvexem.finalgrade = row_data.get('tvvrst_finalgrade')
                             grade_tvexem.save(request=request)
@@ -1548,6 +1584,27 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
 # - end of ImportStudentsubject
 
 
+def get_score_from_awpimport(value): # PR2021-09-20
+    score_int = None
+    try:
+        if value is not None:
+            if isinstance(value, int):
+                score_int = int(value)
+            elif isinstance(value, str) and str.isdigit(value):
+                score_int = int(value)
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+    return score_int
+
+
+def get_grade_from_awpimport(value): # PR2021-09-20
+    grade_str = None
+    try:
+        if value is not None:
+            grade_str = str(value).lower()
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+    return grade_str
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 def get_department_from_mapped(row_data, examyear, mapped):  # PR2021-05-04
@@ -1767,7 +1824,7 @@ def get_subjecttype_from_mapped(row_data, scheme, mapped):  # PR2021-05-04
                     subjecttype = subj_mod.Subjecttype.objects.filter(
                         base=subjecttypebase,
                         scheme=scheme
-                    ).order_by('-pk').first()
+                    ).order_by('pk').first()
 
     if logging_on:
         logger.debug('subjecttype: ' + str(subjecttype))
@@ -1948,7 +2005,7 @@ def get_examyear(country, examyear_int):
         examyear = sch_mod.Examyear.objects.filter(
             country=country,
             code=examyear_int
-        ).order_by('-pk').first()
+        ).order_by('pk').first()
     return examyear
 
 
@@ -1959,7 +2016,7 @@ def get_subjecttype(subjtype_name, examyear):
         subjecttype = subj_mod.Subjecttype.objects.filter(
             examyear=examyear,
             name__iexact=subjtype_name
-        ).order_by('-pk').first()
+        ).order_by('pk').first()
     return subjecttype
 
 
@@ -1970,7 +2027,7 @@ def get_subject(subject_code, examyear):
         subject =subj_mod.Subject.objects.filter(
             examyear=examyear,
             base__code__iexact=subject_code
-        ).order_by('-pk').first()
+        ).order_by('pk').first()
     return subject
 
 
@@ -1986,7 +2043,7 @@ def get_scheme(depbase_code, level_abbrev, sector_abbrev, examyear):
             crit.add(Q(level__abbrev__iexact=level_abbrev), crit.connector)
         if sector_abbrev and not sector_abbrev.lower() == 'none':
             crit.add(Q(sector__abbrev__iexact=sector_abbrev), crit.connector)
-        scheme = subj_mod.Scheme.objects.filter(crit).order_by('-pk').first()
+        scheme = subj_mod.Scheme.objects.filter(crit).order_by('pk').first()
     return scheme
 
 
@@ -1998,7 +2055,7 @@ def get_schemeitem(scheme, subject, subjecttype):
             scheme=scheme,
             subject=subject,
             subjecttype=subjecttype
-        ).order_by('-pk').first()
+        ).order_by('pk').first()
     return schemeitem
 
 
@@ -2010,7 +2067,7 @@ def get_package(school, scheme, package_name):
             school=school,
             scheme=scheme,
             name__iexact=package_name
-        ).order_by('-pk').first()
+        ).order_by('pk').first()
     return package
 
 
@@ -2021,7 +2078,7 @@ def get_packageitem(package, schemeitem):
         packageitem = subj_mod.Packageitem.objects.filter(
             package=package,
             schemeitem=schemeitem
-        ).order_by('-pk').first()
+        ).order_by('pk').first()
     return packageitem
 
 
@@ -2032,7 +2089,7 @@ def get_birthcountry(name):
     if name:
         birthcountry = stud_mod.Birthcountry.objects.filter(
             name__iexact=name
-        ).order_by('-pk').first()
+        ).order_by('pk').first()
     return birthcountry
 
 
@@ -2043,7 +2100,7 @@ def get_birthplace(birthcountry, birthplace_name):
         birthplace = stud_mod.Birthplace.objects.filter(
             birthcountry=birthcountry,
             name__iexact=birthplace_name
-        ).order_by('-pk').first()
+        ).order_by('pk').first()
     return birthplace
 
 
@@ -2054,7 +2111,7 @@ def get_schoolbase(country, code):
         schoolbase = sch_mod.Schoolbase.objects.filter(
             country=country,
             code__iexact=code
-        ).order_by('-pk').first()
+        ).order_by('pk').first()
     return schoolbase
 
 
@@ -2065,5 +2122,5 @@ def get_school(schoolbase, examyear):
         school = sch_mod.School.objects.filter(
             base=schoolbase,
             examyear=examyear
-        ).order_by('-pk').first()
+        ).order_by('pk').first()
     return school

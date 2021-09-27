@@ -266,9 +266,10 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30
                             if new_examyear_instance:
                                 append_dict['created'] = True
     # - copy all tables from last examyear existing examyear
-                                copy_to_sxm = False
+                                also_copy_schools = True
                                 # prev_examyear_instance, msg_err = sf.get_previous_examyear_instance(new_examyear_instance)
-                                copy_tables_from_last_year(current_examyear_instance, new_examyear_instance, copy_to_sxm, request)
+                                log_list = []
+                                copy_tables_from_last_year(current_examyear_instance, new_examyear_instance, also_copy_schools, log_list, request)
                             if msg_err:
                                 error_list.append(msg_err)
                                 if logging_on:
@@ -325,7 +326,8 @@ class OrderlistsParametersView(View):  # PR2021-08-31
         examyear_rows = []
         messages = []
         error_list = []
-        # - get permit
+
+# - get permit
         has_permit = False
         req_usr = request.user
         if req_usr and req_usr.country and req_usr.schoolbase:
@@ -541,14 +543,6 @@ class OrderlistsPublishView(View):  # PR2021-09-08
                             c.STRING_SPACE_10 + str(_("Exam year : %(ey)s") % {'ey': str(sel_examyear_instance.code)}))
                         log_list.append(c.STRING_SPACE_05)
 
-# - get orderlist variables from examyear
-                        order_extra_fixed = getattr(sel_examyear_instance, 'order_extra_fixed')
-                        order_extra_perc = getattr(sel_examyear_instance, 'order_extra_perc')
-                        order_round_to = getattr(sel_examyear_instance, 'order_round_to')
-                        order_tv2_divisor = getattr(sel_examyear_instance, 'order_tv2_divisor')
-                        order_tv2_multiplier = getattr(sel_examyear_instance, 'order_tv2_multiplier')
-                        order_tv2_max = getattr(sel_examyear_instance, 'order_tv2_max')
-
 # get count_dict only once and create orserlists from this dict,
 # to make sure that the published orderlist and the excel files per schoolcontain the same amout of subjects
 
@@ -562,9 +556,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08
                         schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance)
 
 # +++ get nested dicts of subjects per school, dep, level, lang, ete_exam
-                        count_dict = subj_view.create_studsubj_count_dict(sel_examyear_instance, None,
-                                                  order_extra_fixed, order_extra_perc, order_round_to,
-                                                  order_tv2_divisor, order_tv2_multiplier, order_tv2_max)
+                        count_dict = subj_view.create_studsubj_count_dict(sel_examyear_instance, request)
                         total_dict = count_dict.get('total')
                         if logging_on:
                             logger.debug('total_dict: ' + str(total_dict))
@@ -1157,20 +1149,12 @@ def save_published_instance(published_instance, file_path, output, request):
 def create_final_orderlist_xlsx(output, sel_examyear_instance,
                                 department_dictlist, lvlbase_dictlist, subjectbase_dictlist, schoolbase_dictlist,
                                 count_dict, requsr_school_name, min_ond, user_lang):  # PR2021-09-09
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_final_orderlist_xlsx -----')
         logger.debug('count_dict: ' + str(count_dict))
 
     # check for empty count_dict is done outside this function
-
-# - get orderlist variables from examyear
-    order_extra_fixed = getattr(sel_examyear_instance, 'order_extra_fixed')
-    order_extra_perc = getattr(sel_examyear_instance, 'order_extra_perc')
-    order_round_to = getattr(sel_examyear_instance, 'order_round_to')
-    order_tv2_divisor = getattr(sel_examyear_instance, 'order_tv2_divisor')
-    order_tv2_multiplier = getattr(sel_examyear_instance, 'order_tv2_multiplier')
-    order_tv2_max = getattr(sel_examyear_instance, 'order_tv2_max')
 
     msg_err = None
     try:
@@ -1222,19 +1206,8 @@ def create_final_orderlist_xlsx(output, sel_examyear_instance,
                     sheet.write(0, 0, min_ond, formats['bold_format'])
                     sheet.write(1, 0, requsr_school_name)
                     sheet.write(2, 0, now_formatted)
-                    if summary_detail in ('overzicht', 'details'):
-                        exta_txt = ' '.join (('   -  ', str(order_extra_fixed), str(_('extra exams plus')),
-                                              str(order_extra_perc) + '%,', str(_('rounded up to')),str(order_round_to) + '.'))
-                        sheet.write(4, 0, str(_('Calulation of extra exams:')))
-                        sheet.write(5, 0, exta_txt)
-                    elif summary_detail == 'herexamens':
-                        tv2_txt = ' '.join (('   -  ',str(order_tv2_multiplier), str(_('exams per')),
-                                              str(order_tv2_divisor), str(_('exams first exam period,')),
-                                             str(_('with a maximum of')), str(order_tv2_max), '.'))
-                        sheet.write(4, 0, str(_('Calulation exams second exam period:')))
-                        sheet.write(5, 0, tv2_txt)
 
-                    row_index = 8
+                    row_index = 7
 #########################################################################
                     if summary_detail == 'details':
                         awpr_excel.write_orderlist_with_details(
@@ -1411,8 +1384,9 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
                     if logging_on:
                         logger.debug('curacao_examyear_instance and sxm_examyear_instance')
 
-                    copy_to_sxm = True
-                    copy_tables_from_last_year(curacao_examyear_instance, sxm_examyear_instance, copy_to_sxm, request)
+                    also_copy_schools = False
+                    log_list = []
+                    copy_tables_from_last_year(curacao_examyear_instance, sxm_examyear_instance, also_copy_schools, log_list, request)
 
         update_wrap['error_list'] = error_list
         update_wrap['SXM_added_list'] = SXM_added_list
@@ -1421,6 +1395,88 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of ExamyearCopyToSxmView
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+@method_decorator([login_required], name='dispatch')
+class CopySchemesFromExamyearView(View):  # PR2021-09-24
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+
+        update_wrap = {}
+        log_list = []
+        if request.user is not None and request.user.country is not None:
+            req_usr = request.user
+            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_examyear', req_usr)
+            has_permit = 'permit_crud' in permit_list and request.user.is_role_system
+
+            if logging_on:
+                logger.debug(' ')
+                logger.debug(' ============= CopySchemesFromExamyearView ============= ')
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit:  ' + str(has_permit))
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if has_permit and upload_json:
+                upload_dict = json.loads(upload_json)
+                if logging_on:
+                    logger.debug('upload_dict: ' + str(upload_dict))
+                """
+                upload_dict: {'mode': 'copy_scheme', 'copyto_mapid': 'examyear_64', 'copyto_examyear_pk': 64, 'copyto_country_id': 2, 'copyto_country': 'Sint Maarten'}
+                """
+
+                copyto_examyear_pk = upload_dict.get('copyto_examyear_pk')
+
+# - get copyfrom_examyear  - which is the current examyear
+                copyfrom_examyear_instance, sel_schoolNIU, sel_departmentNIU, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+
+                if logging_on:
+                    logger.debug('copyfrom_examyear_instance: ' + str(copyfrom_examyear_instance) + ' ' + str(copyfrom_examyear_instance.country.abbrev))
+
+# - get copyto_examyear from upload_dict
+                copyto_examyear_instance = sch_mod.Examyear.objects.get_or_none(
+                    pk=copyto_examyear_pk
+                )
+                if logging_on:
+                    logger.debug('copyto_examyear_instance: ' + str(copyto_examyear_instance) + ' ' + str(copyto_examyear_instance.country.abbrev))
+
+# - copy all tables from current_examyear_instance_instance to new_copyto_examyear_instance, except for schools
+                if copyfrom_examyear_instance and copyto_examyear_instance:
+
+# - create log_list
+                    today_dte = af.get_today_dateobj()
+                    today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
+
+                    log_list = [c.STRING_DOUBLELINE_80,
+                                str(_('Copy subject schemes ')) + ' ' + str(_('date')) + ': ' + str(
+                                    today_formatted),
+                                c.STRING_DOUBLELINE_80]
+                    from_examyear = ' '.join((str(_("From exam year:")), copyfrom_examyear_instance.country.name, str(copyfrom_examyear_instance.code)))
+                    to_examyear = ' '.join((str(_("To exam year:  ")), copyto_examyear_instance.country.name, str(copyto_examyear_instance.code)))
+                    log_list.append(c.STRING_SPACE_05 + from_examyear)
+                    log_list.append(c.STRING_SPACE_05 + to_examyear)
+
+                    also_copy_schools = False
+                    copy_tables_from_last_year(copyfrom_examyear_instance, copyto_examyear_instance, also_copy_schools, log_list, request)
+
+        if logging_on:
+            logger.debug('log_list: ' + str(log_list) )
+        update_wrap['log_list'] = log_list
+
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of CopySchemesFromExamyearView
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1560,9 +1616,9 @@ def create_examyear(country, examyear_code_int, request):
                       str(_("%(caption)s '%(val)s' could not be created.") % {'caption': caption, 'val': name})
 
     return instance, msg_err
+# - end of create_examyear
 
 
-#######################################################
 def update_examyear(instance, upload_dict, msg_list, request):
     # --- update existing examyear instance PR2019-06-06 PR2021-09-03
     # add new values to update_dict (don't reset update_dict, it has values)
@@ -1590,7 +1646,7 @@ def update_examyear(instance, upload_dict, msg_list, request):
                     pass
 
 # --- update field 'published', 'locked'
-                elif field in ('published', 'locked', 'no_practexam', 'reex_se_allowed', 'no_centralexam', 'no_thirdperiod'):
+                elif field in ('published', 'locked', 'no_practexam', 'sr_allowed', 'no_centralexam', 'no_thirdperiod'):
                     new_value = upload_dict.get(field)
                     saved_value = getattr(instance, field)
 
@@ -1615,7 +1671,8 @@ def update_examyear(instance, upload_dict, msg_list, request):
                     # --- update fieldpython manage.py runserver
                     # 'published', 'locked'
                 elif field in ('order_extra_fixed', 'order_extra_perc', 'order_round_to',
-                               'order_tv2_divisor', 'order_tv2_max', 'order_tv2_multiplier'):
+                               'order_tv2_divisor', 'order_tv2_multiplier', 'order_tv2_max',
+                               'order_admin_divisor', 'order_admin_multiplier', 'order_admin_max'):
                     new_value = upload_dict.get(field)
                     saved_value = getattr(instance, field)
 
@@ -1645,39 +1702,38 @@ def update_examyear(instance, upload_dict, msg_list, request):
             msg_dict = {'header': str(_('Update exam year')), 'class': 'border_bg_invalid','msg_html': msg_html}
             msg_list.append(msg_dict)
     return updated
+# - end of update_examyear
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def copy_tables_from_last_year(prev_examyear_instance, new_examyear_instance, copy_to_sxm, request):
+def copy_tables_from_last_year(prev_examyear_instance, new_examyear_instance, also_copy_schools, log_list, request):
     # --- copy_tables_from_last_year # PR2019-07-30 PR2020-10-05 PR2021-04-25 PR2021-08-06
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- copy_tables_from_last_year -------')
-        logger.debug('prev_examyear_instance: ' + str(prev_examyear_instance))
-        logger.debug('prev_examyear_country: ' + str(prev_examyear_instance.country.abbrev))
-        logger.debug('new_examyear_instance: ' + str(new_examyear_instance))
-        logger.debug('new_examyear_country: ' + str(new_examyear_instance.country.abbrev))
+        logger.debug('prev_examyear_instance: ' + str(prev_examyear_instance) + '' + str(prev_examyear_instance.country.abbrev))
+        logger.debug('new_examyear_instance: ' + str(new_examyear_instance) + '' + str(new_examyear_instance.country.abbrev))
 
     if new_examyear_instance and prev_examyear_instance:
 
-        sf.copy_examyear_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
+        sf.copy_examyear_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance, log_list)
 
-        sf.copy_exfilestext_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
+        sf.copy_exfilestext_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance, log_list)
 
-        mapped_deps = sf.copy_deps_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
+        mapped_deps = sf.copy_deps_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance, log_list)
 
-        if not copy_to_sxm:
-            sf.copy_schools_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
+        if also_copy_schools:
+            sf.copy_schools_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance, log_list)
 
-        mapped_levels = sf.copy_levels_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
-        mapped_sectors = sf.copy_sectors_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
+        mapped_levels = sf.copy_levels_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance, log_list)
+        mapped_sectors = sf.copy_sectors_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance, log_list)
 
-        mapped_schemes = sf.copy_schemes_from_prev_examyear(request, prev_examyear_instance, mapped_deps, mapped_levels, mapped_sectors)
+        mapped_schemes = sf.copy_schemes_from_prev_examyear(request, prev_examyear_instance, mapped_deps, mapped_levels, mapped_sectors, log_list)
 
-        mapped_subjecttypes = sf.copy_subjecttypes_from_prev_examyear(request, prev_examyear_instance, mapped_schemes)
-        mapped_subjects = sf.copy_subjects_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance)
-        mapped_schemeitems = sf.copy_schemeitems_from_prev_examyear(request, prev_examyear_instance, mapped_schemes, mapped_subjects, mapped_subjecttypes)
-        mapped_packages = sf.copy_packages_from_prev_examyear(request, prev_examyear_instance, mapped_schemes)
-        sf.copy_packageitems_from_prev_examyear(request, prev_examyear_instance, mapped_packages, mapped_schemeitems)
+        mapped_subjecttypes = sf.copy_subjecttypes_from_prev_examyear(request, prev_examyear_instance, mapped_schemes, log_list)
+        mapped_subjects = sf.copy_subjects_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance, log_list)
+        mapped_schemeitems = sf.copy_schemeitems_from_prev_examyear(request, prev_examyear_instance, mapped_schemes, mapped_subjects, mapped_subjecttypes, log_list)
+        mapped_packages = sf.copy_packages_from_prev_examyear(request, prev_examyear_instance, mapped_schemes, log_list)
+        sf.copy_packageitems_from_prev_examyear(request, prev_examyear_instance, mapped_packages, mapped_schemeitems, log_list)
 
         # these tables are not copied:
         # Exam

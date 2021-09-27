@@ -244,6 +244,29 @@ LOCALE_PATHS = (
     os.path.join(BASE_DIR, 'locale'),
 )
 
+# PR2021-09-17 Sentry added
+# from https://sentry.io/panta-rhei-nv/tsa/getting-started/python-django/
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
+sentry_sdk.init(
+    dsn=config('SENTRY_DSN', default=''),
+    integrations=[DjangoIntegration()],
+
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    # We recommend adjusting this value in production.
+    # traces_sample_rate=1.0,
+    traces_sample_rate=config('SENTRY_SAMPLE_RATE', default=0.1, cast=float),
+
+    # If you wish to associate users to errors (assuming you are using
+    # django.contrib.auth) you may enable sending PII data.
+    # send_default_pii=True
+    send_default_pii=False
+)
+
+SENTRY_SRC = config('SENTRY_SRC', default=None)
+
 # PR2021-03-26
 LOGGING_ON = config('LOGGING_ON', default=False, cast=bool)
 

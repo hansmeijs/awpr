@@ -124,9 +124,13 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     iseveningstudent = BooleanField(default=False)
     islexstudent = BooleanField(default=False)
     bis_exam = BooleanField(default=False)
-    # notlinked contains ';'-delimited list of student_id's with the same idnumber, bit that are not the same stdent
-    islinked = BooleanField(default=False)
-    notlinked = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    partial_exam = BooleanField(default=False)  # get certificate, only when evening- or lexstudent
+    additional_exam = BooleanField(default=False)  # when student does extra subject at adifferent school, possible in day/evening/lex school, only valid in the same examyear
+
+    # notlinked contains ';'-delimited list of student_id's with the same idnumber, but that are not the same student
+    # islinked = BooleanField(default=False)
+    linked = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+    notlinked = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
 
     has_reex = BooleanField(default=False)
     has_reex3 = BooleanField(default=False)
@@ -246,8 +250,12 @@ class Student_log(sch_mod.AwpBaseModel):
     iseveningstudent = BooleanField(default=False)
     islexstudent = BooleanField(default=False)
     bis_exam = BooleanField(default=False)
-    islinked = BooleanField(default=False)
-    notlinked = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    partial_exam = BooleanField(default=False)  # get certificate, only when evening- or lexstudent
+    additional_exam = BooleanField(default=False)  # when student does extra subject at adifferent school, possible in day/evening/lex school, only valid in the same examyear
+
+    # islinked = BooleanField(default=False)
+    linked = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+    notlinked = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
 
     has_reex = BooleanField(default=False)
     has_reex3 = BooleanField(default=False)
@@ -320,6 +328,7 @@ class Studentsubject(sch_mod.AwpBaseModel):
     objects = CustomManager()
 
     student = ForeignKey(Student, related_name='+', on_delete=CASCADE)
+    subject = ForeignKey(subj_mod.Subject, null=True, related_name='+', on_delete=PROTECT)
     schemeitem = ForeignKey(subj_mod.Schemeitem, related_name='+', on_delete=PROTECT)
     cluster = ForeignKey(subj_mod.Cluster, null=True, blank=True, related_name='+', on_delete=SET_NULL)
 
@@ -393,8 +402,9 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
 
     # PR2019-02-14 changed: refer to log table student_log instead of student, to prevent ref_int with table student
     student_log = ForeignKey(Student_log, null=True, related_name='+', on_delete=CASCADE)
+    subject_log = ForeignKey(subj_mod.Subject_log, null=True, related_name='+', on_delete=SET_NULL)
     schemeitem_log = ForeignKey(subj_mod.Schemeitem_log, null=True, related_name='+', on_delete=SET_NULL)
-    cluster_log = ForeignKey(subj_mod.Cluster_log,null=True,  related_name='+', on_delete=SET_NULL)
+    cluster_log = ForeignKey(subj_mod.Cluster_log,null=True, related_name='+', on_delete=SET_NULL)
 
     is_extra_nocount = BooleanField(default=False)
     is_extra_counts = BooleanField(default=False)
@@ -572,6 +582,7 @@ class Grade(sch_mod.AwpBaseModel):
     answers = CharField(max_length=2048, null=True)
     blanks = PositiveSmallIntegerField(null=True) # number of blank questions
     answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+
     # TODO deprecate?
     tobedeleted = BooleanField(default=False)
     del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)

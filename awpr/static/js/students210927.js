@@ -156,16 +156,6 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         const el_SBR_item_count = document.getElementById("id_SBR_item_count")
 
-// ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
-        const el_MSED_input = document.getElementById("id_MSED_input");
-        const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
-        if (el_MSED_input){
-            el_MSED_input.addEventListener("keyup", function(event){
-                setTimeout(function() {t_MSED_InputName(el_MSED_input)}, 50)});
-        }
-        if (el_MSED_btn_save){
-            el_MSED_btn_save.addEventListener("click", function() {t_MSED_Save(MSED_Response)}, false);
-        }
 
 // ---  MODAL SIDEBAR FILTER ------------------------------------
         const el_SBR_filter = document.getElementById("id_SBR_filter")
@@ -388,8 +378,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 // both 'loc' and 'setting_dict' are needed for CreateSubmenu
                 if (isloaded_loc && isloaded_settings) {CreateSubmenu()};
-                if(isloaded_settings || isloaded_permits){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school)};
-
+                if(isloaded_settings || isloaded_permits){
+                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                };
                 if ("messages" in response) {
                     b_ShowModMessages(response.messages);
                 }
@@ -420,7 +411,7 @@ document.addEventListener('DOMContentLoaded', function() {
             error: function (xhr, msg) {
 // ---  hide loader
                 el_loader.classList.add(cls_visible_hide);
-                //console.log(msg + '\n' + xhr.responseText);
+                console.log(msg + '\n' + xhr.responseText);
             }
         });
     }  // function DatalistDownload
@@ -482,7 +473,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  get selected.student_dict
         selected.student_pk = get_attr_from_el_int(tr_clicked, "data-pk");
-        selected.student_dict = b_get_mapdict_by_integer_from_datarows(student_rows, "id", selected.student_pk);
+        selected.student_dict = b_get_datadict_by_integer_from_datarows(student_rows, "id", selected.student_pk);
         //console.log( "selected.student_pk: ", selected.student_pk);
         //console.log( "selected.student_dict: ", selected.student_dict);
 
@@ -528,7 +519,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- loop through data_rows
         if(data_rows && data_rows.length){
             for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
-
 
         // --- set SBR_filter
         // Note: filter of filterrow is done by Filter_TableRows
@@ -577,7 +567,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const col_is_hidden = get_column_is_hidden(field_name);
             if (!col_is_hidden){
 
-        // --- get field_caption from field_setting, diplay 'Profiel' in column sctbase_id if has_profiel
+        // --- get field_caption from field_setting, display 'Profiel' in column sctbase_id if has_profiel
                 const key = field_setting.field_caption[j];
                 const field_caption = (field_name === "sctbase_id" && has_profiel) ? loc.Profiel : (loc[key]) ? loc[key] : key;
                 const filter_tag = field_setting.filter_tags[j];
@@ -652,12 +642,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const field_names = field_setting.field_names;
         //const field_tags = field_setting.field_tags;
         const field_tag = "div";
-        const filter_tags = field_setting.filter_tags;
         const field_align = field_setting.field_align;
         const field_width = field_setting.field_width;
         const column_count = field_names.length;
-
-        const map_id = (data_dict.mapid) ? data_dict.mapid : null;
 
 // ---  lookup index where this row must be inserted
         const ob1 = (data_dict.lastname) ? data_dict.lastname : "";
@@ -668,8 +655,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                      ob1, ob2, "", setting_dict.user_lang);
 
 // --- insert tblRow into tblBody at row_index
-        let tblRow = tblBody_datatable.insertRow(row_index);
-        tblRow.id = map_id
+        const tblRow = tblBody_datatable.insertRow(row_index);
+        if (data_dict.mapid) {tblRow.id = data_dict.mapid};
 
 // --- add data attributes to tblRow
         tblRow.setAttribute("data-pk", data_dict.id);
@@ -714,12 +701,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     td.classList.add("pointer_show");
                     add_hover(td);
                 }
-
     // --- put value in field
                UpdateField(el, data_dict)
            }  // if (!columns_hidden[field_name])
         }  // for (let j = 0; j < 8; j++)
-
         return tblRow
     };  // CreateTblRow
 
@@ -886,10 +871,7 @@ function RefreshDataRowsAfterUpload(response) {
                 for (let i = 0, msg_dict ; msg_dict = error_list[i]; i++) {
                     if ("field" in msg_dict){field_error_list.push(msg_dict.field)};
                 };
-
-            //} else {
-            // close modal MSJ when no error --- already done in modal
-                //$("#id_mod_subject").modal("hide");
+            // close modal when no error --- already done in modal
             }
 
 // ++++ created ++++
@@ -960,7 +942,7 @@ function RefreshDataRowsAfterUpload(response) {
                                 if (data_dict[col_field] !== update_dict[col_field] ) {
         // ---  add field to updated_columns list
                                     updated_columns.push(col_field)
-                                }}
+                                }};
                         };
         //console.log("updated_columns", updated_columns);
 
@@ -986,7 +968,7 @@ function RefreshDataRowsAfterUpload(response) {
                                     tblRow.parentNode.removeChild(tblRow);
                                 //--- insert row new at new position
                                     tblRow = CreateTblRow(tblName, field_setting, update_dict)
-                                }
+                                };
 
         //console.log("tblRow", tblRow);
                 // loop through cells of row
@@ -1001,20 +983,17 @@ function RefreshDataRowsAfterUpload(response) {
                 // make field green when field name is in updated_columns
                                         if(updated_columns.includes(el_fldName)){
                                             ShowOkElement(el);
-                                        }
-                                    }
-                                };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
-                            };  // if(tblRow){
-                        }; //  if(updated_columns.length){
-
-
+                                        };
+                                    };
+                                };  //  for (let i = 1, el_fldName
+                            };  // if(tblRow)
+                        }; // if(updated_columns.length)
                     };  //  if(!isEmpty(data_dict) && field_names){
-                };  // if(is_deleted){
+                };  // if(is_deleted)
             };  // if(is_created)
-
         //console.log("student_rows", student_rows);
-        }  // if(!isEmpty(update_dict)){
-    }  // RefreshDatarowItem
+        };  // if(!isEmpty(update_dict))
+    };  // RefreshDatarowItem
 
 
 // +++++++++ MOD STUDENT ++++++++++++++++ PR2020-09-30
@@ -1767,8 +1746,10 @@ function RefreshDataRowsAfterUpload(response) {
 //=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10
     function MSED_Response(new_setting) {
         console.log( "===== MSED_Response ========= ");
+        console.log( "new_setting", new_setting);
 
 // ---  upload new selected_pk
+        new_setting.page = setting_dict.sel_page;
 // also retrieve the tables that have been changed because of the change in examyear / dep
         const datalist_request = {
                 setting: new_setting,

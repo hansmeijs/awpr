@@ -121,17 +121,6 @@ document.addEventListener
                 function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         }
 
-// ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
-        const el_MSED_input = document.getElementById("id_MSED_input");
-        const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
-        if (el_MSED_input){
-            el_MSED_input.addEventListener("keyup", function(event){
-                setTimeout(function() {t_MSED_InputName(el_MSED_input)}, 50)});
-        }
-        if (el_MSED_btn_save){
-            el_MSED_btn_save.addEventListener("click", function() {t_MSED_Save(MSED_Response)}, false);
-        }
-
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_examperiod = document.getElementById("id_SBR_select_period");
         if (el_SBR_select_examperiod){
@@ -245,10 +234,10 @@ document.addEventListener
         if(el_mod_status_btn_save){el_mod_status_btn_save.addEventListener("click", function() {ModalStatusSave()}, false )};
 
 // ---  MOD MESSAGE ------------------------------------
-        const el_modmessage_btn_cancel = document.getElementById("id_mod_message_btn_cancel");
+        const el_mod_message_btn_cancel = document.getElementById("id_mod_message_btn_cancel");
         const el_mod_message_container = document.getElementById("id_mod_message_container");
-        if(el_modmessage_btn_cancel){
-            el_modmessage_btn_cancel.addEventListener("click", function() {ModMessageClose(el_modmessage_btn_cancel)}, false);
+        if(el_mod_message_btn_cancel){
+            el_mod_message_btn_cancel.addEventListener("click", function() {ModMessageClose(el_mod_message_btn_cancel)}, false);
         }
 
     if(may_view_page){
@@ -1336,7 +1325,7 @@ document.addEventListener
                                     const msg_err = err_dict[el_fldName]
                                     el_mod_message_container.innerText = msg_err;
                                     $("#id_mod_message").modal({backdrop: false});
-                                    set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
+                                    set_focus_on_el_with_timeout(el_mod_message_btn_cancel, 150 )
                                     el.value = null;
 
         // update field and make field green when field name is in updated_columns
@@ -2542,7 +2531,7 @@ document.addEventListener
                             }
                             el_mod_message_container.innerHTML = msg_err;
                             $("#id_mod_message").modal({backdrop: false});
-                            set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
+                            set_focus_on_el_with_timeout(el_mod_message_btn_cancel, 150 )
                         } else {
     // - put new value in element and in mod_MEX_dict.assignment
                             const new_value = max_char + ( (max_score) ? max_score : "" );
@@ -2577,7 +2566,7 @@ document.addEventListener
                         if (!is_multiple_choice){
                             el_mod_message_container.innerHTML = loc.err_list.This_isnota_multiplechoice_question;
                             $("#id_mod_message").modal({backdrop: false});
-                            set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
+                            set_focus_on_el_with_timeout(el_mod_message_btn_cancel, 150 )
                         } else {
     // - add mod_MEX_dict.keys[q_number] if it does not yet exist
                             if (!(q_number in mod_MEX_dict.keys)){
@@ -2616,7 +2605,7 @@ document.addEventListener
 
                                     el_mod_message_container.innerHTML = msg_err;
                                     $("#id_mod_message").modal({backdrop: false});
-                                    set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
+                                    set_focus_on_el_with_timeout(el_mod_message_btn_cancel, 150 )
 
                                 } else {
         // - put new new_keys in element and in mod_MEX_dict.keys
@@ -2752,8 +2741,8 @@ document.addEventListener
                         el_mod_message_container.innerHTML = msg_err;
                         $("#id_mod_message").modal({backdrop: false});
                         // set focus to current input element
-                        el_modmessage_btn_cancel.setAttribute("data-nextid", "id_MEX_q_" + q_number)
-                        set_focus_on_el_with_timeout(el_modmessage_btn_cancel, 150 )
+                        el_mod_message_btn_cancel.setAttribute("data-nextid", "id_MEX_q_" + q_number)
+                        set_focus_on_el_with_timeout(el_mod_message_btn_cancel, 150 )
 
                     }  //  if (!msg_err)
                 }  //  if (isEmpty(assignment_dict))
@@ -3200,7 +3189,8 @@ document.addEventListener
     function MSED_Response(new_setting) {
         //console.log( "===== MSED_Response ========= ");
 
-// ---  upload new MEXQ_
+// ---  upload new selected_pk
+        new_setting.page = setting_dict.sel_page;
 // also retrieve the tables that have been changed because of the change in examyear / dep
         const datalist_request = {
                 setting: new_setting,

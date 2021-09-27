@@ -9,7 +9,7 @@
             <div class="modal-header tsa_bc_lightlightgrey">
                 <a href="{% url 'manual_url' 'approve' 'intro' %}" target="_blank" title="{% trans 'Open manual' %}" aria-label="Manual"> <div class="questionmark"></div> </a>
 
-                <h4 id="id_MMUOC_header" class="modal-title mx-2" >{% trans "Link same candidates" %}</h4>
+                <h4 id="id_MMUOC_header" class="modal-title mx-2" >{% trans "Link matching candidates" %}</h4>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                 </button>
@@ -23,9 +23,9 @@
                         <ul class="mb-0">
                             <li><small>{% trans "Click the tickmark icon if it is the same candidate." %}</small></li>
                             <li><small>{% trans "Click the crosss icon if it is not the same candidate or if you are not sure." %}</small></li>
-                            <li><small>{% trans "If multiple other candidates are found, you must tick off all candidates that are the same as the current candidate." %}</small></li>
+                            <li><small>{% trans "If there are multiple other candidates, you must tick off all candidates that are the same as the current candidate." %}</small></li>
                         </ul>
-                    <small>{% trans "Ticking off a candidate has no effect on the candidate data. It only helps AWP to enter the exemptions automatically." %}</small>
+                    <small>{% trans "Ticking off a candidate has no effect on the candidate data." %} {% trans "AWP only uses it to enter exemptions automatically." %}</small>
 
                 </div>
 
@@ -35,11 +35,10 @@
             </div>
             <div class="modal-footer">
                 <div class="content_subheader_left mx-1">
-                    <button id="id_MMUOC_btn_delete" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Remove approvals' %}</button>
+                    <button id="id_MMUOC_btn_showall" class="btn btn-outline-secondary"></button>
                 </div>
                 <div class="content_subheader_right">
-                    <button id="id_MMUOC_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
-                    <button id="id_MMUOC_btn_save" class="btn btn-primary">{% trans 'Save' %}</button>
+                    <button id="id_MMUOC_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Close' %}</button>
                 </div>
             </div>
         </div>

@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.views.generic import View
 
 from datetime import date, datetime, timedelta
+from os.path import basename
 
 from accounts import models as acc_mod
 from awpr import constants as c
@@ -760,11 +761,11 @@ class OrderlistPerSchoolDownloadView(View):  # PR2021-09-01
         if request.user and request.user.country and request.user.schoolbase:
             req_user = request.user
 
-            # - reset language
+# - reset language
             user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
             activate(user_lang)
 
-            # - get selected examyear,from usersettings
+# - get selected examyear,from usersettings
             # exames are only ordered in first exam period
             sel_examyear_instance, sel_examperiodNIU = \
                 dl.get_selected_examyear_examperiod_from_usersetting(request)
@@ -772,7 +773,7 @@ class OrderlistPerSchoolDownloadView(View):  # PR2021-09-01
                 logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance))
 
             if sel_examyear_instance:
-                response = create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang)
+                response = create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang, request)
 
         if response is None:
             response = HttpResponseRedirect(request.META.get('HTTP_REFERER'))
@@ -808,7 +809,7 @@ class OrderlistDownloadView(View):  # PR2021-07-04
                 logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance))
 
             if sel_examyear_instance:
-                response = create_orderlist_xlsx(sel_examyear_instance, list, user_lang)
+                response = create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request)
 
         if response is None:
             response = HttpResponseRedirect(request.META.get('HTTP_REFERER'))
@@ -876,21 +877,13 @@ def create_orderlist_rowsNIU(examyear, examperiod_int, is_ete_exam, otherlang):
 
 ##################################################
 
-def create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang):  # PR2021-07-07 PR2021-08-20
+def create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang, request):  # PR2021-07-07 PR2021-08-20
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_orderlist_per_school_xlsx -----')
         # row: {'school_id': 78, 'schbase_code': 'CUR13', 'school_name': 'Abel Tasman College', 'dep_id': 97, 'depbase_code': 'Vsbo',
         #           'lvl_id': 63, 'lvl_abbrev': 'TKL', 'subj_id': 998, 'subjbase_code': 'ne', 'subj_name': 'Nederlandse taal', '
         #           subj_published_arr': [None], 'lang': 'ne', 'count': 7}
-
-# - get orderlist variables from examyear
-    order_extra_fixed = getattr(sel_examyear_instance, 'order_extra_fixed')
-    order_extra_perc = getattr(sel_examyear_instance, 'order_extra_perc')
-    order_round_to = getattr(sel_examyear_instance, 'order_round_to')
-    order_tv2_divisor = getattr(sel_examyear_instance, 'order_tv2_divisor')
-    order_tv2_multiplier = getattr(sel_examyear_instance, 'order_tv2_multiplier')
-    order_tv2_max = getattr(sel_examyear_instance, 'order_tv2_max')
 
 # get text from examyearsetting
     settings = af.get_exform_text(sel_examyear_instance, ['exform', 'ex1'])
@@ -908,7 +901,6 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang):  #
     # functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name of this exam year of all countries
     # fields are: sbase_id, sbase_code, sch_name
     schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance)
-    # schoolbase_dictlist: [ {'sbase_id': 2, 'code': 'CUR01', 'name': 'Ancilla Domini Vsbo'}, {'sbase_id': 3, 'code': 'CUR02', 'name': 'Skol Avansa Amador Nita - Saan'},
 
 # ---  create file Name and worksheet Name
     now_formatted = af.format_modified_at(timezone.now(), user_lang, False)  # False = not month_abbrev
@@ -935,17 +927,16 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang):  #
         school_name = schoolbase_dict.get('sch_name')
 
 # +++ get nested dicts of subjects of this  school, dep, level, lang, ete_exam
-        count_dict = subj_view.create_studsubj_count_dict(sel_examyear_instance, schoolbase_pk,
-                                                order_extra_fixed, order_extra_perc, order_round_to,
-                                                order_tv2_divisor, order_tv2_multiplier, order_tv2_max)
+        count_dict = subj_view.create_studsubj_count_dict(sel_examyear_instance, request, schoolbase_pk)
 
         total_dict = count_dict.get('total')
 
         if logging_on:
             logger.debug('...........school_name: ' + str(school_name))
-            #logger.debug('count_dict: ' + str(count_dict))
+            logger.debug('count_dict: ' + str(count_dict))
             logger.debug('total_dict: ' + str(total_dict))
 
+# - skip when school has no totals
         if total_dict:
             col_count, first_subject_column, col_width, field_names, field_captions, \
             header_formats, detail_row_formats, summary_row_formats, totalrow_formats = \
@@ -967,7 +958,6 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang):  #
             sheet.write(3, 0, title, formats['bold_format'])
 
             row_index = 7
-
 #########################################################################
             write_orderlist_per_school(
                 sheet, count_dict, department_dictlist, lvlbase_dictlist,
@@ -992,7 +982,7 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang):  #
 # - end of create_orderlist_per_school_xlsx
 
 
-def create_orderlist_xlsx(sel_examyear_instance, list, user_lang):  # PR2021-07-07 PR2021-08-20
+def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):  # PR2021-07-07 PR2021-08-20
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_orderlist_xlsx -----')
@@ -1000,41 +990,19 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang):  # PR2021-07-
         #           'lvl_id': 63, 'lvl_abbrev': 'TKL', 'subj_id': 998, 'subjbase_code': 'ne', 'subj_name': 'Nederlandse taal', '
         #           subj_published_arr': [None], 'lang': 'ne', 'count': 7}
 
-# - get orderlist variables from examyear
-    order_extra_fixed = getattr(sel_examyear_instance, 'order_extra_fixed')
-    order_extra_perc = getattr(sel_examyear_instance, 'order_extra_perc')
-    order_round_to = getattr(sel_examyear_instance, 'order_round_to')
-    order_tv2_divisor = getattr(sel_examyear_instance, 'order_tv2_divisor')
-    order_tv2_multiplier = getattr(sel_examyear_instance, 'order_tv2_multiplier')
-    order_tv2_max = getattr(sel_examyear_instance, 'order_tv2_max')
-
 # get text from examyearsetting
     settings = af.get_exform_text(sel_examyear_instance, ['exform', 'ex1'])
 
 # --- get department dictlist
     # fields are: depbase_id, depbase_code, dep_name, dep_level_req
     department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear_instance)
-    """
-    department_dictlist: [
-        {'depbase_id': 1, 'depbase_code': 'Vsbo', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'dep_level_req': True}, 
-        {'depbase_id': 2, 'depbase_code': 'Havo', 'dep_name': 'Hoger Algemeen Voortgezet Onderwijs', 'dep_level_req': False},
-        {'depbase_id': 3, 'depbase_code': 'Vwo', 'dep_name': 'Voorbereidend Wetenschappelijk Onderwijs', 'dep_level_req': False}]
-    """
 
 # --- get lvlbase dictlist
     lvlbase_dictlist = subj_view.create_levelbase_dictlist(sel_examyear_instance)
-    """
-    lvlbase_dictlist: [
-        {'lvlbase_id': 14, 'lvlbase_code': 'PBL', 'lvl_name': 'Praktisch Basisgerichte Leerweg'}, 
-        {'lvlbase_id': 13, 'lvlbase_code': 'PKL', 'lvl_name': 'Praktisch Kadergerichte Leerweg'}, 
-        {'lvlbase_id': 12, 'lvlbase_code': 'TKL', 'lvl_name': 'Theoretisch Kadergerichte Leerweg'}, 
-        {'lvlbase_id': 0, 'lvlbase_code': '---"', 'lvl_name': '---'}]
-    """
 
 # +++ get subjectbase dictlist
     # functions creates ordered dictlist of all subjectbase pk and code of this exam year of all countries
     subjectbase_dictlist = subj_view.create_subjectbase_dictlist(sel_examyear_instance)
-    # subjectbase_dictlist: [{'id': 153, 'code': 'adm&co'}, {'id': 162, 'code': 'asw'},
     """
     subjectbase_pk_list: [
         {'id': 153, 'code': 'adm&co'}, 
@@ -1049,13 +1017,17 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang):  # PR2021-07-
     schoolbase_dictlist: [
         {'sbase_id': 2, 'sbase_code': 'CUR01', 'sch_name': 'Ancilla Domini Vsbo'}, 
         ...
-        {'sbase_id': 37, 'sbase_code': 'SXM03', 'sch_name': 'Sundial School'}]
+        {'sbase_id': 37, 'sbase_code': 'SXM03', 'sch_name': 'Sundial School'}
+        {'sbase_id': 23, 'sbase_code': 'CURETE', 'sch_article': 'het', 'sch_name': 'Expertisecentrum voor Toetsen & Examens', 'sch_abbrev': 'ETE'},
+        {'sbase_id': 39, 'sbase_code': 'SXMDOE', 'sch_article': 'de', 'sch_name': 'Division of Examinations', 'sch_abbrev': 'Division of Examinations'}] 
+        ]
     """
 
 # +++ get nested dicts of subjects per school, dep, level, lang, ete_exam
-    count_dict = subj_view.create_studsubj_count_dict(sel_examyear_instance, None,
-                                             order_extra_fixed, order_extra_perc, order_round_to,
-                                             order_tv2_divisor, order_tv2_multiplier, order_tv2_max)
+    count_dict = subj_view.create_studsubj_count_dict(sel_examyear_instance, request)
+
+    if logging_on:
+        logger.debug('count_dict: ' + str(count_dict))
 
     response = None
 
@@ -1102,29 +1074,32 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang):  # PR2021-07-
                         col_header_formats, detail_row_formats, summary_row_formats, totalrow_formats = \
                             create_row_formats(subjectbase_dictlist, ete_duo_dict_total, formats)
 
-    # +++++ create worksheet +++++
+# +++++ create worksheet +++++
                     sheet_name = ' '.join((ete_duo, summary_detail))
                     sheet = book.add_worksheet(sheet_name)
                     sheet.hide_gridlines(2) # 2 = Hide screen and printed gridlines
 
-            # --- set column width
+    # --- set column width
                     for i, width in enumerate(col_width):
                         sheet.set_column(i, i, width)
 
-            # --- title row
+    # --- title row
                     exam_str = summary_detail if (summary_detail == 'herexamens') else 'examens'
                     title = ' '.join(('Bestellijst', ete_duo, exam_str, str(sel_examyear_instance.code)))
                     sheet.write(0, 0, settings['minond'], formats['bold_format'])
                     sheet.write(1, 0, now_formatted)
                     if summary_detail in ('overzicht', 'details'):
-                        exta_txt = ' '.join (('   -  ', str(order_extra_fixed), str(_('extra exams plus')),
-                                              str(order_extra_perc) + '%,', str(_('rounded up to')),str(order_round_to) + '.'))
+                        exta_txt = ' '.join (('   -  ',
+                              str(sel_examyear_instance.order_extra_fixed),  str(_('extra exams plus')),
+                              str(sel_examyear_instance.order_extra_perc) + '%,',  str(_('rounded up to')),
+                              str(sel_examyear_instance.order_round_to) + '.'))
                         sheet.write(3, 0, str(_('Calulation of extra exams:')))
                         sheet.write(4, 0, exta_txt)
                     elif summary_detail == 'herexamens':
-                        tv2_txt = ' '.join (('   -  ',str(order_tv2_multiplier), str(_('exams per')),
-                                              str(order_tv2_divisor), str(_('exams first exam period,')),
-                                             str(_('with a maximum of')), str(order_tv2_max), '.'))
+                        tv2_txt = ' '.join (('   -  ',
+                             str(sel_examyear_instance.order_tv2_multiplier), str(_('exams per')),
+                             str(sel_examyear_instance.order_tv2_divisor), str(_('exams first exam period,')),
+                             str(_('with a maximum of')), str(sel_examyear_instance.order_tv2_max), '.'))
                         sheet.write(3, 0, str(_('Calulation exams second exam period:')))
                         sheet.write(4, 0, tv2_txt)
 
@@ -1251,7 +1226,7 @@ def write_orderlist_summary(sheet, ete_duo_dict, is_herexamens, department_dictl
 def write_orderlist_with_details(sheet, ete_duo_dict, is_herexamens, department_dictlist, lvlbase_dictlist, schoolbase_dictlist,
                                  row_index, col_count, first_subject_column, list, title, field_names, field_captions,
                                  formats, col_header_formats, detail_row_formats, totalrow_formats):
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
 
     has_separate_extra_row = False
     base_extra_tuple = ('',)
@@ -1286,6 +1261,7 @@ def write_orderlist_with_details(sheet, ete_duo_dict, is_herexamens, department_
                 if lang == 'en' else 'PAPIAMENTSTALIGE EXAMENS' \
                 if lang == 'pa' else 'NEDERLANDSTALIGE EXAMENS'
             sheet.merge_range(row_index, 0, row_index, col_count - 1, lang_full, formats['lang_headerrow'])
+
     # ---  language column header row
             row_index += 1
             sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, '', col_header_formats[0])
@@ -1305,26 +1281,43 @@ def write_orderlist_with_details(sheet, ete_duo_dict, is_herexamens, department_
                 if depbase_pk in lang_dict:
                     dep_dict = lang_dict.get(depbase_pk)
 
-            # ---  departent title row
+    # ---  departent title row
                     row_index += 2
                     sheet.merge_range(row_index, 0, row_index, col_count - 1, dep_name, formats['dep_headerrow'])
-            # ---  departent column header row
+    # ---  departent column header row
                     row_index += 1
                     sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, '', col_header_formats[0])
                     for i in range(first_subject_column, col_count):
                         sheet.write(row_index, i, field_captions[i], col_header_formats[i])
-            # ---  departent total row > moved to the end
+    # ---  departent total row > moved to the end
                     row_index += 1
                     depbase_total_row_index = row_index
 
-    # ++++++++++++ loop through levels  ++++++++++++++++++++++++++++
+# ++++++++++++ loop through levels  ++++++++++++++++++++++++++++
                     for lvlbase_dict in lvlbase_dictlist:
                         # fields are lvlbase_id, lvlbase_code, lvl_name",
                         # lvlbase_dict: {'lvlbase_id': 12, 'lvl_name': 'Theoretisch Kadergerichte Leerweg', 'lvlbase_code': 'TKL'}
+                        if logging_on:
+                            logger.debug('lvlbase_dict: ' + str(lvlbase_dict))
+
                         lvlbase_pk = lvlbase_dict.get('lvlbase_id')
                         lvl_name = lvlbase_dict.get('lvl_name')
                         if lvlbase_pk in dep_dict:
                             level_dict = dep_dict.get(lvlbase_pk)
+
+                            if logging_on:
+                                logger.debug('level_dict: ' + str(level_dict))
+                            """
+                            level_dict: {'c': 'PBL', 
+                                        'total': {
+                                            'total': {440: [114, 21, 35], 464: [67, 13, 25], 442: [37, 8, 15], 423: [197, 23, 50], 430: [190, 20, 50], 432: [114, 21, 35], 438: [5, 5, 5], 429: [3, 2, 5], 435: [4, 6, 5]}, 
+                                             2:      {'c': 'Sxm', 440: [52, 8, 15], 464: [30, 5, 10], 442: [30, 5, 10], 423: [82, 8, 20], 432: [52, 8, 15], 430: [82, 8, 20]}, 
+                                             1:      {'c': 'Cur', 430: [108, 12, 30], 442: [7, 3, 5], 432: [62, 13, 20], 438: [5, 5, 5], 464: [37, 8, 15], 440: [62, 13, 20], 423: [115, 15, 30], 429: [3, 2, 5], 435: [4, 6, 5]}}, 
+                                        35: {'c': 'SXM01', 440: [52, 8, 15], 464: [30, 5, 10], 442: [30, 5, 10], 423: [82, 8, 20], 432: [52, 8, 15], 430: [82, 8, 20]}, 
+                                        2: {'c': 'CUR01', 430: [82, 8, 20], 432: [52, 8, 15], 464: [30, 5, 10], 423: [82, 8, 20], 440: [52, 8, 15]}, 
+                                        4: {'c': 'CUR03', 442: [7, 3, 5], 432: [10, 5, 5], 430: [26, 4, 10], 438: [5, 5, 5], 464: [7, 3, 5], 440: [10, 5, 5], 423: [33, 7, 10], 429: [3, 2, 5], 435: [4, 6, 5]}}
+                            """
+
                             lvlbase_total_row_index = 0
                 # ---  level title row
                             # skip when Havo / Vwo
@@ -1344,51 +1337,55 @@ def write_orderlist_with_details(sheet, ete_duo_dict, is_herexamens, department_
                             for schoolbase_dict in schoolbase_dictlist:
                                 schoolbase_pk = schoolbase_dict.get('sbase_id')
                                 if schoolbase_pk in level_dict:
+                                    defaultrole = schoolbase_dict.get('defaultrole', 0)
                                     for x, key in enumerate(base_extra_tuple):
-                                        row_index += 1
-                                        school_dict = level_dict.get(schoolbase_pk)
+                                        # skip 'non_extra' row when ETE/DEX
+                                        skip_non_extra_row = (has_separate_extra_row and defaultrole == c.ROLE_064_ADMIN and x == 0)
+                                        if not skip_non_extra_row:
+                                            row_index += 1
+                                            school_dict = level_dict.get(schoolbase_pk)
 
-                                        if logging_on:
-                                            logger.debug('schoolbase_dict: ' + str(schoolbase_dict))
-                                            logger.debug('school_dict: ' + str(school_dict))
+                                            if logging_on:
+                                                logger.debug('schoolbase_dict: ' + str(schoolbase_dict))
+                                                logger.debug('school_dict: ' + str(school_dict))
 
-                                        """
-                                        schoolbase_dict: {'sbase_id': 2, 'sbase_code': 'CUR01', 'sch_name': 'Ancilla Domini Vsbo'}
-                                        school_dict: {138: [88, 0, 20], 134: [88, 0, 20]}
-                                        """
-                                        total = 0
-                                        for i, field_name in enumerate(field_names):
-                                            if i == 0:
-                                                value = schoolbase_dict.get('sbase_code', '---')
-                                                sheet.write(row_index, i, value, detail_row_formats[i])
-                                            elif i == 1:
-                                                value = schoolbase_dict.get('sch_name', '---') + key
-                                                sheet.write(row_index, i, value, detail_row_formats[i])
-                                            elif isinstance(field_name, int):
-                                                value = None
-                                                value_arr = school_dict.get(field_name)
-                                                if value_arr:
-                                                    if is_herexamens:
-                                                        value = value_arr[2]
-                                                    else:
-                                                        if has_separate_extra_row:
-                                                            value = value_arr[x]
+                                            """
+                                            schoolbase_dict: {'sbase_id': 2, 'sbase_code': 'CUR01', 'sch_name': 'Ancilla Domini Vsbo'}
+                                            school_dict: {138: [88, 0, 20], 134: [88, 0, 20]}
+                                            """
+                                            total = 0
+                                            for i, field_name in enumerate(field_names):
+                                                if i == 0:
+                                                    value = schoolbase_dict.get('sbase_code', '---')
+                                                    sheet.write(row_index, i, value, detail_row_formats[i])
+                                                elif i == 1:
+                                                    value = schoolbase_dict.get('sch_name', '---') + key
+                                                    sheet.write(row_index, i, value, detail_row_formats[i])
+                                                elif isinstance(field_name, int):
+                                                    value = None
+                                                    value_arr = school_dict.get(field_name)
+                                                    if value_arr:
+                                                        if is_herexamens:
+                                                            value = value_arr[2]
                                                         else:
-                                                            value = value_arr[0] + value_arr[1]
-                                                if value:
-                                                    total += value
-                                                sheet.write(row_index, i, value, detail_row_formats[i])
+                                                            if has_separate_extra_row:
+                                                                value = value_arr[x]
+                                                            else:
+                                                                value = value_arr[0] + value_arr[1]
+                                                    if value:
+                                                        total += value
+                                                    sheet.write(row_index, i, value, detail_row_formats[i])
 
-                                            elif field_name == 'rowtotal':
-                                                last_column = len(field_names) - 1
+                                                elif field_name == 'rowtotal':
+                                                    last_column = len(field_names) - 1
 
-                                                upper_cell_ref = subj_view.xl_rowcol_to_cell(row_index, 2)  # cell_ref: 10,0 > A11
-                                                lower_cell_ref = subj_view.xl_rowcol_to_cell(row_index, last_column -1)  # cell_ref: 10,0 > A11
+                                                    upper_cell_ref = subj_view.xl_rowcol_to_cell(row_index, 2)  # cell_ref: 10,0 > A11
+                                                    lower_cell_ref = subj_view.xl_rowcol_to_cell(row_index, last_column -1)  # cell_ref: 10,0 > A11
 
-                                                sum_cell_ref = subj_view.xl_rowcol_to_cell(row_index, last_column)  # cell_ref: 10,0 > A11
+                                                    sum_cell_ref = subj_view.xl_rowcol_to_cell(row_index, last_column)  # cell_ref: 10,0 > A11
 
-                                                formula = ''.join(['=SUM(', upper_cell_ref, ':', lower_cell_ref, ')'])
-                                                sheet.write_formula(sum_cell_ref, formula, detail_row_formats[last_column])
+                                                    formula = ''.join(['=SUM(', upper_cell_ref, ':', lower_cell_ref, ')'])
+                                                    sheet.write_formula(sum_cell_ref, formula, detail_row_formats[last_column])
                             if level_req:
                                 # add 1 extra row t subtotal range, to prevent leaving out last row in calculation when manually added extra rows
                                 lvlbase_last_row_index = row_index + 1
@@ -1416,7 +1413,6 @@ def write_orderlist_per_school(sheet, count_dict, department_dictlist, lvlbase_d
                                  row_index, col_count, first_subject_column, title, field_names, field_captions,
                                  formats, detail_row_formats, totalrow_formats):
     logging_on = s.LOGGING_ON
-
     if logging_on:
         logger.debug(' ----- write_orderlist_per_school -----')
 
@@ -1437,16 +1433,16 @@ def write_orderlist_per_school(sheet, count_dict, department_dictlist, lvlbase_d
         if ete_duo in count_dict:
             ete_duo_dict = count_dict.get(ete_duo)
 
-        # ---  ETE / DUO title row
+    # ---  ETE / DUO title row
             row_index += 2
             title = ete_duo + ' EXAMENS'
             sheet.merge_range(row_index, 0, row_index, col_count - 1, title, formats['lang_headerrow'])
 
-        # ---  ete_duo subject header row
+    # ---  ete_duo subject header row
             row_index += 1
             write_subject_header_row(sheet, row_index, col_count, first_subject_column, field_captions, formats)
 
-        # ---  ete_duo total row > moved to the end
+    # ---  ete_duo total row > moved to the end
             row_index += 1
             eteduo_total_row_index = row_index
 
@@ -1455,18 +1451,18 @@ def write_orderlist_per_school(sheet, count_dict, department_dictlist, lvlbase_d
                 if lang in ete_duo_dict:
                     lang_dict = ete_duo_dict.get(lang)
 
-            # ---  language title row
+     # ---  language title row
                     row_index += 2
                     lang_full = 'ENGELSTALIGE EXAMENS' \
                         if lang == 'en' else 'PAPIAMENTSTALIGE EXAMENS' \
                         if lang == 'pa' else 'NEDERLANDSTALIGE EXAMENS'
                     sheet.merge_range(row_index, 0, row_index, col_count - 1, lang_full, formats['dep_headerrow'])
 
-            # ---  language subject header row
+    # ---  language subject header row
                     row_index += 1
                     write_subject_header_row(sheet, row_index, col_count, first_subject_column, field_captions, formats)
 
-            # ---  language total row > moved to the end
+    # ---  language total row > moved to the end
                     row_index += 1
                     lang_total_row_index = row_index
 
@@ -1494,22 +1490,22 @@ def write_orderlist_per_school(sheet, count_dict, department_dictlist, lvlbase_d
                                 if lvlbase_pk in dep_dict:
                                     level_dict = dep_dict.get(lvlbase_pk)
 
-                    # ---  dep / level row
+        # ---  dep / level row
                                     last_rowindex = write_summary_row(sheet, level_dict, False, row_index, first_subject_column,
                                                       list, field_names, dep_lvl_name, detail_row_formats)
                                     row_index = last_rowindex
 
-                    # --- write language total row
+        # --- write total row
                     lang_last_row_index = row_index + 1
                     write_total_row_with_formula(sheet, formats, lang_total_row_index, lang_last_row_index,
                                                  field_names, totalrow_formats)
 
-            # --- write ete_duo total row
+        # --- write ete_duo total row
             eteduo_last_row_index = row_index + 1
             write_total_row_with_formula(sheet, formats, eteduo_total_row_index, eteduo_last_row_index,
                                          field_names, totalrow_formats)
 
-    # --- write grandtotal row
+# --- write grandtotal row
     grandtotal_last_row_index = row_index + 1
     write_total_row_with_formula(sheet, formats, grandtotal_row_index, grandtotal_last_row_index,
                                  field_names, totalrow_formats)
@@ -2040,7 +2036,7 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
                    'extra_count_allowed', 'extra_nocount_allowed',
                    'elective_combi_allowed',
                    'has_practexam', 'has_pws',
-                   'reex_se_allowed', 'max_reex',
+                   'sr_allowed', 'max_reex',
                    'no_thirdperiod', 'no_exemption_ce',
                    'modifiedat', 'modby_username']
 
@@ -2142,7 +2138,7 @@ def has_published_ex1_rows(examyear, school, department):  # PR2021-08-15
 
 ###################################################
 # PR2021-09-2 from https://thispointer.com/python-how-to-create-a-zip-archive-from-multiple-files-or-directory/
-def create_zipfile():
+def create_zipfileNIU(dirName):
     # create a ZipFile object
     zipObj = ZipFile('sample.zip', 'w')
     # Add multiple files to the zip

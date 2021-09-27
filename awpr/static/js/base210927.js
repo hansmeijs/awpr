@@ -978,14 +978,16 @@
 //######### IT WORKS !!! #################################################################
 // +++++++++++++++++ LOOKUP dict in ordered dictlist +++++++++++++++++++++++++++ PR2021-06-16
 
-//========= b_get_mapdict_by_integer_from_datarows  ================== PR2021-07-25
-    function b_get_mapdict_by_integer_from_datarows(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int){
+//========= b_get_datadict_by_integer_from_datarows  ================== PR2021-07-25
+    function b_get_datadict_by_integer_from_datarows(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int){
+        // studsubj order by: 'ORDER BY st.id, studsubj.studsubj_id NULLS FIRST'
         const [middle_index, found_dict, compare] = b_recursive_integer_lookup(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int);
         const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
         return selected_dict;
     }
 
 //========= b_get_mapdict_from_datarows  ================== PR2021-06-21
+    // NOT IN USE PR2021-09-18
     function b_get_mapdict_from_datarows(data_rows, map_id, user_lang){
         const [middle_index, found_dict, compare] = b_recursive_lookup(data_rows, map_id, user_lang);
         const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
@@ -1399,7 +1401,7 @@
 
 //#########################################################################
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++
-    function b_show_mod_message(msg_html, header_text){  // PR2021-01-26 PR2021-03-25 PR2021-07-03
+    function b_show_mod_message(msg_html, header_text, ModMessageClose){  // PR2021-01-26 PR2021-03-25 PR2021-07-03
         // TODO header, set focus after closing messagebox
 
         const el_msg_header = document.getElementById("id_mod_message_header");
@@ -1408,10 +1410,16 @@
         const el_msg_container = document.getElementById("id_mod_message_container");
         if(el_msg_container){el_msg_container.innerHTML = (msg_html) ? msg_html : null};
 
-        const el_msg_btn_cancel = document.getElementById("id_modmessage_btn_cancel");
-        if(el_msg_btn_cancel){set_focus_on_el_with_timeout(document.getElementById("id_modmessage_btn_cancel"), 150 )};
+        const el_msg_btn_cancel = document.getElementById("id_mod_message_btn_cancel");
+        if(el_msg_btn_cancel){set_focus_on_el_with_timeout(el_msg_btn_cancel, 150 )};
 
         $("#id_mod_message").modal({backdrop: false});
+        $('#id_mod_message').on('hide.bs.modal', function (e) {
+            try {
+                ModMessageClose();
+            } catch (error) {
+            }
+        })
     }  // show_mod_message
 
 

@@ -154,6 +154,8 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 
         sel_country_abbrev, sel_country_name, country_locked, examyear_locked = None, None, False, False
         sel_examyear_code = None
+        no_practexam, sr_allowed, no_centralexam, no_thirdperiod = False, False, False , False
+
         sel_examyear, sel_examyear_save, may_select_examyear = af.get_sel_examyear_instance(request)
         if sel_examyear is None:
             # PR2021-06-14 debug: not true. New user has no selected examyear yet
@@ -180,6 +182,11 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 # +++ do not display pages when examyear is not published yet,
             examyear_not_published = not sel_examyear.published
             examyear_locked = sel_examyear.locked
+    # - used in page grades: set tab buttons practexam, sr_allowed, centralexam, thirdperiod
+            no_practexam = sel_examyear.no_practexam
+            sr_allowed = sel_examyear.sr_allowed
+            no_centralexam = sel_examyear.no_centralexam
+            no_thirdperiod = sel_examyear.no_thirdperiod
 # +++ give warning when examyear is different from current examyear,
             # is moved to downloadsettings
 
@@ -284,6 +291,9 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
                 no_access_message = _("You must first activate the examyear before you can enter data. Go to the page 'School' and activate the examyear.")
                 messages.append(no_access_message)
 
+# - sentr_src contains link for Sentry awp_js PR2021-09-19
+        sentry_src = s.SENTRY_SRC
+
         headerbar_param = {
             'no_access': no_access,
             'examyear_locked': examyear_locked,
@@ -296,7 +306,12 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             'messages': messages,
             'permit_list': permit_list,
             'page': sel_page[5:],
-            'paragraph': 'intro'
+            'paragraph': 'intro',
+            'no_practexam': no_practexam,
+            'sr_allowed': sr_allowed,
+            'no_centralexam': no_centralexam,
+            'no_thirdperiod': no_thirdperiod,
+            'sentry_src': sentry_src
         }
         if param:
             headerbar_param.update(param)

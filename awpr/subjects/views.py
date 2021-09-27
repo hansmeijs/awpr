@@ -383,7 +383,6 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of SubjectUploadView
 
-# - end of SubjectUploadView
 
 
 ##########################
@@ -2426,7 +2425,7 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, er
             if field in ("gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi",
                          "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
                          "has_practexam", "has_pws", "is_core_subject", "is_mvt", "is_wisk", "ete_exam", "no_order",
-                         "reex_se_allowed", "max_reex",  "no_thirdperiod",  "no_exemption_ce"):
+                         "sr_allowed", "max_reex",  "no_thirdperiod",  "no_exemption_ce"):
 
                 saved_value = getattr(instance, field)
                 if logging_on:
@@ -3096,7 +3095,7 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
                 "si.gradetype, si.weight_se, si.weight_ce, si.ete_exam, si.no_order, si.is_mandatory, si.is_mand_subj_id,",
                 "si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed, si.elective_combi_allowed,",
                 "si.has_practexam, si.has_pws, si.is_core_subject, si.is_mvt, si.is_wisk,",
-                "si.reex_se_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce,",
+                "si.sr_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce,",
 
                 "si.modifiedby_id, si.modifiedat,",
                 "SUBSTRING(au.username, 7) AS modby_username",
@@ -3342,7 +3341,6 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
         #return JsonResponse({'test': 'json'})
 
 
-
 # - end of ExamDownloadExamJsonView
 
 def get_assignment_keys_dict(amount, assignment, keys):
@@ -3525,8 +3523,6 @@ def get_answers_list(sel_exam_instance):
     return answer_list
 
 
-
-
 def get_department_codes(sel_exam_instance, examyear):
     # - create string with depbase codes PR2021-05-09
     dep_codes = ''
@@ -3673,13 +3669,14 @@ def create_schoolbase_dictlist(examyear):  # PR2021-08-20
 
     sql_keys = {'ey_code_int': examyear.code}
     sql_list = [
-        "SELECT sbase.id AS sbase_id, sbase.code AS sbase_code, sch.article AS sch_article, sch.name AS sch_name, sch.abbrev AS sch_abbrev",
+        "SELECT sbase.id AS sbase_id, sbase.code AS sbase_code, sch.article AS sch_article, sch.name AS sch_name, sch.abbrev AS sch_abbrev, sbase.defaultrole",
 
         "FROM schools_school AS sch",
         "INNER JOIN schools_schoolbase AS sbase ON (sbase.id = sch.base_id)",
         "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
 
-        "WHERE ey.code = %(ey_code_int)s::INT AND sbase.defaultrole =", str(c.ROLE_008_SCHOOL),
+        "WHERE ey.code = %(ey_code_int)s::INT",
+        "AND (sbase.defaultrole =", str(c.ROLE_008_SCHOOL), "OR sbase.defaultrole =", str(c.ROLE_064_ADMIN), ")",
         "ORDER BY LOWER(sbase.code)"]
     sql = ' '.join(sql_list)
 
@@ -3726,20 +3723,65 @@ def create_subjectbase_dictlist(examyear):  # PR2021-08-20
 
 
 # /////////////////////////////////////////////////////////////////
-def create_studsubj_count_dict(sel_examyear_instance, schoolbase_pk,
-                               order_extra_fixed, order_extra_perc, order_round_to,
-                               order_tv2_divisor, order_tv2_multiplier, order_tv2_max):  # PR2021-08-19
-    logging_on = False  # s.LOGGING_ON
+def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk=None):  # PR2021-08-19 PR2021-09-24
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_studsubj_count_dict ----- ')
 
     #  create nested dict with subjects count per exam, lang, dep, lvl, school and subjbase_id
     #  all schools of CUR and SXM only submitted subjects, not deleted # PR2021-08-19
+    #  add extra for ETE and DOE PR2021-09-25
 
-    sql_keys = {'ey_code_int': sel_examyear_instance.code}
+# - get schoolbase_id of ETE and DEX
 
+    # key = country_id, value = row_dict
+    mapped_admin_dict = {}
+    sql_keys = {'ey_code_int': sel_examyear_instance.code, 'default_role': c.ROLE_064_ADMIN }
+    sql_list = ["SELECT sb.country_id, sch.base_id AS sb_id, sb.code AS c,",
+                "ey.order_extra_fixed, ey.order_extra_perc, ey.order_round_to,",
+                "ey.order_tv2_divisor, ey.order_tv2_multiplier, ey.order_tv2_max,",
+                "ey.order_admin_divisor, ey.order_admin_multiplier, ey.order_admin_max",
+
+                "FROM schools_school AS sch",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+                "WHERE ey.code = %(ey_code_int)s::INT",
+                "AND sb.defaultrole = %(default_role)s::INT"
+                ]
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        rows = af.dictfetchall(cursor)
+        for row in rows:
+            country_id = row.get('country_id')
+            if country_id not in mapped_admin_dict:
+                mapped_admin_dict[country_id] = row
+
+    if logging_on:
+        logger.debug('mapped_admin_dict: ' + str(mapped_admin_dict) + ' ' + str(type(mapped_admin_dict)))
+        # mapped_admin_dict: {39: {'c': 'SXMDOE'}, 23: {'c': 'CURETE'}} <class 'dict'>
+
+    # - when print orderlist ETE: skip DUO of SXM school
+    # - when print orderlist SXM: skip all CUR schools, skip all ETE exams
+    #  when print per school: show all
+    skip_ete_or_duo = ''
+    requsr_country_pk = request.user.country.pk
+
+    if request.user.country.abbrev.lower() == 'cur':
+    # when print orderlist ETE
+        # - when request,user = ETE: skip DUO of SXM school
+        # -  WHERE is_ete_exam OR (NOT is_ete_exam AND country = requsr_country)
+        skip_ete_or_duo = "AND ( (si.ete_exam) OR (NOT si.ete_exam AND ey.country_id = %(requsr_country_id)s::INT ))"
+    elif  request.user.country.abbrev.lower() == 'sxm':
+    # when print orderlist DEX
+        # - when request,user = SXM: skip all CUR schools, skip all ETE exams
+        # -  WHERE NOT is_ete_exam AND country = requsr_country)
+        skip_ete_or_duo = "AND (NOT si.ete_exam AND ey.country_id = %(requsr_country_id)s::INT )"
+
+    sql_keys = {'ey_code_int': sel_examyear_instance.code, 'requsr_country_id': requsr_country_pk}
     sql_studsubj_agg_list = [
-        "SELECT st.school_id, dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, sch.otherlang AS sch_otherlang,",
+        "SELECT st.school_id, ey.country_id as ey_country_id, dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, sch.otherlang AS sch_otherlang,",
 
         "lvl.abbrev AS lvl_abbrev,",  # for testing only, must also delete from group_by
         "subj.base_id AS subjbase_id, si.ete_exam, subj.otherlang AS subj_otherlang, count(*) AS subj_count",
@@ -3750,6 +3792,7 @@ def create_studsubj_count_dict(sel_examyear_instance, schoolbase_pk,
 
         "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
         "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
         "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
 
@@ -3760,9 +3803,9 @@ def create_studsubj_count_dict(sel_examyear_instance, schoolbase_pk,
 # - show only exams that have a central exam
         "AND NOT si.weight_ce = 0",
 # - skip DUO exams for SXM schools
-        "AND (si.ete_exam OR NOT sch.no_order)"
+        skip_ete_or_duo,
 
-        "GROUP BY st.school_id, dep.base_id, lvl.base_id, lvl.abbrev, sch.otherlang, subj.base_id, si.ete_exam, subj.otherlang"
+        "GROUP BY st.school_id, ey.country_id, dep.base_id, lvl.base_id, lvl.abbrev, sch.otherlang, subj.base_id, si.ete_exam, subj.otherlang"
     ]
     sql_studsubj_agg = ' '.join(sql_studsubj_agg_list)
 
@@ -3772,38 +3815,71 @@ def create_studsubj_count_dict(sel_examyear_instance, schoolbase_pk,
                 "CASE WHEN POSITION(studsubj.sch_otherlang IN studsubj.subj_otherlang) > 0 ",
                 "THEN studsubj.sch_otherlang ELSE 'ne' END END AS lang,",
 
+                "cntr.id AS country_id,",  # PR2021-09-24 added, for extra exams ETE and DoE
                 "sb.code AS sb_code, studsubj.lvl_abbrev,",  # for testing only
                 "sch.base_id AS schoolbase_id, studsubj.depbase_id, studsubj.lvlbase_id, studsubj.subj_count",
 
                 "FROM schools_school AS sch",
                 "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
+                "INNER JOIN schools_country AS cntr ON (cntr.id = sb.country_id)",
                 "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
                 "INNER JOIN studsubj ON (studsubj.school_id = sch.id)",
 # - show only exams of this exam year
                 "WHERE ey.code = %(ey_code_int)s::INT"
                 ]
-# - filter on schoolbase_pk when it has value
-    if schoolbase_pk:
-        sql_keys['sb_pk'] = schoolbase_pk
+
+# - filter on parameter schoolbase_pk when it has value
+    if prm_schoolbase_pk:
+        sql_keys['sb_pk'] = prm_schoolbase_pk
         sql_list.append("AND sb.id = %(sb_pk)s::INT")
 
     sql = ' '.join(sql_list)
 
-    if logging_on:
-        logger.debug('sql_keys: ' + str(sql_keys))
-        logger.debug('sql: ' + str(sql))
+    #if logging_on:
+        #logger.debug('sql_keys: ' + str(sql_keys))
+        #logger.debug('sql: ' + str(sql))
         #logger.debug('connection.queries: ' + str(connection.queries))
 
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
         rows = af.dictfetchall(cursor)
+    if logging_on:
+        logger.debug('rows: ' + str(rows))
 
     count_dict = {'total': {}}
 
     for row in rows:
         if logging_on:
             logger.debug('row: ' + str(row))
-        sb_code = row.get('sb_code', '-')  # for testing only
+
+        row_sb_code = row.get('sb_code', '-')  # for testing only
+
+        # admin_id is schoolbase_id of school of ETE / DEX
+        admin_id, admin_code = None, None
+        order_extra_fixed, order_extra_perc, order_round_to = None, None, None
+        order_tv2_divisor, order_tv2_multiplier, order_tv2_max = None, None, None
+        mapped_country_dict = {}
+
+        country_id = row.get('country_id')
+        if country_id in mapped_admin_dict:
+            mapped_country_dict = mapped_admin_dict[country_id]
+            admin_id = mapped_country_dict.get('sb_id')
+            admin_code = mapped_country_dict.get('c')
+
+            order_extra_fixed = mapped_country_dict.get('order_extra_fixed')
+            order_extra_perc = mapped_country_dict.get('order_extra_perc')
+            order_round_to = mapped_country_dict.get('order_round_to')
+
+            order_tv2_divisor = mapped_country_dict.get('order_tv2_divisor')
+            order_tv2_multiplier = mapped_country_dict.get('order_tv2_multiplier')
+            order_tv2_max = mapped_country_dict.get('order_tv2_max')
+
+        if logging_on:
+            #logger.debug('mapped_country_dict: ' + str(mapped_country_dict))
+            logger.debug('admin_code: ' + str(admin_code))
+            #logger.debug('order_extra_fixed: ' + str(order_extra_fixed))
+            #logger.debug('order_extra_perc: ' + str(order_extra_perc))
+            logger.debug('order_round_to: ' + str(order_round_to))
 
         exam = 'ETE' if row.get('ete_exam', False) else 'DUO'
         if exam not in count_dict:
@@ -3812,12 +3888,14 @@ def create_studsubj_count_dict(sel_examyear_instance, schoolbase_pk,
 
         lang = row.get('lang', 'ne')
         if lang not in exam_dict:
-            exam_dict[lang] = {'total': {}}
+            # lang_dict has no key 'total'
+            exam_dict[lang] = {}
         lang_dict = exam_dict[lang]
 
         depbase_pk = row.get('depbase_id')
         if depbase_pk not in lang_dict:
-            lang_dict[depbase_pk] = {'total': {}}
+            # depbase_dict has no key 'total'
+            lang_dict[depbase_pk] = {}
         depbase_dict = lang_dict[depbase_pk]
 
         # value is '0' when lvlbase_id = None (Havo/Vwo)
@@ -3826,39 +3904,43 @@ def create_studsubj_count_dict(sel_examyear_instance, schoolbase_pk,
             lvlbase_pk = 0
         lvl_abbrev = row.get('lvl_abbrev', '-')
         if lvlbase_pk not in depbase_dict:
-            depbase_dict[lvlbase_pk] = {'c': lvl_abbrev, 'total': {}}
+            depbase_dict[lvlbase_pk] = {'c': lvl_abbrev, 'total': {}, 'country': {}}
         lvlbase_dict = depbase_dict[lvlbase_pk]
 
-        schoolbase_pk = row.get('schoolbase_id')
-        if schoolbase_pk not in lvlbase_dict:
-            lvlbase_dict[schoolbase_pk] = {'c': sb_code}
-        schoolbase_dict = lvlbase_dict[schoolbase_pk]
+        row_sb_pk = row.get('schoolbase_id')
+        if row_sb_pk not in lvlbase_dict:
+            lvlbase_dict[row_sb_pk] = {'c': row_sb_code}
+        schoolbase_dict = lvlbase_dict[row_sb_pk]
 
-        # - count extra exams and examns tv2
+# +++ count extra exams and examns tv2 per school / subject
         subjbase_pk = row.get('subjbase_id')
         subj_count = row.get('subj_count', 0)
 
         extra_count = 0
         tv2_count = 0
         if subj_count:
-            extra_not_rounded = order_extra_fixed + (subj_count * order_extra_perc / 100)
-            extra_count = (int(((
-                                            subj_count + extra_not_rounded - 1) / order_round_to) + 1) * order_round_to) - subj_count
-            tv2_count = int(((subj_count - 1) / order_tv2_divisor) + 1) * order_tv2_multiplier
-            if tv2_count > order_tv2_max:
-                tv2_count = order_tv2_max
+            extra_count = calc_extra_exams(subj_count, order_extra_fixed, order_extra_perc, order_round_to)
+            tv2_count = calc_exams_tv02(subj_count, order_tv2_divisor, order_tv2_multiplier, order_tv2_max)
 
-        #if logging_on:
-        #    logger.debug('subj_count: ' + str(subj_count))
-        #    logger.debug('extra_count: ' + str(extra_count))
-       #     logger.debug('tv2_count: ' + str(tv2_count))
+        if logging_on:
+            logger.debug('.........................................')
+            logger.debug('........schoolbase_pk: ' + str(row_sb_pk) + ' ' + str(row_sb_code))
+            logger.debug('........lvlbase_pk: ' + str(lvlbase_pk) + ' ' + str(lvl_abbrev))
+            logger.debug('........subjbase_pk: ' + str(subjbase_pk))
+            logger.debug('........subj_count: ' + str(subj_count))
+            logger.debug('.......extra_count: ' + str(extra_count))
+            logger.debug('.........tv2_count: ' + str(tv2_count))
 
+# +++ add to totals
         if subjbase_pk not in schoolbase_dict:
             schoolbase_dict[subjbase_pk] = [subj_count, extra_count, tv2_count]
         else:
             schoolbase_dict[subjbase_pk][0] += subj_count
             schoolbase_dict[subjbase_pk][1] += extra_count
             schoolbase_dict[subjbase_pk][2] += tv2_count
+
+        if logging_on:
+            logger.debug('schoolbase_dict: ' + str(schoolbase_dict))
 
         lvlbase_total = lvlbase_dict.get('total')
         if subjbase_pk not in lvlbase_total:
@@ -3868,21 +3950,23 @@ def create_studsubj_count_dict(sel_examyear_instance, schoolbase_pk,
             lvlbase_total[subjbase_pk][1] += extra_count
             lvlbase_total[subjbase_pk][2] += tv2_count
 
-        depbase_total = depbase_dict.get('total')
-        if subjbase_pk not in depbase_total:
-            depbase_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
-        else:
-            depbase_total[subjbase_pk][0] += subj_count
-            depbase_total[subjbase_pk][1] += extra_count
-            depbase_total[subjbase_pk][2] += tv2_count
+    # skip admin_total when calculate per school > when schoolbase_pk has value
+        if prm_schoolbase_pk is None:
+            lvlbase_country = lvlbase_dict.get('country')
+            if admin_id not in lvlbase_country:
+                lvlbase_country[admin_id] = {'c': admin_code}
+            admin_total = lvlbase_country[admin_id]
 
-        lang_total = lang_dict.get('total')
-        if subjbase_pk not in lang_total:
-            lang_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
-        else:
-            lang_total[subjbase_pk][0] += subj_count
-            lang_total[subjbase_pk][1] += extra_count
-            lang_total[subjbase_pk][2] += tv2_count
+            if subjbase_pk not in admin_total:
+                admin_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
+            else:
+                admin_total[subjbase_pk][0] += subj_count
+                admin_total[subjbase_pk][1] += extra_count
+                admin_total[subjbase_pk][2] += tv2_count
+
+            if logging_on:
+                logger.debug(' - - - - ')
+                logger.debug('........admin_total: ' + str(admin_total))
 
         exam_total = exam_dict.get('total')
         if subjbase_pk not in exam_total:
@@ -3899,6 +3983,130 @@ def create_studsubj_count_dict(sel_examyear_instance, schoolbase_pk,
             examyear_total[subjbase_pk][0] += subj_count
             examyear_total[subjbase_pk][1] += extra_count
             examyear_total[subjbase_pk][2] += tv2_count
+
+# +++ after adding schools: calculate extra for ETE and DEX:
+    # skip when calculate per school > when schoolbase_pk has value
+    if prm_schoolbase_pk is None:
+        if logging_on:
+            logger.debug('schoolbase_pk is None')
+
+        for exam, exam_dict in count_dict.items():
+            if exam != 'total':
+                if logging_on:
+                    logger.debug('exam: ' + str(exam) + ' ' + str(type(exam)))
+
+                for lang, lang_dict in exam_dict.items():
+                    if lang != 'total':
+                        if logging_on:
+                            logger.debug('lang: ' + str(lang) + ' ' + str(type(lang)))
+
+                        for depbase_pk, depbase_dict in lang_dict.items():
+                            if isinstance(depbase_pk, int):
+                                for lvlbase_pk, lvlbase_dict in depbase_dict.items():
+                                    if isinstance(lvlbase_pk, int):
+                                        if logging_on:
+                                            logger.debug('lvlbase_pk: ' + str(lvlbase_pk) + ' ' + str(type(lvlbase_pk)))
+                                            logger.debug('lvlbase_dict: ' + str(lvlbase_dict) + ' ' + str(type(lvlbase_dict)))
+
+                                        lvlbase_country_dict = lvlbase_dict.get('country')
+                                        lvlbase_total_dict = lvlbase_dict.get('total')
+                                        exam_total_dict = exam_dict.get('total')
+                                        examyear_total_dict = count_dict.get('total')
+
+                                        if lvlbase_country_dict:
+                                            if logging_on:
+                                                logger.debug('lvlbase_country_dict: ' + str(lvlbase_country_dict) + ' ' + str(type(lvlbase_country_dict)))
+                                                # 'lvlbase_country_dict': {39: {'c': 'SXMDOE', 430: [82, 8, 20], 440: [52, 8, 15]},
+                                                #             23: {'c': 'CURETE', 430: [108, 12, 30], 440: [62, 13, 20], 435: [4, 6, 5]}},
+
+                                            #  country_id: 1
+                                            # mapped_country_dict: { 'country_id': 1, 'sb_id': 23, 'c': 'CURETE',
+                                            # 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5,
+                                            # 'order_tv2_divisor': 25, 'order_tv2_multiplier': 6, 'order_tv2_max': 25,
+                                            # 'order_admin_divisor': 30, 'order_admin_multiplier': 7, 'order_admin_max': 25}
+
+                            # - get admin_pk from mapped_country_dict with key: country_id
+                                            # admin_pk is schoolbase_id of school of ETE / DEX
+                                            for country_id, mapped_country_dict in mapped_admin_dict.items():
+                                                admin_pk = mapped_country_dict.get('sb_id')
+                                                admin_code = mapped_country_dict.get('c')
+                                                order_admin_divisor = mapped_country_dict.get('order_admin_divisor')
+                                                order_admin_multiplier = mapped_country_dict.get('order_admin_multiplier')
+                                                order_admin_max = mapped_country_dict.get('order_admin_max')
+
+                            # - lookup 'country_admin_dict' in lvlbase_country_dict, with key: admin_pk
+                                                # country_admin_dict contains subject_count of all subjects of this admin, this level
+                                                if admin_pk in lvlbase_country_dict:
+                                                    country_admin_dict = lvlbase_country_dict.get(admin_pk)
+                                                    if logging_on:
+                                                        logger.debug('country_id: ' + str(country_id) + ' ' + str(type(country_id)))
+                                                        logger.debug(
+                                                            'mapped_country_dict: ' + str(mapped_country_dict) + ' ' + str(
+                                                                type(mapped_country_dict)))
+                                                        logger.debug('admin_pk: ' + str(admin_pk) + ' ' + str(type(admin_pk)))
+                                                        logger.debug('admin_code: ' + str(admin_code) + ' ' + str(type(admin_code)))
+
+                            # - add extra row 'lvlbase_admin_dict' for ETE / DOE in lvlbase_dict, if not exists yet
+                                                    if admin_pk not in lvlbase_dict:
+                                                        lvlbase_dict[admin_pk] = {'c': admin_code}
+                                                    lvlbase_admin_dict = lvlbase_dict[admin_pk]
+
+                                                    if logging_on:
+                                                        logger.debug('lvlbase_admin_dict: ' + str(lvlbase_admin_dict) + ' ' + str(type(lvlbase_admin_dict)))
+                                                        #  lvlbase_admin_dict = {'c': 'CURETE', 430: [0, 25, 0], 440: [0, 21, 0], 435: [0, 7, 0]}}
+
+                            # - loop through subjects in country_admin_dict
+                                                    for subjbase_pk, count_list in country_admin_dict.items():
+                                                        if isinstance(subjbase_pk, int):
+                            # - caculate extra exams for ETE / DEX
+                                                            sj_count = count_list[0]
+                                                            tv2_count = count_list[2]
+
+                                                            admin_extra_count = calc_exams_tv02(sj_count, order_admin_divisor, order_admin_multiplier, order_admin_max)
+                                                            # TODO tv2 calc for extra ETE / DEZ
+                                                            # TODO esparate varables for extra tv2 ETE/DEX
+                                                            admin_tv2_count = calc_exams_tv02(tv2_count, order_admin_divisor, order_admin_multiplier, order_admin_max)
+                                                            if logging_on:
+                                                                logger.debug('admin_extra_count: ' + str(admin_extra_count) + ' ' + str(type(admin_extra_count)))
+                                                                logger.debug('admin_tv2_count: ' + str(admin_tv2_count) + ' ' + str(type(admin_tv2_count)))
+
+                            # - add extra exams to lvlbase_admin_dict
+                                                            # index 0 contains sj_count, but admins don't have exams, omly extra and tv2 extra
+                                                            lvlbase_admin_dict[subjbase_pk] = [0, admin_extra_count, admin_tv2_count ]
+
+                            # - also add admin_extra_count to total row of lvlbase_total_dict, exam_total_dict and examyear_total_dict
+                                                            if subjbase_pk in lvlbase_total_dict:
+                                                                # Note: admin has no exams: total_dict[subjbase_pk][0] += 0
+                                                                lvlbase_total_dict[subjbase_pk][1] += admin_extra_count
+                                                                lvlbase_total_dict[subjbase_pk][2] += admin_tv2_count
+
+                                                            if subjbase_pk in exam_total_dict:
+                                                                # Note: admin has no exams: total_dict[subjbase_pk][0] += 0
+                                                                exam_total_dict[subjbase_pk][1] += admin_extra_count
+                                                                exam_total_dict[subjbase_pk][2] += admin_tv2_count
+
+                                                            if subjbase_pk in examyear_total_dict:
+                                                                # Note: admin has no exams: total_dict[subjbase_pk][0] += 0
+                                                                examyear_total_dict[subjbase_pk][1] += admin_extra_count
+                                                                examyear_total_dict[subjbase_pk][2] += admin_tv2_count
+
+                                                    if logging_on:
+                                                        logger.debug('lvlbase_admin_dict: ' + str( lvlbase_admin_dict) + ' ' + str(type(lvlbase_admin_dict)))
+
+    if logging_on:
+        logger.debug('schoolbase_pk is NOT None')
+
+        """
+        lvlbase_pk: 13 <class 'int'>
+        lvlbase_dict: {'c': 'PKL', 
+                       'total': {'total': {427: [102, 8, 30]}, 
+                            1: {'c': 'Cur', 427: [51, 4, 15]}, 
+                            2: {'c': 'Sxm', 427: [51, 4, 15]}
+                            }, 
+                        2: {'c': 'CUR01', 427: [51, 4, 15]}, 
+                        35: {'c': 'SXM01', 427: [51, 4, 15]}} 
+        """
+
         """
         examyear_dict_sample = {'total': {137: 513, 134: 63, 156: 63, 175: 63},
             'DUO': {'total': {137: 513, 134: 63, 156: 63, 175: 63},  # exam_dict: { 'total': {}, lang_dict: {}
@@ -3917,13 +4125,99 @@ def create_studsubj_count_dict(sel_examyear_instance, schoolbase_pk,
                 }
             }
         }
-        """
-    #if logging_on:
-    #    logger.debug('studsubj_count_dict: ' + str(count_dict))
+
+    lvlbase_dict = {'c': 'PBL',
+            'total': {430: [190, 66, 50], 440: [114, 56, 35], 435: [4, 13, 5]},
+            'country': {
+                39: {'c': 'SXMDOE', 430: [82, 8, 20], 440: [52, 8, 15]},
+                23: {'c': 'CURETE', 430: [108, 12, 30], 440: [62, 13, 20], 435: [4, 6, 5]}},
+            35: {'c': 'SXM01', 430: [82, 8, 20], 440: [52, 8, 15]},
+             2: {'c': 'CUR01', 430: [82, 8, 20], 440: [52, 8, 15]},
+             4: {'c': 'CUR03', 430: [26, 4, 10], 440: [10, 5, 5], 435: [4, 6, 5]},
+            39: {'c': 'SXMDOE', 430: [0, 21, 0], 440: [0, 14, 0]},
+            23: {'c': 'CURETE', 430: [0, 25, 0], 440: [0, 21, 0], 435: [0, 7, 0]}}
+
+"""
+
+    if logging_on:
+        logger.debug('studsubj_count_dict: ' + str(count_dict))
 
     return count_dict
 # --- end of create_studsubj_count_dict
 
+
+def calc_extra_exams(subj_count, extra_fixed, extra_perc, round_to):  # PR2021-09-25
+    # - function counts extra exams and examns tv2 per school / subject
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- calc_extra_exams -------')
+        logger.debug('subj_count:  ' + str(subj_count))
+        logger.debug('extra_fixed: ' + str(extra_fixed))
+        logger.debug('extra_perc:  ' + str(extra_perc))
+        logger.debug('round_to:  ' + str(round_to))
+
+    extra_count = 0
+    if subj_count:
+        total_not_rounded = subj_count + extra_fixed + (subj_count * extra_perc / 100)
+        total_divided = total_not_rounded / round_to
+        total_integer = int(total_divided)
+        # total_frac = (total_divided - total_integer)
+        total_roundup = total_integer + 1 if (total_divided - total_integer) else total_integer
+        # total_roundup = total_frac_roundup * order_round_to
+        extra_count = total_roundup * round_to - subj_count
+
+        if logging_on:
+            logger.debug('subj_count:  ' + str(subj_count))
+            logger.debug('total_not_rounded: ' + str(total_not_rounded))
+            logger.debug('total_divided:  ' + str(total_divided))
+            logger.debug('total_integer:  ' + str(total_integer))
+            logger.debug('total_frac: ' + str(total_divided - total_integer))
+            logger.debug('total_roundup: ' + str(total_roundup))
+            logger.debug('total_roundup:   ' + str(total_roundup))
+            logger.debug('extra_count:   ' + str(extra_count))
+            logger.debug('..........: ')
+
+    return extra_count
+# - end of calc_extra_exams
+
+
+def calc_exams_tv02(subj_count, divisor, multiplier, max_exams):  # PR2021-09-25
+    # - count examns tv2 per school / subject:
+    # - 'multiplier' tv02-examns per 'divisor' tv01-examns, roundup to 'multiplier', with max of 'max_exams'
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- calc_exams_tv02 -------')
+        logger.debug('subj_count:  ' + str(subj_count))
+        logger.debug('divisor: ' + str(divisor))
+        logger.debug('multiplier:  ' + str(multiplier))
+        logger.debug('max_exams:  ' + str(max_exams))
+
+    tv2_count = 0
+    if subj_count:
+
+        total_divided = subj_count / divisor
+        total_integer = int(total_divided)
+        # total_frac = (total_divided - total_integer)
+        total_roundup = total_integer + 1 if (total_divided - total_integer) else total_integer
+        # total_roundup = total_frac_roundup * order_round_to
+        tv2_count = total_roundup * multiplier
+
+        if tv2_count > max_exams:
+            tv2_count = max_exams
+
+        if logging_on:
+            logger.debug('subj_count:  ' + str(subj_count))
+            logger.debug('total_divided:  ' + str(total_divided))
+            logger.debug('total_integer:  ' + str(total_integer))
+            logger.debug('total_frac: ' + str(total_divided - total_integer))
+            logger.debug('total_roundup: ' + str(total_roundup))
+            logger.debug('tv2_count:   ' + str(tv2_count))
+            logger.debug('..........: ')
+
+    return tv2_count
+# - end of calc_exams_tv02
 
 # from https://github.com/jmcnamara/XlsxWriter/blob/main/xlsxwriter/utility.py PR2021-08-30
 
@@ -3986,5 +4280,3 @@ def xl_col_to_name(col, col_abs=False):
         col_num = int((col_num - 1) / 26)
 
     return col_abs + col_str
-
-##############################################################

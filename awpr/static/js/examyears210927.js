@@ -1,6 +1,9 @@
 // PR2020-09-29 added
 
 
+let setting_dict = {};
+let permit_dict = {};
+let loc = {};  // locale_dict
 const urls = {};
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -13,9 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // permit dict gets value after downloading permit_list PR2021-03-27
     //  if user has no permit to view this page ( {% if no_access %} ): el_loader does not exist PR2020-10-02
     const may_view_page = (!!el_loader)
-    let permit_dict = {};
-    let setting_dict = {};
-    let loc = {};  // locale_dict
+
 
     let usergroups = [];
 
@@ -32,10 +33,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let selected_subjecttype_pk = null;
     let selected_scheme_pk = null;
     let selected_package_pk = null;
-
     let mod_dict = {};
     let mod_MEY_dict = {};
-    let time_stamp = null; // used in mod add user
+
+    let selected_copyto_examyear_dict = {};
 
     let user_list = [];
 
@@ -53,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_examyear_upload = get_attr_from_el(el_data, "data-url_examyear_upload");
     urls.url_examyear_copytosxm = get_attr_from_el(el_data, "data-url_examyear_copytosxm");
     urls.url_examyear_deletesubjectsfromsxm = get_attr_from_el(el_data, "data-url_examyear_deletesubjectsfromsxm");
+    urls.url_subjectscheme_copyfrom = get_attr_from_el(el_data, "data-url_subjectscheme_copyfrom");
 
     urls.url_school_upload = get_attr_from_el(el_data, "data-url_school_upload");
 
@@ -99,17 +101,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
                 function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
-        }
-
-// ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
-        const el_MSED_input = document.getElementById("id_MSED_input");
-        const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
-        if (el_MSED_input){
-            el_MSED_input.addEventListener("keyup", function(event){
-                setTimeout(function() {t_MSED_InputName(el_MSED_input)}, 50)});
-        }
-        if (el_MSED_btn_save){
-            el_MSED_btn_save.addEventListener("click", function() {t_MSED_Save(MSED_Response)}, false);
         }
 
 // NOT IN USE
@@ -175,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const datalist_request = {
                 setting: {page: "page_examyear"},
                 locale: {page: ["page_examyear"]},
-                examyear_rows: {get: true},
+                examyear_rows: {get_all_countries: true},
                 school_rows: {get: true},
                 department_rows: {get: true}
             };
@@ -287,8 +278,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Delete_examyear, function() {ModConfirmOpen("delete")});
                 if (permit_dict.requsr_role_system){
                     AddSubmenuButton(el_submenu, loc.Copy_examyear_to_SXM, function() {ModConfirmOpen("copy_to_sxm")});
-                    // FIXIT DISABLE THIS FUNCTION,it will remove all students and subjects of SXM
-                    // AddSubmenuButton(el_submenu, loc.Delete_subjects_from_SXM, function() {ModConfirmOpen("delete_subjects_from_sxm")});
+                    // TODO FIXIT DISABLE THIS FUNCTION,it will remove all students and subjects of SXM
+                    //AddSubmenuButton(el_submenu, loc.Delete_subjects_from_SXM, function() {ModConfirmOpen("delete_subjects_from_sxm")});
+
+                    AddSubmenuButton(el_submenu, loc.Copy_subject_schemes, function() {
+                     t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response, true) }); // true = all_countries
+
                     AddSubmenuButton(el_submenu, loc.Upload_awpdata, function() {ModUploadAwp_open()}, null, "id_submenu_importawp");
                 };
             };
@@ -707,7 +702,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log("response.messages", response.messages)
                         b_ShowModMessages(response.messages);
                     }
-
+                    if ("log_list" in response) {
+                       OpenLogfile(response.log_list);
+                    };
                 },  // success: function (response) {
                 error: function (xhr, msg) {
                     // ---  hide loader
@@ -1177,11 +1174,12 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-11-22 PR2021-06-29 PR2021-08-21
     function ModConfirmOpen(mode) {
-        //console.log(" -----  ModConfirmOpen   ----")
-        // called by el_MEY_btn_delete and submenu btn delete examyear
-        // mode is 'delete', 'copy_to_sxm', 'delete_subjects_from_sxm'
+        console.log(" -----  ModConfirmOpen   ----")
+        // called by el_MEY_btn_delete and submenu btn delete examyear and copyfrom_
+        // mode is 'delete', 'copy_to_sxm', 'delete_subjects_from_sxm', 'copy_scheme
         //console.log("selected", selected)
         //console.log("permit_dict", permit_dict)
+
 
         if(!!permit_dict.permit_userpage){
             const tblName = "examyear";
@@ -1189,37 +1187,52 @@ document.addEventListener('DOMContentLoaded', function() {
             let dont_show_modal = false;
 
     // ---  get info from data_map
-            const map_id =  tblName + "_" + selected.examyear_pk;
-            const map_dict = get_mapdict_from_datamap_by_id(examyear_map, map_id)
+            let map_dict = {};
+            if (mode === "copy_scheme"){
+                 if (permit_dict.requsr_role_system){
+                    map_dict = selected_copyto_examyear_dict;
+                }
+            } else {
+                const map_id = tblName + "_" + selected.examyear_pk;
+                map_dict = get_mapdict_from_datamap_by_id(examyear_map, map_id)
+            };
             const has_selected_item = (!isEmpty(map_dict));
 
-            //console.log("data_map", data_map)
-            //console.log("map_id", map_id)
-            //console.log("map_dict", map_dict)
-
+        console.log("has_selected_item", has_selected_item)
     // ---  create mod_dict
             mod_dict = {mode: mode};
 
             if(has_selected_item){
-                mod_dict.country_pk = map_dict.country_id;
-                mod_dict.examyear_pk = map_dict.examyear_id;
-                mod_dict.examyear_code = map_dict.examyear_code;
-                mod_dict.mapid = map_id;
+                if (mode === "copy_scheme"){
+                    mod_dict.copyto_mapid = map_dict.mapid;
+                    mod_dict.copyto_examyear_id = map_dict.examyear_id;
+                    mod_dict.copyto_country_id = map_dict.country_id;
+                    mod_dict.copyto_examyear_code = map_dict.examyear_code;
+                    mod_dict.copyto_country = map_dict.country;
+                } else {
+                    mod_dict.country_pk = map_dict.country_id;
+                    mod_dict.examyear_pk = map_dict.examyear_id;
+                    mod_dict.examyear_code = map_dict.examyear_code;
+                    mod_dict.mapid = map_id;
+                };
             };
 
-        //console.log("mod_dict", mod_dict);
+        console.log("mod_dict", mod_dict);
 // ---  get header text
             let header_text = "";
             const is_NL = (loc.user_lang === "nl");
             if(mode === "delete"){
-                header_text =  loc.Delete_examyear ;
+                header_text = loc.Delete_examyear;
             } else if (mode === "copy_to_sxm"){
-                header_text =  loc.Copy_examyear_to_SXM ;
+                header_text = loc.Copy_examyear_to_SXM;
             } else if (mode === "delete_subjects_from_sxm"){
-                header_text =  loc.Delete_subjects_from_SXM ;
+                header_text = loc.Delete_subjects_from_SXM;
+            } else if (mode === "copy_scheme"){
+                header_text = loc.Copy_subject_schemes;
             }
+
 // ---  put text in modal form
-            const item = (tblName === "examyear") ? loc.Examyear : "";
+            const item = (mode === "copy_scheme") ? loc.Subjectschemes_of_ey_willbe_copiedto_ey : loc.Examyear;
 
             let msg_list = [];
             const hide_save_btn = !has_selected_item;
@@ -1228,16 +1241,14 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 if(mode === "delete"){
                     msg_list[0] = loc.Examyear + " '" + mod_dict.examyear_code + "'" + loc.will_be_deleted;
-                    msg_list[1] = loc.Do_you_want_to_continue;
-
                 } else if (mode === "copy_to_sxm"){
                     msg_list[0] = loc.Examyear + " '" + mod_dict.examyear_code + "'" + loc.will_be_copid_to_sxm
-                    msg_list[1] = loc.Do_you_want_to_continue;
-
                 } else if (mode === "delete_subjects_from_sxm"){
                     msg_list[0] = loc.Subjects + loc._of_ + "St. Maarten " + loc._of_ + loc.Examyear.toLowerCase() + " " + mod_dict.examyear_code +  loc.will_be_deleted;
-                    msg_list[1] = loc.Do_you_want_to_continue;
+                } else if (mode === "copy_scheme"){
+                    msg_list[0] = loc.Subjectschemes_of_ey_willbe_copiedto_ey + " '" + mod_dict.copyto_country +  " " + mod_dict.copyto_examyear_code + "'.";
                 }
+                msg_list[1] = loc.Do_you_want_to_continue;
             }
 
             if(!dont_show_modal){
@@ -1260,9 +1271,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 500);
     // show modal
                 $("#id_mod_confirm").modal({backdrop: true});
-            }  // if(!dont_show_modal)
+            };  // if(!dont_show_modal)
 
-        }  // if(!!permit_dict.permit_crud)
+        } ; // if(!!permit_dict.permit_crud)
+
     };  // ModConfirmOpen
 
 //=========  ModConfirmSave  ================ PR2019-06-23 PR2021-06-15
@@ -1291,9 +1303,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 upload_dict.examyear_pk = mod_dict.examyear_pk;
             } else if (mod_dict.mode === "copy_to_sxm" || mod_dict.mode === "delete_subjects_from_sxm"){
                 upload_dict.examyear_code = mod_dict.examyear_code
+            } else if (mod_dict.mode === "copy_scheme"){
+                upload_dict.table = mod_dict.table;
+                upload_dict.mapid = mod_dict.mapid;
+                upload_dict.copyto_mapid = mod_dict.copyto_mapid;
+                upload_dict.copyto_examyear_pk = mod_dict.copyto_examyear_id;
+                upload_dict.copyto_country_id = mod_dict.copyto_country_id;
+                upload_dict.copyto_country = mod_dict.copyto_country;
             }
             const url_str = (mod_dict.mode === "delete_subjects_from_sxm") ? urls.url_examyear_deletesubjectsfromsxm :
-                            (mod_dict.mode === "copy_to_sxm") ? urls.url_examyear_copytosxm : urls.url_examyear_upload;
+                            (mod_dict.mode === "copy_to_sxm") ? urls.url_examyear_copytosxm :
+                            (mod_dict.mode === "copy_scheme") ? urls.url_subjectscheme_copyfrom : urls.url_examyear_upload;
 
             UploadChanges(upload_dict, url_str);
         };
@@ -1458,20 +1478,28 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ MODAL SELECT EXAMYEAR OR DEPARTMENT ++++++++++++++++++++
 // functions are in table.js, except for MSED_Response
 
-//=========  MSED_Response  ================ PR2021-04-25  PR2021-05-10
+//=========  MSED_Response  ================ PR2021-04-25  PR2021-05-10 PR2021-09-25
     function MSED_Response(new_setting) {
-        //console.log( "===== MSED_Response ========= ");
+        console.log( "===== MSED_Response ========= ");
+        console.log( "new_setting", new_setting);
 
-// ---  upload new selected_pk
-// also retrieve the tables that have been changed because of the change in school / dep
-        const datalist_request = {
-                setting: new_setting,
-                examyear_rows: {get: true},
-                school_rows: {get: true},
-                department_rows: {get: true}
-            };
-        DatalistDownload(datalist_request);
-
+        if(new_setting.all_countries){
+    // open modconfirm for Copy_subject_schemes PR2021-09-24
+            // put selected examyear_pk in selected_copyto_examyear_dict
+            selected_copyto_examyear_dict = get_mapdict_from_datamap_by_tblName_pk(examyear_map, "examyear", new_setting.copyto_examyear_pk);
+            ModConfirmOpen("copy_scheme")
+        } else {
+    // ---  upload new selected_pk
+            new_setting.page = setting_dict.sel_page;
+    // also retrieve the tables that have been changed because of the change in school / dep
+            const datalist_request = {
+                    setting: new_setting,
+                    examyear_rows: {get: true},
+                    school_rows: {get: true},
+                    department_rows: {get: true}
+                };
+            DatalistDownload(datalist_request);
+        };
     }  // MSED_Response
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -1741,6 +1769,20 @@ document.addEventListener('DOMContentLoaded', function() {
         return add_to_list;
     }  // ModSelSchOrDep_FillSelectRow
 //###########################################################################
+
+//=========   OpenLogfile   ====================== PR2021-09-24
+    function OpenLogfile(log_list) {
+        console.log(" ========== OpenLogfile ===========");
+
+        if (!!log_list && log_list) {
+            const today = new Date();
+            const this_month_index = 1 + today.getMonth();
+            const date_str = today.getFullYear() + "-" + this_month_index + "-" + today.getDate();
+            let filename = "Log dd " + date_str + ".pdf";
+
+            printPDFlogfile(log_list, filename )
+        };
+    }; //OpenLogfile
 
 //========= get_permits  ======== // PR2021-04-24
     function get_permits(permit_list) {

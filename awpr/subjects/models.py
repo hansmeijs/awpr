@@ -560,7 +560,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
     is_mvt = BooleanField(default=False)
     is_wisk = BooleanField(default=False)
 
-    reex_se_allowed = BooleanField(default=False)  # herkansing schoolexamen
+    sr_allowed = BooleanField(default=False)  # herkansing schoolexamen
     # deleted: reex_combi_allowed = BooleanField(default=False)
     # deleted: no_centralexam = BooleanField(default=False)
     # deleted: no_reex = BooleanField(default=False)
@@ -574,7 +574,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
     #   has_practexam: only at Vsbo PBL and PKL, all sectorprogramma's except uv 'PR2017-01-28
 
     # Corona issues PR2021-04-25
-    # reex_se_allowed = BooleanField(default=False)
+    # sr_allowed = BooleanField(default=False)
     # reex_combi_allowed = BooleanField(default=False)
     # no_centralexam = BooleanField(default=False)
     # no_reex = BooleanField(default=False)
@@ -678,7 +678,7 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     is_mvt = BooleanField(default=False)
     is_wisk = BooleanField(default=False)
 
-    reex_se_allowed = BooleanField(default=False)  # herkansing schoolexamen
+    sr_allowed = BooleanField(default=False)  # herkansing schoolexamen
     max_reex = PositiveSmallIntegerField(default=1)
     no_thirdperiod = BooleanField(default=False)
     no_exemption_ce = BooleanField(default=False)

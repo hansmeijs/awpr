@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Grades' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/grades210913.js' %}"></script>
+    <script src="{% static 'js/grades210927.js' %}"></script>
     <script src="{% static 'js/download210816.js' %}"></script>
 {% endblock %}
 
@@ -16,21 +16,6 @@
             <h3>{% trans 'Grades' %}</h3>
         </div>
         {% if not no_access %}
-            <div id="id_SBR_container_examperiod" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Period' %}:</h6>
-                <select id="id_SBR_select_period" class="tw_200 border_none px-1"
-                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
-               ></select>
-            </div>
-
-            <div id="id_SBR_container_examtype" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam type' %}:</h6>
-                <select id="id_SBR_select_examtype" class="tw_200 border_none px-1"
-                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
-               >
-                </select>
-            </div>
-
             <div id="id_SBR_container_level" class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Leerweg' %}:</h6>
                 <select id="id_SBR_select_level" class="tw_200 border_none px-1"
@@ -78,49 +63,49 @@
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
+            {% include 'includes/modselectcolumns.html' %}
             {% include 'students/modapprovegrade.html' %}
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'includes/modstatus.html' %}
             {% include 'includes/modnote.html' %}
 
+    <!-- CONTENT HEADER - LOADER -->
             <div class="content_margin_top78">
+                <div class="flex_4 mx-4 visibility_hide">
+                    <h5 id="id_hdr_left"></h5>
+                </div>
+    <!-- loader -->
+                <div class="flex_1 py-2">
+                    {% include 'includes/loader.html' %}
+                </div>
+            </div>
+            <!-- end content_header -->
+
     <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-
                     <button data-btn="btn_exemption" class="btn btn-secondary ">{% trans 'Exemptions' %}</button>
                     <button data-btn="btn_se" class="btn btn-secondary ">{% trans 'School exam' %}</button>
-                    <button data-btn="btn_ce" class="btn btn-secondary ">{% trans 'Central exam' %}</button>
-                    <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Re-examination' %}</button>
-                    <button data-btn="btn_reex3" class="btn btn-secondary ">{% trans 'Third exam period' %}</button>
+                    {% if sr_allowed %}
+                        <button data-btn="btn_sr" class="btn btn-secondary ">{% trans 'Herkansing school exam' %}</button>
+                    {% endif %}
+                    {% if not no_practexam %}
+                        <button data-btn="btn_pe" class="btn btn-secondary ">{% trans 'Practical exam' %}</button>
+                    {% endif %}
+                    {% if not no_centralexam %}
+                        <button data-btn="btn_ce" class="btn btn-secondary ">{% trans 'Central exam' %}</button>
+                        <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Re-examination' %}</button>
+                        {% if not no_thirdperiod %}
+                            <button data-btn="btn_reex3" class="btn btn-secondary ">{% trans 'Third exam period' %}</button>
+                        {% endif %}
+                    {% endif %}
                     <button data-btn="btn_all" class="btn btn-secondary ">{% trans 'All grades' %}</button>
-                    <button data-btn="btn_published" class="btn btn-secondary ">{% trans 'Submitted Ex forms' %}</button>
                 </div>
     <!-- end BUTTON GROUP -->
-
-    <!-- CONTENT HEADER - LOADER -->
-                <div class="content_header flex_container">
-        <!-- submenu -->
-                    <div id="id_submenu" class="mt-5">
-                    </div>
-        <!-- left header_text -->
-                    <div class="flex_4 pl-4 py-2">
-                        <h5 id="id_hdr_left"></h5>
-                    </div>
-        <!-- loader -->
-                    <div class="flex_1 py-2">
-                        {% include 'includes/loader.html' %}
-                    </div>
-
-        <!-- right header_text -->
-                    <div class="text_align_right flex_4 pr-4 py-2">
-                        <h5 id="id_hdr_textright1"></h5>
-                    </div>
-                </div>
+    <!-- END OF CONTENT HEADER -->
     <!-- CONTENT BODY -->
-
-                <div id="id_tbl_container" class="content_body ml-2 mr-4">
     <!-- =================== DATA TABLE  =================== -->
+                <div id="id_tbl_container" class="content_body ml-2 mr-4">
                     <table class="table tsa_tbl">
                         <thead id="id_tblHead_datatable"></thead>
                         <tbody id="id_tblBody_datatable"></tbody>
@@ -143,7 +128,6 @@
                     data-noteattachment_download_url="{% url 'noteattachment_download_url' pk_int=0 %}"
                 >
                 </div>
-            </div>
         {% endif %}
     </div>
 {% endblock %}

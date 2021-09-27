@@ -26,3 +26,4 @@ def round_decimal(input_str, digits=0):
     output_decimal = input_decimal.quantize(Decimal(decimal_string), rounding='ROUND_HALF_UP')
     return output_decimal
 
+

@@ -535,7 +535,8 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
     prefix = data_dict.get('prefix', '')
 
 # - base_pk only has value when user has ticked off 'same_student' after test_upload
-    # insteaad of creating a new student_base, the pase_pk will be used and 'islinked' will be set True
+    # TODO chnage to linked fiels ( ';'-delimited string of linked student_id
+    # insteaad of creating a new student_base, the base_pk will be used and 'islinked' will be set True
     # base_pk = data_dict.get('base_pk')
 
     idnumber_nodots, msg_err, birthdate_dteobjNIU = stud_val.get_idnumber_nodots_stripped_lower(id_number)
@@ -579,9 +580,8 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
                 department=department,
                 idnumber_nodots=idnumber_nodots,
                 upload_fullname=full_name,
-                is_import=True,
                 error_list=error_list,
-                notfound_is_error=False
+                found_is_error=False
             )
         if logging_on:
             student_pk = student.pk if student else 'None'

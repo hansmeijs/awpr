@@ -3,7 +3,7 @@
 // PR2021-07-23  declare variables outside function to make them global variables
 let setting_dict = {};
 let permit_dict = {};
-let loc = {};
+let loc = {};  // locale_dict
 let urls = {};
 
 const field_settings = {};
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fields: ["subj_name", "sjtp_abbrev", "ete_exam",
                 "gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
                 "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
-                "has_practexam",  "has_pws", "reex_se_allowed",
+                "has_practexam",  "has_pws", "sr_allowed",
                 "max_reex", "no_thirdperiod",  "no_exemption_ce"],
         captions: ["Subject", "Character", "ETE_exam",
                 "Grade_type", "SE_weighing",  "CE_weighing", "Mandatory", "Mandatory_if_subject", "Combination_subject", "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_names: ["select", "scheme_name", "subj_code", "subj_name", "sjtp_abbrev", "ete_exam",
                             "gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
                             "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
-                            "has_practexam",  "has_pws", "reex_se_allowed",
+                            "has_practexam",  "has_pws", "sr_allowed",
                             "max_reex",  "no_thirdperiod",  "no_exemption_ce"],
                     field_tags: ["div", "div", "div", "div", "div", "div",
                                 "div", "div", "div", "div", "div", "div", "div", "div", "div",
@@ -223,27 +223,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click", function() {
                 t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response)}, false );
-        }
-        //const el_hdrbar_school = document.getElementById("id_hdrbar_school");
-        //const el_hdrbar_department = document.getElementById("id_hdrbar_department");
-        //if (el_hdrbar_department){
-        //    el_hdrbar_department.addEventListener("click", function() {
-        //        t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
-        //}
-        //if (el_hdrbar_school){
-        //    el_hdrbar_school.addEventListener("click",
-        //        function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
-        //}
-
-// ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
-        const el_MSED_input = document.getElementById("id_MSED_input");
-        const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
-        if (el_MSED_input){
-            el_MSED_input.addEventListener("keyup", function(event){
-                setTimeout(function() {t_MSED_InputName(el_MSED_input)}, 50)});
-        }
-        if (el_MSED_btn_save){
-            el_MSED_btn_save.addEventListener("click", function() {t_MSED_Save(MSED_Response)}, false);
         }
 
 // ---  SIDE BAR ------------------------------------
@@ -363,7 +342,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 subject_rows: {get: true},
                 schemeitem_rows: {get: true},
                 subjecttype_rows: {cur_dep_only: false},
-
                 examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true},
@@ -483,9 +461,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
-        //console.log("===  CreateSubmenu == ");
+        console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
 
+        console.log("requsr_role_system", permit_dict.requsr_role_system);
+        console.log("permit_crud", permit_dict.permit_crud);
         if (permit_dict.permit_crud){
                 AddSubmenuButton(el_submenu, loc.Add_subject, function() {MSUBJ_Open()}, ["tab_show", "tab_btn_subject"]);
                 AddSubmenuButton(el_submenu, loc.Delete_subject, function() {ModConfirmOpen("subject", "delete")}, ["tab_show", "tab_btn_subject"]);
@@ -503,6 +483,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         }
         AddSubmenuButton(el_submenu, loc.Download_subject_scheme, null, ["tab_show", "tab_btn_scheme", "tab_btn_schemeitem", "tab_btn_subjecttype" ], "id_submenu_download_schemexlsx", urls.url_download_scheme_xlsx, false);  // true = download
+
 
         AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_subject")}, [], "id_submenu_columns")
 
@@ -553,6 +534,7 @@ document.addEventListener('DOMContentLoaded', function() {
         selected.subject_dict = null;
         selected.schemeitem_dict = null;
         selected.subjecttype_dict = null;
+        selected.copyto_examyear_dict = null;  // for Copy_subject_schemes PR2021-09-24
 
 // ---  deselect all highlighted rows - also tblFoot , highlight selected row
         DeselectHighlightedRows(tr_clicked, cls_selected);
@@ -685,6 +667,7 @@ if(j){th_header.classList.add("border_left")};
 // ++++++++++ create filter row +++++++++++++++
         // --- add th to tblRow_filter.
                 const th_filter = document.createElement("th");
+
         // --- create element with tag based on filter_tag
                     const filter_field_tag = (["text", "number"].includes(filter_tag)) ? "input" : "div";
                     const el_filter = document.createElement(filter_field_tag);
@@ -941,7 +924,7 @@ if(j){td.classList.add("border_left")};
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
                 } else if (["ete_exam", "addedbyschool", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
                             "extra_count_allowed", "extra_nocount_allowed", "elective_combi_allowed",
-                            "has_practexam", "has_pws", "reex_se_allowed", "reex_combi_allowed",
+                            "has_practexam", "has_pws", "sr_allowed", "reex_combi_allowed",
                             "no_reex", "no_exemption_ce"].includes(field_name)) {
                     const is_etenorm = fld_value;
                     filter_value = (is_etenorm) ? "1" : "0";
@@ -1116,6 +1099,9 @@ if(j){td.classList.add("border_left")};
                     };
                     if ("updated_schemeitem_rows" in response) {
                         RefreshDataRows("schemeitem", response.updated_schemeitem_rows, schemeitem_rows, true)  // true = update
+                    };
+                    if ("log_list" in response) {
+                       OpenLogfile(response.log_list);
                     };
 
                     $("#id_mod_subject").modal("hide");
@@ -1494,6 +1480,8 @@ if(j){td.classList.add("border_left")};
         selected.subject_dict = null;
         selected.schemeitem_dict = null;
         selected.subjecttype_dict = null;
+        selected.copyto_examyear_dict = null;  // for Copy_subject_schemes PR2021-09-24
+
         selected.depbase_pk = null;
         selected.scheme_pk = null;
         selected.scheme_dict = null;
@@ -1818,23 +1806,30 @@ if(j){td.classList.add("border_left")};
 
 //=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10
     function MSED_Response(new_setting) {
-        //console.log( "===== MSED_Response ========= ");
+        console.log( "===== MSED_Response ========= ");
 
-// ---  upload new selected_pk
-// also retrieve the tables that have been changed because of the change in examyear / dep
+        if(new_setting.all_countries){
+    // open modconfirm for Copy_subject_schemes PR2021-09-24
+            // put selected examyear_pk in selected.copyto_examyear_dict
+            selected.copyto_examyear_dict = get_mapdict_from_datamap_by_tblName_pk(examyear_map, "examyear", new_setting.copyto_examyear_pk);
+            ModConfirmOpen("examyear", "copy_scheme")
+        } else {
+    // ---  upload new selected_pk
+            new_setting.page = setting_dict.sel_page;
+    // also retrieve the tables that have been changed because of the change in examyear / dep
 
-        const datalist_request = {
-                setting: new_setting,
-                department_rows: {get: true},
-                subject_rows: {get: true},
-                level_rows: {cur_dep_only: true},
-                sector_rows: {cur_dep_only: true},
-                subjecttype_rows: {cur_dep_only: false},
-                scheme_rows: {get: true}
-            };
+            const datalist_request = {
+                    setting: new_setting,
+                    department_rows: {get: true},
+                    subject_rows: {get: true},
+                    level_rows: {cur_dep_only: true},
+                    sector_rows: {cur_dep_only: true},
+                    subjecttype_rows: {cur_dep_only: false},
+                    scheme_rows: {get: true}
+                };
 
-        DatalistDownload(datalist_request);
-
+            DatalistDownload(datalist_request);
+        };
     }  // MSED_Response
 
 
@@ -3817,9 +3812,9 @@ if(j){td.classList.add("border_left")};
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03
     function ModConfirmOpen(tblName, mode) {
-        //console.log(" -----  ModConfirmOpen   ----")
-        // values of mode are : "delete"
-        //console.log("mode", mode)
+        console.log(" -----  ModConfirmOpen   ----")
+        // values of mode are : "delete", "copy_scheme"
+        console.log("mode", mode)
 
         if(permit_dict.permit_crud){
             el_confirm_msg_container.innerHTML = null;
@@ -3836,36 +3831,42 @@ if(j){td.classList.add("border_left")};
                 map_dict = selected.subjecttype_dict;
             } else if(tblName === "subjecttypebase"){
                 map_dict = selected.subjecttypebase_dict;
+            } else if(tblName === "examyear"){
+                map_dict =selected.copyto_examyear_dict;
             };
 
     // ---  get info from data_map or data_rows
-            //console.log("map_dict", map_dict)
+            console.log("map_dict", map_dict)
 
     // ---  create mod_dict
             mod_dict = {mode: mode, table: tblName};
             const has_selected_item = (!isEmpty(map_dict));
             if(has_selected_item){
-                mod_dict.id = map_dict.id;
-                // mod_dict.examyear_pk = map_dict.examyear_id;
-                mod_dict.scheme_pk = map_dict.scheme_id;
-                mod_dict.abbrev = map_dict.abbrev;
-                mod_dict.name = map_dict.name;
-                mod_dict.sequence = map_dict.sequence;
-                mod_dict.depbases = map_dict.depbases;
                 mod_dict.mapid = map_dict.mapid;
+                if (tblName === "examyear"){
+                    mod_dict.copyto_mapid = map_dict.mapid;
+                    mod_dict.copyto_examyear_id = map_dict.examyear_id;
+                    mod_dict.copyto_country_id = map_dict.country_id;
+                    mod_dict.copyto_examyear_code = map_dict.examyear_code;
+                    mod_dict.copyto_country = map_dict.country;
+                } else {
+                    mod_dict.id = map_dict.id;
+                    mod_dict.mapid = map_dict.mapid;
+                    mod_dict.scheme_pk = map_dict.scheme_id;
+                    mod_dict.abbrev = map_dict.abbrev;
+                    mod_dict.name = map_dict.name;
+                    mod_dict.sequence = map_dict.sequence;
+                    mod_dict.depbases = map_dict.depbases;
+                };
             };
             if (mode === "inactive") {
-                  mod_dict.current_isactive = map_dict.is_active;
+                mod_dict.current_isactive = map_dict.is_active;
             }
+            console.log("mod_dict", mod_dict)
+            console.log("has_selected_item", has_selected_item)
 
     // ---  put text in modal form
             let dont_show_modal = false;
-
-            const item = (tblName === "subject") ? loc.Subject :
-                           (tblName === "subjecttype") ? loc.Character :
-                           (tblName === "subjecttypebase") ? loc.Characterbase :
-                           (tblName === "scheme") ? loc.Scheme :
-                           (tblName === "package") ? loc.Package : "";
 
             let header_text = (tblName === "subject") ? loc.Delete_subject :
                            (tblName === "subjecttype") ? loc.Delete_character :
@@ -3873,25 +3874,26 @@ if(j){td.classList.add("border_left")};
                            (tblName === "scheme") ? loc.Delete_scheme :
                            (tblName === "package") ? loc.Delete_package : "";
 
-            //console.log("tblName", tblName)
-            //console.log("mod_dict", mod_dict)
-            //console.log("item", item)
+            const item = (tblName === "subject") ? loc.Subject :
+                           (tblName === "subjecttype") ? loc.Character :
+                           (tblName === "subjecttypebase") ? loc.Characterbase :
+                           (tblName === "scheme") ? loc.Scheme :
+                           (tblName === "package") ? loc.Package : "";
 
             let msg01_txt = null, msg02_txt = null, msg03_txt = null;
             let hide_save_btn = false;
             if(!has_selected_item){
                 msg01_txt = loc.There_is_no__ + item.toLowerCase() + loc.__selected;
                 hide_save_btn = true;
-            } else if(mode === "delete"){
+            } else {
                 let item_name = (tblName === "subject") ? mod_dict.name :
                            (tblName === "subjecttype") ? mod_dict.name :
                            (tblName === "subjecttypebase") ? mod_dict.name :
                            (tblName === "scheme") ? mod_dict.name :
                            (tblName === "package") ? mod_dict.name : "";
 
-
             //console.log("item_name", item_name)
-                msg01_txt = item + " '" + item_name + "'" + loc.will_be_deleted
+                msg01_txt = item + " '" + item_name + "'" + loc.will_be_deleted;
                 msg02_txt = loc.Do_you_want_to_continue;
 
             }
@@ -3931,8 +3933,9 @@ if(j){td.classList.add("border_left")};
         //console.log("mod_dict: ", mod_dict);
 
         let close_modal = true  // !permit_dict.permit_crud;
+        if(mod_dict.mode === "copy_scheme") {
 
-        if(permit_dict.permit_crud){
+        } else if(permit_dict.permit_crud){
             let tblRow = document.getElementById(mod_dict.mapid);
 
     // ---  when delete: make tblRow red, before uploading
@@ -4241,7 +4244,6 @@ if(j){td.classList.add("border_left")};
 
         return is_hidden;
     };  // get_column_is_hidden
-
 
 
 })  // document.addEventListener('DOMContentLoaded', function()

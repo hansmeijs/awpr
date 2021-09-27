@@ -174,6 +174,7 @@ urlpatterns = [
         path('examyear_upload', school_views.ExamyearUploadView.as_view(), name='url_examyear_upload'),
         path('examyear_copytosxm', school_views.ExamyearCopyToSxmView.as_view(), name='url_examyear_copytosxm'),
         path('examyear_deletesubjectsfromsxm', school_views.ExamyearDeleteSubjectsFromSxmView.as_view(), name='url_examyear_deletesubjectsfromsxm'),
+        path('subjectscheme_copyfrom', school_views.CopySchemesFromExamyearView.as_view(), name='url_subjectscheme_copyfrom'),
 
         path('school', school_views.SchoolListView.as_view(), name='schools_url'),
         path('school_upload', school_views.SchoolUploadView.as_view(), name='url_school_upload'),
@@ -209,10 +210,12 @@ urlpatterns = [
         path('student', student_views.StudentListView.as_view(), name='students_url'),
 
         path('student_upload', student_views.StudentUploadView.as_view(), name='url_student_upload'),
-        path('student_biscand', student_views.StudentBiscandView.as_view(), name='url_student_biscand'),
+        path('student_biscand', student_views.StudentLinkStudentView.as_view(), name='url_student_biscand'),
 
         path('studentsubject', student_views.StudentsubjectListView.as_view(), name='studentsubjects_url'),
         path('studsubj_upload', student_views.StudentsubjectUploadView.as_view(), name='url_studsubj_upload'),
+        path('studsubj_single_update', student_views.StudentsubjectSingleUpdateView.as_view(), name='url_studsubj_single_update'),
+
         # NIU path('studsubj_validate', student_views.StudentsubjectValidateView.as_view(), name='url_student_validate'),
 
         path('studsubj_validate_scheme', student_views.StudentsubjectValidateSchemeView.as_view(), name='url_studsubj_validate_scheme'),
@@ -234,7 +237,7 @@ urlpatterns = [
 
 # ===== ORDERLISTS ========================== PR2021-04-04
     path('orderlists/', include([
-        path('orderlist', student_views.OrederlistsListView.as_view(), name='orderlists_url'),
+        path('orderlist', student_views.OrderlistsListView.as_view(), name='orderlists_url'),
         path('download_orderlist/<list>/', grade_excel.OrderlistDownloadView.as_view(), name='orderlist_download_url'),
         path('download_orderlist_per_school', grade_excel.OrderlistPerSchoolDownloadView.as_view(), name='orderlist_per_school_download_url'),
         path('orderlist_parameters', school_views.OrderlistsParametersView.as_view(), name='url_orderlist_parameters'),

@@ -55,12 +55,12 @@ def create_mailbox_rows(examyear_pk, request):
     return mailbox_rows
 # --- end of create_mailbox_rows
 
-def create_examyear_rows(req_usr, append_dict, examyear_pk):
-    # --- create rows of all examyears of this country PR2020-10-04
+def create_examyear_rows(req_usr, append_dict, examyear_pk, get_all_countries=False):
+    # --- create rows of all examyears of this country PR2020-10-04 PR2021-09-24
     #logger.debug(' =============== create_examyear_rows ============= ')
 
     # when role = school: show examyear plus school.isactivated
-
+    country_filter = "WHERE TRUE" if get_all_countries else "WHERE ey.country_id = %(cntr_id)s::INT"
     sql_keys = {}
     if req_usr.role <= c.ROLE_008_SCHOOL:
         sql_keys['sb_id'] = req_usr.schoolbase.pk
@@ -73,15 +73,19 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk):
             "WHERE sch.base_id = %(sb_id)s::INT"]
     else:
         sql_keys['cntr_id'] = req_usr.country.pk
-        sql_list = ["SELECT ey.id AS examyear_id, ey.country_id, CONCAT('examyear_', ey.id::TEXT) AS mapid,",
-            "ey.code AS examyear_code,  ey.published, ey.locked, ey.createdat, ey.publishedat, ey.lockedat,",
-            "ey.no_practexam, ey.reex_se_allowed, ey.no_centralexam, ey.no_thirdperiod,",
+        sql_list = ["SELECT ey.id AS examyear_id, ey.country_id, cntr.name AS country,",
+                    "CONCAT('examyear_', ey.id::TEXT) AS mapid,",
+            "ey.code AS examyear_code, ey.published, ey.locked, ey.createdat, ey.publishedat, ey.lockedat,",
+            "ey.no_practexam, ey.sr_allowed, ey.no_centralexam, ey.no_thirdperiod,",
             "ey.order_extra_fixed, ey.order_extra_perc, ey.order_round_to,",
             "ey.order_tv2_divisor, ey.order_tv2_multiplier, ey.order_tv2_max,",
+            "ey.order_admin_divisor, ey.order_admin_multiplier, ey.order_admin_max,",
             "ey.modifiedby_id, ey.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
             "FROM schools_examyear AS ey",
+            "INNER JOIN schools_country AS cntr ON (cntr.id = ey.country_id)",
             "LEFT JOIN accounts_user AS au ON (au.id = ey.modifiedby_id)",
-            "WHERE ey.country_id = %(cntr_id)s::INT"]
+            country_filter
+        ]
 
     if examyear_pk:
         # when examyear_pk has value: skip other filters

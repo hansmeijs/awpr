@@ -15,10 +15,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def get_bis_candidates(sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-09-05
+def get_multiple_occurrences(sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-09-05
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug('----------- get_bis_candidates ----------- ')
+        logger.debug('----------- get_multiple_occurrences ----------- ')
         logger.debug('--- sel_examyear: ' + str(sel_examyear))
         logger.debug('--- sel_schoolbase: ' + str(sel_schoolbase))
         logger.debug('--- sel_depbase: ' + str(sel_depbase))
@@ -36,56 +36,39 @@ def get_bis_candidates(sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-09-
 
         if student_idnumber_list:
             for student_idnumber in student_idnumber_list:
-                student_dict = lookup_bis_candidate(firstinrange_examyear_int, sel_examyear, sel_schoolbase, sel_depbase, student_idnumber)
+                student_dict = lookup_multiple_occurrences(firstinrange_examyear_int, sel_examyear, sel_schoolbase, sel_depbase, student_idnumber)
                 if student_dict:
                     dictlist.append(student_dict)
     if logging_on:
         logger.debug('dictlist: ' + str(dictlist))
 
     return dictlist
-# - end of get_bis_candidates
+# - end of get_multiple_occurrences
 
 
-def lookup_bis_candidate(firstinrange_examyear_int, sel_examyear, sel_schoolbase, sel_depbase, student_idnumber):  # PR2021-09-05
+def lookup_multiple_occurrences(firstinrange_examyear_int, sel_examyear, sel_schoolbase, sel_depbase, student_idnumber):  # PR2021-09-05
     # function looks up matching students in previous year(s)
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug('----------- lookup_bis_candidate ----------- ')
+        logger.debug('----------- lookup_multiple_occurrences ----------- ')
         logger.debug('--- student: ' + str(student_idnumber))
 
     # first scheck if this student exists in this school, last year
     student_dict = {}
     if student_idnumber:
+        idnumber_lower = student_idnumber.lower()
 
-# - get current student
-        student = stud_mod.Student.objects.get_or_none(
-            idnumber__iexact=student_idnumber,
-            school__examyear=sel_examyear,
-            school__base=sel_schoolbase,
-            department__base=sel_depbase)
+        cur_stud_dict = get_cur_stud_dict(idnumber_lower, sel_examyear, sel_schoolbase, sel_depbase)
+        if cur_stud_dict:
+            student_pk = cur_stud_dict.get('student_id')
+            student_dict['cur_stud'] = cur_stud_dict
 
-        if student and student.idnumber:
-            if logging_on:
-                logger.debug('student: ' + str(student))
-            student_dict['cur_stud'] = {
-                'student_id': student.pk,
-                'base_id': student.base.pk,
-                'idnumber': student.idnumber,
-                'fullname': student.fullname,
-                'depbase_code': sel_depbase.code,
-                'lvlbase_code': student.level.base.code,
-                'sctbase_code': student.sector.base.code,
-                'islinked': student.islinked,
-                'notlinked': student.notlinked
-            }
-
-            idnumber_lower = student.idnumber.lower()
 # get other occurrences of this student within period, from all countries
             sql_keys = {'first_ey': firstinrange_examyear_int, 'cur_ey': sel_examyear.code,
-                        'st_id': student.pk, 'idnumber': idnumber_lower}
-            sql_list = ["SELECT st.id AS student_id, st.base_id, st.lastname, st.firstname, st.prefix, st.result_info, st.islinked, st.notlinked,",
-                        "CONCAT(st.prefix, CASE WHEN st.prefix IS NULL THEN NULL ELSE ' ' END, st.lastname, ', ', st.firstname) AS fullname,",
+                        'st_id': student_pk, 'idnumber': idnumber_lower}
+            sql_list = ["SELECT st.id AS student_id, st.base_id, st.lastname, st.firstname, st.prefix, st.result_info, st.linked, st.notlinked,",
+                        "CONCAT_WS (' ', st.prefix, CONCAT(st.lastname, ','), st.firstname) AS fullname,",
                         "CONCAT(depbase.code, ' ', lvl.abbrev, CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE ' ' END, sct.abbrev) AS deplvlsct,",
                         "ey.code AS examyear, sch.name AS school_name, depbase.code AS depbase_code,",
                         "lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev",
@@ -99,7 +82,7 @@ def lookup_bis_candidate(firstinrange_examyear_int, sel_examyear, sel_schoolbase
                         "INNER JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
                         "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
                         "INNER JOIN subjects_sectorbase AS sctbase ON (sctbase.id = sct.base_id)",
-                        "WHERE ey.code >= %(first_ey)s::INT AND ey.code <= %(cur_ey)s::INT",
+                        "WHERE ey.code <= %(cur_ey)s::INT",
                         "AND LOWER(st.idnumber) = %(idnumber)s::TEXT",
                         "AND NOT st.id = %(st_id)s::INT",
                         "AND NOT st.tobedeleted"
@@ -112,8 +95,47 @@ def lookup_bis_candidate(firstinrange_examyear_int, sel_examyear, sel_schoolbase
 
     if logging_on:
         logger.debug('student_dict: ' + str(student_dict))
+
     return student_dict
-# - end of lookup_bis_candidate
+# - end of lookup_multiple_occurrences
+
+
+def get_cur_stud_dict(idnumber_lower, sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-09-17
+
+    student_dict = None
+    if idnumber_lower:
+        # get student with this idnumber of this school and dep
+        sql_keys = {'idnumber': idnumber_lower, 'ey_pk': sel_examyear.pk,
+                    'sbase_id': sel_schoolbase.pk, 'depbase_id': sel_depbase.pk}
+        sql_list = [
+            "SELECT st.id AS student_id, st.base_id, st.idnumber, st.linked, st.notlinked,",
+            "CONCAT_WS (' ', st.prefix, CONCAT(st.lastname, ','), st.firstname) AS fullname,",
+            "depbase.code AS depbase_code, lvlbase.code AS lvlbase_code, sctbase.code AS sctbase_code",
+    
+            "FROM students_student AS st",
+            "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+            "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
+            "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+
+            "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
+            "INNER JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
+            "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
+            "INNER JOIN subjects_sectorbase AS sctbase ON (sctbase.id = sct.base_id)",
+
+            "WHERE ey.id = %(ey_pk)s::INT",
+            "AND sch.base_id = %(sbase_id)s::INT",
+            "AND LOWER(st.idnumber) = %(idnumber)s::TEXT",
+            "AND NOT st.tobedeleted"
+            ]
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            student_dict = af.dictfetchone(cursor)
+
+    return student_dict
+# - end of
 
 
 def get_idnumbers_with_multiple_occurrence(sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-09-05
@@ -166,20 +188,19 @@ def get_idnumbers_with_multiple_occurrence(sel_examyear, sel_schoolbase, sel_dep
                 for row in cursor.fetchall():
                     student_idnumber_list.append(row[0])
     return firstinrange_examyear_int, student_idnumber_list
-
-
 # - end of get_idnumbers_with_multiple_occurrence
 
 
 # ########################### validate students ##############################
 def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, upload_fullname,
-                   is_import, error_list, found_is_error=False, notfound_is_error=False):
-    # PR2019-12-17 PR2020-12-06 PR2020-12-31  PR2021-02-27  PR2021-06-19  PR2021-07-21
-    # function searches for existing student by idnumber in this school and this examyear, all departments
-    # if multiple found it searches again for idnumber + lastname + firstname
-    # gives error if multiple found, or found in different department
-    # also checks for first / lastname if multiple found
-    # this one is not used for uploading subjects and grade - those can skip checks
+                   error_list, found_is_error=False):
+    # PR2019-12-17 PR2020-12-06 PR2020-12-31  PR2021-02-27  PR2021-06-19  PR2021-07-21  PR2021-09-22
+    # called before creating new student, by upload_student_from_datalist and create_student
+    # function searches for existing student by idnumber, only in this school and this examyear
+    # if student exists in other schools is checked by StudentLinkStudentView
+    # gives error if multiple found, or found in different department, returns student if found in this department
+
+    # this one is not used for uploading subjects and grade - they lookup idnumber in students_dict_with_subjbase_pk_list
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -191,143 +212,115 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
 
     student = None
     not_found = False
-    has_error = False
+    err_str = None
 
-    # - search student in this school and department by idnumber
     # msg_err already given when id is blank or too long ( in stud_val.get_idnumber_nodots_stripped_lower)
     if idnumber_nodots:
         msg_keys = {'cpt': _('ID-number'), 'val': idnumber_nodots, 'name': upload_fullname}
 
-        err_str = None
-
 # - count how many students exist with this idnumber in this school (all departments)
         # get all students from this school with this idnumber
-        row_count = stud_mod.Student.objects.filter(
+        # idnumber can have letters, therefore compare case insensitive
+        rows = stud_mod.Student.objects.filter(
             idnumber__iexact=idnumber_nodots,
             school=school
-        ).count()
+        )
         if logging_on:
-            logger.debug('row_count: ' + str(row_count))
+            for row in rows:
+                logger.debug('row: ' + str(row))
 
-        if row_count == 0:
+# - if no students found:
+        if len(rows) == 0:
             not_found = True
-            # - when importing studsubjects or grade: return error when student not found in any department
-            if notfound_is_error:
-                has_error = True
-                err_str = str( _("%(cpt)s '%(val)s' does not exist this year in this school.") % msg_keys)
 
-        elif row_count == 1:
+        elif len(rows) == 1:
 
-# - if one student found: check if it is in this department
-            row = stud_mod.Student.objects.get_or_none(
-                idnumber__iexact=idnumber_nodots,
-                school=school)
-            if row is None:
-                # this should not be possible
-                has_error = True
-                err_str = str(_("%(cpt)s '%(val)s' not found.") % msg_keys)
-            else:
+# - if one student found: get this student and check if it is in this department
+            row = rows[0]
 
 # - return student when student only occurs once and is in this department
-                if row.department_id == department.pk:
-                    if found_is_error:
-                        has_error = True
-                        err_str = str(_("%(cpt)s '%(val)s' already exists.") % msg_keys)
-                    else:
-                        #return student when updating student info when importing PR2021-08-23
-                        student = row
+            if row.department_id == department.pk:
+                # return error when creating single student
+                if found_is_error:
+                    err_str = str(_("%(cpt)s '%(val)s' already exists.") % msg_keys)
                 else:
-# - return error when student only occurs in different department
-                    # in evening school student can do exam in two different departments at the same time
-                    # info from Richard Westerink, confirmed by Nacy Josephina August 2021
-                    has_error = not school.iseveningschool and not school.islexschool
-                    err_str = str(
-                        _("%(cpt)s '%(val)s' already exists in a different department.") % msg_keys)
-        elif (school.iseveningschool and row_count == 2) or (school.islexschool and row_count == 2):
-            # in evening school student can do exam in two different departments at the same time
-            # info from Richard Westerink, confirmed by Nacy Josephina August 2021
-            # if found multiples times in evening / lex school:
-            #
-            count = stud_mod.Student.objects.filter(
-                idnumber__iexact=idnumber_nodots,
-                school=school,
-                department=department).count()
-            if count == 1:
-                student = stud_mod.Student.objects.get_or_none(
-                    idnumber__iexact=idnumber_nodots,
-                    school=school,
-                    department=department)
-            elif count > 1:
-                has_error = True
-                err_str = str(_("%(cpt)s '%(val)s' exists multiple times this year ") % msg_keys)
-
-            if student is None:
-                # this should not be possible
-                has_error = True
-                err_str = str(_("%(cpt)s '%(val)s' not found in this department.") % msg_keys)
-
-        else:  # row_count > 1:
-            # - multiple students found with this idnumber in this school (all departments)
-            has_error = True
-
-# - check departments of students
-            found_in_this_dep, found_in_diff_dep = False, False
-
-            # .values() returns dict,
-            # .values_list() returns tuple,
-            # with flat=True: values_list(id, flat=True) returns value when there is only 1 field
-
-            dep_ids = stud_mod.Student.objects.filter(
-                idnumber__iexact=idnumber_nodots,
-                school=school).values('department_id')
-
-            for item in dep_ids:
-                # dep_id {'department_id': 97}
-                dep_id = item.get('department_id')
-                if logging_on:
-                    logger.debug('item: ' + str(item))
-                    logger.debug('dep_id: ' + str(dep_id))
-
-                if dep_id and dep_id == department.pk:
-                    found_in_this_dep = True
-                else:
-                    found_in_diff_dep = True
-
-            err_str = str(_("%(cpt)s '%(val)s' exists multiple times this year ") % msg_keys)
-            if logging_on:
-                logger.debug('msg_keys: ' + str(msg_keys))
-                logger.debug('err_str: ' + str(err_str))
-
-            if found_in_diff_dep:
-                if found_in_this_dep:
-                    err_str += str(_("in multiple departments of your school."))
-                else:
-                    err_str += str(_("in other departments of your school."))
-            elif found_in_this_dep:
-                err_str += str(_("in this department."))
-
-        if has_error:
-            if notfound_is_error:
-                error_list.append(err_str)
+                    # return student when importing, to update student infoPR2021-08-23
+                    student = row
             else:
-                if is_import:
-                    #skipped_str = upload_fullname + str(_(' will be skipped.')) if is_test else str(_(' is skipped.'))
-                    #error_list.append(' '.join((skipped_str, err_str)))
-                    error_list.append(err_str)
+
+# - return error when student occurs in different department (not when eveningschool or lexschool)
+                # in evening school student can do exam in two different departments at the same time
+                # info from Richard Westerink, confirmed by Nancy Josephina August 2021
+                if not school.iseveningschool and not school.islexschool:
+                    err_str = str(_("%(cpt)s '%(val)s' already exists in a different department.") % msg_keys)
                 else:
-                    error_list.append(err_str)
+                    not_found = True
+
+# - if two students found: (only when eveningschool or lexschool)
+        elif (len(rows) == 2) and (school.iseveningschool or school.islexschool):
+            # in evening school student can do exam in two different departments at the same time
+            # info from Richard Westerink, confirmed by Nancy Josephina August 2021
+
+    # - check which department both students have
+            # - if one student exists in this department: return thisstudent
+            # - if both students exists in this department: return error
+            # - if both students exists in other departments: return error
+
+            student = None
+            for row in rows:
+                if row.department_id == department.pk:
+                    if student is None:
+                        student = row
+                    else:
+                        student = None
+
+    # - return error if both students exist in this this or other department: return error
+            if student is None:
+                err_str = get_error_multiple_students(rows, department, msg_keys)
+            elif found_is_error:
+                err_str = str(_("%(cpt)s '%(val)s' already exists.") % msg_keys)
+
+# - return error if multiple students found (2 or more in dayschool, 3 or more in eveningschool or lexschool)
+        else:
+            err_str = get_error_multiple_students(rows, department, msg_keys)
+
         if logging_on:
             logger.debug('student: ' + str(student))
             logger.debug('not_found: ' + str(not_found))
             logger.debug('err_str: ' + str(err_str))
             logger.debug('----------- end of lookup_student_by_idnumber_nodots ---- ')
 
-    return student, not_found, has_error
+    return student, not_found, err_str
 # --- end of lookup_student_by_idnumber_nodots
 
 
-# ========  get_prefix_lastname_comma_firstname  ======= PR2021-06-19
+def get_error_multiple_students(rows, department, msg_keys):  # PR2021-09-22
+    # - check which department both students have
+    # - if one student exists in this department: return thisstudent
+    # - if both students exists in this department: return error
+    # - if both students exists in other departments: return error
 
+    found_in_this_dep, found_in_diff_dep = False, False
+    for row in rows:
+        if row.department_id == department.pk:
+            found_in_this_dep = True
+        else:
+            found_in_diff_dep = True
+
+    err_str = str(_("%(cpt)s '%(val)s' exists multiple times this year ") % msg_keys)
+    if found_in_diff_dep:
+        if found_in_this_dep:
+            err_str += str(_("in multiple departments of your school."))
+        else:
+            err_str += str(_("in other departments of your school."))
+    elif found_in_this_dep:
+        err_str += str(_("in this department."))
+
+    return err_str
+# --- end of get_error_multiple_students
+
+
+# ========  get_prefix_lastname_comma_firstname  ======= PR2021-06-19
 def get_prefix_lastname_comma_firstname(lastname_stripped, firstname_stripped, prefix_stripped):
     full_name = '---'
 
@@ -361,7 +354,7 @@ def validate_examnumber_exists(student, examnumber):  # PR2021-08-11
 # ========  validate_studentsubjects  ======= PR2021-08-17
 
 def validate_studentsubjects_TEST(student, si_dictlist):
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  validate_studentsubjects_TEST  -----')
         logger.debug('student: ' + str(student))

@@ -125,7 +125,7 @@ def copy_examyear_to_log(mode, instance, modby_id, mod_at):
             locked=instance.locked,
 
             no_practexam=instance.no_practexam,
-            reex_se_allowed=instance.reex_se_allowed,
+            sr_allowed=instance.sr_allowed,
             no_centralexam=instance.no_centralexam,
             no_thirdperiod=instance.no_thirdperiod,
 

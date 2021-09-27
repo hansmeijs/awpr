@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
-        //const elMSESD_input = document.getElementById("id_MSED_input");
+
 
         if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click",
@@ -114,16 +114,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  SIDEBAR ------------------------------------
         const el_SBR_item_count = document.getElementById("id_SBR_item_count")
 
-// ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
-        const el_MSED_input = document.getElementById("id_MSED_input");
-        const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
-        if (el_MSED_input){
-            el_MSED_input.addEventListener("keyup", function(event){
-                setTimeout(function() {t_MSED_InputName(el_MSED_input)}, 50)});
-        }
-        if (el_MSED_btn_save){
-            el_MSED_btn_save.addEventListener("click", function() {t_MSED_Save(el_MSED_btn_save, MSED_Response)}, false);
-        }
 
 // ---  MSSS MOD SELECT SCHOOL SUBJECT STUDENT ------------------------------
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
@@ -1291,6 +1281,7 @@ function RefreshDataRowsAfterUpload(response) {
         //console.log( "===== MSED_Response ========= ");
 
 // ---  upload new selected_pk
+        new_setting.page = setting_dict.sel_page;
 // also retrieve the tables that have been changed because of the change in examyear / dep
         const datalist_request = {
                 setting: new_setting,

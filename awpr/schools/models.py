@@ -168,7 +168,7 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
 
     # also in schemitems. Here is only to hide checkboxes in schemeitems PR2021-04-24
     no_practexam = BooleanField(default=False)
-    reex_se_allowed = BooleanField(default=False)  # herkansing schoolexamen
+    sr_allowed = BooleanField(default=False)  # herkansing schoolexamen
     # deleted: reex_combi_allowed = BooleanField(default=False)
     no_centralexam = BooleanField(default=False)
     # deleted: no_reex = BooleanField(default=False)
@@ -183,9 +183,14 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
     order_extra_fixed = PositiveSmallIntegerField(default=2)
     order_extra_perc = PositiveSmallIntegerField(default=5)
     order_round_to = PositiveSmallIntegerField(default=5)
+
     order_tv2_divisor = PositiveSmallIntegerField(default=25)
     order_tv2_multiplier = PositiveSmallIntegerField(default=5)
     order_tv2_max = PositiveSmallIntegerField(default=25)
+
+    order_admin_divisor = PositiveSmallIntegerField(default=25)
+    order_admin_multiplier = PositiveSmallIntegerField(default=5)
+    order_admin_max = PositiveSmallIntegerField(default=25)
 
     class Meta:
         ordering = ['-code',]
@@ -216,7 +221,7 @@ class Examyear_log(AwpBaseModel):
     locked = BooleanField(default=False)
 
     no_practexam = BooleanField(default=False)
-    reex_se_allowed = BooleanField(default=False)
+    sr_allowed = BooleanField(default=False)
     no_centralexam = BooleanField(default=False)
     no_thirdperiod = BooleanField(default=False)
 
@@ -228,9 +233,15 @@ class Examyear_log(AwpBaseModel):
     order_extra_fixed = PositiveSmallIntegerField(default=2)
     order_extra_perc = PositiveSmallIntegerField(default=5)
     order_round_to = PositiveSmallIntegerField(default=5)
+
     order_tv2_divisor = PositiveSmallIntegerField(default=25)
     order_tv2_multiplier = PositiveSmallIntegerField(default=5)
     order_tv2_max = PositiveSmallIntegerField(default=25)
+
+    order_admin_divisor = PositiveSmallIntegerField(default=25)
+    order_admin_multiplier = PositiveSmallIntegerField(default=5)
+    order_admin_max = PositiveSmallIntegerField(default=25)
+
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 

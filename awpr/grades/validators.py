@@ -2,6 +2,7 @@
 from django.utils.translation import ugettext_lazy as _
 
 from awpr import constants as c
+from awpr import settings as s
 from grades import calc_finalgrade as calc_final
 
 import logging
@@ -9,13 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 #######################################################
-def validate_input_grade(grade, field, input_value, logging_on):  # PR2021-01-18
-    logging_on = False
+def validate_input_grade(grade, field, input_value):  # PR2021-01-18 PR2021-09-19
+    logging_on = s.LOGGING_ON
     #  PR2021-05-02 field "srgrade" added, TODO no validations yet
     is_score = field in ("pescore", "cescore")
     is_grade = field in ("segrade", "srgrade", "pegrade", "cegrade")
     is_se_grade = (field == "segrade")
-    is_se =  (field in ("segrade", "srgrade"))
+    is_se = (field in ("segrade", "srgrade"))
     is_pe = (field in ("pescore", "pegrade"))
     is_pe_or_ce = (field in ("pescore", "pegrade", "cescore", "cegrade"))
 
@@ -43,14 +44,21 @@ def validate_input_grade(grade, field, input_value, logging_on):  # PR2021-01-18
     examyear = department.examyear
 
     # TODO move to schemitems PR2021-04-24
+    # examyear variables are no_practexam, sr_allowed, no_centralexam, no_thirdperiod
+    # schemitem variables are has_practexam sr_allowed max_reex no_thirdperiod no_exemption_ce
     no_practexam = False  # was: examyear.no_practexam
-    no_centralexam = False  # was: examyear.no_centralexam
+    no_centralexam = examyear.no_centralexam
     combi_reex_allowed = False  # was: examyear.combi_reex_allowed
-    no_exemption_ce = False  # was: examyear.no_exemption_ce
-    no_thirdperiod = False  # was: examyear.no_thirdperiod
+
+    no_thirdperiod = examyear.no_thirdperiod
 
     student = studsubj.student
-    is_eveningstudent  = student.iseveningstudent
+    # has_dyslexie = student.has_dyslexie
+    iseveningstudent = student.iseveningstudent
+    islexstudent =student.islexstudent
+    # bis_exam = student.bis_exam
+    partial_exam = student.partial_exam  # get certificate, only when evening- or lexstudent
+    additional_exam = student.additional_exam  # when student does extra subject at a different school, possible in day/evening/lex school, only valid in the same examyear
 
     school = student.school
     is_dayschool = school.isdayschool
@@ -68,20 +76,24 @@ def validate_input_grade(grade, field, input_value, logging_on):  # PR2021-01-18
         logger.debug("subject: ", subject.base.code, "student: ", student)
         logger.debug("field: ", field, "input_value: ", input_value)
         logger.debug("is_score: ", is_score, "is_grade: ", is_grade, "is_pe: ", is_pe)
+        logger.debug("has_exemption: ", has_exemption)
 
 # - reset output parameters
     output_str, msg_err = None, None
 
-# - exit als kandidaat is vergrendeld >>> handle outside this function
-    #  if (dict.ey_locked) { msg_err = err_list.examyear_locked} else
-    #  if (dict.school_locked) { msg_err = err_list.school_locked} else
-    #  if (dict.stud_locked) {msg_err = err_list.candidate_locked};
-    #  if( (dict.se_blocked && fldName === "segrade") ||
-    #      (dict.sr_blocked && fldName === "srgrade") ||
-    #      (dict.pe_blocked && fldName in ["pescore", "pegrade"]) ||
-    #      (dict.ce_blocked && fldName in ["cescore", "cegrade"]) ) {
-    #          msg_err = err_list.grade_locked;
-    #  }
+# - exit if:
+    #  - country is locked,
+    #  - examyear is not found, not published or locked
+    #  - school is not found, not same_school, not activated, or locked
+    #  - department is not found, not in user allowed depbase or not in school_depbase
+    #  these are taken care of in GradeUploadView > get_selected_ey_school_dep_from_usersetting
+
+    is_published = (field == 'segrade' and grade.se_published) or \
+                   (field == 'srgrade' and grade.sr_published) or \
+                   (field in('pescore', 'pegrade') and grade.sr_published) or \
+                   (field in ('cescore', 'cegrade') and grade.sr_published)
+    # se_blocked etc is True when Inspection has blocked the subject from gradelist, until it is changed
+    # when blocked is set True, published_id will be erased, to submit the grade again
 
 # - exit als dit vak bewijs van kennis heeft. Dan is invoer gegevens geblokkeerd.
     #  PR2010-06-10 mail Lorraine Wieske: kan geen PE cjfers corrigeren. Weghalen
@@ -96,7 +108,7 @@ def validate_input_grade(grade, field, input_value, logging_on):  # PR2021-01-18
 
     field_allowed = False
     if examperiod_int == c.EXAMPERIOD_FIRST:
-        field_allowed = field in ("pescore", "cescore", "segrade", "pegrade", "cegrade")
+        field_allowed = field in ("pescore", "cescore", "segrade", "srgrade", "pegrade", "cegrade")
     if examperiod_int == c.EXAMPERIOD_SECOND:
         field_allowed = field in ("cescore", "cegrade")
     elif examperiod_int == c.EXAMPERIOD_THIRD:
@@ -119,11 +131,12 @@ def validate_input_grade(grade, field, input_value, logging_on):  # PR2021-01-18
                 msg_err = _('Combination subject has no re-examination.')
 # - afterCorona: check if exemption has no_centralexam,  PR2020-12-16
             # skip when iseveningstudent school or islexschool
-        if msg_err is None:
-            if examperiod_int == c.EXAMPERIOD_EXEMPTION:
-                if is_pe_or_ce and no_exemption_ce:
-                    if not is_eveningstudent and not is_lexschool:
-                        msg_err = _('Exemption has no central exam this exam year.')
+        #if msg_err is None:
+        #    if examperiod_int == c.EXAMPERIOD_EXEMPTION:
+        #        if is_pe_or_ce and no_exemption_ce:
+        #            if not is_eveningstudent and not is_lexschool:
+        #                msg_err = _('Exemption has no central exam this exam year.')
+
 # - controleer Praktijkexamen 'PR2019-02-22 'PR2015-12-08
         if msg_err is None:
             if is_pe:
@@ -137,7 +150,7 @@ def validate_input_grade(grade, field, input_value, logging_on):  # PR2021-01-18
 
 # - controleer ce cijfer van combivak
         if msg_err is None:
-            # 'PR2019-05-03 keuze-combi weer uitgeschakeld. Was:   Or KvIsKeuzeCombiVak Then 'PR2016-05-30 KeuzeCombi toegevoegd. Was: If VsiIsCombinatieVak Then
+            # 'PR2019-05-03 keuze-combi weer uitgeschakeld. Was:  Or KvIsKeuzeCombiVak Then 'PR2016-05-30 KeuzeCombi toegevoegd. Was: If VsiIsCombinatieVak Then
             if is_pe_or_ce:
                 if is_combi:
 # - reexamination not allowed for combination subjects, except when Corona
@@ -154,6 +167,7 @@ def validate_input_grade(grade, field, input_value, logging_on):  # PR2021-01-18
 
                         msg_err = caption + str(_(' not allowed in combination subject.'))
                     elif examperiod_int in (c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
+
 #  'PR2020-05-15 Corona: herkansing wel mogelijk bij combivakken
                         if not combi_reex_allowed:
                              msg_err = _('Re-examination grade not allowed in combination subject.')
@@ -165,11 +179,9 @@ def validate_input_grade(grade, field, input_value, logging_on):  # PR2021-01-18
                     msg_err = _('The SE weighing of this subject is zero.\nYou cannot enter a grade.')
             else:
                 if not weight_ce:
-                    if is_score:
-                        msg_err = _('The CE weighing of this subject is zero.\nYou cannot enter a score.')
-                    else:
-                        msg_err = _('The CE weighing of this subject is zero.\nYou cannot enter a grade.')
-
+                    grade_score = _('score') if is_score else _('grade')
+                    msg_err = '\n'.join((str(_('This subject has no central exam.')),
+                                         str( _('You cannot enter a %(item)s.') % {'item': grade_score})))
 # A. SCORE
     # 1. controleer score PR2015-12-27 PR2016-01-03
         if msg_err is None:

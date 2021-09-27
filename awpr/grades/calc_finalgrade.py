@@ -177,9 +177,13 @@ def calc_finalgrade_char_reex_corona(se_grade, ce_grade, weight_se, logging_on):
     return final_grade
 
 
-def calc_pece_grade(examperiod_int, has_practex, ce_grade, pe_grade, logging_on):  # PR2021-01-18
+def calc_pece_grade(examperiod_int, has_practex, ce_grade, pe_grade, logging_on):  # PR2021-01-18 PR2021-09-1820
     if logging_on:
         logger.debug(' ----- calc_pece_grade -----')
+        logger.debug('examperiodt: ' + str(examperiod_int))
+        logger.debug('has_practex: ' + str(has_practex))
+        logger.debug('ce_grade   : ' + str(ce_grade))
+        logger.debug('pe_grade   : ' + str(pe_grade))
     """
     #'+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     #'+  PeCEcijferNietAfgerond = (PEcijfer + CEcijfer) / 2                       +
@@ -217,9 +221,9 @@ def calc_pece_grade(examperiod_int, has_practex, ce_grade, pe_grade, logging_on)
     #         End If
     elif examperiod_int == c.EXAMPERIOD_EXEMPTION:
     #     'c. bij vrijstelling wordt geen PE ingevuld, daarom is PeCe(Tv)=0 gelijk aan crcCEvrijst
-             pece_grade = ce_grade
+        pece_grade = ce_grade
     if logging_on:
-        logger.debug('pece_grade: ' + str(pece_grade))
+        logger.debug('... pece_grade: ' + str(pece_grade))
     return pece_grade
 # --- end of calc_pece_grade
 

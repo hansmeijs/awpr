@@ -104,17 +104,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         }
 
-// ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
-        const el_MSED_input = document.getElementById("id_MSED_input");
-        const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
-        if (el_MSED_input){
-            el_MSED_input.addEventListener("keyup", function(event){
-                setTimeout(function() {t_MSED_InputName(el_MSED_input)}, 50)});
-        }
-        if (el_MSED_btn_save){
-            el_MSED_btn_save.addEventListener("click", function() {t_MSED_Save(MSED_Response)}, false);
-        }
-
 // ---  MSSS MOD SELECT SCHOOL / SUBJECT / STUDENT ------------------------------
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
         const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tbody_select");
@@ -2023,6 +2012,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "===== MSED_Response ========= ");
 
 // ---  upload new selected_pk
+        new_setting.page = setting_dict.sel_page;
 // also retrieve the tables that have been changed because of the change in examyear / dep
         const datalist_request = {
                 setting: new_setting,

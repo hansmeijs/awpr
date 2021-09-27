@@ -121,7 +121,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
-        //const elMSESD_input = document.getElementById("id_MSED_input");
 
         if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click",
@@ -134,17 +133,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
                 function() {t_MSSSS_Open(loc, "school", school_rows, false, setting_dict, permit_dict, MSSSS_Response)}, false );
-        }
-
-// ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
-        const el_MSED_input = document.getElementById("id_MSED_input");
-        const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
-        if (el_MSED_input){
-            el_MSED_input.addEventListener("keyup", function(event){
-                setTimeout(function() {t_MSED_InputName(el_MSED_input)}, 50)});
-        }
-        if (el_MSED_btn_save){
-            el_MSED_btn_save.addEventListener("click", function() {t_MSED_Save(el_MSED_btn_save, MSED_Response)}, false);
         }
 
 // ---  MSSS MOD SELECT SCHOOL SUBJECT STUDENT ------------------------------
@@ -1838,48 +1826,45 @@ document.addEventListener('DOMContentLoaded', function() {
         let msg_list = [];
         let hide_save_btn = false;
         if(!has_selected_item){
-            msg_list = [loc.No_user_selected];
+            msg_list.push("<p>" + loc.No_user_selected + "</p>");
             hide_save_btn = true;
         } else {
             if(tblName === "userpermit"){
                 const action = (data_dict.action) ? data_dict.action  : "-";
                 const page = (data_dict.page) ? data_dict.page  : "-";
-                const msg_txt = [loc.Action, " '", action, "'", loc.on_page, "'",page, "'", loc.will_be_deleted].join("");
-                msg_list = [msg_txt, loc.Do_you_want_to_continue];
-
+                msg_list.push(["<p>", loc.Action, " '", action, "'", loc.on_page, "'",page, "'", loc.will_be_deleted, "</p>"].join(""));
+                msg_list.push("<p>" + loc.Do_you_want_to_continue + "</p>");
             } else {
 
                 const username = (data_dict.username) ? data_dict.username  : "-";
                 if(mode === "delete"){
                     if(is_request_user){
-                        msg_list = [loc.Sysadm_cannot_delete_own_account];
+                        msg_list.push("<p>" + loc.Sysadm_cannot_delete_own_account + "</p>");
                         hide_save_btn = true;
                     } else {
-                        msg_list = [loc.User + " '" + username + "'" + loc.will_be_deleted,
-                                    loc.Do_you_want_to_continue];
+                        msg_list.push(["<p>", loc.User + " '" + username + "'", loc.will_be_deleted, "</p>"].join(""));
+                        msg_list.push("<p>" + loc.Do_you_want_to_continue + "</p>");
                     }
                 } else if(mode === "is_active"){
                     if(is_request_user && mod_dict.current_isactive){
-                        msg_list = [loc.Sysadm_cannot_set_inactive];
+                        msg_list.push("<p>" + loc.Sysadm_cannot_set_inactive + "</p>");
                         hide_save_btn = true;
                     } else {
                         const inactive_txt = (mod_dict.current_isactive) ? loc.will_be_made_inactive : loc.will_be_made_active
-                        msg_list = [loc.User + " '" + username + "'" + inactive_txt,
-                                    loc.Do_you_want_to_continue];
+                        msg_list.push(["<p>", loc.User + " '" + username + "'", inactive_txt, "</p>"].join(""));
+                        msg_list.push("<p>" + loc.Do_you_want_to_continue + "</p>");
                     }
                 } else if(is_mode_permission_admin){
                     hide_save_btn = true;
                     const fldName = get_attr_from_el(el_input, "data-field")
                     if (fldName === "group_admin") {
-                        msg_list = [loc.Sysadm_cannot_remove_sysadm_perm]
+                        msg_list.push("<p>" + loc.Sysadm_cannot_remove_sysadm_perm + "</p>");
                     }
                 } else if (is_mode_send_activation_email) {
                     const is_expired = activationlink_is_expired(data_dict.date_joined);
                     dont_show_modal = (data_dict.activated);
                     if(!dont_show_modal){
-                        if(is_expired) {
-                            msg_list.push(loc.Activationlink_expired);
-                        };
+                        if(is_expired) {msg_list.push("<p>" + loc.Activationlink_expired + "</p>");};
                         msg_list.push("<p>" + loc.We_will_send_an_email_to_user + " '" + username + "'.</p>");
                         msg_list.push("<p>" + loc.Do_you_want_to_continue + "</p>");
                     }
@@ -1891,10 +1876,10 @@ document.addEventListener('DOMContentLoaded', function() {
             el_confirm_loader.classList.add(cls_visible_hide)
             el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
 
-            const msg_html = (msg_list.length) ? msg_list.join("<br>") : null;
+            const msg_html = (msg_list.length) ? msg_list.join("") : null;
             el_confirm_msg_container.innerHTML = msg_html;
 
-                        el_confirm_msg_container.classList.add("border_bg_transparent");
+            el_confirm_msg_container.classList.add("border_bg_transparent");
 
             const caption_save = (mode === "delete") ? loc.Yes_delete :
                             (mode === "is_active") ? ( (mod_dict.current_isactive) ? loc.Yes_make_inactive : loc.Yes_make_active ) :
@@ -1996,22 +1981,23 @@ document.addEventListener('DOMContentLoaded', function() {
         if ("msg_err" in response || "msg_ok" in response) {
             let msg_list = [];
             if ("msg_err" in response) {
-                msg_list.push(get_dict_value(response, ["msg_err", "msg01"], ""));
+                const msg_err = get_dict_value(response, ["msg_err", "msg01"]);
+                if (msg_err) {msg_list.push("<p>" + msg_err + "</p>")};
                 if (mod_dict.mode === "send_activation_email") {
-                     msg_list.push(loc.Activation_email_not_sent);
+                    msg_list.push("<p>" + loc.Activation_email_not_sent + "</p>")
                 }
                 el_confirm_msg_container.classList.add("border_bg_invalid");
             } else if ("msg_ok" in response){
                 const msg01 = get_dict_value(response, ["msg_ok", "msg01"]);
                 const msg02 = get_dict_value(response, ["msg_ok", "msg02"]);
                 const msg03 = get_dict_value(response, ["msg_ok", "msg03"]);
-                if (msg01) { msg_list.push("<p>" + msg01 + "</p>")};
-                if (msg02) msg_list.push("<p>" + msg02 + "</p>");
-                if (msg03) msg_list.push("<p>" + msg03 + "</p>");
+                if (msg01) {msg_list.push("<p>" + msg01 + "</p>")};
+                if (msg02) {msg_list.push("<p>" + msg02 + "</p>")};
+                if (msg03) {msg_list.push("<p>" + msg03 + "</p>")};
                 el_confirm_msg_container.classList.add("border_bg_valid");
             }
 
-            const msg_html = (msg_list.length) ? msg_list.join("<br>") : null;
+            const msg_html = (msg_list.length) ? msg_list.join("") : null;
             el_confirm_msg_container.innerHTML = msg_html;
 
             el_confirm_btn_cancel.innerText = loc.Close
@@ -2422,6 +2408,7 @@ function RefreshDataRowsAfterUpload(response) {
         //console.log( "===== MSED_Response ========= ");
 
 // ---  upload new selected_pk
+        new_setting.page = setting_dict.sel_page;
 // also retrieve the tables that have been changed because of the change in examyear / dep
         const datalist_request = {
                 setting: new_setting,
@@ -2465,7 +2452,6 @@ function RefreshDataRowsAfterUpload(response) {
         } else if (permit_dict.requsr_role_school) {
             columns_hidden = ["sb_code", "school_abbrev", "group_auth3", "group_anlz"];
         }
-
     };  // set_columns_hidden
 
 

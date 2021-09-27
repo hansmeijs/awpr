@@ -37,10 +37,32 @@
                         </div>
                     </div>
 
+                    <h5 id="id_MOLEX_admin_label" class="mx-2 mt-3"></h5>
+                    <div class="flex_container">
+                         <div class="flex_1 mx-1">
+                            <label for="id_MOLEX_admin_multiplier" class="mx-2">{% trans 'Order ... extra exams' %}...</label>
+                            <input id="id_MOLEX_admin_multiplier" type="number" min=0 max=100 data-field="order_admin_multiplier"
+                            class="form-control awp_input_number"
+                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                        </div>
+                        <div class="flex_1 mx-1">
+                            <label for="id_MOLEX_admin_divisor" class="mx-2">{% trans 'per ... exams first period' %}</label>
+                            <input id="id_MOLEX_admin_divisor" type="number" min=1 max=100 data-field="order_admin_divisor"
+                            class="form-control awp_input_number"
+                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                        </div>
+                        <div class="flex_1 mx-1">
+                            <label for="id_MOLEX_admin_max" class="mx-2">{% trans 'With maximum of ... exams' %}</label>
+                            <input id="id_MOLEX_admin_max" type="number" min=0 max=100 data-field="order_admin_max"
+                            class="form-control awp_input_number"
+                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                        </div>
+                    </div>
+
                     <h5 class="mx-2 mt-3">{% trans 'Exams second exam period' %}</h5>
                     <div class="flex_container">
                          <div class="flex_1 mx-1">
-                            <label for="id_MOLEX_tv2_multiplier" class="mx-2">{% trans 'Order ... exams second period' %}</label>
+                            <label for="id_MOLEX_tv2_multiplier" class="mx-2">{% trans 'Order ... exams second period' %}...</label>
                             <input id="id_MOLEX_tv2_multiplier" type="number" min=0 max=100 data-field="order_tv2_multiplier"
                             class="form-control awp_input_number"
                             autocomplete="off" ondragstart="return false;" ondrop="return false;">

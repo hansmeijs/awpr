@@ -38,7 +38,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
     logging.disable(logging.NOTSET)  # logging.NOTSET re-enables logging
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ++++++++++++++++++++ DatalistDownloadView ++++++++++++++++++++ ')
@@ -128,10 +128,11 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- examyears
                 if datalist_request.get('examyear_rows'):
                     cur_ey_only = af.get_dict_value(datalist_request, ('examyear_rows', 'cur_ey_only'), False)
+                    get_all_countries =  af.get_dict_value(datalist_request, ('examyear_rows', 'get_all_countries'), False)
                     sel_examyear_pk = None
                     if cur_ey_only and sel_examyear:
                         sel_examyear_pk = sel_examyear.pk
-                    datalists['examyear_rows'] = school_dicts.create_examyear_rows(request.user, {}, sel_examyear_pk)
+                    datalists['examyear_rows'] = school_dicts.create_examyear_rows(request.user, {}, sel_examyear_pk, get_all_countries)
 
 # ----- schools
                 if datalist_request.get('school_rows'):
@@ -208,9 +209,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- orderlists
                 if datalist_request.get('orderlist_rows'):
-                    # TODO sel_exam_period
-                    sel_exam_period = 1
-                    datalists['orderlist_rows'] = stud_view.create_orderlist_rows(sel_examyear.code, sel_exam_period)
+                    datalists['orderlist_rows'] = stud_view.create_orderlist_rows(sel_examyear.code, request)
 
 # ----- grade_with_exam_rows
                 if datalist_request.get('grade_with_exam_rows'):
@@ -231,7 +230,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_schoolbase_pk=sel_schoolbase.pk,
                             sel_depbase_pk=sel_depbase.pk,
                             sel_examperiod=sel_examperiod,
-                            sel_examtype=sel_examtype,
                             request=request
                         )
 
@@ -627,7 +625,7 @@ def download_setting(request_item_setting, messages, user_lang, request):  # PR2
             if logging_on:
                 logger.debug('...........setting_dict: ' + str(setting_dict))
 
-# - add list of hidden columns PR2021-07-07 - cols_hidden cannot be chaged by calling downloads function
+# - add list of hidden columns PR2021-07-07 - cols_hidden cannot be changed by calling downloads function
         cols_hidden = page_dict.get(c.KEY_COLS_HIDDEN)
         if cols_hidden:
             setting_dict[c.KEY_COLS_HIDDEN] = cols_hidden
@@ -701,7 +699,15 @@ def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-
     if logging_on:
         logger.debug(' ----- get_selected_ey_school_dep_from_usersetting ----- ' )
     # this function gets sel_examyear, sel_school, sel_department from req_user and usersetting
+
     # checks if user may edit .
+        # may_edit = False when:
+        # - examyear, schoolbase, school, depbase or department is None
+        # - country, examyear or school is locked
+        # - not requsr_same_school,
+        # - not sel_examyear.published,
+        # - not sel_school.activated,
+        # not af.is_allowed_depbase_requsr or not af.is_allowed_depbase_school,
 
     req_user = request.user
     sel_examyear, sel_school, sel_department = None, None, None
@@ -709,7 +715,9 @@ def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-
 
 # ==== COUNTRY ========================
 # - get country from req_user
-    if req_user.country:
+    if req_user.country is None:
+        msg_list.append(str(_('User has no country.')))
+    else:
         requsr_country = req_user.country
         if requsr_country.locked:
             msg_list.append(str(_('This country is locked.')))
@@ -768,9 +776,9 @@ def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-
                 msg_list.append(str(_('School not found in this exam year.')))
             else:
                 if not sel_school.activated:
-                    msg_list.append(str(_('This school has not activated this exam year yet.')))
+                    msg_list.append(str(_('The school has not activated this exam year yet.')))
                 elif sel_school.locked:
-                    msg_list.append(str(_('This school is locked this exam year.')))
+                    msg_list.append(str(_('This school is locked.')))
 
                 if logging_on:
                     logger.debug('sel_school: ' + str(sel_school))
@@ -791,14 +799,13 @@ def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-
 
 # ===== DEPARTMENT =======================
                 if sel_depbase is None:
-                    msg_list.append(str(_('No department selected.')))
+                    msg_list.append(str(_('There is no department selected.')))
                 else:
                     if not af.is_allowed_depbase_requsr(sel_depbase.pk, request):
                         msg_list.append(str(_("You don't have permission to view department %(val)s.") % {'val': sel_depbase.code}))
                     else:
                         if not af.is_allowed_depbase_school(sel_depbase.pk, sel_school):
                             msg_list.append(str(_("This school does not have department %(val)s.") % {'val': sel_depbase.code}))
-
                         else:
                             sel_department = sch_mod.Department.objects.get_or_none(
                                 base=sel_depbase,

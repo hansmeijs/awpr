@@ -76,6 +76,7 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['will_be_made_active'] = pgettext_lazy('singular', ' will be made active.')
     dict['will_be_printed'] = pgettext_lazy('singular', ' will be printed.')
     dict['will_be_downloaded'] = pgettext_lazy('singular', ' will be downloaded.')
+    dict['Copy_to_examyear'] = _('Copy to examyear')
 
     dict['Do_you_want_to_continue'] = _('Do you want to continue?')
     dict['Yes_delete'] = _('Yes, delete')
@@ -124,6 +125,7 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['by'] = _(' by ')
 
     dict['School_exam'] = _('School exam')
+    dict['School_exam_2lines'] = _('School\nexam')
     dict['Central_exam'] = _('Central exam')
     dict['Exemption'] = _('Exemption')
     dict['Exemptions'] = _('Exemptions')
@@ -287,8 +289,6 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Yes_send_email'] = _('Yes, send email')
 
-
-
 # ====== PAGE EXAM YEAR ========================= PR2020-10-04
     if 'page_examyear' in page_list:
         dict['Created_at'] = _('Created at ')
@@ -341,6 +341,11 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['will_be_copid_to_sxm'] = pgettext_lazy('singular', ' will be copied to SXM.')
         dict['Yes_copy'] = _('Yes, copy')
         dict['Edit_examyear'] = _('Edit examyear')
+
+        dict['Copy_subject_schemes'] = _('Copy subject schemes')
+        dict['Subjectschemes_of_ey_willbe_copiedto_ey'] = _('Subject schemes of this exam year will be copied<br>to exam year')
+
+        dict['Upload_awpdata'] = _('Upload AWP data file')
 
         dict['msg_info'] = {
         'create': [
@@ -395,7 +400,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Message'] = _('Message')
         dict['Messages'] = _('Messages')
 
-
 # ====== PAGE SUBJECTS ========================= PR2020-09-30
     if 'page_subject' in page_list:
 
@@ -421,7 +425,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Delete_subject_scheme'] = _('Delete subject scheme')
         dict['Add_package'] = _('Add package')
         dict['Copy_from_previous_year'] = _('Copy from previous years')
-
 
         dict['Base_character'] = _("Base character")
         dict['Character_name'] = _("Character name")
@@ -618,6 +621,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['at_'] = pgettext_lazy('at_date', 'at ')
         dict['_of_'] = TXT__of_
         dict['_or_'] = TXT__or_
+        dict['_for_'] = TXT__for_
 
         dict['Approve_subjects'] = _('Approve subjects')
         dict['Apply_verificationcode'] = _('Apply verificationcode')
@@ -638,6 +642,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
         dict['Date_submitted'] = TXT_Date_submitted
         dict['Download_Exform'] = TXT_Download_Exform
+
+        dict['Show_all_matching_candidates'] = _('Show all matching candidates')
+        dict['Hide_linked_candidates'] = _('Hide linked candidates')
+
+        dict['Delete_exemption'] = _('Delete exemption')
+        dict['This_exemption'] = _('This exemption')
 
         dict['MASS_info'] = {
             'checking_studsubj': _('The subjects of the candidates are checked'),
@@ -785,6 +795,13 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['PECE_grade'] = _('PE-CE grade')
         dict['Final_grade'] = _('Final grade')
 
+        dict['Herkansing_SE_grade_2lines'] = _('Herkansing\nschool exam')
+        dict['Re-examination_score'] = _('Re-examination\nscore')
+        dict['Re-examination_grade'] = _('Re-examination\ngrade')
+        dict['Third_period_score'] = _('Third period\nscore')
+        dict['Third_period_grade'] = _('Third period\ngrade')
+
+
         dict['PE_score_twolines'] = _('PE-\nscore')
         dict['CE_score_twolines'] = _('CE-\nscore')
         dict['SE_grade_twolines'] = _('SE-\ngrade')
@@ -794,9 +811,15 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['SECE_weighing'] = _('SE-CE\nweighing')
         dict['Final_grade_twolines'] = _('Final\ngrade')
 
-        dict['Exem_SESR_twolines'] = '\n'.join((str('Exemption'), str(_('SE-grade'))))
-        dict['Exem_PECE_twolines'] = '\n'.join((str('Exemption'), str(_('CE-grade'))))
-        dict['Exem_FINAL_twolines'] = '\n'.join((str('Exemption'), str(_('Final grade'))))
+        dict['Exemption_SE'] = ' '.join((str(_('Exemption')), str(_('SE-grade'))))
+        dict['Exemption_CE'] = ' '.join((str(_('Exemption')), str(_('CE-grade'))))
+        dict['Exemption_FINAL'] = ' '.join((str(_('Exemption')), str(_('Final grade'))))
+        dict['Exem_SE_twolines'] = '\n'.join((str(_('Exemption')), str(_('SE-grade'))))
+        dict['Exem_CE_twolines'] = '\n'.join((str(_('Exemption')), str(_('CE-grade'))))
+        dict['Exem_FINAL_twolines'] = '\n'.join((str(_('Exemption')), str(_('Final grade'))))
+
+        dict['Examnumber'] = TXT_Examnumber
+        dict['Notes'] = _('Notes')
 
         dict['No_subject_selected'] = _('No subject selected.')
 
@@ -837,9 +860,14 @@ def get_locale_dict(table_dict, user_lang, request):
             'notallowed_in_combi': _(' not allowed in combination subject.'),
             'reex_notallowed_in_combi': _('Re-examination grade not allowed in combination subject.'),
             'weightse_is_zero': _('The SE weighing of this subject is zero.'),
-            'weightce_is_zero': _('The CE weighing of this subject is zero.'),
-            'cannot_enter_score': _('You cannot enter a score.'),
-            'cannot_enter_grade': _('You cannot enter a grade.'),
+            'weightce_is_zero': _('This subject has no central exam.'),
+            'cannot_enter_SE_grade': _('You cannot enter a SE grade.'),
+            'cannot_enter_SR_grade': _("You cannot enter a 'herkansing' of the school exam."),
+            'cannot_enter_PE_grade': _('You cannot enter a grade of the practical exam.'),
+            'cannot_enter_CE_grade': _('You cannot enter a CE grade.'),
+            'cannot_enter_PE_score': _('You cannot enter a score of the practical exam.'),
+            'cannot_enter_CE_score': _('You cannot enter a CE score.'),
+
             'score_mustbe_number': _('The score must be a number.'),
             'score_mustbe_gt0': _('The score must be a number greater than zero.'),
             'score_mustbe_wholenumber': _('The score must be a whole number.'),
@@ -898,6 +926,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Without_extra'] = _("Don't calculate extra exams")
         dict['File_per_school'] = _('Create Excelfile per school')
         dict['Language'] = _('Language')
+        dict['Extra_exams'] = _('Extra exams')
+        dict['the_exam_bureau'] = _('the exam bureau')
 
         dict['MPUBORD_info'] = {
             'request_verifcode_01': _("When you publish the orderlist, AWP will create an Excel file with the total exams, plus an Excel file for each school."),
@@ -962,6 +992,7 @@ TXT_Submitted_by = _('Submitted by')
 TXT__and_ = _(' and ')
 TXT__or_ = _(" or ")
 TXT__by_ = _(" by ")
+TXT__for_ = _(" for ")
 
 TXT_Name_ex_form = _('Name Ex form')
 TXT_Date_submitted = _('Date submitted')

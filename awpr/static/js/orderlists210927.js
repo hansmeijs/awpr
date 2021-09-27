@@ -113,17 +113,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         }
 
-// ---  MSED - MOD SELECT EXAMYEAR OR DEPARTMENT ------------------------------
-        const el_MSED_input = document.getElementById("id_MSED_input");
-        const el_MSED_btn_save = document.getElementById("id_MSED_btn_save");
-        if (el_MSED_input){
-            el_MSED_input.addEventListener("keyup", function(event){
-                setTimeout(function() {t_MSED_InputName(el_MSED_input)}, 50)});
-        }
-        if (el_MSED_btn_save){
-            el_MSED_btn_save.addEventListener("click", function() {t_MSED_Save(MSED_Response)}, false);
-        }
-
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
         if(el_SBR_select_level){el_SBR_select_level.addEventListener("change", function() {HandleSbrLevelSector("level", el_SBR_select_level)}, false )};
@@ -961,6 +950,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     el.value = mod_dict[field];
                 };
             };
+
+
+// --- loop through school_map, to look up ETE /DEX school PR2021-09-26
+            let admin_name = null;
+            for (const [map_id, map_dict] of school_map.entries()) {
+                if(map_dict.country_id === permit_dict.requsr_country_pk && map_dict.defaultrole === 64) {
+                    admin_name = (map_dict.article) ? map_dict.article + ' ' + map_dict.name : map_dict.name;
+                    break;
+                };
+            };
+            if(!admin_name) {admin_name = loc.the_exam_bureau}
+
+            const el_MOLEX_admin_label = document.getElementById("id_MOLEX_admin_label")
+        console.log("el_MOLEX_admin_label", el_MOLEX_admin_label)
+        console.log("loc.Extra_exams + loc._for_ + admin_name", loc.Extra_exams + loc._for_ + admin_name)
+            el_MOLEX_admin_label.innerText = loc.Extra_exams + loc._for_ + admin_name;
         };
 
 // show modal
@@ -1333,6 +1338,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "===== MSED_Response ========= ");
 
 // ---  upload new selected_pk
+        new_setting.page = setting_dict.sel_page;
 // also retrieve the tables that have been changed because of the change in examyear / dep
         const datalist_request = {
                 setting: new_setting,
