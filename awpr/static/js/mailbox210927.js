@@ -127,6 +127,26 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MSSSS_input.addEventListener("click", function() {t_MSSSS_Save(el_MSSSS_input, MSSSS_Response)}, false );
         }
 
+// ---  MOD MAIL MESSAGE  ------------------------------------
+        const el_MMM_header = document.getElementById("id_MMM_header");
+        const el_MMM_input_container = document.getElementById("id_MMM_input_container");
+        const el_MMM_input_note = document.getElementById("id_MMM_input_note");
+        const el_MMM_notes_container = document.getElementById("id_MMM_notes_container");
+        const el_MMM_btn_save = document.getElementById("id_MMM_btn_save");
+        const el_MMM_internal = document.getElementById("id_MMM_memo_internal");
+        const el_MMM_external = document.getElementById("id_MMM_memo_external");
+        if(el_MMM_btn_save){
+            el_MMM_btn_save.addEventListener("click", function() {MMM_Save()}, false )};
+        if(el_MMM_internal){
+            el_MMM_internal.addEventListener("click", function() {MMM_SetInternalExternal("internal", el_MMM_internal)}, false)};
+        if(el_MMM_external){
+            el_MMM_external.addEventListener("click", function() {MMM_SetInternalExternal("external_btn", el_MMM_external)}, false );
+            for (let i = 0, el; el = el_MMM_external.children[i]; i++) {
+                el.addEventListener("click", function() {MMM_SetInternalExternal("external_icon", el)}, false );
+                add_hover(el)
+            };
+        }
+
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");
         let el_confirm_loader = document.getElementById("id_modconfirm_loader");
@@ -238,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const permit_role_admin = (permit_dict.requsr_role_admin && permit_dict.usergroup_list.includes("admin"));
 
         if (permit_dict.permit_crud) {
-            //AddSubmenuButton(el_submenu, loc.Create_message, function() {ModConfirmOpen("user","delete")});
+            AddSubmenuButton(el_submenu, loc.Create_message, function() {MMM_Open()});
         }
 
          //el_submenu.classList.remove(cls_hide);
@@ -1309,6 +1329,94 @@ function RefreshDataRowsAfterUpload(response) {
     }  // MSSSS_Response
 
 
+//###########################################################################
+
+//========= MOD MAIL MESSAGE Open====================================
+    function MMM_Open (el_input) {
+        console.log("===  MMM_Open  =====") ;
+        console.log("el_input", el_input) ;
+
+    // get has_note from grade_map
+       // const grade_dict = get_datadict_by_el(el_input);
+        //const has_note = !!get_dict_value(grade_dict, ["note_status"])
+
+// reset notes_container
+        //el_MMM_notes_container.innerText = null;
+
+// reset input_note
+        //el_MMM_input_note.value = null;
+
+// --- show input element for note, only when user has permit
+        const has_permit_intern_extern = (permit_dict.permit_write_note_intern || permit_dict.permit_write_note_extern)
+        let may_open_modnote =  true // has_permit_intern_extern || (permit_dict.permit_read_note && has_note);
+        if(may_open_modnote){
+            // only show input block when  has_permit_intern_extern
+            //add_or_remove_class(el_MMM_input_container, cls_hide, !has_permit_intern_extern)
+            // hide external note if no permit write_note_extern
+            //add_or_remove_class(el_MMM_external, cls_hide, !permit_dict.permit_write_note_extern)
+
+            // hide 'x' option when not inspection
+            //const el_MMM_memo_icon4 = document.getElementById("id_MMM_memo_icon4")
+           // add_or_remove_class(el_MMM_memo_icon4, cls_hide, !permit_dict.requsr_role_insp)
+
+    // get tr_selected
+            //let tr_selected = get_tablerow_selected(el_input)
+
+    // download existing studentsubjectnote_rows of this studsubj
+                // will be filled in MMM_FillNotes
+
+    // show loader
+            //const el_MMM_loader = document.getElementById("id_MMM_loader");
+            //add_or_remove_class(el_MMM_loader, cls_hide, false);
+               // const upload_dict = {studsubj_pk: grade_dict.studsubj_id};
+                //UploadChanges(upload_dict, urls.url_studentsubjectnote_download)
+
+            //    if (el_input){ setTimeout(function (){ el_MMM_input_note.focus() }, 50)};
+
+    // get info from grade_map
+                $("#id_mod_mailmessage").modal({backdrop: true});
+
+        }  // if(permit_dict.permit_read_note)
+    }  // MMM_Open
+
+//========= MODAL MAIL MESSAGE Save============== PR2020-10-15
+    function MMM_Save () {
+        //console.log("===  MMM_Save  =====");
+        const filename = document.getElementById("id_MMM_filedialog").value;
+
+        if(permit_dict.permit_write_note_intern || permit_dict.permit_permit_write_note_extern){
+            const note = el_MMM_input_note.value;
+            const note_status = (!mod_note_dict.is_internal) ? "1_" + mod_note_dict.sel_icon : "0_1";
+
+// get attachment info
+            const file = document.getElementById("id_MMM_filedialog").files[0];  // file from input
+            const file_type = (file) ? file.type : null;
+            const file_name = (file) ? file.name : null;
+            const file_size = (file) ? file.size : 0;
+
+           // may check size or type here with
+            // ---  upload changes
+            const upload_dict = { table: mod_note_dict.table,
+                                   create: true,
+                                   studsubj_pk: mod_note_dict.studsubj_pk,
+                                   examperiod: mod_note_dict.examperiod,
+                                   note: note,
+                                   note_status: note_status,
+                                   is_internal_note: mod_note_dict.is_internal,
+                                   file_type: file_type,
+                                   file_name: file_name,
+                                   file_size: file_size
+                                   };
+            const upload_json = JSON.stringify (upload_dict)
+
+            if(note || file_size){
+                const upload = new Upload(upload_json, file, urls.url_studentsubjectnote_upload);
+                upload.doUpload();
+           }
+       }
+// hide modal
+        $("#id_mod_note").modal("hide");
+    }  // MMM_Save
 //###########################################################################
 
 //========= get_datadict_with_index_from_mapid  ====== PR2021-08-01

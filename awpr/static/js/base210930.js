@@ -1515,6 +1515,111 @@
         };
     }  // b_ShowModMessages
 
+//?????????????????????????????????????????????????????????????????
+
+// PR2021-03-16 from https://stackoverflow.com/questions/2320069/jquery-ajax-file-upload
+    const b_Upload = function (upload_json, file, url_str) {
+        this.upload_json = upload_json;
+        this.file = file;
+        this.url_str = url_str;
+    };
+
+    b_Upload.prototype.getType = function() {
+        return (this.file) ? this.file.type : null;
+    };
+    b_Upload.prototype.getSize = function() {
+        return (this.file) ? this.file.size : 0;
+    };
+    b_Upload.prototype.getName = function() {
+        return (this.file) ? this.file.name : null;
+    };
+    b_Upload.prototype.doUpload = function () {
+        var that = this;
+        var formData = new FormData();
+        // from https://blog.filestack.com/thoughts-and-knowledge/ajax-file-upload-formdata-examples/
+        // add to input html:  <input id="id_ModNote_filedialog" type="file" multiple="multiple"
+        // Loop through each of the selected files.
+        //for(var i = 0; i < files.length; i++){
+        //  var file = files[i];
+        // formData.append('myfiles[]', file, file.name);
+
+        // add assoc key values, this will be posts values
+        //console.log( "attachment type",  this.getType())
+        //console.log( "attachment name", this.getName())
+
+        formData.append("upload_file", true);
+        formData.append("filename", this.getName());
+        formData.append("contenttype", this.getType());
+
+        if (this.file){
+            formData.append("file", this.file, this.getName());
+        }
+        // from https://stackoverflow.com/questions/16761987/jquery-post-formdata-and-csrf-token-together
+        const csrftoken = Cookies.get('csrftoken');
+        formData.append('csrfmiddlewaretoken', csrftoken);
+        formData.append('upload', this.upload_json);
+
+        //const parameters = {"upload": JSON.stringify (upload_dict)}
+        const parameters = formData;
+        $.ajax({
+            type: "POST",
+            url: this.url_str,
+                //xhr: function () {
+                //     var myXhr = $.ajaxSettings.xhr();
+                //      if (myXhr.upload) {
+                //         myXhr.upload.addEventListener('progress', that.progressHandling, false);
+                //      }
+                //     return myXhr;
+                //   },
+            data: parameters,
+            dataType:'json',
+            success: function (response) {
+                // ---  hide loader
+                el_loader.classList.add(cls_visible_hide)
+
+                if ("grade_note_icon_rows" in response) {
+                    const tblName = "grades";
+                    const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
+                    RefreshDataMap(tblName, field_names, response.grade_note_icon_rows, grade_map, false);  // false = don't show green ok background
+                }
+
+            },  // success: function (response) {
+
+
+            error: function (xhr, msg) {
+                // ---  hide loader
+                el_loader.classList.add(cls_visible_hide)
+                console.log(msg + '\n' + xhr.responseText);
+            },
+            async: true,
+            data: formData,
+            cache: false,
+            contentType: false,
+            processData: false,
+            timeout: 60000
+        });
+
+    };
+
+    b_Upload.prototype.progressHandling = function (event) {
+    //console.log("progressHandling", event)
+        let percent = 0;
+        const position = event.loaded || event.position;
+        const total = event.total;
+        const progress_bar_id = "#progress-wrp";
+        if (event.lengthComputable) {
+            percent = Math.ceil(position / total * 100);
+        }
+    //console.log("percent", percent)
+        // update progressbars classes so it fits your code
+        $(progress_bar_id + " .progress-bar").css("width", +percent + "%");
+        $(progress_bar_id + " .status").text(percent + "%");
+    };
+
+//?????????????????????????????????????????????????????????????????
+
+
+
 //#########################################################################
 // +++++++++++++++++ SVG  +++++++++++++++++++++++++++++++++++++++++++
     function create_svg_html(id_svg, href, caption, txt_x, txt_y,

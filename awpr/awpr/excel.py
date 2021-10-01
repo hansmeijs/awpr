@@ -103,7 +103,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
         logger.debug('subject_pk_list: ' + str(subject_pk_list))
         logger.debug('subject_code_list: ' + str(subject_code_list))
 
-# +++ get dict of students with list of studsubj_pk, grouped by levle_pk, with totals
+# +++ get dict of students with list of studsubj_pk, grouped by level_pk, with totals
     ex1_rows_dict = create_ex1_rows_dict(examyear, school, department, save_to_disk, published_instance)
 
     """
@@ -277,15 +277,25 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
                         # 'lvl': 'PBL', 'sct': 'tech', 'class': '4BH', 'subj': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}
                         row_index += 1
                         for i, field_name in enumerate(ex1_formats['field_names']):
+                            exc_format = ex1_formats['row_formats'][i]
                             value = ''
                             if isinstance(field_name, int):
                                 # in subject column 'field_name' is subject_id
-                                subj_id_list = row.get('subj', [])
-                                if subj_id_list and field_name in subj_id_list:
+                                #subj_id_list = row.get('subj', [])
+                                #if subj_id_list and field_name in subj_id_list:
+                                #    value = 'x'
+
+                                subj_nondel_list = row.get('subj_nondel', [])
+                                if subj_nondel_list and field_name in subj_nondel_list:
+                                    value = 'o'
+
+                                subj_del_list = row.get('subj_del', [])
+                                if subj_del_list and field_name in subj_del_list:
                                     value = 'x'
+                                    exc_format = ex1_formats['row_align_center_red']
                             else:
                                 value = row.get(field_name, '')
-                            sheet.write(row_index, i, value, ex1_formats['row_formats'][i])
+                            sheet.write(row_index, i, value, exc_format)
 
 # ---  level subtotal row
                 # skip subtotal row in Havo/vwo,
@@ -323,7 +333,6 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
                         value = total_dict.get(field_name)
                 sheet.write(row_index, i, value, ex1_formats['totalrow_formats'][i])
                 # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
-
 
 # ---  table footer row
         row_index += 1
@@ -442,6 +451,8 @@ def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, sub
 
     row_align_left = book.add_format({'font_size': 8, 'font_color': 'blue', 'valign': 'vcenter','border': True})
     row_align_center = book.add_format({'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter','border': True})
+    # for deleted subjects in Ex1
+    row_align_center_red = book.add_format({'font_size': 8, 'font_color': 'red', 'align': 'center', 'valign': 'vcenter','border': True})
 
     totalrow_align_center = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
     totalrow_number = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
@@ -468,6 +479,7 @@ def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, sub
                     'bold_format': bold_format,
                    'bold_blue': bold_blue,
                    'normal_blue': normal_blue,
+                   'row_align_center_red': row_align_center_red,
                    'th_merge': th_merge,
                    'th_exists': th_exists,
                    'th_prelim': th_prelim,
@@ -541,7 +553,7 @@ def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, sub
 
 def create_ex1_rows_dict(examyear, school, department, save_to_disk, published_instance):  # PR2021-08-15
     # this function is only called by create_ex1_xlsx
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex1_rows_dict -----')
     # function creates dictlist of all students of this examyear, school and department
@@ -571,15 +583,20 @@ def create_ex1_rows_dict(examyear, school, department, save_to_disk, published_i
     sql_studsubj_agg_list = [
         "SELECT studsubj.student_id,",
         "ARRAY_AGG(si.subject_id) AS subj_id_arr,",
+        "ARRAY_AGG(si.subject_id) FILTER (WHERE NOT studsubj.tobedeleted) AS subj_id_arr_nondel,",
+        "ARRAY_AGG(si.subject_id) FILTER (WHERE studsubj.tobedeleted) AS subj_id_arr_del,",
+
         "ARRAY_AGG(DISTINCT studsubj.subj_auth1by_id) FILTER (WHERE studsubj.subj_auth1by_id IS NOT NULL) AS subj_auth1_arr,",
         "ARRAY_AGG(DISTINCT studsubj.subj_auth2by_id) FILTER (WHERE studsubj.subj_auth2by_id IS NOT NULL) AS subj_auth2_arr",
         "FROM students_studentsubject AS studsubj",
         "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-        "WHERE NOT studsubj.tobedeleted"]
+        # was: "WHERE NOT studsubj.tobedeleted"
+    ]
     if save_to_disk:
         # when submitting an Ex1 form published_instance is already saved, therefore published_instance.pk has a value
         # filter on published_instance.pk, so only subjects of this submit will ne added to Ex1 form
-        sql_studsubj_agg_list.append("AND studsubj.subj_published_id = %(publ_id)s::INT")
+        # was: sql_studsubj_agg_list.append("AND studsubj.subj_published_id = %(publ_id)s::INT")
+        sql_studsubj_agg_list.append("WHERE studsubj.subj_published_id = %(publ_id)s::INT")
 
     sql_studsubj_agg_list.append("GROUP BY studsubj.student_id")
 
@@ -596,7 +613,7 @@ def create_ex1_rows_dict(examyear, school, department, save_to_disk, published_i
     sql_list = ["WITH studsubj AS (" , sql_studsubj_agg, ")",
         "SELECT st.id, st.idnumber, st.examnumber, st.lastname, st.firstname, st.prefix, st.classname,",
         "st.level_id, lvl.name AS lvl_name, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
-        "studsubj.subj_id_arr, studsubj.subj_auth1_arr, studsubj.subj_auth2_arr",
+        "studsubj.subj_id_arr, studsubj.subj_id_arr_nondel, studsubj.subj_id_arr_del, studsubj.subj_auth1_arr, studsubj.subj_auth2_arr",
         "FROM students_student AS st",
         inner_or_left_join_studsubj, "studsubj ON (studsubj.student_id = st.id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
@@ -659,12 +676,16 @@ def create_ex1_rows_dict(examyear, school, department, save_to_disk, published_i
         fullname = ''.join((lastname, ', ', firstname))
 
         subj_id_arr = row.get('subj_id_arr', [])
+        subj_id_arr_nondel = row.get('subj_id_arr_nondel', [])
+        subj_id_arr_del = row.get('subj_id_arr_del', [])
         student_dict = {'idnr': idnumber, 'exnr': examnumber, 'name': fullname,
-                        'lvl': lvl_abbrev, 'sct': sct_abbrev, 'cls': classname, 'subj': subj_id_arr}
+                        'lvl': lvl_abbrev, 'sct': sct_abbrev, 'cls': classname, 'subj': subj_id_arr,
+                        'subj_nondel': subj_id_arr_nondel, 'subj_del': subj_id_arr_del
+                        }
         level_studlist.append(student_dict)
-
-        if subj_id_arr:
-            for subject_pk in subj_id_arr:
+        # only count non-deleted rows
+        if subj_id_arr_nondel:
+            for subject_pk in subj_id_arr_nondel:
                 if subject_pk not in level_total:
                     level_total[subject_pk] = 1
                 else:

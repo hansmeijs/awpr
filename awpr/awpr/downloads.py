@@ -120,11 +120,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if datalist_request.get('user_rows'):
                     datalists['user_rows'] = acc_view.create_user_rows(request)
                     datalists['permit_rows'] = acc_view.create_permit_list()
-
-# ----- get mail
-                if datalist_request.get('mailbox_rows'):
-                    datalists['mailbox_rows'] = school_dicts.create_mailbox_rows(sel_examyear.pk, request)
-
 # ----- examyears
                 if datalist_request.get('examyear_rows'):
                     cur_ey_only = af.get_dict_value(datalist_request, ('examyear_rows', 'cur_ey_only'), False)
@@ -133,11 +128,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     if cur_ey_only and sel_examyear:
                         sel_examyear_pk = sel_examyear.pk
                     datalists['examyear_rows'] = school_dicts.create_examyear_rows(request.user, {}, sel_examyear_pk, get_all_countries)
-
 # ----- schools
                 if datalist_request.get('school_rows'):
                     datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear, permit_dict)
-
 # ----- departments
                 if datalist_request.get('department_rows'):
                     datalists['department_rows'] = school_dicts.create_department_rows(sel_examyear)
@@ -149,7 +142,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if datalist_request.get('sector_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('sector_rows', 'cur_dep_only'), False)
                     datalists['sector_rows'] = school_dicts.create_sector_rows(sel_examyear, sel_depbase, cur_dep_only)
-
 # ----- subjecttypes
                 if datalist_request.get('subjecttype_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('subjecttype_rows', 'cur_dep_only'), False)
@@ -158,7 +150,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         depbase=sel_depbase,
                         cur_dep_only=cur_dep_only)
                     datalists['subjecttypebase_rows'] = sj_vw.create_subjecttypebase_rows()
-
 # ----- subjects
                 if datalist_request.get('subject_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
@@ -166,7 +157,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         setting_dict=new_setting_dict,
                         subject_pk=None,
                         cur_dep_only=cur_dep_only)
-
 # ----- schemes
                 if datalist_request.get('scheme_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('scheme_rows', 'cur_dep_only'), False)
@@ -181,16 +171,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         examyear=sel_examyear,
                         cur_dep_only=cur_dep_only,
                         depbase=sel_depbase)
-
 # ----- exams
                 if datalist_request.get('exam_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
                     datalists['exam_rows'] = sj_vw.create_exam_rows(new_setting_dict, {}, cur_dep_only)
-
 # ----- students
                 if datalist_request.get('student_rows'):
                     datalists['student_rows'] = stud_view.create_student_rows(new_setting_dict, {}, None)
-
 # ----- studentsubjects
                 if datalist_request.get('studentsubject_rows'):
                     datalists['studentsubject_rows'] = stud_view.create_studentsubject_rows(
@@ -201,16 +188,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         setting_dict=new_setting_dict,
                         append_dict={}
                     )
-
 # ----- studentsubjectnote
                 #request_item = datalist_request.get('studentsubjectnote_rows')
                 #if request_item:
                 #    datalists['studentsubjectnote_rows'] = stud_view.create_studentsubjectnote_rows(request_item, request)
-
 # ----- orderlists
                 if datalist_request.get('orderlist_rows'):
                     datalists['orderlist_rows'] = stud_view.create_orderlist_rows(sel_examyear.code, request)
-
 # ----- grade_with_exam_rows
                 if datalist_request.get('grade_with_exam_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
@@ -221,7 +205,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_examperiod=sel_examperiod,
                             request=request
                         )
-
 # ----- grades
                 if datalist_request.get('grade_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
@@ -232,7 +215,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_examperiod=sel_examperiod,
                             request=request
                         )
-
 # ----- grade_note_icons
                 if datalist_request.get('grade_note_icons'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
@@ -244,7 +226,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             studsubj_pk=None,
                             request=request
                         )
-
 # ----- published
                 if datalist_request.get('published_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
@@ -253,6 +234,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_schoolbase_pk=sel_schoolbase.pk,
                             sel_depbase_pk=sel_depbase.pk
                         )
+# ----- mailbox
+                if datalist_request.get('mailbox_rows'):
+                    datalists['mailbox_rows'] = school_dicts.create_mailbox_rows(
+                        examyear_pk=sel_examyear.pk,
+                        request=request
+                    )
+
 
         elapsed_seconds = int(1000 * (timer() - starttime)) / 1000
         datalists['elapsed_seconds'] = elapsed_seconds

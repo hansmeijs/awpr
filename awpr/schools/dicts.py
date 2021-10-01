@@ -15,28 +15,18 @@ def create_mailbox_rows(examyear_pk, request):
     if logging_on:
         logger.debug(' =============== create_mailbox_rows ============= ')
 
-    mailbox_rows = None
+    mailbox_rows = []
 
     try:
         sql_keys = {'req_usr_id': request.user.pk, 'ey_id': examyear_pk}
 
-        sub_sql_list = ["SELECT msg.id,",
+        sql_list = ["SELECT msg.id, CONCAT('message_', msg.id::TEXT) AS mapid,",
+                    "mailbox.read, mailbox.deleted, mailbox.issentmail, mailbox.isreceivedmail,",
                     "msg.header, msg.body, msg.status,",
-                    "msg.modifiedby_id, msg.modifiedat, sch.name AS school_name, sch.abbrev AS school_abbrev, au.last_name AS sender_name",
+                    "msg.modifiedby_id, msg.modifiedat, sch.name AS sender_school_name, sch.abbrev AS sender_school_abbrev, au.last_name AS sender_lastname",
 
-                    "FROM schools_mailmessage AS msg",
-                    "LEFT JOIN schools_school AS sch ON (sch.id = msg.sender_school_id)",
-                    "LEFT JOIN accounts_user AS au ON (au.id = msg.sender_user_id)",
-                    "WHERE msg.examyear_id = %(ey_id)s::INT"]
-        sub_sql = ' '.join(sub_sql_list)
-
-        sql_list = ["SELECT mailbox.id, CONCAT('mailbox_', mailbox.id::TEXT) AS mapid,",
-                    "mailbox.read, mailbox.deleted, mailbox.issentmail,",
-                    "msg.id AS mailmessage_id, msg.header, msg.body, msg.status,",
-                    "msg.modifiedby_id, msg.modifiedat, sch.name AS school_name, sch.abbrev AS school_abbrev, au.last_name AS user_lastname",
-
-                    "FROM schools_mailbox AS mailbox",
-                    "INNER JOIN schools_mailmessage AS msg ON (msg.id = mailbox.mailmessage_id)",
+                    "FROM schools_mailmessage AS msg ON (msg.id = mailbox.mailmessage_id)",
+                    "INNER JOIN schools_mailbox AS mailbox ON (mailbox.mailmessage_id = msg.id)",
                     "LEFT JOIN schools_school AS sch ON (sch.id = msg.sender_school_id)",
                     "LEFT JOIN accounts_user AS au ON (au.id = msg.sender_user_id)",
 
@@ -45,9 +35,9 @@ def create_mailbox_rows(examyear_pk, request):
                     ]
         sql = ' '.join(sql_list)
 
-        newcursor = connection.cursor()
-        newcursor.execute(sql, sql_keys)
-        mailbox_rows = af.dictfetchall(newcursor)
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            mailbox_rows = af.dictfetchall(cursor)
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
@@ -268,8 +258,6 @@ def create_sector_rows(examyear, depbase, cur_dep_only):
                     logger.debug('row: ' + str(row))
     return rows
 # --- end of create_sector_rows
-
-
 
 
 def create_school_rows(examyear, permit_dict, school_pk=None):

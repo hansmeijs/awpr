@@ -555,6 +555,8 @@ class Usergroup(sch_mod.AwpBaseModel):  # PR2021-06-19
     roles = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
 
 
+
+
 # PR2018-05-06
 class Usersetting(Model):
     objects = CustomUserManager()

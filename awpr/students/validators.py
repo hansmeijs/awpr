@@ -353,22 +353,29 @@ def validate_examnumber_exists(student, examnumber):  # PR2021-08-11
 
 # ========  validate_studentsubjects  ======= PR2021-08-17
 
-def validate_studentsubjects_TEST(student, si_dictlist):
-    logging_on = s.LOGGING_ON
+def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted):
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  validate_studentsubjects_TEST  -----')
         logger.debug('student: ' + str(student))
-        logger.debug('si_dictlist: ' + str(si_dictlist))
+        logger.debug('studsubj_dictlist_with_tobedeleted: ' + str(studsubj_dictlist_with_tobedeleted))
+
+    # PR2021-09-29 debug: 'tobedeleted' subjects must be filtered out
+    studsubj_dictlist = []
+    if studsubj_dictlist_with_tobedeleted:
+        for studsubj_dict in studsubj_dictlist_with_tobedeleted:
+            tobedeleted = studsubj_dict.get('tobedeleted', False)
+            if not tobedeleted:
+                studsubj_dictlist.append(studsubj_dict)
 
     try:
         msg_list = []
-        msg_html = None
 
         if student:
             stud_scheme = student.scheme
             if logging_on:
                 logger.debug('stud_scheme: ' + str(stud_scheme))
-
+    # - no student.scheme
             if stud_scheme is None:
                 dep_missing, level_missing, sector_missing, has_profiel = False, False, False, False
 
@@ -399,77 +406,146 @@ def validate_studentsubjects_TEST(student, si_dictlist):
                 msg_list.append(str(not_entered_str) + '<br>' + str(_("Go to the page <i>Candidates</i> and enter the missing information of the candidate.")))
                 if logging_on:
                     logger.debug('msg_list: ' + str(msg_list))
+
+# - return warning when no subjects found
+            elif studsubj_dictlist is None:
+                msg_list = ["<div class='p-2 border_bg_warning'><p>", str(_('This candidate has no subjects.')), "</p></div>"]
             else:
-                if si_dictlist:
-        # ++++++++++++++++++++++++++++++++
-        # - get min max subjects and mvt from scheme
-                    scheme_dict = get_scheme_si_sjtp_dict(stud_scheme)
-        # ++++++++++++++++++++++++++++++++
-        # - get info from studsubjects
-                    doubles_pk_list = []
-                    doubles_code_list = []
-                    studsubj_dict = get_studsubj_dict_from_modal(stud_scheme, student, si_dictlist, doubles_pk_list, msg_list)
-                    doubles_pk_len = len(doubles_pk_list)
-                    if doubles_pk_len:
-                        subject_code_dict = scheme_dict.get('subj_code')
-                        for pk_int in doubles_pk_list:
-                            doubles_code_list.append(subject_code_dict.get(pk_int, '-'))
-                        display_str = convert_code_list_to_display_str(doubles_code_list)
-                        if doubles_pk_len == 1:
-                            msg_list.append(''.join(
-                                ("<li>",
-                                 str(_("The subject %(list)s occurs twice and must be deleted.") % {'list': display_str}),
-                                 "<br>",
-                                 str(_("It will be disregarded in the rest of the validation.")),
-                                 "</li>")))
-                        else:
-                            msg_list.append(''.join((
-                                "<li>",
-                                str(_("The subjects %(list)s occur multiple times and must be deleted.") % {'list': display_str}),
-                                "<br>",
-                                str(_("They will be disregarded in the rest of the validation.")),
-                                "</li>")))
 
-                    if logging_on:
-                        logger.debug('scheme_dict: ' + str(scheme_dict))
-                        logger.debug('studsubj_dict: ' + str(studsubj_dict))
-                        logger.debug('msg_list: ' + str(msg_list))
-
-        # ++++++++++++++++++++++++++++++++
-        # - get eveninstudent or lex student
-                    is_evening_or_lex_student = get_evening_or_lex_student(student)
-
-        # -------------------------------
-        # - check required subjects
-                    validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-                    if logging_on:
-                        logger.debug('msg_list: ' + str(msg_list))
-        # - check total amount of subjects
-                    validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-                    if logging_on:
-                        logger.debug('msg_list: ' + str(msg_list))
-
-        # - check amount of mvt and combi subjects
-                    validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-                    validate_amount_subjects('wisk', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-                    validate_amount_subjects('combi', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-
-        # - check amount of subjects per subjecttype
-                    validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-
-                    if logging_on:
-                        logger.debug('msg_list: ' + str(msg_list) + '' + str(type(msg_list)))
-
-                    if len(msg_list):
-                        msg_str = ''.join(("<div class='p-2 border_bg_warning'><h6>", str(_('The composition of the subjects is not correct')), ':</h6>', "<ul class='msg_bullet'>"))
-                        msg_list.insert(0, msg_str)
-                        msg_list.append("</ul></div>")
+    # ++++++++++++++++++++++++++++++++
+    # - get min max subjects and mvt from scheme
+                scheme_dict = get_scheme_si_sjtp_dict(stud_scheme)
+    # ++++++++++++++++++++++++++++++++
+    # - get info from studsubjects
+                doubles_pk_list = []
+                doubles_code_list = []
+                studsubj_dict = get_studsubj_dict_from_modal(stud_scheme, student, studsubj_dictlist, doubles_pk_list, msg_list)
+                doubles_pk_len = len(doubles_pk_list)
+                if doubles_pk_len:
+                    subject_code_dict = scheme_dict.get('subj_code')
+                    for pk_int in doubles_pk_list:
+                        doubles_code_list.append(subject_code_dict.get(pk_int, '-'))
+                    display_str = convert_code_list_to_display_str(doubles_code_list)
+                    if doubles_pk_len == 1:
+                        msg_list.append(''.join(
+                            ("<li>",
+                             str(_("The subject %(list)s occurs twice and must be deleted.") % {'list': display_str}),
+                             "<br>",
+                             str(_("It will be disregarded in the rest of the validation.")),
+                             "</li>")))
                     else:
-                        msg_list = ["<div class='p-2 border_bg_valid'><p>", str(_('AWP has not found any errors in the composition of the subjects.')), "</p></div>"]
-                    if logging_on:
-                        logger.debug('msg_list: ' + str(msg_list))
+                        msg_list.append(''.join((
+                            "<li>",
+                            str(_("The subjects %(list)s occur multiple times and must be deleted.") % {'list': display_str}),
+                            "<br>",
+                            str(_("They will be disregarded in the rest of the validation.")),
+                            "</li>")))
+
+                if logging_on:
+                    logger.debug('............................... ')
+                    logger.debug('scheme_dict: ' + str(scheme_dict))
+                    logger.debug('studsubj_dict: ' + str(studsubj_dict))
+                    logger.debug('msg_list: ' + str(msg_list))
+
+    # ++++++++++++++++++++++++++++++++
+    # - get eveninstudent or lex student
+                is_evening_or_lex_student = get_evening_or_lex_student(student)
+
+    # -------------------------------
+    # - check required subjects
+                validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+
+    # - check total amount of subjects
+                validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+
+    # - check amount of mvt and combi subjects
+                validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+                validate_amount_subjects('wisk', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+                validate_amount_subjects('combi', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+
+    # - check amount of subjects per subjecttype
+                validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+                if len(msg_list):
+                    msg_str = ''.join(("<div class='p-2 border_bg_warning'><h6>", str(_('The composition of the subjects is not correct')), ':</h6>', "<ul class='msg_bullet'>"))
+                    msg_list.insert(0, msg_str)
+                    msg_list.append("</ul></div>")
                 else:
-                    msg_list = ["<div class='p-2 border_bg_warning'><p>", str(_('This candidate has no subjects.')), "</p></div>"]
+                    msg_list = ["<div class='p-2 border_bg_valid'><p>", str(_('AWP has not found any errors in the composition of the subjects.')), "</p></div>"]
+                if logging_on:
+                    logger.debug('msg_list: ' + str(msg_list))
+
+    # - return warning when subject is deleted or subjtype has changed
+                deleted_list, changed_list = [], []
+                for studsubj_dict in studsubj_dictlist_with_tobedeleted:
+                    studsubj_pk = studsubj_dict.get('studsubj_id')
+                    tobedeleted = studsubj_dict.get('tobedeleted')
+                    tobechanged = studsubj_dict.get('tobechanged')
+                    if logging_on:
+                        logger.debug('............................... ')
+                        logger.debug('studsubj_dict: ' + str(studsubj_dict))
+                        logger.debug('studsubj_pk: ' + str(studsubj_pk))
+                        logger.debug('tobedeleted: ' + str(tobedeleted))
+                        logger.debug('tobechanged: ' + str(tobechanged))
+
+                    if (studsubj_pk) and (tobedeleted or tobechanged):
+                        if studsubj_pk:
+                            studsubj = stud_mod.Studentsubject.objects.get_or_none(pk=studsubj_pk)
+                            if logging_on:
+                                logger.debug('studsubj: ' + str(studsubj))
+                                logger.debug('studsubj.subj_published_id: ' + str(studsubj.subj_published_id))
+                            if studsubj and studsubj.subj_published_id:
+                                sb_code = studsubj.schemeitem.subject.base.code
+                                if tobedeleted:
+                                    deleted_list.append(sb_code)
+                                elif tobechanged:
+                                    changed_list.append(sb_code)
+
+                deleted_count = len(deleted_list)
+                changed_count = len(changed_list)
+                if deleted_count or changed_count:
+                    msg_list.append("<div class='p-2 border_bg_warning'><h6>" + str(_('ATTENTION')) + '</h6><p>')
+                    if deleted_count:
+                        deleted_list.sort()
+                        subj_str = ''
+                        for x in range(0, deleted_count):  # range(start_value, end_value, step), end_value is not included!
+                            if x == 0:
+                                join_str = ''
+                            elif x == (deleted_count - 1):
+                                join_str = str(_(' and '))
+                            else:
+                                join_str = ', '
+                            subj_str += ''.join((join_str, "'", deleted_list[x], "'"))
+                        if deleted_count == 1:
+                            msg_str = str(_("The subject %(subj_str)s will be deleted.") % {'subj_str': subj_str})
+                        else:
+                            msg_str = str(_("The subjects %(subj_str)s will be deleted.") % {'subj_str': subj_str})
+                        msg_list.append(msg_str + '<br>')
+
+                    if changed_count:
+                        changed_list.sort()
+                        subj_str = ''
+                        for x in range(0, changed_count):  # range(start_value, end_value, step), end_value is not included!
+                            if x == 0:
+                                join_str = ''
+                            elif x == (changed_count - 1):
+                                join_str = str(_(' and '))
+                            else:
+                                join_str = ', '
+                            subj_str += ''.join((join_str, "'", changed_list[x], "'"))
+                        if changed_count == 1:
+                            msg_str = str(_("The character of subject %(subj_str)s will be changed.") % {'subj_str': subj_str})
+                        else:
+                            msg_str = str(_("The character of subjects %(subj_str)s will be changed.") % {'subj_str': subj_str})
+                        msg_list.append(msg_str + '<br>')
+
+                    if deleted_count + changed_count == 1:
+                        cpt1 = _('this subject')
+                        cpt2 = _('has already been submitted')
+                    else:
+                        cpt1 = _('these subjects')
+                        cpt2 =_('have already been submitted')
+                    msg_list.append(str(_("Because %(cpt1)s %(cpt2)s, you have to submit an additional Ex1 form with %(cpt1)s.") \
+                                        % {'cpt1': cpt1, 'cpt2': cpt2}) + '</p></div>')
 
         msg_html = ''.join(msg_list)
 
@@ -1084,14 +1160,13 @@ def get_scheme_si_sjtp_dict(scheme):
 def get_studsubj_dict_from_modal(stud_scheme, student, si_dictlist, doubles_list, msg_list):
     # - get info from student subjects PR2021-08-17
     # si_dictlist contains studentsubject values from studsubj modal, not from the database
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_studsubj_dict_from_modal  -----')
         logger.debug('scheme: ' + str(student))
         logger.debug('si_dictlist: ' + str(si_dictlist))
 
     subject_list = []
-
     sjtp_dict = {}
 
     mand_list = []
@@ -1099,8 +1174,6 @@ def get_studsubj_dict_from_modal(stud_scheme, student, si_dictlist, doubles_list
     combi_list = []
     mvt_list = []
     wisk_list = []
-
-
     core_list = []
 
     if not si_dictlist:
@@ -1146,7 +1219,6 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
         logger.debug('scheme: ' + str(student))
 
     subject_list = []
-
     sjtp_dict = {}
 
     mand_list = []
@@ -1202,7 +1274,7 @@ def get_schemitem_info(stud_scheme, schemeitem,
         msg_list.append(msg_str)
     else:
 
-        # - put subject.pk in subject_list, or in doubles_list when already exists
+# - put subject.pk in subject_list, or in doubles_list when already exists
         subj_pk = schemeitem.subject.pk
 
         # if subject already exists: skip double from other checks (double should not be possible)
@@ -1211,7 +1283,7 @@ def get_schemitem_info(stud_scheme, schemeitem,
         else:
             subject_list.append(subj_pk)
 
-            # add subject to subjecttype list
+# add subject to subjecttype list
             subjecttype = schemeitem.subjecttype
             sjtp_pk = subjecttype.pk
             if sjtp_pk not in sjtp_dict:

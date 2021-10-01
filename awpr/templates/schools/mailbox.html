@@ -31,6 +31,7 @@
         {% else %}
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
+            {% include 'schools/modmailmessage.html' %}
 
             <div class="content_margin_top78">
 
@@ -56,7 +57,8 @@
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="btn_received" class="btn btn-secondary ">{% trans 'Received messages' %}</button>
                     <button data-btn="btn_sent" class="btn btn-secondary ">{% trans 'Sent messages' %}</button>
-                    <button data-btn="btn_mailinglist" class="btn btn-secondary display_hide">{% trans 'Mailing lists' %}</button>
+                    <button data-btn="btn_draft" class="btn btn-secondary ">{% trans 'Draft messages' %}</button>
+                    <button data-btn="btn_mailinglist" class="btn btn-secondary">{% trans 'Mailing lists' %}</button>
 
                 </div>
 <!-- end BUTTON GROUP -->

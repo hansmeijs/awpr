@@ -531,7 +531,6 @@ class Published(AwpBaseModel): # PR2020-12-02
     # published has no published_log because its data don't change
 
 
-
 # PR2018-06-07
 class Entrylist(AwpBaseModel):
     school = ForeignKey(School, related_name='+', on_delete=CASCADE)
@@ -627,14 +626,14 @@ class Mailattachment(AwpBaseModel):
 class Mailbox(AwpBaseModel):
     objects = AwpModelManager()
 
-    examyear = ForeignKey(Examyear, related_name='+', on_delete=CASCADE)
     # user is recipient when issentmail = False, is sender when issentmail = True
     user = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=CASCADE)
     mailmessage = ForeignKey(Mailmessage, related_name='+', on_delete=CASCADE)
     read = BooleanField(default=False)
     deleted = BooleanField(default=False)
     issentmail = BooleanField(default=False)
-
+    isreceivedmail = BooleanField(default=False)
+    # isdraftmail when issentmail and isreceivedmail are False
 
 def delete_instance(instance, msg_list, error_list, request, this_txt=None, header_txt=None):
     logging_on = False  # s.LOGGING_ON

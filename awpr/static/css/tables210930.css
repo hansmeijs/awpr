@@ -1002,7 +1002,6 @@ aXX:hover{
     border-radius: .25rem  !important;
     background-color: #fff3cd !important; /* #fff3cd; alert-warning background  */
     /*background-color: #fdd6ba !important; /* light organgeishbackground  */
-
 }
 
 .border_bg_transparent {
@@ -1023,6 +1022,12 @@ aXX:hover{
     /*background-color: #2d4e77;  /* HeaderBackColor Default Schema Blauw donkerblauw RGB 45,78,119 */
    /* background-color: #376191;  /*  FooterBackColor Default Schema Blauw medium blauw  RGB 55,97,145)  */
     background-color: #b8cce4;  /* AWP lichtblauw RGB 184,204,228  */
+
+    transition: background-color 250ms ease;
+     -webkit-transition: background-color 250ms ease;
+     -o-transition: background-color 250ms ease;
+     -moz-transition: background-color 250ms ease;
+
 }
 
 .bg_selected_blue {
@@ -1053,6 +1058,23 @@ aXX:hover{
      -webkit-transition: background-color 250ms ease;
      -o-transition: background-color 250ms ease;
      -moz-transition: background-color 250ms ease;
+}
+
+.text_decoration_line_through_red {
+  text-decoration: line-through double red;  /* #dc3545;    /*  red like in django is-invalid */
+}
+
+.text_decoration_initial {
+  text-decoration: initial;
+}
+
+.just_linked_blue {
+    background-color: #dc3545;
+    transition: background-color 5000ms ease;
+}
+
+.text_decoration_initial {
+  text-decoration: initial;
 }
 
 .msg_bullet {
@@ -1086,7 +1108,12 @@ aXX:hover{
     height: 390px;
     width: 360px;
 }
-
+.tbl_div_520_360 {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 520px;
+    width: 360px;
+}
 .tbl_div_390_420 {
     overflow-x: hidden;
     overflow-y: auto;

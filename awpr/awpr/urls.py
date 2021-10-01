@@ -216,8 +216,6 @@ urlpatterns = [
         path('studsubj_upload', student_views.StudentsubjectUploadView.as_view(), name='url_studsubj_upload'),
         path('studsubj_single_update', student_views.StudentsubjectSingleUpdateView.as_view(), name='url_studsubj_single_update'),
 
-        # NIU path('studsubj_validate', student_views.StudentsubjectValidateView.as_view(), name='url_student_validate'),
-
         path('studsubj_validate_scheme', student_views.StudentsubjectValidateSchemeView.as_view(), name='url_studsubj_validate_scheme'),
         path('studsubj_validate_test', student_views.StudentsubjectValidateTestView.as_view(), name='url_studsubj_validate_test'),
         path('studsubj_validate_all', student_views.StudentsubjectValidateAllView.as_view(), name='url_studsubj_validate_all'),

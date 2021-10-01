@@ -649,6 +649,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Delete_exemption'] = _('Delete exemption')
         dict['This_exemption'] = _('This exemption')
 
+        dict['This_subject_ismarked_fordeletion'] = _('This subject is marked for deletion.')
+        dict['You_must_submit_additional_ex1form'] = _('You must submit an additional Ex-1 form to delete it.')
+
+
         dict['MASS_info'] = {
             'checking_studsubj': _('The subjects of the candidates are checked'),
             'subheader_approve': _('Selection of the subjects, that will be approved:'),

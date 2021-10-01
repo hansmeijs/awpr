@@ -32,15 +32,16 @@ from students import functions as stud_fnc
 from subjects import models as subj_mod
 from students import validators as stud_val
 
+# PR2019-01-04  https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
+from django.utils.functional import Promise
+from django.utils.encoding import force_text
+from django.core.serializers.json import DjangoJSONEncoder
+
 import json
 
 import logging
 logger = logging.getLogger(__name__)
 
-# PR2019-01-04 from https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
-from django.utils.functional import Promise
-from django.utils.encoding import force_text
-from django.core.serializers.json import DjangoJSONEncoder
 
 class LazyEncoder(DjangoJSONEncoder):
     def default(self, obj):
@@ -763,66 +764,11 @@ class StudentsubjectValidateAllView(View):  # PR2021-07-24
 # - end of StudentsubjectValidateAllView
 
 
-#################################################################################
-@method_decorator([login_required], name='dispatch')
-class StudentsubjectValidateViewNIU(View):
-
-    def post(self, request):
-        logging_on = False  # s.LOGGING_ON
-        if logging_on:
-            logger.debug(' ============= StudentsubjectValidateView ============= ')
-
-        # function validates studentsubject records of this student PR2021-07-10
-
-        update_wrap = {}
-
-# - get permit - no permit necessary
-
-# - reset language
-        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-        activate(user_lang)
-
-# - get upload_dict from request.POST
-        upload_json = request.POST.get('upload', None)
-        if upload_json:
-            upload_dict = json.loads(upload_json)
-
-# ----- get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, may_editNIU, msg_listNIU = \
-                dl.get_selected_ey_school_dep_from_usersetting(request)
-
-            if logging_on:
-                logger.debug('upload_dict' + str(upload_dict))
-                logger.debug('sel_examyear: ' + str(sel_examyear))
-                logger.debug('sel_school: ' + str(sel_school))
-                logger.debug('sel_department: ' + str(sel_department))
-
-# +++ validate subjects of one student, used in modal
-            student_pk = upload_dict.get('student_pk')
-            if student_pk:
-                student = stud_mod.Student.objects.get_or_none(
-                    id=student_pk,
-                    school=sel_school,
-                    department=sel_department
-                )
-                if student:
-                    msg_html = stud_val.validate_studentsubjects(student)
-                    if msg_html:
-                        update_wrap['studsubj_validate_html'] = msg_html
-
-# - return update_wrap
-        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-
-# - end of StudentsubjectValidateView
-
-
-
-#################################################################################
 @method_decorator([login_required], name='dispatch')
 class StudentsubjectValidateTestView(View):
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= StudentsubjectValidateTestView ============= ')
@@ -846,18 +792,16 @@ class StudentsubjectValidateTestView(View):
             sel_examyear, sel_school, sel_department, may_editNIU, msg_listNIU = \
                 dl.get_selected_ey_school_dep_from_usersetting(request)
 
+# +++ validate subjects of one student, used in modal
+            student_pk = upload_dict.get('student_pk')
+            studsubj_dictlist = upload_dict.get('studsubj_dictlist')
+
             if logging_on:
-                logger.debug('upload_dict' + str(upload_dict))
                 logger.debug('sel_examyear: ' + str(sel_examyear))
                 logger.debug('sel_school: ' + str(sel_school))
                 logger.debug('sel_department: ' + str(sel_department))
-
-# +++ validate subjects of one student, used in modal
-            student_pk = upload_dict.get('student_pk')
-            si_dictlist = upload_dict.get('si_dictlist')
-            if logging_on:
                 logger.debug('student_pk: ' + str(student_pk) + ' ' + str(type(student_pk)))
-                logger.debug('si_dictlist: ' + str(si_dictlist))
+                logger.debug('studsubj_dictlist: ' + str(studsubj_dictlist))
 
             if student_pk:
                 student = stud_mod.Student.objects.get_or_none(id=student_pk)
@@ -867,7 +811,7 @@ class StudentsubjectValidateTestView(View):
                     logger.debug('student: ' + str(student))
 
                 if student:
-                    msg_html = stud_val.validate_studentsubjects_TEST(student, si_dictlist)
+                    msg_html = stud_val.validate_studentsubjects_TEST(student, studsubj_dictlist)
                     if msg_html:
                         update_wrap['studsubj_validate_html'] = msg_html
                         if logging_on:
@@ -1143,7 +1087,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 
 # +++ get selected studsubj_rows
                         # TODO exclude published rows?? Yes, but count them when checking. You cannot approve or undo approve or submit when submitted
-
+                        # when a subject is set 'tobedeleted', the published info is removed, to show up when submitted
                         crit = Q(student__school=sel_school) & \
                                Q(student__department=sel_department)
             # when submit: don't filter on level, sector, subject or cluster
@@ -1275,12 +1219,14 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                                         request=request,
                                         user_lang=user_lang)
 
-                                    #update_wrap['updated_published_rows'] = create_published_rows(
-                                    #    sel_examyear_pk=sel_examyear.pk,
-                                    #    sel_schoolbase_pk=sel_school.base_id,
-                                    #    sel_depbase_pk=sel_department.base_id,
-                                    #    published_pk=published_instance.pk
-                                    #)
+                    # - delete the 'tobedeleted' rows from StudSubject, only after submitting and no test!
+                                    self.delete_tobedeleted_from_studsubj(
+                                        published_instance=published_instance,
+                                        sel_examyear=sel_examyear,
+                                        sel_school=sel_school,
+                                        sel_department=sel_department,
+                                        request=request
+                                )
 
                                 if (studsubj_rows):
                                     update_wrap['updated_studsubj_approve_rows'] = studsubj_rows
@@ -1295,6 +1241,30 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+    def delete_tobedeleted_from_studsubj(self, published_instance, sel_examyear, sel_school, sel_department, request):
+        # PR2021-09-30
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('  ----- delete_tobedeleted_from_studsubj -----')
+
+        studentsubjects = stud_mod.Studentsubject.objects.filter(
+            subj_published=published_instance,
+            student__school__examyear=sel_examyear,
+            student__school=sel_school,
+            student__department=sel_department,
+            tobedeleted=True
+        )
+        if logging_on:
+            logger.debug('studentsubjects: ' + str(studentsubjects))
+
+        if studentsubjects:
+            for studsubj in studentsubjects:
+                studsubj.delete(request=request)
+                if logging_on:
+                    logger.debug('deleted _studsubj: ' + str(studsubj))
+
+# - end of  delete_tobedeleted_from_studsubj
 
     def create_msg_list(self, count_dict, requsr_auth, is_approve, is_test):
         logging_on = False  # s.LOGGING_ON
@@ -2210,7 +2180,7 @@ def validate_studsubj_scheme(sel_examyear, correct_errors, request):
 
 
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17
+class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -2279,8 +2249,6 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17
                         department=sel_department
                     )
                 if logging_on:
-                    logger.debug('msg_list: ' + str(msg_list))
-                    logger.debug('may_edit: ' + str(may_edit))
                     logger.debug('student: ' + str(student))
 
 # - get list of studentsubjects from upload_dict
@@ -2315,13 +2283,31 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17
                         if logging_on:
                             logger.debug('studsubj: ' + str(studsubj))
 
+# +++ undelete studsubj ++++++++++++
+                        if mode == 'undelete':
+                            # remove 'tobedeleted', approve and publish info will stay blank, thus studsubj must be submitted again
+                            # TODO retrieve the approve info from logfile and put it back in studsubj, to prevent new submittal
+                            if studsubj:
+
+                                setattr(studsubj, 'tobedeleted', False)
+
+                                # put back approval info from prev_fields
+                                # TODO for now, to be replaced by lookup in log file
+                                setattr(studsubj, 'subj_auth1by', getattr(studsubj, 'prev_auth1by'))
+                                setattr(studsubj, 'subj_auth2by', getattr(studsubj, 'prev_auth2by'))
+                                setattr(studsubj, 'subj_published', getattr(studsubj, 'prev_published'))
+                                studsubj.save(request=request)
+
 # +++ delete studsubj ++++++++++++
-                        if mode == 'delete':
+                        elif mode == 'delete':
                             # published fields are: subj_published, exem_published, reex_published, reex3_published, pok_published
-                            # if published: don't delete, but set deleted=True, so its remains in the Ex1 form
-                            #               also set grades 'deleted=True
+                            # if published: don't delete, but set 'tobedeleted' = True, so its remains in the Ex1 form
+                            #       also remove approved and published info
+                            #       also set grades 'tobedeleted'=True
                             # if not published: delete studsubj, grades will be cascade deleted
                             if studsubj:
+                                tobedeleted = getattr(studsubj, 'tobedeleted')
+
                                 this_text = None
                                 if studsubj.schemeitem:
                                     subject = studsubj.schemeitem.subject
@@ -2338,18 +2324,37 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17
                                     studsubj.pok_published:
                     # - if published: set tobedeleted=True, so its remains in the Ex1 form
                                     setattr(studsubj, 'tobedeleted', True)
+
+                    # - also remove approved and published info
+                                    # TODO also from grades??
+                                    # put approval info in prev_fields
+                                    # TODO for now, to be replaced by lookup in log file
+
+                                    setattr(studsubj, 'prev_auth1by', getattr(studsubj, 'subj_auth1by'))
+                                    setattr(studsubj, 'prev_auth2by', getattr(studsubj, 'subj_auth2by'))
+                                    setattr(studsubj, 'prev_published', getattr(studsubj, 'subj_published'))
+
+                                    # remove approved and published info
+                                    setattr(studsubj, 'subj_auth1by', None)
+                                    setattr(studsubj, 'subj_auth2by', None)
+                                    setattr(studsubj, 'subj_published', None)
+
                                     studsubj.save(request=request)
                                     if logging_on:
                                         logger.debug('studsubj.tobedeleted: ' + str(studsubj.tobedeleted))
+
                                     grades = stud_mod.Grade.objects.filter(studentsubject=studsubj)
-                            # also set grades tobedeleted=True
+                    # - also set grades tobedeleted=True
                                     if grades:
                                         for grade in grades:
                                             setattr(grade, 'tobedeleted', True)
                                             grade.save(request=request)
                                             if logging_on:
                                                 logger.debug('grade.tobedeleted: ' + str(grade.tobedeleted))
-                                else:
+                                elif not tobedeleted:
+                                    # PR2021-09-29 debug: subject could be deleted before re-approval.
+                                    # add filter to prevent deletion when tobedeleted = True
+                                    # tobedeleted will be set False after submitting
                     # - if not yet published: delete Grades, Studentsubjectnote, Noteattachment will also be deleted with cascade_delete
                                     err_list = []  # TODO
                                     deleted_ok = sch_mod.delete_instance(studsubj, messages, err_list, request, this_text)
@@ -2386,8 +2391,6 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17
 
 # +++ update existing studsubj - also when studsubj is created - studsubj is None when deleted
                         if studsubj and mode in ('create', 'update'):
-                            if logging_on:
-                                logger.debug('studsubj and mode: ' + str(studsubj))
                             update_studsubj(studsubj, studsubj_dict, error_dict, request)
 
 # - add update_dict to update_wrap
@@ -2415,15 +2418,13 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17
                                     studsubj_rows.append(studsubj_row)
 # - end of loop
 # -------------------------------------------------
-                    if logging_on:
-                        logger.debug('studsubj_rows: ' + str(studsubj_rows))
 
                     if studsubj_rows:
-                        update_wrap['updated_MSTUDSUBJ_rows'] = studsubj_rows
+                        update_wrap['updated_studsubj_rows'] = studsubj_rows
 
 # +++ validate subjects of student
                         # no message necessary, done by test before saving
-                        #msg_html = stud_val.validate_studentsubjects(student)
+                        #msg_html = stud_val.Fstudent)
                         #if msg_html:
                         #    update_wrap['studsubj_validate_html'] = msg_html
                         #if logging_on:
@@ -2435,8 +2436,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17
 
         if len(messages):
             update_wrap['messages'] = messages
-        if logging_on:
-            logger.debug('update_wrap: ' + str(update_wrap))
+
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -2575,7 +2575,35 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
             logger.debug('field: ' + str(field) + ' new_value: ' + str(new_value))
 
 # +++ save changes in instance fields
-        if field in ['pws_title', 'pws_subjects']:
+        if field in ['schemeitem_pk']:
+            saved_schemeitem = getattr(instance, 'schemeitem')
+            new_schemeitem = subj_mod.Schemeitem.objects.get_or_none(pk=new_value)
+            if logging_on:
+                logger.debug('saved_schemeitem: ' + str(saved_schemeitem))
+                logger.debug('new_schemeitem: ' + str(new_schemeitem))
+            if new_schemeitem is None:
+                msg_dict['err_' + field] = str(_("Subject with this character not found."))
+            elif saved_schemeitem:
+                if new_schemeitem.pk != saved_schemeitem.pk:
+                    setattr(instance, 'schemeitem', new_schemeitem)
+            # - also remove approved and published info
+                    # TODO also from grades??
+                    setattr(instance, 'subj_auth1by', None)
+                    setattr(instance, 'subj_auth2by', None)
+                    setattr(instance, 'subj_published', None)
+
+                    save_changes = True
+                    if logging_on:
+                        logger.debug('>>>>> new_schemeitem save')
+
+        elif field == 'tobedeleted':
+            saved_value = getattr(instance, field, False)
+            new_value = new_value if new_value else False
+            if new_value != saved_value:
+                setattr(instance, field, new_value)
+                save_changes = True
+
+        elif field in ['pws_title', 'pws_subjects']:
             # only allowed when schemeitem has_pws = True
             if not instance.schemeitem.has_pws:
                 msg_dict['err_' + field] = str(_("Title and subjects are not allowed in this subject."))
@@ -2587,7 +2615,7 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
                     setattr(instance, field, new_value)
                     save_changes = True
 
-        elif field in ['is_extra_nocount','is_extra_counts', 'is_elective_combi']:
+        elif field in ['is_extra_nocount','is_extra_counts']:
             saved_value = getattr(instance, field)
             if logging_on:
                 logger.debug('saved_value: ' + str(saved_value))
@@ -2635,7 +2663,6 @@ def update_studsubj(instance, upload_dict, msg_dict, request):
                     grade.save(request=request)
                 if grade:
                     grade.save(request=request)
-
 
         #   subj_auth1by, subj_auth2by, subjpublished, exem_auth1by, exem_auth2by, exemppublished,
         #   reex_auth1by, reex_auth2by, reexpublished, reex3_auth1by, reex3_auth2by, reex3published,
@@ -3772,15 +3799,13 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
 
             "LEFT JOIN accounts_user AS pok_auth1 ON (pok_auth1.id = studsubj.pok_auth1by_id)",
             "LEFT JOIN accounts_user AS pok_auth2 ON (pok_auth2.id = studsubj.pok_auth2by_id)",
-            "LEFT JOIN schools_published AS pok_published ON (pok_published.id = studsubj.pok_published_id)",
-
-            "WHERE NOT studsubj.tobedeleted"]
+            "LEFT JOIN schools_published AS pok_published ON (pok_published.id = studsubj.pok_published_id)"]
 
         # only show published subject for other users than sameschool
         if not requsr_same_school:
             # PR2021-09-04 debug: examyear before 2022 have no subj_published_id. SHow them to others anyway
             if examyear is None or examyear.code >= 2022:
-                sql_studsubj_list.append("AND studsubj.subj_published_id IS NOT NULL")
+                sql_studsubj_list.append("WHERE studsubj.subj_published_id IS NOT NULL")
 
         sql_studsubjects = ' '.join(sql_studsubj_list)
 

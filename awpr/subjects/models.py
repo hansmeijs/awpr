@@ -371,7 +371,7 @@ class Subjecttype_log(sch_mod.AwpBaseModel):
     abbrev = CharField(max_length=c.MAX_LENGTH_20, null=True)
     sequence = PositiveSmallIntegerField(null=True)
 
-    # has_prac only enables the has_practexam option of a schemeitem
+    # has_prac / has_pws only enables the has_practexam / pws option of a schemeitem
     has_prac = BooleanField(default=False)
     has_pws = BooleanField(default=False)
 
@@ -552,10 +552,12 @@ class Schemeitem(sch_mod.AwpBaseModel):
 
     extra_count_allowed = BooleanField(default=False)
     extra_nocount_allowed = BooleanField(default=False)
+    # TODO deprecate elective_combi_allowed
     elective_combi_allowed = BooleanField(default=False)
 
     has_practexam = BooleanField(default=False)
     has_pws = BooleanField(default=False)
+
     is_core_subject = BooleanField(default=False)
     is_mvt = BooleanField(default=False)
     is_wisk = BooleanField(default=False)

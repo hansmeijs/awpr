@@ -3093,8 +3093,9 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
                 "lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
 
                 "si.gradetype, si.weight_se, si.weight_ce, si.ete_exam, si.no_order, si.is_mandatory, si.is_mand_subj_id,",
-                "si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed, si.elective_combi_allowed,",
-                "si.has_practexam, si.has_pws, si.is_core_subject, si.is_mvt, si.is_wisk,",
+                "si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
+                 # deprecated: si.has_pws, si.elective_combi_allowed,
+                "si.has_practexam, si.is_core_subject, si.is_mvt, si.is_wisk,",
                 "si.sr_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce,",
 
                 "si.modifiedby_id, si.modifiedat,",
