@@ -231,6 +231,9 @@ urlpatterns = [
 
         path('download_ex1', grade_excel.StudsubjDownloadEx1View.as_view(), name='url_grade_download_ex1'),
 
+        path('ex3_getinfo/', grade_exfiles.GetEx3infoView.as_view(), name='url_ex3_getinfo'),
+        path('download_ex3/<list>/', grade_exfiles.DownloadEx3View.as_view(), name='url_ex3_download'),
+
     ])),
 
 # ===== ORDERLISTS ========================== PR2021-04-04
@@ -259,7 +262,7 @@ urlpatterns = [
         path('upload', grade_views.GradeUploadView.as_view(), name='grade_upload_url'),
         path('approve', grade_views.GradeApproveView.as_view(), name='grade_approve_url'),
         path('download_icons', grade_views.GradeDownloadGradeIconsView.as_view(), name='download_grade_icons_url'),
-        path('download_ex2a', grade_exfiles.GradeDownloadEx2aView.as_view(), name='grade_download_ex2a_url'),
+        path('download_ex2a', grade_exfiles.GradeDownloadEx2aView.as_view(), name='url_grade_download_ex2a'),
         path('download/', grade_exfiles.DownloadPublishedFile.as_view(), name='grades_download_published_url'),
     ])),
 

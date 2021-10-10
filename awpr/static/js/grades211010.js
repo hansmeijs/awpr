@@ -8,12 +8,23 @@ let urls = {};
 
 // selected_btn is also used in t_MCOL_Open
 let selected_btn = "btn_exemption";
-let selected = {grade_pk: null, grade_dict: {}};
-
-let school_rows = [];
-let grade_rows = [];
 
 const field_settings = {};
+
+let selected = {
+    grade_pk: null,
+    grade_dict: {},
+    item_count: 0
+};
+
+let school_rows = [];
+let student_rows = [];
+let subject_rows = [];
+let studsubj_rows = [];
+let grade_rows = [];
+
+let schemeitem_rows = [];
+let published_rows = [];
 
 document.addEventListener("DOMContentLoaded", function() {
     "use strict";
@@ -45,7 +56,6 @@ document.addEventListener("DOMContentLoaded", function() {
     let sector_map = new Map();
 
     let student_map = new Map();
-    let subject_map = new Map();
 
     let published_map = new Map();
     let studentsubject_map = new Map();
@@ -65,12 +75,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
     urls.url_grade_approve = get_attr_from_el(el_data, "data-grade_approve_url");
     urls.url_download_grade_icons = get_attr_from_el(el_data, "data-download_grade_icons_url");
-    urls.url_grade_download_ex2a = get_attr_from_el(el_data, "data-grade_download_ex2a_url");
+    urls.url_grade_download_ex2a = get_attr_from_el(el_data, "data-url_grade_download_ex2a");
     urls.url_download_published = get_attr_from_el(el_data, "data-download_published_url");
     urls.url_studentsubjectnote_upload = get_attr_from_el(el_data, "data-studentsubjectnote_upload_url");
     urls.url_studentsubjectnote_download = get_attr_from_el(el_data, "data-studentsubjectnote_download_url");
     urls.url_noteattachment_download = get_attr_from_el(el_data, "data-noteattachment_download_url");
-
 
 // columns_hidden and columns_tobe_hidden are also used in t_MCOL_Open and t_MCOL_Save
     columns_tobe_hidden.btn_exemption = {
@@ -259,10 +268,10 @@ document.addEventListener("DOMContentLoaded", function() {
         if (el_SBR_select_sector){el_SBR_select_sector.addEventListener("change", function() {HandleSbrLevelSector("sector", el_SBR_select_sector)}, false)};
         if (el_SBR_select_subject){
             el_SBR_select_subject.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "subject", subject_map, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
+                function() {t_MSSSS_Open(loc, "subject", subject_rows, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
         if (el_SBR_select_student){
             el_SBR_select_student.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "student", student_map, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
+                function() {t_MSSSS_Open(loc, "student", student_rows, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
         if (el_SBR_select_showall){el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false )};
 
 // ---  MOD APPROVE GRADE ------------------------------------
@@ -339,14 +348,17 @@ document.addEventListener("DOMContentLoaded", function() {
                 locale: {page: ["page_grade"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
+
                 department_rows: {get: true},
-                subject_rows: {get: true},
-                student_rows: {get: true},
-                studentsubject_rows: {get: true},
-                grade_rows: {get: true},
-                published_rows: {get: true},
                 level_rows: {cur_dep_only: true},
-                sector_rows: {cur_dep_only: true}
+                sector_rows: {cur_dep_only: true},
+
+                student_rows: {cur_dep_only: true},
+                subject_rows: {cur_dep_only: true},
+                studentsubject_rows: {cur_dep_only: true},
+                grade_rows: {cur_dep_only: true}, // TODO: cur_dep
+
+                published_rows: {get: true}
             };
 
         DatalistDownload(datalist_request);
@@ -443,16 +455,31 @@ document.addEventListener("DOMContentLoaded", function() {
                     b_fill_datamap(sector_map, response.level_rows);
                     FillOptionsSelectLevelSector("sector", response.sector_rows);
                 };
-                if ("subject_rows" in response) { b_fill_datamap(subject_map, response.subject_rows) };
-                if ("student_rows" in response) { b_fill_datamap(student_map, response.student_rows) };
-                if ("studentsubject_rows" in response) { b_fill_datamap(studentsubject_map, response.studentsubject_rows) };
-                if ("published_rows" in response) {b_fill_datamap(published_map, response.published_rows)};
+
+                if ("student_rows" in response) {
+                    student_rows = response.student_rows;
+                }
+                if ("subject_rows" in response) {
+                    subject_rows = response.subject_rows;
+                }
+                if ("studentsubject_rows" in response) {
+                    studsubj_rows = response.studentsubject_rows;
+                    //check_validation = true;
+                };
 
                 if ("grade_rows" in response) {
                     grade_rows = response.grade_rows;
         // get icons of notes and status PR2021-04-21
                     DownloadGradeStatusAndIcons();
                 };
+
+                //if ("student_rows" in response) { b_fill_datamap(student_map, response.student_rows) };
+                //if ("studentsubject_rows" in response) { b_fill_datamap(studentsubject_map, response.studentsubject_rows) };
+
+                if ("published_rows" in response)  {
+                    published_rows = response.published_rows;
+                };
+                //if ("published_rows" in response) {b_fill_datamap(published_map, response.published_rows)};
 
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
                 // also calls: FillTblRows(), MSSSS_display_in_sbr(), UpdateHeader()ect
@@ -471,6 +498,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let el_submenu = document.getElementById("id_submenu")
         AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A_form, null, null, "id_submenu_download_ex2a", urls.url_grade_download_ex2a, true);  // true = download
+        AddSubmenuButton(el_submenu, loc.Ex3_form, function() {MEX3_Open()});
         if (permit_dict.permit_approve_grade){
             AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MAG_Open("approve")});
         }
@@ -566,42 +594,6 @@ document.addEventListener("DOMContentLoaded", function() {
             //setting_dict.sel_student_pk = map_dict.id;
         }
     }  // HandleTblRowClicked
-
-//=========  HandleSelectRowClicked  ================ PR2020-12-16
-    function HandleSelectRowClicked_NIU(tr_clicked) {
-        //console.log("=== HandleSelectRowClicked");
-        //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
-        const tblName = get_attr_from_el(tr_clicked, "data-table")
-        //console.log( "tblName: ", tblName);
-
-        if (tblName === "select_student") {
-             setting_dict.sel_student_pk = null;
-        } else if (tblName === "select_subject") {
-            setting_dict.sel_subject_pk = null;
-        }
-
-// ---  deselect all highlighted rows - also tblFoot , highlight selected row
-        DeselectHighlightedRows(tr_clicked, cls_selected);
-        tr_clicked.classList.add(cls_selected)
-
-// ---  update setting_dict.sel_student_pk or setting_dict.sel_subject_pk
-        // only select employee from select table
-        const row_id = tr_clicked.id
-        if(row_id){
-            const data_map = (tblName === "select_student") ? student_map :
-                              (tblName === "select_subject") ? subject_map : null;
-            const map_dict = get_mapdict_from_datamap_by_id(data_map, row_id)
-            if (tblName === "select_student") {
-                 setting_dict.sel_student_pk = map_dict.id;
-            } else if (tblName === "select_subject") {
-                setting_dict.sel_subject_pk = map_dict.id;
-            }
-        }
-        //console.log( "setting_dict.sel_student_pk: ", setting_dict.sel_student_pk);
-        //console.log( "setting_dict.sel_subject_pk: ", setting_dict.sel_subject_pk);
-
-        FillTblRows();
-    }  // HandleSelectRowClicked_NIU
 
 
 //=========  HandleSbrPeriod  ================ PR2020-12-20
@@ -704,7 +696,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const display_rows = []
         const has_items = (!!rows && !!rows.length);
         const has_profiel = setting_dict.sel_dep_has_profiel;
-        const caption_all = "&#60" + ( (tblName === "level") ? loc.All_leerwegen : (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
+        const caption_all = "&#60" + ( (tblName === "level") ? loc.All_levels : (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
         if (has_items){
             if (rows.length === 1){
                 // if only 1 level: make that the selected one
@@ -816,16 +808,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= FillTblRows  ====================================
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
+        //console.log( "===== FillTblRows  === ");
         //console.log( "setting_dict", setting_dict);
 
         const tblName = get_tblName_from_selectedBtn()
         const field_setting = field_settings[selected_btn];
         const data_rows = get_datarows_from_selectedBtn()
-
-   console.log( "tblName", tblName);
-   console.log( "field_setting", field_setting);
-   console.log( "data_rows", data_rows);
 
 // --- show columns
         set_columns_hidden();
@@ -844,10 +832,10 @@ document.addEventListener("DOMContentLoaded", function() {
             // only show rows of selected level / sector / student / subject
                 // Note: filter of filterrow is done by Filter_TableRows
                 const show_row = (tblName === "published") ? true :
-                                (!setting_dict.sel_level_pk || map_dict.lvl_id === setting_dict.sel_level_pk) &&
-                                (!setting_dict.sel_sector_pk || map_dict.sct_id === setting_dict.sel_sector_pk) &&
-                                (!setting_dict.sel_student_pk || map_dict.student_id === setting_dict.sel_student_pk) &&
-                                (!setting_dict.sel_subject_pk || map_dict.subject_id === setting_dict.sel_subject_pk);
+                                (!setting_dict.sel_level_pk || data_dict.lvl_id === setting_dict.sel_level_pk) &&
+                                (!setting_dict.sel_sector_pk || data_dict.sct_id === setting_dict.sel_sector_pk) &&
+                                (!setting_dict.sel_student_pk || data_dict.student_id === setting_dict.sel_student_pk) &&
+                                (!setting_dict.sel_subject_pk || data_dict.subject_id === setting_dict.sel_subject_pk);
                 if(show_row){
                     CreateTblRow(tblName, field_setting, data_dict)
                 }
@@ -1670,7 +1658,6 @@ if(j && !is_status_field){td.classList.add("border_left")};
                         b_fill_datamap(studentsubjectnote_map, response.studentsubjectnote_rows)
                         ModNote_FillNotes(response.studentsubjectnote_rows);
                     };
-
                 },  // success: function (response) {
                 error: function (xhr, msg) {
                     // ---  hide loader
@@ -1682,7 +1669,6 @@ if(j && !is_status_field){td.classList.add("border_left")};
     };  // UploadChanges
 
 // +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
-
 
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
@@ -1711,31 +1697,28 @@ if(j && !is_status_field){td.classList.add("border_left")};
                             (tblName === "scheme") ? selected_scheme_pk :
                             (tblName === "package") ? selected_package_pk : null;
             }
-            //console.log("selected_pk", selected_pk )
+            console.log("selected_pk", selected_pk )
 
-    // ---  get info from data_map
-            //TODO
-            const data_map = get_datarows_from_selectedBtn
-            const map_id =  tblName + "_" + selected_pk;
-            const map_dict = get_mapdict_from_datamap_by_id(subject_map, map_id)
-
-            //console.log("data_map", data_map)
-            //console.log("map_id", map_id)
-            //console.log("map_dict", map_dict)
+// +++ get existing data_dict from data_rows. data_rows is ordered by grade.id'
+            //TODO test if it is ok
+            const data_rows = get_datarows_from_selectedBtn;
+            const [middle_index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", grade_pk);
+            const data_dict = found_dict;
+            console.log("data_dict", data_dict)
 
     // ---  create mod_dict
             mod_dict = {mode: mode};
-            const has_selected_item = (!isEmpty(map_dict));
+            const has_selected_item = (!isEmpty(data_dict));
             if(has_selected_item){
-                mod_dict.id = map_dict.id;
-                mod_dict.abbrev = map_dict.abbrev;
-                mod_dict.name = map_dict.name;
-                mod_dict.sequence = map_dict.sequence;
-                mod_dict.depbases = map_dict.depbases;
-                mod_dict.mapid = map_id;
+                mod_dict.id = data_dict.id;
+                mod_dict.abbrev = data_dict.abbrev;
+                mod_dict.name = data_dict.name;
+                mod_dict.sequence = data_dict.sequence;
+                mod_dict.depbases = data_dict.depbases;
+                mod_dict.mapid = data_dict.mapid;
             };
             if (mode === "inactive") {
-                  mod_dict.current_isactive = map_dict.is_active;
+                  mod_dict.current_isactive = data_dict.is_active;
             }
 
     // ---  put text in modal form
@@ -1756,7 +1739,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
                 msg01_txt = loc.No_user_selected;
                 hide_save_btn = true;
             } else {
-                const username = (map_dict.username) ? map_dict.username  : "-";
+                const username = (data_dict.username) ? data_dict.username  : "-";
                 if(mode === "delete"){
                     msg01_txt = loc.User + " '" + username + "'" + loc.will_be_deleted
                     msg02_txt = loc.Do_you_want_to_continue;
@@ -2562,7 +2545,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 // +++ get existing data_dict from data_rows. data_rows is ordered by grade.id'
             const grade_pk = update_dict.id;
-            const data_dict = get_datadict_by_gradepk(grade_pk);
+            const data_dict = get_gradedict_by_gradepk(grade_pk);
     console.log("data_dict", data_dict);
 
 // ---  create list of updated fields
@@ -2612,12 +2595,12 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         }  //  if(!isEmpty(update_dict)){
     };  // RefreshDatarowItem
 
-//========= get_datadict_by_gradepk =============  PR2021-09-20
-    function get_datadict_by_gradepk(grade_pk) {
-        //console.log( " ==== get_datadict_by_gradepk ====");
+//========= get_gradedict_by_gradepk =============  PR2021-09-20
+    function get_gradedict_by_gradepk(grade_pk) {
+        //console.log( " ==== get_gradedict_by_gradepk ====");
         const [middle_index, found_dict, compare] = b_recursive_integer_lookup(grade_rows, "id", grade_pk);
         return  found_dict;
-    };  // get_datadict_by_gradepk
+    };  // get_gradedict_by_gradepk
 
 //========= get_datadict_by_el =============  PR2021-09-20
     function get_datadict_by_el(el) {
@@ -2793,7 +2776,9 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 //=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
     function MSSSS_Response(tblName, selected_dict, selected_pk) {
         console.log( "===== MSSSS_Response ========= ");
-        //console.log( "selected_pk", selected_pk);
+        console.log( "tblName", tblName);
+        console.log( "selected_pk", selected_pk);
+        console.log( "selected_dict", selected_dict);
 
     // ---  upload new setting
         if(selected_pk === -1) { selected_pk = null};
@@ -2871,8 +2856,9 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         const sel_subject_pk = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_pk : null;
         //console.log( "sel_subject_pk ", sel_subject_pk);
         if(sel_subject_pk){
-            const dict = get_mapdict_from_datamap_by_tblName_pk(subject_map, "subject", sel_subject_pk);
-            subject_text =  (dict.name) ? dict.name : "---"
+        b_recursive_integer_lookup
+            const [middle_index, data_dict, compare] = b_recursive_integer_lookup(subject_rows, "id", sel_subject_pk);
+            subject_text = (data_dict.name) ? data_dict.name : "---"
         } else {
             subject_text = "<" + loc.All_subjects + ">";
         }

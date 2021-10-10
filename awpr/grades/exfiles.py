@@ -1,6 +1,7 @@
 # PR2021-11-24
 from django.contrib.auth.decorators import login_required
 from django.core.files import File
+from django.db import connection
 
 from django.core.files.storage import default_storage, FileSystemStorage
 
@@ -21,13 +22,14 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Frame, Spacer, Imag
 
 from awpr import constants as c
 from awpr import settings as s
+from awpr import functions as af
 from awpr import downloads as dl
 from awpr import settings as awpr_settings
 
-from accounts import models as acc_mod
+from accounts import views as acc_view
 from schools import models as sch_mod
 from students import models as stud_mod
-from students import views as stud_view
+from students import functions as stud_fnc
 from subjects import models as subj_mod
 from grades import views as gr_vw
 
@@ -104,6 +106,186 @@ class GradeDownloadPdfViewNIU(View):  # PR2021-02-0
 
         except:
             raise Http404("Error creating Ex2A file")
+
+
+
+
+@method_decorator([login_required], name='dispatch')
+class GetEx3infoView(View):  # PR2021-10-06
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug(' ============= GetEx3infoView ============= ')
+
+        update_wrap = {}
+
+# - get permit - no permit necessary
+
+# - reset language
+        #user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        #activate(user_lang)
+
+# - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            # upload_dict = json.loads(upload_json)
+
+# - get ex3 settings from usersetting
+            setting_dict = acc_view.get_usersetting_dict(c.KEY_EX3, request)
+            if logging_on:
+                logger.debug('setting_dict: ' + str(setting_dict))
+            if setting_dict:
+                # setting_dict: {'sel_layout': 'class', 'lvlbase_pk_list': '[86, 85]'}
+                sel_layout = setting_dict.get('sel_layout')
+                if sel_layout:
+                    update_wrap['sel_layout'] = sel_layout
+
+                lvlbase_pk_list = setting_dict.get('lvlbase_pk_list')
+                if lvlbase_pk_list:
+                    update_wrap['lvlbase_pk_list'] = lvlbase_pk_list
+
+# - get selected examyear, school and department from usersettings
+            sel_examyear, sel_school, sel_department, may_editNIU, msg_listNIU = \
+                dl.get_selected_ey_school_dep_from_usersetting(request)
+
+# - get selected examperiod from usersettings
+            sel_examperiod = None
+            selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+            if selected_pk_dict:
+                sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+            if not sel_examperiod:
+                sel_examperiod = 1
+            update_wrap['sel_examperiod'] = sel_examperiod
+            update_wrap['examperiod_caption'] = c.EXAMPERIOD_CAPTION.get(sel_examperiod)
+            if logging_on:
+                logger.debug('update_wrap: ' + str(update_wrap))
+
+            subject_rows = self.get_subject_rows (sel_examyear, sel_school, sel_department, sel_examperiod)
+
+            update_wrap['ex3_subject_rows'] = subject_rows
+
+        # - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+
+    def get_subject_rows (self, examyear, school, department, examperiod):
+        # PR2021-10-09
+        # note: don't forget to filter deleted = false!! PR2021-03-15
+        # grades that are not published are only visible when 'same_school'
+        # note_icon is downloaded in separate call
+
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ----- create_grade_with_exam_rows -----')
+
+        sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'examperiod': examperiod}
+
+        sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name,",
+                    "MAX(studsubj.cluster_id) AS max_cluster_id, MAX(stud.classname) AS max_classname,",
+                    "ARRAY_AGG(DISTINCT lvl.base_id) AS lvlbase_id_arr",
+
+                    "FROM students_grade AS grd",
+                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+
+                    "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                    "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                    "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+
+                    "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+                    "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                    "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
+                    "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
+                    "AND grd.examperiod = %(examperiod)s::INT",
+
+                    "GROUP BY subj.id, subjbase.code, subj.name",
+
+                    "ORDER BY LOWER(subj.name)"
+                    ]
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            subject_rows = af.dictfetchall(cursor)
+
+        if logging_on:
+            logger.debug('sql_keys: ' + str(sql_keys))
+            logger.debug('sql: ' + str(sql))
+
+        # - add full name to rows, and array of id's of auth
+        """
+        if subject_rows:
+            for row in subject_rows:
+                first_name = row.get('firstname')
+                last_name = row.get('lastname')
+                prefix = row.get('prefix')
+                full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
+                row['fullname'] = full_name if full_name else None
+        """
+        return subject_rows
+
+    def get_grade_rows (self, examyear, school, department, examperiod, examtype):
+
+        # note: don't forget to filter deleted = false!! PR2021-03-15
+        # grades that are not published are only visible when 'same_school'
+        # note_icon is downloaded in separate call
+
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ----- create_grade_with_exam_rows -----')
+
+        sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'experiod': examperiod}
+        sql_list = ["SELECT stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
+                    "lvl.id AS level_id, lvl.base_id AS levelbase_id, lvl.abbrev AS lvl_abbrev,",
+                    "subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name",
+
+                    "FROM students_grade AS grd",
+                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+
+                    "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                    "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                    "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+
+                    "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+                    "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                    "WHERE ey.id = %(ey_id)s::INT",
+                    "AND school.id = %(sch_id)s::INT",
+                    "AND dep.id = %(dep_id)s::INT",
+                    "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
+                    "AND grd.examperiod = %(experiod)s::INT",
+
+                    "ORDER BY LOWER(subj.name), LOWER(stud.lastname), LOWER(stud.firstname)"
+                    ]
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            grade_rows = af.dictfetchall(cursor)
+
+        if logging_on:
+            logger.debug('sql_keys: ' + str(sql_keys))
+            logger.debug('sql: ' + str(sql))
+
+        # - add full name to rows, and array of id's of auth
+        if grade_rows:
+            for row in grade_rows:
+                first_name = row.get('firstname')
+                last_name = row.get('lastname')
+                prefix = row.get('prefix')
+                full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
+                row['fullname'] = full_name if full_name else None
+
+        return grade_rows
+# - end of GetEx3infoView
 
 
 @method_decorator([login_required], name='dispatch')
@@ -195,6 +377,270 @@ class DownloadPublishedFile(View):  # PR2021-02-07
 
 
 @method_decorator([login_required], name='dispatch')
+class DownloadEx3View(View):  # PR2021-10-07
+
+    def get(self, request, list):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= DownloadEx3View ============= ')
+
+        # TODO for uloading Exs with signatures:
+        # - give each Ex3 a sequence , print under Ex3 in box
+        # - create table mapped_ex3 with field Ex3 sequence and field with all grade_pks of that Ex3
+        # when uploading: user types Ex3 number when uploading Ex3,
+        # Awp links grades of that Ex3 to the uploaded file
+        # in grade table: add column with href to the uploaded Ex3 form
+
+        # function creates, Ex3 pdf file based on settings in list and usersetting
+
+        response = None
+
+        if request.user and request.user.country and request.user.schoolbase and list:
+            upload_dict = json.loads(list)
+
+            req_user = request.user
+
+# - reset language
+            user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get selected examyear, school and department from usersettings
+            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                dl.get_selected_ey_school_dep_from_usersetting(request)
+            islexschool = sel_school.islexschool
+
+# - get selected examperiod from usersettings
+            sel_examperiod, sel_examtype_NIU, sel_subject_p_NIU = dl.get_selected_experiod_extype_subject_from_usersetting(request)
+
+            if logging_on:
+                logger.debug('sel_examperiod: ' + str(sel_examperiod))
+                logger.debug('sel_school: ' + str(sel_school))
+                logger.debug('sel_department: ' + str(sel_department))
+
+            if sel_examperiod and sel_school and sel_department:
+                sel_layout = upload_dict.get('sel_layout')
+                lvlbase_pk_list = upload_dict.get('lvlbase_pk_list', [])
+                subject_list = upload_dict.get('subject_list', [])
+
+# - save sel_layout and lvlbase_pk_list and in usersetting
+                setting_dict = {'sel_layout': sel_layout, 'lvlbase_pk_list': lvlbase_pk_list}
+                acc_view.set_usersetting_dict(c.KEY_EX3, setting_dict, request)
+
+# - get exform_text from examyearsetting
+                exform_text = af.get_exform_text(sel_examyear, ['exform', 'ex3'])
+
+# +++ get ex3_grade_rows
+                ex3_dict = self.get_ex3_grade_rows(sel_examyear, sel_school, sel_department, upload_dict, sel_examperiod)
+                """
+                ex3_dict: { 
+                    2168: { 'subj_name': 'Culturele en Artistieke Vorming', 
+                            'student_list': [
+                                ('V021', ' Albertus, Dinaida L.J.'), 
+                                ('A17', ' Angela, Jean-Drianelys N.E.'),
+                                ('A06', ' Doran, Tianny L.'), 
+                                
+                                
+                """
+
+        # - get arial font
+                try:
+                    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'arial.ttf'
+                    ttfFile = TTFont('Arial', filepath)
+                    pdfmetrics.registerFont(ttfFile)
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+
+                # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
+
+                # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
+                #temp_file = tempfile.TemporaryFile()
+                # canvas = Canvas(temp_file)
+
+                buffer = io.BytesIO()
+                canvas = Canvas(buffer)
+
+                canvas.setLineWidth(0)
+
+                max_rows = 24
+
+                for key, page_dict in ex3_dict.items():
+                    student_list = page_dict.get('students', [])
+                    if logging_on:
+                        logger.debug('page_dict: ' + str(page_dict))
+                        logger.debug('student_list: ' + str(student_list))
+
+                    if student_list:
+                        row_count = len(student_list)
+                        pages_not_rounded = row_count / max_rows
+                        pages_integer = int(pages_not_rounded)
+                        pages_roundup = pages_integer + 1 if (pages_not_rounded - pages_integer) else pages_integer
+
+                        for page_index in range(0, pages_roundup):  # range(start_value, end_value, step), end_value is not included!
+                            first_row_of_page = page_index * max_rows
+                            last_row_of_page_plus_one = (page_index + 1) * max_rows
+                            row_range = [first_row_of_page, last_row_of_page_plus_one]
+                            draw_Ex3(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_examperiod, exform_text,
+                                     page_dict, student_list, row_range, page_index, pages_roundup, user_lang)
+                            canvas.showPage()
+
+                draw_Ex3backpage(canvas, sel_school, islexschool, subject_list, exform_text)
+
+                canvas.save()
+                pdf = buffer.getvalue()
+                # pdf_file = File(temp_file)
+
+                # was: buffer.close()
+
+                """
+                # TODO as test try to save file in
+                studsubjnote = stud_mod.Studentsubjectnote.objects.get_or_none(pk=47)
+                content_type='application/pdf'
+                file_name = 'test_try.pdf'
+                if studsubjnote and pdf_file:
+                    instance = stud_mod.Noteattachment(
+                        studentsubjectnote=studsubjnote,
+                        contenttype=content_type,
+                        filename=file_name,
+                        file=pdf_file)
+                    instance.save()
+                    logger.debug('instance.saved: ' + str(instance))
+                # gives error: 'bytes' object has no attribute '_committed'
+                """
+
+                response = HttpResponse(content_type='application/pdf')
+                response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                #response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
+
+                response.write(pdf)
+
+        #except Exception as e:
+       #     logger.error(getattr(e, 'message', str(e)))
+       #     raise Http404("Error creating Ex2A file")
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+# - end of DownloadEx3View
+
+    def get_ex3_grade_rows (self, examyear, school, department, upload_dict, examperiod):
+
+        # note: don't forget to filter deleted = false!! PR2021-03-15
+        # grades that are not published are only visible when 'same_school'
+        # note_icon is downloaded in separate call
+
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ----- create_grade_with_exam_rows -----')
+            logger.debug('upload_dict: ' + str(upload_dict))
+
+        # upload_dict: {'subject_list': [2206, 2165, 2166], 'sel_layout': 'level', 'level_list': [86, 85]}
+
+        # values of sel_layout are:"none", "level", "class", "cluster"
+        # "none" or None: all students of subject on one form
+        # "level:" seperate form for each leeerweg
+        #  Note: when lvlbase_pk_list has values: filter on lvlbase_pk_list in all lay-outs
+        #  filter on lvlbase_pk, not level_pk, to make filter also work in other examyears
+
+        lvlbase_pk_list = upload_dict.get('lvlbase_pk_list', [])
+        subject_list = upload_dict.get('subject_list', [])
+        sel_layout = upload_dict.get('sel_layout')
+
+        sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk,
+                    'lvlbase_pk_arr': lvlbase_pk_list, 'subj_arr': subject_list, 'experiod': examperiod}
+        if logging_on:
+            logger.debug('sql_keys: ' + str(sql_keys))
+
+        ex3_dict = {}
+
+        level_filter = "AND lvl.base_id IN ( SELECT UNNEST( %(lvlbase_pk_arr)s::INT[]))" if lvlbase_pk_list else ""
+        subject_filter = "AND subj.id IN ( SELECT UNNEST( %(subj_arr)s::INT[]))" if subject_list else ""
+
+        logger.debug('subject_filter: ' + str(subject_filter))
+        sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name,",
+                    "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, ",
+                    "studsubj.cluster_id, stud.classname, cls.name AS cluster_name,",
+                    "stud.level_id, lvl.name AS lvl_name",
+
+                    "FROM students_grade AS grd",
+                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                    "LEFT JOIN subjects_cluster AS cls ON (cls.id = studsubj.cluster_id)",
+
+                    "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                    "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                    "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+
+                    "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+                    "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                    "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
+                    level_filter,
+                    subject_filter,
+                    "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
+                    "AND grd.examperiod = %(experiod)s::INT",
+                    "ORDER BY LOWER(subj.name), LOWER(stud.lastname), LOWER(stud.firstname)"
+                    ]
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            grade_rows = af.dictfetchall(cursor)
+
+        if logging_on:
+            logger.debug('sql_keys: ' + str(sql_keys))
+            logger.debug('sql: ' + str(sql))
+
+# - add full name to rows, and array of id's of auth
+        if grade_rows:
+            for row in grade_rows:
+                subj_pk = row.get('subj_id')
+                subj_name = row.get('subj_name', '---')
+                classname = row.get('classname', '---')
+                cluster_id = row.get('cluster_id')
+                cluster_name = row.get('cluster_name', '---')
+                level_id = row.get('level_id')
+                lvl_name = row.get('lvl_name', '---')
+                examnumber = row.get('examnumber', '---')
+                first_name = row.get('firstname')
+                last_name = row.get('lastname')
+                prefix = row.get('prefix')
+                full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
+
+                if sel_layout == "level":
+                    key = (subj_pk, level_id)
+                elif sel_layout == "class":
+                    key = (subj_pk, classname)
+                elif sel_layout == "cluster":
+                    key = (subj_pk, cluster_id)
+                else:
+                    sel_layout = None
+                    key = subj_pk
+                if key not in ex3_dict:
+                    ex3_dict[key] = {'subject': subj_name}
+                    if sel_layout == "level":
+                        ex3_dict[key][sel_layout] = lvl_name
+                    elif sel_layout == "class":
+                        ex3_dict[key][sel_layout] = classname
+                    elif sel_layout == "cluster":
+                        ex3_dict[key][sel_layout] = cluster_name
+                    ex3_dict[key]['students'] = []
+
+                student_list = ex3_dict[key].get('students', [])
+                student_list.append((examnumber, full_name))
+
+        if logging_on:
+            logger.debug('ex3_dict: ' + str(ex3_dict))
+
+        return ex3_dict
+
+# - end of DownloadEx3View
+
+
+@method_decorator([login_required], name='dispatch')
 class GradeDownloadEx2aView(View):  # PR2021-01-24
 
     def get(self, request):
@@ -220,12 +666,13 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
                 dl.get_selected_ey_school_dep_from_usersetting(request)
 
 # - get selected examperiod, examtype, subject_pk from usersettings
-            sel_examperiod, sel_examtype, sel_subject_pk = dl.get_selected_examperiod_examtype_from_usersetting(request)
+            sel_examperiod, sel_examtype, sel_subject_pk = dl.get_selected_experiod_extype_subject_from_usersetting(request)
 
             if logging_on:
                 logger.debug('sel_examperiod: ' + str(sel_examperiod))
                 logger.debug('sel_school: ' + str(sel_school))
                 logger.debug('sel_department: ' + str(sel_department))
+                logger.debug('sel_subject_pk: ' + str(sel_subject_pk))
 
             if sel_examperiod and sel_school and sel_department and sel_subject_pk:
                 sel_subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk, examyear=sel_examyear)
@@ -372,6 +819,498 @@ def test_pdf(canvas):
         doc.build(Story, onFirstPage=myFirstPage, onLaterPages=myLaterPages)
 
 
+def draw_Ex3(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_examperiod, exform_text,
+             page_dict, student_list, row_range, page_index, pages, user_lang):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- draw_Ex3 -----')
+        logger.debug('page_dict: ' + str(page_dict))
+
+    # page_dict: {
+    # ' subj_name': 'Economie',
+    # ' class': '4A3',
+    #   'cluster': None,
+    #   'levvl': 'Praktisch Kadergerichte Leerweg',
+    #   'student_list': [('A33', 'Alberto, Giorelle L.'),
+
+# - set the corners of the rectangle
+    top, right, bottom, left = 287 * mm, 200 * mm, 12 * mm, 10 * mm
+    #width = right - left  # 190 mm
+    #height = top - bottom  # 275 mm
+    border = [top, right, bottom, left]
+    coord = [left, top]
+    col_width_list = (20, 55, 35, 18, 18, 22, 22)
+
+# - draw border around page
+    draw_page_border(canvas, border)
+
+# - draw 'Ex.3' in upper right cormner
+    draw_ex_box(canvas, border, exform_text)
+
+    examyear_code = str(sel_examyear.code)
+    school_name = sel_school.name
+    dep_abbrev = sel_department.abbrev
+
+    subj_name = page_dict.get('subject', '---')
+    level_name = page_dict.get('level')
+    class_name = page_dict.get('class')
+    cluster_name = page_dict.get('cluster')
+
+# get article and examen for normal / lex school
+    key_article = 'lex_article' if islexschool else 'eex_article'
+    key_examen = 'landsexamen' if islexschool else 'eindexamen'
+    examen_txt_list = [
+        exform_text.get(key_examen, '-'),
+        dep_abbrev,
+        exform_text.get('in_het_examenjaar', '-'),
+        examyear_code
+    ]
+# - add exam period for second and third exam period
+    if sel_examperiod > 1:
+        examperiod_txt = '  -  ' + c.get_examperiod_caption(sel_examperiod)
+        examen_txt_list.append(examperiod_txt)
+    examen_txt = ' '.join(examen_txt_list)
+
+# - draw page header
+    text_list = [
+        (exform_text.get('minond', '-'), ""),
+        (exform_text.get('title', '-'), ""),
+        (exform_text.get(key_article, '-'), ""),
+        (exform_text.get('voor_het_vak', '-'), subj_name),
+        (examen_txt, ""),
+    ]
+    # skip school when islexschool
+    if not islexschool:
+        text_list.append((exform_text.get('naam_school', '-'), school_name))
+
+    if level_name:
+        text_list.append(("Leerweg:", level_name))
+    elif class_name:
+        text_list.append(("Klas:", class_name))
+    elif cluster_name:
+        text_list.append(("Cluster:", cluster_name))
+
+    if logging_on:
+        logger.debug('text_list: ' + str(text_list))
+
+    draw_Ex3_page_header(canvas, coord, text_list)
+
+# - draw column header
+    header_height = 17 * mm
+    draw_Ex3_colum_header(canvas, border, coord, header_height, col_width_list, exform_text)
+
+# - draw vertical lines of columns
+    x = coord[0]
+    y_top = coord[1]
+    y_top_minus = y_top - 7 * mm
+    y_bottom = bottom + 10 * mm
+    coord[1] = y_top - header_height
+
+    for index in range(0, len(col_width_list) - 1):  # range(start_value, end_value, step), end_value is not included!
+        w = col_width_list[index]
+        x += w * mm
+        y1_mod = y_top_minus if index == 3 else y_top
+        canvas.line(x, y1_mod, x, y_bottom)
+
+# - loop through students
+    x = coord[0]
+    y = coord[1]
+
+    canvas.setFont('Arial', 8, leading=None)
+
+    canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
+
+    line_height = 8 * mm
+    for index in range(row_range[0], row_range[1]):  # range(start_value, end_value, step), end_value is not included!
+        row_data = None
+        if index < len(student_list):
+            row_data = student_list[index]
+        draw_Ex3_row(canvas, row_data, left, right, coord, line_height, col_width_list)
+
+# - draw page footer
+    draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, user_lang)
+
+# - end of draw_Ex3
+
+
+def draw_page_border(canvas, border):
+    # - draw border around page
+
+    #  border = [top, right, bottom, left]
+    top, right, bottom, left = border[0], border[1], border[2], border[3]
+    width = right - left  # 190 mm
+    height = top - bottom  # 275 mm
+
+    canvas.rect(left, bottom, width, height)
+
+# - end of draw_page_border_plus_exbox
+
+
+def draw_ex_box(canvas, border, exform_text):
+    # - draw border around page
+
+    ex_code = exform_text.get('ex_code', '---')
+
+    #  border = [top, right, bottom, left]
+    top = border[0]
+    right = border[1]
+
+# - draw rectangle around 'EX.3' text
+    # draw a rectangle
+    # canvas.rect(x, y, width, height, stroke=1, fill=0)
+    #canvas.rect(right - 16 * mm, top - 12 * mm, 16 * mm, 12 * mm)
+    canvas.line(right - 16 * mm, top, right - 16 * mm, top - 12 * mm)
+    canvas.line(right - 16 * mm, top - 12 * mm , right, top - 12 * mm )
+
+
+    # add 'EX.3' in the right upper corner
+    canvas.drawString(right - 13 * mm, top - 8 * mm, ex_code)
+
+
+
+
+# - end of draw_ex_box
+
+
+def draw_Ex3_page_header(canvas, coord, text_list):
+    # loop trhrough rows of page_header
+
+    line_count = len(text_list)
+    line_height = 7 * mm
+    padding_left = 4 * mm
+
+    x = coord[0] + padding_left
+    y = coord[1]
+
+    for index in range(0, line_count):  # range(start_value, end_value, step), end_value is not included!
+        y -= line_height
+        label = text_list[index][0]
+        text = text_list[index][1]
+        logger.debug('label: ' + str(label))
+        logger.debug('text: ' + str(text))
+
+# draw label
+        # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
+        canvas.setFont('Times-Bold', 11, leading=None)
+        canvas.setFillColor(colors.HexColor("#000000"))
+        canvas.drawString(x, y, label)
+
+# draw text (schoolname etc
+        if text:
+            canvas.setFont('Arial', 11, leading=None)
+            canvas.setFillColor(colors.HexColor("#000080"))
+            canvas.drawString(x + 40 * mm, y, text)
+
+    coord[1] = y
+# - end of draw_Ex3_page_header
+
+
+def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, user_lang):
+    # PR2021-10-08
+    footer_height = 10 * mm
+    padding_left = 4 * mm
+    padding_bottom = 2 * mm
+
+    #  border = [top, right, bottom, left]
+    right = border[1]
+    bottom = border[2]
+    x = coord[0] + padding_left
+    y = bottom + padding_bottom
+    y_top = bottom + footer_height
+
+# - draw horizontal lines above page footer
+    canvas.setStrokeColorRGB(0, 0, 0)
+    canvas.line(border[3], y_top, border[1], y_top)
+
+    canvas.setFont('Arial', 8, leading=None)
+    canvas.setFillColor(colors.HexColor("#000000"))
+
+# - column 0 'Examennummer en naam dienen in overeenstemming te zijn met formulier EX.1.'
+    canvas.drawString(x, y, exform_text.get('footer_01', '-'))  # 'col_00_00': 'Examennr.'
+
+    today_dte = af.get_today_dateobj()
+    today_formatted = af.format_DMY_from_dte(today_dte, user_lang, True)  # True = month_abbrev
+    canvas.drawRightString(right - padding_bottom, y, today_formatted)
+
+    if pages > 1:
+        page_txt = ' '.join(('Pagina', str(page_index + 1), 'van', str(pages)))
+        canvas.drawString(right - 60 * mm, y, page_txt)
+# - end of draw_Ex3_page_footer
+
+
+def draw_Ex3_colum_header(canvas, border, coord, header_height, col_width_list, exform_text):
+
+    line_height = 4 * mm
+
+    #  border = [top, right, bottom, left]
+    top, right, bottom, left = border[0], border[1], border[2], border[3]
+    x = coord[0]
+    y = coord[1] - 4 * mm
+    coord[1] = y
+
+# - draw horizontal lines above and below column header
+    canvas.line(left, y, right, y)
+
+    y1 = y - header_height
+    canvas.line(left, y1, right, y1)
+
+    canvas.setFont('Arial', 8, leading=None)
+    canvas.setFillColor(colors.HexColor("#000000"))
+
+    y_txt1 = y - line_height - 1 * mm
+    y_txt2 = y_txt1 - line_height
+    y_txt3 = y_txt2 - line_height
+
+# - column 0 'Examennr.'
+    col_index = 0
+    x_center = x + col_width_list[col_index] * mm / 2
+    canvas.drawCentredString(x_center, y_txt1, exform_text.get('col_00_00', '-'))  # 'col_00_00': 'Examennr.'
+    canvas.drawCentredString(x_center, y_txt2, exform_text.get('col_00_01', '-'))  # ''col_00_01': '1)'
+
+# - column 1 'Naam en voorletters van de kandidaat',
+    col_index += 1
+    x += col_width_list[col_index - 1] * mm
+    x_center = x + col_width_list[col_index] * mm / 2
+    canvas.drawCentredString(x_center, y_txt1,
+                             exform_text.get('col_01_00', '-'))  # 'col_01_00': 'Naam en voorletters van de kandidaat',
+    canvas.drawCentredString(x_center, y_txt2,
+                             exform_text.get('col_01_01', '-'))  # 'col_01_01': '(in alfabetische volgorde)',
+
+# - column 2 'Naam en voorletters van de kandidaat',
+    col_index += 1
+    x += col_width_list[col_index - 1] * mm
+    x_center = x + col_width_list[col_index] * mm / 2
+    canvas.drawCentredString(x_center, y_txt1, exform_text.get('col_02_00', '-'))  # 'col_02_00': 'Handtekening kandidaat'
+    canvas.drawCentredString(x_center, y_txt2, exform_text.get('col_02_01', '-'))  # 'col_02_01': '(bij aanvang)',
+
+
+
+# - column 3 'Aantal ingeleverde bladen',
+    col_index += 1
+    x += col_width_list[col_index - 1] * mm
+    x_center = x + (col_width_list[col_index] + col_width_list[col_index + 1]) * mm / 2
+    x_right = x + (col_width_list[col_index] + col_width_list[col_index + 1]) * mm
+    canvas.drawCentredString(x_center, y_txt1, exform_text.get('col_03_00', '-'))  # 'col_03_00': 'Aantal ingeleverde bladen'
+
+    # horizontal line under text
+    canvas.line(x, y_txt1 - 2 * mm, x_right, y_txt1 - 2 * mm)
+
+# - column 3 'uitwerkbladen',
+    x_center = x + col_width_list[col_index] * mm / 2
+    canvas.drawCentredString(x_center, y_txt2 - 2 * mm, exform_text.get('col_03_01', '-'))  # 'col_03_01': 'uitwerk-',
+    canvas.drawCentredString(x_center, y_txt3 - 2 * mm, exform_text.get('col_03_02', '-'))  # 'col_03_02': 'bladen',
+
+# - column 4 'folio bladen',
+    col_index += 1
+    x += col_width_list[col_index - 1] * mm
+    x_center = x + col_width_list[col_index] * mm / 2
+    canvas.drawCentredString(x_center, y_txt2 - 2 * mm, exform_text.get('col_04_01', '-'))  # 'col_04_01': 'folio',
+    canvas.drawCentredString(x_center, y_txt3 - 2 * mm, exform_text.get('col_04_02', '-'))  # 'col_04_02': 'bladen',
+
+# - column 5 'Tijdstip van inlevering',
+    col_index += 1
+    x += col_width_list[col_index - 1] * mm
+    x_center = x + col_width_list[col_index] * mm / 2
+    canvas.drawCentredString(x_center, y_txt1, exform_text.get('col_05_00', '-'))  # 'col_05_00': 'Tijdstip van',
+    canvas.drawCentredString(x_center, y_txt2, exform_text.get('col_05_01', '-'))  # ''col_05_01', 'inlevering'
+
+# - column 6 'Paraaf surveillant',
+    col_index += 1
+    x += col_width_list[col_index - 1] * mm
+    x_center = x + col_width_list[col_index] * mm / 2
+    canvas.drawCentredString(x_center, y_txt1, exform_text.get('col_06_00', '-'))  # 'col_06_00', 'Paraaf'
+    canvas.drawCentredString(x_center, y_txt2, exform_text.get('col_06_01', '-'))  # ''col_06_01', 'surveillant'
+    canvas.drawCentredString(x_center, y_txt3, exform_text.get('col_06_02', '-'))  # 'col_06_02', '(voor inlevering)'
+# - end of draw_Ex3_colum_header
+
+
+
+def draw_Ex3_row(canvas, row, left, right, coord, line_height, col_width_list):
+
+    x = left
+    y = coord[1] - line_height
+    pl = 4 * mm
+    pb = 2 * mm
+
+    try:
+        #logger.debug('y: ' + str(y) + ' ' + str(type(y)))
+        #logger.debug('tab_list: ' + str(tab_list) + ' ' + str(type(tab_list)))
+        # col_width = (25, 65, 17, 22, 22, 22, 17)  # last col is 17 mm
+        # draw empty row when row is None, to draw lines till end of page
+        if row is not None:
+            examnumber = row[0] or '---'
+            # canvas.drawString(tab_list[0], y, examnumber)
+            canvas.drawCentredString(x + pl + pb, y + pb, examnumber)
+
+            x += col_width_list[0] * mm
+            fullname = row[1] or '---'
+            canvas.drawString(x + pl, y + pb, fullname)
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+        logger.error('row: ', str(row))
+
+    #canvas.line(left, y - 1.25 * mm, right, y - 1.25 * mm)
+    canvas.line(left, y, right, y)
+
+    coord[1] = y
+    #logger.debug('end of draw_Ex2A_line:')
+# - end of draw_Ex3_row
+
+
+def draw_Ex3backpage(canvas, sel_school, islexschool, subject_list, exform_text):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- draw_Ex3backpage -----')
+
+
+    #if logging_on:
+    #    logger.debug('exform_text: ' + str(exform_text))
+    dots_63 = '.' * 63
+    dots_45 = '.' * 45
+
+    subj_name = None
+    if len(subject_list) == 1:
+        subject = subj_mod.Subject.objects.get_or_none(pk=subject_list[0])
+        subj_name = subject.name
+    if logging_on:
+        logger.debug('subject_list: ' + str(subject_list))
+        logger.debug('len(subject_list): ' + str(len(subject_list)))
+        logger.debug('subj_name: ' + str(subj_name))
+
+# - set the corners of the rectangle
+    top, right, bottom, left = 287 * mm, 200 * mm, 12 * mm, 10 * mm
+    #width = right - left  # 190 mm
+    #height = top - bottom  # 275 mm
+    border = [top, right, bottom, left]
+    coord = [left, top]
+
+    canvas.setLineWidth(0)
+
+# - draw 'Ex.3' in upper right cormner
+    draw_ex_box(canvas, border, exform_text)
+
+# - draw page header
+    # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
+    canvas.setFont('Times-Bold', 11, leading=None)
+    canvas.setFillColor(colors.HexColor("#000000"))
+
+    line_height = 6 * mm
+    padding_left = 4 * mm
+    padding_bottom = 2 * mm
+
+    x = coord[0] + padding_left
+    y = coord[1]
+    y -= line_height
+    text = exform_text.get('minond', '-')
+    canvas.drawString(x, y, text)
+
+# - PROCES-VERBAAL
+    canvas.setFont('Times-Bold', 16, leading=None)
+    x_center = (right + left) / 2
+    y -= line_height * 3
+    text = exform_text.get('proces_verbaal', '-')
+    canvas.drawCentredString(x_center, y, text.upper())
+
+# - PROCES-VERBAAL VAN TOEZICHT
+    canvas.setFont('Times-Bold', 11, leading=None)
+    y -= line_height * 2
+    text = exform_text.get('title', '-')
+    canvas.drawString(x, y, text.upper())
+
+# - Artikel 28, Landsbesluit eindexamens
+    # get article and examen for normal / lex school
+    canvas.setFont('Times-Roman', 11, leading=None)
+    y -= line_height
+    key_article = 'lex_article' if islexschool else 'eex_article'
+    text = exform_text.get(key_article, '-')
+    canvas.drawString(x, y, text)
+
+# - School
+    # skip school when islexschool
+    if not islexschool:
+        y -= line_height  * 1.5
+        canvas.drawString(x, y, exform_text.get('naam_school', '-'))
+        canvas.setFont('Arial', 11, leading=None)
+        canvas.setFillColor(colors.HexColor("#000080"))
+        canvas.drawString(x + 40 * mm, y, sel_school.name)
+
+# - Verloop en eventuele bijzonderheden
+    canvas.setFont('Times-Roman', 11, leading=None)
+    y -= line_height * 1.5
+    text = exform_text.get('back_01', '-')
+    canvas.setFillColor(colors.HexColor("#000000"))
+    canvas.drawString(x, y, text)
+# - subject (blank if multiple subjects
+    x_subj = x + 122 * mm
+    if subj_name:
+        canvas.setFont('Arial', 11, leading=None)
+        canvas.setFillColor(colors.HexColor("#000080"))
+        canvas.drawString(x_subj, y, subj_name)
+
+        canvas.setFont('Times-Roman', 11, leading=None)
+        canvas.setFillColor(colors.HexColor("#000000"))
+    else:
+        canvas.drawString(x_subj, y, dots_63)
+
+# - voor de groep kandidaten
+    y -= line_height
+    canvas.drawString(x, y, exform_text.get('back_02', '-'))
+
+# - Indien meer dan 2 verschillende personen
+    y -= line_height * 1.5
+    canvas.drawString(x, y, exform_text.get('back_03', '-'))
+
+    canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
+
+# -  ten dotted lines
+    line_height = 8 * mm
+    y -= line_height * 0.5
+    for index in range(0, 10):  # range(start_value, end_value, step), end_value is not included!
+        y -= line_height
+        text = ''.join((dots_63, dots_63, dots_63))
+        canvas.drawString(x, y, text)
+# - ... , ...
+    y -= line_height
+    x_center_right = (right + x_center) / 2
+    text = ''.join((dots_45, ', ', dots_45))
+    canvas.drawCentredString(x_center_right, y, text)
+# - (plaatsnaam)
+    y -= line_height * 0.5
+    x_place = (x_center_right + x_center) / 2
+    canvas.drawCentredString(x_place, y, exform_text.get('back_place', '-'))
+# - (datum)
+    x_date = (right + x_center_right) / 2
+    canvas.drawCentredString(x_date, y, exform_text.get('back_date', '-'))
+
+# - Handtekening toezichthouders
+    y -= line_height * 1.5
+    canvas.drawString(x, y, exform_text.get('back_signature', '-'))
+
+# -  five dotted lines with 'Toezicht van...
+    dots_40 = '.' * 38
+    y -= line_height * 0.5
+    for index in range(0, 5):  # range(start_value, end_value, step), end_value is not included!
+        y -= line_height
+        text = '  '.join((dots_63, exform_text.get('back_from', '-'), dots_40, exform_text.get('back_till', '-'), dots_40, exform_text.get('back_hour', '-')))
+        canvas.drawString(x, y, text)
+
+
+# - draw page footer
+    y = bottom + padding_bottom
+    canvas.setFont('Times-Roman', 10, leading=None)
+    canvas.drawString(x, y, exform_text.get('backfooter_01', ''))
+
+# - end of draw_Ex3backpage
+
+
+def draw_red_cross(canvas, x, y):
+    # draw red cross, for outlining while designing
+    canvas.setStrokeColorRGB(1, 0, 0)
+    canvas.line(x, y + 5 * mm, x, y - 5 * mm)
+    canvas.line(x - 5 * mm, y , x + 5 * mm, y )
+
+
 def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel_examperiod, sel_examtype, grade_rows):
     #logger.debug('----- draw_Ex2A -----')
     # pagesize A4  = (595.27, 841.89) points, 1 point = 1/72 inch
@@ -471,12 +1410,12 @@ def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel
     canvas.drawString(right - 13*mm, y - 8*mm, "EX.2a")
     l_b_coord = [x,y - 50*mm]
 
-    add_frame_header(canvas, border, text_list, school_name, subject_name)
+    #draw_page_header(canvas, border, text_list, school_name, subject_name)
 
     canvas.setFont('Arial', 8, leading=None)
     x, y = left + 2*mm, top - 50*mm
     canvas.drawString(x, y, 'Examennummer')
-    canvas.drawString(x, y - 4*mm, 'van de kandidaat')
+    canvas.drawString(x, y - 4 * mm, 'van de kandidaat')
     canvas.drawString(x + 10*mm, y - 10*mm, '1)')
 
     x += 30*mm
@@ -552,8 +1491,19 @@ def draw_Ex2A_line(canvas, row, left, right, coord, tab_list):
     #logger.debug('end of draw_Ex2A_line:')
 
 
-def add_frame_header(canvas, border, text_list, school_name, subject_name):
-    #logger.debug('----- add_frame_header -----')
+def draw_page_headerOLD_NIU(canvas, border, label_list, text_list, school_name, subject_name):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- draw_page_header -----')
+        logger.debug('text_list: ' + str(text_list))
+        """
+        text_list: ('MINISTERIE VAN ONDERWIJS, WETENSCHAP, CULTUUR EN SPORT', 
+                    'Proces-verbaal van toezicht', 
+                    '(Artikel 28 Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)', 
+                    'voor het vak:', 
+                    'EINDEXAMEN V.S.B.O. in het examenjaar 2022', 
+                    'Naam van de school:')
+        """
 
     # border = [top, right, bottom, left]
     # width = right - left  # 190 mm
@@ -566,18 +1516,22 @@ def add_frame_header(canvas, border, text_list, school_name, subject_name):
     # canvas.setFillColorRGB(0, 0, 0.5) #  =.HexColor("#000080"),
     # add some flowables
 
-    styleHeader = ParagraphStyle(name="ex_header", alignment=TA_LEFT, fontName="Times-Bold", fontSize=11,
+    styleLabel = ParagraphStyle(name="ex_header", alignment=TA_LEFT, fontName="Times-Bold", fontSize=11,
                                    leading=7*mm, leftIndent=2*mm, rightIndent=2*mm)
 
-    #logger.debug('styleHeader: ' + str(styleHeader) + ' ' + str(type(styleHeader)))
-    story = []
-    for index, text in enumerate(text_list):
-        story.append(Paragraph(text, styleHeader))
+    #logger.debug('styleLabel: ' + str(styleLabel) + ' ' + str(type(styleLabel)))
+    story_label = []
+    story_text = []
+    for row_index, label in enumerate(label_list):
+        text = text_list[row_index]
+        story_label.append(Paragraph(label, styleLabel))
+        story_text.append(Paragraph(text, styleLabel))
+
     # Frame(x1, y1, width,height, leftPadding=6, bottomPadding=6, rightPadding=6, topPadding=6, id=None, showBoundary=0)
     # (x1,y1) = lower left hand corner at coordinate (x1,y1)
     # If showBoundary is non-zero then the boundary of the frame will getdrawn at run time.
     f = Frame(left, bottom, width, height, showBoundary=0)
-    f.addFromList(story, canvas)
+    f.addFromList(story_label, canvas)
     color_blue = colors.HexColor("#000080")
     #color_blue = colors.cornflowerblue
 
@@ -604,6 +1558,7 @@ def add_frame_header(canvas, border, text_list, school_name, subject_name):
     f2.addFromList(story2, canvas)
     #logger.debug('addFromList: ' + str(f2) + ' ' + str(type(f2)))
 
+# - end of draw_page_header
 
 def testing():
     response = HttpResponse(content_type='application/pdf')
@@ -658,4 +1613,30 @@ defaults = {
      'uriWasteReduce': _uriWasteReduce,        
      'embeddedHyphenation': _embeddedHyphenation,
     }
+
+    # pagesize A4  = (595.27, 841.89) points, 1 point = 1/72 inch
+    # move the origin up and to the left
+    # c.translate(inch,inch)
+
+    # filepath = awpr_settings.STATICFILES_FONTS_DIR + 'Garamond.ttf'
+
+    # filepath = awpr_settings.STATICFILES_FONTS_DIR + 'Palace_Script_MT.ttf'
+    # logger.debug('filepath: ' + str(filepath))
+    # pdfmetrics.registerFont(TTFont('Palace_Script_MT', filepath))
+
+    # c.setFont('Palace_Script_MT', 36)
+    # c.drawString(10, 650, "Some text encoded in UTF-8")
+    # c.drawString(10, 600, "In the Palace_Script_MT TT Font!")
+
+    # choose some colors
+    # c.setStrokeColorRGB(0.2,0.5,0.3)
+    # c.setFillColorRGB(1,0,1)
+
+    # draw a rectangle
+    # canvas.rect(x, y, width, height, stroke=1, fill=0)
+
+    #canvas.setLineWidth(.5)
+    #canvas.setLineWidth(.1)
+
+
 """

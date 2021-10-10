@@ -1705,7 +1705,7 @@ if(j){td.classList.add("border_left")};
         const all_sectors_profielen_txt = (!el_SBR_select_sector_label) ? loc.All_sectors_profielen : (selected.has_profiel) ? loc.All_profielen :loc.All_sectors;
         const caption_all = "&#60" + (
                 (is_dep) ? loc.All_departments :
-                (is_level) ? loc.All_leerwegen :
+                (is_level) ? loc.All_levels :
                 (is_sector) ? all_sectors_profielen_txt : "---"
              ) + "&#62";
 

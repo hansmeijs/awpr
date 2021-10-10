@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Grades' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/grades210927.js' %}"></script>
+    <script src="{% static 'js/grades211010.js' %}"></script>
     <script src="{% static 'js/download210816.js' %}"></script>
 {% endblock %}
 
@@ -65,6 +65,7 @@
             {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modselectcolumns.html' %}
             {% include 'students/modapprovegrade.html' %}
+            {% include 'students/modselectex3.html' %}
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'includes/modstatus.html' %}
@@ -122,7 +123,7 @@
                     data-grade_approve_url="{% url 'grade_approve_url' %}"
                     data-download_grade_icons_url="{% url 'download_grade_icons_url' %}"
                     data-download_published_url="{% url 'grades_download_published_url' %}"
-                    data-grade_download_ex2a_url="{% url 'grade_download_ex2a_url' %}"
+                    data-url_grade_download_ex2a="{% url 'url_grade_download_ex2a' %}"
                     data-studentsubjectnote_upload_url="{% url 'studentsubjectnote_upload_url' %}"
                     data-studentsubjectnote_download_url="{% url 'studentsubjectnote_download_url' %}"
                     data-noteattachment_download_url="{% url 'noteattachment_download_url' pk_int=0 %}"

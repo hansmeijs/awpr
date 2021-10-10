@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import210913.js' %}"></script>
-    <script src="{% static 'js/studentsubjects210930.js' %}"></script>
+    <script src="{% static 'js/studentsubjects211010.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -74,6 +74,7 @@
             {% include 'students/modapprovesubject.html' %}
             {% include 'students/modstudentsubject.html' %}
             {% include 'students/modmultipleoccurrences.html' %}
+            {% include 'students/modselectex3.html' %}
             {% include 'includes/modimport.html' %}
 
     <!-- CONTENT HEADER - LOADER -->
@@ -106,9 +107,9 @@
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="btn_studsubj" class="btn btn-secondary ">{% trans 'Subjects' %}</button>
                     <button data-btn="btn_exemption" class="btn btn-secondary">{% trans 'Exemptions' %}</button>
-                    <button data-btn="btn_reex" class="btn btn-secondary display_hide">{% trans 'Re-examinations' %}</button>
-                    <button data-btn="btn_reex3" class="btn btn-secondary display_hide">{% trans 'Re-exam 3rd period' %}</button>
-                    <button data-btn="btn_pok" class="btn btn-secondary display_hide">{% trans 'Proof_of_knowledge' %}</button>
+                    <button data-btn="btn_reex" class="btn btn-secondary">{% trans 'Re-examinations' %}</button>
+                    <button data-btn="btn_reex3" class="btn btn-secondary">{% trans 'Re-exam 3rd period' %}</button>
+                    <button data-btn="btn_pok" class="btn btn-secondary">{% trans 'Proof_of_knowledge' %}</button>
                     <button data-btn="btn_published" class="btn btn-secondary ">{% trans 'Submitted Ex forms' %}</button>
                 </div>
     <!-- end BUTTON GROUP -->
@@ -142,6 +143,8 @@
                 data-url_studsubj_approve_multiple="{% url 'url_studsubj_approve_multiple' %}"
                 data-url_studsubj_send_email_exform="{% url 'url_studsubj_send_email_exform' %}"
                 data-url_grade_download_ex1="{% url 'url_grade_download_ex1' %}"
+                data-url_ex3_getinfo="{% url 'url_ex3_getinfo' %}"
+                data-url_ex3_download="{% url 'url_ex3_download' '-' %}"
             >
             </div>
         {% endif %}

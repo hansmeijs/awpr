@@ -61,7 +61,7 @@ aXX:hover{
     grid-template-areas:
             "c_header c_header c_header"
             "c_menu c_menu c_menu"
-            "c_select_file c_link_columns c_select_leerweg"
+            "c_select_file c_link_columns c_Select_level"
             "c_table_stud c_table_stud c_table_stud";
 }
 /* ------------------- c_header ----------------------*/
@@ -385,9 +385,9 @@ aXX:hover{
     box-shadow:         3px 3px 5px 6px rgba(68, 68, 68, 0.6);  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
 }
 
-/* ------------------- c_select_leerweg ----------------------*/
-.c_select_leerweg {
-    grid-area: c_select_leerweg;
+/* ------------------- c_Select_level ----------------------*/
+.c_Select_level {
+    grid-area: c_Select_level;
         -ms-grid-row: 5;
         -ms-grid-column: 5;
 
@@ -494,7 +494,7 @@ aXX:hover{
             "c_menu"
             "c_select_file"
             "c_link_columns"
-            "c_select_leerweg"
+            "c_Select_level"
             "c_table_stud";
         }
 
@@ -520,7 +520,7 @@ aXX:hover{
         -ms-grid-column: 1;
         }
 
-    [class="c_gridcontainer"] > .c_select_leerweg {
+    [class="c_gridcontainer"] > .c_Select_level {
         -ms-grid-row: 5;
         -ms-grid-column: 1;
         }
@@ -901,6 +901,12 @@ aXX:hover{
     width: 220px;
     padding: 4px;
 }
+.tbl_hide_scrollbar {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+
 .input_text, .tsa_transparent {
     background: transparent;
     border: none;
@@ -1134,8 +1140,7 @@ aXX:hover{
     width: 200px;
 }
 
-/* test freeze table header */
-
+/* freeze table header */
 #id_tbl_container {
     float: left;
     overflow: auto;
@@ -1143,7 +1148,6 @@ aXX:hover{
     border-spacing: 0 !important;
     border-collapse: separate !important;
 }
-
 /* from https://stackoverflow.com/questions/45692744/td-border-disappears-when-applying-transform-translate */
 
 

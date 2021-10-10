@@ -37,9 +37,9 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Select_school'] = _('Select a school')
     dict['Select_department'] = _('Select a department')
     dict['No_department_found'] = _("No department found")
-    dict['Select_leerweg'] =  _("Select a 'leerweg'")
-    dict['All_leerwegen'] = _("All 'leerwegen'")
-    dict['No_leerweg_found'] = _("No 'leerweg' found")
+    dict['Select_level'] =  _("Select a learning path")
+    dict['All_levels'] = _("All learning paths")
+    dict['No_level_found'] = _("No learning paths found")
     dict['Select_sector'] = _("Select a sector")
     dict['All_sectors'] = _("All sectors")
     dict['No_sector_found'] = _("No sector found")
@@ -652,7 +652,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['This_subject_ismarked_fordeletion'] = _('This subject is marked for deletion.')
         dict['You_must_submit_additional_ex1form'] = _('You must submit an additional Ex-1 form to delete it.')
 
-
         dict['MASS_info'] = {
             'checking_studsubj': _('The subjects of the candidates are checked'),
             'subheader_approve': _('Selection of the subjects, that will be approved:'),
@@ -670,6 +669,17 @@ def get_locale_dict(table_dict, user_lang, request):
             'creating_Ex1_form': _("AWP is creating the Ex1 form"),
             'submit_ok_01': _("The Ex2A form is succesfully created."),
         }
+        # Ex3 modal
+
+        dict['Ex3'] = _('Ex3')
+        dict['Ex3_form'] = _('Ex3 Proces Verbaal')
+        dict['Proces_verbaal_van_Toezicht'] = _('Proces-verbaal van Toezicht')
+        dict['No_studenst_with_subjects'] = _('There are no candidates with subjects.')
+        dict['No_studenst_examperiod_02'] = _('There are no re-examination candidates.')
+        dict['No_studenst_examperiod_03'] = _('There are no re-examination candidates in the third exam period.')
+        dict['Please_select_one_or_more_subjects'] = _('Please select one or more subjects')
+        dict['from_available_list'] = _('from the list of available subjects.')
+
 
 # ====== PAGE EXAM ========================= PR2021-04-04
     if 'page_exams' in page_list:
@@ -740,6 +750,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_candidate_selected'] = _('No candidate selected')
         dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
 
+
+        dict['Please_select_one_or_more_subjects'] = _('Please select one or more subjects')
+        dict['from_available_list'] = _('from the list of available subjects.')
+
         dict['Ex_nr'] = _('Ex.#')
         dict['Examnumber'] = TXT_Examnumber
         dict['Examnumber_twolines'] = TXT_Examnumber_twolines
@@ -765,11 +779,11 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
 
-
         dict['Submit_Ex2A_form'] = _('Submit Ex2A form')
         dict['Approve_grades'] = _('Approve grades')
         dict['Submit_Ex2A_form'] = _('Submit Ex2A form')
         dict['Preliminary_Ex2A_form'] = _('Preliminary Ex2A form')
+
         dict['Approve'] = _('Approve')
         dict['Check_grades'] = _('Check grades')
         dict['Submit'] = TXT_Submit
@@ -804,7 +818,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Re-examination_grade'] = _('Re-examination\ngrade')
         dict['Third_period_score'] = _('Third period\nscore')
         dict['Third_period_grade'] = _('Third period\ngrade')
-
 
         dict['PE_score_twolines'] = _('PE-\nscore')
         dict['CE_score_twolines'] = _('CE-\nscore')
@@ -945,8 +958,6 @@ def get_locale_dict(table_dict, user_lang, request):
             'Publishing_orderlist': _("AWP is publishing the orderlist"),
             'publish_ok': _("The orderlist is published succesfully."),
         }
-
-
     return dict
 
 

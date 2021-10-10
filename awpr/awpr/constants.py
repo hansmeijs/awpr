@@ -286,6 +286,7 @@ KEY_SEL_SCHEME_PK = 'sel_scheme_pk'
 KEY_SEL_BTN = 'sel_btn'
 KEY_COLS_HIDDEN = 'cols_hidden'
 KEY_VERIFICATIONCODE = 'verificationcode'
+KEY_EX3 = 'ex3'
 
 # SCHOOL SETTING KEYS PR2018-12-03  PR2020-12-04
 
@@ -434,7 +435,6 @@ STRING_SPACE_15 = ' ' * 15
 STRING_SPACE_10 = ' ' * 10
 STRING_SPACE_05 = ' ' * 5
 STRING_DOUBLELINE_80 = '=' * 80
-
 
 # ============================================================================
 # ROLES AND PERMITS PR2021-02-23

@@ -22,6 +22,7 @@ let school_rows = [];
 let student_rows = [];
 let subject_rows = [];
 let studsubj_rows = [];
+
 let schemeitem_rows = [];
 let published_rows = [];
 
@@ -56,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let mod_MASS_dict = {};
     let mod_MMUOC = {};
+    let mod_MEX3_dict = {};
 
     let user_list = [];
     let examyear_map = new Map();
@@ -63,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let level_map = new Map();
     let sector_map = new Map();
 
-    // PR2021-07-23 moved outside this function, on top of this acript:
+    // PR2021-07-23 moved outside this function, on top of this script:
     //let student_rows = [];
     //let subject_rows = [];
     //let studsubj_rows = [];
@@ -83,12 +85,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     urls.url_studsubj_validate = get_attr_from_el(el_data, "data-url_studsubj_validate");
     urls.url_studsubj_validate_test = get_attr_from_el(el_data, "data-url_studsubj_validate_test");
+
     urls.url_studsubj_validate_all = get_attr_from_el(el_data, "data-url_studsubj_validate_all");
     urls.url_studsubj_multiple_occurrences = get_attr_from_el(el_data, "data-url_studsubj_multiple_occurrences");
     urls.url_studsubj_approve = get_attr_from_el(el_data, "data-url_studsubj_approve");
     urls.url_studsubj_approve_multiple = get_attr_from_el(el_data, "data-url_studsubj_approve_multiple");
     urls.url_studsubj_send_email_exform = get_attr_from_el(el_data, "data-url_studsubj_send_email_exform");
     urls.url_grade_download_ex1 = get_attr_from_el(el_data, "data-url_grade_download_ex1");
+
+    urls.url_ex3_getinfo = get_attr_from_el(el_data, "data-url_ex3_getinfo");
+    urls.url_ex3_download = get_attr_from_el(el_data, "data-url_ex3_download");
 
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
@@ -342,6 +348,22 @@ document.addEventListener('DOMContentLoaded', function() {
    const el_MMUOC_btn_showall = document.getElementById("id_MMUOC_btn_showall");
         el_MMUOC_btn_showall.addEventListener("click", function() {MMUOC_toggle_showall()}, false )
 
+// ---  MOD EX3 FORM ------------------------------------
+    const el_id_MEX3_hdr = document.getElementById("id_MEX3_hdr");
+    const el_MEX3_loader = document.getElementById("id_MEX3_loader");
+    const el_MEX3_select_layout = document.getElementById("id_MEX3_select_layout");
+    const el_MEX3_layout_option_level = document.getElementById("id_MEX3_layout_option_level");
+
+    const el_MEX3_select_level = document.getElementById("id_MEX3_select_level");
+    if (el_MEX3_select_level){
+        el_MEX3_select_level.addEventListener("change", function() {MEX3_SelectLevelHasChanged()}, false )
+    }
+    const el_MEX3_tblBody_available = document.getElementById("id_MEX3_tblBody_available");
+    const el_MEX3_tblBody_selected = document.getElementById("id_MEX3_tblBody_selected");
+    const el_MEX3_btn_save = document.getElementById("id_MEX3_btn_save");
+    if (el_MEX3_btn_save){
+        el_MEX3_btn_save.addEventListener("click", function() {MEX3_Save()}, false )
+    }
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");
@@ -361,15 +383,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 locale: {page: ["page_studsubj", "page_subject", "page_student", "upload"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
+
                 department_rows: {get: true},
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
 
+                scheme_rows: {cur_dep_only: true},
+                schemeitem_rows: {cur_dep_only: true},
+
                 student_rows: {cur_dep_only: true},
                 subject_rows: {cur_dep_only: true},
                 studentsubject_rows: {cur_dep_only: true},
-                scheme_rows: {cur_dep_only: true},
-                schemeitem_rows: {cur_dep_only: true},
+
                 published_rows: {get: true}
             };
 
@@ -512,6 +537,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (permit_dict.permit_submit_subject){
                     AddSubmenuButton(el_submenu, loc.Submit_Ex1_form, function() {MASS_Open("submit")});
                 };
+                AddSubmenuButton(el_submenu, loc.Ex3_form, function() {MEX3_Open()});
             };
             AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_studsubj")}, [], "id_submenu_columns")
             el_submenu.classList.remove(cls_hide);
@@ -1227,6 +1253,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if("updated_multiple_occurrences" in response){
                         MMUOC_response(response.updated_multiple_occurrences);
                     };
+                    if ("ex3_subject_rows" in response) {
+                        MEX3_UpdateFromResponse (response);
+                    }
                 },  // success: function (response) {
                 error: function (xhr, msg) {
                     // ---  hide loader
@@ -2433,6 +2462,330 @@ console.log("mode: ", mode)
     }  // HandleShowAll
 
 // +++++++++++++++++ END OF MODAL SIDEBAR SELECT +++++++++++++++++++++++++++++++++++
+
+// +++++++++ MOD EX3 FORM++++++++++++++++ PR2021-10-06
+    function MEX3_Open(){
+        console.log(" -----  MEX3_Open   ----")
+        mod_MEX3_dict = {};
+
+        console.log("level_map", level_map)
+// ---  fill select level or hide
+        if (setting_dict.sel_dep_level_req){
+            // HTML code "&#60" = "<" HTML code "&#62" = ">";
+            const first_item = ["&#60", loc.All_levels, "&#62"].join("");
+            el_MEX3_select_level.innerHTML = t_FillOptionLevelSectorFromMap("level", "base_id", level_map,
+                setting_dict.sel_depbase_pk, null, first_item);
+        }
+// hide option 'level' when havo/vwo
+        if(el_MEX3_layout_option_level){
+            add_or_remove_class(el_MEX3_layout_option_level, cls_hide, !setting_dict.sel_dep_level_req);
+        }
+        if(el_MEX3_select_layout){
+            const select_size = (setting_dict.sel_dep_level_req) ? "4" : "3";
+            el_MEX3_select_layout.setAttribute("size", select_size);
+        }
+// hide element 'select_level' when havo/vwo
+        add_or_remove_class(el_MEX3_select_level.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
+
+// - set header text
+        el_id_MEX3_hdr.innerText = [loc.Ex3, loc.Proces_verbaal_van_Toezicht].join("  -  ");
+
+// ---  reset layout options
+        MEX3_reset_layout_options();
+
+// ---  reset tblBody available and selected
+        el_MEX3_tblBody_available.innerText = null;
+        el_MEX3_tblBody_selected.innerText = null;
+
+// ---  disable save btn
+        el_MEX3_btn_save.disabled = true;
+
+// ---  get info from server
+        MEX3_getinfo_from_server()
+
+// ---  show modal
+        $("#id_mod_selectex3").modal({backdrop: true});
+
+    };  // MEX3_Open
+
+//========= MEX3_Save  ============= PR2021-10-07
+    function MEX3_Save(){
+        console.log(" -----  MEX3_Save   ----")
+        const subject_list = [];
+
+// ---  loop through id_MEX3_select_level and collect selected lvlbase_pk's
+        const sel_lvlbase_pk_list = MEX3_get_sel_lvlbase_pk_list();
+        console.log("mod_MEX3_dict.sel_lvlbase_pk_list", mod_MEX3_dict.sel_lvlbase_pk_list)
+
+// ---  get de selected value of
+        const selected_layout_value = (el_MEX3_select_layout.value) ? el_MEX3_select_layout.value : "none";
+
+// ---  loop through mod_MEX3_dict.subject_rows and collect selected subject_pk's
+        // PR2021-10-09 debug: also filter lvlbase_pk, because they stay selected when unselecting level
+        for (let i = 0, subj_row; subj_row = mod_MEX3_dict.subject_rows[i]; i++) {
+            if(subj_row.selected){
+                let add_row = false;
+                if (mod_MEX3_dict.lvlbase_pk_list && mod_MEX3_dict.lvlbase_pk_list.length){
+                    if (subj_row.lvlbase_id_arr && subj_row.lvlbase_id_arr.length){
+                         for (let x = 0, lvlbase_id; lvlbase_id = subj_row.lvlbase_id_arr[x]; x++) {
+                            if (mod_MEX3_dict.lvlbase_pk_list.includes(lvlbase_id)){
+                                add_row = true;
+                                break
+                    }}};
+                } else {
+                    add_row = true;
+                }
+                if (add_row){
+                    subject_list.push(subj_row.subj_id);
+                };
+            }  ;
+        };
+
+        if(subject_list.length){
+            const upload_dict = {
+                subject_list: subject_list,
+                sel_layout: selected_layout_value,
+                lvlbase_pk_list: sel_lvlbase_pk_list
+            };
+
+        // convert dict to jason and add as parameter in link
+            const upload_str = JSON.stringify(upload_dict);
+            const href_str = urls.url_ex3_download.replace("-", upload_str);
+
+        console.log("href_str", href_str)
+
+            const el_MEX3_save_link = document.getElementById("id_MEX3_save_link");
+            el_MEX3_save_link.href = href_str;
+
+        console.log("el_MEX3_save_link", el_MEX3_save_link)
+
+            el_MEX3_save_link.click();
+        };
+
+// ---  hide modal
+        //$("#id_mod_selectex3").modal("hide");
+    }  // MEX3_Save
+
+//========= MEX3_getinfo_from_server  ============= PR2021-10-06
+    function MEX3_getinfo_from_server() {
+        console.log("  =====  MEX3_getinfo_from_server  =====");
+        el_MEX3_loader.classList.remove(cls_hide);
+
+        UploadChanges({get: true}, urls.url_ex3_getinfo);
+    }  // MEX3_getinfo_from_server
+
+//========= MEX3_UpdateFromResponse  ============= PR2021-10-08
+    function MEX3_UpdateFromResponse(response) {
+        console.log("  =====  MEX3_UpdateFromResponse  =====");
+        console.log("response", response)
+
+        el_MEX3_loader.classList.add(cls_hide);
+        mod_MEX3_dict.subject_rows = (response.ex3_subject_rows) ? response.ex3_subject_rows : [];
+        mod_MEX3_dict.sel_examperiod = (response.sel_examperiod) ? response.sel_examperiod : null;
+        mod_MEX3_dict.examperiod_caption = (response.examperiod_caption) ? response.examperiod_caption : "---";
+        mod_MEX3_dict.sel_layout = (response.sel_layout) ? response.sel_layout : "none";
+        mod_MEX3_dict.lvlbase_pk_list = (response.lvlbase_pk_list) ? response.lvlbase_pk_list : [];
+
+        el_MEX3_select_layout.value = mod_MEX3_dict.sel_layout;
+        // el_MEX3_select_level is already reset in MEX#_Open with MEX3_reset_layout_options
+        console.log("mod_MEX3_dict.lvlbase_pk_list", mod_MEX3_dict.lvlbase_pk_list)
+        if (mod_MEX3_dict.lvlbase_pk_list && mod_MEX3_dict.lvlbase_pk_list.length){
+            for (let i = 0, option; option = el_MEX3_select_level.options[i]; i++) {
+                const lvlbase_pk_int = (Number(option.value)) ? Number(option.value) : null;
+                option.selected = (lvlbase_pk_int && mod_MEX3_dict.lvlbase_pk_list && mod_MEX3_dict.lvlbase_pk_list.includes(lvlbase_pk_int));
+            };
+        } else {
+            el_MEX3_select_level.value = "0";
+        };
+
+// - set header text
+        el_id_MEX3_hdr.innerText = [loc.Ex3, loc.Proces_verbaal_van_Toezicht, mod_MEX3_dict.examperiod_caption].join("  -  ");
+
+        MEX3_FillTbls()
+
+    }  // MEX3_getinfo_from_server
+
+//========= MEX3_SelectLevelHasChanged  ============= PR2021-10-09
+    function MEX3_SelectLevelHasChanged() {
+        mod_MEX3_dict.lvlbase_pk_list = MEX3_get_sel_lvlbase_pk_list();
+        MEX3_FillTbls();
+    }  // MEX3_SelectLevelHasChanged
+
+//========= MEX3_FillTbls  ============= PR2021-10-06
+    function MEX3_FillTbls() {
+        console.log("===== MEX3_FillTbls ===== ");
+        console.log("mod_MEX3_dict.subject_rows", mod_MEX3_dict.subject_rows);
+        console.log("mod_MEX3_dict.lvlbase_pk_list", mod_MEX3_dict.lvlbase_pk_list, typeof mod_MEX3_dict.lvlbase_pk_list);
+
+// ---  reset tblBody available and selected
+        el_MEX3_tblBody_available.innerText = null;
+        el_MEX3_tblBody_selected.innerText = null;
+
+        let has_subject_rows = false;
+        let has_selected_subject_rows = false;
+
+// ---  loop through mod_MEX3_dict.subject_rows, show only subjects with lvlbase_pk in lvlbase_pk_list
+        if (mod_MEX3_dict.subject_rows && mod_MEX3_dict.subject_rows.length){
+            for (let i = 0, subj_row; subj_row = mod_MEX3_dict.subject_rows[i]; i++) {
+                let show_row = false;
+                if (mod_MEX3_dict.lvlbase_pk_list && mod_MEX3_dict.lvlbase_pk_list.length){
+                    if (subj_row.lvlbase_id_arr && subj_row.lvlbase_id_arr.length){
+                         for (let x = 0, lvlbase_id; lvlbase_id = subj_row.lvlbase_id_arr[x]; x++) {
+                            if (mod_MEX3_dict.lvlbase_pk_list.includes(lvlbase_id)){
+                                show_row = true;
+                                break
+                    }}};
+                } else {
+                    show_row = true;
+                }
+                if (show_row){
+                    has_subject_rows = true;
+                    const has_selected_subjects = MEX3_CreateSelectRow(subj_row);
+                    if(has_selected_subjects) {has_selected_subject_rows = true };
+                };
+            };
+        };
+
+        if (!has_subject_rows){
+            const no_students_txt = (mod_MEX3_dict.sel_examperiod === 3) ? loc.No_studenst_examperiod_03 :
+                                    (mod_MEX3_dict.sel_examperiod === 2) ? loc.No_studenst_examperiod_02 :
+                                    loc.No_studenst_with_subjects;
+            el_MEX3_tblBody_available.innerHTML = [
+                "<p class='text-muted px-2 pt-2'>", no_students_txt, "</p>"
+            ].join("");
+
+// --- addrow 'Please_select_one_or_more_subjects' if no subjects selected
+        } else if(!has_selected_subject_rows){
+            el_MEX3_tblBody_selected.innerHTML = [
+                "<p class='text-muted px-2 pt-2'>", loc.Please_select_one_or_more_subjects,
+                "</p><p class='text-muted px-2'>", loc.from_available_list, "</p>"
+            ].join("");
+
+        };
+
+// ---  enable save btn
+        el_MEX3_btn_save.disabled = !has_selected_subject_rows;
+
+    }; // MEX3_FillTbls
+
+//========= MEX3_CreateSelectRow  ============= PR2021-10-07
+    function MEX3_CreateSelectRow(row_dict) {
+        //console.log("===== MEX3_CreateSelectRow ===== ");
+
+        let has_selected_subjects = false;
+// - get ifo from dict
+        const subj_id = (row_dict.subj_id) ? row_dict.subj_id : null;
+        const subj_code = (row_dict.subj_code) ? row_dict.subj_code : "---";
+        const subj_name = (row_dict.subj_name) ? row_dict.subj_name : "---";
+        const is_selected = (row_dict.selected) ? row_dict.selected : false;
+        const just_selected = (row_dict.just_selected) ? row_dict.just_selected : false;
+
+        if(is_selected) { has_selected_subjects = true};
+
+        const tblBody = (is_selected) ? el_MEX3_tblBody_selected : el_MEX3_tblBody_available;
+
+        const tblRow = tblBody.insertRow(-1);
+        // bg_transparent added for transition - not working
+        //tblRow.classList.add("bg_transparent");
+        tblRow.id = subj_id;
+
+//- add hover to select row
+        add_hover(tblRow)
+
+// --- add first td to tblRow.
+        let td = tblRow.insertCell(-1);
+        let el_div = document.createElement("div");
+            el_div.classList.add("tw_060")
+            el_div.innerText = subj_code;
+            td.appendChild(el_div);
+
+// --- add second td to tblRow.
+        td = tblRow.insertCell(-1);
+        el_div = document.createElement("div");
+            el_div.classList.add("tw_240")
+            el_div.innerText = subj_name;
+            td.appendChild(el_div);
+
+        //td.classList.add("tw_200X", "px-2", "pointer_show") // , "tsa_bc_transparent")
+
+//----- add addEventListener
+        tblRow.addEventListener("click", function() {MEX3_AddRemoveSubject(tblRow)}, false);
+
+// --- if added / removed row highlight row for 1 second
+        if (just_selected) {
+        row_dict.just_selected = false;
+            ShowClassWithTimeout(tblRow, "bg_selected_blue", 1000) ;
+        }
+        return has_selected_subjects;
+    } // MEX3_CreateSelectRow
+
+//========= MEX3_AddRemoveSubject  ============= PR2020-11-18 PR2021-08-31
+    function MEX3_AddRemoveSubject(tblRow) {
+        console.log("  =====  MEX3_AddRemoveSubject  =====");
+        console.log("tblRow", tblRow);
+
+        const sel_subject_pk = (Number(tblRow.id)) ? Number(tblRow.id) : null;
+        let has_changed = false;
+    // lookup subject in mod_MEX3_dict.subject_rows
+        for (let i = 0, row_dict; row_dict = mod_MEX3_dict.subject_rows[i]; i++) {
+            if (row_dict.subj_id === sel_subject_pk){
+                // set selected = true when clicked in list 'available', set false when clicked in list 'selected'
+                const new_selected = (row_dict.selected) ? false : true;
+                row_dict.selected = new_selected
+                row_dict.just_selected = true;
+                has_changed = true;
+        console.log("new_selected", new_selected);
+        console.log("row_dict", row_dict);
+                break;
+            }
+        };
+
+// ---  enable btn submit
+        if(has_changed){
+            el_MEX3_btn_save.disabled = false;
+            MEX3_FillTbls();
+        }
+
+    }  // MEX3_AddRemoveSubject
+
+function MEX3_get_sel_lvlbase_pk_list(){  // PR2021-10-09
+// ---  loop through id_MEX3_select_level and collect selected lvlbase_pk's
+    //console.log("  =====  MEX3_get_sel_lvlbase_pk_list  =====");
+    let sel_lvlbase_pk_list = [];
+    if(el_MEX3_select_level){
+        const level_options = Array.from(el_MEX3_select_level.options);
+        console.log("level_options", level_options);
+        if(level_options && level_options.length){
+            for (let i = 0, level_option; level_option = level_options[i]; i++) {
+                if (level_option.selected){
+        console.log("level_option.selected", level_option);
+                    if (level_option.value === "0"){
+                        sel_lvlbase_pk_list = [];
+                        break;
+                    } else {
+                        const lvlbase_pk = Number(level_option.value);
+                        if (lvlbase_pk){
+                            sel_lvlbase_pk_list.push(lvlbase_pk);
+    }}}}}};
+    //console.log("sel_lvlbase_pk_list", sel_lvlbase_pk_list);
+    return sel_lvlbase_pk_list;
+}
+
+function MEX3_reset_layout_options(){  // PR2021-10-10
+// ---  remove 'se';lected' from layout options
+    //console.log("  =====  MEX3_reset_layout_options  =====");
+    if(el_MEX3_select_layout){
+        const layout_options = Array.from(el_MEX3_select_layout.options);
+        if(layout_options && layout_options.length){
+            for (let i = 0, option; option = layout_options[i]; i++) {
+                option.selected = false;
+            };
+        };
+    };
+};  // MEX3_reset_layout_options
+
+
+
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2021-08-13

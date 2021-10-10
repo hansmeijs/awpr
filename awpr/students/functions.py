@@ -242,16 +242,19 @@ def split_fullname(fullname): # PR2018-12-06
 
 # oooooooooooooo Functions  Student name ooooooooooooooooooooooooooooooooooooooooooooooooooo
 
-def get_full_name(last_name, first_name, prefix):  # PR2021-07-26 PR2021-09-05
-    _lastname, _firstname, _prefix = '', '', ''
-    if last_name:
-        _lastname = last_name.strip() + ','
-    if first_name:
-        _firstname = first_name.strip()
-    if prefix:
-        _prefix = prefix.strip()
+def get_full_name(last_name, first_name, prefix):  # PR2021-07-26 PR2021-09-05  PR2021-10-07
 
-    return ' '.join((_prefix, _lastname, _firstname))
+    _full_name = last_name.strip() if last_name else ''
+
+    _prefix = prefix.strip() if prefix else ''
+    if _prefix:
+        _full_name = ' '.join((_prefix, _full_name))
+
+    _firstname = first_name.strip() if first_name else ''
+    if _firstname:
+        _full_name = ', '.join((_full_name, _firstname))
+
+    return _full_name
 
 
 def get_firstname_initials(first_name):  # PR2021-07-26
@@ -269,7 +272,7 @@ def get_firstname_initials(first_name):  # PR2021-07-26
                 else:
                     if item:
                         # PR2017-02-18 VB debug. bij dubbele spatie in voornaam krijg je lege err(x)
-                        firstname_initials += item[:1]  # write of the next firstnames only the first letter
+                        firstname_initials += item[:1] + '.'  # write of the next firstnames only the first letter
     return firstname_initials
 
 

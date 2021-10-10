@@ -666,20 +666,26 @@ def get_selected_examyear_scheme_pk_from_usersetting(request):  # PR2021-07-13
 
     return sel_examyear, sel_scheme_pk
 
+
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-def get_selected_examperiod_examtype_from_usersetting(request):  # PR2021-01-20
-# - get selected examperiod and examtype from usersettings
+def get_selected_experiod_extype_subject_from_usersetting(request):  # PR2021-01-20 PR2021-10-06
+# - get selected examperiod and examtype and sel_subject_pk from usersettings
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_selected_experiod_extype_subject_from_usersetting ----- ' )
+
     sel_examperiod, sel_examtype, sel_subject_pk = None, None, None
     req_user = request.user
     if req_user:
         selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        if logging_on:
+            logger.debug('selected_pk_dict: ' + str(selected_pk_dict) )
         if selected_pk_dict:
             sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
             sel_examtype = selected_pk_dict.get(c.KEY_SEL_EXAMTYPE)
             sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
     return sel_examperiod, sel_examtype, sel_subject_pk
-
-
+# - end of get_selected_experiod_extype_subject_from_usersetting
 
 
 def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-06-14

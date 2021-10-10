@@ -180,10 +180,10 @@
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23
     function t_MSSSS_Open (loc, tblName, data_rows, add_all, setting_dict, permit_dict, MSSSS_Response) {
-        //console.log(" ===  t_MSSSS_Open  =====", tblName) ;
-        //console.log( "setting_dict", setting_dict);
-        //console.log( "permit_dict", permit_dict);
-        //console.log( "data_rows", data_rows);
+        console.log(" ===  t_MSSSS_Open  =====", tblName) ;
+        console.log( "setting_dict", setting_dict);
+        console.log( "permit_dict", permit_dict);
+        console.log( "data_rows", data_rows, typeof data_rows );
         // tblNames are: "school", "subject", "student"
 
         // PR2021-04-27 debug: opening modal before loc and setting_dict are loaded gives 'NaN' on modal.
@@ -852,7 +852,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         const all_sectors_profielen_txt = (!el_SBR_select_sector_label) ? loc.All_sectors_profielen : (has_profiel) ? loc.All_profielen :loc.All_sectors;
         const caption_all = "&#60" + (
                 (tblName === "department") ? loc.All_departments :
-                (tblName === "level") ? loc.All_leerwegen :
+                (tblName === "level") ? loc.All_levels :
                 (tblName === "sector") ? all_sectors_profielen_txt : "---"
              ) + "&#62";
 
@@ -905,6 +905,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 //========= t_FillOptionLevelSectorFromMap  ============= PR2020-12-11 from tsa PR2021-07-18
     function t_FillOptionLevelSectorFromMap(tblName, pk_field, data_map, depbase_pk, selected_pk, firstoption_txt) {
          //console.log( "===== t_FillOptionLevelSectorFromMap  ========= ");
+         //console.log( "data_map", data_map);
          // used in page schemes
 // add empty option on first row, put firstoption_txt in < > (placed here to escape \< and \>
         let option_text = "";
@@ -913,7 +914,8 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         }
 // --- loop through data_map, fill only items with department_pk in depbases
         for (const [map_id, item_dict] of data_map.entries()) {
-            if(item_dict.depbases && item_dict.depbases.includes(depbase_pk)){
+         //console.log( "item_dict", item_dict);
+            if(item_dict.depbases && depbase_pk && item_dict.depbases.includes(depbase_pk)){
                 option_text += FillOptionText(tblName, pk_field, item_dict, selected_pk);
             }
         }
@@ -1761,10 +1763,10 @@ const columns_tobe_hidden = {};
 
         //console.log("show_select_element", show_select_element);
 
-        const caption_all = "&#60" + ( (tblName === "level") ? loc.All_leerwegen :
+        const caption_all = "&#60" + ( (tblName === "level") ? loc.All_levels :
                                         (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
         if (!has_items){
-             const caption_none = (tblName === "level") ? loc.No_leerweg_found :
+             const caption_none = (tblName === "level") ? loc.No_level_found :
                                   (has_profiel) ? loc.No_profiel_found : loc.No_sector_found ;
             display_rows.push({value: 0, caption: caption_none})
         } else {

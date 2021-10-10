@@ -48,7 +48,7 @@ MENUS_DICT = {
     'page_student': {'caption': _('Candidates'), 'href': 'students_url', 'width': 120},
     'page_studsubj': {'caption': _('Subjects'), 'href': 'studentsubjects_url', 'width': 100},
     'page_orderlist': {'caption': _('Orderlist'), 'href': 'orderlists_url', 'width': 130},
-    'page_exams': {'caption': _('Exam questions'), 'href': 'exams_url', 'width': 130},
+    'page_exams': {'caption': _('Exams'), 'href': 'exams_url', 'width': 130},
     'page_grade': {'caption': _('Grades'), 'href': 'grades_url', 'width': 120},
     'page_result': {'caption': _('Results'), 'href': 'subjects_url', 'width': 120},
     'page_report': {'caption': _('Reports'), 'href': 'subjects_url', 'width': 120},

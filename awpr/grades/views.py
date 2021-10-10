@@ -74,7 +74,7 @@ class GradeDownloadGradeIconsView(View):  # PR2021-04-30
             dl.get_selected_ey_school_dep_from_usersetting(request)
 
 # - get selected examperiod, examtype, subject_pk from usersettings
-            sel_examperiod, sel_examtype, sel_subject_pk = dl.get_selected_examperiod_examtype_from_usersetting(request)
+            sel_examperiod, sel_examtype, sel_subject_pk = dl.get_selected_experiod_extype_subject_from_usersetting(request)
 
             if logging_on:
                 logger.debug('sel_examperiod: ' + str(sel_examperiod))
@@ -227,7 +227,7 @@ class GradeApproveView(View):  # PR2021-01-19
                                 logger.debug('saved_setting_dict: ' + str(saved_setting_dict))
 
                         sel_examperiodNIU, sel_examtype, sel_subject_pk = \
-                            dl.get_selected_examperiod_examtype_from_usersetting(request)
+                            dl.get_selected_experiod_extype_subject_from_usersetting(request)
 
                     if logging_on:
                         logger.debug('sel_examtype:   ' + str(sel_examtype))
@@ -753,7 +753,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15
 # - get select
                 # get examperiod and examtype from upload_dict
                 # don't get it from usersettings, get it from upload_dict instead
-                # was: sel_examperiod, sel_examtype, sel_subject_pkNIU = dl.get_selected_examperiod_examtype_from_usersetting(request)
+                # was: sel_examperiod, sel_examtype, sel_subject_pkNIU = dl.get_selected_experiod_extype_subject_from_usersetting(request)
                 mode = upload_dict.get('mode')
                 examperiod_int = upload_dict.get('examperiod')
                 grade_pk = upload_dict.get('grade_pk')

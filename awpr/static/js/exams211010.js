@@ -577,7 +577,7 @@ document.addEventListener
         const has_profiel = setting_dict.sel_dep_has_profiel;
         console.log("has_items", has_items);
         console.log("has_profiel", has_profiel);
-        const caption_all = "&#60" + ( (tblName === "level") ? loc.All_leerwegen : (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
+        const caption_all = "&#60" + ( (tblName === "level") ? loc.All_levels : (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
         if (has_items){
             if (rows.length === 1){
                 // if only 1 level: make that the selected one
@@ -2089,7 +2089,7 @@ document.addEventListener
         if (!columns_hidden.lvl_abbrev){
             el_MEX_select_level.innerText = null;
             el_MEX_select_level.value = null;
-            const select_text = loc.Select_leerweg
+            const select_text = loc.Select_level
             const select_text_none = loc.No_leerwegen_found;
             const id_field = "base_id", display_field = "abbrev";
             const selected_pk = mod_MEX_dict.levelbase_pk;

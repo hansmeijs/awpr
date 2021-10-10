@@ -992,7 +992,7 @@ def system_updates(examyear, request):
     #PR2021-08-05 add SXMSYS school if not exists
     add_sxmsys_school_if_not_exist(request)
 
-    #update_examyearsetting(examyear, request)
+    update_examyearsetting(examyear, request)
     # PR2021-03-26
 
     #transfer_depbases_from_array_to_string()
@@ -1234,9 +1234,47 @@ def update_examyearsetting(examyear, request):
         ('ex2a', 'title', 'Lijst van cijfers'),
         ('ex2a', 'eex_article', '(Artikel 20 Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
         ('ex2a', 'lex_article', '(Artikel 34 Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
-        ('ex3', 'title', 'Proces-Verbaal van Toezicht'),
+
+        ('ex3', 'proces_verbaal', 'Proces-verbaal'),
+        ('ex3', 'title', 'Proces-verbaal van Toezicht'),
         ('ex3', 'eex_article', '(Artikel 28, Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
-        ('ex3', 'lex_article', '((Artikel 18, Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
+        ('ex3', 'lex_article', '(Artikel 18, Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
+        ('ex3', 'ex_code', 'EX.3'),
+        ('ex3', 'eindexamen', 'EINDEXAMEN'),
+        ('ex3', 'landsexamen', 'LANDSEXAMEN'),
+        ('ex3', 'in_het_examenjaar', 'in het examenjaar'),
+        ('ex3', 'voor_het_vak', 'voor het vak:'),
+        ('ex3', 'naam_school', 'Naam van de school:'),
+
+        ('ex3', 'col_00_00', 'Examennr.'),
+        ('ex3', 'col_00_01', '1)'),
+        ('ex3', 'col_01_00', 'Naam en voorletters van de kandidaat'),
+        ('ex3', 'col_01_01', '(in alfabetische volgorde)'),
+        ('ex3', 'col_02_00', 'Handtekening kandidaat'),
+        ('ex3', 'col_02_01', '(bij aanvang)'),
+        ('ex3', 'col_03_00', 'Aantal ingeleverde bladen'),
+        ('ex3', 'col_03_01', 'uitwerk-'),
+        ('ex3', 'col_03_02', 'bladen'),
+        ('ex3', 'col_04_01', 'folio-'),
+        ('ex3', 'col_04_02', 'bladen'),
+        ('ex3', 'col_05_00', 'Tijdstip van'),
+        ('ex3', 'col_05_01', 'inlevering'),
+        ('ex3', 'col_06_00', 'Paraaf'),
+        ('ex3', 'col_06_01', 'surveillant'),
+        ('ex3', 'col_06_02', '(voor inlevering)'),
+        ('ex3', 'footer_01', '1) Examennummer en naam dienen in overeenstemming te zijn met formulier EX.1'),
+
+        ('ex3', 'back_01', 'Verloop en eventuele bijzonderheden van het schriftelijk examen van het vak'),
+        ('ex3', 'back_02', 'voor de groep kandidaten als aan ommezijde vermeld.'),
+        ('ex3', 'back_03', 'Indien meer dan 2 verschillende personen toezicht hebben gehouden opmerkingen paraferen.'),
+        ('ex3', 'back_place', '(plaatsnaam)'),
+        ('ex3', 'back_date', '(datum)'),
+        ('ex3', 'back_signature', 'Handtekening toezichthouders:'),
+        ('ex3', 'back_from', '(Toezicht van'),
+        ('ex3', 'back_till', 'uur tot'),
+        ('ex3', 'back_hour', 'uur)'),
+        ('ex3', 'backfooter_01', 'In elk lokaal dienen twee toezichthouders aanwezig te zijn. Elk moment dient derhalve door 2 handtekeningen gedekt te zijn.'),
+
         ('ex4', 'title', 'Lijst van kandidaten voor het herexamen.'),
         ('ex4', 'title_corona', 'Lijst van kandidaten voor herkansing.'),
         ('ex4', 'eex_article', '(Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),

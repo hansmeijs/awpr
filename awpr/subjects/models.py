@@ -727,6 +727,7 @@ class Packageitem(sch_mod.AwpBaseModel):
     package = ForeignKey(Package, related_name='packageschemes', on_delete=CASCADE)
     schemeitem = ForeignKey(Schemeitem, related_name='packageschemes', on_delete=CASCADE)
 
+
 # PR2018-06-06
 class Cluster(sch_mod.AwpBaseModel):
     objects = AwpModelManager()
