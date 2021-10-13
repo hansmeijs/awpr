@@ -1,0 +1,32 @@
+ {% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL OTHER LANGUAGE  =================== -->
+    <div class="modal" id="id_mod_otherlang" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md " role="document">
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 id="id_MOL_header" class="modal-title mx-2" ></h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div id="id_MSUBJ_form_controls" class="m-2 p-2">
+                        <label for="id_MOL_otherlang" class="mx-2">{% trans 'Other languages' %}:</label>
+                        <select id="id_MOL_otherlang" data-field="otherlang" size="4" class="form-control awp_input_text">
+                            <option value="none">{% trans 'None' %}</option>
+                            <option value="en">{% trans 'English' %}</option>
+                            <option value="pa">{% trans 'Papiamentu' %}</option>
+                            <option value="en;pa">{% trans 'English and Papiamentu' %}</option>
+                        </select>
+                    </div>
+
+                <div class="modal-footer">
+                    <div class="content_subheader_right">
+                        <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MOL_btn_save" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
