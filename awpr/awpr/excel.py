@@ -1794,6 +1794,9 @@ class SchemeDownloadXlsxView(View):  # PR2021-07-13
                 sel_examyear_instance, sel_scheme_pk = \
                     dl.get_selected_examyear_scheme_pk_from_usersetting(request)
 
+                # TODO set sel_scheme_pk not working properly, set None for now
+                sel_scheme_pk = None
+
                 if sel_examyear_instance :
 
     # +++ get dict of subjects of these studsubj_rows
