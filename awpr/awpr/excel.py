@@ -2119,7 +2119,9 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
 
                     elif field_name == 'otherlang':
                         other_lang = row.get(field_name)
-                        value = ''
+                        value = other_lang
+                        # TODO
+                        """
                         if other_lang:
                             if 'en' in other_lang:
                                 value += str(_('English'))
@@ -2127,7 +2129,7 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
                                 if value:
                                     value += ', '
                                 value += str(_('Papiamentu'))
-
+                        """
                     else:
                         value = row.get(field_name, '')
                         if isinstance(value, bool):
