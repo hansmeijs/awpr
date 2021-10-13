@@ -1588,7 +1588,6 @@
 
             },  // success: function (response) {
 
-
             error: function (xhr, msg) {
                 // ---  hide loader
                 const el_loader = document.getElementById("id_loader");

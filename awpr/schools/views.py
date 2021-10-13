@@ -107,8 +107,6 @@ def Loggedin(request):
     return HttpResponseRedirect(reverse_lazy(page_url))
 
 
-
-
 # === MAIL =====================================
 @method_decorator([login_required], name='dispatch')
 class MailListView(View):
@@ -116,7 +114,7 @@ class MailListView(View):
 
     def get(self, request):
 
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(" =====  MailListView  =====")
 
@@ -179,38 +177,36 @@ class MailUploadView(View):  # PR2021-01-16  PR2021-10-11
                 is_delete = (mode == 'delete')
                 is_send = (mode == 'send')
 
-                header_str= upload_dict.get('header')
-                body_str = upload_dict.get('body')
-                issentmail = upload_dict.get('issentmail', False)
-                isreceivedmail = upload_dict.get('isreceivedmail', False)
+                header = upload_dict.get('header')
+                body = upload_dict.get('body')
 
-                mailto_list= upload_dict.get('mailto')
-                mailto_str = ''
+                mailto_list = upload_dict.get('mailto')
+                mailto_user = ''
                 if mailto_list:
                     for user_pk in mailto_list:
-                        if mailto_str:
-                            mailto_str += ';'
-                        mailto_str += str(user_pk)
+                        if mailto_user:
+                            mailto_user += ';'
+                        mailto_user += str(user_pk)
                 # change '' into None
-                if not mailto_str:
-                    mailto_str = None
+                if not mailto_user:
+                    mailto_user = None
 
                 mailcc_list = upload_dict.get('mailcc')
-                mailcc_str = ''
+                mailcc_user = ''
                 if mailcc_list:
                     for user_pk in mailcc_list:
-                        if mailcc_str:
-                            mailcc_str += ';'
-                        mailcc_str += str(user_pk)
+                        if mailcc_user:
+                            mailcc_user += ';'
+                        mailcc_user += str(user_pk)
                 # change '' into None
-                if not mailcc_str:
-                    mailcc_str = None
+                if not mailcc_user:
+                    mailcc_user = None
 
                 if logging_on:
                     logger.debug('upload_dict: ' + str(upload_dict))
                     logger.debug('mode: ' + str(mode))
-                    logger.debug('mailto_str: ' + str(mailto_str))
-                    logger.debug('mailcc_str: ' + str(mailcc_str))
+                    logger.debug('mailto_user: ' + str(mailto_user))
+                    logger.debug('mailcc_user: ' + str(mailcc_user))
 
                 updated_rows = []
                 error_list = []
@@ -228,7 +224,8 @@ class MailUploadView(View):  # PR2021-01-16  PR2021-10-11
 
 # ++++ Create new mailbox_instance:
                 if is_create:
-                    mailbox_instance = create_mailbox_instance(sel_examyear, sel_school, header_str, body_str, mailto_str, mailcc_str, messages, request)
+                    mailbox_instance = create_mailbox_and_mailmessage_instance(sel_examyear, sel_school,
+                                           header, body, mailto_user, mailcc_user, messages, request)
                     if mailbox_instance:
                         is_created = True
 
@@ -250,13 +247,16 @@ class MailUploadView(View):  # PR2021-01-16  PR2021-10-11
 
 # ++++ Delete mailbox_instance
                     if is_delete:
-                        delete_mailbox_instance(mailbox_instance, request)
+                        deleted_ok = delete_mailbox_instance(mailbox_instance, request)
 
 # +++ Update mailmessage, not when it is created, nor when deleted
                     elif not is_create:
-                        update_mailmessage_instance(mailmessage_instance, sel_examyear, sel_school,
-                                                    header_str, body_str, mailto_str, mailcc_str,
+                        update_mailmessage_instance(mailmessage_instance, header, body, mailto_user, mailcc_user,
                                                     error_list, request)
+
+# +++ send mailmessage, onlt when is_send
+                    if is_send:
+                        send_mail(mailmessage_instance, mailto_user, mailcc_user, request)
 
 # - create mailbox_row, also when is_delete (then deleted=True)
                 # PR2021-089-04 debug. gave error on subject.pk: 'NoneType' object has no attribute 'pk'
@@ -294,12 +294,12 @@ class MailUploadView(View):  # PR2021-01-16  PR2021-10-11
 # - ens of MailUploadView
 
 
-def create_mailbox_instance(examyear, sender_school, header_str, body_str, mailto_str, mailcc_str, messages, request):
+def create_mailbox_and_mailmessage_instance(examyear, sender_school, header, body, mailto_user, mailcc_user, messages, request):
     # --- create mailbox item and mailmessage itemPR2021-10-11
 
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- create_mailbox ----- ')
+        logger.debug(' ----- create_mailbox_and_mailmessage_instance ----- ')
 
     mailbox = None
     caption = _('Create message')
@@ -308,16 +308,16 @@ def create_mailbox_instance(examyear, sender_school, header_str, body_str, mailt
 
         msg_list = []
 # - validate code and name. Function checks null, max_len, exists
-        msg_err = av.validate_notblank_maxlength(header_str, c.MAX_LENGTH_FIRSTLASTNAME, _('The subject'))
+        msg_err = av.validate_notblank_maxlength(header, c.MAX_LENGTH_FIRSTLASTNAME, _('The title of this message'))
         if msg_err:
             msg_list.append(msg_err)
-        msg_err = av.validate_notblank_maxlength(body_str, 2048, _('The text of the message'), True)  # True = blanks allowed
+        msg_err = av.validate_notblank_maxlength(body, 2048, _('The text of this message'), True)  # True = blanks allowed
         if msg_err:
             msg_list.append(msg_err)
-        msg_err = av.validate_notblank_maxlength(mailto_str, 2048, _('The list of recipients'))
+        msg_err = av.validate_notblank_maxlength(mailto_user, 2048, _('The list of recipients'))
         if msg_err:
             msg_list.append(msg_err)
-        msg_err = av.validate_notblank_maxlength(mailto_str, 2048, _('The list of c.c. recipients'), True)  # True = blanks allowed
+        msg_err = av.validate_notblank_maxlength(mailto_user, 2048, _('The list of c.c. recipients'), True)  # True = blanks allowed
         if msg_err:
             msg_list.append(msg_err)
 
@@ -332,10 +332,10 @@ def create_mailbox_instance(examyear, sender_school, header_str, body_str, mailt
                     examyear=examyear,
                     sender_user=request.user,
                     sender_school=sender_school,
-                    header=header_str,
-                    body=body_str,
-                    mailto_user=mailto_str,
-                    mailcc_user=mailcc_str
+                    header=header,
+                    body=body,
+                    mailto_user=mailto_user,
+                    mailcc_user=mailcc_user
                 )
                 mailmessage.save(request=request)
 
@@ -363,7 +363,7 @@ def create_mailbox_instance(examyear, sender_school, header_str, body_str, mailt
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
                 msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
-                                    str(_("%(cpt)s '%(val)s'could not be added.") % {'cpt': _('Message'), 'val': header_str})))
+                                    str(_("%(cpt)s '%(val)s'could not be added.") % {'cpt': _('Message'), 'val': str(header)})))
                 messages.append(
                     {'class': "border_bg_invalid", 'header': str(_('Create message')), 'msg_html': msg_html})
 
@@ -372,12 +372,13 @@ def create_mailbox_instance(examyear, sender_school, header_str, body_str, mailt
         logger.debug('messages: ' + str(messages))
 
     return mailbox
-# - end of create_mailbox_instance
+# - end of create_mailbox_and_mailmessage_instance
 
 
 def delete_mailbox_instance(mailbox_instance, request):
     # --- delete mailbox instance # PR2021-10-12
     # set deleted=True insted of deleting instance
+    deleted_ok = False
     if mailbox_instance:
         try:
             setattr(mailbox_instance, 'deleted', True)
@@ -385,160 +386,126 @@ def delete_mailbox_instance(mailbox_instance, request):
             deleted_ok = True
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
+    return deleted_ok
 # - end of delete_mailbox_instance
 
 
-def update_mailmessage_instance(mailmessage, examyear, sender_school, header_str, body_str, mailto_str, mailcc_str, msg_list, request):
+def update_mailmessage_instance(mailmessage_instance, header, body, mailto_user, mailcc_user, msg_list, request):
     # --- update existing mailbox instance and mailmessage instance PR2021-10-11
-
+    # the following fiels can not be changed: examyear, sender_user, sender_school
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_mailmessage_instance ----- ')
-        logger.debug('header_str: ' + str(header_str))
-        logger.debug('body_str: ' + str(body_str))
-        logger.debug('mailto_str: ' + str(mailto_str))
-        logger.debug('mailcc_str: ' + str(mailcc_str))
+        logger.debug('header: ' + str(header))
+        logger.debug('body: ' + str(body))
+        logger.debug('mailto_user: ' + str(mailto_user))
+        logger.debug('mailcc_user: ' + str(mailcc_user))
 
     messages = []
     mailbox = None
-    if mailmessage:
+    if mailmessage_instance:
         save_changes = False
 
         caption = _('Message')
 
 # - save changes in field 'header'
-        field = 'header'
-        new_value = header_str
-        msg_err = av.validate_notblank_maxlength(new_value, c.MAX_LENGTH_FIRSTLASTNAME, _('The subject'))
-        if msg_err:
-            msg_list.append(msg_err)
-        else:
-            saved_value = getattr(mailmessage, field)
-            if logging_on:
-                logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
+        for field in ('header', 'body', 'mailto_user', 'mailcc_user'):
+            new_value = None
+            caption = ''
+            if field == 'header':
+                new_value = header
+                caption = _('The title of this message')
+            elif field == 'body':
+                new_value = body
+                caption = _('The text of this message')
+            elif field == 'mailto_user':
+                new_value = mailto_user
+                caption = _('The list of recipients')
+            elif field == 'mailcc_user':
+                new_value = mailcc_user
+                caption = _('The list of c.c. recipients')
 
-            if new_value != saved_value:
-                setattr(mailmessage, field, new_value)
-                save_changes = True
+            blanks_allowed = False if field in ('header', 'mailto_user') else True
+
+            msg_err = av.validate_notblank_maxlength(new_value, c.MAX_LENGTH_FIRSTLASTNAME, caption, blanks_allowed)
+            if msg_err:
+                msg_list.append(msg_err)
+            else:
+                saved_value = getattr(mailmessage_instance, field)
                 if logging_on:
-                    logger.debug('save field ' + str(field) + ':  ' + str(new_value))
+                    logger.debug('field:        ' + str(field))
+                    logger.debug('new_value:   <' + str(new_value) + '> ' + str(type(new_value)))
+                    logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
 
-# - save changes in field 'body'
-        field = 'body'
-        new_value = body_str
-        msg_err = av.validate_notblank_maxlength(new_value, 2048, _('The text of the message'), True)  # True = blanks allowed
-        if msg_err:
-            msg_list.append(msg_err)
-        else:
-            saved_value = getattr(mailmessage, field)
-            if logging_on:
-                logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
-
-            if new_value != saved_value:
-                setattr(mailmessage, field, new_value)
-                save_changes = True
-                if logging_on:
-                    logger.debug('save field ' + str(field) + ':  ' + str(new_value))
-
-# - save changes in field 'mailto_user'
-        field = 'mailto_user'
-        new_value = mailto_str
-        msg_err = av.validate_notblank_maxlength(mailto_str, 2048, _('The list of recipients'))
-        if msg_err:
-            msg_list.append(msg_err)
-        else:
-            saved_value = getattr(mailmessage, field)
-            if logging_on:
-                logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
-
-            if new_value != saved_value:
-                setattr(mailmessage, field, new_value)
-                save_changes = True
-                if logging_on:
-                    logger.debug('save field ' + str(field) + ':  ' + str(new_value))
-
-# - save changes in field 'mailcc_user'
-        field = 'mailcc_user'
-        new_value = mailcc_str
-        msg_err = av.validate_notblank_maxlength(mailto_str, 2048, _('The list of c.c. recipients'), True)  # True = blanks allowed
-        if msg_err:
-            msg_list.append(msg_err)
-        else:
-            saved_value = getattr(mailmessage, field)
-            if logging_on:
-                logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
-
-            if new_value != saved_value:
-                setattr(mailmessage, field, new_value)
-                save_changes = True
-                if logging_on:
-                    logger.debug('save field ' + str(field) + ':  ' + str(new_value))
-
-
-        msg_list = []
-# - validate code and name. Function checks null, max_len, exists
-        msg_err = av.validate_notblank_maxlength(header_str, c.MAX_LENGTH_FIRSTLASTNAME, _('The subject'))
-        if msg_err:
-            msg_list.append(msg_err)
-        msg_err = av.validate_notblank_maxlength(body_str, 2048, _('The text'), True)  # True = blanks allowed
-        if msg_err:
-            msg_list.append(msg_err)
-        msg_err = av.validate_notblank_maxlength(mailto_str, 2048, _('The list of recipients'))
-        if msg_err:
-            msg_list.append(msg_err)
-
-# - first create and save mailbox item
-        if len(msg_list) > 0:
-            msg_html = '<br>'.join(msg_list)
-            messages.append({'header': str(caption), 'class': "border_bg_invalid", 'msg_html': msg_html})
-        else:
-            try:
-# - first create and save mailbox item
-                mailmessage = sch_mod.Mailmessage(
-                    examyear=examyear,
-                    sender_user=request.user,
-                    sender_school=sender_school,
-                    header=header_str,
-                    body=body_str,
-                    mailto_user=mailto_str,
-                    mailcc_user=mailcc_str
-                )
-                mailmessage.save(request=request)
-
-                if logging_on:
-                    logger.debug('mailmessage: ' + str(mailmessage))
-                    logger.debug('mailmessage.pk: ' + str(mailmessage.pk))
-
-# - add link to this message in inbox of request.user
-                # when issentmail and isreceivedmail are False: it is a saved draft mail
-                # don't add mailbox item of recipients and cc until the message is sent.
-                if mailmessage.pk:
-                    mailbox = sch_mod.Mailbox(
-                        user=request.user,
-                        mailmessage=mailmessage,
-                        # read=False,
-                        # deleted=False,
-                        #issentmail=False,
-                        #isreceivedmail=False
-                    )
-                    mailbox.save(request=request)
-
+                if new_value != saved_value:
+                    setattr(mailmessage_instance, field, new_value)
+                    save_changes = True
                     if logging_on:
-                        logger.debug('mailbox: ' + str(mailbox))
+                        logger.debug('save field ' + str(field) + ':  ' + str(new_value))
 
+        if save_changes:
+            try:
+                mailmessage_instance.save(request=request)
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
                 msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
-                                    str(_("%(cpt)s '%(val)s'could not be added.") % {'cpt': _('Message'), 'val': header_str})))
-                messages.append(
-                    {'class': "border_bg_invalid", 'header': str(_('Create message')), 'msg_html': msg_html})
+                                    str(_("%(cpt)s '%(val)s' could not be updated.") % {'cpt': _('Message'), 'val': header})))
+                messages.append({'class': "border_bg_invalid", 'header': str(_('Create message')), 'msg_html': msg_html})
 
     if logging_on:
         logger.debug('messages: ' + str(messages))
+# - end of update_mailmessage_instance
 
-    return mailbox
-# - end of create_mailbox
 
+def send_mail(mailmessage_instance, mailto_user, mailcc_user, request):
+    # function adds isreceivedmail mailbox_items for mailto_users and mailcc_user, issentmail for sender_user
+        # - when sending: add link to this message in inbox of request.user, if not exists
+        # when issentmail and isreceivedmail are False: it is a saved draft mail
+        # don't add mailbox item of recipients and cc until the message is sent.
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- send_mail ----- ')
+        logger.debug('mailmessage_instance: ' + str(mailmessage_instance))
+
+    for to_cc in ('to', 'cc', 'sender'):
+        is_receivedmail = False if to_cc == 'sender' else True
+        is_sentmail = True if to_cc == 'sender' else False
+
+        mailto_str = None
+        if to_cc == 'to':
+            mailto_str = mailto_user
+        elif to_cc == 'cc':
+            mailto_str = mailcc_user
+        elif to_cc == 'sender':
+            # sender mailbox already exists, set issentmail = True
+            mailto_str = str(request.user.pk)
+
+        if mailto_str:
+            mailto_list = mailto_str.split(';')
+            if mailto_list:
+                for user_pk_str in mailto_list:
+                    try:
+                        user_pk_int = int(user_pk_str)
+                        mailbox_instance = sch_mod.Mailbox.objects.filter(
+                            mailmessage=mailmessage_instance,
+                            user_id=user_pk_int
+                        ).first()
+                        if mailbox_instance is None:
+                            mailbox_instance = sch_mod.Mailbox(
+                                mailmessage=mailmessage_instance,
+                                user_id=user_pk_int,
+                                isreceivedmail=is_receivedmail,
+                                issentmail=is_sentmail,
+                            )
+                        if mailbox_instance:
+                            setattr(mailbox_instance, 'isreceivedmail', is_receivedmail)
+                            setattr(mailbox_instance, 'issentmail', is_sentmail)
+                            mailbox_instance.save(request=request)
+                        if logging_on:
+                            logger.debug('mailbox ' + str(to_cc) + ': ' + str(mailbox_instance))
+                    except Exception as e:
+                        logger.error(getattr(e, 'message', str(e)))
 
 
 # === EXAMYEAR =====================================

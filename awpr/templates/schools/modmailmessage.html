@@ -54,7 +54,7 @@
                                         <div data-index="attachment" class="note_flex_1">
                                             <div class="note_1_8 mx-2"></div>
                                             <div class="c_form_text m-0 p-2">{% trans 'Add attachment' %}</div>
-                                            <input id="id_MMM_filedialog" type="file">
+                                            <input id="id_MMM_filedialog" type="file" multiple>
                                         </div>
                                     </div>
                                 </div>
@@ -91,7 +91,7 @@
 
                 <div class="modal-footer">
                     <div class="content_subheader_right">
-                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MMM_btn_cancel" class="btn btn-outline-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
                         <button id="id_MMM_btn_save" class="btn btn-secondary">{% trans 'Save' %}</button>
                         <button id="id_MMM_btn_send" class="btn btn-primary">{% trans 'Send' %}</button>
                     </div>

@@ -59,7 +59,7 @@ def create_mailbox_rows(examyear_pk, request, mailbox_pk=None):
 
 def create_mailbox_user_rows(examyear_pk, request):
     # --- create list of all users , for mailbox recipients PR2021-10-11
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_mailbox_user_rows ============= ')
 

@@ -1041,7 +1041,8 @@ def system_updates(examyear, request):
 # - end of system_updates
 
 def transfer_otherlang_from_subj_to_schemeitem(request):
-    logging_on = s.LOGGING_ON
+    # PR 2021-10-12 one time function to move otherlang from table subjects to schemeitem
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- transfer_otherlang_from_subj_to_schemeitem -------')
     try:

@@ -164,10 +164,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(function() {MMM_input_filter_Keyup(el_MMM_input_filter)}, 50)});
         };
 
+        const el_MMM_btn_cancel = document.getElementById("id_MMM_btn_cancel");
         const el_MMM_btn_save = document.getElementById("id_MMM_btn_save");
-        if(el_MMM_btn_save){el_MMM_btn_save.addEventListener("click", function() {MMM_Save("save")}, false)};
+        if(el_MMM_btn_save){el_MMM_btn_save.addEventListener("click", function() {MMM_SaveOrSend("save")}, false)};
         const el_MMM_btn_send = document.getElementById("id_MMM_btn_send");
-        if(el_MMM_btn_send){el_MMM_btn_send.addEventListener("click", function() {MMM_Save("send")}, false)};
+        if(el_MMM_btn_send){el_MMM_btn_send.addEventListener("click", function() {MMM_SaveOrSend("send")}, false)};
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");
@@ -1374,6 +1375,8 @@ function RefreshMailboxRowsAfterUpload(response) {
                 el_MMM_input_message.value = data_dict.body;
 
                 mod_MMM_dict.mailbox_pk = data_dict.id;
+                mod_MMM_dict.isreceivedmail = data_dict.isreceivedmail;
+                mod_MMM_dict.issentmail = data_dict.issentmail;
 
 // --- fill mailto_list and mailcc_list
                 if(data_dict.mailto_user){
@@ -1410,70 +1413,72 @@ function RefreshMailboxRowsAfterUpload(response) {
         }
     }  // MMM_Open
 
-//========= MMM_Save============== PR2021-10-10=1
-    function MMM_Save (save_or_send) {
-        console.log("===  MMM_Save  =====");
+//========= MMM_SaveOrSend============== PR2021-10-10=1
+    function MMM_SaveOrSend (save_or_send) {
+        console.log("===  MMM_SaveOrSend  =====");
         const el_MMM_filedialog = document.getElementById("id_MMM_filedialog")
         const filename = el_MMM_filedialog.value;
 
-        // if(permit_dict.permit_write_note_intern || permit_dict.permit_permit_write_note_extern){
-        if (true){
+// - messages cannot be edited when they are sent or received
+        const may_edit = (!mod_MMM_dict.isreceivedmail && !mod_MMM_dict.issentmail);
+        if (may_edit){
             const header_str = el_MMM_input_title.value;
             const body_str = el_MMM_input_message.value;
 
-
-        console.log("mailbox_user_rows", mailbox_user_rows);
-// get recipient and cc list
-        const recipient_list = [];
-        const cc_list = [];
-        for (let i = 0, data_dict; data_dict = mailbox_user_rows[i]; i++) {
-            if(data_dict.selected === "to"){
-                if(!recipient_list.includes(data_dict.id)){
-                    recipient_list.push(data_dict.id);
-                };
-            } else if(data_dict.selected === "cc"){
-                if(!cc_list.includes(data_dict.id)){
-                    cc_list.push(data_dict.id);
+            console.log("mailbox_user_rows", mailbox_user_rows);
+    // get recipient and cc list
+            const recipient_list = [];
+            const cc_list = [];
+            for (let i = 0, data_dict; data_dict = mailbox_user_rows[i]; i++) {
+                if(data_dict.selected === "to"){
+                    if(!recipient_list.includes(data_dict.id)){
+                        recipient_list.push(data_dict.id);
+                    };
+                } else if(data_dict.selected === "cc"){
+                    if(!cc_list.includes(data_dict.id)){
+                        cc_list.push(data_dict.id);
+                    };
                 };
             };
-        };
-        if(recipient_list.length){recipient_list.sort()};
-        if(cc_list.length){cc_list.sort()};
-        console.log("recipient_list", recipient_list);
-        console.log("cc_list", cc_list);
+            if(recipient_list.length){recipient_list.sort()};
+            if(cc_list.length){cc_list.sort()};
+            console.log("recipient_list", recipient_list);
+            console.log("cc_list", cc_list);
 
 // get attachment info
-            const file = document.getElementById("id_MMM_filedialog").files[0];  // file from input
-            const file_type = (file) ? file.type : null;
-            const file_name = (file) ? file.name : null;
-            const file_size = (file) ? file.size : 0;
+        // from https://medium.com/typecode/a-strategy-for-handling-multiple-file-uploads-using-javascript-eb00a77e15f
 
-        console.log("file_name", file_name);
-           // may check size or type here with
-            // ---  upload changes
-            const upload_dict = { table: mod_MMM_dict.table,
-                                   mode: save_or_send,
+            const file_list = []
+            const files = el_MMM_filedialog.files;// files from input
+            // temp till multiple files is implemented
+            let file = null;
+            if (files){
+                for (let i = 0, file_item; file_item = files[i]; i++) {
+                    file = file_item;
+                    file_list.push({ file_type: file_item.type, file_name: file_item.name, file_size: file_item.size })
+                };
+            };
+    // ---  upload changes
+            const upload_dict = { mode: save_or_send,
                                    mailbox_pk: ( (mod_MMM_dict.mailbox_pk) ? mod_MMM_dict.mailbox_pk : null ),
                                    header: header_str,
                                    body: body_str,
                                    mailto: recipient_list,
                                    mailcc: cc_list,
-                                   file_type: file_type,
-                                   file_name: file_name,
-                                   file_size: file_size
+                                   file_list: file_list
                                    };
-        console.log("upload_dict", upload_dict);
+
             const upload_json = JSON.stringify (upload_dict)
             const url_str = urls.url_mail_upload;
         console.log("url_str", url_str);
-            if(body_str || file_size){
-                const upload = new b_Upload(upload_json, file, url_str);
-                upload.doUpload(RefreshMailboxRowsAfterUpload);
-           }
+        console.log("upload_dict", upload_dict);
+            const upload = new b_Upload(upload_json, file, url_str);
+            upload.doUpload(RefreshMailboxRowsAfterUpload);
+
        }
 // hide modal
         $("#id_mod_mailmessage").modal("hide");
-    }  // MMM_Save
+    }  // MMM_SaveOrSend
 
 
 //=========  MMM_HandleBtnSelect  ================ PR2021-10-11
@@ -1687,25 +1692,35 @@ function RefreshMailboxRowsAfterUpload(response) {
         //console.log( "el_MMM_input_title", el_MMM_input_title);
         //console.log( "el_MMM_input_message", el_MMM_input_message);
 
-        let disable_btn_send = false;
-        if (!el_MMM_input_title.value) {
-            disable_btn_send = true;
-        //console.log( "el_MMM_input_title disable_btn_send", disable_btn_send);
-        } else if (!el_MMM_input_message.value) {
-            disable_btn_send = true;
-        //console.log( " el_MMM_input_message disable_btn_send", disable_btn_send);
-        } else {
-    // - check if there are any recipients
-            let has_recipients = false;
-            for (let i = 0, data_dict; data_dict = mailbox_user_rows[i]; i++) {
-                if(data_dict.selected === "to"){
-                    has_recipients = true;
+
+// - messages cannot be edited when they are sent or received
+        const may_edit = (!mod_MMM_dict.isreceivedmail && !mod_MMM_dict.issentmail);
+        add_or_remove_class(el_MMM_btn_save, cls_hide, !may_edit)
+        add_or_remove_class(el_MMM_btn_send, cls_hide, !may_edit)
+
+        el_MMM_btn_cancel.innerText = (may_edit) ? loc.Cancel : loc.Close;
+
+        if(may_edit){
+            let disable_btn_send = false;
+            if (!el_MMM_input_title.value) {
+                disable_btn_send = true;
+            //console.log( "el_MMM_input_title disable_btn_send", disable_btn_send);
+            } else if (!el_MMM_input_message.value) {
+                disable_btn_send = true;
+            //console.log( " el_MMM_input_message disable_btn_send", disable_btn_send);
+            } else {
+        // - check if there are any recipients
+                let has_recipients = false;
+                for (let i = 0, data_dict; data_dict = mailbox_user_rows[i]; i++) {
+                    if(data_dict.selected === "to"){
+                        has_recipients = true;
+                    };
                 };
-            };
-        //console.log( "has_recipients", has_recipients);
-            disable_btn_send = !has_recipients;
-        }
-        el_MMM_btn_send.disabled = disable_btn_send;
+            //console.log( "has_recipients", has_recipients);
+                disable_btn_send = !has_recipients;
+            }
+            el_MMM_btn_send.disabled = disable_btn_send;
+        };
     };
 
 // +++++++++++++++++ END OF SELECT USER FROM USERLIST ++++++++++++++++++++++++++++++++
