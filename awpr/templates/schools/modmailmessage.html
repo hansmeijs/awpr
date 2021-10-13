@@ -14,58 +14,86 @@
                 </div>
 
                 <div class="modal-body">
-                    <div class="modal_container">
-
-<!-- modal_body_left contains select table -->
-                        <div class="modal_body_left mx-1 border_bg_transparent">
-                             <!-- this div is necessary to get standard structure for FilterTableRows -->
-                            <!-- <div style="overflow-x:hidden;overflow-y:auto;height:400px;width:220px"> -->
-                            <div class="tbl_div_390_360X">
-                                <h6 class="m-2">{% trans 'Send message to' %}...</h6>
-                                <table class="table tsa_tbl mx-1 my-1">
-                                    <tbody id="id_MMM_tblBody_select" >
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div id="id_ModNote_input_container" class="modal_body_right mx-1 px-2">
-
-                            <div id="id_MMM_btn_container" class="btn-group btn-block m-2 pr-3" role="group" aria-label="Choose option" >
-                                <button data-btn="btn_message" class="btn btn-secondary ">{% trans 'Message' %}</button>
-                                <button data-btn="btn_userlist" class="btn btn-secondary">{% trans 'User list' %}</button>
-                                <button data-btn="btn_recipients" class="btn btn-secondary">{% trans 'Mailing lists' %}</button>
-                            </div>
-                            <div class="pt-2 pr-3">
-                                <input id="id_MMM_input_title" type="text" data-field="code"
-                                    class="form-control mx-2 pr-4"
-                                    placeholder="{% trans 'Title of this message'%}..."
-                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                            </div>
-                            <div class="pr-3">
-                                <textarea id="id_MMM_input_message" rows="12" class="form-control m-2 pr-4"
-                                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
-                                    placeholder="{% trans 'Type your message here'%}..."></textarea>
-                            </div>
-
-                            <div class="note_attachment_wrapper px-2">
-                                <div data-index="attachment" class="note_flex_1">
-                                    <div class="note_1_8 mx-2"></div>
-                                    <div class="c_form_text m-0 p-2">{% trans 'Add attachment' %}</div>
-                                    <input id="id_ModNote_filedialog" type="file">
+                        <div id="id_MMM_input_container" class="flex_container">
+                            <div class="flex_1 mx-2">
+                                <div id="id_MMM_tblBody_recipient_container" class="mb-2 border_bg_transparent">
+                                    <h6 class="m-2">{% trans 'Send message to' %}...</h6>
+                                    <table class="table tsa_tbl  tbl_mailbox_h240_w_auto">
+                                        <tbody id="id_MMM_tblBody_recipient" >
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div id="id_MMM_tblBody_cc_container"  class="my-2 border_bg_transparent">
+                                    <h6 class="m-2">{% trans 'Send copy to' %}...</h6>
+                                    <table class="table tsa_tbl mb-0 pb-0 tbl_mailbox_cc_h120_w_auto">
+                                        <tbody id="id_MMM_tblBody_cc" >
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
+                            <div class="flex_2 mx-2 border_bg_message">
+                                <div id="id_MMM_btn_container" class="btn-group btn-block m-2 pr-3" role="group" aria-label="Choose option" >
+                                    <button data-btn="btn_message" class="btn btn-secondary ">{% trans 'Message' %}</button>
+                                    <button data-btn="btn_userlist" class="btn btn-secondary">{% trans 'Select users' %}</button>
+                                    <button data-btn="btn_recipientlist" class="btn btn-secondary">{% trans 'Select mailing list' %}</button>
+                                </div>
+                                <div class="tab_show tab_message display_hide">
+                                    <div class="pt-2 pr-3">
+                                        <input id="id_MMM_input_title" type="text" data-field="code"
+                                            class="form-control mx-2 pr-4"
+                                            placeholder="{% trans 'Title of this message'%}..."
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                    </div>
+                                    <div class="pr-3">
+                                        <textarea id="id_MMM_input_message" rows="12" class="form-control m-2 pr-4"
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;"
+                                            placeholder="{% trans 'Type your message here'%}..."></textarea>
+                                    </div>
 
+                                    <div class="note_attachment_wrapper px-2">
+                                        <div data-index="attachment" class="note_flex_1">
+                                            <div class="note_1_8 mx-2"></div>
+                                            <div class="c_form_text m-0 p-2">{% trans 'Add attachment' %}</div>
+                                            <input id="id_MMM_filedialog" type="file">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="tab_show tab_userlist btn_recipientlist display_hide">
+                                    <div class="flex_container_direction_rowreverse">
+                                        <div class="flex_1 mx-2 my-2">
+                                            <label class="mr-2">{% trans 'Filter' %}:</label>
+                                            <div class="form-group">
+                                                <input id="id_MMM_input_filter" type="text" class="form-control"
+                                                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+                                                    placeholder="{% trans 'Type a few letters'%}..."
+                                                    >
+                                            </div><div class="mx-2">
+                                            <small id="id_MMM_msg_input"></small>
+                                             </div>
+                                        </div>
+                                        <div class="flex_1 mx-2 mt-2">
+                                                <div class="tbl_studsubj_h390_w_auto border_bg_white">
+                                                    <table class="table tsa_tbl mx-1 my-1">
+                                                        <tbody id="id_MMM_tblBody_selectuser" >
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
                         </div>
 
 
-                    </div>
                 </div>
 
                 <div class="modal-footer">
                     <div class="content_subheader_right">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
-                        <button id="id_MMM_btn_save" type="button" class="btn btn-primary">{% trans 'OK' %}</button>
+                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MMM_btn_save" class="btn btn-secondary">{% trans 'Save' %}</button>
+                        <button id="id_MMM_btn_send" class="btn btn-primary">{% trans 'Send' %}</button>
                     </div>
                 </div>
 

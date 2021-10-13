@@ -280,19 +280,20 @@
         }
     } // t_MSSSS_Fill_SelectTable
 
-function t_MSSSS_AddAll_txt(tblName){
-    const caption = (tblName === "student") ? loc.Candidates.toLowerCase() :
-                    (tblName === "subject") ? loc.Subjects.toLowerCase() :
-                    (tblName === "school") ? loc.Schools.toLowerCase() : "";
-    return "<" + loc.All + caption + ">";
-}
+    function t_MSSSS_AddAll_txt(tblName){
+        const caption = (tblName === "student") ? loc.Candidates.toLowerCase() :
+                        (tblName === "subject") ? loc.Subjects.toLowerCase() :
+                        (tblName === "school") ? loc.Schools.toLowerCase() : "";
+        return "<" + loc.All + caption + ">";
+    }
 
-function t_MSSSS_AddAll_dict(tblName){
-    const add_all_text = t_MSSSS_AddAll_txt(tblName);
-    return (tblName === "student") ? {id: -1, examnumber: "", fullname: add_all_text} :
-           (tblName === "subject") ? {id: -1,  code: "", name: add_all_text} :
-           (tblName === "school") ? {id: -1,  code: "", name: add_all_text} : {};
-}
+    function t_MSSSS_AddAll_dict(tblName){
+        const add_all_text = t_MSSSS_AddAll_txt(tblName);
+        return (tblName === "student") ? {id: -1, examnumber: "", fullname: add_all_text} :
+               (tblName === "subject") ? {id: -1,  code: "", name: add_all_text} :
+               (tblName === "school") ? {id: -1,  code: "", name: add_all_text} : {};
+    }
+
 //========= t_MSSSS_Create_SelectRow  ============= PR2020-12-18 PR2020-07-14
     function t_MSSSS_Create_SelectRow(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
         //console.log("===== t_MSSSS_Create_SelectRow ===== ");

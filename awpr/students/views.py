@@ -235,9 +235,6 @@ def get_permit_crud_of_this_page(page, request):
     return has_permit
 
 
-
-
-
 @method_decorator([login_required], name='dispatch')
 class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
 
@@ -3921,7 +3918,7 @@ def create_studentsubjectnote_rows(upload_dict, request):  # PR2021-03-16
         if studsubj_pk:
             if logging_on:
                 logger.debug('studsubj_pk: ' + str(studsubj_pk))
-            sel_examyear_instance = af.get_selected_examyear_from_usersetting(request)
+            sel_examyear_instance = af.get_selected_examyear_instance_from_usersetting(request)
             if sel_examyear_instance:
                 sql_keys = {
                     'ss_id': studsubj_pk,

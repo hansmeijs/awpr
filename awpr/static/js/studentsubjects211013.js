@@ -2673,6 +2673,7 @@ console.log("mode: ", mode)
         //console.log("===== MEX3_CreateSelectRow ===== ");
 
         let has_selected_subjects = false;
+
 // - get ifo from dict
         const subj_id = (row_dict.subj_id) ? row_dict.subj_id : null;
         const subj_code = (row_dict.subj_code) ? row_dict.subj_code : "---";

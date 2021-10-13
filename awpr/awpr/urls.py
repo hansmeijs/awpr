@@ -134,7 +134,6 @@ urlpatterns = [
         path('permits_download', account_views.UserDownloadPermitsView.as_view(), name='user_download_permits_url'),
 
 
-
         #url(r'^users/(?P<pk>\d+)/log$', account_views.UserLogView.as_view(), name='user_log_url'),
     ])),
 
@@ -165,7 +164,8 @@ urlpatterns = [
 
 # ===== MAILBOX ==========================  PR2021-06-10
     path('mail/', include([
-        path('mailbox/', school_views.MailListView.as_view(), name='page_mailbox_url')
+        path('mailbox/', school_views.MailListView.as_view(), name='page_mailbox_url'),
+        path('mail_upload', school_views.MailUploadView.as_view(), name='url_mail_upload')
     ])),
 
 # ===== SCHOOLS ==========================  PR2018-08-23 PR2020-10-20 PR2021-04-26
@@ -201,8 +201,7 @@ urlpatterns = [
 
         path('schemeitem_upload', subject_views.SchemeitemUploadView.as_view(), name='schemeitem_upload_url'),
 
-        path('download_scheme_xlsx', grade_excel.SchemeDownloadXlsxView.as_view(), name='url_download_scheme_xlsx'),
-
+        path('download_scheme_xlsx', grade_excel.SchemeDownloadXlsxView.as_view(), name='url_download_scheme_xlsx')
     ])),
 
 # ===== STUDENTS ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
@@ -225,15 +224,14 @@ urlpatterns = [
         path('studsubj_approve_multiple', student_views.StudentsubjectApproveOrSubmitEx1View.as_view(), name='url_studsubj_approve_multiple'),
         path('studsubj_send_email_exform', student_views.StudentsubjectSendEmailExformView.as_view(), name='url_studsubj_send_email_exform'),
 
-        path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='studentsubjectnote_upload_url'),
+        path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='url_studentsubjectnote_upload'),
         path('studentsubjectnote_download', student_views.StudentsubjectnoteDownloadView.as_view(), name='studentsubjectnote_download_url'),
         path('noteattachment_download/<int:pk_int>/', student_views.NoteAttachmentDownloadView.as_view(), name='noteattachment_download_url'),
 
         path('download_ex1', grade_excel.StudsubjDownloadEx1View.as_view(), name='url_grade_download_ex1'),
 
         path('ex3_getinfo/', grade_exfiles.GetEx3infoView.as_view(), name='url_ex3_getinfo'),
-        path('download_ex3/<list>/', grade_exfiles.DownloadEx3View.as_view(), name='url_ex3_download'),
-
+        path('download_ex3/<list>/', grade_exfiles.DownloadEx3View.as_view(), name='url_ex3_download')
     ])),
 
 # ===== ORDERLISTS ========================== PR2021-04-04
@@ -253,7 +251,6 @@ urlpatterns = [
         path('approve', subject_views.ExamApproveView.as_view(), name='exam_approve_url'),
         path('download_exam_pdf/<list>/', subject_views.ExamDownloadExamView.as_view(), name='exam_download_exam_pdf_url'),
         path('download_exam_json/<list>/', subject_views.ExamDownloadExamJsonView.as_view(), name='exam_download_exam_json_url'),
-
     ])),
 
 # ===== GRADES ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16

@@ -315,6 +315,7 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
                     logger.debug('examyear' + str(examyear))
 
 # - exit when no examyear or examyear is locked
+                # TODO switch to get_selected_ey_school_dep_from_usersetting, it includes validation
                 # note: subjects may be changed before publishing, therefore don't exit on examyear.published
                 if examyear is None:
                     messages.append({'class': "border_bg_warning",
@@ -870,7 +871,7 @@ class SchemeUploadView(View):  # PR2021-06-27
 class SchemeitemUploadView(View):  # PR2021-06-25
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= SchemeitemUploadView ============= ')
@@ -2120,7 +2121,6 @@ def create_subject(examyear, upload_dict, messages, request):
         logger.debug('messages: ' + str(messages))
 
     return subject
-
 # - end of create_subject
 
 
@@ -2181,13 +2181,6 @@ def update_subject_instance(instance, examyear, upload_dict, error_list, request
                         setattr(instance, field, new_value)
                         save_changes = True
 
-# - save changes in field 'otherlang'
-            elif field == 'otherlang':
-                saved_value = getattr(instance, field)
-                if new_value != saved_value:
-                    setattr(instance, field, new_value)
-                    save_changes = True
-
 # 3. save changes in depbases
             elif field == 'depbases':
                 saved_value = getattr(instance, field)
@@ -2236,8 +2229,6 @@ def update_subject_instance(instance, examyear, upload_dict, error_list, request
                 error_list.append({'header': str(header_txt), 'class': 'border_bg_invalid', 'msg_html': msg_html})
                 # error_list = [ { 'header': 'Header text', 'field': 'code', msg_html: 'line1 <br> line2',
                 #                'class': 'border_bg_invalid')
-
-
 
 
 # >>>>>>>  SCHEMEITEM >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -2411,7 +2402,7 @@ def update_si_list(examyear, scheme, si_list, updated_rows, messages, error_list
 
 def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, error_list, request):
     # --- update existing and new instance PR2021-06-26
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_schemeitem_instance -----')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -2424,7 +2415,7 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, er
 
             if field in ("gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi",
                          "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
-                         "has_practexam", "has_pws", "is_core_subject", "is_mvt", "is_wisk", "ete_exam", "no_order",
+                         "has_practexam", "has_pws", "is_core_subject", "is_mvt", "is_wisk", "ete_exam", "otherlang", "no_order",
                          "sr_allowed", "max_reex",  "no_thirdperiod",  "no_exemption_ce"):
 
                 saved_value = getattr(instance, field)
@@ -2445,6 +2436,10 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, er
         if save_changes:
             try:
                 instance.save(request=request)
+                if logging_on:
+                    otherlang = getattr(instance, 'otherlang')
+                    logger.debug('instance: ' + str(instance))
+                    logger.debug('otherlang: ' + str(otherlang))
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
                 msg_html = ''.join((str(_('An error occurred: ')), '<br><i>', str(e), '</i><br>',
@@ -3092,7 +3087,8 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
                 "lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id,",
                 "lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
 
-                "si.gradetype, si.weight_se, si.weight_ce, si.ete_exam, si.no_order, si.is_mandatory, si.is_mand_subj_id,",
+                "si.gradetype, si.weight_se, si.weight_ce, si.ete_exam, si.otherlang,",
+                "si.no_order, si.is_mandatory, si.is_mand_subj_id,",
                 "si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
                  # deprecated: si.has_pws, si.elective_combi_allowed,
                 "si.has_practexam, si.is_core_subject, si.is_mvt, si.is_wisk,",
@@ -3666,7 +3662,10 @@ def create_schoolbase_dictlist(examyear):  # PR2021-08-20
     # PR2021-08-20 functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name
     # - of this exam year, of all countries
     # - skip schools of other organizations than schools
+    # - also add admin organization (ETE, DOE), for extra for ETE, DOE
     # NOTE: use examyear.code (integer field) to filter on examyear. This way schoolbases from SXM and CUR are added to list
+
+    # called by: create_orderlist_xlsx, create_orderlist_per_school_xlsx and OrderlistsPublishView
 
     sql_keys = {'ey_code_int': examyear.code}
     sql_list = [
@@ -3732,6 +3731,7 @@ def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk
     #  create nested dict with subjects count per exam, lang, dep, lvl, school and subjbase_id
     #  all schools of CUR and SXM only submitted subjects, not deleted # PR2021-08-19
     #  add extra for ETE and DOE PR2021-09-25
+    # called by: create_orderlist_xlsx, create_orderlist_per_school_xlsx, OrderlistsPublishView
 
 # - get schoolbase_id of ETE and DEX
 
@@ -3782,10 +3782,15 @@ def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk
 
     sql_keys = {'ey_code_int': sel_examyear_instance.code, 'requsr_country_id': requsr_country_pk}
     sql_studsubj_agg_list = [
-        "SELECT st.school_id, ey.country_id as ey_country_id, dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, sch.otherlang AS sch_otherlang,",
+        "SELECT st.school_id, ey.country_id as ey_country_id, dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id,",
+        "sch.otherlang AS sch_otherlang,",
 
         "lvl.abbrev AS lvl_abbrev,",  # for testing only, must also delete from group_by
-        "subj.base_id AS subjbase_id, si.ete_exam, subj.otherlang AS subj_otherlang, count(*) AS subj_count",
+        "subj.name AS subj_name,",  # for testing only, must also delete from group_by
+
+        #PR2021-10-12 subj.otherlang replaced by si.otherlang
+        # was: "subj.base_id AS subjbase_id, si.ete_exam, subj.otherlang AS subj_otherlang, count(*) AS subj_count",
+        "subj.base_id AS subjbase_id, si.ete_exam, si.otherlang AS si_otherlang, count(*) AS subj_count",
 
         "FROM students_studentsubject AS studsubj",
         "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
@@ -3806,18 +3811,28 @@ def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk
 # - skip DUO exams for SXM schools
         skip_ete_or_duo,
 
-        "GROUP BY st.school_id, ey.country_id, dep.base_id, lvl.base_id, lvl.abbrev, sch.otherlang, subj.base_id, si.ete_exam, subj.otherlang"
+        # PR2021-10-12 subj.otherlang replaced by si.otherlang
+        #  was: "GROUP BY st.school_id, ey.country_id, dep.base_id, lvl.base_id, lvl.abbrev, sch.otherlang, subj.base_id, si.ete_exam, subj.otherlang"
+        "GROUP BY st.school_id, ey.country_id, dep.base_id, lvl.base_id,",
+        "lvl.abbrev, subj.name,", # for testing only, must also delete from group_by
+        "sch.otherlang, subj.base_id, si.ete_exam, si.otherlang"
     ]
     sql_studsubj_agg = ' '.join(sql_studsubj_agg_list)
 
     sql_list = ["WITH studsubj AS (", sql_studsubj_agg, ")",
                 "SELECT studsubj.subjbase_id, studsubj.ete_exam,",
-                "CASE WHEN studsubj.subj_otherlang IS NULL OR studsubj.sch_otherlang IS NULL THEN 'ne' ELSE",
-                "CASE WHEN POSITION(studsubj.sch_otherlang IN studsubj.subj_otherlang) > 0 ",
+
+                # PR2021-10-12 subj.otherlang replaced by si.otherlang
+                #  was:
+                # "CASE WHEN studsubj.subj_otherlang IS NULL OR studsubj.sch_otherlang IS NULL THEN 'ne' ELSE",
+                # "CASE WHEN POSITION(studsubj.sch_otherlang IN studsubj.subj_otherlang) > 0 ",
+                # "THEN studsubj.sch_otherlang ELSE 'ne' END END AS lang,",
+                "CASE WHEN studsubj.si_otherlang IS NULL OR studsubj.sch_otherlang IS NULL THEN 'ne' ELSE",
+                "CASE WHEN POSITION(studsubj.sch_otherlang IN studsubj.si_otherlang) > 0 ",
                 "THEN studsubj.sch_otherlang ELSE 'ne' END END AS lang,",
 
                 "cntr.id AS country_id,",  # PR2021-09-24 added, for extra exams ETE and DoE
-                "sb.code AS sb_code, studsubj.lvl_abbrev,",  # for testing only
+                "sb.code AS sb_code, studsubj.lvl_abbrev, studsubj.subj_name,",  # for testing only
                 "sch.base_id AS schoolbase_id, studsubj.depbase_id, studsubj.lvlbase_id, studsubj.subj_count",
 
                 "FROM schools_school AS sch",
@@ -4197,25 +4212,29 @@ def calc_exams_tv02(subj_count, divisor, multiplier, max_exams):  # PR2021-09-25
 
     tv2_count = 0
     if subj_count:
+        try:
+            # PR2021-10-12 debug: gave ZeroDivisionError. "if divisor else 0" added.
+            total_divided = subj_count / divisor if divisor else 0
+            total_integer = int(total_divided)
+            # total_frac = (total_divided - total_integer)
+            total_roundup = total_integer + 1 if (total_divided - total_integer) else total_integer
+            # total_roundup = total_frac_roundup * order_round_to
+            tv2_count = total_roundup * multiplier
 
-        total_divided = subj_count / divisor
-        total_integer = int(total_divided)
-        # total_frac = (total_divided - total_integer)
-        total_roundup = total_integer + 1 if (total_divided - total_integer) else total_integer
-        # total_roundup = total_frac_roundup * order_round_to
-        tv2_count = total_roundup * multiplier
+            if tv2_count > max_exams:
+                tv2_count = max_exams
 
-        if tv2_count > max_exams:
-            tv2_count = max_exams
+            if logging_on:
+                logger.debug('subj_count:  ' + str(subj_count))
+                logger.debug('total_divided:  ' + str(total_divided))
+                logger.debug('total_integer:  ' + str(total_integer))
+                logger.debug('total_frac: ' + str(total_divided - total_integer))
+                logger.debug('total_roundup: ' + str(total_roundup))
+                logger.debug('tv2_count:   ' + str(tv2_count))
+                logger.debug('..........: ')
 
-        if logging_on:
-            logger.debug('subj_count:  ' + str(subj_count))
-            logger.debug('total_divided:  ' + str(total_divided))
-            logger.debug('total_integer:  ' + str(total_integer))
-            logger.debug('total_frac: ' + str(total_divided - total_integer))
-            logger.debug('total_roundup: ' + str(total_roundup))
-            logger.debug('tv2_count:   ' + str(tv2_count))
-            logger.debug('..........: ')
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
 
     return tv2_count
 # - end of calc_exams_tv02

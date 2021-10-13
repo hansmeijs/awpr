@@ -22,6 +22,7 @@ liNIU {
     list-style-type: none;
 }
 
+
 /* MENU */
 aXX {
     font-size: 14px;
@@ -865,6 +866,20 @@ aXX:hover{
     height: 320px;
     width: auto
 }
+
+.tbl_mailbox_h240_w_auto {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 240px;
+    width: auto
+}
+.tbl_mailbox_cc_h120_w_auto {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 120px;
+    width: auto
+}
+
 .tbl_h180_w360 {
     overflow-x: hidden;
     overflow-y: auto;
@@ -905,7 +920,6 @@ aXX:hover{
     overflow-x: hidden;
     overflow-y: auto;
 }
-
 
 .input_text, .tsa_transparent {
     background: transparent;
@@ -1008,6 +1022,12 @@ aXX:hover{
     border-radius: .25rem  !important;
     background-color: #fff3cd !important; /* #fff3cd; alert-warning background  */
     /*background-color: #fdd6ba !important; /* light organgeishbackground  */
+}
+
+.border_bg_white {
+    border: 1px solid #303024; /* dark dark Panta Rhei grey 48 48 36 */
+    border-radius: .25rem;
+    background-color: white;
 }
 
 .border_bg_transparent {

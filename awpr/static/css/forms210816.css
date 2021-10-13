@@ -89,7 +89,37 @@ note_flex_2 {
     flex: 4;
 }
 
+
+/* PR2021-10-11 from https://css-tricks.com/snippets/css/a-guide-to-flexbox/#basics-and-terminology */
+.flex_container_direction_rowreverse {
+/* PR2021-10-11 used in modmailmessage to get input filter user at the right when the box is large and on top when the box is small
+/* container display: flex  or inline-flex;  It enables a flex context for all its direct children. */
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+/* flex-direction: establishes the main-axis: row = hotizontal, left to right */
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: reverse;
+    -ms-flex-direction: row-reverse;
+    flex-direction: row-reverse;  /* option: row | row-reverse | column | column-reverse; */
+/* flex-wrap: By default, flex items will all try to fit onto one line. */
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;  /* flex-wrap: nowrap | wrap | wrap-reverse;  */
+/* justify-content */
+    -ms-flex-pack: distribute;
+    justify-content: space-around; /*center space-between; space-around PR2019-01-05 */
+/* align-items */
+     -webkit-box-align: stretch;
+     -ms-flex-align: stretch;
+     align-items: stretch;   /*   align-items: stretch | flex-start | flex-end | center |  */
+/* align-content */
+    -ms-flex-line-pack: start;
+    align-content: flex-start;  /* flex-start | flex-end | center | space-between | space-around | stretch; */
+}
+
+
 .flex_container {
+/* PR2021-10-11 from https://css-tricks.com/snippets/css/a-guide-to-flexbox/#basics-and-terminology
 /*PR2019-02-05 from https://css-tricks.com/snippets/css/a-guide-to-flexbox/*/
 
 /* Properties for the Parent (flex container):

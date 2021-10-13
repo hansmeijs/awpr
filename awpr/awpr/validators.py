@@ -140,10 +140,10 @@ def validate_unique_useremail(value, country, schoolbase, cur_user_id=None, skip
 
 
 # === validate_unique_username ========= PR2020-08-02 PR2021-06-29
-def validate_notblank_maxlength(value, max_length, caption):
+def validate_notblank_maxlength(value, max_length, caption, blank_allowed=False):
     #logger.debug ('=== validate_notblank_maxlength ====')
     msg_html = None
-    if not value:
+    if not value and not blank_allowed:
         msg_html = _('%(cpt)s cannot be blank.') % {'cpt': caption}
     elif max_length and len(value) > max_length:
         msg_html = _("%(cpt)s '%(val)s' is too long.<br>Maximum %(max)s characters.") \

@@ -7,6 +7,7 @@ let loc = {};
 let urls = {};
 
 let mailbox_rows = [];
+let mailbox_user_rows = [];
 let mailinglist_rows = [];
 
 const field_settings = {};
@@ -30,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_selected = "tsa_tr_selected";
 
     let mod_dict = {};
+    let mod_MMM_dict = {}
     let time_stamp = null; // used in mod add user
 
     let user_list = [];
@@ -49,30 +51,26 @@ document.addEventListener('DOMContentLoaded', function() {
     let el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    urls.url_mail_upload = get_attr_from_el(el_data, "data-url_mail_upload");
 
     let columns_hidden = [];
 
 // --- get field_settings
     const field_settings = {
-        btn_received: { field_caption: ["", "Sender", "From", "Subject", "Date_sent", "Attachment", "Status"],
+        mailbox: { field_caption: ["", "Sender", "From", "Subject", "Date_sent", "Attachment", "Status"],
                     field_names: ["select", "school_abbrev", "user_lastname", "header", "modifiedat"], //, "attachment", "status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["select", "text", "text",  "text",  "text", "toggle", "toggle"],
                     field_width:  ["020", "150", "240", "480",  "180", "090", "090"],
                     field_align: ["c", "l", "l", "l", "l",  "c",  "c"]},
-        btn_sent:  { field_caption: ["", "Sent_to", "Attn", "Subject", "Date_sent", "Attachment", "Status"],
-                    field_names: ["select", "school_abbrev", "user_lastname", "header", "modifiedat"], //, "attachment", "status"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text",  "text",  "text", "toggle", "toggle"],
-                    field_width:  ["020", "150", "240", "480",  "180", "090", "090"],
-                    field_align: ["c", "l", "l", "l", "l",  "c",  "c"]},
-        btn_mailinglist:  { field_caption: ["", "Organization", "From", "Subject", "Sent", "Attachment", "Status"],
+        mailinglist: { field_caption: ["", "Organization", "From", "Subject", "Sent", "Attachment", "Status"],
                     field_names: ["select", "sender_school", "sender_user", "header", "modifiedat"], //, "attachment", "status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["select", "text", "text",  "text",  "text", "toggle", "toggle"],
                     field_width:  ["020", "150", "240", "240",  "180", "090", "090"],
                     field_align: ["c", "l", "l", "l", "l",  "c",  "c"]}
         };
+
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
 
@@ -96,7 +94,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
-
 
         if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click",
@@ -130,22 +127,47 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MOD MAIL MESSAGE  ------------------------------------
         const el_MMM_header = document.getElementById("id_MMM_header");
         const el_MMM_input_container = document.getElementById("id_MMM_input_container");
-        const el_MMM_input_note = document.getElementById("id_MMM_input_note");
-        const el_MMM_notes_container = document.getElementById("id_MMM_notes_container");
-        const el_MMM_btn_save = document.getElementById("id_MMM_btn_save");
-        const el_MMM_internal = document.getElementById("id_MMM_memo_internal");
-        const el_MMM_external = document.getElementById("id_MMM_memo_external");
-        if(el_MMM_btn_save){
-            el_MMM_btn_save.addEventListener("click", function() {MMM_Save()}, false )};
-        if(el_MMM_internal){
-            el_MMM_internal.addEventListener("click", function() {MMM_SetInternalExternal("internal", el_MMM_internal)}, false)};
-        if(el_MMM_external){
-            el_MMM_external.addEventListener("click", function() {MMM_SetInternalExternal("external_btn", el_MMM_external)}, false );
-            for (let i = 0, el; el = el_MMM_external.children[i]; i++) {
-                el.addEventListener("click", function() {MMM_SetInternalExternal("external_icon", el)}, false );
-                add_hover(el)
-            };
+
+        const el_MMM_tblBody_recipient = document.getElementById("id_MMM_tblBody_recipient");
+        const el_MMM_tblBody_recipient_container = document.getElementById("id_MMM_tblBody_recipient_container");
+        if (el_MMM_tblBody_recipient_container){
+            el_MMM_tblBody_recipient_container.addEventListener("click", function() {MMM_tbl_to_cc_click("to")}, false );
         }
+        const el_MMM_tblBody_cc = document.getElementById("id_MMM_tblBody_cc");
+        const el_MMM_tblBody_cc_container = document.getElementById("id_MMM_tblBody_cc_container");
+        if (el_MMM_tblBody_cc_container){
+            el_MMM_tblBody_cc_container.addEventListener("click", function() {MMM_tbl_to_cc_click("cc")}, false );
+        };
+        const el_MMM_input_title = document.getElementById("id_MMM_input_title");
+        if (el_MMM_input_title){
+            el_MMM_input_title.addEventListener("keyup", function() {MMM_input_Keyup()}, false );
+        };
+        const el_MMM_input_message = document.getElementById("id_MMM_input_message");
+        if (el_MMM_input_message){
+            el_MMM_input_message.addEventListener("keyup", function() {MMM_input_Keyup()}, false );
+        };
+
+        const el_MMM_btn_container = document.getElementById("id_MMM_btn_container");
+        if (el_MMM_btn_container){
+            const btns = el_MMM_btn_container.children;
+            for (let i = 0, btn; btn = btns[i]; i++) {
+                const data_btn = get_attr_from_el(btn,"data-btn")
+                btn.addEventListener("click", function() {MMM_HandleBtnSelect(data_btn)}, false )
+            };
+        };
+
+        const el_MMM_tblBody_selectuser = document.getElementById("id_MMM_tblBody_selectuser");
+
+        const el_MMM_input_filter = document.getElementById("id_MMM_input_filter");
+        if (el_MMM_input_filter){
+            el_MMM_input_filter.addEventListener("keyup", function(event){
+                setTimeout(function() {MMM_input_filter_Keyup(el_MMM_input_filter)}, 50)});
+        };
+
+        const el_MMM_btn_save = document.getElementById("id_MMM_btn_save");
+        if(el_MMM_btn_save){el_MMM_btn_save.addEventListener("click", function() {MMM_Save("save")}, false)};
+        const el_MMM_btn_send = document.getElementById("id_MMM_btn_send");
+        if(el_MMM_btn_send){el_MMM_btn_send.addEventListener("click", function() {MMM_Save("send")}, false)};
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");
@@ -235,7 +257,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     b_ShowModMessages(response.messages);
                 }
                 if ("mailbox_rows" in response) {
-                    mailbox_rows = response.mailbox_rows
+                    mailbox_rows = response.mailbox_rows;
+                    mailbox_user_rows = response.mailbox_user_rows;
                 console.log("mailbox_rows", mailbox_rows);
                 };
 
@@ -268,15 +291,15 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
 //=========  HandleBtnSelect  ================ PR2020-09-19 PR2021-08-01
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ");
-        console.log( "skip_upload: ", skip_upload);
+        //console.log( "===== HandleBtnSelect ========= ");
+        //console.log( "skip_upload: ", skip_upload);
 
 // ---  get  selected_btn
         // set to default "btn_user" when there is no selected_btn
         // this happens when user visits page for the first time
         // includes is to catch saved btn names that are no longer in use
-        selected_btn = (data_btn && ["btn_received", "btn_sent", "btn_mailinglist"].includes(data_btn)) ? data_btn : "btn_received"
-        console.log( "selected_btn: ", selected_btn);
+        selected_btn = (data_btn && ["btn_received", "btn_sent", "btn_draft", "btn_mailinglist"].includes(data_btn)) ? data_btn : "btn_received"
+        //console.log( "selected_btn: ", selected_btn);
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
@@ -301,8 +324,8 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
         //console.log( "tr_clicked.id: ", tr_clicked, typeof tr_clicked.id);
 
-        selected_user_dict = get_datadict_from_mapid(tr_clicked.id);
-        console.log( "selected_user_dict: ", selected_user_dict);
+        //selected_user_dict = get_datadict_from_mapid(tr_clicked.id);
+        //console.log( "selected_user_dict: ", selected_user_dict);
 
 // ---  deselect all highlighted rows - also tblFoot , highlight selected row
         DeselectHighlightedRows(tr_clicked, cls_selected);
@@ -310,13 +333,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get existing data_dict from data_rows
         //console.log( "tr_clicked.id: ", tr_clicked.id);
-        const data_dict = get_datadict_from_mapid(tr_clicked.id)
+        //const data_dict = get_datadict_from_mapid(tr_clicked.id)
         //console.log( "data_dict: ", data_dict);
 
 // ---  update selected_user_pk
-        const tblName = get_tblName_from_mapid(data_dict.mapid);
+        //const tblName = get_tblName_from_mapid(data_dict.mapid);
 
-        selected_user_pk = data_dict.id;
+        //selected_user_pk = data_dict.id;
 
         //console.log( "selected_userpermit_pk: ", selected_userpermit_pk, typeof selected_userpermit_pk);
         //console.log( "selected_user_pk: ", selected_user_pk, typeof selected_user_pk);
@@ -327,7 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "===== FillTblRows  === ");
         const tblName = get_tblName_from_selectedBtn();
 
-        const field_setting = field_settings[selected_btn];
+        const field_setting = field_settings[tblName];
         const data_rows = get_data_rows(tblName);
 
         console.log( "selected_btn", selected_btn);
@@ -346,8 +369,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if(data_rows && data_rows.length){
             for (let i = 0, map_dict; map_dict = data_rows[i]; i++) {
             // skip sent items in inbox, skip inbox item in sent box
-                const skip_row = (selected_btn === "btn_received") ? !!map_dict.issentmail :
-                                 (selected_btn === "btn_sent") ? !map_dict.issentmail : false;
+                const skip_row = (selected_btn === "btn_received") ? !map_dict.isreceivedmail :
+                                 (selected_btn === "btn_sent") ? !map_dict.issentmail :
+                                 (selected_btn === "btn_draft") ? map_dict.issentmail || map_dict.isreceivedmail:
+                                 (selected_btn === "btn_mailinglist") ? false : false;
+
+
                 if(!skip_row){
                     CreateTblRow(tblName, field_setting, map_dict);
                 }
@@ -360,8 +387,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-03-23  PR2021-08-01
     function CreateTblHeader(field_setting) {
-        console.log("===  CreateTblHeader ===== ");
-        console.log("field_setting", field_setting);
+        //console.log("===  CreateTblHeader ===== ");
+        //console.log("field_setting", field_setting);
 
         const column_count = field_setting.field_names.length;
 
@@ -468,10 +495,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_datatable.insertRow(row_index);
-        tblRow.id = map_id
+        if(map_dict.id){tblRow.id = map_dict.id}
 
 // --- add data attributes to tblRow
-        tblRow.setAttribute("data-pk", map_dict.id);
+        //tblRow.setAttribute("data-pk", map_dict.id);
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
         tblRow.setAttribute("data-ob1", ob1);
@@ -523,7 +550,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         // TODO add select multiple users option PR2020-08-18
 
                     } else if (["school_abbrev", "user_lastname", "header", "modifiedat", "attachment", "status"].includes(field_name)){
-                        el.addEventListener("click", function() {MUA_Open("update", el)}, false)
+                        el.addEventListener("click", function() {MMM_Open(el)}, false)
                         el.classList.add("pointer_show");
                         add_hover(el);
                     } else if (field_name === "is_active") {
@@ -892,57 +919,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //###########################################################################
 
-//=========  RefreshDataRowsAfterUpload  ================ PR2021-08-05
-function RefreshDataRowsAfterUpload(response) {
-    //console.log(" --- RefreshDataRowsAfterUpload  ---");
-    //console.log("response:", response);
-    const is_test = (!!response && !!response.is_test) ;
-    if(!is_test && response && "updated_user_rows" in response) {
-        RefreshDataRows("user", response.updated_user_rows, user_rows, true)  // true = update
+
+//=========  RefreshMailboxRowsAfterUpload  ================ PR2021-10-12
+function RefreshMailboxRowsAfterUpload(response) {
+    console.log(" --- RefreshMailboxRowsAfterUpload  ---");
+    console.log("response:", response);
+    if(response && "updated_mailbox_rows" in response) {
+        RefreshDataRows("mailbox", response.updated_mailbox_rows, mailbox_rows, true)  // true = update
     }
 
-}  // RefreshDataRowsAfterUpload
-
-//=========  RefreshDataRowsPermitsAfterUpload  ================ PR2021-07-20
-    function RefreshDataRowsPermitsAfterUpload(response) {
-        //console.log(" --- RefreshDataRowsPermitsAfterUpload  ---");
-        //console.log( "response", response);
-
-        const is_test = (response && response.is_test);
-        //console.log( "is_test", is_test);
-        if (response && "updated_user_rows" in response) {
-            const updated_user_rows = response.updated_user_rows;
-        }
-
-    }  //  RefreshDataRowsPermitsAfterUpload
-
-// +++++++++++++++++ REFRESH PERMIT MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
-//=========  refresh_permit_map  ================ PR2021-03-18
-    function refresh_permit_map(updated_permitlist) {
-        //console.log(" --- refresh_permit_map  ---");
-        //console.log( "updated_permitlist", updated_permitlist);
-        if (updated_permitlist) {
-            for (let i = 0, update_dict; update_dict = updated_permitlist[i]; i++) {
-               // refresh_usermap_item(permit_map, update_dict);
-               //RefreshDatarowItem(tblName, field_setting, update_dict, data_rows)
-            }
-        }
-    }  //  refresh_permit_map
+}  // RefreshMailboxRowsAfterUpload
 
 
 // +++++++++++++++++ REFRESH DATA ROWS ++++++++++++++++++++++++++++++++++++++++++++++++++
 
-//=========  RefreshDataRows  ================ PR2021-08-01
-    function RefreshDataRows(page_tblName, update_rows, data_rows, is_update) {
-        //console.log(" --- RefreshDataRows  ---");
-        //console.log("page_tblName", page_tblName);
+//=========  RefreshDataRows  ================ PR2021-10-12
+    function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
+        console.log(" --- RefreshDataRows  ---");
+        console.log("tblName", tblName);
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
 
         if (update_rows && update_rows.length ) {
-            const field_setting = field_settings[page_tblName];
-            //console.log("field_setting", field_setting);
+            const field_setting = field_settings[tblName];
+            console.log("field_setting", field_setting);
             for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
-                RefreshDatarowItem(page_tblName, field_setting, update_dict, data_rows);
+                RefreshDatarowItem(tblName, field_setting, update_dict, data_rows);
             }
         } else if (!is_update) {
             // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
@@ -953,10 +954,10 @@ function RefreshDataRowsAfterUpload(response) {
 
 
 //=========  RefreshDatarowItem  ================ PR2021-08-01
-    function RefreshDatarowItem(page_tblName, field_setting, update_dict, data_rows) {
-        //console.log(" --- RefreshDatarowItem  ---");
-        //console.log("page_tblName", page_tblName);
-        //console.log("update_dict", update_dict);
+    function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
+        console.log(" --- RefreshDatarowItem  ---");
+        console.log("tblName", tblName);
+        console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -984,7 +985,7 @@ function RefreshDataRowsAfterUpload(response) {
                 //$("#id_mod_subject").modal("hide");
             }
 
-            // NIU: const col_hidden = (columns_hidden[page_tblName]) ? columns_hidden[page_tblName] : [];
+            // NIU: const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
 
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
@@ -1005,7 +1006,7 @@ function RefreshDataRowsAfterUpload(response) {
                 data_rows.push(update_dict)
 
     // ---  create row in table., insert in alphabetical order
-                const new_tblRow = CreateTblRow(page_tblName, field_setting, update_dict)
+                const new_tblRow = CreateTblRow(tblName, field_setting, update_dict)
 
     // ---  scrollIntoView,
                 if(new_tblRow){
@@ -1080,7 +1081,7 @@ function RefreshDataRowsAfterUpload(response) {
                                 //--- delete current tblRow
                                     tblRow.parentNode.removeChild(tblRow);
                                 //--- insert row new at new position
-                                    tblRow = CreateTblRow(page_tblName, field_setting, update_dict)
+                                    tblRow = CreateTblRow(tblName, field_setting, update_dict)
                                 }
 
                 // loop through cells of row
@@ -1336,57 +1337,110 @@ function RefreshDataRowsAfterUpload(response) {
         console.log("===  MMM_Open  =====") ;
         console.log("el_input", el_input) ;
 
-    // get has_note from grade_map
-       // const grade_dict = get_datadict_by_el(el_input);
-        //const has_note = !!get_dict_value(grade_dict, ["note_status"])
+        mod_MMM_dict = {select_table: null};
 
-// reset notes_container
-        //el_MMM_notes_container.innerText = null;
+        MMM_HandleBtnSelect();
 
-// reset input_note
-        //el_MMM_input_note.value = null;
+// reset input fields
+        el_MMM_tblBody_selectuser.innerText = null;
+        el_MMM_tblBody_recipient.innerText = null;
+        el_MMM_tblBody_cc.innerText = null;
+
+        el_MMM_input_title.value = null;
+        el_MMM_input_message.value = null;
+        // TOD reset attachments
 
 // --- show input element for note, only when user has permit
-        const has_permit_intern_extern = (permit_dict.permit_write_note_intern || permit_dict.permit_write_note_extern)
         let may_open_modnote =  true // has_permit_intern_extern || (permit_dict.permit_read_note && has_note);
         if(may_open_modnote){
-            // only show input block when  has_permit_intern_extern
-            //add_or_remove_class(el_MMM_input_container, cls_hide, !has_permit_intern_extern)
-            // hide external note if no permit write_note_extern
-            //add_or_remove_class(el_MMM_external, cls_hide, !permit_dict.permit_write_note_extern)
 
             // hide 'x' option when not inspection
             //const el_MMM_memo_icon4 = document.getElementById("id_MMM_memo_icon4")
            // add_or_remove_class(el_MMM_memo_icon4, cls_hide, !permit_dict.requsr_role_insp)
-
+            const mailto_list = [];
+            const mailcc_list = [];
     // get tr_selected
-            //let tr_selected = get_tablerow_selected(el_input)
+            let tr_selected = get_tablerow_selected(el_input)
+            const selected_pk = (tr_selected && Number(tr_selected.id)) ? Number(tr_selected.id) : null;
+        console.log("tr_selected", tr_selected) ;
+
+// --- get data_dict from tblName and selected_pk
+            const data_dict = get_datadict_from_pk("mailbox", selected_pk)
+            console.log("data_dict", data_dict);
+            if (!isEmpty(data_dict)){
+                el_MMM_tblBody_recipient.innerText = null;
+                el_MMM_tblBody_cc.innerText = null;
+                el_MMM_input_title.value = data_dict.header;
+                el_MMM_input_message.value = data_dict.body;
+
+                mod_MMM_dict.mailbox_pk = data_dict.id;
+
+// --- fill mailto_list and mailcc_list
+                if(data_dict.mailto_user){
+                    const arr = data_dict.mailto_user.split(";");
+                    for (let i = 0, str; str = arr[i]; i++) {
+                        if(Number(str)){mailto_list.push(Number(str))};
+                    };
+                };
+                if(data_dict.mailcc_user){
+                    const arr = data_dict.mailcc_user.split(";");
+                    for (let i = 0, str; str = arr[i]; i++) {
+                        if(Number(str)){mailcc_list.push(Number(str))};
+                    };
+                };
+            };
 
     // download existing studentsubjectnote_rows of this studsubj
                 // will be filled in MMM_FillNotes
 
-    // show loader
-            //const el_MMM_loader = document.getElementById("id_MMM_loader");
-            //add_or_remove_class(el_MMM_loader, cls_hide, false);
-               // const upload_dict = {studsubj_pk: grade_dict.studsubj_id};
-                //UploadChanges(upload_dict, urls.url_studentsubjectnote_download)
+// set or reset list with recipient and cc
+        for (let i = 0, data_dict; data_dict = mailbox_user_rows[i]; i++) {
+            data_dict.selected = (mailto_list.includes(data_dict.id)) ? "to" :
+                                 (mailcc_list.includes(data_dict.id)) ? "cc" : null;
+        };
 
-            //    if (el_input){ setTimeout(function (){ el_MMM_input_note.focus() }, 50)};
 
-    // get info from grade_map
-                $("#id_mod_mailmessage").modal({backdrop: true});
+// - fill table with all users
+            MMM_userlist_Fill_SelectTable()
 
-        }  // if(permit_dict.permit_read_note)
+// - enable btn send
+            MMM_enable_btn_send();
+
+            $("#id_mod_mailmessage").modal({backdrop: true});
+        }
     }  // MMM_Open
 
-//========= MODAL MAIL MESSAGE Save============== PR2020-10-15
-    function MMM_Save () {
-        //console.log("===  MMM_Save  =====");
-        const filename = document.getElementById("id_MMM_filedialog").value;
+//========= MMM_Save============== PR2021-10-10=1
+    function MMM_Save (save_or_send) {
+        console.log("===  MMM_Save  =====");
+        const el_MMM_filedialog = document.getElementById("id_MMM_filedialog")
+        const filename = el_MMM_filedialog.value;
 
-        if(permit_dict.permit_write_note_intern || permit_dict.permit_permit_write_note_extern){
-            const note = el_MMM_input_note.value;
-            const note_status = (!mod_note_dict.is_internal) ? "1_" + mod_note_dict.sel_icon : "0_1";
+        // if(permit_dict.permit_write_note_intern || permit_dict.permit_permit_write_note_extern){
+        if (true){
+            const header_str = el_MMM_input_title.value;
+            const body_str = el_MMM_input_message.value;
+
+
+        console.log("mailbox_user_rows", mailbox_user_rows);
+// get recipient and cc list
+        const recipient_list = [];
+        const cc_list = [];
+        for (let i = 0, data_dict; data_dict = mailbox_user_rows[i]; i++) {
+            if(data_dict.selected === "to"){
+                if(!recipient_list.includes(data_dict.id)){
+                    recipient_list.push(data_dict.id);
+                };
+            } else if(data_dict.selected === "cc"){
+                if(!cc_list.includes(data_dict.id)){
+                    cc_list.push(data_dict.id);
+                };
+            };
+        };
+        if(recipient_list.length){recipient_list.sort()};
+        if(cc_list.length){cc_list.sort()};
+        console.log("recipient_list", recipient_list);
+        console.log("cc_list", cc_list);
 
 // get attachment info
             const file = document.getElementById("id_MMM_filedialog").files[0];  // file from input
@@ -1394,29 +1448,268 @@ function RefreshDataRowsAfterUpload(response) {
             const file_name = (file) ? file.name : null;
             const file_size = (file) ? file.size : 0;
 
+        console.log("file_name", file_name);
            // may check size or type here with
             // ---  upload changes
-            const upload_dict = { table: mod_note_dict.table,
-                                   create: true,
-                                   studsubj_pk: mod_note_dict.studsubj_pk,
-                                   examperiod: mod_note_dict.examperiod,
-                                   note: note,
-                                   note_status: note_status,
-                                   is_internal_note: mod_note_dict.is_internal,
+            const upload_dict = { table: mod_MMM_dict.table,
+                                   mode: save_or_send,
+                                   mailbox_pk: ( (mod_MMM_dict.mailbox_pk) ? mod_MMM_dict.mailbox_pk : null ),
+                                   header: header_str,
+                                   body: body_str,
+                                   mailto: recipient_list,
+                                   mailcc: cc_list,
                                    file_type: file_type,
                                    file_name: file_name,
                                    file_size: file_size
                                    };
+        console.log("upload_dict", upload_dict);
             const upload_json = JSON.stringify (upload_dict)
-
-            if(note || file_size){
-                const upload = new Upload(upload_json, file, urls.url_studentsubjectnote_upload);
-                upload.doUpload();
+            const url_str = urls.url_mail_upload;
+        console.log("url_str", url_str);
+            if(body_str || file_size){
+                const upload = new b_Upload(upload_json, file, url_str);
+                upload.doUpload(RefreshMailboxRowsAfterUpload);
            }
        }
 // hide modal
-        $("#id_mod_note").modal("hide");
+        $("#id_mod_mailmessage").modal("hide");
     }  // MMM_Save
+
+
+//=========  MMM_HandleBtnSelect  ================ PR2021-10-11
+    function MMM_HandleBtnSelect(data_btn) {
+        console.log( "===== MMM_HandleBtnSelect ========= ");
+
+// ---  get  selected_btn
+        // set to default "btn_user" when there is no selected_btn
+        // this happens when user visits page for the first time
+        // includes is to catch saved btn names that are no longer in use
+        mod_MMM_dict.selected_btn = (data_btn && ["btn_message", "btn_userlist", "btn_recipientlist"].includes(data_btn)) ? data_btn : "btn_message"
+        console.log( "mod_MMM_dict.selected_btn: ", mod_MMM_dict.selected_btn);
+
+// ---  highlight selected button
+        highlight_BtnSelect(el_MMM_btn_container, mod_MMM_dict.selected_btn)
+        //const tab_str = selected_btn.replace("btn_", "tab_");
+
+// ---  make either recipient table or cc table lightblue, not when btn = message
+        if (mod_MMM_dict.selected_btn === "btn_message"){
+            mod_MMM_dict.select_table = null;
+        } else if (!mod_MMM_dict.select_table){
+            mod_MMM_dict.select_table = "to";
+        };
+        console.log( "mod_MMM_dict.select_table", mod_MMM_dict.select_table);
+        MMM_set_table_to_cc_selected();
+
+        console.log( "el_MMM_tblBody_recipient", el_MMM_tblBody_recipient);
+
+// ---  show only the elements that are used in this tab
+        const tab_str = "tab_" + mod_MMM_dict.selected_btn.slice(4);
+        console.log( "tab_str: ", tab_str);
+        b_show_hide_selected_elements_byClass("tab_show", tab_str, el_MMM_input_container)
+
+// ---  fill datatable
+        //FillTblRows();
+
+    }  // MMM_HandleBtnSelect
+
+//========= MMM_userlist_Fill_SelectTable  ============= PR2021-10-11
+    function MMM_userlist_Fill_SelectTable() {
+        //console.log("===== MMM_userlist_Fill_SelectTable ===== ");
+
+// ---  reset tblBody selectuser, recipient and cc
+        el_MMM_tblBody_selectuser.innerText = null;
+        el_MMM_tblBody_recipient.innerText = null;
+        el_MMM_tblBody_cc.innerText = null;
+        const selected_pk = null;
+
+        const data_rows = mailbox_user_rows;
+        const el_input = el_MMM_input_filter;
+
+// ---  loop through dictlist
+        //PR 2021-07-23 was: for (const [map_id, map_dict] of data_map.entries()) {
+        for (let i = 0, data_dict, tblBody_select; data_dict = data_rows[i]; i++) {
+            tblBody_select = (data_dict.selected === "to") ? el_MMM_tblBody_recipient :
+                             (data_dict.selected === "cc") ? el_MMM_tblBody_cc : el_MMM_tblBody_selectuser;
+            MMM_userlist_Create_SelectRow(tblBody_select, data_dict, selected_pk);
+        }
+    } // MMM_userlist_Fill_SelectTable
+
+//========= MMM_userlist_Create_SelectRow  ============= PR2020-12-18 PR2020-07-14
+    function MMM_userlist_Create_SelectRow(tblBody_select, data_dict, selected_pk) {
+        //console.log("===== MMM_userlist_Create_SelectRow ===== ");
+        //console.log("data_dict", data_dict);
+
+//--- get info from data_dict
+        const user_pk_int = data_dict.id;
+        const school_code = data_dict.school_code;
+        const school_name = data_dict.school_abbrev;
+        const user_name = data_dict.last_name;
+
+        const is_selected_row = (user_pk_int === selected_pk);
+        const just_selected = (data_dict.just_selected) ? data_dict.just_selected : false;
+
+        let show_row = false;
+        if (mod_MMM_dict.filter){
+            if (school_code && school_code.toLowerCase().includes(mod_MMM_dict.filter)) { show_row = true };
+            if (!show_row && school_name && user_name.toLowerCase().includes(mod_MMM_dict.filter)) { show_row = true };
+            if (!show_row && user_name && user_name.toLowerCase().includes(mod_MMM_dict.filter)) { show_row = true };
+        } else {
+            show_row = true;
+        }
+        if(show_row){
+
+    // ---  lookup index where this row must be inserted
+            let ob1 = "", ob2 = "", row_index = -1;
+            if (data_dict.school_code) { ob1 = data_dict.school_code.toLowerCase()};
+            if (data_dict.last_name) { ob2 = data_dict.last_name.toLowerCase()};
+            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, "", loc.user_lang);
+
+    //--------- insert tblBody_select row at row_index
+            const map_id = "userpk_" + user_pk_int
+            const tblRow = tblBody_select.insertRow(row_index);
+
+            tblRow.id = map_id;
+            tblRow.setAttribute("data-pk", user_pk_int);
+            tblRow.setAttribute("data-code", school_code);
+            tblRow.setAttribute("data-name", school_name);
+            tblRow.setAttribute("data-user_name", user_name);
+
+    // ---  add data-sortby attribute to tblRow, for ordering new rows
+            tblRow.setAttribute("data-ob1", ob1);
+            tblRow.setAttribute("data-ob2", ob2);
+            //tblRow.setAttribute("data-ob3", ob3);
+
+            const class_selected = (is_selected_row) ? cls_selected: cls_bc_transparent;
+            tblRow.classList.add(class_selected);
+
+    //- add hover to select row
+            add_hover(tblRow)
+
+    // --- add first td to tblRow.
+            let td = tblRow.insertCell(-1);
+            let el_div = document.createElement("div");
+                el_div.classList.add("pointer_show")
+                el_div.innerText = school_code;
+                el_div.classList.add("tw_075", "px-1")
+                td.appendChild(el_div);
+            td.classList.add("tsa_bc_transparent")
+
+    // --- add second td to tblRow.
+            td = tblRow.insertCell(-1);
+            el_div = document.createElement("div");
+                el_div.classList.add("pointer_show")
+                el_div.innerText = school_name;
+                el_div.classList.add("tw_120", "px-1")
+                td.appendChild(el_div);
+            td.classList.add("tsa_bc_transparent")
+
+    // --- add third td to tblRow.
+            td = tblRow.insertCell(-1);
+            el_div = document.createElement("div");
+                el_div.classList.add("pointer_show")
+                el_div.innerText = user_name;
+                el_div.classList.add("tw_180", "px-1")
+                td.appendChild(el_div);
+            td.classList.add("tsa_bc_transparent")
+
+    //--------- add addEventListener
+            tblRow.addEventListener("click", function() {MMM_userlist_SelectItem(tblRow, data_dict)}, false);
+
+    // --- if added / removed row highlight row for 1 second
+            if (just_selected) {
+                data_dict.just_selected = false;
+                ShowClassWithTimeout(tblRow, "bg_selected_blue", 1000) ;
+            };
+        };
+    } // MMM_userlist_Create_SelectRow
+
+//=========  MMM_userlist_SelectItem  ================ PR2020-12-17
+    function MMM_userlist_SelectItem(tblRow, data_dict) {
+        console.log( "===== MMM_userlist_SelectItem ========= ");
+        console.log( "tblRow", tblRow);
+        console.log( "data_dict", data_dict);
+        // all data attributes are now in tblRow, not in el_select = tblRow.cells[0].children[0];
+        // after selecting row, values are stored in input box
+
+// ---  set data_dict.selected
+        // data_dict.selected = (data_dict.selected  is "to", "cc" or null
+        data_dict.selected = (!data_dict.selected) ? mod_MMM_dict.select_table : null;
+        data_dict.just_selected = true;
+
+// - fill tables with users
+        MMM_userlist_Fill_SelectTable()
+
+// - enable /disable save btn
+        MMM_enable_btn_send();
+    }  // MMM_userlist_SelectItem
+
+//=========  MMM_input_filter_Keyup  ================ PR2020-09-19  PR2021-10-11
+    function MMM_input_filter_Keyup(el_input) {
+        console.log( "===== MMM_input_filter_Keyup  ========= ");
+        console.log( "el_input", el_input);
+// ---  get value of new_filter
+        mod_MMM_dict.filter = (el_input.value) ? el_input.value.toLowerCase() : null;
+        MMM_userlist_Fill_SelectTable()
+
+    }; // MMM_input_filter_Keyup
+
+
+//=========  MMM_input_Keyup  ================ PR2020-09-19  PR2021-10-12
+    function MMM_input_Keyup() {
+        console.log( "===== MMM_input_Keyup  ========= ");
+// - enable /disable save btn
+        MMM_enable_btn_send();
+    }; // MMM_input_Keyup
+
+
+
+//=========  MMM_tbl_to_cc_click  ================ PR2021-10-11
+    function MMM_tbl_to_cc_click(to_cc) {
+        console.log( "===== MMM_tbl_to_cc_click  ========= ");
+        console.log( "to_cc", to_cc);
+
+// ---  set data_dict.selected
+        // data_dict.selected = (data_dict.selected  is "to", "cc" or null
+        mod_MMM_dict.select_table = to_cc;
+        MMM_set_table_to_cc_selected();
+
+    }  // MMM_tbl_to_cc_click
+
+//========= MMM_set_table_to_cc_selected  ============= PR2021-10-11
+    function MMM_set_table_to_cc_selected() {
+        add_or_remove_class(el_MMM_tblBody_recipient.parentNode.parentNode, "border_bg_lightblue", mod_MMM_dict.select_table === "to", "border_bg_transparent");
+        add_or_remove_class(el_MMM_tblBody_cc.parentNode.parentNode, "border_bg_lightblue", mod_MMM_dict.select_table === "cc", "border_bg_transparent");
+    };
+
+//========= MMM_enable_btn_send  ============= PR2021-10-12
+    function MMM_enable_btn_send() {
+        //console.log( "===== MMM_tbl_to_cc_click  ========= ");
+        //console.log( "el_MMM_input_title", el_MMM_input_title);
+        //console.log( "el_MMM_input_message", el_MMM_input_message);
+
+        let disable_btn_send = false;
+        if (!el_MMM_input_title.value) {
+            disable_btn_send = true;
+        //console.log( "el_MMM_input_title disable_btn_send", disable_btn_send);
+        } else if (!el_MMM_input_message.value) {
+            disable_btn_send = true;
+        //console.log( " el_MMM_input_message disable_btn_send", disable_btn_send);
+        } else {
+    // - check if there are any recipients
+            let has_recipients = false;
+            for (let i = 0, data_dict; data_dict = mailbox_user_rows[i]; i++) {
+                if(data_dict.selected === "to"){
+                    has_recipients = true;
+                };
+            };
+        //console.log( "has_recipients", has_recipients);
+            disable_btn_send = !has_recipients;
+        }
+        el_MMM_btn_send.disabled = disable_btn_send;
+    };
+
+// +++++++++++++++++ END OF SELECT USER FROM USERLIST ++++++++++++++++++++++++++++++++
+
 //###########################################################################
 
 //========= get_datadict_with_index_from_mapid  ====== PR2021-08-01
@@ -1465,14 +1758,11 @@ function RefreshDataRowsAfterUpload(response) {
     function get_tblName_from_selectedBtn() {  // PR2021-09-12
         // HandleBtnSelect sets tblName to default "user" when there is no selected_btn
         // this happens when user visits page for the first time
-        return  (selected_btn === "btn_received") ? "mailbox" :
-                (selected_btn === "btn_sent") ? "mailbox" :
-                (selected_btn === "btn_mailinglist") ? "mailinglist" : null;
+        return (selected_btn === "btn_mailinglist") ? "mailinglist" : "mailbox";
     }
 
-    function get_data_rows(tblName) {  //PR2021-09-12
-        return (tblName === "mailbox") ? mailbox_rows :
-                (tblName === "mailinglist") ? mailinglist_rows : null;
+    function get_data_rows(tblName) {  // PR2021-09-12 PR2021-10-11
+        return  (selected_btn === "btn_mailinglist") ? mailinglist_rows : mailbox_rows;
     }
 
     function get_tblName_from_mapid(map_id) {  //PR2021-08-01

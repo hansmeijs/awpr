@@ -400,6 +400,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Message'] = _('Message')
         dict['Messages'] = _('Messages')
 
+        dict['Select_a_user'] = _('Select a user')
+
+
 # ====== PAGE SUBJECTS ========================= PR2020-09-30
     if 'page_subject' in page_list:
 

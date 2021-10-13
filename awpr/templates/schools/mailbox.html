@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Messages' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/mailbox210927.js' %}"></script>
+    <script src="{% static 'js/mailbox211013.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -77,6 +77,8 @@
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_settings_upload="{% url 'url_settings_upload' %}"
+                data-url_mail_upload="{% url 'url_mail_upload' %}"
+
             >
         </div>
     {% endif %}

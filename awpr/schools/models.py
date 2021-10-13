@@ -107,6 +107,18 @@ class AwpBaseModel(Model):
         super(AwpBaseModel, self).delete(*args, **kwargs)
 
 
+
+class Systemupdate(AwpBaseModel):
+    # PR2021-10-12 stores name of the systemupdate once it has run, to prevent running multiple times
+    objects = AwpModelManager()
+
+    name = CharField(db_index=True, max_length=c.MAX_LENGTH_NAME)
+
+
+    def __str__(self):
+        return self.name
+
+
 class Country(AwpBaseModel):
     # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
     objects = AwpModelManager()
@@ -606,7 +618,7 @@ class Mailmessage(AwpBaseModel):
     sender_user = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
     sender_school = ForeignKey(School, related_name='+', null=True, on_delete=SET_NULL)
 
-    header = CharField(max_length=80, null=True, blank=True)
+    header = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True, blank=True)
     body = CharField(max_length=2048, null=True, blank=True)
     mailto_user = CharField(max_length=2048, null=True, blank=True)
     mailcc_user = CharField(max_length=2048, null=True, blank=True)
@@ -626,7 +638,7 @@ class Mailattachment(AwpBaseModel):
 class Mailbox(AwpBaseModel):
     objects = AwpModelManager()
 
-    # user is recipient when issentmail = False, is sender when issentmail = True
+    # user is recipient when isreceivedmail = True, is sender when draft (isreceivedmail=False and issentmail = False)
     user = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=CASCADE)
     mailmessage = ForeignKey(Mailmessage, related_name='+', on_delete=CASCADE)
     read = BooleanField(default=False)
@@ -634,6 +646,7 @@ class Mailbox(AwpBaseModel):
     issentmail = BooleanField(default=False)
     isreceivedmail = BooleanField(default=False)
     # isdraftmail when issentmail and isreceivedmail are False
+
 
 def delete_instance(instance, msg_list, error_list, request, this_txt=None, header_txt=None):
     logging_on = False  # s.LOGGING_ON

@@ -493,7 +493,9 @@ def copy_subjects_from_prev_examyear(request, prev_examyear, new_examyear, log_l
                     sequence=prev_subject.sequence,
                     depbases=prev_subject.depbases,
 
-                    otherlang=prev_subject.otherlang,
+                    # PR201-10-11 moved from Subject to Schemitem
+                    #otherlang=prev_subject.otherlang,
+
                     addedbyschool=prev_subject.addedbyschool,
 
                     modifiedby_id=modifiedby_id,
@@ -641,6 +643,8 @@ def copy_schemeitems_from_prev_examyear(request, prev_examyear, mapped_schemes, 
                     subjecttype_id=new_subjecttype_pk,
 
                     ete_exam=prev_si.ete_exam,
+                    # PR201-10-11 moved from Subject to Schemeitem
+                    otherlang=prev_si.otherlang,
 
                     gradetype=prev_si.gradetype,
                     weight_se=prev_si.weight_se,

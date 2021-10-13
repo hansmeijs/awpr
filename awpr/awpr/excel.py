@@ -769,6 +769,7 @@ def create_ex1_mapped_subject_rows(examyear, school, department):  # PR2021-08-0
 
 @method_decorator([login_required], name='dispatch')
 class OrderlistPerSchoolDownloadView(View):  # PR2021-09-01
+    # function creates Ex1 xlsx file based on settings in usersetting
 
     def get(self, request):
         logging_on = s.LOGGING_ON
@@ -776,7 +777,6 @@ class OrderlistPerSchoolDownloadView(View):  # PR2021-09-01
             logger.debug(' ')
             logger.debug(' ============= OrderlistPerSchoolDownloadView ============= ')
 
-    # function creates, Ex1 xlsx file based on settings in usersetting
         response = None
 
         if request.user and request.user.country and request.user.schoolbase:
@@ -787,11 +787,9 @@ class OrderlistPerSchoolDownloadView(View):  # PR2021-09-01
             activate(user_lang)
 
 # - get selected examyear,from usersettings
-            # exames are only ordered in first exam period
+            # orderlist is only created in first exam period
             sel_examyear_instance, sel_examperiodNIU = \
                 dl.get_selected_examyear_examperiod_from_usersetting(request)
-            if logging_on:
-                logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance))
 
             if sel_examyear_instance:
                 response = create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang, request)
@@ -906,7 +904,7 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang, req
         #           'lvl_id': 63, 'lvl_abbrev': 'TKL', 'subj_id': 998, 'subjbase_code': 'ne', 'subj_name': 'Nederlandse taal', '
         #           subj_published_arr': [None], 'lang': 'ne', 'count': 7}
 
-# get text from examyearsetting
+# - get text from examyearsetting
     settings = af.get_exform_text(sel_examyear_instance, ['exform', 'ex1'])
 
 # - get depbase dictlist

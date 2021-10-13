@@ -240,6 +240,12 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         examyear_pk=sel_examyear.pk,
                         request=request
                     )
+                    datalists['mailbox_user_rows'] = school_dicts.create_mailbox_user_rows(
+                        examyear_pk=sel_examyear.pk,
+                        request=request
+                    )
+
+
 
 
         elapsed_seconds = int(1000 * (timer() - starttime)) / 1000

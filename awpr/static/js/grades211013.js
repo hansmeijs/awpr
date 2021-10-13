@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", function() {
     urls.url_download_grade_icons = get_attr_from_el(el_data, "data-download_grade_icons_url");
     urls.url_grade_download_ex2a = get_attr_from_el(el_data, "data-url_grade_download_ex2a");
     urls.url_download_published = get_attr_from_el(el_data, "data-download_published_url");
-    urls.url_studentsubjectnote_upload = get_attr_from_el(el_data, "data-studentsubjectnote_upload_url");
+    urls.url_studentsubjectnote_upload = get_attr_from_el(el_data, "data-url_studentsubjectnote_upload");
     urls.url_studentsubjectnote_download = get_attr_from_el(el_data, "data-studentsubjectnote_download_url");
     urls.url_noteattachment_download = get_attr_from_el(el_data, "data-noteattachment_download_url");
 

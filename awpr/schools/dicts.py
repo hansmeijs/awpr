@@ -9,41 +9,99 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def create_mailbox_rows(examyear_pk, request):
+def create_mailbox_rows(examyear_pk, request, mailbox_pk=None):
     # --- create mail_inbox rows of this user this examyear PR2021-09-11
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_mailbox_rows ============= ')
+        logger.debug('examyear_pk: ' + str(examyear_pk))
+        logger.debug('request.user.pk: ' + str(request.user.pk))
 
     mailbox_rows = []
 
     try:
-        sql_keys = {'req_usr_id': request.user.pk, 'ey_id': examyear_pk}
+        filter_mailbox_pk = 'AND mailbox.id = %(mb_pk)s::INT' if mailbox_pk else ''
 
-        sql_list = ["SELECT msg.id, CONCAT('message_', msg.id::TEXT) AS mapid,",
+        sql_keys = {'req_usr_id': request.user.pk, 'ey_id': examyear_pk, 'mb_pk': mailbox_pk}
+
+        sql_list = ["SELECT mailbox.id, CONCAT('mailbox_', mailbox.id::TEXT) AS mapid, msg.id AS mailmessage_id,",
                     "mailbox.read, mailbox.deleted, mailbox.issentmail, mailbox.isreceivedmail,",
-                    "msg.header, msg.body, msg.status,",
-                    "msg.modifiedby_id, msg.modifiedat, sch.name AS sender_school_name, sch.abbrev AS sender_school_abbrev, au.last_name AS sender_lastname",
+                    "msg.header, msg.body, msg.mailto_user, msg.mailcc_user, msg.status, msg.modifiedby_id, msg.modifiedat, ",
+                    "sch.name AS sender_school_name, sch.abbrev AS sender_school_abbrev,",
+                    "au.last_name AS sender_lastname",
 
-                    "FROM schools_mailmessage AS msg ON (msg.id = mailbox.mailmessage_id)",
-                    "INNER JOIN schools_mailbox AS mailbox ON (mailbox.mailmessage_id = msg.id)",
+                    "FROM schools_mailbox AS mailbox",
+                    "INNER JOIN schools_mailmessage AS msg ON (msg.id = mailbox.mailmessage_id)",
                     "LEFT JOIN schools_school AS sch ON (sch.id = msg.sender_school_id)",
                     "LEFT JOIN accounts_user AS au ON (au.id = msg.sender_user_id)",
 
                     "WHERE msg.examyear_id = %(ey_id)s::INT AND mailbox.user_id = %(req_usr_id)s::INT",
+                    filter_mailbox_pk,
                     "ORDER BY mailbox.id"
                     ]
         sql = ' '.join(sql_list)
+        if logging_on:
+            logger.debug('sql: ' + str(sql))
 
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
             mailbox_rows = af.dictfetchall(cursor)
+        if logging_on:
+            logger.debug('mailbox_rows: ' + str(mailbox_rows))
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
 
     return mailbox_rows
 # --- end of create_mailbox_rows
+
+###########################
+
+def create_mailbox_user_rows(examyear_pk, request):
+    # --- create list of all users , for mailbox recipients PR2021-10-11
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_mailbox_user_rows ============= ')
+
+    mailbox_user_list = []
+    if examyear_pk and request.user.country:
+        try:
+
+            sql_keys = {'country_id': request.user.country.pk, 'ey_id': examyear_pk}
+
+            sql_list = ["SELECT u.id, u.last_name, u.email, sb.code AS school_code, school.abbrev AS school_abbrev",
+
+                "FROM accounts_user AS u",
+                "INNER JOIN schools_country AS c ON (c.id = u.country_id)",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
+                "INNER JOIN schools_school AS school ON (school.base_id = sb.id)",
+
+                "WHERE u.country_id = %(country_id)s::INT",
+                "AND school.examyear_id = %(ey_id)s::INT",
+                "AND  u.activated AND u.is_active",
+                "ORDER BY LOWER(sb.code), LOWER(u.last_name)"
+            ]
+            sql = ' '.join(sql_list)
+
+            if logging_on:
+                logger.debug('sql: ' + str(sql))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                mailbox_user_list = af.dictfetchall(cursor)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug('mailbox_user_list: ' + str(mailbox_user_list))
+
+    return mailbox_user_list
+# - end of create_mailbox_user_rows
+
+#############################
+
+
+
 
 def create_examyear_rows(req_usr, append_dict, examyear_pk, get_all_countries=False):
     # --- create rows of all examyears of this country PR2020-10-04 PR2021-09-24

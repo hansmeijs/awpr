@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Grades' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/grades211010.js' %}"></script>
+    <script src="{% static 'js/grades211013.js' %}"></script>
     <script src="{% static 'js/download210816.js' %}"></script>
 {% endblock %}
 
@@ -124,7 +124,7 @@
                     data-download_grade_icons_url="{% url 'download_grade_icons_url' %}"
                     data-download_published_url="{% url 'grades_download_published_url' %}"
                     data-url_grade_download_ex2a="{% url 'url_grade_download_ex2a' %}"
-                    data-studentsubjectnote_upload_url="{% url 'studentsubjectnote_upload_url' %}"
+                    data-url_studentsubjectnote_upload="{% url 'url_studentsubjectnote_upload' %}"
                     data-studentsubjectnote_download_url="{% url 'studentsubjectnote_download_url' %}"
                     data-noteattachment_download_url="{% url 'noteattachment_download_url' pk_int=0 %}"
                 >

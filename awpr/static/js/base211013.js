@@ -316,9 +316,9 @@
 
 //========= function show_hide_element_by_id  ====  PR2019-12-13
     function show_hide_element_by_id(el_id, is_show) {
-        if(!!el_id){
+        if(el_id){
             let el = document.getElementById(el_id);
-            if(!!el){
+            if(el){
                 if(is_show){
                     el.classList.remove("display_hide")
                 } else{
@@ -327,7 +327,7 @@
 
 //========= show_hide_element  ====  PR2019-12-13
     function show_hide_element(el, is_show) {
-        if(!!el){
+        if(el){
             if(is_show){
                 el.classList.remove("display_hide")
             } else{
@@ -336,9 +336,9 @@
 
 //========= set_element_class  ====  PR2019-12-13
     function set_element_class(el_id, is_add_class, clsName) {
-        if(!!el_id){
+        if(el_id){
             let el = document.getElementById(el_id);
-            if(!!el){
+            if(el){
                 if(is_add_class){
                     el.classList.add(clsName)
                 } else{
@@ -1533,7 +1533,7 @@
     b_Upload.prototype.getName = function() {
         return (this.file) ? this.file.name : null;
     };
-    b_Upload.prototype.doUpload = function () {
+    b_Upload.prototype.doUpload = function (RefreshDataRows) {
         var that = this;
         var formData = new FormData();
         // from https://blog.filestack.com/thoughts-and-knowledge/ajax-file-upload-formdata-examples/
@@ -1575,7 +1575,10 @@
             dataType:'json',
             success: function (response) {
                 // ---  hide loader
-                el_loader.classList.add(cls_visible_hide)
+                const el_loader = document.getElementById("id_loader");
+                if(el_loader){el_loader.classList.add("visibility_hide")}
+
+                RefreshDataRows(response);
 
                 if ("grade_note_icon_rows" in response) {
                     const tblName = "grades";
@@ -1588,7 +1591,8 @@
 
             error: function (xhr, msg) {
                 // ---  hide loader
-                el_loader.classList.add(cls_visible_hide)
+                const el_loader = document.getElementById("id_loader");
+                if(el_loader){el_loader.classList.add("visibility_hide")}
                 console.log(msg + '\n' + xhr.responseText);
             },
             async: true,

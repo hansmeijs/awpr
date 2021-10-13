@@ -76,19 +76,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // columns_hidden and columns_tobe_hidden are also used in t_MCOL_Open and t_MCOL_Save
     columns_tobe_hidden.btn_subject = {
-        fields: ["name", "depbases", "sequence", "otherlang", "addedbyschool"],
-        captions: ["Name", "Departments", "Sequence", "Other_languages", "Added_by_school"]};
+        fields: ["name", "depbases", "sequence", "addedbyschool"],
+        captions: ["Name", "Departments", "Sequence", "Added_by_school"]};
     columns_tobe_hidden.btn_scheme = {
         fields: ["depbase_code", "lvl_abbrev", "sct_abbrev", "min_subjects", "max_subjects", "min_mvt", "max_mvt", "min_wisk", "max_wisk", "min_combi", "max_combi"],
         captions: ["Department", "Leerweg",  "SectorProfiel_twolines", "Minimum_subjects",  "Maximum_subjects",
                     "Minimum_MVT_subjects", "Maximum_MVT_subjects", "Minimum_Wisk_subjects", "Maximum_Wisk_subjects", "Minimum_combi_subjects", "Maximum_combi_subjects"]};
     columns_tobe_hidden.btn_schemeitem = {
-        fields: ["subj_name", "sjtp_abbrev", "ete_exam",
+        fields: ["subj_name", "sjtp_abbrev", "ete_exam", "otherlang",
                 "gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
                 "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
                 "has_practexam",  "has_pws", "sr_allowed",
                 "max_reex", "no_thirdperiod",  "no_exemption_ce"],
-        captions: ["Subject", "Character", "ETE_exam",
+        captions: ["Subject", "Character", "ETE_exam", "Other_languages",
                 "Grade_type", "SE_weighing",  "CE_weighing", "Mandatory", "Mandatory_if_subject", "Combination_subject", "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
                 "Extra_count_allowed",  "Extra_nocount_allowed",  "Elective_combi_allowed",
                 "Has_practical_exam",  "Has_assignment", "Herkansing_SE_allowed",
@@ -104,12 +104,12 @@ document.addEventListener('DOMContentLoaded', function() {
         captions: [ "Name", "Abbreviation",  "Sequence"]};
 
 // --- get field_settings
-    field_settings.btn_subject = {field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence", "Other_languages", "Added_by_school"],
-                    field_names: ["select", "code", "name", "depbases", "sequence", "otherlang", "addedbyschool"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text",  "text", "number", "text", "toggle"],
-                    field_width:  ["020", "120", "300", "150", "120",  "120", "180", "120"],
-                    field_align: ["c", "l", "l", "l",  "r", "l", "c"]};
+    field_settings.btn_subject = {field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence", "Added_by_school"],
+                    field_names: ["select", "code", "name", "depbases", "sequence",  "addedbyschool"],
+                    field_tags: ["div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["select", "text", "text",  "text", "number", "toggle"],
+                    field_width:  ["020", "120", "300", "150", "120",  "120", "120"],
+                    field_align: ["c", "l", "l", "l",  "r", "c"]};
     field_settings.btn_scheme = {   field_caption: ["", "Subject_scheme_name", "Department", "Leerweg",  "SectorProfiel_twolines", "Minimum_subjects",  "Maximum_subjects",
                                     "Minimum_MVT_subjects", "Maximum_MVT_subjects", "Minimum_Wisk_subjects", "Maximum_Wisk_subjects", "Minimum_combi_subjects", "Maximum_combi_subjects"],
                     field_names: ["select", "name", "depbase_code", "lvl_abbrev", "sct_abbrev", "min_subjects", "max_subjects", "min_mvt", "max_mvt", "min_wisk", "max_wisk", "min_combi", "max_combi" ],
@@ -117,32 +117,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     filter_tags: ["select", "text", "text", "text", "text", "number", "number", "number", "number", "number", "number", "number", "number"],
                     field_width:  ["020", "280", "120", "120",  "120",  "150",  "150",  "150",  "150", "150",  "150",  "150",  "150"],
                     field_align: ["c", "l", "l", "l",  "l", "c", "c", "c", "c", "c", "c", "c", "c"]};
-    field_settings.btn_schemeitem = { field_caption: ["", "Subject_scheme", "Abbreviation", "Subject", "Character", "ETE_exam",
+    field_settings.btn_schemeitem = { field_caption: ["", "Subject_scheme", "Abbreviation", "Subject", "Character", "ETE_exam", "Other_languages",
                             "Grade_type", "SE_weighing",  "CE_weighing", "Mandatory", "Mandatory_if_subject", "Combination_subject", "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
                             "Extra_count_allowed",  "Extra_nocount_allowed",  "Elective_combi_allowed",
                             "Has_practical_exam",  "Has_assignment", "Herkansing_SE_allowed",
                             "Maximum_reex", "No_third_period", "Exemption_without_CE_allowed"],
-                    field_names: ["select", "scheme_name", "subj_code", "subj_name", "sjtp_abbrev", "ete_exam",
+                    field_names: ["select", "scheme_name", "subj_code", "subj_name", "sjtp_abbrev", "ete_exam", "otherlang",
                             "gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
                             "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
                             "has_practexam",  "has_pws", "sr_allowed",
                             "max_reex",  "no_thirdperiod",  "no_exemption_ce"],
-                    field_tags: ["div", "div", "div", "div", "div", "div",
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
                                 "div", "div", "div", "div", "div", "div", "div", "div", "div",
                                 "div", "div", "div",
                                 "div", "div", "div",
                                  "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text",  "text", "toggle",
+                    filter_tags: ["select", "text", "text", "text",  "text", "toggle", "text",
                                 "toggle", "toggle","toggle", "toggle", "toggle",  "toggle", "toggle",  "toggle",  "toggle",
                                 "toggle",  "toggle", "toggle",
                                 "toggle",  "toggle", "toggle",
                                 "toggle", "toggle",  "toggle"],
-                    field_width:  ["020", "180", "090", "300", "120", "090",
+                    field_width:  ["020", "180", "090", "300", "120", "090", "180",
                                     "090", "090", "090", "090","090", "090", "090", "090", "090",
                                     "090", "090", "090",
                                     "090", "090", "090",
                                      "090", "090", "090"],
-                    field_align: ["c", "l", "l","l", "l", "c",
+                    field_align: ["c", "l", "l","l", "l", "c", "l",
                                     "l", "r", "r", "c", "c", "c","c", "c", "c",
                                     "c", "c", "c",
                                     "c", "c", "c",
@@ -286,7 +286,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MSUBJ_code = document.getElementById("id_MSUBJ_code");
         const el_MSUBJ_name = document.getElementById("id_MSUBJ_name");
         const el_MSUBJ_sequence = document.getElementById("id_MSUBJ_sequence");
-        const el_MSUBJ_otherlang = document.getElementById("id_MSUBJ_otherlang");
         const el_MSUBJ_etenorm = document.getElementById("id_MSUBJ_etenorm");
         if(el_MSUBJ_etenorm){el_MSUBJ_etenorm.addEventListener("click", function() {MSUBJ_Toggle(el_MSUBJ_etenorm)}, false )}
 
@@ -313,6 +312,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_tblBody_subjects = document.getElementById("id_MSI_tblBody_subjects");
         const el_tblBody_schemeitems = document.getElementById("id_MSI_tblBody_schemeitems");
+
+
+// ---  MODAL OTHER LANGUAGE ------------------------------------
+        const el_MOL_header = document.getElementById("id_MOL_header")
+        const el_MOL_otherlang = document.getElementById("id_MOL_otherlang")
+        if(el_MOL_otherlang){el_MOL_otherlang.addEventListener("change", function() {MOL_InputChange(el_MOL_otherlang)}, false )}
+        const el_MOL_btn_save = document.getElementById("id_MOL_btn_save")
+        if(el_MOL_otherlang){el_MOL_btn_save.addEventListener("click", function() {MOL_Save()}, false)};
 
 // ---  MODAL SELECT COLUMNS ------------------------------------
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
@@ -493,7 +500,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //###########################################################################
 //=========  HandleBtnSelect  ================ PR2020-09-19
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ", data_btn);
+        //console.log( "===== HandleBtnSelect ========= ", data_btn);
         selected_btn = data_btn
         if(!selected_btn){selected_btn = "btn_subject"}
 
@@ -573,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ FILL TABLE ROWS ++++++++++++++++++++++++++++++++++++++++
 //========= FillTblRows  ===================== PR2021-06-21
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
+        //console.log( "===== FillTblRows  === ");
 
         const tblName = get_tblName_from_selectedBtn();
         const field_setting = field_settings[selected_btn];
@@ -792,7 +799,7 @@ if(j){td.classList.add("border_left")};
 
     // --- add EventListener to td
                 if (tblName === "subject"){
-                    if (["code", "name", "depbases", "sequence", "otherlang"].includes(field_name)){
+                    if (["code", "name", "depbases", "sequence"].includes(field_name)){
                         td.addEventListener("click", function() {MSUBJ_Open(el)}, false)
                         td.classList.add("pointer_show");
                         add_hover(td)
@@ -816,9 +823,13 @@ if(j){td.classList.add("border_left")};
 
                 } else if (tblName === "schemeitem"){
                     if ( filter_tag ==="text"){
-                        td.addEventListener("click", function() {MSI_Open(el)}, false)
-                        td.classList.add("pointer_show");
-                        add_hover(td)
+                        if(field_name === "otherlang"){
+                            td.addEventListener("click", function() {MOL_Open(el)}, false);
+                        } else {
+                            td.addEventListener("click", function() {MSI_Open(el)}, false);
+                        };
+                            td.classList.add("pointer_show");
+                            add_hover(td);
                     } else if (filter_tag ==="toggle"){
                         // skip max_reex and no_thirdperiod when weight_ce = 0
                         if(!["max_reex", "no_thirdperiod"].includes(field_name) || map_dict.weight_ce) {
@@ -912,13 +923,11 @@ if(j){td.classList.add("border_left")};
                                 (fld_value === 1) ? loc.Grade : "---";
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
                 } else if ( field_name === "otherlang") {
+                    // "\n" instead of null, otherwise green box not showing after removing lang
                     inner_text = (fld_value === "en;pa") ? loc.English_and_Papiamentu :
                                 (fld_value === "pa") ? loc.Papiamentu :
-                                (fld_value === "en") ? loc.English : null;
+                                (fld_value === "en") ? loc.English : "\n";
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
-        //console.log("field_name", field_name);
-        //console.log("fld_value", fld_value);
-        //console.log("inner_text", inner_text);
                 } else if ( field_name === "depbases") {
                     inner_text = b_get_depbases_display(department_map, "base_code", fld_value);
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
@@ -2715,7 +2724,6 @@ if(j){td.classList.add("border_left")};
                 el_MSUBJ_code.value = (mod_MSUBJ_dict.code) ? mod_MSUBJ_dict.code : null;
                 el_MSUBJ_name.value = (mod_MSUBJ_dict.name) ? mod_MSUBJ_dict.name : null;
                 el_MSUBJ_sequence.value = (mod_MSUBJ_dict.sequence) ? mod_MSUBJ_dict.sequence : null;
-                el_MSUBJ_otherlang.value = (mod_MSUBJ_dict.otherlang) ? mod_MSUBJ_dict.otherlang : null;
 
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSUBJ_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
@@ -3057,7 +3065,7 @@ if(j){td.classList.add("border_left")};
     function MSUBJ_ResetElements(also_remove_values){
         //console.log( "===== MSUBJ_ResetElements  ========= ");
         // --- loop through input elements
-        const fields = ["code", "sequence", "name", "otherlang",  "department", "modified"]
+        const fields = ["code", "sequence", "name", "department", "modified"]
         for (let i = 0, field, el_input, el_msg; field = fields[i]; i++) {
             el_input = document.getElementById("id_MSUBJ_" + field);
             if(el_input){
@@ -3325,7 +3333,6 @@ if(j){td.classList.add("border_left")};
 
     }  // MSI_Save
 
-
 //========= MSI_InputChange  ============= PR2021-06-24 PR2021-07-07
     function MSI_InputChange(){
         //console.log( "===== MSI_InputChange  ========= ");
@@ -3348,7 +3355,6 @@ if(j){td.classList.add("border_left")};
 
         //MSI_validate_and_disable();
     }; // MSI_InputChange
-
 
 //=========  MSI_set_headertext  ================  PR2021-06-24  PR2021-07-07
     function MSI_set_headertext() {
@@ -3404,8 +3410,6 @@ if(j){td.classList.add("border_left")};
          MSI_fill_si_list(scheme_pk)
     } // MSI_FillDicts
 
-
-
 //========= MSI_FillTblSubjects  ============= PR2021-06-25
     function MSI_fill_si_list(scheme_pk) {
         //console.log("===== MSI_fill_si_list ===== ");
@@ -3432,10 +3436,6 @@ if(j){td.classList.add("border_left")};
         }
     };  // MSI_fill_si_list
 
-////////////////////
-
-
-
 //========= MSI_FillTblSubjects  ============= PR2021-06-24
     function MSI_FillTblSubjects() {
         //console.log("===== MSI_FillTblSubjects ===== ");
@@ -3451,7 +3451,6 @@ if(j){td.classList.add("border_left")};
         }
 
     } // MSI_FillTblSubjects
-
 
 //========= MSI_FillTbls  ============= PR2021-06-22
     function MSI_FillTblSchemeitems(sel_schemeitem_pk_list) {
@@ -3610,7 +3609,6 @@ if(j){td.classList.add("border_left")};
         }
     } // MSI_MSJT_CreateSelectRow
 
-
 //========= MSI_SubjectClicked  ============= PR2020-10-01 PR2021-03-05 PR2021-06-24
     function MSI_SubjectClicked(tblName, tblRow){
         //console.log( "===== MSI_SubjectClicked  ========= ");
@@ -3714,7 +3712,6 @@ if(j){td.classList.add("border_left")};
         MSI_FillTblSchemeitems();
     }  // MSI_SubjecttypeClicked
 
-
 //========= MSI_AddSubjectToSubjecttype  ============= PR2021-06-24
     function MSI_AddSubjectToSubjecttype(subj_pk_int, sjtp_dict, justclicked_subj_pk) {
         //console.log("  =====  MSI_AddSubjectToSubjecttype  =====");
@@ -3755,7 +3752,6 @@ if(j){td.classList.add("border_left")};
         //console.log("sjtp_dict.si_list", sjtp_dict.si_list);
 
     }  // MSI_AddSubjectToSubjecttype
-
 
 //========= MSI_SchemeitemClicked  ============= PR2021-06-24
     function MSI_SchemeitemClicked(tr_clicked) {
@@ -3808,6 +3804,86 @@ if(j){td.classList.add("border_left")};
     }  // MSI_AddPackage
 
 // +++++++++ END MOD SCHEMEITEM ++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+// ++++++++ MODAL OTHER LANG ++++++++++++++++++++++++++++++++++
+
+    function MOL_Open(el_input){
+        console.log(" -----  MOL_Open   ----")
+        console.log("el_input", el_input)
+        //console.log("permit_dict", permit_dict)
+
+        if (permit_dict.permit_crud){
+
+            mod_MSI_dict = {el_input: el_input};
+
+            if (el_input){
+                const tblRow = get_tablerow_selected(el_input);
+                const data_dict = get_recursive_integer_lookup(tblRow);
+                if(!isEmpty(data_dict)) {
+                    mod_MSI_dict.schemeitem_pk = data_dict.id;
+                    mod_MSI_dict.mapid = data_dict.mapid;
+                    mod_MSI_dict.scheme_name = data_dict.scheme_name;
+                    mod_MSI_dict.scheme_pk = data_dict.scheme_id;
+                    mod_MSI_dict.subj_pk = data_dict.subj_id;
+                    mod_MSI_dict.subj_name = data_dict.subj_name;
+                    mod_MSI_dict.otherlang = (data_dict.otherlang) ? data_dict.otherlang : "none";
+                }  // if(!isEmpty(map_dict)) {
+
+    // ---  set header text
+                el_MOL_header.innerText = [(mod_MSI_dict.scheme_name) ? mod_MSI_dict.scheme_name : "",
+                                            (mod_MSI_dict.subj_name) ? mod_MSI_dict.subj_name : ""].join("\n");
+    // ---  set select box otherlang
+                el_MOL_otherlang.value = mod_MSI_dict.otherlang
+    // ---  disable btn save
+                el_MOL_btn_save.disabled = true;
+    // ---  show modal
+                $("#id_mod_otherlang").modal({backdrop: true});
+            };
+        }  //  if (permit_dict.permit_crud){
+    };  // MOL_Open
+
+//========= MOL_Save  ============= PR2021-10-11
+    function MOL_Save() {
+        console.log( " ==== MOL_Save ====");
+        if (setting_dict.sel_examyear_locked){
+            const msg_html = loc.This_examyear + loc.is_locked + "<br>" + loc.You_cannot_make_changes
+            b_ShowModMessages([{class: "border_bg_warning", msg_html: msg_html}]);
+        } else {
+
+            const fldName = "otherlang"
+            let new_value = (!el_MOL_otherlang.value || el_MOL_otherlang.value === "none") ? null : el_MOL_otherlang.value;
+            const update_dict = {otherlang: new_value};
+            UpdateField(mod_MSI_dict.el_input, update_dict)
+
+        console.log("mod_MSI_dict", mod_MSI_dict)
+// ---  upload changes
+            const upload_dict = {
+                mode: "update",
+                table: "schemeitem",
+                mapid:  (mod_MSI_dict.mapid) ? mod_MSI_dict.mapid : null,
+                si_pk: (mod_MSI_dict.schemeitem_pk) ? mod_MSI_dict.schemeitem_pk : null,
+                subject_pk: (mod_MSI_dict.subj_pk) ? mod_MSI_dict.subj_pk : null,
+                scheme_pk: (mod_MSI_dict.scheme_pk) ? mod_MSI_dict.scheme_pk : null,
+                otherlang: new_value
+            };
+            const url_str = get_url_str();
+            UploadChanges(upload_dict, url_str);
+        };
+
+            // ---  show modal
+        $("#id_mod_otherlang").modal("hide");
+    }  // MOL_Save
+
+//========= MOL_InputChange  ============= PR2021-10-11
+    function MOL_InputChange(el_input){
+        //console.log( "===== MOL_InputChange  ========= ");
+         mod_MSI_dict.otherlang = el_input.value;
+         el_MOL_btn_save.disabled = false
+
+    }; // MOL_InputChange
+
+// ++++++++ END OF MODAL OTHER LANG ++++++++++++++++++++++++++++++++++
+
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03
@@ -4189,7 +4265,7 @@ if(j){td.classList.add("border_left")};
                             (selected_btn === "btn_subjecttype") ? subjecttype_rows :
                             (selected_btn === "btn_subjecttypebase") ? subjecttypebase_rows : null;
         const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
-        console.log( "found_dict: ", found_dict);
+        //console.log( "found_dict: ", found_dict);
 
         return found_dict;
     };  // get_recursive_integer_lookup

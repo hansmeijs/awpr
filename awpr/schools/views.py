@@ -33,7 +33,7 @@ from awpr import menus as awpr_menu
 from awpr import downloads as dl
 
 from schools import functions as sf
-from schools import dicts as sd
+from schools import dicts as sch_dicts
 from schools import models as sch_mod
 from students import models as stud_mod
 from subjects import models as subj_mod
@@ -136,6 +136,409 @@ class MailListView(View):
         # - save this page in Usersetting, so at next login this page will open. Uses in LoggedIn
         # PR2021-06-22 moved to get_headerbar_param
         return render(request, 'mailbox.html', headerbar_param)
+
+
+@method_decorator([login_required], name='dispatch')
+class MailUploadView(View):  # PR2021-01-16  PR2021-10-11
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+
+        files = request.FILES
+        file = files.get('file')
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= MailUploadView ============= ')
+            logger.debug('files: ' + str(files) + ' ' + str(type(files)))
+            logger.debug('file: ' + str(file) + ' ' + str(type(file)))
+
+        messages = []
+        update_wrap = {}
+
+# - get permit
+        # has_permit = get_permit_crud_page_mailbox(request)
+        # TODO set permit
+        has_permit = True  # (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
+        if has_permit:
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+
+# - get  variables
+                mailbox_pk = upload_dict.get('mailbox_pk')
+                # mode = 'save', 'send' or 'delete'
+                # is_create = True when mailbox_pk is None
+                mode = upload_dict.get('mode')
+                is_create = (not mailbox_pk)
+                is_delete = (mode == 'delete')
+                is_send = (mode == 'send')
+
+                header_str= upload_dict.get('header')
+                body_str = upload_dict.get('body')
+                issentmail = upload_dict.get('issentmail', False)
+                isreceivedmail = upload_dict.get('isreceivedmail', False)
+
+                mailto_list= upload_dict.get('mailto')
+                mailto_str = ''
+                if mailto_list:
+                    for user_pk in mailto_list:
+                        if mailto_str:
+                            mailto_str += ';'
+                        mailto_str += str(user_pk)
+                # change '' into None
+                if not mailto_str:
+                    mailto_str = None
+
+                mailcc_list = upload_dict.get('mailcc')
+                mailcc_str = ''
+                if mailcc_list:
+                    for user_pk in mailcc_list:
+                        if mailcc_str:
+                            mailcc_str += ';'
+                        mailcc_str += str(user_pk)
+                # change '' into None
+                if not mailcc_str:
+                    mailcc_str = None
+
+                if logging_on:
+                    logger.debug('upload_dict: ' + str(upload_dict))
+                    logger.debug('mode: ' + str(mode))
+                    logger.debug('mailto_str: ' + str(mailto_str))
+                    logger.debug('mailcc_str: ' + str(mailcc_str))
+
+                updated_rows = []
+                error_list = []
+                is_created = False
+                message_header = _('Message')
+
+# - get selected examyear, school from usersettings
+                sel_examyear, sel_school = af.get_selected_examyear_school_instance_from_usersetting(request)
+
+                if logging_on:
+                    logger.debug('mailbox_pk: ' + str(mailbox_pk))
+                    logger.debug('sel_examyear: ' + str(sel_examyear))
+                    logger.debug('sel_school: ' + str(sel_school))
+                    logger.debug('is_create: ' + str(is_create))
+
+# ++++ Create new mailbox_instance:
+                if is_create:
+                    mailbox_instance = create_mailbox_instance(sel_examyear, sel_school, header_str, body_str, mailto_str, mailcc_str, messages, request)
+                    if mailbox_instance:
+                        is_created = True
+
+                else:
+# +++  get existing mailbox instance
+                    mailbox_instance = sch_mod.Mailbox.objects.get_or_none(
+                        id=mailbox_pk,
+                        user=request.user
+                    )
+                if logging_on:
+                    logger.debug('..... mailbox_instance: ' + str(mailbox_instance))
+
+                deleted_ok = False
+
+                if mailbox_instance:
+                    mailmessage_instance = mailbox_instance.mailmessage
+                    if logging_on:
+                        logger.debug('..... mailmessage_instance: ' + str(mailmessage_instance))
+
+# ++++ Delete mailbox_instance
+                    if is_delete:
+                        delete_mailbox_instance(mailbox_instance, request)
+
+# +++ Update mailmessage, not when it is created, nor when deleted
+                    elif not is_create:
+                        update_mailmessage_instance(mailmessage_instance, sel_examyear, sel_school,
+                                                    header_str, body_str, mailto_str, mailcc_str,
+                                                    error_list, request)
+
+# - create mailbox_row, also when is_delete (then deleted=True)
+                # PR2021-089-04 debug. gave error on subject.pk: 'NoneType' object has no attribute 'pk'
+                if mailbox_instance:
+                    updated_rows = sch_dicts.create_mailbox_rows(
+                        examyear_pk=sel_examyear.pk,
+                        request=request,
+                        mailbox_pk=mailbox_instance.pk
+                    )
+
+
+# - add messages to updated_row (there is only 1 updated_row
+                if updated_rows:
+                    row = updated_rows[0]
+                    if row:
+                        # TODO fix it or remove
+                        # - add error_list to updated_rows[0]
+                        if error_list:
+                            updated_rows[0]['error'] = error_list
+                        if is_created:
+                            updated_rows[0]['created'] = True
+
+                    update_wrap['updated_mailbox_rows'] = updated_rows
+
+# - Create new studsubjnote if is_create:
+
+                # attachments are stored in spaces awpmedia/awpmedia/media/private
+
+# +++ save attachment
+
+# ---  create file_path
+
+# 9. return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=LazyEncoder))
+# - ens of MailUploadView
+
+
+def create_mailbox_instance(examyear, sender_school, header_str, body_str, mailto_str, mailcc_str, messages, request):
+    # --- create mailbox item and mailmessage itemPR2021-10-11
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_mailbox ----- ')
+
+    mailbox = None
+    caption = _('Create message')
+
+    if examyear:
+
+        msg_list = []
+# - validate code and name. Function checks null, max_len, exists
+        msg_err = av.validate_notblank_maxlength(header_str, c.MAX_LENGTH_FIRSTLASTNAME, _('The subject'))
+        if msg_err:
+            msg_list.append(msg_err)
+        msg_err = av.validate_notblank_maxlength(body_str, 2048, _('The text of the message'), True)  # True = blanks allowed
+        if msg_err:
+            msg_list.append(msg_err)
+        msg_err = av.validate_notblank_maxlength(mailto_str, 2048, _('The list of recipients'))
+        if msg_err:
+            msg_list.append(msg_err)
+        msg_err = av.validate_notblank_maxlength(mailto_str, 2048, _('The list of c.c. recipients'), True)  # True = blanks allowed
+        if msg_err:
+            msg_list.append(msg_err)
+
+# - first create and save mailbox item
+        if len(msg_list) > 0:
+            msg_html = '<br>'.join(msg_list)
+            messages.append({'header': str(caption), 'class': "border_bg_invalid", 'msg_html': msg_html})
+        else:
+            try:
+# - first create and save mailmessage item
+                mailmessage = sch_mod.Mailmessage(
+                    examyear=examyear,
+                    sender_user=request.user,
+                    sender_school=sender_school,
+                    header=header_str,
+                    body=body_str,
+                    mailto_user=mailto_str,
+                    mailcc_user=mailcc_str
+                )
+                mailmessage.save(request=request)
+
+                if logging_on:
+                    logger.debug('mailmessage: ' + str(mailmessage))
+                    logger.debug('mailmessage.pk: ' + str(mailmessage.pk))
+
+# - add link to this message in draft box of request.user
+                # when issentmail and isreceivedmail are False: it is a saved draft mail
+                # don't add mailbox item of recipients and cc until the message is sent.
+                if mailmessage.pk:
+                    mailbox = sch_mod.Mailbox(
+                        user=request.user,
+                        mailmessage=mailmessage,
+                        # read=False,
+                        # deleted=False,
+                        #issentmail=False,
+                        #isreceivedmail=False
+                    )
+                    mailbox.save(request=request)
+
+                    if logging_on:
+                        logger.debug('mailbox: ' + str(mailbox))
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
+                                    str(_("%(cpt)s '%(val)s'could not be added.") % {'cpt': _('Message'), 'val': header_str})))
+                messages.append(
+                    {'class': "border_bg_invalid", 'header': str(_('Create message')), 'msg_html': msg_html})
+
+    if logging_on:
+        logger.debug('mailbox: ' + str(mailbox))
+        logger.debug('messages: ' + str(messages))
+
+    return mailbox
+# - end of create_mailbox_instance
+
+
+def delete_mailbox_instance(mailbox_instance, request):
+    # --- delete mailbox instance # PR2021-10-12
+    # set deleted=True insted of deleting instance
+    if mailbox_instance:
+        try:
+            setattr(mailbox_instance, 'deleted', True)
+            mailbox_instance.save(request=request)
+            deleted_ok = True
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+# - end of delete_mailbox_instance
+
+
+def update_mailmessage_instance(mailmessage, examyear, sender_school, header_str, body_str, mailto_str, mailcc_str, msg_list, request):
+    # --- update existing mailbox instance and mailmessage instance PR2021-10-11
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- update_mailmessage_instance ----- ')
+        logger.debug('header_str: ' + str(header_str))
+        logger.debug('body_str: ' + str(body_str))
+        logger.debug('mailto_str: ' + str(mailto_str))
+        logger.debug('mailcc_str: ' + str(mailcc_str))
+
+    messages = []
+    mailbox = None
+    if mailmessage:
+        save_changes = False
+
+        caption = _('Message')
+
+# - save changes in field 'header'
+        field = 'header'
+        new_value = header_str
+        msg_err = av.validate_notblank_maxlength(new_value, c.MAX_LENGTH_FIRSTLASTNAME, _('The subject'))
+        if msg_err:
+            msg_list.append(msg_err)
+        else:
+            saved_value = getattr(mailmessage, field)
+            if logging_on:
+                logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
+
+            if new_value != saved_value:
+                setattr(mailmessage, field, new_value)
+                save_changes = True
+                if logging_on:
+                    logger.debug('save field ' + str(field) + ':  ' + str(new_value))
+
+# - save changes in field 'body'
+        field = 'body'
+        new_value = body_str
+        msg_err = av.validate_notblank_maxlength(new_value, 2048, _('The text of the message'), True)  # True = blanks allowed
+        if msg_err:
+            msg_list.append(msg_err)
+        else:
+            saved_value = getattr(mailmessage, field)
+            if logging_on:
+                logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
+
+            if new_value != saved_value:
+                setattr(mailmessage, field, new_value)
+                save_changes = True
+                if logging_on:
+                    logger.debug('save field ' + str(field) + ':  ' + str(new_value))
+
+# - save changes in field 'mailto_user'
+        field = 'mailto_user'
+        new_value = mailto_str
+        msg_err = av.validate_notblank_maxlength(mailto_str, 2048, _('The list of recipients'))
+        if msg_err:
+            msg_list.append(msg_err)
+        else:
+            saved_value = getattr(mailmessage, field)
+            if logging_on:
+                logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
+
+            if new_value != saved_value:
+                setattr(mailmessage, field, new_value)
+                save_changes = True
+                if logging_on:
+                    logger.debug('save field ' + str(field) + ':  ' + str(new_value))
+
+# - save changes in field 'mailcc_user'
+        field = 'mailcc_user'
+        new_value = mailcc_str
+        msg_err = av.validate_notblank_maxlength(mailto_str, 2048, _('The list of c.c. recipients'), True)  # True = blanks allowed
+        if msg_err:
+            msg_list.append(msg_err)
+        else:
+            saved_value = getattr(mailmessage, field)
+            if logging_on:
+                logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
+
+            if new_value != saved_value:
+                setattr(mailmessage, field, new_value)
+                save_changes = True
+                if logging_on:
+                    logger.debug('save field ' + str(field) + ':  ' + str(new_value))
+
+
+        msg_list = []
+# - validate code and name. Function checks null, max_len, exists
+        msg_err = av.validate_notblank_maxlength(header_str, c.MAX_LENGTH_FIRSTLASTNAME, _('The subject'))
+        if msg_err:
+            msg_list.append(msg_err)
+        msg_err = av.validate_notblank_maxlength(body_str, 2048, _('The text'), True)  # True = blanks allowed
+        if msg_err:
+            msg_list.append(msg_err)
+        msg_err = av.validate_notblank_maxlength(mailto_str, 2048, _('The list of recipients'))
+        if msg_err:
+            msg_list.append(msg_err)
+
+# - first create and save mailbox item
+        if len(msg_list) > 0:
+            msg_html = '<br>'.join(msg_list)
+            messages.append({'header': str(caption), 'class': "border_bg_invalid", 'msg_html': msg_html})
+        else:
+            try:
+# - first create and save mailbox item
+                mailmessage = sch_mod.Mailmessage(
+                    examyear=examyear,
+                    sender_user=request.user,
+                    sender_school=sender_school,
+                    header=header_str,
+                    body=body_str,
+                    mailto_user=mailto_str,
+                    mailcc_user=mailcc_str
+                )
+                mailmessage.save(request=request)
+
+                if logging_on:
+                    logger.debug('mailmessage: ' + str(mailmessage))
+                    logger.debug('mailmessage.pk: ' + str(mailmessage.pk))
+
+# - add link to this message in inbox of request.user
+                # when issentmail and isreceivedmail are False: it is a saved draft mail
+                # don't add mailbox item of recipients and cc until the message is sent.
+                if mailmessage.pk:
+                    mailbox = sch_mod.Mailbox(
+                        user=request.user,
+                        mailmessage=mailmessage,
+                        # read=False,
+                        # deleted=False,
+                        #issentmail=False,
+                        #isreceivedmail=False
+                    )
+                    mailbox.save(request=request)
+
+                    if logging_on:
+                        logger.debug('mailbox: ' + str(mailbox))
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
+                                    str(_("%(cpt)s '%(val)s'could not be added.") % {'cpt': _('Message'), 'val': header_str})))
+                messages.append(
+                    {'class': "border_bg_invalid", 'header': str(_('Create message')), 'msg_html': msg_html})
+
+    if logging_on:
+        logger.debug('messages: ' + str(messages))
+
+    return mailbox
+# - end of create_mailbox
+
 
 
 # === EXAMYEAR =====================================
@@ -283,7 +686,7 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30
                     if current_examyear_instance and mode == 'update':
                         updated = update_examyear(current_examyear_instance, upload_dict, error_list, request)
                         if updated:
-                            examyear_rows = sd.create_examyear_rows(
+                            examyear_rows = sch_dicts.create_examyear_rows(
                                 req_usr=req_usr,
                                 append_dict={},
                                 examyear_pk=current_examyear_instance.pk
@@ -295,7 +698,7 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30
                         update_wrap['messages'] = error_list
 # - add update_dict to update_wrap
                     if new_examyear_instance:
-                        examyear_rows = sd.create_examyear_rows(
+                        examyear_rows = sch_dicts.create_examyear_rows(
                             req_usr=req_usr,
                             append_dict=append_dict,
                             examyear_pk=new_examyear_instance.pk
@@ -358,7 +761,7 @@ class OrderlistsParametersView(View):  # PR2021-08-31
                     update_examyear(sel_examyear_instance, upload_dict, error_list, request)
 
 # - create examyear_row
-                    updated_rows = sd.create_examyear_rows(
+                    updated_rows = sch_dicts.create_examyear_rows(
                         req_usr=req_usr,
                         append_dict={},
                         examyear_pk=sel_examyear_instance.pk
@@ -433,7 +836,7 @@ class OrderlistRequestVerifcodeView(View):  # PR2021-09-08
                         update_wrap['verificationkey'] = verifcode_key
                         msg_list += (str(_("We have sent an email with a 6 digit verification code to the email address:")),
                                      '<br>', req_usr.email, '<br>',
-                                     str(_("Enter the verification code and click 'Submit Ex form' to submit the Ex1 form.")))
+                                     str(_("Enter the verification code and click 'Publish orderlist' to publish the orderlist.")))
                     else:
                         class_str = 'border_bg_invalid'
                         has_error = True
@@ -460,7 +863,7 @@ class OrderlistRequestVerifcodeView(View):  # PR2021-09-08
 
 
 @method_decorator([login_required], name='dispatch')
-class OrderlistsPublishView(View):  # PR2021-09-08
+class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -543,7 +946,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08
                             c.STRING_SPACE_10 + str(_("Exam year : %(ey)s") % {'ey': str(sel_examyear_instance.code)}))
                         log_list.append(c.STRING_SPACE_05)
 
-# get count_dict only once and create orserlists from this dict,
+# get count_dict only once and create orderlists from this dict,
 # to make sure that the published orderlist and the excel files per schoolcontain the same amout of subjects
 
 # get text from examyearsetting
@@ -579,6 +982,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08
                             min_ond = settings['minond']
                             now_arr = upload_dict.get('now_arr', [])
 
+# -create published_instance
                             published_instance, temp_file, file_path, filename_ext = \
                                 create_published_instance_orderlist(
                                     now_arr=now_arr,
@@ -587,6 +991,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08
                                     request=request,
                                     user_lang=user_lang)
 
+# -create final_orderlist
                             msg_err = create_final_orderlist_xlsx(temp_file, sel_examyear_instance,
                                                         department_dictlist, lvlbase_dictlist, subjectbase_dictlist,
                                                         schoolbase_dictlist, count_dict,
@@ -604,6 +1009,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08
                                 log_list.append(''.join((c.STRING_SPACE_10, err_str02)))
                                 log_list.append(c.STRING_SPACE_05)
                             else:
+# - save published instance
                                 msg_err = save_published_instance(published_instance, file_path, temp_file, request)
                                 if msg_err:
                                     class_str = 'border_bg_invalid'
@@ -626,7 +1032,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08
                                     log_list.append(''.join((c.STRING_SPACE_15, filename_ext)))
                                     log_list.append(c.STRING_SPACE_05)
 
-        # get list of 'auth1' and 'auth2' users of requsr_school, for sending email with total_torderlist and cc to schools
+        # get list of 'auth1' and 'auth2' users of requsr_school, for sending email with total_orderlist and cc to schools
                                     allowed_usergroups = ('auth1', 'auth2')
                                     cc_pk_str_list, cc_name_list, cc_email_list = get_school_emailto_list(requsr_school, allowed_usergroups)
                                     if logging_on:
@@ -664,124 +1070,26 @@ class OrderlistsPublishView(View):  # PR2021-09-08
                                     # schoolbase_dictlist: [{'sbase_id': 2, 'sbase_code': 'CUR01', 'sch_name': 'Ancilla Domini Vsbo'},
                                     count_school_orderlists = 0
                                     for schoolbase_dict in schoolbase_dictlist:
-                                        sbase_id = schoolbase_dict.get('sbase_id')
-                                        sbase_code = schoolbase_dict.get('sbase_code', '')
-                                        sch_name = schoolbase_dict.get('sch_name', '')
-                                        sch_abbrev = schoolbase_dict.get('sch_abbrev', '')
 
-                                        # filter on examyear.code (is integer), not on examyear to get SXM schools also
-                                        school = sch_mod.School.objects.get_or_none(
-                                            examyear__code=sel_examyear_instance.code,
-                                            base_id=sbase_id
-                                        )
+                            # +++ get nested dicts of subjects of this  school, dep, level, lang, ete_exam
+                                        schoolbase_pk = schoolbase_dict.get('sbase_id')
+                                        count_dict = subj_view.create_studsubj_count_dict(sel_examyear_instance,
+                                                                                          request, schoolbase_pk)
 
-                                        if school:
-                                            log_list.append(''.join(
-                                                ((sbase_code + c.STRING_SPACE_10)[:10], sch_name)))
-
-                                # - get list of 'auth1' and 'auth2'users of this school, for sending email
-                                            allowed_usergroups = ('auth1', 'auth2')
-                                            sendto_pk_str_list, sendto_name_list, sendto_email_list = \
-                                                get_school_emailto_list(school, allowed_usergroups)
-
-                                            count_total, subjbasepk_inuse_list = count_total_exams(count_dict, sbase_id)
-
-                                            if not count_total:
-                                                log_list.append(''.join((c.STRING_SPACE_10,
-                                                                         str(_("This school has no submitted subjects.")))))
-
-                                                log_list.append(c.STRING_SPACE_05)
-                                            else:
-                                                if logging_on:
-                                                    logger.debug('..... school: ' + str(school))
-                                                    logger.debug('sendto_pk_str_list: ' + str(sendto_pk_str_list))
-                                                    logger.debug('sendto_name_list: ' + str(sendto_name_list))
-                                                    logger.debug('sendto_email_list: ' + str(sendto_email_list))
-                                                    logger.debug('count_total: ' + str(count_total))
-                                                    logger.debug('subjbasepk_inuse_list: ' + str(subjbasepk_inuse_list))
-
-                                            # create published instance for this school
-                                                published_instance, temp_file, file_path, filename_ext = \
-                                                    create_published_instance_orderlist(
-                                                        now_arr=now_arr,
-                                                        examyear=sel_examyear_instance,
-                                                        school=school,
-                                                        request=request,
-                                                        user_lang=user_lang,
-                                                        school_code=sbase_code,
-                                                        school_abbrev=sch_abbrev)
-
-                                                msg_err = create_final_orderlist_perschool_xlsx(
-                                                    output=temp_file,
-                                                    sel_examyear_instance=sel_examyear_instance,
-                                                    department_dictlist=department_dictlist,
-                                                    lvlbase_dictlist=lvlbase_dictlist,
-                                                    subjectbase_dictlist=subjectbase_dictlist,
-                                                    count_dict=count_dict,
-                                                    subjbasepk_inuse_dict=subjbasepk_inuse_list,
-                                                    school_code=sbase_code,
-                                                    school_name=sch_name,
-                                                    requsr_school_name=requsr_school_name,
-                                                    min_ond=min_ond,
-                                                    user_lang=user_lang)
-
-                                                if msg_err:
-                                                    err_str01 = str(_('An error occurred'))
-                                                    err_str02 = str(_('The orderlist of this school is not created.'))
-                                                    log_list.append(''.join((c.STRING_SPACE_10, err_str01, ':')))
-                                                    log_list.append(''.join((c.STRING_SPACE_10, msg_err)))
-                                                    log_list.append(''.join((c.STRING_SPACE_10, err_str02)))
-                                                    log_list.append(c.STRING_SPACE_05)
-                                                else:
-                                                    msg_err = save_published_instance(published_instance, file_path, temp_file, request)
-                                                    if msg_err:
-                                                        err_str01 = str(_('An error occurred'))
-                                                        err_str02 = str(
-                                                            _('The orderlist of this school is not saved.'))
-                                                        log_list.append(''.join((c.STRING_SPACE_10, err_str01, ':')))
-                                                        log_list.append(''.join((c.STRING_SPACE_10, msg_err)))
-                                                        log_list.append(''.join((c.STRING_SPACE_10, err_str02)))
-                                                        log_list.append(c.STRING_SPACE_05)
-                                                    else:
-                                                        count_school_orderlists += 1
-                                                        log_list.append(''.join((c.STRING_SPACE_10,
-                                                            str(_('An orderlist of this school is created with the filename:')))))
-                                                        log_list.append(''.join((c.STRING_SPACE_10, filename_ext)))
-                                                        log_list.append(c.STRING_SPACE_05)
-
-                                # get list of users of this school, for sending email
-                                                        mail_sent = send_email_orderlist(
-                                                            examyear=sel_examyear_instance,
-                                                            school=school,
-                                                            is_total_orderlist=False,
-                                                            sendto_pk_str_list=sendto_pk_str_list,
-                                                            sendto_name_list=sendto_name_list,
-                                                            sendto_email_list=sendto_email_list,
-                                                            cc_pk_str_list=cc_pk_str_list,
-                                                            cc_email_list=cc_email_list,
-                                                            published_instance=published_instance,
-                                                            request=request
-                                                        )
-                                                        if not mail_sent:
-                                                            log_list.append(''.join((c.STRING_SPACE_10, str(_(
-                                                                'An error occurred while sending the email.')), ' ',
-                                                                                     str(_('The email is not sent.')))))
-                                                        else:
-                                                            log_list.append(''.join((c.STRING_SPACE_10, str(_(
-                                                                'An email with the orderlist is sent to')), ':')))
-                                                            log_list.append(''.join((c.STRING_SPACE_15, ', '.join((sendto_name_list)))))
-                                                            log_list.append(''.join((c.STRING_SPACE_10, str(_(
-                                                                'with cc to')), ':')))
-                                                            log_list.append(''.join((c.STRING_SPACE_15, ', '.join((cc_name_list)))))
-                                                        log_list.append(c.STRING_SPACE_05)
-                                                        if logging_on:
-                                                            logger.debug('mail_sent: ' + str(mail_sent))
+                                        is_created = create_orderlist_per_school(
+                                            sel_examyear_instance, schoolbase_dict,
+                                            department_dictlist, lvlbase_dictlist, subjectbase_dictlist,
+                                            count_dict, now_arr, min_ond, requsr_school_name, log_list,
+                                            cc_pk_str_list, cc_email_list, cc_name_list,
+                                            user_lang, request)
+                                        if is_created:
+                                            count_school_orderlists += 1
 
                                     if count_school_orderlists == 1:
-                                        msg_list.append(str(_("There is one orderlist per school created.")))
+                                        msg_list.append(str(_("The orderlist of one school is created.")))
                                     else:
                                         counst_str = str(count_school_orderlists) if count_school_orderlists else pgettext_lazy('geen', 'no')
-                                        msg_list.append(str(_("There are %(count)s orderlists per school created.") % {'count': counst_str}))
+                                        msg_list.append(str(_("The orderlists of %(count)s schools are created.") % {'count': counst_str}))
 
         update_wrap['log_list'] = log_list
 
@@ -812,6 +1120,134 @@ class OrderlistsPublishView(View):  # PR2021-09-08
 
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of OrderlistsPublishView
+
+def create_orderlist_per_school(sel_examyear_instance, schoolbase_dict,
+                                department_dictlist, lvlbase_dictlist, subjectbase_dictlist,
+                                count_dict, now_arr, min_ond, requsr_school_name, log_list,
+                                cc_pk_str_list, cc_email_list, cc_name_list,
+                                user_lang, request):
+    # function creates orderlist of one school # PR2021-10-12
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug('  ===== create_orderlist_per_school =====')
+
+    sbase_id = schoolbase_dict.get('sbase_id')
+    sbase_code = schoolbase_dict.get('sbase_code', '')
+    sch_name = schoolbase_dict.get('sch_name', '')
+    sch_abbrev = schoolbase_dict.get('sch_abbrev', '')
+    orderlist_is_created = False
+    # filter on examyear.code (is integer), not on examyear to include SXM schools
+    school = sch_mod.School.objects.get_or_none(
+        examyear__code=sel_examyear_instance.code,
+        base_id=sbase_id
+    )
+
+    if school:
+        log_list.append(''.join(
+            ((sbase_code + c.STRING_SPACE_10)[:10], sch_name)))
+
+        # - get list of 'auth1' and 'auth2'users of this school, for sending email
+        allowed_usergroups = ('auth1', 'auth2')
+        sendto_pk_str_list, sendto_name_list, sendto_email_list = \
+            get_school_emailto_list(school, allowed_usergroups)
+
+        count_total, subjbasepk_inuse_list = count_total_exams(count_dict, sbase_id)
+
+        if not count_total:
+            log_list.append(''.join((c.STRING_SPACE_10,
+                                     str(_("This school has no submitted subjects.")))))
+
+            log_list.append(c.STRING_SPACE_05)
+        else:
+            if logging_on:
+                logger.debug('..... school: ' + str(school))
+                logger.debug('sendto_pk_str_list: ' + str(sendto_pk_str_list))
+                logger.debug('sendto_name_list: ' + str(sendto_name_list))
+                logger.debug('sendto_email_list: ' + str(sendto_email_list))
+                logger.debug('count_total: ' + str(count_total))
+                logger.debug('subjbasepk_inuse_list: ' + str(subjbasepk_inuse_list))
+
+            # create published instance for this school
+            published_instance, temp_file, file_path, filename_ext = \
+                create_published_instance_orderlist(
+                    now_arr=now_arr,
+                    examyear=sel_examyear_instance,
+                    school=school,
+                    request=request,
+                    user_lang=user_lang,
+                    school_code=sbase_code,
+                    school_abbrev=sch_abbrev)
+
+            msg_err = create_final_orderlist_perschool_xlsx(
+                output=temp_file,
+                sel_examyear_instance=sel_examyear_instance,
+                department_dictlist=department_dictlist,
+                lvlbase_dictlist=lvlbase_dictlist,
+                subjectbase_dictlist=subjectbase_dictlist,
+                count_dict=count_dict,
+                subjbasepk_inuse_dict=subjbasepk_inuse_list,
+                school_code=sbase_code,
+                school_name=sch_name,
+                requsr_school_name=requsr_school_name,
+                min_ond=min_ond,
+                user_lang=user_lang)
+
+            if msg_err:
+                err_str01 = str(_('An error occurred'))
+                err_str02 = str(_('The orderlist of this school is not created.'))
+                log_list.append(''.join((c.STRING_SPACE_10, err_str01, ':')))
+                log_list.append(''.join((c.STRING_SPACE_10, msg_err)))
+                log_list.append(''.join((c.STRING_SPACE_10, err_str02)))
+                log_list.append(c.STRING_SPACE_05)
+            else:
+                msg_err = save_published_instance(published_instance, file_path, temp_file, request)
+                if msg_err:
+                    err_str01 = str(_('An error occurred'))
+                    err_str02 = str(
+                        _('The orderlist of this school is not saved.'))
+                    log_list.append(''.join((c.STRING_SPACE_10, err_str01, ':')))
+                    log_list.append(''.join((c.STRING_SPACE_10, msg_err)))
+                    log_list.append(''.join((c.STRING_SPACE_10, err_str02)))
+                    log_list.append(c.STRING_SPACE_05)
+                else:
+                    orderlist_is_created = True
+                    log_list.append(''.join((c.STRING_SPACE_10,
+                                             str(_('An orderlist of this school is created with the filename:')))))
+                    log_list.append(''.join((c.STRING_SPACE_10, filename_ext)))
+                    log_list.append(c.STRING_SPACE_05)
+
+                    # get list of users of this school, for sending email
+                    mail_sent = send_email_orderlist(
+                        examyear=sel_examyear_instance,
+                        school=school,
+                        is_total_orderlist=False,
+                        sendto_pk_str_list=sendto_pk_str_list,
+                        sendto_name_list=sendto_name_list,
+                        sendto_email_list=sendto_email_list,
+                        cc_pk_str_list=cc_pk_str_list,
+                        cc_email_list=cc_email_list,
+                        published_instance=published_instance,
+                        request=request
+                    )
+                    if not mail_sent:
+                        log_list.append(''.join((c.STRING_SPACE_10, str(_(
+                            'An error occurred while sending the email.')), ' ',
+                                                 str(_('The email is not sent.')))))
+                    else:
+                        log_list.append(''.join((c.STRING_SPACE_10, str(_(
+                            'An email with the orderlist is sent to')), ':')))
+                        log_list.append(''.join((c.STRING_SPACE_15, ', '.join((sendto_name_list)))))
+                        log_list.append(''.join((c.STRING_SPACE_10, str(_(
+                            'c.c.')), ':')))
+                        log_list.append(''.join((c.STRING_SPACE_15, ', '.join((cc_name_list)))))
+                    log_list.append(c.STRING_SPACE_05)
+                    if logging_on:
+                        logger.debug('mail_sent: ' + str(mail_sent))
+
+    return orderlist_is_created
+# - end of create_orderlist_per_school
+
 
 def count_total_exams(count_dict, sbase_id):  # PR2021-09-10
     count_total = 0
@@ -890,8 +1326,7 @@ def send_email_orderlist(examyear, school, is_total_orderlist,
     mail_sent = False
     req_usr = request.user
     if sendto_email_list:
-        #try:
-        if True:
+        try:
             subject_str = ' '.join((str(_('Orderlist')), str(_('Exams')).lower(), str(examyear.code), school.base.code, school.name))
             school_article = school.article if school.article else ''
             school_attn = ' '.join(( str(_('To')), school_article, school.name ))
@@ -995,31 +1430,34 @@ def send_email_orderlist(examyear, school, is_total_orderlist,
                 now_iso = timezone.now().isoformat()
                 sender_pk_str = str(req_usr.pk)
 
-                other_values = ','.join((str(examyear.pk), str(mailmessage.pk), 'FALSE', 'FALSE', sender_pk_str, "'" + now_iso + "'"))
+                # fields of other_values: mailmessage_id, read, deleted, modifiedby_id, modifiedat
+                other_values = ', '.join((str(mailmessage.pk), 'FALSE', 'FALSE', sender_pk_str, "'" + now_iso + "'"))
                 sql_list = [
-                    "INSERT INTO schools_mailbox (user_id, issentmail, examyear_id, mailmessage_id, read, deleted, modifiedby_id, modifiedat) VALUES"
+                    "INSERT INTO schools_mailbox (user_id, issentmail, isreceivedmail, mailmessage_id, read, deleted, modifiedby_id, modifiedat) VALUES"
                      ]
 
         # - add mail in inbox of recipients
                 value_str = ''
                 is_sent_mail_str = 'FALSE,'
+                is_received_mail_str = 'TRUE,'
                 if sendto_pk_str_list:
                     for pk_str in sendto_pk_str_list:
                         if value_str:
                             value_str += ','
-                        value_str += ''.join(('(', pk_str, ',',  is_sent_mail_str,  other_values, ')'))
+                        value_str += ''.join(('(', pk_str, ',',  is_sent_mail_str, is_received_mail_str,  other_values, ')'))
 
                 if cc_pk_str_list:
                     for pk_str in cc_pk_str_list:
                         if value_str:
                             value_str += ','
-                        value_str += ''.join(('(', pk_str, ',', is_sent_mail_str, other_values, ')'))
+                        value_str += ''.join(('(', pk_str, ',', is_sent_mail_str, is_received_mail_str, other_values, ')'))
 
-        # - add mail in mailbox sent
+        # - add mail in mailbox of sender (request.user is sender)
                 is_sent_mail_str = 'TRUE,'
+                is_received_mail_str = 'FALSE,'
                 if value_str:
                     value_str += ','
-                value_str += ''.join(('(', sender_pk_str, ',',  is_sent_mail_str,  other_values, ')'))
+                value_str += ''.join(('(', sender_pk_str, ',',  is_sent_mail_str,  is_received_mail_str, other_values, ')'))
 
                 sql_list.append(value_str)
                 sql_list.append('RETURNING *;')
@@ -1035,9 +1473,9 @@ def send_email_orderlist(examyear, school, is_total_orderlist,
                         for row in rows:
                             logger.debug('row: ' + str(row))
 
-        #except Exception as e:
-        #    mail_sent = False
-        #    logging_on.error(getattr(e, 'message', str(e)))
+        except Exception as e:
+            mail_sent = False
+            logging_on.error(getattr(e, 'message', str(e)))
 
         if logging_on:
             logger.debug('mail_sent: ' + str(mail_sent))
@@ -1158,7 +1596,6 @@ def create_final_orderlist_xlsx(output, sel_examyear_instance,
 
     msg_err = None
     try:
-        list = 'totals_only'
 # ---  create file Name and worksheet Name
         now_formatted = af.format_modified_at(timezone.now(), user_lang, False)  # False = not month_abbrev
 
@@ -1209,6 +1646,7 @@ def create_final_orderlist_xlsx(output, sel_examyear_instance,
 
                     row_index = 7
 #########################################################################
+                    list = 'totals_only'
                     if summary_detail == 'details':
                         awpr_excel.write_orderlist_with_details(
                             sheet, ete_duo_dict, is_herexamens, department_dictlist, lvlbase_dictlist, schoolbase_dictlist,
@@ -1904,7 +2342,7 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                                 'requsr_role': req_usr.role,
                                 'requsr_schoolbase_pk': req_usr.schoolbase_id
                             }
-                            school_rows = sd.create_school_rows(
+                            school_rows = sch_dicts.create_school_rows(
                                 examyear=examyear,
                                 permit_dict=permit_dict,
                                 school_pk=school.pk

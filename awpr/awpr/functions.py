@@ -107,7 +107,7 @@ def send_email_verifcode(formname, email_template, request, sel_examyear, sel_sc
 
 
 def check_verificationcode(upload_dict, formname, request ):  # PR2021-09-8
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  ----- check_verificationcode -----')
 
@@ -606,8 +606,9 @@ def get_mode_str(self):  # PR2018-11-28
         mode_str = c.MODE_DICT.get(str(self.mode))
     return mode_str
 
-def get_selected_examyear_from_usersetting(request):  # PR2021-05-31
-    #logger.debug(' ----- get_selected_examyear_from_usersetting ----- ' )
+
+def get_selected_examyear_instance_from_usersetting(request):  # PR2021-05-31
+    #logger.debug(' ----- get_selected_examyear_instance_from_usersetting ----- ' )
     # this function gets sel_examyear_instance from saved settings.
     # used in students.create_studentsubjectnote_rows
     selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
@@ -617,10 +618,47 @@ def get_selected_examyear_from_usersetting(request):  # PR2021-05-31
         country=request.user.country
     )
     return sel_examyear_instance
-# - end of get_selected_examyear_from_usersetting
+# - end of get_selected_examyear_instance_from_usersetting
+
+
+
+def get_selected_examyear_school_instance_from_usersetting(request):  # PR2021-10-12
+    #logger.debug(' ----- get_selected_examyear_instance_from_usersetting ----- ' )
+    # this function gets sel_examyear_instance from saved settings.
+    # used in MailUploadView
+
+# - get selected examyear from Usersetting
+    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+    s_ey_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+    sel_school_instance = None
+    sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(
+        pk=s_ey_pk,
+        country=request.user.country
+    )
+
+# - get selected schoolbase from Usersetting, from role if role = school
+    if request.user.role == c.ROLE_008_SCHOOL:
+        sel_sb_pk = request.user.schoolbase.pk
+    else:
+        sel_sb_pk = selected_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
+
+    sel_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
+        pk=sel_sb_pk,
+        country=request.user.country
+    )
+    sel_school_instance = sch_mod.School.objects.get_or_none(
+        base=sel_schoolbase,
+        examyear=sel_examyear_instance
+    )
+
+
+    return sel_examyear_instance, sel_school_instance
+# - end of get_selected_examyear_instance_from_usersetting
 
 
 def get_sel_examyear_instance(request, request_item_examyear_pk=None):  # PR2020-12-25 PR2021-08-12
+    # called by: get_headerbar_param, download_setting create_or_validate_user_instance, UploadOldAwpView
+
     #logger.debug('  -----  get_sel_examyear_instance  -----')
     sel_examyear_instance = None
     sel_examyear_save = False
@@ -989,14 +1027,52 @@ def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
 
+    # PR2021-10-11 move otherlang from subject to schemitem, after this: must delete field otherlang from subject
+    transfer_otherlang_from_subj_to_schemeitem(request)
+
     #PR2021-08-05 add SXMSYS school if not exists
-    add_sxmsys_school_if_not_exist(request)
+    # add_sxmsys_school_if_not_exist(request)
 
     update_examyearsetting(examyear, request)
     # PR2021-03-26
 
     #transfer_depbases_from_array_to_string()
+
 # - end of system_updates
+
+def transfer_otherlang_from_subj_to_schemeitem(request):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- transfer_otherlang_from_subj_to_schemeitem -------')
+    try:
+        exists = sch_mod.Systemupdate.objects.filter(
+            name='transfer_otherlang_from_subj_to_schemeitem'
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+        if not exists:
+            sql_list = [
+                "UPDATE subjects_schemeitem AS si",
+                "SET otherlang = subj.otherlang",
+                "FROM subjects_subject AS subj",
+                "WHERE si.subject_id = subj.id",
+                "RETURNING si.id"
+            ]
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+
+        # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name='transfer_otherlang_from_subj_to_schemeitem'
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
 
 
 def add_sxmsys_school_if_not_exist(request):  # PR2021-08-05
