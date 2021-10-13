@@ -1888,7 +1888,9 @@ def create_scheme_xlsx(examyear, scheme_rows, subjecttype_rows, schemeitem_rows,
         field_width = [25, 12, 12, 12,
                        12, 12, 12, 12, 12, 12,
                        15, 15,
-                       12, 12, 12, 12, 12, 12, 12,
+                       12, 12, 12,
+                       12, 12, 12,
+                       12,15,
                        15, 15
                        ]
 
@@ -2053,10 +2055,10 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
                    'is_mandatory', 'is_mand_subj',
                    'is_combi', 'is_core_subject', 'is_mvt',
                    'extra_count_allowed', 'extra_nocount_allowed',
-                   'elective_combi_allowed',
                    'has_practexam', 'has_pws',
                    'sr_allowed', 'max_reex',
                    'no_thirdperiod', 'no_exemption_ce',
+                   'otherlang',
                    'modifiedat', 'modby_username']
 
     col_count = len(field_names)
@@ -2065,20 +2067,21 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
 
     field_captions = [str(_('Subjects of this subject scheme')), str(_('Abbreviation')),
                       str(_('Subject type')), str(_('Grade type')),
+
                       str(_('SE weight')), str(_('CE weight')),
                       str(_('Mandatory')),  str(_("'Mandatory-if' subject")),
                       str( _('Combination subject')), str(_('Core subject')), str(_('MVT subject')),
                       str(_('Extra subject counts allowed')), str(_('Extra subject does not count allowed')),
-                      str(_('Elective combi subject allowed')),
                       str(_('Has practical exam')), str(_('Has assignment')),
                       str(_('Herkansing SE allowed')), str(_('Maximum number of re-examinations')),
                       str(_('Subject has no third period')), str(_('Exemption without CE allowed')),
+                      str(_('Other languages')),
                       str(_('Last modified on ')), str(_('Last modified by'))]
     header_format = th_align_center
 
     row_formats = []
     for x in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
-        if 1 < x < col_count - 2:
+        if 1 < x < col_count - 3:
             row_formats.append(row_align_center)
         else:
             row_formats.append(row_align_left)
@@ -2110,6 +2113,18 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
                             value = 'o/v/g'
                         else:
                             value = ''
+
+                    elif field_name == 'otherlang':
+                        other_lang = row.get(field_name)
+                        value = ''
+                        if other_lang:
+                            if 'en' in other_lang:
+                                value += str(_('English'))
+                            if 'pa' in other_lang:
+                                if value:
+                                    value += ', '
+                                value += str(_('Papiamentu'))
+
                     else:
                         value = row.get(field_name, '')
                         if isinstance(value, bool):
