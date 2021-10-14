@@ -913,9 +913,6 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12
                             c.STRING_SPACE_10 + str(_("Exam year : %(ey)s") % {'ey': str(sel_examyear_instance.code)}))
                         log_list.append(c.STRING_SPACE_05)
 
-# get count_dict only once and create orderlists from this dict,
-# to make sure that the published orderlist and the excel files per schoolcontain the same amout of subjects
-
 # get text from examyearsetting
                         settings = af.get_exform_text(sel_examyear_instance, ['exform', 'ex1'])
 
@@ -923,7 +920,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12
                         department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear_instance)
                         lvlbase_dictlist = subj_view.create_levelbase_dictlist(sel_examyear_instance)
                         subjectbase_dictlist = subj_view.create_subjectbase_dictlist(sel_examyear_instance)
-                        schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance)
+                        schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance, request)
 
 # +++ get nested dicts of subjects per school, dep, level, lang, ete_exam
                         count_dict = subj_view.create_studsubj_count_dict(sel_examyear_instance, request)
@@ -999,7 +996,8 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12
                                     log_list.append(''.join((c.STRING_SPACE_15, filename_ext)))
                                     log_list.append(c.STRING_SPACE_05)
 
-        # get list of 'auth1' and 'auth2' users of requsr_school, for sending email with total_orderlist and cc to schools
+        # get list of 'auth1' and 'auth2' users of requsr_school (ETE or DOE), for sending email with total_orderlist
+                                    # they will get cc of email to each school
                                     allowed_usergroups = ('auth1', 'auth2')
                                     cc_pk_str_list, cc_name_list, cc_email_list = get_school_emailto_list(requsr_school, allowed_usergroups)
                                     if logging_on:
@@ -1306,6 +1304,8 @@ def send_email_orderlist(examyear, school, is_total_orderlist,
             requsr_school_article = requsr_school.article.capitalize() if requsr_school.article else ''
             sender_organisation = ''.join((requsr_school_article, ' ', requsr_school.name, ','))
             sender_name = req_usr.last_name
+            is_curacao = request.user.country.abbrev.lower() == 'cur'
+
             msg_dict = {
                 'examyear_str': str(examyear.code),
                 'school_attn': school_attn,
@@ -1314,7 +1314,8 @@ def send_email_orderlist(examyear, school, is_total_orderlist,
                 'sender_organisation': sender_organisation,
                 'sender_name': sender_name,
                 'sendto_name_list': sendto_name_list,
-                'is_total_orderlist': is_total_orderlist
+                'is_total_orderlist': is_total_orderlist,
+                'is_curacao': is_curacao
             }
 
             if logging_on:
@@ -2669,7 +2670,7 @@ def update_school_instance(instance, upload_dict, err_dict, request):
                     save_changes = True
 
 # 4. save changes in boolean fields
-            elif field in ['activated', 'locked', 'isdayschool', 'iseveningschool', 'islexschool', 'no_order']:
+            elif field in ['activated', 'locked', 'isdayschool', 'iseveningschool', 'islexschool' ]:
                 saved_value = getattr(instance, field)
                 new_value = False if new_value is None else new_value
 

@@ -458,8 +458,7 @@ class School(AwpBaseModel):  # PR2018-08-20 PR2018-11-11
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
-    # TODO remname no_order to no_duo_order
-    # don't count subject of this school in orderlist when subject.no_order and school.no_order are both True
+    # TODO deprecate, not in use any more
     no_order = BooleanField(default=False)
 
     isdayschool = BooleanField(default=False)
@@ -507,7 +506,7 @@ class School_log(AwpBaseModel):
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
-    # TODO remname no_order to no_duo_order
+    # TODO deprecate, not in use any more
     no_order = BooleanField(default=False)
 
     isdayschool = BooleanField(default=False)

@@ -2415,7 +2415,7 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, er
 
             if field in ("gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi",
                          "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
-                         "has_practexam", "has_pws", "is_core_subject", "is_mvt", "is_wisk", "ete_exam", "otherlang", "no_order",
+                         "has_practexam", "has_pws", "is_core_subject", "is_mvt", "is_wisk", "ete_exam", "otherlang",
                          "sr_allowed", "max_reex",  "no_thirdperiod",  "no_exemption_ce"):
 
                 saved_value = getattr(instance, field)
@@ -3088,7 +3088,7 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
                 "lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
 
                 "si.gradetype, si.weight_se, si.weight_ce, si.ete_exam, si.otherlang,",
-                "si.no_order, si.is_mandatory, si.is_mand_subj_id,",
+                "si.is_mandatory, si.is_mand_subj_id,",
                 "si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
                  # deprecated: si.has_pws, si.elective_combi_allowed,
                 "si.has_practexam, si.is_core_subject, si.is_mvt, si.is_wisk,",
@@ -3654,20 +3654,28 @@ def create_levelbase_dictlist(examyear_instance):  # PR2021-09-01
 # --- end of create_levelbase_dictlist
 
 
-def create_schoolbase_dictlist(examyear):  # PR2021-08-20
+def create_schoolbase_dictlist(examyear, request):  # PR2021-08-20 PR2021-10-14
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug ('----- create_schoolbase_dictlist -----')
 
     # PR2021-08-20 functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name
     # - of this exam year, of all countries
+    # - country: when req_usr country = curacao: include all schools (inluding SXM schools)
+    #           when req_usr country = sxm: include only SXM schools
+
     # - skip schools of other organizations than schools
     # - also add admin organization (ETE, DOE), for extra for ETE, DOE
     # NOTE: use examyear.code (integer field) to filter on examyear. This way schoolbases from SXM and CUR are added to list
 
     # called by: create_orderlist_xlsx, create_orderlist_per_school_xlsx and OrderlistsPublishView
 
-    sql_keys = {'ey_code_int': examyear.code}
+    if request.user.country.abbrev.lower() == 'sxm':
+        show_sxm_schools_only = "AND ey.country_id = %(requsr_country_id)s::INT"
+    else:
+        show_sxm_schools_only = ''
+
+    sql_keys = {'ey_code_int': examyear.code, 'requsr_country_id': request.user.country.pk}
     sql_list = [
         "SELECT sbase.id AS sbase_id, sbase.code AS sbase_code, sch.article AS sch_article, sch.name AS sch_name, sch.abbrev AS sch_abbrev, sbase.defaultrole",
 
@@ -3677,6 +3685,7 @@ def create_schoolbase_dictlist(examyear):  # PR2021-08-20
 
         "WHERE ey.code = %(ey_code_int)s::INT",
         "AND (sbase.defaultrole =", str(c.ROLE_008_SCHOOL), "OR sbase.defaultrole =", str(c.ROLE_064_ADMIN), ")",
+        show_sxm_schools_only,
         "ORDER BY LOWER(sbase.code)"]
     sql = ' '.join(sql_list)
 
@@ -3733,7 +3742,7 @@ def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk
     #  add extra for ETE and DOE PR2021-09-25
     # called by: create_orderlist_xlsx, create_orderlist_per_school_xlsx, OrderlistsPublishView
 
-# - get schoolbase_id of ETE and DEX
+# - get schoolbase_id of ETE and DOE
 
     # key = country_id, value = row_dict
     mapped_admin_dict = {}
@@ -3771,14 +3780,14 @@ def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk
 
     if request.user.country.abbrev.lower() == 'cur':
     # when print orderlist ETE
-        # - when request,user = ETE: skip DUO of SXM school
+        # - when request,user = ETE: add all ETE-exams and DUO-exams of CUR schools, but skip DUO-exams of SXM schools
         # -  WHERE is_ete_exam OR (NOT is_ete_exam AND country = requsr_country)
         skip_ete_or_duo = "AND ( (si.ete_exam) OR (NOT si.ete_exam AND ey.country_id = %(requsr_country_id)s::INT ))"
-    elif  request.user.country.abbrev.lower() == 'sxm':
-    # when print orderlist DEX
-        # - when request,user = SXM: skip all CUR schools, skip all ETE exams
-        # -  WHERE NOT is_ete_exam AND country = requsr_country)
-        skip_ete_or_duo = "AND (NOT si.ete_exam AND ey.country_id = %(requsr_country_id)s::INT )"
+    elif request.user.country.abbrev.lower() == 'sxm':
+    # when print orderlist DOE
+        # - when request,user = SXM: show only SXM schools, show ETE exams and DUO exams
+        # -  WHERE country = requsr_country
+        skip_ete_or_duo = "AND (ey.country_id = %(requsr_country_id)s::INT )"
 
     sql_keys = {'ey_code_int': sel_examyear_instance.code, 'requsr_country_id': requsr_country_pk}
     sql_studsubj_agg_list = [
@@ -3870,11 +3879,10 @@ def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk
 
         row_sb_code = row.get('sb_code', '-')  # for testing only
 
-        # admin_id is schoolbase_id of school of ETE / DEX
+        # admin_id is schoolbase_id of school of ETE / DOE
         admin_id, admin_code = None, None
         order_extra_fixed, order_extra_perc, order_round_to = None, None, None
         order_tv2_divisor, order_tv2_multiplier, order_tv2_max = None, None, None
-        mapped_country_dict = {}
 
         country_id = row.get('country_id')
         if country_id in mapped_admin_dict:
@@ -4164,6 +4172,8 @@ def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk
 
 def calc_extra_exams(subj_count, extra_fixed, extra_perc, round_to):  # PR2021-09-25
     # - function counts extra exams and examns tv2 per school / subject
+    # - Note: values of extra_fixed, extra_perc, round_to are from table examyear,
+    #         thus can be different for CUR and SXM schools
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -4201,6 +4211,8 @@ def calc_extra_exams(subj_count, extra_fixed, extra_perc, round_to):  # PR2021-0
 def calc_exams_tv02(subj_count, divisor, multiplier, max_exams):  # PR2021-09-25
     # - count examns tv2 per school / subject:
     # - 'multiplier' tv02-examns per 'divisor' tv01-examns, roundup to 'multiplier', with max of 'max_exams'
+    # - Note: values of divisor, multiplier, max_exams are from table examyear,
+    #         thus can be different for CUR and SXM schools
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:

@@ -11,11 +11,30 @@
 
 {% trans "Click 'Enable editing' if the totals in the Excel sheet are zero." %}
 
-{% trans "Please review this orderlist and contact us if necessary." %}
+{% if is_curacao %}Wilt u de bestellijst controleren en indien nodig binnen 1 week uw reactie sturen naar:
+    e-mail adres:  esther.bomberg@ete.cw
+    c.c. naar:     fatima.celestijn@ete.cw (Productie afdeling)
 
+Met vriendelijke groet | Best regards | Kordial Saludo,
 
-{{ sender_organisation }}
-{{ sender_name }}
+Esther Padilla-Bomberg
+
+Hoofd ETE,
+Expertisecentrum voor Toetsen & Examens
+Ministerie van Onderwijs, Wetenschap, Cultuur & Sport
+
+{% else %}
+{% trans "Please review this orderlist and contact us within 1 week if necessary at:" %}
+    e-mail adres:  Yvette.Halley@sintmaartengov.org
+    c.c.:          Brigida.Peterson@sintmaartengov.org
+
+{% trans "With Kind Regards," %}
+
+Drs. Yvette J.C.Halley
+Division Head
+Division of Examinations
+Ministry of Education, Culture, Youth and Sport
+{% endif %}
 
 {% endautoescape %}
 

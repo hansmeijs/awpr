@@ -333,7 +333,7 @@ def create_school_rows(examyear, permit_dict, school_pk=None):
 
     sql_list = ["SELECT sch.id, sch.base_id, sch.examyear_id, ey.code AS examyear_code, ey.country_id, c.name AS country,",
         "CONCAT('school_', sch.id::TEXT) AS mapid, sb.defaultrole,",
-        "sch.name, sch.abbrev, sch.article, sb.code AS sb_code, sch.depbases, sch.otherlang, sch.no_order,",
+        "sch.name, sch.abbrev, sch.article, sb.code AS sb_code, sch.depbases, sch.otherlang,",
         "sch.isdayschool, sch.iseveningschool, sch.islexschool, sch.activated, sch.activatedat, sch.locked, sch.lockedat,",
         "sch.modifiedby_id, sch.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
 

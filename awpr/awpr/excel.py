@@ -919,7 +919,7 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang, req
 # - get schoolbase dictlist
     # functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name of this exam year of all countries
     # fields are: sbase_id, sbase_code, sch_name
-    schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance)
+    schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance, request)
 
 # ---  create file Name and worksheet Name
     now_formatted = af.format_modified_at(timezone.now(), user_lang, False)  # False = not month_abbrev
@@ -1031,7 +1031,7 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):  # P
 
 # +++ get schoolbase dictlist
     # functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name of this exam year of all countries
-    schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance)
+    schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance, request)
     """
     schoolbase_dictlist: [
         {'sbase_id': 2, 'sbase_code': 'CUR01', 'sch_name': 'Ancilla Domini Vsbo'}, 
@@ -1084,7 +1084,7 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):  # P
                     ete_duo_dict = count_dict.get(ete_duo)
                     ete_duo_dict_total = ete_duo_dict.get('total')
 
-            # get number of subject columns from DEO/ETE total dict
+            # get number of subject columns from DEO / ETE total dict
                     # 'DUO': {'total': {137: 513, 134: 63, 156: 63, 175: 63},
                     # columns are (0: 'schoolbase_code', 1: school_name"
                     # columns 2 etc  are subject columns. Extend number when more than 15 subjects

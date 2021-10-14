@@ -61,11 +61,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     const field_settings = {
-        school: {field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments", "Day_Evening_LEXschool",  "Other_language",  "Not_on_DUOorderlist_2lines",  "Activated",  "Locked"],
-                 field_names: ["select", "sb_code", "article", "name", "abbrev", "depbases", "dayevelex", "otherlang", "no_order", "activated", "locked"],
-                 filter_tags: ["select", "text", "text",  "text", "text",  "text", "text", "text", "toggle", "toggle", "toggle"],
-                 field_width:  ["020", "075", "075", "360", "180", "120","120", "090","100", "100", "100"],
-                 field_align: ["c", "l", "l", "l","l", "l", "l", "l", "c", "c", "c"]}
+        school: {field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments", "Day_Evening_LEXschool",  "Other_language", "Activated",  "Locked"],
+                 field_names: ["select", "sb_code", "article", "name", "abbrev", "depbases", "dayevelex", "otherlang", "activated", "locked"],
+                 filter_tags: ["select", "text", "text",  "text", "text",  "text", "text", "text", "toggle", "toggle"],
+                 field_width:  ["020", "075", "075", "360", "180", "120","120", "090","100", "100"],
+                 field_align: ["c", "l", "l", "l","l", "l", "l", "l", "c", "c"]}
         };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -158,9 +158,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MSCH_defaultrole_container = document.getElementById("id_MSCH_defaultrole_container");
         const el_MSCH_select_defaultrole = document.getElementById("id_MSCH_defaultrole");
         const el_MSCH_select_otherlang = document.getElementById("id_MSCH_otherlang");
-        const el_MSCH_no_order = document.getElementById("id_MSCH_no_order");
-
-
 
 // ---  MODAL UPLOAD DATA - MIMP
     // --- create EventListener for buttons in btn_container
@@ -526,7 +523,7 @@ document.addEventListener('DOMContentLoaded', function() {
             td.appendChild(el);
 
     // --- add EventListener to td
-            if (["code", "abbrev", "name", "last_name", "depbases", "dayevelex", "otherlang", "no_order"].includes(field_name)){
+            if (["code", "abbrev", "name", "last_name", "depbases", "dayevelex", "otherlang"].includes(field_name)){
                 td.addEventListener("click", function() {MSCH_Open(el)}, false)
                 td.classList.add("pointer_show");
                 add_hover(td);
@@ -562,7 +559,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let filter_value = null, display_txt = null;
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
-                } else if (["activated", "locked", "no_order"].includes(field_name)){
+                } else if (["activated", "locked"].includes(field_name)){
                     el_div.className = (fld_value) ? "tickmark_2_2" : "tickmark_0_0";
                     filter_value = (fld_value) ? "1" : "0";
                 } else if (["sb_code", "article", "name", "abbrev"].indexOf(field_name) > -1){
@@ -881,7 +878,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 tblName = get_tblName_from_selectedBtn();
                 mod_MSCH_dict.examyear_id = setting_dict.sel_examyear_pk;
                 // default setting: role = school, type = dayschool
-                mod_MSCH_dict.no_order = false;
                 mod_MSCH_dict.defaultrole = 8;
                 mod_MSCH_dict.isdayschool = true;
                 mod_MSCH_dict.iseveningschool = false;
@@ -926,7 +922,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     mod_MSCH_dict.name = map_dict.name;
                     mod_MSCH_dict.depbases = map_dict.depbases;
                     mod_MSCH_dict.otherlang = map_dict.otherlang;
-                    mod_MSCH_dict.no_order = map_dict.no_order;
                     mod_MSCH_dict.defaultrole = map_dict.defaultrole,
 
                     mod_MSCH_dict.isdayschool = map_dict.isdayschool,
@@ -960,7 +955,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_MSCH_article.value = (mod_MSCH_dict.article) ? mod_MSCH_dict.article : null;
                 el_MSCH_select_defaultrole.value = (mod_MSCH_dict.defaultrole) ? mod_MSCH_dict.defaultrole : null;
                 el_MSCH_select_otherlang.value = (mod_MSCH_dict.otherlang) ? mod_MSCH_dict.otherlang : "none";
-                el_MSCH_no_order.value = (mod_MSCH_dict.no_order) ? "1" : "0";
 
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSCH_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
@@ -1028,14 +1022,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (new_value !== old_value) {
                         upload_dict[fldName] = new_value
                     };
-            console.log("upload_dict", upload_dict)
-                } else if(fldName === "no_order"){;
-                    old_value = (!!mod_MSCH_dict[fldName])
-                    new_value = (el.value === "1") ? true : false;
-                    if (new_value !== old_value) {
-                        upload_dict[fldName] = new_value
-                    };
-
                 } else {
                     old_value = (mod_MSCH_dict[fldName]) ? mod_MSCH_dict[fldName] : null;
                     new_value = (el.value) ? el.value : null;

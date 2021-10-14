@@ -541,8 +541,8 @@ class Schemeitem(sch_mod.AwpBaseModel):
     # teherfore otherlang is moved from subject to schemeitem
     # TODO remove from subject after transferring data
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-    # TODO remove no_order from subjects
-    # if no_order: dont count this subject in orderlist when school no_order is also True
+
+    # TODO deprecated: remove no_order from subjects
     no_order = BooleanField(default=False)
 
     # delete exam from schemitem, is linked to grade
