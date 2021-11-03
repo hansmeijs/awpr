@@ -159,7 +159,7 @@ class User(AbstractUser):
 
     def permit_list(self, page):
         # --- create list of all permits  of this user PR2021-04-22  PR2021-07-03
-        logging_on = False  #s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' =============== permit_list ============= ')
             logger.debug('page: ' + str(page) + ' ' + str(type(page)))
@@ -170,11 +170,13 @@ class User(AbstractUser):
             logger.debug('requsr_usergroups: ' + str(requsr_usergroups) + ' ' + str(type(requsr_usergroups)))
             logger.debug('requsr_role: ' + str(requsr_role) + ' ' + str(type(requsr_role)))
         # requsr_usergroups_list: ['admin', 'auth2', 'edit'] <class 'list'>
+
         permit_list = []
         if page and requsr_role and requsr_usergroups:
             requsr_usergroups_list = requsr_usergroups.split(';')
             if logging_on:
                 logger.debug('requsr_usergroups_list: ' + str(requsr_usergroups_list) + ' ' + str(type(requsr_usergroups_list)))
+
             sql_filter = ""
             for usergroup in requsr_usergroups_list:
                 sql_filter += " OR (POSITION('" + usergroup + "' IN p.usergroups) > 0)"
@@ -195,6 +197,7 @@ class User(AbstractUser):
                     for row in cursor.fetchall():
                         if logging_on:
                             logger.debug('row: ' + str(row) + ' ' + str(type(row)))
+
                         if row[0]:
                             permit = 'permit_' + row[0]
                             if permit not in permit_list:
@@ -553,8 +556,6 @@ class Usergroup(sch_mod.AwpBaseModel):  # PR2021-06-19
     name = CharField(max_length=c.USERNAME_SLICED_MAX_LENGTH, null=True)
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
     roles = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
-
-
 
 
 # PR2018-05-06

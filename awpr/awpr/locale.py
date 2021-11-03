@@ -231,10 +231,9 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Commissioner_2lines'] =  pgettext_lazy('2 lines', 'Commis-\nsioner')
         dict['Analyze'] = _('Analyze')
-        dict['Administrator'] = _('Administrator')
-        dict['Administrator_2lines'] =  pgettext_lazy('2 lines', 'Admini-\nstrator')
-        dict['System_manager'] = _('System manager')
-        dict['System_manager_2lines'] = pgettext_lazy('2 lines', 'System\nmanager')
+
+        dict['System_administrator'] = _('System administrator')
+        dict['System_administrator_2lines'] = pgettext_lazy('2 lines', 'System\nadministrator')
 
         dict['Sysadm_cannot_delete_own_account'] = _("System administrators cannot delete their own account.")
         dict['Sysadm_cannot_remove_sysadm_perm'] = _("System administrators cannot remove their own 'system administrator' permission.")
@@ -386,7 +385,9 @@ def get_locale_dict(table_dict, user_lang, request):
     if 'page_mailbox' in page_list:
 
         dict['Sender'] = _('Sender')
-        dict['Organization'] = _('Organization')
+        dict['Organization'] = TXT_Organization
+        dict['User'] = _('User')
+        dict['Usergroup'] = _('Usergroup')
         dict['From'] = _('From')
         dict['Subject'] = pgettext_lazy('onderwerp', ' Subject')
 
@@ -394,14 +395,53 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Date_sent'] = _('Date sent')
         dict['Attn'] = _('Attn.')
         dict['Attachment'] = _('Attachment')
+
         dict['Status'] = _('Status')
-        dict['Create_message'] = _('Create message')
+        dict['Create_new_message'] = _('Create new message')
+        dict['Mailing_list'] = _('Mailing list')
+        dict['Mailing_lists'] = _('Mailing lists')
+        dict['Name_of_the_mailinglist'] = _('The name of the mailing list')
+        dict['For_general_use'] = _('For general use')
+        dict['Mailinglist_canbe_used_byallusers'] = _('This mailing list is available to all users of your organization.')
+
+        dict['There_are_no_'] = _('There are no ')
+
+        dict['Create_new_mailing_list'] = _('Create new mailing list')
+        dict['Delete_mailing_list'] = _('Delete mailing list')
+        dict['is_general_mailinglist'] = _('is a general mailing list.')
+        dict['canbe_usedby_allusers'] = _('It can be used by all users of your organization.')
+        dict['Areyousure_youwantto_delete'] = _('Are you sure you want to delete this mailing list?')
+        dict['Can_only_delete_by_sysadm'] = _('It can only be deleted by the system administrator.')
 
         dict['Message'] = _('Message')
         dict['Messages'] = _('Messages')
 
         dict['Select_a_user'] = _('Select a user')
 
+        dict['Title_cannot_be_blank'] = _('The title of the message cannot be blank.')
+        dict['Text_cannot_be_blank'] = _('The text of the message cannot be blank.')
+        dict['Mesage_musthave_atleast_one_recipient'] = _('The message must have at least one recipient.')
+        dict['Mailinglist_musthave_atleast_one_recipient'] = _('The mailing list must have at least one recipient.')
+
+        dict['Upload_attachment'] = _('Upload attachment')
+        dict['Attachment_too_large'] = _('The attachment is too large.')
+        dict['Maximum_size_is'] = _('The maximum size is ')
+
+        dict['Selected'] = _('Selected')
+        dict['Available'] = _('Available')
+        dict['Organizations'] = _('Organizations')
+        dict['Users'] = _('Users')
+        dict['Usergroups'] = _('User groups')
+
+        dict['Include_users_of_'] = _('Include users of ')
+        dict['Include'] = _('Include')
+
+        dict['_of_'] = TXT__of_
+        # dict['With_Kind_Regards'] = _('With Kind Regards')
+
+        dict['Delete_this_message'] = _('Delete this message')
+        dict['Undelete_this_message'] = _('Undelete this message')
+        # Delete this message
 
 # ====== PAGE SUBJECTS ========================= PR2020-09-30
     if 'page_subject' in page_list:

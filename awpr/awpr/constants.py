@@ -35,6 +35,8 @@ MAX_LEN_DICT_STUDENT = {
     'gradelistnumber': MAX_LENGTH_10
 }
 
+MAX_ATTACHMENT_SIZE_Mb = 1
+
 GENDER_NONE = '-'  # PR2018-09-05
 GENDER_MALE = 'M'
 GENDER_FEMALE = 'V'
@@ -471,9 +473,10 @@ def get_role_options(request):
     return _role_options
 
 
-# PR2018-05-21 PR2021-04-23
+# PR2018-05-21 PR2021-04-23 PR2021-10-22 teacher added
 USERGROUP_READ = 'read'
 USERGROUP_EDIT = 'edit'
+USERGROUP_TEACHER = 'teach'
 USERGROUP_AUTH1_PRES = 'auth1'
 USERGROUP_AUTH2_SECR = 'auth2'
 USERGROUP_AUTH3_COM = 'auth3'
@@ -484,12 +487,13 @@ USERGROUP_ADMIN = 'admin'
 USERGROUP_CAPTION = {
     USERGROUP_READ: _('Read'),
     USERGROUP_EDIT: _('Edit'),
+    USERGROUP_TEACHER: _('Teacher'),
     USERGROUP_AUTH1_PRES: _('President'),
     USERGROUP_AUTH2_SECR: _('Secretary'),
     USERGROUP_AUTH3_COM: _('Commissioner'),
     USERGROUP_AUTH4_EXAM: _('Examinator'),
     USERGROUP_ANALYZE: _('Analyze'),
-    USERGROUP_ADMIN: _('Administrator')
+    USERGROUP_ADMIN: _('System administrator')
 }
 
 PAGE_LIST = {

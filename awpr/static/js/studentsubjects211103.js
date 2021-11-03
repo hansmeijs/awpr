@@ -803,7 +803,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (tblName === "published") {
              if (map_dict.datepublished) { ob1 = map_dict.datepublished};
         }
-        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, ob1, ob2, ob3, setting_dict.user_lang);
+        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, ob1, ob2, ob3, false, setting_dict.user_lang);
 
 // --- insert tblRow into tblBody at row_index
         let tblRow = tblBody_datatable.insertRow(row_index);
@@ -1605,7 +1605,7 @@ console.log("mode: ", mode)
                         break;
                     };
                 };  // for (const ss_dict of Object.values(mod_MSTUDSUBJ_dict.studsubj_dict))
-            }
+            };
             if (add_to_studsubj){
     // add studsubj to tblBody_studsubjects if it exists in studsubj_dict, not tobedeleted
                 MSTUDSUBJ_CreateSelectRow("studsubj", el_tblBody_studsubjects, ss_mapid, si_schemeitem_pk, subj_code, subj_name,
@@ -1642,7 +1642,7 @@ console.log("mode: ", mode)
         if (subj_name) { ob1 = subj_name.toLowerCase() };
         if (sjtp_abbrev) { ob2 = sjtp_abbrev.toString()};
 
-        const row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, ob3, setting_dict.user_lang);
+        const row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, ob3, false, setting_dict.user_lang);
 
         const tblRow = tblBody_select.insertRow(row_index);
         if (tblName === "studsubj") {
@@ -2994,7 +2994,6 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
            data_rows = [];
         }
     }  //  RefreshDataRows
-
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {

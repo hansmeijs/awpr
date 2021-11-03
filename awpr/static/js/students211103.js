@@ -652,7 +652,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // NIU:  const ob3 = (data_dict.firstname) ? data_dict.firstname : "";
 
         const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
-                                     ob1, ob2, "", setting_dict.user_lang);
+                                     ob1, ob2, "", false, setting_dict.user_lang);
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_datatable.insertRow(row_index);

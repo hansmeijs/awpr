@@ -224,16 +224,6 @@ def create_student_rows(setting_dict, append_dict, student_pk):
 # --- end of create_student_rows
 
 
-def get_permit_crud_of_this_page(page, request):
-    # --- get crud permit for this page # PR2021-07-18 PR2021-09-05
-    has_permit = False
-    if page and request.user and request.user.country and request.user.schoolbase:
-        permit_list = request.user.permit_list(page)
-        if permit_list:
-            has_permit = 'permit_crud' in permit_list
-
-    return has_permit
-
 
 @method_decorator([login_required], name='dispatch')
 class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
@@ -248,7 +238,7 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
         messages = []
 
 # - get permit
-        has_permit = get_permit_crud_of_this_page('page_student', request)
+        has_permit = af.get_permit_crud_of_this_page('page_student', request)
         if has_permit:
 
 # - reset language
@@ -302,6 +292,7 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                         if student:
                             append_dict['created'] = True
                     else:
+
 # +++  or get existing student
                         student = stud_mod.Student.objects.get_or_none(
                             id=student_pk,
@@ -336,10 +327,14 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                         )
 
                 update_wrap['updated_student_rows'] = updated_rows
+
+# - addd messages to update_wrap
         if len(messages):
             update_wrap['messages'] = messages
-            # - return update_wrap
+
+# - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of StudentUploadView
 
 
 @method_decorator([login_required], name='dispatch')
@@ -355,7 +350,7 @@ class StudentLinkStudentView(View):  # PR2021-09-06
         messages = []
 
 # - get permit - StudentLinkStudentView is called from page studsubj
-        has_permit = get_permit_crud_of_this_page('page_studsubj', request)
+        has_permit = af.get_permit_crud_of_this_page('page_studsubj', request)
         if has_permit:
 
 # - reset language
@@ -835,7 +830,7 @@ class StudentsubjectMultipleOccurrencesView(View):  # PR2021-09-05
         update_wrap = {}
 
 # - get permit - only download list when user has permit_crud
-        has_permit = get_permit_crud_of_this_page('page_studsubj', request)
+        has_permit = af.get_permit_crud_of_this_page('page_studsubj', request)
         if has_permit:
 # - reset language
             #user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -2821,9 +2816,14 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
 # ---  create file_path
                         # PR2021-08-07 file_dir = 'country/examyear/attachments/'
                         # this one gives path:awpmedia/awpmedia/media/cur/2022/published
+                        requsr_school = sch_mod.School.objects.get_or_none(
+                            base=request.user.schoolbase,
+                            examyear=sel_examyear
+                        )
+                        requsr_schoolcode = requsr_school.base.code if requsr_school.base.code else '---'
                         country_abbrev = sel_examyear.country.abbrev.lower()
                         examyear_str = str(sel_examyear.code)
-                        file_dir = '/'.join((country_abbrev, examyear_str, 'attachment'))
+                        file_dir = '/'.join((country_abbrev, examyear_str, requsr_schoolcode, 'attachment'))
                         file_path = '/'.join((file_dir, file_name))
 
                         if logging_on:
@@ -2860,7 +2860,7 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def delete_student(student, student_rows, msg_list, error_list, request):
+def delete_student(student, updated_rows, msg_list, error_list, request):
     # --- delete student # PR2021-07-18
 
     logging_on = s.LOGGING_ON
@@ -2870,8 +2870,8 @@ def delete_student(student, student_rows, msg_list, error_list, request):
 
     deleted_ok = False
 
-# - create student_row - to be returned after successfull delete
-    student_row = {'id': student.pk,
+# - create updated_row - to be returned after successfull delete
+    updated_row = {'id': student.pk,
                    'mapid': 'student_' + str(student.pk),
                    'deleted': True}
     base_pk = student.base.pk
@@ -2907,11 +2907,9 @@ def delete_student(student, student_rows, msg_list, error_list, request):
     else:
         deleted_ok = sch_mod.delete_instance(student, msg_list, error_list, request, this_txt, header_txt)
 
-    if logging_on:
-        logger.debug('msg_list: ' + str(msg_list))
-    if deleted_ok:
-# - add deleted_row to subject_rows
-        student_rows.append(student_row)
+# - add deleted_row to updated_rows
+        if deleted_ok:
+            updated_rows.append(updated_row)
 
 # - check if this student also exists in other examyears.
         students_exist = stud_mod.Student.objects.filter(base_id=base_pk).exists()
@@ -2922,7 +2920,7 @@ def delete_student(student, student_rows, msg_list, error_list, request):
                 student_base.delete()
 
     if logging_on:
-        logger.debug('student_rows' + str(student_rows))
+        logger.debug('updated_rows' + str(updated_rows))
         logger.debug('msg_list' + str(msg_list))
 
     return deleted_ok

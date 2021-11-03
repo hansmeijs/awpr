@@ -5,7 +5,7 @@
     const man_upload = {
 /////////  NEDERLANDS //////////////////////////////
         nl: [
-        write_paragraph_header("id_upload_data", "Gegevens uploaden", true),
+        write_paragraph_header("id_upload_data", "Gegevens uploaden"),
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",

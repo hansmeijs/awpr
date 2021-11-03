@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Messages' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/mailbox211013.js' %}"></script>
+    <script src="{% static 'js/mailbox211103.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -29,9 +29,12 @@
         {% if no_access %}
             {% include 'includes/message_noaccess.html' %}
         {% else %}
+            {% include 'schools/modmailmessage.html' %}
+            {% include 'schools/modmailmessagereader.html' %}
+            {% include 'schools/modmailinglist.html' %}
+            {% include 'schools/modselectmailinglistuserschool.html' %}
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
-            {% include 'schools/modmailmessage.html' %}
 
             <div class="content_margin_top78">
 
@@ -78,7 +81,11 @@
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_settings_upload="{% url 'url_settings_upload' %}"
                 data-url_mail_upload="{% url 'url_mail_upload' %}"
-
+                data-url_mailbox_upload="{% url 'url_mailbox_upload' %}"
+                data-url_mail_attachment_upload="{% url 'url_mail_attachment_upload' %}"
+                data-url_mailinglist_upload="{% url 'url_mailinglist_upload' %}"
+                data-url_recipients_download="{% url 'url_recipients_download' %}"
+                data-class_has_mail="{{class_has_mail}}"
             >
         </div>
     {% endif %}

@@ -11,9 +11,9 @@
 
 //=========  t_MSED_Open  ================ PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10
     function t_MSED_Open(loc, tblName, data_map, setting_dict, permit_dict, MSED_Response, all_countries) {
-        console.log( "===== t_MSED_Open ========= ", tblName);
-        console.log( "setting_dict", setting_dict);
-        console.log( "permit_dict", permit_dict);
+        //console.log( "===== t_MSED_Open ========= ", tblName);
+        //console.log( "setting_dict", setting_dict);
+        //console.log( "permit_dict", permit_dict);
         // PR2021-09-24 all_countries is added for copy subjects to other examyear/ country
         if (!isEmpty(loc)) {
             let may_open_modal = false, selected_pk = null;
@@ -47,7 +47,7 @@
 
     //=========  t_MSED_Save  ================ PR2021-05-10 PR2021-08-13 PR2021-09-24
     function t_MSED_Save(MSED_Response, tblRow) {
-        console.log("===  t_MSED_Save =========");
+        //console.log("===  t_MSED_Save =========");
     // --- put tblName, sel_pk and value in MSED_Response, MSED_Response handles uploading
 
         const tblName = get_attr_from_el(tblRow, "data-table");
@@ -64,7 +64,7 @@
             new_setting.sel_depbase_pk = (selected_pk_int) ? selected_pk_int : null;
         }
 
-        console.log("new_setting", new_setting);
+        //console.log("new_setting", new_setting);
         MSED_Response(new_setting)
 
 // hide modal
@@ -74,7 +74,7 @@
 
 //=========  t_MSED_FillSelectTable  ================ PR2020-08-21 PR2020-12-18 PR2021-05-10 PR2021-09-24
     function t_MSED_FillSelectTable(loc, tblName, data_map, permit_dict, MSED_Response, selected_pk, all_countries) {
-        console.log( "===== t_MSED_FillSelectTable ========= ");
+        //console.log( "===== t_MSED_FillSelectTable ========= ");
 
         const tblBody_select = document.getElementById("id_MSED_tblBody_select");
         tblBody_select.innerText = null;
@@ -180,10 +180,10 @@
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23
     function t_MSSSS_Open (loc, tblName, data_rows, add_all, setting_dict, permit_dict, MSSSS_Response) {
-        console.log(" ===  t_MSSSS_Open  =====", tblName) ;
-        console.log( "setting_dict", setting_dict);
-        console.log( "permit_dict", permit_dict);
-        console.log( "data_rows", data_rows, typeof data_rows );
+        //console.log(" ===  t_MSSSS_Open  =====", tblName) ;
+        //console.log( "setting_dict", setting_dict);
+        //console.log( "permit_dict", permit_dict);
+        //console.log( "data_rows", data_rows, typeof data_rows );
         // tblNames are: "school", "subject", "student"
 
         // PR2021-04-27 debug: opening modal before loc and setting_dict are loaded gives 'NaN' on modal.
@@ -322,13 +322,13 @@
         if(tblName === "student"){
             if (map_dict.lastname) { ob1 = map_dict.lastname.toLowerCase()};
             if (map_dict.firstname) { ob2 = map_dict.firstname.toLowerCase()};
-            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, "", loc.user_lang);
+            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, "", false, loc.user_lang);
         } else if(tblName === "subject"){
             if (name) { ob1 = name.toLowerCase()};
-            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", loc.user_lang);
+            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", false, loc.user_lang);
         } else if(tblName === "school"){
             if (code) { ob1 = code.toLowerCase()};
-            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", loc.user_lang);
+            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", false, loc.user_lang);
         }
 
 //--------- insert tblBody_select row at row_index
@@ -1463,8 +1463,8 @@ console.log( "show_row", show_row);
     }; // t_Filter_TableRows
 
 
-//========= t_ShowTableRowExtended  ==================================== PR2020-07-12 PR2020-09-12 PR2021-03-23
-    function t_ShowTableRowExtended(filter_dict, tblRow) {
+//========= t_ShowTableRowExtended  ==================================== PR2020-07-12 PR2020-09-12 PR2021-10-28
+    function t_ShowTableRowExtended(filter_dict, tblRow, data_inactive_field) {
         //console.log( "===== t_ShowTableRowExtended  ========= ");
         //console.log( "filter_dict", filter_dict);
         // filter_dict = {2: ["text", "r", ""], 4: ["text", "y", ""] }
@@ -1480,93 +1480,114 @@ console.log( "show_row", show_row);
         // - It is more concise than a conventional for loop and doesn't have as many edge cases as for/in and forEach().
         let hide_row = false;
 
-// ---  show all rows if filter_dict is empty
-        if (tblRow && !isEmpty(filter_dict)){
-// ---  loop through filter_dict key = index_str, value = filter_arr
-           for (const [index_str, filter_arr] of Object.entries(filter_dict)) {
+// ---  show all rows if filter_dict is empty - except for inactive ones
+        if (tblRow){
 
-// ---  skip column if no filter on this column, also if hide_row is already true
-                if(!hide_row && filter_arr){
-                    // filter text is already trimmed and lowercase
-                    const col_index = Number(index_str);
-                    const filter_tag = filter_arr[0];
-                    const filter_value = filter_arr[1];
-                    const filter_mode = filter_arr[2];
+// --- PR2021-10-28 new way of filtering inactive rows: (for now: only used in mailbox - deleted)
+            // - set filter inactive before other filters, inactive value is stored in tblRow, "data-inactive"
+            // - filter_dict has key 'showinactive'
+            // - 'showinactive' is a list of table names.
+            // - when tblName is in  the showinactive list: inactive items are shwon
+            // - also applies to 'deleted' rows in mailbox, then data_inactive_field has value 'deleted'
 
-        //console.log( "filter_tag", filter_tag)
-        //console.log( "filter_value", filter_value)
-        //console.log( "col_index", col_index)
-                    const cell = tblRow.cells[col_index];
-        //console.log( "cell", cell)
-                    if(cell){
-                        const el = cell.children[0];
-        //console.log( "el", el)
-                        if (el){
-                            const cell_value = get_attr_from_el(el, "data-filter")
-        //console.log( "cell_value", cell_value)
-                            if (filter_tag === "toggle"){
-                                // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
-                                if (filter_value === "2"){
-                                    // only show rows without tickmark
-                                     if (cell_value === "1") { hide_row = true };
-                                } else if (filter_value === "1"){
-                                    // only show rows with tickmark
-                                     if (cell_value !== "1") { hide_row = true };
-                                }
-                            } else if(filter_tag === "multitoggle"){  // PR2021-08-21
-                                if (filter_value){
-                                    hide_row = (cell_value !== filter_value);
-                                };
-                            } else if(filter_mode === "blanks_only"){  // # : show only blank cells
-                                if (cell_value) { hide_row = true };
-                            } else if(filter_mode === "no_blanks"){  // # : show only non-blank cells
-                                if (!cell_value) {hide_row = true};
-                            } else if( filter_tag === "text") {
-                                // hide row if filter_value not found or when cell is empty
-                                 if (cell_value) {
-                                    if (!cell_value.includes(filter_value)) { hide_row = true };
-                                 } else {
-                                    hide_row = true;
-                                 }
-                            } else if( filter_tag === "number") {
-                                // numeric columns: make blank cells zero
+        //console.log("inactive_str", inactive_str);
+            const filter_showinactive = (filter_dict && filter_dict.showinactive)
+            const is_inactive = !!get_attr_from_el_int(tblRow, data_inactive_field);
 
-                                if(!Number(filter_value)) {
-                                    // hide all rows when filter is not numeric
-                                    hide_row = true;
-                                } else {
-                                    const filter_number = Number(filter_value);
-                                    const cell_number = (Number(cell_value)) ? Number(cell_value) : 0;
-        //console.log( "cell_number", cell_number, typeof cell_number);
-                                    if ( filter_mode === "lte") {
-                                        if (cell_number > filter_number) {hide_row = true};
-                                    } else if ( filter_mode === "lt") {
-                                        if (cell_number >= filter_number) {hide_row = true};
-                                    } else if (filter_mode === "gte") {
-                                        if (cell_number < filter_number) {hide_row = true};
-                                    } else if (filter_mode === "gt") {
-                                        if (cell_number <= filter_number) {hide_row = true};
-                                    } else {
-                                        if (cell_number !== filter_number) {hide_row = true};
+            hide_row = (!filter_showinactive && is_inactive);
+
+        //console.log( "filter_showinactive", filter_showinactive);
+        //console.log( "is_inactive", is_inactive);
+        //console.log( "hide_row", hide_row);
+
+
+            if (!isEmpty(filter_dict)){
+    // ---  loop through filter_dict key = index_str, value = filter_arr
+               for (const [index_str, filter_arr] of Object.entries(filter_dict)) {
+
+    // ---  skip column if no filter on this column, also if hide_row is already true
+                    if(!hide_row && filter_arr){
+                        // filter text is already trimmed and lowercase
+                        const col_index = Number(index_str);
+                        const filter_tag = filter_arr[0];
+                        const filter_value = filter_arr[1];
+                        const filter_mode = filter_arr[2];
+
+            //console.log( "filter_tag", filter_tag)
+            //console.log( "filter_value", filter_value)
+            //console.log( "col_index", col_index)
+                        const cell = tblRow.cells[col_index];
+            //console.log( "cell", cell)
+                        if(cell){
+                            const el = cell.children[0];
+            //console.log( "el", el)
+                            if (el){
+                                const cell_value = get_attr_from_el(el, "data-filter")
+            //console.log( "cell_value", cell_value)
+                                if (filter_tag === "toggle"){
+                                    // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+                                    if (filter_value === "2"){
+                                        // only show rows without tickmark
+                                         if (cell_value === "1") { hide_row = true };
+                                    } else if (filter_value === "1"){
+                                        // only show rows with tickmark
+                                         if (cell_value !== "1") { hide_row = true };
                                     }
-                                }
+                                } else if(filter_tag === "multitoggle"){  // PR2021-08-21
+                                    if (filter_value){
+                                        hide_row = (cell_value !== filter_value);
+                                    };
+                                } else if(filter_mode === "blanks_only"){  // # : show only blank cells
+                                    if (cell_value) { hide_row = true };
+                                } else if(filter_mode === "no_blanks"){  // # : show only non-blank cells
+                                    if (!cell_value) {hide_row = true};
+                                } else if( filter_tag === "text") {
+                                    // hide row if filter_value not found or when cell is empty
+                                     if (cell_value) {
+                                        if (!cell_value.includes(filter_value)) { hide_row = true };
+                                     } else {
+                                        hide_row = true;
+                                     }
+                                } else if( filter_tag === "number") {
+                                    // numeric columns: make blank cells zero
 
-                            } else if( filter_tag === "status") {
+                                    if(!Number(filter_value)) {
+                                        // hide all rows when filter is not numeric
+                                        hide_row = true;
+                                    } else {
+                                        const filter_number = Number(filter_value);
+                                        const cell_number = (Number(cell_value)) ? Number(cell_value) : 0;
+            //console.log( "cell_number", cell_number, typeof cell_number);
+                                        if ( filter_mode === "lte") {
+                                            if (cell_number > filter_number) {hide_row = true};
+                                        } else if ( filter_mode === "lt") {
+                                            if (cell_number >= filter_number) {hide_row = true};
+                                        } else if (filter_mode === "gte") {
+                                            if (cell_number < filter_number) {hide_row = true};
+                                        } else if (filter_mode === "gt") {
+                                            if (cell_number <= filter_number) {hide_row = true};
+                                        } else {
+                                            if (cell_number !== filter_number) {hide_row = true};
+                                        }
+                                    }
 
-                                // TODO
-                                if(filter_value === 1) {
-                                    if(cell_value){
-                                        // cell_value = "status_1_5", '_1_' means data_has_changed
-                                        const arr = cell_value.split('_')
-                                        hide_row = (arr[1] && arr[1] !== "1")
+                                } else if( filter_tag === "status") {
+
+                                    // TODO
+                                    if(filter_value === 1) {
+                                        if(cell_value){
+                                            // cell_value = "status_1_5", '_1_' means data_has_changed
+                                            const arr = cell_value.split('_')
+                                            hide_row = (arr[1] && arr[1] !== "1")
+                                        }
                                     }
                                 }
                             }
-                        }
-                    };  // if(cell)
-                };  //  if(filter_arr)
-            };  // for (const [index_str, filter_arr] of Object.entries(filter_dict))
-        }  // if (tblRow && !isEmpty(filter_dict))
+                        };  // if(cell)
+                    };  //  if(filter_arr)
+                };  // for (const [index_str, filter_arr] of Object.entries(filter_dict))
+            }  // if (!isEmpty(filter_dict)
+        }  // if (tblRow)
         //console.log("hide_row", hide_row);
         return !hide_row
     }; // t_ShowTableRowExtended

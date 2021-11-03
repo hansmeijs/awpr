@@ -137,6 +137,13 @@
 }
 
 
+.mfl_10pc {
+    width: 10%;
+}
+.mfr_10pc {
+    width: 80%;
+}
+
 
 /* ---------------------------------------------------
     MEDIAQUERIES
@@ -436,3 +443,51 @@
 .img_studsubj_submitted_exforms_en {
     background-image: url('/static/manual/studsubj_submitted_exforms_en.png');
 }
+
+
+/* ---------------------------------------------------
+    IMAGES - MAILBOX
+----------------------------------------------------- */
+
+.img_envelope_0_0, .img_envelope_0_2, .img_delete_0_2 {
+    background-size: 120px 40px;
+    background-repeat: no-repeat;
+    height: 40px;
+    width: 40px;
+    margin: auto;
+}
+.img_envelope_0_0, .img_envelope_0_2 {
+    background-image: url('/static/img/envelope211027.png');
+}
+.img_delete_0_2 {
+   background-image: url('/static/img/btn_del.png');
+}
+.img_envelope_0_0 { background-position: -0px -0px;}
+.img_envelope_0_2, .img_delete_0_2 { background-position: -80px -0px;}
+
+.img_mailbox_create_message_ne, .img_mailbox_create_message_en {
+    width: 1135px;
+    height: 570px;
+    background-size: 1135px 570px;
+ }
+.img_mailbox_create_message_ne {
+    background-image: url('/static/manual/mailbox_create_message_ne.png');
+}
+.img_mailbox_create_message_en {
+    background-image: url('/static/manual/mailbox_create_message_en.png');
+}
+
+.img_mailbox_select_items_ne, .img_mailbox_select_items_en {
+    width: 797px; height: 692px; background-size: 797px 692px;}
+.img_mailbox_select_items_ne {background-image: url('/static/manual/mailbox_select_items_ne.png');}
+.img_mailbox_select_items_en {background-image: url('/static/manual/mailbox_select_items_en.png');}
+
+.img_mailbox_read_message_ne, .img_mailbox_read_message_en {
+    width: 797px; height: 682px; background-size: 797px 682px;}
+.img_mailbox_read_message_ne {background-image: url('/static/manual/mailbox_read_message_ne.png');}
+.img_mailbox_read_message_en {background-image: url('/static/manual/mailbox_read_message_en.png');}
+
+.img_mailbox_mailinglist_ne, .img_mailbox_mailinglist_en {
+    width: 797px; height: 485px; background-size: 797px 485px;}
+.img_mailbox_mailinglist_ne {background-image: url('/static/manual/mailbox_mailinglist_ne.png');}
+.img_mailbox_mailinglist_en {background-image: url('/static/manual/mailbox_mailinglist_en.png');}

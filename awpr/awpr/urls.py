@@ -120,7 +120,6 @@ urlpatterns = [
 
     #url(r'^users/(?P<pk>\d+)/activated$', account_views.UserActivatedSuccess.as_view(), name='account_activation_success_url'),
 
-
     # PR2018-03-09 path is new in django2.0 See: https://docs.djangoproject.com/en/2.0/releases/2.0/#whats-new-2-0
     # path('admin/', admin.site.urls, name='admin_url'),
 
@@ -132,7 +131,6 @@ urlpatterns = [
         path('userpermit_upload', account_views.UserpermitUploadView.as_view(), name='userpermit_upload_url'),
         path('settings_upload', account_views.UserSettingsUploadView.as_view(), name='url_settings_upload'),
         path('permits_download', account_views.UserDownloadPermitsView.as_view(), name='user_download_permits_url'),
-
 
         #url(r'^users/(?P<pk>\d+)/log$', account_views.UserLogView.as_view(), name='user_log_url'),
     ])),
@@ -165,7 +163,13 @@ urlpatterns = [
 # ===== MAILBOX ==========================  PR2021-06-10
     path('mail/', include([
         path('mailbox/', school_views.MailListView.as_view(), name='page_mailbox_url'),
-        path('mail_upload', school_views.MailUploadView.as_view(), name='url_mail_upload')
+        path('mail_upload', school_views.MailUploadView.as_view(), name='url_mail_upload'),
+        path('mailbox_upload', school_views.MailboxUploadView.as_view(), name='url_mailbox_upload'),
+        path('recipients_download', school_views.MailboxRecipientsDownloadView.as_view(), name='url_recipients_download'),
+        path('mail_attachment_upload', school_views.MailAttachmentUploadView.as_view(), name='url_mail_attachment_upload'),
+        path('mailinglist', school_views.MailinglistUploadView.as_view(), name='url_mailinglist_upload'),
+
+
     ])),
 
 # ===== SCHOOLS ==========================  PR2018-08-23 PR2020-10-20 PR2021-04-26

@@ -943,8 +943,6 @@ class SchemeitemUploadView(View):  # PR2021-06-25
 # - end of SchemeitemUploadView
 
 
-# - end of update_si_list
-
 def get_permit_crud_page_subject(request):
     # --- get crud permit for page subject # PR2021-06-26
     logging_on = False  # s.LOGGING_ON

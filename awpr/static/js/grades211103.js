@@ -956,7 +956,7 @@ if(j && !is_status_field){th_filter.classList.add("border_left")};
         const ob3 = (data_dict.subj_code) ? data_dict.subj_code : "";
 
         const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
-                                     ob1, ob2, ob3, setting_dict.user_lang);
+                                     ob1, ob2, ob3, false, setting_dict.user_lang);
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_datatable.insertRow(row_index);

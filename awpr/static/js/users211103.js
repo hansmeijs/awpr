@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
         usergroup: {
                     field_caption: ["", "School_code", "School", "User", "Read_only_2lines", "Edit",
                                     "President", "Secretary", "Commissioner_2lines",
-                                    "Analyze",  "System_manager_2lines"],
+                                    "Analyze",  "System_administrator_2lines"],
                     field_names: ["select", "sb_code", "school_abbrev", "username", "group_read", "group_edit",
                                     "group_auth1", "group_auth2", "group_auth3", "group_anlz", "group_admin"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
         userpermit: {
                     field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
                                     "President", "Secretary", "Commissioner_2lines",
-                                    "Analyze", "System_manager_2lines"],
+                                    "Analyze", "System_administrator_2lines"],
                     field_names: ["select", "role", "page", "action",
                                     "group_read", "group_edit", "group_auth1", "group_auth2", "group_auth3", "group_anlz", "group_admin"],
                     field_tags: ["div", "div", "div", "input", "div", "div",
@@ -159,6 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MUA_footer01 = document.getElementById("id_MUA_footer01");
         const el_MUA_footer02 = document.getElementById("id_MUA_footer02");
         const el_MUA_loader = document.getElementById("id_MUA_loader");
+        const el_MUA_msg_modified = document.getElementById("id_MUA_msg_modified");
 
         if (el_MUA_schoolname){
             el_MUA_schoolname.addEventListener("keyup", function() {MUA_InputSchoolname(el_MUA_schoolname, event.key)}, false);
@@ -543,7 +544,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const ob2 = (map_dict.username) ? map_dict.username : "";
 
         const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
-                                     ob1, ob2, "", setting_dict.user_lang);
+                                     ob1, ob2, "", false, setting_dict.user_lang);
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_datatable.insertRow(row_index);
@@ -927,14 +928,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const el_MUA_header = document.getElementById("id_MUA_header");
             el_MUA_header.innerText = header_text;
 
-    // ---  set text last modified
-
-            if (!is_addnew){
-                const el_MUA_msg_modified = document.getElementById("id_MUA_msg_modified");
-                if (el_MUA_msg_modified) {
-                    el_MUA_msg_modified.innerText = f_format_last_modified_txt(loc, modifiedat, modby_username)
-                };
-            };
+// ---  set text last modified
+            el_MUA_msg_modified.innerText = (!is_addnew) ? f_format_last_modified_txt(loc, modifiedat, modby_username) : null;
 
     // ---  fill selecttable
             if(permit_dict.permit_crud_otherschool){
@@ -1182,7 +1177,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  lookup index where this row must be inserted
                         let ob1 = "", row_index = -1;
                         if (code) { ob1 = code.toLowerCase()};
-                        row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", loc.user_lang);
+                        row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", false, loc.user_lang);
 //--------- insert tblBody_select row at row_index
                         const map_id = "sel_" + tblName + "_" + base_id
                         const tblRow = tblBody_select.insertRow(row_index);
@@ -1254,6 +1249,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         el_MUA_footer_container.classList.add(cls_hide);
+
+id_MUA_msg_modified
 
 // ---  reset text on btn cancel
         if(el_MUA_btn_cancel) {el_MUA_btn_cancel.innerText = loc.Cancel};

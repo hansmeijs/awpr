@@ -7,7 +7,7 @@
             <div class="modal-content">
                 <div class="modal-header tsa_bc_lightlightgrey">
                     <h4 id="id_MUPM_header" class="modal-title mx-2" >{% trans 'Group permission' %}</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -24,7 +24,7 @@
                                          <option value="8">{% trans 'School' %}</option>
                                          <option value="16">{% trans 'Commissioner' %}</option>
                                          <option value="32">{% trans 'Inspection' %}</option>
-                                         <option value="64">{% trans 'Administrator' %}</option>
+                                         <option value="64">{% trans 'System administrator' %}</option>
                                          <option value="128">{% trans 'System manager' %}</option>
                                      </select>
                                 </div>
@@ -69,7 +69,7 @@
                 </div>
                 <div class="modal-footer">
                     <div class="content_subheader_left mx-1">
-                        <button id="id_MUPM_btn_delete" type="button" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete permission' %}</button>
+                        <button id="id_MUPM_btn_delete" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete permission' %}</button>
                     </div>
                     <div class="content_subheader_right">
                         <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>

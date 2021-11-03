@@ -6,7 +6,7 @@ const man_approve = {
 
 /////////  NEDERLANDS //////////////////////////////
     nl: [
-        write_paragraph_header("id_intro", "Goedkeuren en indienen van Ex-formulieren", true),
+        write_paragraph_header("id_intro", "Goedkeuren en indienen van Ex-formulieren"),
         "<div class='mfc'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
@@ -173,7 +173,7 @@ const man_approve = {
     ],
 /////////  ENGLISH //////////////////////////////
     en:  [
-        write_paragraph_header("id_intro", "Approve and submit Ex forms", true),
+        write_paragraph_header("id_intro", "Approve and submit Ex forms"),
         "<div class='mfc'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",

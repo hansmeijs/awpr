@@ -1,0 +1,53 @@
+ {% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL SELECT MAILINGLIST, USER OR SCHOOL  =================== -->
+     <div class="modal" id="id_mod_select_mailinglist" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <a href="{% url 'manual_url' 'mailbox' 'id_mailbox_recipients' %}" target="_blank" title="{% trans 'Open manual' %}" aria-label="Manual"> <div class="questionmark"></div> </a>
+
+                    <h4 id="id_MMMselect_header" class="modal-title mx-2" ></h4>
+                    <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mx-2 mb-2">
+                        <input id="id_MMMselect_input_filter" type="text" class="form-control"
+                            autocomplete="off" ondragstart="return false;" ondrop="return false;"
+                            placeholder="{% trans 'Type a few letters to filter'%}..."
+                            >
+                    </div>
+                    <div class="flex_container">
+                         <div class="flex_1 m-1 py-2 border_bg_lightblue">
+                             <h6 id="id_MMMselect_hdr_selected" class="px-2">{% trans 'Selected items' %}:</h6>
+                             <table class="tsa_tbl tbl_MMLselect_h390_w365">
+                                <tbody id="id_MMMselect_tblBody_select"></tbody>
+                             </table>
+                         </div>
+                         <div class="flex_1 m-1 py-2 border_bg_message">
+                             <h6 id="id_MMMselect_hdr_available" class="px-2">{% trans 'Available items' %}:</h6>
+                              <table class="tsa_tbl tbl_MMLselect_h390_w365">
+                                <tbody id="id_MMMselect_tblBody_available"></tbody>
+                              </table>
+                        </div>
+                    </div>
+                    <div  class="content_subheader_left mx-1">
+                        <span>
+                            <input id="id_MMMselect_all_countries" type="checkbox" class="tw_032 mx-2">
+                            <label id="id_MMMselect_all_countries_label" for="id_MMMselect_all_countries" class="mx-1 mt-2 mb-0"></label>
+                        </span>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <div class="content_subheader_right">
+                        <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Close' %}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>

@@ -56,20 +56,21 @@ MENUS_DICT = {
 }
 
 
-
 # === MANUAL =====================================
 # @method_decorator([login_required], name='dispatch')
 class ManualListView(View):
     # PR2021-06-10
 
     def get(self, request, page, paragraph):
-        logger.debug(" =====  ManualListView  =====")
-        logger.debug("page: " + str(page))
-        logger.debug("paragraph: " + str(paragraph))
-        logger.debug("request: " + str(request))
-        logger.debug("request.user: " + str(request.user))
-        logger.debug("request.user.is_anonymous: " + str(request.user.is_anonymous))
-        logger.debug("request.user.is_authenticated: " + str(request.user.is_authenticated))
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(" =====  ManualListView  =====")
+            logger.debug("page: " + str(page))
+            logger.debug("paragraph: " + str(paragraph))
+            logger.debug("request: " + str(request))
+            logger.debug("request.user: " + str(request.user))
+            logger.debug("request.user.is_anonymous: " + str(request.user.is_anonymous))
+            logger.debug("request.user.is_authenticated: " + str(request.user.is_authenticated))
 
         # 'AnonymousUser' object has no attribute 'lang'
         # -  get user_lang
@@ -110,10 +111,10 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
     param = param if param else {}
     headerbar_param = {}
     _class_bg_color = 'awp_bg_blue'
+    _class_has_mail = 'envelope_0_0'
 
     req_user = request.user
     if req_user.is_authenticated and req_user.country and req_user.schoolbase:
-        messages = []
 
 # -  get user_lang
         requsr_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
@@ -226,6 +227,10 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             else:
                 school_name += ' <' + str(_('School not found in this exam year')) + '>'
 
+    # - check if there are any unread mailbox items
+            if af.has_unread_mailbox_items(sel_examyear, req_user):
+                _class_has_mail = 'envelope_0_2'
+
         if logging_on:
             logger.debug('sel_school: ' + str(sel_school))
             logger.debug('sel_school_activated: ' + str(sel_school_activated))
@@ -256,6 +261,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         no_access = ('permit_view' not in permit_list and 'permit_crud' not in permit_list)
 
 # ------- set message -------- PR2021-03-25
+        messages = []
         if no_examyears:
             no_access_message = _("There are no exam years yet.")
             messages.append(no_access_message)
@@ -316,8 +322,10 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         if param:
             headerbar_param.update(param)
     headerbar_param['class_bg_color'] = _class_bg_color
-    #if logging_on:
-        #logger.debug('headerbar_param: ' + str(headerbar_param))
+
+    headerbar_param['class_has_mail'] = _class_has_mail
+    if logging_on:
+        logger.debug('headerbar_param: ' + str(headerbar_param))
 
     return headerbar_param
 

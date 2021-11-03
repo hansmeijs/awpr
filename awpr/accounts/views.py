@@ -641,7 +641,7 @@ def update_grouppermit(instance, upload_dict, msg_dict, request):
 class UserSettingsUploadView(UpdateView):  # PR2019-10-09
 
     def post(self, request, *args, **kwargs):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None:
@@ -1995,7 +1995,8 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
     try:
         has_changed = False
     # - loop through subkeys of new settings
-        logger.debug(' --------------------- loop ')
+        if logging_on:
+            logger.debug(' --------------------- loop ')
         for subkey, new_subdict_or_value in new_setting_dict.items():
             # subkeys can have value: {'page': 'page_student'}, {'sel_depbase_pk': 23'}
             # or can be a dict:       {'cols_hidden': {'scheme': ['min_mtv', 'max_mvt')}}

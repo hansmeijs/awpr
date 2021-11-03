@@ -7,89 +7,86 @@
             <div class="modal-content">
 
                 <div class="modal-header tsa_bc_lightlightgrey">
+                    <a href="{% url 'manual_url' 'mailbox' 'id_mailbox_create_message' %}" target="_blank" title="{% trans 'Open manual' %}" aria-label="Manual"> <div class="questionmark"></div> </a>
+
                     <h4 id="id_MMM_header" class="modal-title mx-2" >{% trans 'Create message' %}</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
 
                 <div class="modal-body">
-                        <div id="id_MMM_input_container" class="flex_container">
-                            <div class="flex_1 mx-2">
-                                <div id="id_MMM_tblBody_recipient_container" class="mb-2 border_bg_transparent">
-                                    <h6 class="m-2">{% trans 'Send message to' %}...</h6>
-                                    <table class="table tsa_tbl  tbl_mailbox_h240_w_auto">
-                                        <tbody id="id_MMM_tblBody_recipient" >
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div id="id_MMM_tblBody_cc_container"  class="my-2 border_bg_transparent">
-                                    <h6 class="m-2">{% trans 'Send copy to' %}...</h6>
-                                    <table class="table tsa_tbl mb-0 pb-0 tbl_mailbox_cc_h120_w_auto">
-                                        <tbody id="id_MMM_tblBody_cc" >
+                    <div id="id_MMM_input_container" class="flex_container">
+                        <div class="flex_1 mx-2">
+                            <div id="id_MMM_tblBody_mailinglist_container" class="mb-2 border_bg_transparent">
+                                <h6 class="mb-0 p-2">{% trans 'Send to mailing list' %}...</h6>
+                                <table class="table tsa_tbl mb-0 pb-0 tbl_studsubj_h_w_auto">
+                                    <tbody id="id_MMM_tblBody_mailinglist">
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="mb-2 border_bg_transparent">
+                                <h6 id="id_MMM_tblBody_organization_label" class="mb-0 p-2">{% trans 'Send to organizations' %}...</h6>
+                                <table id="id_MMM_tblBody_organization_table" class="table tsa_tbl tbl_studsubj_h_w_auto mb-0">
+                                    <tbody id="id_MMM_tblBody_organization">
+                                    </tbody>
+                                </table>
+                                <div id="id_MMM_tblBody_usergroup_container"  class="mb-2 border_bg_transparentX">
+                                    <h6 id="id_MMM_tblBody_usergroup_label" class="m-2">{% trans 'Only to usergroup' %}...</h6>
+                                    <table id="id_MMM_tblBody_usergroup_table" class="table tsa_tbl tbl_studsubj_h_w_auto mb-0 pb-0">
+                                        <tbody id="id_MMM_tblBody_usergroup">
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
-                            <div class="flex_2 mx-2 border_bg_message">
-                                <div id="id_MMM_btn_container" class="btn-group btn-block m-2 pr-3" role="group" aria-label="Choose option" >
-                                    <button data-btn="btn_message" class="btn btn-secondary ">{% trans 'Message' %}</button>
-                                    <button data-btn="btn_userlist" class="btn btn-secondary">{% trans 'Select users' %}</button>
-                                    <button data-btn="btn_recipientlist" class="btn btn-secondary">{% trans 'Select mailing list' %}</button>
-                                </div>
-                                <div class="tab_show tab_message display_hide">
-                                    <div class="pt-2 pr-3">
-                                        <input id="id_MMM_input_title" type="text" data-field="code"
-                                            class="form-control mx-2 pr-4"
-                                            placeholder="{% trans 'Title of this message'%}..."
-                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                    </div>
-                                    <div class="pr-3">
-                                        <textarea id="id_MMM_input_message" rows="12" class="form-control m-2 pr-4"
-                                            autocomplete="off" ondragstart="return false;" ondrop="return false;"
-                                            placeholder="{% trans 'Type your message here'%}..."></textarea>
-                                    </div>
 
-                                    <div class="note_attachment_wrapper px-2">
-                                        <div data-index="attachment" class="note_flex_1">
-                                            <div class="note_1_8 mx-2"></div>
-                                            <div class="c_form_text m-0 p-2">{% trans 'Add attachment' %}</div>
-                                            <input id="id_MMM_filedialog" type="file" multiple>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="tab_show tab_userlist btn_recipientlist display_hide">
-                                    <div class="flex_container_direction_rowreverse">
-                                        <div class="flex_1 mx-2 my-2">
-                                            <label class="mr-2">{% trans 'Filter' %}:</label>
-                                            <div class="form-group">
-                                                <input id="id_MMM_input_filter" type="text" class="form-control"
-                                                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
-                                                    placeholder="{% trans 'Type a few letters'%}..."
-                                                    >
-                                            </div><div class="mx-2">
-                                            <small id="id_MMM_msg_input"></small>
-                                             </div>
-                                        </div>
-                                        <div class="flex_1 mx-2 mt-2">
-                                                <div class="tbl_studsubj_h390_w_auto border_bg_white">
-                                                    <table class="table tsa_tbl mx-1 my-1">
-                                                        <tbody id="id_MMM_tblBody_selectuser" >
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                        </div>
-                                    </div>
-                                </div>
-
+                            <div id="id_MMM_tblBody_user_container" class="border_bg_transparent">
+                                <h6 class="mb-0 m-2">{% trans 'Send to users' %}...</h6>
+                                <table class="table tsa_tbl  tbl_studsubj_h_w_auto">
+                                    <tbody id="id_MMM_tblBody_user" >
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 
+                        <div class="flex_2 mx-2 border_bg_message">
+                            <div class="pt-2 pr-3">
+                                <input id="id_MMM_input_title" type="text" class="form-control mx-2 pr-4"
+                                    placeholder="{% trans 'Title of this message'%}..."
+                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                            </div>
+                            <div class="pr-3">
+                                <textarea id="id_MMM_input_message" rows="12" class="form-control m-2 pr-4"
+                                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+                                    placeholder="{% trans 'Type your message here'%}..."></textarea>
+                            </div>
+                            <div id="id_MMM_loader" class="display_hide">
+                                <div class="image_container p-0">
+                                    <img src="{% static 'img/loader.gif' %}" class="icon_24">
+                                </div>
+                            </div>
+                            <div id="id_MMM_attachment_container" class="px-2">
+                            </div>
+                            <div id="id_MMM_add_attachment" class="px-2">
+                                <div class="note_flex_1 mr-0 mb-2 pointer_show">
+                                    <div class="c_form_text m-0 p-2">{% trans 'Add attachment' %}</div>
+                                </div>
+                            </div>
+                            <input id="id_MMM_filedialog" type="file" class="display_hide">
+
+                            <div class=" mx-3">
+                                <small id="id_MMM_msg_error" class="text-danger"></small>
+                            </div>
+                        </div>
+                    </div>
 
                 </div>
 
                 <div class="modal-footer">
+                    <div class="content_subheader_left mx-2">
+                        <button id="id_MMM_btn_delete" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete message' %}</button>
+                    </div>
                     <div class="content_subheader_right">
                         <button id="id_MMM_btn_cancel" class="btn btn-outline-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
                         <button id="id_MMM_btn_save" class="btn btn-secondary">{% trans 'Save' %}</button>

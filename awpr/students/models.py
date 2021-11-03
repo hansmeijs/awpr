@@ -299,7 +299,7 @@ class Studentnote(sch_mod.AwpBaseModel):
     intern_schoolbase = ForeignKey(sch_mod.Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
 
     note = CharField(max_length=2048, null=True, blank=True)
-    mailto_user = CharField(max_length=2048, null=True, blank=True)
+    recipients = CharField(max_length=2048, null=True, blank=True)
     note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
 
@@ -317,7 +317,7 @@ class Studentnote_log(sch_mod.AwpBaseModel):
     intern_schoolbase = ForeignKey(sch_mod.Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
 
     note = CharField(max_length=2048, null=True, blank=True)
-    mailto_user = CharField(max_length=2048, null=True, blank=True)
+    recipients = CharField(max_length=2048, null=True, blank=True)
     note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
@@ -480,7 +480,7 @@ class Studentsubjectnote(sch_mod.AwpBaseModel):
     intern_schoolbase = ForeignKey(sch_mod.Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
 
     note = CharField(max_length=2048, null=True, blank=True)
-    mailto_user = CharField(max_length=2048, null=True, blank=True)
+    recipients = CharField(max_length=2048, null=True, blank=True)
     note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
 
@@ -493,7 +493,7 @@ class Studentsubjectnote_log(sch_mod.AwpBaseModel):
     intern_schoolbase = ForeignKey(sch_mod.Schoolbase, related_name='+', null=True, on_delete=SET_NULL)
 
     note = CharField(max_length=2048, null=True, blank=True)
-    mailto_user = CharField(max_length=2048, null=True, blank=True)
+    recipients = CharField(max_length=2048, null=True, blank=True)
     note_status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)

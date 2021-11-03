@@ -7,7 +7,7 @@
         <div class="modal-content ">
             <div class="modal-header tsa_bc_lightlightgrey">
                 <h4 id="id_ModNote_header" class="modal-title mx-2" ></h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <button class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -30,7 +30,7 @@
                         </div>
 
                         <div class="note_attachment_wrapper">
-                            <div data-index="attachment" class="note_flex_1">
+                            <div data-index="attachment" class="note_flex_1 pointer_show">
                                 <div class="note_1_8 mx-2"></div>
                                 <div class="c_form_text m-0 p-2">{% trans 'Attachment' %}</div>
                                 <input id="id_ModNote_filedialog" type="file">
@@ -38,8 +38,8 @@
                         </div>
 
                         <div class="flex_1 text_align_right">
-                            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
-                            <button id="id_ModNote_btn_save" type="button" class="btn btn-primary">{% trans 'Save' %}</button>
+                            <button class="btn btn-outline-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                            <button id="id_ModNote_btn_save"  class="btn btn-primary">{% trans 'Save' %}</button>
                         </div>
                     </div>
                 </div>

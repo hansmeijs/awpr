@@ -9,7 +9,7 @@
                 <div class="modal-header tsa_bc_lightlightgrey">
                     <a href="{% url 'manual_url' 'upload' 'intro' %}" target="_blank" title="{% trans 'Open manual' %}" aria-label="Manual"> <div class="questionmark"></div> </a>
                     <h4 id="id_MIMP_header" class="modal-title mx-2" ></h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                     </button>
 
@@ -371,10 +371,10 @@
                             <small >{% trans "Click 'Upload' to upload and save the new data." %} {% trans "Candidates, who already exist in the database, will be skipped." %}</small>
                         </div>
                         <div class="content_subheader_left mx-2 my-2 btn_show btn_step4 display_hide">
-                            <button id="id_MIMP_btn_test" type="button" class="btn btn-secondary">{% trans 'Test upload' %}</button>
+                            <button id="id_MIMP_btn_test"  class="btn btn-secondary">{% trans 'Test upload' %}</button>
                         </div>
                         <div class="content_subheader_left mx-2 my-2 btn_show btn_step5 display_hide">
-                            <button id="id_MIMP_btn_upload" type="button" class="btn btn-secondary">{% trans 'Upload' %}</button>
+                            <button id="id_MIMP_btn_upload"  class="btn btn-secondary">{% trans 'Upload' %}</button>
                         </div>
 
                         <div class="flex_container mb-0">
@@ -399,8 +399,8 @@
                 <div class="modal-footer pr-4">
                     <div class="content_subheader_left mx-1 ">
                         <div id="id_btn_container2" class="sidebar_btngroup btn-group btn-block" role="group" aria-label="Choose option" >
-                            <button id="id_MIMP_btn_prev" type="button" class="btn btn-secondary"> &lt;  {% trans 'Previous step' %}</button>
-                            <button id="id_MIMP_btn_next"  type="button" class="btn btn-secondary">{% trans 'Next step' %} &gt; </button>
+                            <button id="id_MIMP_btn_prev"  class="btn btn-secondary"> &lt;  {% trans 'Previous step' %}</button>
+                            <button id="id_MIMP_btn_next"   class="btn btn-secondary">{% trans 'Next step' %} &gt; </button>
                         </div>
                     </div>
                     <div class="content_subheader_right">

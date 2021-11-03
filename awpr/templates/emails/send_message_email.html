@@ -1,0 +1,19 @@
+{% load i18n %}{% autoescape off %}
+{{ school_attn }},
+{% trans "attn." %}:{% for sendto_name in sendto_name_list %}
+    {{ sendto_name }}{% endfor %}
+
+
+{% trans "There is a message for you in AWP-online." %}
+
+{% trans "Login to AWP-online and click on the envelope icon in the right upper corner to view this message." %}
+
+
+{% trans "With Kind Regards" %},
+
+{{ sender_name }}
+{{ sender_organization }}
+
+{% endautoescape %}
+
+

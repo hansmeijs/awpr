@@ -869,6 +869,18 @@ def is_allowed_depbase_school(depbase_pk, school):  # PR2021-06-14
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+def get_permit_crud_of_this_page(page, request):
+    # --- get crud permit for this page # PR2021-07-18 PR2021-09-05
+    has_permit = False
+    if page and request.user and request.user.country and request.user.schoolbase:
+        permit_list = request.user.permit_list(page)
+        if permit_list:
+            has_permit = 'permit_crud' in permit_list
+
+    return has_permit
+
+
 def get_sel_examperiod(selected_pk_dict, request_item_examperiod):  # PR2021-09-07
     #logger.debug('  -----  get_sel_examperiod  -----')
 
@@ -890,6 +902,7 @@ def get_sel_examperiod(selected_pk_dict, request_item_examperiod):  # PR2021-09-
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 def get_sel_examtype(selected_pk_dict, request_item_examtype, sel_examperiod):  # PR2021-09-07
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -942,6 +955,7 @@ def get_sel_examtype(selected_pk_dict, request_item_examtype, sel_examperiod):  
     return sel_examtype, save_changes
 # --- end of get_sel_examtype
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 def get_this_examyear_int():
     # get this year in Jan thru July, get next year in Aug thru Dec PR2020-09-29 PR2020-12-24
     now = timezone.now()
@@ -1021,6 +1035,41 @@ def get_depbase_list_field_sorted_zerostripped(depbase_list):  # PR2018-08-23
             return None
     else:
         return None
+
+
+def has_unread_mailbox_items(examyear, req_user):
+    # --- function checks if this user this examyear has unread mail_inbox rows PR2021-10-29
+    # -   skip deleted unread mail
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== has_unread_mailbox_items ============= ')
+        logger.debug('examyear.pk: ' + str(examyear.pk))
+        logger.debug('req_user.pk: ' + str(req_user.pk))
+
+    has_items = False
+    try:
+        sql_keys = {'ey_id': examyear.pk, 'req_usr_id': req_user.pk}
+        sql = ' '.join((
+            "SELECT 1 FROM schools_mailbox AS mb",
+            "INNER JOIN schools_mailmessage AS msg ON (msg.id = mb.mailmessage_id)",
+            "WHERE msg.examyear_id = %(ey_id)s::INT",
+            "AND mb.user_id = %(req_usr_id)s::INT",
+            "AND NOT mb.read AND NOT mb.deleted",
+            "AND msg.sentdate IS NOT NULL",
+            "LIMIT 1"))
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            row = cursor.fetchone()
+            if row:
+                has_items = True
+        if logging_on:
+           logger.debug(' has_items: ' + str(has_items))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+    return has_items
 
 
 def system_updates(examyear, request):

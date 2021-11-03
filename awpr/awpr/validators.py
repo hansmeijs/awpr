@@ -139,7 +139,7 @@ def validate_unique_useremail(value, country, schoolbase, cur_user_id=None, skip
     return msg_err
 
 
-# === validate_unique_username ========= PR2020-08-02 PR2021-06-29 PR2021-10-13
+# === validate_notblank_maxlength ========= PR2020-08-02 PR2021-06-29 PR2021-10-13
 def validate_notblank_maxlength(value, max_length, caption, blank_allowed=False):
     #logger.debug ('=== validate_notblank_maxlength ====')
     msg_html = None
@@ -151,7 +151,7 @@ def validate_notblank_maxlength(value, max_length, caption, blank_allowed=False)
         msg_html = _('%(cpt)s cannot be blank.') % {'cpt': str(caption)}
 
     return msg_html
-
+# - end of validate_notblank_maxlength
 
 # === validate_unique_examyear ======== PR2020-10-05
 def validate_unique_examyear(country, examyear_int, request):

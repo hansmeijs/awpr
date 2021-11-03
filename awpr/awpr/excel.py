@@ -161,8 +161,13 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
 # ---  create file_path
             # PR2021-08-07 changed to file_dir = 'country/examyear/published/'
             # this one gives path:awpmedia/awpmedia/media/cur/2022/published
+            requsr_school = sch_mod.School.objects.get_or_none(
+                base=request.user.schoolbase,
+                examyear=sel_examyear
+            )
+            requsr_schoolcode = requsr_school.base.code if requsr_school.base.code else '---'
             country_abbrev = examyear.country.abbrev.lower()
-            file_dir = '/'.join((country_abbrev, examyear_str, 'exfiles'))
+            file_dir = '/'.join((country_abbrev, examyear_str, requsr_schoolcode, 'exfiles'))
             file_path = '/'.join((file_dir, published_instance.filename))
             file_name = published_instance.name
 

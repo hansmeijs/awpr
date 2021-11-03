@@ -68,12 +68,17 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
                 requsr_same_school = permit_dict.get('requsr_same_school', False)
 
-                if permit_dict:
-                    datalists['permit_dict'] = permit_dict
+                # PR2021-11-03 was:
+                #if permit_dict:
+                #    datalists['permit_dict'] = permit_dict
 
                 # only add setting_dict to datalists when called by request_item_setting 'setting'
+                # PR2021-11-03 also only add permit_dict when by request_item_setting 'setting'
+                # - because permys were lost when refreshing mailbox page.
+                # - might cause other problems?
                 if request_item_setting and new_setting_dict:
                     datalists['setting_dict'] = new_setting_dict
+                    datalists['permit_dict'] = permit_dict
                 if logging_on:
                     logger.debug('new_setting_dict: ' + str(new_setting_dict) + ' ' + str(type(new_setting_dict)))
                     logger.debug('messages: ' + str(messages) + ' ' + str(type(messages)))
@@ -235,18 +240,37 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_depbase_pk=sel_depbase.pk
                         )
 # ----- mailbox
-                if datalist_request.get('mailbox_rows'):
-                    datalists['mailbox_rows'] = school_dicts.create_mailbox_rows(
-                        examyear_pk=sel_examyear.pk,
+                if datalist_request.get('mailmessage_rows'):
+                    datalists['mailmessage_received_rows'] = school_dicts.create_mailmessage_received_rows(
+                        examyear=sel_examyear,
+                        request=request
+                    )
+                    datalists['mailmessage_sent_rows'] = school_dicts.create_mailmessage_draft_or_sent_rows(
+                        is_sent=True,
+                        examyear=sel_examyear,
+                        request=request
+                    )
+                    datalists['mailmessage_draft_rows'] = school_dicts.create_mailmessage_draft_or_sent_rows(
+                        is_sent=False,
+                        examyear=sel_examyear,
+                        request=request
+                    )
+                    datalists['mailinglist_rows'] = school_dicts.create_mailinglist_rows(
+                        request=request
+                    )
+                    datalists['mailattachment_rows'] = school_dicts.create_mailattachment_rows(
+                        examyear=sel_examyear,
                         request=request
                     )
                     datalists['mailbox_user_rows'] = school_dicts.create_mailbox_user_rows(
-                        examyear_pk=sel_examyear.pk,
+                        examyear=sel_examyear,
                         request=request
                     )
-
-
-
+                    datalists['mailbox_school_rows'] = school_dicts.create_mailbox_school_rows(
+                        examyear=sel_examyear,
+                        request=request
+                    )
+                    datalists['mailbox_usergroup_rows'] = school_dicts.create_mailbox_usergroup_rows()
 
         elapsed_seconds = int(1000 * (timer() - starttime)) / 1000
         datalists['elapsed_seconds'] = elapsed_seconds

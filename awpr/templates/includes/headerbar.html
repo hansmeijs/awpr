@@ -5,7 +5,7 @@
     <!-- NAVBAR 1 -->
     <nav class="navbar navbar-expand-md awp_navbar {{class_bg_color}}">
         <!-- Toggler/collapsibe Button -->
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsibleNavbar2">
+        <button class="navbar-toggler" data-toggle="collapse" data-target="#collapsibleNavbar2">
           <span class="navbar-toggler-icon"></span>
         </button>
 
@@ -50,7 +50,9 @@
                     <li class="nav-item dropdown">
                         <a id="userMenu" class="awp_navbaritem_may_select {{class_bg_color}} dropdown-toggle"
                            href="#" data-toggle="dropdown"
-                           aria-haspopup="true" aria-expanded="false">{{ user.username_sliced }}</a>
+                           aria-haspopup="true" aria-expanded="false">
+                            {{ user.username_sliced }}
+                        </a>
                         <div class="dropdown-menu" aria-labelledby="userMenu">
                             {% if 'permit_userpage' in permit_list %}
                                 <a class="dropdown-item" href="{% url 'users_url' %}" >{% trans 'Users' %}</a>
@@ -74,7 +76,9 @@
             <ul class="navbar-nav">
                 {% if user.is_authenticated %}
                     <li>
-                        <a href="{% url 'page_mailbox_url' %}"> <div class="envelope_0_0"></div> </a>
+                        <a href="{% url 'page_mailbox_url' %}">
+                            <div id="id_hdrbar_has_mail" class="{{class_has_mail}}"></div>
+                        </a>
                     </li>
                 {% endif %}
                 <li>
@@ -82,7 +86,7 @@
                     {% if page and paragraph %}
                          <a href="{% url 'manual_url' page paragraph %}" target="_blank"> <div class="questionmark"></div> </a>
                     {% else %}
-                         <a href="{% url 'manual_url' 'intro' 'intro' %}" target="_blank"> <div class="questionmark"></div> </a>
+                         <a href="{% url 'manual_url' 'home' 'intro' %}" target="_blank"> <div class="questionmark"></div> </a>
                     {% endif %}
 
                 </li>
@@ -93,7 +97,7 @@
 
         <nav class="navbar navbar-expand-md navbar-light bg-light py-1">
         <!-- Toggler/collapsibe Button -->
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsible_testbar">
+        <button class="navbar-toggler" data-toggle="collapse" data-target="#collapsible_testbar">
           <span class="navbar-toggler-icon"></span>
         </button>
 
@@ -122,7 +126,7 @@
 
 <!-- MENU BAR -->
     <nav id="id_menubar" class="navbar navbar-expand-md awp_nav_bg_submenu pt-0 pb-2">
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#id_submenu">
+        <button class="navbar-toggler" data-toggle="collapse" data-target="#id_submenu">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div id="id_submenu" class="collapse navbar-collapse awp_navbar_submenu" >

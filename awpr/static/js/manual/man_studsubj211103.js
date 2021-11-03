@@ -6,7 +6,7 @@ const man_studsubj = {
 
 /////////  NEDERLANDS //////////////////////////////
     nl: [
-        write_paragraph_header("id_intro", "Vakken van kandidaten", true),
+        write_paragraph_header("id_intro", "Vakken van kandidaten"),
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",

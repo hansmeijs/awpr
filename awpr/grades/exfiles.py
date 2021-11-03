@@ -450,6 +450,15 @@ class DownloadEx3View(View):  # PR2021-10-07
                 except Exception as e:
                     logger.error(getattr(e, 'message', str(e)))
 
+        # - get Palace_Script_MT font - for testing - it works 2021-10-14
+                """
+                try:
+                    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'Palace_Script_MT.ttf'
+                    ttfFile = TTFont('Palace_Script_MT', filepath)
+                    pdfmetrics.registerFont(ttfFile)
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+                """
                 # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
 
                 # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html

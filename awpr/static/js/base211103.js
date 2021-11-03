@@ -40,7 +40,7 @@
         }; //if(!!e.target)
     }; //function SetMenubuttonActive()
 
-//=========  AddSubmenuButton  === PR2020-01-26 PR2021-04-26 PR2021-06-23
+//=========  AddSubmenuButton  === PR2020-01-26 PR2021-04-26 PR2021-06-23 PR21-10-22
     function AddSubmenuButton(el_div, a_innerText, a_function, classnames_list, a_id, a_href, a_download) {
         //console.log(" ---  AddSubmenuButton --- ");
         let el_a = document.createElement("a");
@@ -57,11 +57,8 @@
             el_a.classList.add("tsa_tr_selected");
             el_a.classList.add("px-2", "mr-2");
             if (classnames_list && classnames_list.length) {
-                for (let i = 0, len = classnames_list.length; i < len; i++) {
-                    const classname = classnames_list[i];
-                    if(!!classname){
-                        el_a.classList.add(classname);
-                    }
+                for (let i = 0, classname; classname = classnames_list[i]; i++) {
+                    el_a.classList.add(classname);
                 }
             }
 
@@ -71,9 +68,10 @@
 
 //========= b_UploadSettings  ============= PR2019-10-09
     function b_UploadSettings (upload_dict, url_str) {
-        console.log("=== b_UploadSettings");
-        console.log("url_str", url_str);
-        console.log("upload_dict", upload_dict);
+        //console.log("=== b_UploadSettings");
+        //console.log("url_str", url_str);
+        //console.log("upload_dict", upload_dict);
+
         if(!!upload_dict) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
             let response = "";
@@ -83,9 +81,8 @@
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
-                    console.log( "response");
-                    console.log( response);
-                },  // success: function (response) {
+                    //console.log( "response", response);
+                },
                 error: function (xhr, msg) {
                     console.log(msg + '\n' + xhr.responseText);
                 }
@@ -215,8 +212,9 @@
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //========= b_get_permits_from_permitlist  ============= PPR2021-04-26
     function b_get_permits_from_permitlist(permit_dict) {
-        //console.log("----- b_get_permits_from_permitlist -----");
-        //console.log("permit_dict", permit_dict);
+        console.log("----- b_get_permits_from_permitlist -----");
+        console.log("permit_dict", permit_dict);
+        console.log("permit_dict.permit_list", permit_dict.permit_list);
         // function puts permits from permit_list as key in permit_dict, for ease of use
         if(permit_dict.permit_list){
             for (let i = 0, action; action = permit_dict.permit_list[i]; i++) {
@@ -488,6 +486,26 @@
             }
         }
     }  // add_or_remove_attr
+
+
+//========= function add_hover  =========== PR2021-10-28
+    function add_hover_delete_btn(el, hover_class, class_1, class_0) {
+//- add hover to element, with img_class that contains deleted or not, must be no other classes in this div
+        if(!hover_class) {hover_class = "delete_0_2"};
+        if(!class_1) { class_1 = "delete_0_2"};
+        if(!class_0) { class_0 = "delete_0_1"};
+        if(el){
+            el.addEventListener("mouseenter", function(){
+                const value = get_attr_from_el_int(el, "data-filter")
+                el.className = (value) ? class_0 : class_1;
+            });
+            el.addEventListener("mouseleave", function(){
+                const value = get_attr_from_el_int(el, "data-filter")
+                el.className = (value) ? class_1 : class_0;
+            });
+        }
+        el.classList.add("pointer_show")
+    }  // add_hover
 
 //========= function add_hover  =========== PR2020-05-20 PR2020-08-10
     function add_hover(el, hover_class, default_class) {
@@ -808,7 +826,7 @@
         return 0;
     }  // b_comparator_sortby
 
-// this one sorts integers, not in use yet PR2021-02-26
+// this one sorts integers, only used in mailbox.js mailinglist MML_Save - for now PR2021-10-22
     function b_comparator_sortby_integer(a, b) {
     // PR2021-02-25 from https://stackoverflow.com/questions/1063007/how-to-sort-an-array-of-integers-correctly
        // exc_subject_ColIndex_list.sort((a, b) => a - b);
@@ -997,22 +1015,27 @@
 //========= b_recursive_integer_lookup  ========== PR2020-07-14 PR2020-07-25
     function b_recursive_integer_lookup(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int){
         //console.log( " ----- b_recursive_integer_lookup -----");
+    //console.log( "data_rows", data_rows);
 
         // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
         // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
         // function returns rowindex of searched value, or rowindex of row to be inserted
-        // data_rows must be ordered by id (as text field), done by server
+        // data_rows must be ordered by id, done by server
 
-    //console.log( ".....lookup_1_field: ", lookup_1_field, search_1_int);
-    //console.log( ".....lookup_2_field: ", lookup_2_field,  search_2_int);
+    //console.log( ".....lookup_1_field: ", lookup_1_field, "search_1_int:", search_1_int);
+    //console.log( ".....lookup_2_field: ", lookup_2_field, "search_2_int:", search_2_int);
 
         let compare = null, middle_index = null, found_dict = null;
-        if (data_rows && data_rows.length){
+        // PR2021-11-01 debug. when looking up new item search_1_int = 0, returned row when there was only one row.
+        // add check that search_1_int must have value, also lookup_1_field
+        // was: if (data_rows && data_rows.length){
+        if (lookup_1_field && search_1_int && data_rows && data_rows.length){
             const last_index = data_rows.length - 1;
             let min_index = 0;
             let max_index = last_index;
             middle_index =  Math.floor( (min_index + max_index) / 2);
 
+            // not necessary any more
             if(!search_1_int){search_1_int = 0};
             if(!search_2_int){search_2_int = 0};
 
@@ -1191,7 +1214,7 @@
     };  // b_recursive_lookup
 
 //========= b_recursive_tblRow_lookup  ========== PR2020-06-16
-    function b_recursive_tblRow_lookup(tblBody, search_value_1, search_value_2, search_value_3, user_lang){
+    function b_recursive_tblRow_lookup(tblBody, search_value_1, search_value_2, search_value_3, descending_order, user_lang){
         //console.log( " ----- b_recursive_tblRow_lookup -----");
         // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
         // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
@@ -1200,7 +1223,8 @@
         const lookup_field_1 = "data-ob1", lookup_field_2 = "data-ob2", lookup_field_3 = "data-ob3";
         let compare = null, middle_index = null, found_row = null;
         const last_index = (tblBody.rows && tblBody.rows.length) ? tblBody.rows.length -1 : 0;
-
+        // TODO test descending
+        const is_desc = (descending_order) ? -1 : 1;  // value = 1 when not descending
     //console.log( "last_index: ", last_index);
 
         if (tblBody.rows && tblBody.rows.length){
@@ -1216,7 +1240,7 @@
             for (let i = 0; i < max_loop; i++) {
                 if (i > 23) {
                 // exit when loop not breaked (should not be possible), put index at end of list
-                    compare = 1;
+                    compare = 1 * is_desc;
                     middle_index = last_index;
                     break;
                 } else {
@@ -1235,13 +1259,13 @@
                     // 'acu'.localeCompare('giro') = -1
                     // 'mcb'.localeCompare('giro') = 1
                     // note: value of compare can be 2 or -2 in some browsers, therefore use compare < 0 instead of compare === -1
-                    const compare1 = s_val_1.localeCompare(middle_value_field_1, user_lang, {sensitivity: 'base'});
+                    const compare1 = is_desc * s_val_1.localeCompare(middle_value_field_1, user_lang, {sensitivity: 'base'});
                     // if first lookup field matches: compare has value of second field
                     // if first lookup field does not match: compare has value of first field
                     if (!compare1){
-                        const compare2 = s_val_2.localeCompare(middle_value_field_2, user_lang, {sensitivity: 'base'});
+                        const compare2 = is_desc * s_val_2.localeCompare(middle_value_field_2, user_lang, {sensitivity: 'base'});
                         if (!compare2){
-                             compare = s_val_3.localeCompare(middle_value_field_3, user_lang, {sensitivity: 'base'});
+                             compare = is_desc * s_val_3.localeCompare(middle_value_field_3, user_lang, {sensitivity: 'base'});
                         } else {
                             compare = compare2;
                         };
@@ -1304,7 +1328,7 @@
             }
         } else {
             // table is empty
-            compare = 1;
+            compare = is_desc * 1;
             middle_index = -1;
         };  //  if (tblBody.rows && tblBody.rows.length)
 
@@ -1341,18 +1365,31 @@
     };  // b_lookup_dict_in_dictlist
 
 //=========  b_remove_item_from_array  ================ PR2021-07-07
-    function b_remove_item_from_array(array, item){
-        // PR2021-07-07 remove item from array used in mod select columsn
+    function b_remove_item_from_array(array, value){
+        // PR2021-07-07 remove item from array used in mod select columns
         // from https://stackoverflow.com/questions/3954438/how-to-remove-item-from-array-by-value
-        for(let i in array){
-            if(array[i]==item){
-                array.splice(i,1);
-                break;
-            }
-        }
+
+        if(array && array.length){
+            for (let i = 0, item; item = array[i]; i++) {
+                if (item === value){
+                    array.splice(i, 1);
+                    break;
+                }
+            };
+        };
     }  // b_remove_item_from_array
 
-//=========  b_remove_item_from_array  ================ PR2021-07-07
+// =========  b_remove_item_from_array2  === PR2021-10-20 NOT IN USE yet
+    function b_remove_item_from_array2(array, item){
+        // from https://stackoverflow.com/questions/3954438/how-to-remove-item-from-array-by-value
+        // this function returns a new array without element 'item'
+        // In ECMA6 (arrow function syntax):
+        const new_array = array.filter(e => e !== item);
+
+        return new_array;
+    } // b_remove_item_from_array2
+
+//=========  b_clear_array  ================ PR2021-07-07
     function b_clear_array(array){
        // clear the array. from https://love2dev.com/blog/javascript-remove-from-array/
         if(array){
@@ -1361,6 +1398,18 @@
             };
         };
     };  // b_clear_array
+
+//=========  b_clear_dict  ================ PR2021-10-23
+    function b_clear_dict(dict){
+       // remove all key / value pairs from a dictionary. from https://attacomsian.com/blog/javascript-iterate-objects
+        if(dict){
+            for (const key in dict) {
+                if (dict.hasOwnProperty(key)) {
+                    delete dict[key];
+                };
+            };
+        };
+    };  // b_clear_dict
 
 //========= b_get_statusindex_of_requsr  ======== // PR2021-03-26 PR2021-07-26
     function b_get_statusindex_of_requsr(loc, permit_dict){
@@ -1421,7 +1470,6 @@
             }
         })
     }  // show_mod_message
-
 
 //========= b_render_msg_containerNEW  ================= PR2021-08-13
     function b_render_msg_containerNEW(el_msg_container, msg_list, class_list) {
@@ -1518,22 +1566,22 @@
 //?????????????????????????????????????????????????????????????????
 
 // PR2021-03-16 from https://stackoverflow.com/questions/2320069/jquery-ajax-file-upload
-    const b_Upload = function (upload_json, file, url_str) {
+    const b_UploadFile = function (upload_json, file, url_str) {
         this.upload_json = upload_json;
         this.file = file;
         this.url_str = url_str;
     };
 
-    b_Upload.prototype.getType = function() {
+    b_UploadFile.prototype.getType = function() {
         return (this.file) ? this.file.type : null;
     };
-    b_Upload.prototype.getSize = function() {
+    b_UploadFile.prototype.getSize = function() {
         return (this.file) ? this.file.size : 0;
     };
-    b_Upload.prototype.getName = function() {
+    b_UploadFile.prototype.getName = function() {
         return (this.file) ? this.file.name : null;
     };
-    b_Upload.prototype.doUpload = function (RefreshDataRows) {
+    b_UploadFile.prototype.doUpload = function (RefreshDataRows) {
         var that = this;
         var formData = new FormData();
         // from https://blog.filestack.com/thoughts-and-knowledge/ajax-file-upload-formdata-examples/
@@ -1604,7 +1652,7 @@
 
     };
 
-    b_Upload.prototype.progressHandling = function (event) {
+    b_UploadFile.prototype.progressHandling = function (event) {
     //console.log("progressHandling", event)
         let percent = 0;
         const position = event.loaded || event.position;

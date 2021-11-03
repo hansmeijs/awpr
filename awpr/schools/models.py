@@ -107,7 +107,6 @@ class AwpBaseModel(Model):
         super(AwpBaseModel, self).delete(*args, **kwargs)
 
 
-
 class Systemupdate(AwpBaseModel):
     # PR2021-10-12 stores name of the systemupdate once it has run, to prevent running multiple times
     objects = AwpModelManager()
@@ -619,9 +618,10 @@ class Mailmessage(AwpBaseModel):
 
     header = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True, blank=True)
     body = CharField(max_length=2048, null=True, blank=True)
-    mailto_user = CharField(max_length=2048, null=True, blank=True)
-    mailcc_user = CharField(max_length=2048, null=True, blank=True)
-    status = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    recipients = CharField(max_length=2048, null=True, blank=True)
+
+    # when a mailmessage is sent, sentdate IS NOT NULL
+    sentdate = DateTimeField(null=True)
 
 
 # PR2021-03-08 from https://simpleisbetterthancomplex.com/tutorial/2017/08/01/how-to-setup-amazon-s3-in-a-django-project.html
@@ -630,30 +630,46 @@ class Mailattachment(AwpBaseModel):
 
     mailmessage = ForeignKey(Mailmessage, related_name='+', on_delete=CASCADE)
     contenttype = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
-    filename = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME)
     file = FileField(storage=PrivateMediaStorage())
+    filename = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME)
+    filesize = IntegerField(null=True)
 
 
 class Mailbox(AwpBaseModel):
     objects = AwpModelManager()
 
-    # user is recipient when isreceivedmail = True, is sender when draft (isreceivedmail=False and issentmail = False)
     user = ForeignKey(AUTH_USER_MODEL, related_name='+', on_delete=CASCADE)
     mailmessage = ForeignKey(Mailmessage, related_name='+', on_delete=CASCADE)
     read = BooleanField(default=False)
     deleted = BooleanField(default=False)
-    issentmail = BooleanField(default=False)
-    isreceivedmail = BooleanField(default=False)
-    # isdraftmail when issentmail and isreceivedmail are False
 
 
-def delete_instance(instance, msg_list, error_list, request, this_txt=None, header_txt=None):
+class Mailinglist(AwpBaseModel):
+    objects = AwpModelManager()
+
+    # base and examyear cannot be changed PR2018-10-17
+    schoolbase = ForeignKey(Schoolbase, related_name='+', on_delete=CASCADE)
+    # when user is None the mailinglist can be used by all users of this schoolbase
+    user = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+
+    name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME)
+
+    recipients = CharField(max_length=2048, null=True, blank=True)
+
+
+def delete_instance(instance, messages, error_list, request, this_txt=None, header_txt=None):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_instance  -----')
         logger.debug('instance: ' + str(instance))
 
     # function deletes instance of table,  PR2019-08-25 PR2020-10-23 PR2021-06-20
+
+    # error_list is list of strings, used for error message under input field,
+    #  messages is list of dicts with format:
+    #   {'field': fldName, header': header_txt, 'retry': True, 'class': 'border_bg_invalid', 'msg_html': msg_html}
+    #  retry: not in use yet, lets user retry again
+    #  error_list is to be deprecated PR2021-10-24
     deleted_ok = False
 
     if instance:
@@ -669,13 +685,13 @@ def delete_instance(instance, msg_list, error_list, request, this_txt=None, head
 
             msg_html = ''.join((err_txt1, ': ', '<br><i>', err_txt2, '</i><br>',err_txt3))
             msg_dict = {'header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
-            msg_list.append(msg_dict)
+            messages.append(msg_dict)
         else:
             instance = None
             deleted_ok = True
 
     if logging_on:
-        logger.debug('msg_list: ' + str(msg_list))
+        logger.debug('messages: ' + str(messages))
         logger.debug('error_list: ' + str(error_list))
         logger.debug('instance: ' + str(instance))
         logger.debug('deleted_ok: ' + str(deleted_ok))
