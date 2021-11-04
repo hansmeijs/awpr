@@ -163,13 +163,11 @@ urlpatterns = [
 # ===== MAILBOX ==========================  PR2021-06-10
     path('mail/', include([
         path('mailbox/', school_views.MailListView.as_view(), name='page_mailbox_url'),
-        path('mail_upload', school_views.MailUploadView.as_view(), name='url_mail_upload'),
+        path('mailmessage_upload', school_views.MailmessageUploadView.as_view(), name='url_mailmessage_upload'),
         path('mailbox_upload', school_views.MailboxUploadView.as_view(), name='url_mailbox_upload'),
         path('recipients_download', school_views.MailboxRecipientsDownloadView.as_view(), name='url_recipients_download'),
-        path('mail_attachment_upload', school_views.MailAttachmentUploadView.as_view(), name='url_mail_attachment_upload'),
+        path('mailattachment_upload', school_views.MailAttachmentUploadView.as_view(), name='url_mailattachment_upload'),
         path('mailinglist', school_views.MailinglistUploadView.as_view(), name='url_mailinglist_upload'),
-
-
     ])),
 
 # ===== SCHOOLS ==========================  PR2018-08-23 PR2020-10-20 PR2021-04-26

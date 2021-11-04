@@ -82,7 +82,9 @@ const man_mailbox = {
                 "<p><b>Een bericht verzenden</b><br>",
                 "Klik op <i>Verzenden</i>. AWP stuurt nu het bericht naar alle geadresseerde gebruikers. ",
                 "Alleen de gebruikers van wie de account geactiveerd en niet niet-actief is, ontvangen het bericht. ",
-                "AWP stuurt ook een e-mail naar alle geadresseerde gebruikers, met de mededeling dat er een bericht voor ze is.</p>"
+                "AWP stuurt ook een e-mail naar alle geadresseerde gebruikers, met de mededeling dat er een bericht voor ze is.<br>",
+                "Na het verzenden van de e-mails wordt er een logbestand gedownload met de namen van de geadresseerden.</p>"
+
             ]),
         set_image_div("img_mailbox_create_message_ne"),
 
@@ -226,7 +228,9 @@ const man_mailbox = {
                 "<p><b>Send a message</b><br>",
                 "Click <i>Send</i>. AWP will now send the message to all recipients. ",
                 "Only the users whose account is activated and not inactive will receive the message. ",
-                "AWP also sends an email to all recipients, informing them that they have received a message.</p>"]),
+                "AWP also sends an email to all recipients, informing them that they have received a message.<br>",
+                "After sending the emails, a logfile will be downloaded with the names of the recipients.</p>"
+                ]),
         set_image_div("img_mailbox_create_message_en"),
 
         write_paragraph_header("id_mailbox_recipients", "Recipients"),

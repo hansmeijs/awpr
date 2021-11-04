@@ -607,10 +607,10 @@ def get_mode_str(self):  # PR2018-11-28
     return mode_str
 
 
-def get_selected_examyear_instance_from_usersetting(request):  # PR2021-05-31
+def get_selected_examyear_instance_from_usersetting(request):  # PR2021-05-31 PR2021-11-03
     #logger.debug(' ----- get_selected_examyear_instance_from_usersetting ----- ' )
     # this function gets sel_examyear_instance from saved settings.
-    # used in students.create_studentsubjectnote_rows
+    # used in students.create_studentsubjectnote_rows, MailmessageUploadView, MailboxUploadView, MailinglistUploadView
     selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
     s_ey_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
     sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(
@@ -621,11 +621,10 @@ def get_selected_examyear_instance_from_usersetting(request):  # PR2021-05-31
 # - end of get_selected_examyear_instance_from_usersetting
 
 
-
-def get_selected_examyear_school_instance_from_usersetting(request):  # PR2021-10-12
+def get_selected_examyear_school_instance_from_usersettingNIU(request):  # PR2021-10-12
     #logger.debug(' ----- get_selected_examyear_instance_from_usersetting ----- ' )
     # this function gets sel_examyear_instance from saved settings.
-    # used in MailUploadView
+    # NOT IN USE - was used in MailmessageUploadView
 
 # - get selected examyear from Usersetting
     selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
@@ -650,7 +649,6 @@ def get_selected_examyear_school_instance_from_usersetting(request):  # PR2021-1
         base=sel_schoolbase,
         examyear=sel_examyear_instance
     )
-
 
     return sel_examyear_instance, sel_school_instance
 # - end of get_selected_examyear_instance_from_usersetting

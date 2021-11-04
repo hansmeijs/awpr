@@ -58,10 +58,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
-    urls.url_mail_upload = get_attr_from_el(el_data, "data-url_mail_upload");
+    urls.url_mailmessage_upload = get_attr_from_el(el_data, "data-url_mailmessage_upload");
     urls.url_mailbox_upload = get_attr_from_el(el_data, "data-url_mailbox_upload");
     urls.url_recipients_download = get_attr_from_el(el_data, "data-url_recipients_download");
-    urls.url_mail_attachment_upload = get_attr_from_el(el_data, "data-url_mail_attachment_upload");
+    urls.url_mailattachment_upload = get_attr_from_el(el_data, "data-url_mailattachment_upload");
     urls.url_mailinglist_upload = get_attr_from_el(el_data, "data-url_mailinglist_upload");
     const has_new_mail = (get_attr_from_el(el_data, "data-class_has_mail") === "envelope_0_2")
 
@@ -1852,7 +1852,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_MMM_msg_error.innerText = null;
 
 // ---  Upload changes
-                const url_str = urls.url_mail_upload;
+                const url_str = urls.url_mailmessage_upload;
                 UploadChanges(upload_dict, url_str);
 
 // hide modal
@@ -1891,7 +1891,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 mailmessage_pk: mod_MMM_dict.mailmessage_pk
             };
 // ---  Upload changes
-            const url_str = urls.url_mail_upload;
+            const url_str = urls.url_mailmessage_upload;
             UploadChanges(upload_dict, url_str);
         };
     };  // MMM_Delete
@@ -2250,7 +2250,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_MMM_loader.classList.remove(cls_hide);
 
                 const upload_json = JSON.stringify (upload_dict)
-                const url_str = urls.url_mail_attachment_upload;
+                const url_str = urls.url_mailattachment_upload;
                 //console.log("url_str", url_str);
                 //console.log("upload_dict", upload_dict);
 
