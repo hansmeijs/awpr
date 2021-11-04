@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 def create_mailmessage_received_rows(examyear, request, mailmessage_pk=None):
     # --- create received mail_message rows of this user, this examyear PR2021-10-28
     #       use INNER JOIN mailbox to filter messages for this user
+    # PR2021-11-03 debug: since received messages cab come from other countries:
+    # - dont filter on examyear.pk but on examyear.code
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_mailmessage_received_rows ============= ')
@@ -24,7 +26,7 @@ def create_mailmessage_received_rows(examyear, request, mailmessage_pk=None):
 
     try:
 
-        sql_keys = {'req_usr_id': request.user.pk, 'ey_id': examyear.pk, 'msg_id': mailmessage_pk}
+        sql_keys = {'req_usr_id': request.user.pk, 'ey_code': examyear.code, 'msg_id': mailmessage_pk}
 
         filter_mailmessage_pk = 'AND msg.id = %(msg_id)s::INT' if mailmessage_pk else ''
 
@@ -39,12 +41,13 @@ def create_mailmessage_received_rows(examyear, request, mailmessage_pk=None):
                     "au.last_name AS sender_lastname",
 
                     "FROM schools_mailmessage AS msg",
+                    "INNER JOIN schools_examyear AS ey ON (ey.id = msg.examyear_id)",
                     "INNER JOIN schools_mailbox AS mb ON (mb.mailmessage_id = msg.id)",
                     "LEFT JOIN schools_school AS sch ON (sch.id = msg.sender_school_id)",
                     "LEFT JOIN accounts_user AS au ON (au.id = msg.sender_user_id)",
                     "LEFT JOIN att ON (att.mailmessage_id = msg.id)",
 
-                    "WHERE msg.examyear_id = %(ey_id)s::INT",
+                    "WHERE ey.code = %(ey_code)s::INT",
                     "AND mb.user_id = %(req_usr_id)s::INT",
                     "AND msg.sentdate IS NOT NULL",
 
