@@ -838,12 +838,12 @@ def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, requ
         logger.debug('ws_name: ' + str(ws_name))
         logger.debug('row_data.get(is_mandatory): ' + str(row_data.get('is_mandatory')) + ' ' + str(type(row_data.get('is_mandatory'))))
     # row_data: {'schemeitem_id': 1, 'scheme_id': 1, 'subject_id': 2, 'subjecttype_id': 1, 'gradetype_id': 1,
-    #  'weight_se': 1, 'weight_ce': 1, 'is_mandatory': 1  is_combi	elective_combi_allowed	has_practexam}
+    #  'weight_se': 1, 'weight_ce': 1, 'is_mandatory': 1  is_combi	has_practexam}
 
     # fields of schemitem are:
     # scheme, subject, subjecttype, norm ,
     # gradetype, weight_se, weight_ce,
-    # is_mandatory,  is_combi, extra_count_allowed,  extra_nocount_allowed,  elective_combi_allowed,  has_practexam,  has_pws,
+    # is_mandatory,  is_combi, extra_count_allowed,  extra_nocount_allowed, has_practexam,  has_pws,
     # sr_allowed,  reex_combi_allowed, no_centralexam, no_reex, no_thirdperiod, no_exemption_ce,
 
     if ws_name == 'schemeitem' and row_data:
@@ -884,7 +884,6 @@ def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, requ
                     is_mandatory = True if row_data.get('is_mandatory') == 1 else False
                     #is_manda_subj = True if row_data.get('is_manda_subj') == 1 else False
                     is_combi = True if row_data.get('is_combi') == 1 else False
-                    elective_combi_allowed = True if row_data.get('elective_combi_allowed') == 1 else False
                     has_practexam = True if row_data.get('has_practexam') == 1 else False
 
                     schemeitem = subj_mod.Schemeitem(
@@ -897,7 +896,6 @@ def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, requ
                         is_mandatory=is_mandatory,
                         #is_mand_subj=is_mand_subj,
                         is_combi=is_combi,
-                        elective_combi_allowed=elective_combi_allowed,
                         has_practexam=has_practexam
                     )
                     schemeitem.save(request=request)
@@ -1146,7 +1144,7 @@ def ImportCluster(ws_name, row_data, logfile, mapped, examyear, school, request)
         logger.debug('-------------------  cluster ----------------- sel_examyear: ' + str(examyear))
         logger.debug('row_data: ' + str(row_data))
         logger.debug('ws_name: ' + str(ws_name))
-        # row_data: {'cluster_id': 1, 'subject_id': 64, 'dep_id': 3, 'name': 'ne - 1'}
+        # row_data: {'clustername': 1, 'subject_id': 64, 'dep_id': 3, 'name': 'ne - 1'}
 
     if ws_name == 'cluster' and row_data:
         try:
@@ -1186,7 +1184,7 @@ def ImportCluster(ws_name, row_data, logfile, mapped, examyear, school, request)
                     if logging_on:
                         logger.debug (ws_name + ': ' + str(cluster))
                     awp_cluster_id = row_data.get('cluster_id')
-
+                    # TODO change to clustername
                     if ws_name not in mapped:
                         mapped[ws_name] = {}
                     mapped[ws_name][awp_cluster_id] = cluster
@@ -1304,14 +1302,14 @@ def ImportStudent(ws_name, row_data, logfile, mapped, examyear, school, request)
                             student.islexstudent = school.islexschool
                             student.bis_exam = True if row_data.get('bis_exam') == 1 else False
 
-                            student.has_reex = True if row_data.get('has_reex') == 1 else False
-                            student.has_reex3 = True if row_data.get('has_reex3') == 1 else False
+                            student.reex_count = row_data.get('reex_count', 0)
+                            student.reex03_count = row_data.get('reex03_count', 0)
                             student.has_sere = True if row_data.get('has_sere') == 1 else False
                             student.withdrawn = True if row_data.get('withdrawn') == 1 else False
 
-                            student.grade_ce_avg_text = row_data.get('grade_ce_avg_text')
-                            student.grade_combi_avg_text = row_data.get('grade_combi_avg_text')
-                            student.endgrade_avg_text = row_data.get('endgrade_avg_text')
+                            student.grade_ce_avg = row_data.get('grade_ce_avg')
+                            student.grade_combi_avg = row_data.get('grade_combi_avg')
+                            student.grade_final_avg = row_data.get('grade_final_avg')
 
                             student.result_info = row_data.get('result_info', 0)
 
@@ -1360,9 +1358,10 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
     schemeitem_id,
     subject_id,
     cluster_id, 
+    # TODO change to clustername
+    
     is_extra_nocount, 
     is_extra_counts, 
-    is_elective_combi,
     has_exemption, has_sr, has_reex, has_reex03, 
     has_pok,  has_pex, 
     tv01_pescore, 
@@ -1372,10 +1371,47 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
     tv02_cescore, tv02_cegrade,tv02_pecegrade, tv02_finalgrade, 
     tv03_cescore, tv03_cegrade, tv03_pecegrade, tv03_finalgrade, 
     tvvrst_segrade, tvvrst_cegrade, tvvrst_finalgrade,
-    gradelist_segrade, gradelist_pecegrade, gradelist_finalgrade
+    gradelist_sesrgrade, gradelist_pecegrade, gradelist_finalgrade
    
     """
-
+    """
+    Kandidaat_Vak.KandidaatID AS student_id, 
+    Kandidaat_Vak.VakSchemaItemID AS schemeitem_id, 
+    Kandidaat_Vak.VakID AS subject_id, 
+    Kandidaat_Vak.ClusterID AS cluster_id, 
+    IIf([Kandidaat_Vak]![IsExtraVak],1,Null) AS is_extra_nocount, 
+    IIf([Kandidaat_Vak]![ExtraVakTeltMee],1,Null) AS is_extra_counts, 
+    IIf([Kandidaat_Vak]![HasVrst],1,Null) AS has_exemption, 
+    IIf([Kandidaat_Vak]![IsHerSe],1,Null) AS has_sr, 
+    IIf([Kandidaat_Vak]![HerExamen],1,Null) AS has_reex, 
+    IIf([Kandidaat_Vak]![IsHerTv03],1,Null) AS has_reex03, 
+    IIf([Kandidaat_Vak]![HasBewijsKennis],1,Null) AS has_pok, 
+    IIf([Kandidaat_Vak]![HasBewijsVrst],1,Null) AS has_pex, 
+    Kandidaat_Vak.ScorePE AS tv01_pescore, 
+    Kandidaat_Vak.ScoreCE AS tv01_cescore, 
+    Kandidaat_Vak.GemidSE AS tv01_segrade, 
+    Kandidaat_Vak.GemidSeHer AS tv01_srgrade, 
+    Kandidaat_Vak.GemidSeFinal AS tv01_sesrgrade, 
+    Kandidaat_Vak.GemidPE AS tv01_pegrade, 
+    Kandidaat_Vak.GemidCSE AS tv01_cegrade, 
+    Kandidaat_Vak.GemidPeCe AS tv01_pecegrade, 
+    Kandidaat_Vak.Resultaat AS tv01_finalgrade, 
+    Kandidaat_Vak.ScoreHer AS tv02_cescore, 
+    Kandidaat_Vak.GemidHerex AS tv02_cegrade, 
+    Kandidaat_Vak.GemidPeCeHer AS tv02_pecegrade, 
+    Kandidaat_Vak.ResultaatHerex AS tv02_finalgrade,
+    Kandidaat_Vak.ScoreTv03 AS tv03_cescore, 
+    Kandidaat_Vak.GemidHerTv03 AS tv03_cegrade, 
+    Kandidaat_Vak.GemidPeCeTv03 AS tv03_pecegrade, 
+    Kandidaat_Vak.ResultaatTv03 AS tv03_finalgrade, 
+    Kandidaat_Vak.GemidSeVrst AS tvvrst_segrade, 
+    Kandidaat_Vak.GemidCseVrst AS tvvrst_cegrade, 
+    Kandidaat_Vak.ResultaatVrst AS tvvrst_finalgrade, 
+    [Kandidaat_Vak]![CLcijferSE] AS gradelist_sesrgrade,
+    [Kandidaat_Vak]![CLcijferCE] AS gradelist_pecegrade,
+    [Kandidaat_Vak]![CLcijferEIND] AS gradelist_finalgrade
+    
+    """
     if ws_name == 'studsubj' and row_data:
         studentsubject = None
         try:
@@ -1418,7 +1454,6 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                     #studentsubject.cluster = get_cluster_from_mapped(row_data, mapped)
                     studentsubject.is_extra_nocount = True if row_data.get('is_extra_nocount') == 1 else False
                     studentsubject.is_extra_counts = True if row_data.get('is_extra_counts') == 1 else False
-                    studentsubject.is_elective_combi = True if row_data.get('is_elective_combi') == 1 else False
 
                     # only import pws title and subjects when subjecttype = werkstuk
                     if pws_title or pws_subjects:
@@ -1447,7 +1482,7 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                     studentsubject.reex3_max_pecegrade = row_data.get('reex3_max_pecegrade')
                     studentsubject.reex3_max_finalgrade = row_data.get('reex3_max_finalgrade')
 
-                    studentsubject.gradelist_segrade = row_data.get('gradelist_segrade')
+                    studentsubject.gradelist_segrade = row_data.get('gradelist_sesrgrade')
                     studentsubject.gradelist_pecegrade = row_data.get('gradelist_pecegrade')
                     studentsubject.gradelist_finalgrade = row_data.get('gradelist_finalgrade')
                     studentsubject.save(request=request)
@@ -1486,7 +1521,7 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                         grade_tv01.cegrade = get_grade_from_awpimport(row_data.get('tv01_cegrade'))
                         grade_tv01.pecegrade = get_grade_from_awpimport(row_data.get('tv01_pecegrade'))
 
-                        grade_tv01.finalgrade =  get_grade_from_awpimport(row_data.get('tv01_finalgrade'))
+                        grade_tv01.finalgrade = get_grade_from_awpimport(row_data.get('tv01_finalgrade'))
 
                         grade_tv01.save(request=request)
 
@@ -1562,14 +1597,7 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                                 examperiod=c.EXAMPERIOD_EXEMPTION
                             )
                         if grade_tvexem:
-                            tvvrst_segrade
-                            tvvrst_cegrade
-                            tvvrst_finalgrade
-
                             grade_tvexem.segrade = row_data.get('tvvrst_segrade')
-
-
-
                             grade_tvexem.pecegrade = row_data.get('tvvrst_cegrade')
                             grade_tvexem.finalgrade = row_data.get('tvvrst_finalgrade')
                             grade_tvexem.save(request=request)
@@ -1598,10 +1626,16 @@ def get_score_from_awpimport(value): # PR2021-09-20
 
 
 def get_grade_from_awpimport(value): # PR2021-09-20
+
+    # PR2021-11-22 from now grades are saved with dots instead of comma's,
+    #  so they can be used by Decimal() without having to convert to dots
+    #  replace by comma's when printing gradelist and reports
+
     grade_str = None
     try:
         if value is not None:
-            grade_str = str(value).lower()
+            value_with_dot = value.replace(',', '.')
+            grade_str = str(value_with_dot).lower()
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
     return grade_str
@@ -1913,6 +1947,9 @@ def get_cluster_from_mapped(row_data, mapped):  # PR2021-05-20
     cluster = None
     if row_data and mapped:
         mapped_clusters = mapped.get('cluster')
+
+        # TODO change to clustername
+
         awp_cluster_id = row_data.get('cluster_id')
         if logging_on:
             logger.debug('mapped_clusters: ' + str(mapped_clusters))

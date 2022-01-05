@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exam years' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/examyears210927.js' %}"></script>
+    <script src="{% static 'js/examyears220105.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -38,7 +38,7 @@
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'schools/modcreateexamyear.html' %}
-            {% include 'schools/modeditexamyear.html' %}
+            {% include 'schools/modexamyear.html' %}
 
             <div class="content_margin_top78">
                 <div class="content_header flex_container">
@@ -79,7 +79,7 @@
     <!-- END OF CONTENT BODY -->
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
-                data-url_settings_upload="{% url 'url_settings_upload' %}"
+                data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
                 data-url_examyear_upload="{% url 'url_examyear_upload' %}"
                 data-url_examyear_copytosxm="{% url 'url_examyear_copytosxm' %}"
                 data-url_examyear_deletesubjectsfromsxm="{% url 'url_examyear_deletesubjectsfromsxm' %}"

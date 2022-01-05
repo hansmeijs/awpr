@@ -5,8 +5,9 @@
 {% block title %}{% trans 'Grades' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/grades211103.js' %}"></script>
-    <script src="{% static 'js/download210816.js' %}"></script>
+    <script src="{% static 'js/import220105.js' %}"></script>
+    <script src="{% static 'js/grades220105.js' %}"></script>
+    <script src="{% static 'js/download220105.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -16,6 +17,13 @@
             <h3>{% trans 'Grades' %}</h3>
         </div>
         {% if not no_access %}
+
+            <div id="id_SBR_container_examtype" class="tw_200 m-2">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam type' %}:</h6>
+                <select id="id_SBR_select_examtype" class="tw_200 border_none px-1"
+                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+               ></select>
+            </div>
             <div id="id_SBR_container_level" class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Leerweg' %}:</h6>
                 <select id="id_SBR_select_level" class="tw_200 border_none px-1"
@@ -30,15 +38,15 @@
                ></select>
             </div>
 
-            <div id="id_SBR_container_subject" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Subject' %}:</h6>
-                <input id="id_SBR_select_subject" type="text"
-                    class="tw_200 border_none pointer_show px-2" readonly>
-            </div>
-
             <div id="id_SBR_container_cluster" class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
                <input id="id_SBR_select_cluster" type="text"
+                    class="tw_200 border_none pointer_show px-2" readonly>
+            </div>
+
+            <div id="id_SBR_container_subject" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Subject' %}:</h6>
+                <input id="id_SBR_select_subject" type="text"
                     class="tw_200 border_none pointer_show px-2" readonly>
             </div>
 
@@ -51,6 +59,10 @@
             <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
                 <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all from this period' %}</h6>
             </div>
+
+            <div class="tw_200 m-2">
+                <p id="id_SBR_item_count" class="tw_200 line_height_normal py-1"></p>
+            </div>
         {% endif %}
     </nav>
 {% endblock %}
@@ -60,6 +72,13 @@
     <div id="id_content">
         {% if no_access %}
             {% include 'includes/message_noaccess.html' %}
+        {% elif messages %}
+            <div class="content_margin_top78 m-4 pt-5">
+                {% for message in messages %}
+                    <div class="m-4 p-4 alert border_bg_invalid">{{ message }}</div>
+                {% endfor %}
+            </div>
+
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
@@ -70,6 +89,8 @@
             {% include 'includes/modconfirm.html' %}
             {% include 'includes/modstatus.html' %}
             {% include 'includes/modnote.html' %}
+            {% include 'includes/modimport.html' %}
+
 
     <!-- CONTENT HEADER - LOADER -->
             <div class="content_margin_top78">
@@ -85,22 +106,14 @@
 
     <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="btn_exemption" class="btn btn-secondary ">{% trans 'Exemptions' %}</button>
-                    <button data-btn="btn_se" class="btn btn-secondary ">{% trans 'School exam' %}</button>
-                    {% if sr_allowed %}
-                        <button data-btn="btn_sr" class="btn btn-secondary ">{% trans 'Herkansing school exam' %}</button>
-                    {% endif %}
-                    {% if not no_practexam %}
-                        <button data-btn="btn_pe" class="btn btn-secondary ">{% trans 'Practical exam' %}</button>
-                    {% endif %}
+                    <button data-btn="btn_exem" class="btn btn-secondary ">{% trans 'Exemptions' %}</button>
+                    <button data-btn="btn_ep_01" class="btn btn-secondary ">{% trans 'First exam period' %}</button>
                     {% if not no_centralexam %}
-                        <button data-btn="btn_ce" class="btn btn-secondary ">{% trans 'Central exam' %}</button>
-                        <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Re-examination' %}</button>
+                        <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Second exam period' %}</button>
                         {% if not no_thirdperiod %}
-                            <button data-btn="btn_reex3" class="btn btn-secondary ">{% trans 'Third exam period' %}</button>
+                            <button data-btn="btn_reex03" class="btn btn-secondary ">{% trans 'Third exam period' %}</button>
                         {% endif %}
                     {% endif %}
-                    <button data-btn="btn_all" class="btn btn-secondary ">{% trans 'All grades' %}</button>
                 </div>
     <!-- end BUTTON GROUP -->
     <!-- END OF CONTENT HEADER -->
@@ -116,7 +129,7 @@
     <!-- END OF CONTENT BODY -->
                 <div id="id_data"
                     data-url_datalist_download="{% url 'url_datalist_download' %}"
-                    data-url_settings_upload="{% url 'url_settings_upload' %}"
+                    data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
                     data-url_student_upload="{% url 'url_student_upload' %}"
                     data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
                     data-grade_upload_url="{% url 'grade_upload_url' %}"

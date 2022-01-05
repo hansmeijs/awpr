@@ -244,6 +244,7 @@ class Scheme(sch_mod.AwpBaseModel):
     sector = ForeignKey(Sector, null=True,  blank=True, related_name='schemes', on_delete=CASCADE)
 
     name = CharField(max_length=50)  # TODO set department+level+sector Unique per examyear True.
+    # TODO check if fields is still in use, deprecate otherwise
     fields = CharField(max_length=255, null=True, blank=True)
 
     min_subjects = PositiveSmallIntegerField(null=True)
@@ -257,6 +258,15 @@ class Scheme(sch_mod.AwpBaseModel):
 
     min_combi = PositiveSmallIntegerField(null=True)
     max_combi = PositiveSmallIntegerField(null=True)
+
+    max_reex = PositiveSmallIntegerField(default=1)
+
+# - rule variables are used in calculating results PR2021-11-27
+    rule_avg_pece_sufficient = BooleanField(default=False)
+    rule_avg_pece_notatevlex = BooleanField(default=False)  # PR2021-11-27  NOT IN USE: mustbe_avg_pece_sufficient not at evening or lex school
+
+    rule_core_sufficient = BooleanField(default=False)
+    rule_core_notatevlex = BooleanField(default=False)  # PR2021-11-27  NOT IN USE: mustbe_avg_pece_sufficient not at evening or lex school
 
     class Meta:
         ordering = ['name',]
@@ -307,6 +317,14 @@ class Scheme_log(sch_mod.AwpBaseModel):
     max_wisk = PositiveSmallIntegerField(null=True)
     min_combi = PositiveSmallIntegerField(null=True)
     max_combi = PositiveSmallIntegerField(null=True)
+    max_reex = PositiveSmallIntegerField(null=True)
+
+# - rule variables are used in calculating results PR2021-11-27
+    rule_avg_pece_sufficient = BooleanField(default=False)
+    rule_avg_pece_notatevlex = BooleanField(default=False)  # PR2021-11-27  NOT IN USE: mustbe_avg_pece_sufficient not at evening or lex school
+
+    rule_core_sufficient = BooleanField(default=False)
+    rule_core_notatevlex = BooleanField(default=False)  # PR2021-11-27  NOT IN USE: mustbe_avg_pece_sufficient not at evening or lex school
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -322,7 +340,7 @@ class Subjecttypebase(Model):  # PR2018-10-17 PR2021-07-11
     code = CharField(db_index=True, max_length=c.MAX_LENGTH_04)
     name = CharField(max_length=50)
     abbrev = CharField(db_index=True, max_length=20)
-
+    # value '0' is reserved for combi in gradelist, values must be unique!
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
 
     def __str__(self):
@@ -339,7 +357,7 @@ class Subjecttype(sch_mod.AwpBaseModel):
     name = CharField(max_length=50)
     abbrev = CharField(max_length=20, null=True)
 
-    # has_prac only enables the has_practexam option of a schemeitem
+    # has_prac / has_pws only enables the has_practexam / pws option of a schemeitem
     has_prac = BooleanField(default=False)  # has practical exam
     has_pws = BooleanField(default=False)  # has profielwerkstuk or sectorwerkstuk
 
@@ -351,9 +369,6 @@ class Subjecttype(sch_mod.AwpBaseModel):
 
     min_extra_counts = PositiveSmallIntegerField(null=True)
     max_extra_counts = PositiveSmallIntegerField(null=True)
-
-    min_elective_combi = PositiveSmallIntegerField(null=True)
-    max_elective_combi = PositiveSmallIntegerField(null=True)
 
     def __str__(self):
         return self.name
@@ -371,7 +386,6 @@ class Subjecttype_log(sch_mod.AwpBaseModel):
     abbrev = CharField(max_length=c.MAX_LENGTH_20, null=True)
     sequence = PositiveSmallIntegerField(null=True)
 
-    # has_prac / has_pws only enables the has_practexam / pws option of a schemeitem
     has_prac = BooleanField(default=False)
     has_pws = BooleanField(default=False)
 
@@ -383,9 +397,6 @@ class Subjecttype_log(sch_mod.AwpBaseModel):
 
     min_extra_counts = PositiveSmallIntegerField(null=True)
     max_extra_counts = PositiveSmallIntegerField(null=True)
-
-    min_elective_combi = PositiveSmallIntegerField(null=True)
-    max_elective_combi = PositiveSmallIntegerField(null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -410,11 +421,11 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
     examyear = ForeignKey(sch_mod.Examyear, related_name='subjects', on_delete=CASCADE)
 
     name = CharField(max_length=c.MAX_LENGTH_NAME)
-    sequence = PositiveSmallIntegerField(default=9999)
+    sequence = PositiveSmallIntegerField(default=9999, db_index=True)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     # TODO remove otherlang from Subject
-    otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    #otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     # pr2021-05-04 temporary, used when importing from AWP to determine if subject is uploaded from school
     addedbyschool = BooleanField(default=False)
 
@@ -454,8 +465,9 @@ class Subject_log(sch_mod.AwpBaseModel):
     code = CharField(max_length=c.MAX_LENGTH_10, null=True)  # stored in subjectbase PR2020-12-11
     sequence = PositiveSmallIntegerField(null=True)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+
     # TODO remove otherlang from Subject
-    otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    # otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     addedbyschool = BooleanField(default=False)
 
@@ -542,7 +554,6 @@ class Schemeitem(sch_mod.AwpBaseModel):
     # TODO remove from subject after transferring data
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
-    # TODO deprecated: remove no_order from subjects
     no_order = BooleanField(default=False)
 
     # delete exam from schemitem, is linked to grade
@@ -551,6 +562,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
     gradetype = PositiveSmallIntegerField(default=1)
     weight_se = PositiveSmallIntegerField(default=1)
     weight_ce = PositiveSmallIntegerField(default=1)
+    multiplier = PositiveSmallIntegerField(default=1)
 
     # is_mand_subj: only mandatory if student has this subject
     is_mandatory = BooleanField(default=False)
@@ -559,27 +571,32 @@ class Schemeitem(sch_mod.AwpBaseModel):
 
     extra_count_allowed = BooleanField(default=False)
     extra_nocount_allowed = BooleanField(default=False)
-    # TODO deprecate elective_combi_allowed
-    elective_combi_allowed = BooleanField(default=False)
 
     has_practexam = BooleanField(default=False)
-    has_pws = BooleanField(default=False)
+    # TODO deprecate has_pws, use sjtp.has_prac instead
+    # has_pws = BooleanField(default=False)
 
     is_core_subject = BooleanField(default=False)
     is_mvt = BooleanField(default=False)
     is_wisk = BooleanField(default=False)
 
-    sr_allowed = BooleanField(default=False)  # herkansing schoolexamen
+# - rule variables are used in calculating results PR2021-11-27
+    rule_grade_sufficient = BooleanField(default=False)
+    rule_gradesuff_notatevlex = BooleanField(default=False) # PR2021-11-23 rule_grade_sufficient not at evening or lex school
+
+    sr_allowed = BooleanField(default=False) # herkansing schoolexamen
     # deleted: reex_combi_allowed = BooleanField(default=False)
     # deleted: no_centralexam = BooleanField(default=False)
     # deleted: no_reex = BooleanField(default=False)
+
+    # TODO to be deprecated, moved to scheme
     max_reex = PositiveSmallIntegerField(default=1)
+    # TODO remove, not in use
     no_thirdperiod = BooleanField(default=False)
     no_exemption_ce = BooleanField(default=False)
 
     #   extra_count_allowed: only at Havo Vwo) 'PR2017-01-28
     #   extra_nocount_allowed: at Vsbo TKL and Havo Vwo)) 'PR2017-01-28
-    #   elective_combi_allowed: only at Vwo and subject du fr sp 'PR2017-01-28
     #   has_practexam: only at Vsbo PBL and PKL, all sectorprogramma's except uv 'PR2017-01-28
 
     # Corona issues PR2021-04-25
@@ -619,10 +636,12 @@ class Schemeitem(sch_mod.AwpBaseModel):
                 item_dict['ssi_exal'] = 1 # was: (0, 1)[item.extra_count_allowed]
             if item.extra_nocount_allowed:
                 item_dict['ssi_exna'] = 1 # was: (0, 1)[item.extra_nocount_allowed]
-            if item.elective_combi_allowed:
-                item_dict['ssi_chal'] = 1 # was: (0, 1)[item.elective_combi_allowed]
             if item.is_core_subject:
                 item_dict['ssi_core'] = 1 # PR2019-02-26 is core subject
+            if item.rule_grade_sufficient:
+                item_dict['ssi_sufficient'] = 1 # PR2019-11-23
+            if item.rule_gradesuff_notatevlex:
+                item_dict['ssi_rule_gradesuff_notatevlex'] = 1 # PR2019-11-23
 
             if item.subject:
                 item_dict['subj_id'] = item.subject.id
@@ -664,7 +683,6 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     ete_exam = BooleanField(default=False)
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
-    # TODO remove no_order from subjects
     no_order = BooleanField(default=False)
 
     # delete exam from schemitem, is linked to grade
@@ -673,6 +691,7 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     gradetype = PositiveSmallIntegerField(null=True)
     weight_se = PositiveSmallIntegerField(null=True)
     weight_ce = PositiveSmallIntegerField(null=True)
+    multiplier = PositiveSmallIntegerField(null=True)
 
     is_mandatory = BooleanField(default=False)
     is_mand_subj_log = ForeignKey(Subject_log, related_name='+', null=True, on_delete=SET_NULL)
@@ -680,13 +699,19 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
 
     extra_count_allowed = BooleanField(default=False)
     extra_nocount_allowed = BooleanField(default=False)
-    elective_combi_allowed = BooleanField(default=False)
 
     has_practexam = BooleanField(default=False)
-    has_pws = BooleanField(default=False)
+
+    # TODO deprecate has_pws, use sjtp.has_prac instead
+    # has_pws = BooleanField(default=False)
+
     is_core_subject = BooleanField(default=False)
     is_mvt = BooleanField(default=False)
     is_wisk = BooleanField(default=False)
+
+# - rule variables are used in calculating results PR2021-11-27
+    rule_grade_sufficient = BooleanField(default=False)
+    rule_gradesuff_notatevlex = BooleanField(default=False)  # PR2021-11-23 rule_grade_sufficient not at evening or lex school
 
     sr_allowed = BooleanField(default=False)  # herkansing schoolexamen
     max_reex = PositiveSmallIntegerField(default=1)

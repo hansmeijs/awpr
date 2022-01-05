@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_user_upload = get_attr_from_el(el_data, "data-user_upload_url");
     urls.url_userpermit_upload = get_attr_from_el(el_data, "data-userpermit_upload_url");
     urls.url_download_permits = get_attr_from_el(el_data, "data-user_download_permits_url");
@@ -75,28 +75,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_align: ["c", "l", "l", "l","l",  "l",  "c", "l", "c"]},
         usergroup: {
                     field_caption: ["", "School_code", "School", "User", "Read_only_2lines", "Edit",
-                                    "President", "Secretary", "Commissioner_2lines",
+                                    "President", "Secretary", "Commissioner_2lines", "Examinator", "Teacher",
                                     "Analyze",  "System_administrator_2lines"],
                     field_names: ["select", "sb_code", "school_abbrev", "username", "group_read", "group_edit",
-                                    "group_auth1", "group_auth2", "group_auth3", "group_anlz", "group_admin"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text",  "toggle", "toggle",
+                                    "group_auth1", "group_auth2", "group_auth3", "group_auth4", "group_teach", "group_anlz", "group_admin"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["select", "text", "text", "text",  "toggle", "toggle", "toggle", "toggle",
                                     "toggle", "toggle", "toggle",  "toggle", "toggle"],
-                    field_width:  ["020", "090", "150", "150", "090", "090", "090", "090", "090", "090", "090"],
-                    field_align: ["c", "l", "l","l", "c", "c", "c", "c", "c", "c", "c"]},
+                    field_width:  ["020", "090", "150", "150", "090", "090", "090", "090", "090", "090", "090", "090", "090"],
+                    field_align: ["c", "l", "l","l", "c", "c", "c", "c", "c", "c", "c", "c", "c"]},
         userpermit: {
                     field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
-                                    "President", "Secretary", "Commissioner_2lines",
+                                    "President", "Secretary", "Commissioner_2lines", "Examinator", "Teacher",
                                     "Analyze", "System_administrator_2lines"],
-                    field_names: ["select", "role", "page", "action",
-                                    "group_read", "group_edit", "group_auth1", "group_auth2", "group_auth3", "group_anlz", "group_admin"],
+                    field_names: ["select", "role", "page", "action", "group_read", "group_edit",
+                                    "group_auth1", "group_auth2", "group_auth3", "group_auth4",
+                                     "group_teach", "group_anlz", "group_admin"],
                     field_tags: ["div", "div", "div", "input", "div", "div",
-                                    "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text", "toggle", "toggle",
-                                    "toggle", "toggle", "toggle", "toggle", "toggle"],
+                                    "div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["select", "text", "text", "text", "toggle","toggle",  "toggle",
+                                    "toggle", "toggle", "toggle", "toggle", "toggle", "toggle"],
                     field_width:  ["020", "090", "120","150", "075", "075",
-                                    "090", "090", "090", "090", "090"],
-                    field_align: ["c", "l", "l", "l", "c", "c", "c", "c", "c", "c", "c"]}
+                                    "090", "090", "090", "090", "090", "090", "090"],
+                    field_align: ["c", "l", "l", "l", "c", "c", "c", "c", "c", "c", "c", "c", "c"]}
         };
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -196,8 +197,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if(el_MIMP_btn_container){
             const btns = el_MIMP_btn_container.children;
             for (let i = 0, btn; btn = btns[i]; i++) {
-                const data_btn = get_attr_from_el(btn,"data-btn")
-                btn.addEventListener("click", function() {MIMP_btnSelectClicked(data_btn)}, false )
+                //PR2021-12-05 debug: data_btn as argument doesn't work, don't know why, use btn as argument instead
+                // was: const data_btn = get_attr_from_el(btn, "data-btn")
+                btn.addEventListener("click", function() {MIMP_btnSelectClicked(btn)}, false )
             }
         }
         const el_MIMP_filedialog = document.getElementById("id_MIMP_filedialog");
@@ -358,7 +360,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_user: {sel_btn: selected_btn}};
-            b_UploadSettings (upload_dict, urls.url_settings_upload);
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
         };
 
 // ---  highlight selected button
@@ -372,9 +374,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // HandleBtnSelect
 
-//=========  HandleTableRowClicked  ================ PR2020-08-03 PR2021-08-01
-    function HandleTableRowClicked(tr_clicked) {
-        //console.log("=== HandleTableRowClicked");
+//=========  HandleTblRowClicked  ================ PR2020-08-03 PR2021-08-01
+    function HandleTblRowClicked(tr_clicked) {
+        //console.log("=== HandleTblRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
         //console.log( "tr_clicked.id: ", tr_clicked, typeof tr_clicked.id);
 
@@ -401,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         //console.log( "selected_userpermit_pk: ", selected_userpermit_pk, typeof selected_userpermit_pk);
         //console.log( "selected_user_pk: ", selected_user_pk, typeof selected_user_pk);
-    }  // HandleTableRowClicked
+    }  // HandleTblRowClicked
 
 //========= FillTblRows  =================== PR2021-08-01
     function FillTblRows() {
@@ -559,7 +561,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // NIU: tblRow.setAttribute("data-ob3", ---);
 
 // --- add EventListener to tblRow
-        tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
+        tblRow.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
 
 // +++  insert td's into tblRow
         for (let j = 0; j < column_count; j++) {
@@ -2099,7 +2101,11 @@ function RefreshDataRowsAfterUpload(response) {
                 //$("#id_mod_subject").modal("hide");
             }
 
-            // NIU: const col_hidden = (columns_hidden[page_tblName]) ? columns_hidden[page_tblName] : [];
+// NIU:
+// ---  get list of hidden columns
+            // copy col_hidden from mod_MCOL_dict.cols_hidden
+            //const col_hidden = [];
+            //b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
 
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
@@ -2160,7 +2166,7 @@ function RefreshDataRowsAfterUpload(response) {
                         for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
                             let has_changed = false;
                             if (col_field.slice(0, 5) === "group") {
-                            // data_dict.usergroups example: "anlz;auth1;auth2;auth3;edit;read"
+                            // data_dict.usergroups example: "anlz;auth1;auth2;auth3;auth4;edit;read"
                                 const usergroup = col_field.slice(6);
                                 // usergroup_in_data_dict and usergroup_in_update_dict are necessary to catch empty usergroup field
                                 const usergroup_in_data_dict = (!!data_dict.usergroups && data_dict.usergroups.includes(usergroup));
@@ -2441,11 +2447,11 @@ function RefreshDataRowsAfterUpload(response) {
         if (permit_dict.requsr_role_system) {
             columns_hidden =  [];
         } else if (permit_dict.requsr_role_admin) {
-            columns_hidden = ["group_auth3"];
+            columns_hidden = ["group_auth3", "group_auth4"];
         } else if (permit_dict.requsr_role_insp) {
-            columns_hidden =  ["group_auth3"];
+            columns_hidden =  ["group_auth3", "group_auth4"];
         } else if (permit_dict.requsr_role_comm) {
-            columns_hidden =  ["group_edit", "group_auth1", "group_auth2", "group_anlz"];
+            columns_hidden =  ["group_edit", "group_auth1", "group_auth2", "group_auth4", "group_anlz"];
         } else if (permit_dict.requsr_role_school) {
             columns_hidden = ["sb_code", "school_abbrev", "group_auth3", "group_anlz"];
         }

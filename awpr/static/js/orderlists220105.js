@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_orderlist_download = get_attr_from_el(el_data, "data-orderlist_download_url");
     urls.orderlist_per_school_download_url = get_attr_from_el(el_data, "data-orderlist_per_school_download_url");
     urls.url_orderlist_parameters = get_attr_from_el(el_data, "data-url_orderlist_parameters");
@@ -312,16 +312,16 @@ document.addEventListener('DOMContentLoaded', function() {
         UpdateHeaderText();
     }  // HandleBtnSelect
 
-//=========  HandleTableRowClicked  ================ PR2020-08-03
-    function HandleTableRowClicked(tr_clicked) {
-        //console.log("=== HandleTableRowClicked");
+//=========  HandleTblRowClicked  ================ PR2020-08-03
+    function HandleTblRowClicked(tr_clicked) {
+        //console.log("=== HandleTblRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
 // ---  deselect all highlighted rows - also tblFoot , highlight selected row
         DeselectHighlightedRows(tr_clicked, cls_selected);
         tr_clicked.classList.add(cls_selected)
 
-    }  // HandleTableRowClicked
+    }  // HandleTblRowClicked
 
 //========= UpdateHeaderText  ================== PR2020-07-31
     function UpdateHeaderText(){
@@ -345,8 +345,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const data_rows = orderlist_rows;
         //console.log( "data_rows", data_rows);
 
-// --- set_columns_hidden
-        const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
+// ---  get list of hidden columns
+        // copy col_hidden from mod_MCOL_dict.cols_hidden
+        const col_hidden = [];
+        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
 
 // --- reset table
         tblHead_datatable.innerText = null;
@@ -470,7 +472,7 @@ document.addEventListener('DOMContentLoaded', function() {
         tblRow.setAttribute("data-pk", map_dict.id);
 
 // --- add EventListener to tblRow
-        tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
+        tblRow.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
 
 // +++  insert td's into tblRow
         for (let j = 0; j < column_count; j++) {
@@ -1054,8 +1056,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // close modal MSJ when no error --- already done in modal
                 //$("#id_mod_subject").modal("hide");
             }
-
-            const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
+// ---  get list of hidden columns
+            // copy col_hidden from mod_MCOL_dict.cols_hidden
+            const col_hidden = [];
+            b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
             //arr.splice(index, 0, item); will insert item into arr at the specified index

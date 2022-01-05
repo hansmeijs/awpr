@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_mailmessage_upload = get_attr_from_el(el_data, "data-url_mailmessage_upload");
     urls.url_mailbox_upload = get_attr_from_el(el_data, "data-url_mailbox_upload");
     urls.url_recipients_download = get_attr_from_el(el_data, "data-url_recipients_download");
@@ -423,7 +423,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_mailbox: {sel_btn: selected_btn}};
-            b_UploadSettings (upload_dict, urls.url_settings_upload);
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
         };
 
 // ---  highlight selected button
@@ -434,16 +434,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // HandleBtnSelect
 
-//=========  HandleTableRowClicked  ================ PR2020-08-03 PR2021-08-01
-    function HandleTableRowClicked(tr_clicked) {
-        //console.log("=== HandleTableRowClicked");
+//=========  HandleTblRowClicked  ================ PR2020-08-03 PR2021-08-01
+    function HandleTblRowClicked(tr_clicked) {
+        //console.log("=== HandleTblRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
 // ---  deselect all highlighted rows - also tblFoot , highlight selected row
         DeselectHighlightedRows(tr_clicked, cls_selected);
         tr_clicked.classList.add(cls_selected)
 
-    }  // HandleTableRowClicked
+    }  // HandleTblRowClicked
 
 //========= FillTblRows  =================== PR2021-08-01
     function FillTblRows() {
@@ -615,7 +615,7 @@ document.addEventListener('DOMContentLoaded', function() {
         tblRow.setAttribute("data-ob2", ob2);
 
 // --- add EventListener to tblRow
-        tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
+        tblRow.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
 
 // +++  insert td's into tblRow
         for (let j = 0; j < column_count; j++) {
@@ -861,7 +861,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         btn_cancel_txt = loc.No_cancel;
                         btn_save_txt = loc.Yes_delete;
                 } else {
-                    if(permit_dict.usergroup_admin){
+                    if(permit_dict.usergroup_list && permit_dict.usergroup_list.includes("admin")){
                         msg_list = [loc.Mailing_list + " '" + mod_MMM_dict.name + "' " + loc.is_general_mailinglist,
                                 loc.canbe_usedby_allusers,
                                 loc.Areyousure_youwantto_delete];
@@ -2607,7 +2607,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // - creator of the mailinglist may edit, also sysadmin when it is a public mailinglist
             mod_MMM_dict.may_edit = (mod_MMM_dict.mode = "create") ||
                                     (mod_MMM_dict.user_id === permit_dict.requsr_pk) ||
-                                    (mod_MMM_dict.ispublic && permit_dict.usergroup_admin);
+                                    (mod_MMM_dict.ispublic && permit_dict.usergroup_list && permit_dict.usergroup_list.includes('admin'));
+
             add_or_remove_class(el_MML_btn_save, cls_hide, !mod_MMM_dict.may_edit)
 
             el_MML_header.innerText = (mod_MMM_dict.name) ? loc.Mailing_list + ": " + mod_MMM_dict.name : loc.Create_new_mailing_list;

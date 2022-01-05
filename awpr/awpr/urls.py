@@ -27,9 +27,12 @@ from awpr import menus as awpr_menus
 from schools import views as school_views
 from schools import imports as school_imports
 from students import views as student_views
+from students import results as student_results
 from subjects import views as subject_views
 from grades import views as grade_views
 from grades import exfiles as grade_exfiles
+from grades import calc_results as grade_calc_res
+
 from reports import views as report_views
 from upload import views as upload_views
 
@@ -129,7 +132,7 @@ urlpatterns = [
         path('user', account_views.UserListView.as_view(), name='users_url'),
         path('user_upload', account_views.UserUploadView.as_view(), name='user_upload_url'),
         path('userpermit_upload', account_views.UserpermitUploadView.as_view(), name='userpermit_upload_url'),
-        path('settings_upload', account_views.UserSettingsUploadView.as_view(), name='url_settings_upload'),
+        path('usersetting_upload', account_views.UserSettingsUploadView.as_view(), name='url_usersetting_upload'),
         path('permits_download', account_views.UserDownloadPermitsView.as_view(), name='user_download_permits_url'),
 
         #url(r'^users/(?P<pk>\d+)/log$', account_views.UserLogView.as_view(), name='user_log_url'),
@@ -143,6 +146,9 @@ urlpatterns = [
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
     path('datalist_download', awpr_downloads.DatalistDownloadView.as_view(), name='url_datalist_download'),
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+    # PR2019-02-25
+    # PR2021-11-15 NIU: path('downloads/', report_views.download, name='downloads_url'),
 
     # PR2018-03-11
     url('^$', school_views.home,  name='home_url'),
@@ -182,7 +188,6 @@ urlpatterns = [
         path('school_upload', school_views.SchoolUploadView.as_view(), name='url_school_upload'),
         path('school_import', school_views.SchoolImportView.as_view(), name='school_import_url'),
 
-        path('old_awp_upload', upload_views.UploadOldAwpView.as_view(), name='url_old_awp_upload'),
 
         path('uploadsetting', school_views.SchoolImportUploadSetting.as_view(), name='school_uploadsetting_url'),
         path('uploaddata', school_views.SchoolImportUploadData.as_view(), name='school_uploaddata_url')
@@ -236,6 +241,27 @@ urlpatterns = [
         path('download_ex3/<list>/', grade_exfiles.DownloadEx3View.as_view(), name='url_ex3_download')
     ])),
 
+# ===== GRADES ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
+    path('grades/', include([
+        path('grade', grade_views.GradeListView.as_view(), name='grades_url'),
+        path('upload', grade_views.GradeUploadView.as_view(), name='grade_upload_url'),
+
+        path('approve', grade_views.GradeApproveView.as_view(), name='grade_approve_url'),
+        path('download_icons', grade_views.GradeDownloadGradeIconsView.as_view(), name='download_grade_icons_url'),
+        path('download_ex2a', grade_exfiles.GradeDownloadEx2aView.as_view(), name='url_grade_download_ex2a'),
+        path('download/', grade_exfiles.DownloadPublishedFile.as_view(), name='grades_download_published_url'),
+    ])),
+
+# ===== RESULTS ========================== PR2021-11-15
+    path('results/', include([
+        path('result', student_results.ResultListView.as_view(), name='results_url'),
+
+        path('get_auth', student_results.GetPresSecrView.as_view(), name='url_get_auth'),
+        path('download_gradelist/<list>/', student_results.DownloadGradelistView.as_view(), name='url_download_gradelist'),
+        path('calc_results/<list>/', grade_calc_res.CalcresultsView.as_view(), name='url_calc_results')
+
+    ])),
+
 # ===== ORDERLISTS ========================== PR2021-04-04
     path('orderlists/', include([
         path('orderlist', student_views.OrderlistsListView.as_view(), name='orderlists_url'),
@@ -255,28 +281,20 @@ urlpatterns = [
         path('download_exam_json/<list>/', subject_views.ExamDownloadExamJsonView.as_view(), name='exam_download_exam_json_url'),
     ])),
 
-# ===== GRADES ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
-    path('grades/', include([
-        path('grade', grade_views.GradeListView.as_view(), name='grades_url'),
-        path('upload', grade_views.GradeUploadView.as_view(), name='grade_upload_url'),
-        path('approve', grade_views.GradeApproveView.as_view(), name='grade_approve_url'),
-        path('download_icons', grade_views.GradeDownloadGradeIconsView.as_view(), name='download_grade_icons_url'),
-        path('download_ex2a', grade_exfiles.GradeDownloadEx2aView.as_view(), name='url_grade_download_ex2a'),
-        path('download/', grade_exfiles.DownloadPublishedFile.as_view(), name='grades_download_published_url'),
-    ])),
-
-    # PR2019-02-25
-    path('downloads/', report_views.download, name='downloads_url'),
-
 # ===== IMPORT ==========================
     path('import/', include([
         #path('import_student_load/', student_views.StudentImportUploadDataView.as_view(), name='import_student_load_url'),
         path('importsettings_upload/', school_imports.UploadImportSettingView.as_view(), name='url_import_settings_upload'),
         path('student_upload/', school_imports.UploadImportStudentView.as_view(), name='url_importstudent_upload'),
         path('studentsubject_upload/', school_imports.UploadImportStudentsubjectView.as_view(), name='url_importstudentsubject_upload'),
+
+        path('grade_upload/', school_imports.UploadImportGradeView.as_view(), name='url_importgrade_upload'),
+
         path('username_upload/', school_imports.UploadImportUsernameView.as_view(), name='url_importusername_upload'),
         path('importdata_upload/', school_imports.UploadImportDataView.as_view(), name='url_importdata_upload'),
         path('ajax_schemeitems_download/', subject_views.SchemeitemsDownloadView.as_view(), name='ajax_schemeitems_download_url'),
+
+        path('old_awp_upload', upload_views.UploadOldAwpView.as_view(), name='url_old_awp_upload'),
     ])),
 ]
 

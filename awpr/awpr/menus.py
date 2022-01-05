@@ -50,7 +50,7 @@ MENUS_DICT = {
     'page_orderlist': {'caption': _('Orderlist'), 'href': 'orderlists_url', 'width': 130},
     'page_exams': {'caption': _('Exams'), 'href': 'exams_url', 'width': 130},
     'page_grade': {'caption': _('Grades'), 'href': 'grades_url', 'width': 120},
-    'page_result': {'caption': _('Results'), 'href': 'subjects_url', 'width': 120},
+    'page_result': {'caption': _('Results'), 'href': 'results_url', 'width': 120},
     'page_report': {'caption': _('Reports'), 'href': 'subjects_url', 'width': 120},
     'page_analysis': {'caption':  _('Analysis'), 'href': 'subjects_url', 'width': 90}
 }
@@ -95,7 +95,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
     # PR2018-05-28 set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
-    logging_on = False  # s.LOGGING_ON
+    logging_on = False # s.LOGGING_ON
     if logging_on:
         logger.debug('===== get_headerbar_param ===== ' + str(sel_page))
 
@@ -188,6 +188,14 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             sr_allowed = sel_examyear.sr_allowed
             no_centralexam = sel_examyear.no_centralexam
             no_thirdperiod = sel_examyear.no_thirdperiod
+
+        if logging_on:
+            logger.debug('no_practexam:   ' + str(no_practexam))
+            logger.debug('sr_allowed:     ' + str(sr_allowed))
+            logger.debug('no_centralexam: ' + str(no_centralexam))
+            logger.debug('no_thirdperiod: ' + str(no_thirdperiod))
+
+
 # +++ give warning when examyear is different from current examyear,
             # is moved to downloadsettings
 
@@ -261,6 +269,8 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         no_access = ('permit_view' not in permit_list and 'permit_crud' not in permit_list)
 
 # ------- set message -------- PR2021-03-25
+        # messages block access to the page.
+        # warnigs must be given via DatalistDownloadView
         messages = []
         if no_examyears:
             no_access_message = _("There are no exam years yet.")
@@ -269,10 +279,10 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             no_access_message = _("%(country)s has no license to use AWP-online.") % \
                                                  {'country': sel_country_name}
             messages.append(no_access_message)
-        elif examyear_locked:
-            no_access_message = _("Exam year %(ey)s is locked. You cannot make changes.") % \
-                                                 {'ey': str(sel_examyear.code)}
-            messages.append(no_access_message)
+       # elif examyear_locked:
+            # this is a warning, dont block access when examyear_locked
+            #no_access_message = _("Exam year %(ey)s is locked. You cannot make changes.") % {'ey': str(sel_examyear.code)}
+            #messages.append(no_access_message)
         elif examyear_not_published:
             # get latest name of ETE / Div of Exam from schools, if not found: default = MinOnd
             school_admin = sch_mod.School.objects.filter(
@@ -294,9 +304,8 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         elif not sel_school_activated:
             # block certain pages when not sel_school_activated
             if sel_page in ('page_student', 'page_studsubj', 'page_grade'):
-                no_access_message = _("You must first activate the examyear before you can enter data. Go to the page 'School' and activate the examyear.")
+                no_access_message = _("The school has not activated this examyear yet.")
                 messages.append(no_access_message)
-
 # - sentr_src contains link for Sentry awp_js PR2021-09-19
         sentry_src = s.SENTRY_SRC
 
@@ -330,12 +339,12 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
     return headerbar_param
 
 
-def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-12-23
+def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-12-23 PR22021-12-03
     #logger.debug('------------ get_saved_page_url ----------------')
     #logger.debug('sel_page: ' + str(sel_page))
     # only called by schools.views.Loggedin,
     # retrieves submenu_href for: return HttpResponseRedirect(reverse_lazy(saved_href))
-    lookup_page = sel_page if sel_page else 'page_examyear'
+    lookup_page = sel_page if sel_page else 'page_student'
     #logger.debug('lookup_page: ' + str(lookup_page))
 
     page_href = None

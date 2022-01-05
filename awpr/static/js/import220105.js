@@ -51,18 +51,23 @@
 // +++++++++++++++++ MODAL IMPORT ++++++++++++++++++++
 //=========  MIMP_Open  ================ PR2020-12-03 PR2021-01-12
     function MIMP_Open(loc, import_table) {
-        //console.log( "===== MIMP_Open ========= ");
+        console.log( "===== MIMP_Open ========= ");
         //console.log( "import_table: ", import_table);
         //console.log( "loc: ", loc);
 
          // mimp_stored.coldefs gets value from schoolsetting_dict in i_UpdateSchoolsettingsImport(schoolsetting_dict)
+
 // reset all values of mimp to null, keep the keys.
         // was: Object.keys(mimp).forEach(function(key, index) {
         for (const key of Object.keys(mimp)) {
             mimp[key] = null;
         };
-        mimp.import_table = import_table
-        mimp.skip_open_filedialog = true;
+        mimp.import_table = import_table;
+
+        // step 2 is to choose examgradetype
+        mimp.is_import_grade = (import_table === "import_grade")
+
+        mimp.examgradetype = (mimp_stored.examgradetype) ? mimp_stored.examgradetype : null;
         mimp_loc = loc;
 
         //PR2020-12-05. This one doesn't work: if(el_filedialog){el_filedialog.files = null};
@@ -93,7 +98,6 @@
 
             document.getElementById("id_MIMP_header").innerText = mimp.header_text;
             document.getElementById("id_MIMP_filedialog_label").innerText = "A. " + subheader_a;
-            // >>>>>>>>>document.getElementById("id_MIMP_upload_label").innerText = header_text;
 
             document.getElementById("id_MIMP_msg_filedialog").innerText = mimp_loc.First_select_valid_excelfile;
 
@@ -102,18 +106,13 @@
             //const hide_crosstab_container = (!["import_subject", "import_studsubj"].includes(mimp.import_table))
             //add_or_remove_class(el_MIMP_crosstab_container, cls_hide, hide_crosstab_container)
 
-            const el_MIMP_crosstab = document.getElementById("id_MIMP_crosstab");
-            const el_MIMP_tabular = document.getElementById("id_MIMP_tabular");
+            //const el_MIMP_crosstab = document.getElementById("id_MIMP_crosstab");
+            //const el_MIMP_tabular = document.getElementById("id_MIMP_tabular");
 
-            add_or_remove_class(document.getElementById("id_MIMP_loader"), cls_hide, true);
-
-            const el_MIMP_msg_container = document.getElementById("id_MIMP_msg_container");
-            add_or_remove_class(el_MIMP_msg_container, cls_hide, true)
+            MIMP_show_elements()
 
 // show msg "You don't have to link the subjects yet." only when importing studsubjects
-            show_hide_element_by_id("id_MIMP_msg_dontlinksubjects", (import_table === "import_studsubj"));
-
-            MIMP_btnSelectClicked("btn_step1");
+            show_hide_element_by_id("id_MIMP_msg_dontlinksubjects", (["import_studsubj", "import_grade"].includes(import_table)));
 
 // ---  fill select unique option
             //const el_selectunique_container = document.getElementById("id_MIMP_selectunique_container");
@@ -130,10 +129,76 @@
                //     selected_value, filter_field, filter_value);
                // el_selectunique_container.classList.remove(cls_hide);
             //}
+
+// ---  reset el_worksheet_list.options
+            const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
+            el_worksheet_list.options.length = 0;
+// --- fill selectbox examtype with examtypes of this period PR2021-05-07
+            MIMP_FillSelectExamgradetype();
+
+            MIMP_btnSelectClicked(null, 1);
+
 // ---  show modal
             $("#id_mod_import").modal({backdrop: true});
         }
     }  // MIMP_Open
+
+//=========   MIMP_FillSelectExamgradetype  =====  PR2021-12-06
+    function MIMP_FillSelectExamgradetype(){
+        //console.log( "===== MIMP_FillSelectExamgradetype ========= ");
+        //console.log( "mimp_stored.examgradetype: ", mimp_stored.examgradetype);
+
+        const el_MIMP_examgradetype = document.getElementById("id_MIMP_examgradetype")
+        let option_list = []
+        let row_count = 0;
+        for (let i = 0, item_dict; item_dict = loc.examgrade_options[i]; i++) {
+
+// - skip option when not allowed this examyear
+            // values of item_dict.value are:
+            // 'exemsegrade', 'exemcegrade', 'segrade', 'srgrade',
+            // 'pescore', 'pegrade', 'cescore', 'cegrade'
+            // 'reexscore', 'reexgrade', 'reex03score', 'reex03grade'
+
+            let not_allowed = false;
+            if (item_dict.value){
+                if(item_dict.value === "srgrade") {
+                    not_allowed = (!setting_dict.sr_allowed);
+                } else if(item_dict.value.includes("pe")) {
+                    not_allowed = (setting_dict.no_centralexam || setting_dict.no_practexam);
+                } else if(item_dict.value.includes("ce")) {
+                    not_allowed = (setting_dict.no_centralexam);
+                } else if(["reexscore", "reexgrade"].includes(item_dict.value)) {
+                    not_allowed = (setting_dict.no_centralexam);
+                } else if(item_dict.value.includes("reex03")) {
+                    not_allowed = (setting_dict.no_centralexam || setting_dict.no_thirdperiod);
+                };
+                if(!not_allowed) {
+                    option_list.push(item_dict);
+                };
+            };
+        };
+        const sel_examgradetype = (mimp_stored.examgradetype) ? mimp_stored.examgradetype : null;
+        //console.log ("sel_examgradetype", sel_examgradetype);
+        t_FillOptionsFromList(el_MIMP_examgradetype, option_list, "value", "caption",
+                                loc.Select_examgradetype + "...", loc.No_examgradetypes_found,
+                                sel_examgradetype)
+
+    }  // MIMP_FillSelectExamgradetype
+
+//=========   MIMP_show_elements  =====  PR2021-12-05
+    function MIMP_show_elements(){
+        //console.log ("==========  MIMP_show_elements ==========");
+        //console.log ("mimp.import_table", mimp.import_table);
+
+        add_or_remove_class(document.getElementById("id_MIMP_loader"), cls_hide, true);
+
+        const el_MIMP_msg_container = document.getElementById("id_MIMP_msg_container");
+        add_or_remove_class(el_MIMP_msg_container, cls_hide, true)
+
+// show msg "You don't have to link the subjects yet." only when importing studsubjects
+        show_hide_element_by_id("id_MIMP_msg_dontlinksubjects", (["import_studsubj", "import_grade"].includes(mimp.import_table)));
+
+    }
 
 //=========   MIMP_Save   ======================
     function MIMP_Save(mode, RefreshDataRowsAfterUpload, setting_dict){
@@ -147,6 +212,9 @@
         // was: if(mimp.import_table === "import_studsubj" && mimp.is_crosstab){
         if(mimp.import_table === "import_studsubj"){
             upload_studentsubjects_crosstab(mode, RefreshDataRowsAfterUpload);
+
+        } else if(mimp.import_table === "import_grade"){  // PR2021-12-08
+            upload_grade_crosstab(mode, RefreshDataRowsAfterUpload);
 
         } else if(mimp.import_table === "import_permit"){
             //upload_permits();
@@ -163,6 +231,142 @@
     }  // MIMP_Save
 
 //####################################################################
+
+//=========   upload_grade_crosstab   ======================
+    function upload_grade_crosstab(mode, RefreshDataRowsAfterUpload) {
+        console.log(" ========== upload_grade_crosstab ===========");
+        console.log("mimp: ", mimp);
+
+/*
+upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1,
+            'sel_depbase_code': 'Vsbo', 'sel_school_abbrev': 'ATC',
+            'importtable': 'import_student',
+            'awpColdef_list': ['idnumber', 'sector', 'level'],
+            'test': True,
+            'data_list': [
+                {'rowindex': 0, 'idnumber': '1999112405', 'sector': None, 'level': 1},
+                {'rowindex': 8, 'idnumber': '1997053111', 'sector': None, 'level': 1}]}
+*/
+        const is_test_upload = (mode === "test")
+
+        let rowLength = 0, colLength = 0;
+        if(mimp.curWorksheetData){rowLength = mimp.curWorksheetData.length;};
+        if(mimp_stored.coldefs){colLength = mimp_stored.coldefs.length;};
+        if(rowLength > 0 && colLength > 0){
+    //console.log ("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
+    //console.log ("mimp.linked_awp_values", deepcopy_dict(mimp.linked_awp_values));
+
+// --- put all excColIndexes as key in mapped_subjects, maps ColIndex to awpBasePk {excColIndex: [awpBasePk, subj_code}
+            const mapped_subjects = {};
+            if(mimp.linked_awp_values.subject && mimp.linked_awp_values.subject.length){
+                // dict = {awpBasePk: 39, awpValue: "adm&co", excColIndex: 5, excValue: "adm&co", sortby: "adm&co", rowId: "id_tr_subject_awp_21"
+                for (let i = 0, dict; dict = mimp.linked_awp_values.subject[i]; i++) {
+                    if (dict.excColIndex && dict.excColIndex != null){ // key can be 0, dont use (!key)
+                        const subj_code = (dict.awpValue) ? dict.awpValue : "-";
+                        mapped_subjects[dict.excColIndex] = [dict.awpBasePk, subj_code];
+                    }
+                }
+            }
+            // mapped_subjects = {5: [143, "bi"], 7: [137, "cav"],  ... }
+    //console.log ("mapped_subjects", mapped_subjects);
+    //console.log ("mimp",mimp);
+
+// ---  get list of linked awpColdefs mapped colIndex to awpColdef
+            // loop through excel_coldefs to get list of linked awpColdefs
+            // excel_coldefs = [ {excColIndex: 0, excColdef: "Ex_nr_", awpColdef: "examnumber", awpCaption: "Examennummer"} ]
+            // mapped_awpColdefs = {0: "examnumber", 1: "idnumber"}
+            let has_awpColdef_examnumber = false,  has_awpColdef_idnumber = false;
+            let mapped_awpColdefs = {}
+            if(mimp.excel_coldefs){
+                for (let i = 0, coldef; coldef = mimp.excel_coldefs[i]; i++) {
+                    if (coldef.awpColdef){
+                        if (coldef.awpColdef === "examnumber") { has_awpColdef_examnumber = true };
+                        if (coldef.awpColdef === "idnumber") { has_awpColdef_idnumber = true };
+                        mapped_awpColdefs[coldef.excColIndex] = coldef.awpColdef;
+                    }
+                }
+            }
+            mapped_awpColdefs = {0: "examnumber", 1: "idnumber"}
+    //console.log ("mapped_awpColdefs",mapped_awpColdefs);
+
+            if(isEmpty(mapped_awpColdefs)){
+                alert("No linked columns")
+            } else {
+                //PR2021-07-20 only idnumber is lookupfield. Was
+                //const lookup_field = (has_awpColdef_examnumber) ? "examnumber" :
+                //                     (has_awpColdef_idnumber) ? "idnumber" : null;
+                const lookup_field = "idnumber"
+    //console.log ("lookup_field", lookup_field);
+    //console.log ("mapped_awpColdefs", mapped_awpColdefs);
+// ---  loop through all rows of worksheet_data
+                let dict_list = [];
+                for (let i = 0; i < rowLength; i++) {
+                    const row = mimp.curWorksheetData[i];
+    //console.log ("row", i,  row);
+
+//------ loop through cells of row
+                    // rowindex is index of tablerow. Index 0 is header, therefore rowindex starts with 1
+                    // ?? PR2021-02-26 not true: first row of curWorksheetData is first datarow, not header
+                    const dict = {};
+                    let subject_dict = {}
+                    for (let j = 0, len = row.length; j < len; j++) {
+                        const cell_value = row[j];
+        // skip if cell is empty
+                        if(cell_value) {  // cell_value is string , no need for cell_value != null
+    //console.log ("    col_index", j, "cell_value", cell_value, typeof cell_value);
+// check if column is in mapped_awpColdefs
+                            if(j in mapped_awpColdefs){
+        // add cellvalue to dict with key awpColdef
+                                const awpColdef = mapped_awpColdefs[j];
+    //console.log ("    awpColdef", awpColdef);
+                                dict[awpColdef] = cell_value
+        // check if column is subject column
+
+                            } else if(j in mapped_subjects){
+
+                // ---  check if value exists in linked_exc_values
+                                // ---  check if value exists in linked_exc_values
+                                // subj_arr = [143, "bi"]
+                                const subj_arr = mapped_subjects[j];
+                                let subjectBasePk = null, subject_code = null;
+                                if (subj_arr) {
+                                    subjectBasePk = (Number(subj_arr[0])) ? Number(subj_arr[0]) : null;
+                                    if (subjectBasePk){
+                                        subject_code = (subj_arr[1]) ? subj_arr[1] : null;
+                                        subject_dict[subjectBasePk] = [subject_code, cell_value];
+                                    };
+                                };
+                            }  // if(j in mapped_subjects)
+                        }  // if(!row[j])
+                    }; // for (let j = 0, excel_coldef_dict; excel_coldef_dict = mimp.excel_coldefs[j]; j++)
+                    if(!isEmpty(subject_dict)) { dict.subjects = subject_dict }
+                    dict_list.push(dict);
+                }  // for (let i = 0; i < rowLength; i++) {
+
+    //console.log ("    dict_list", dict_list);
+                if(!dict_list || !dict_list.length){
+                    alert("No data found")
+                } else {
+    // --- Upload Data
+                    const el_data = document.getElementById("id_MIMP_data");
+                    const url_str = get_attr_from_el(el_data, "data-url_importgrade_upload");
+                    const upload_dict = {
+                        importtable: mimp.import_table,
+                        test: is_test_upload,
+                        is_crosstab: mimp.is_crosstab,
+                        sel_examyear_pk: mimp_stored.sel_examyear_pk,
+                        sel_schoolbase_pk: mimp_stored.sel_schoolbase_pk,
+                        sel_depbase_pk: mimp_stored.sel_depbase_pk,
+                        examgradetype: mimp.examgradetype,
+                        filename: mimp.sel_filename,
+                        lookup_field: lookup_field,
+                        data_list: dict_list
+                    }
+                    UploadData(url_str, upload_dict, RefreshDataRowsAfterUpload);
+                }
+            }  // if(!awpColdef_list || !awpColdef_list.length){
+        }  // if(rowLength > 0 && colLength > 0){
+    }  // upload_grade_crosstab
 
 //=========   upload_studentsubjects   ======================
     function upload_studentsubjects_crosstab(mode, RefreshDataRowsAfterUpload) {
@@ -461,7 +665,6 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         };
     }  // upload_username
 
-
 //####################################################################
 
 //=========   MIMP_OpenFiledialog   ======================
@@ -484,7 +687,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         mimp.curWorksheetRange = null;
         mimp.curWorksheetData = [];
         mimp.curNoHeader = false;
-        // mimp.sel_btn gets default value in MIMP_Open
+        // mimp.sel_btn_index gets default value in MIMP_Open
 
         // dont reset these. They get value after download schoolsetting_dict PR2020-12-04
         // mimp_stored.worksheetname = null;
@@ -629,6 +832,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
     // ---  fill lists with linked values
                                     FillExcelValueLists(true);  // true = link_same_names
     // ---  fill link-tables column, department, level, sector
+        //console.log("mimp_stored.tablelist ", mimp_stored.tablelist);
                                     Fill_AEL_Tables();
     // ---  upload new settings awpCaption
                                     UploadImportSetting ("workbook");
@@ -697,11 +901,10 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             // FillDataTable();
             // UpdateDatatableHeader();
 
-// upload new settings awpCaption
+// upload new settings noheader
             UploadImportSetting ("noheader");
         }  // if(mimp.curWorkSheet){
     }; //MIMP_CheckboxHasheaderChanged
-
 
 //=========   MIMP_OpenLogfile   ====================== PR2021-07-17
     function MIMP_OpenLogfile() {
@@ -718,6 +921,10 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 } else if (mimp_stored.import_table === "import_student"){
                     const schoolname =  [mimp_stored.sel_examyear_code, mimp_stored.sel_school_name, mimp_stored.sel_depbase_code].join(" ");
                     filename += "kandidaten " +  schoolname + " dd " + date_str + ".pdf";
+
+                } else if (mimp_stored.import_table === "import_grade"){
+                    const schoolname =  [mimp_stored.sel_examyear_code, mimp_stored.sel_school_name, mimp_stored.sel_depbase_code].join(" ");
+                    filename += "cijfers " +  schoolname + " dd " + date_str + ".pdf";
                 }
             //console.log("filename", filename);
                 printPDFlogfile(mimp_logfile, filename )
@@ -726,22 +933,27 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //=========  FillExcelColdefArray  ===========
     function FillExcelColdefArray(skip_update_iscrosstab, skip_link_same_values) {
-        //console.log("=========  FillExcelColdefArray ========= ");
+        console.log("=========  FillExcelColdefArray ========= ");
         // function - creates list mimp.excel_coldefs: [{index: idx, excColdef: colName}, ...]
         //          - loops through stored_coldef and excel_coldefs and add links and caption in these arrays
-        // PR20221-02-24 debug: when is_crosstab must not link col subject and subjecttype
+
+        // PR2021-02-24 debug: when is_crosstab must not link col subject and subjecttype
+
         // stored_coldef: [ {awpColdef: "idnumber", caption: "ID nummer", excColdef: "ID"}, 1: ...]
         // excel_coldefs: [ {index: 10, excColdef: "ID", awpColdef: "idnumber", awpCaption: "ID nummer"}} ]
 
         // function is called by MIMP_GetWorkbook, MIMP_SelectWorksheet, MIMP_CheckboxHasheaderChanged
-        let itemlist = [];
-        mimp.excel_coldefs = [];
-        let has_subject_field = false;
+
+        //console.log("mimp.curWorkSheet", mimp.curWorkSheet);
+        // A67: {t: 's', v: '2000102204', r: '<t>2000102204</t>', h: '2000102204', w: '2000102204'}
 
 // ---  create array 'excel_coldefs' with Excel column names, replaces spaces, ", ', /, \ and . with _
-        const range = mimp.curWorksheetRange
+        let itemlist = [];
+        mimp.excel_coldefs = [];
+        // Not in use (for crosstab): let has_subject_field = false;
 
 // ---  get column headers if Not SelectedSheetHasNoHeader: from first row, otherwise: F01 etc ");
+        const range = mimp.curWorksheetRange
         if(mimp.curWorkSheet && range) {
             let row_number = range.StartRowNumber;
             for (let col_number = range.StartColNumber, idx = 0, colName = ""; col_number <= range.EndColNumber; ++col_number){
@@ -749,27 +961,28 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                     const index = "00" + col_number;
                     colName = "F" + index.slice(-2);
                 } else {
-                    const cellName = GetCellName (col_number,row_number);
+                    const cellName = GetCellName (col_number, row_number);
                     const excColdef = GetExcelValue(mimp.curWorkSheet, cellName, "w");
-        //console.log(">>>>>excColdef", excColdef);
                     colName = replaceChar(excColdef);
-        //console.log(">>>>>colName", colName);
-        //console.log(">>>>>has_subject_field", has_subject_field);
-                    // set has_subject_field = True when colName 'Subject' or 'Subjects' exist
-                    if(!has_subject_field && colName){
-                        const colName_lc = colName.toLowerCase();
-                        has_subject_field = (mimp_loc.Subject && mimp_loc.Subject.toLowerCase() === colName_lc);
-                        if(!has_subject_field){has_subject_field = (mimp_loc.Subjects && mimp_loc.Subjects.toLowerCase() === colName_lc)}
-                    }
+
+                    // Not in use (for crosstab):
+                                // set has_subject_field = True when colName 'Subject' or 'Subjects', 'Vak', 'Vakken' exist
+                    //            if(!has_subject_field && colName){
+                    //                const colName_lc = colName.toLowerCase();
+                    //                has_subject_field = (mimp_loc.Subject && mimp_loc.Subject.toLowerCase() === colName_lc);
+                    //                if(!has_subject_field){has_subject_field = (mimp_loc.Subjects && mimp_loc.Subjects.toLowerCase() === colName_lc)}
+                    //            }
+
                 }
                 mimp.excel_coldefs.push ({excColIndex: idx, excColdef: colName});
                 idx += 1;
         }}
 
-        //console.log(">>>>>mimp.excel_coldefs", mimp.excel_coldefs);
-
 // ---  loop through array mimp_stored.coldefs
         // mimp_stored.coldefs gets value from schoolsetting_dict in i_UpdateSchoolsettingsImport(schoolsetting_dict)
+        // it contains the linked coldefs stored in schoolsetting
+        // stored_coldef = {awpColdef: "idnumber", caption: "ID-nummer", excColdef: "ID-nummer", linkrequired: true, rowId: "id_tr_coldef_awp_0", unique: true}
+
         if(mimp_stored.coldefs) {
         //console.log("loop through array mimp_stored.coldefs");
             for (let i = 0, stored_coldef; stored_coldef = mimp_stored.coldefs[i]; i++) {
@@ -779,6 +992,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 // when table = 'column': awpColdef = field name "examnumber" etc
                 // when table = department, level or sector etc: awpColdef = base_id
                 if (stored_coldef.awpColdef && stored_coldef.excColdef){
+
 // ---  check if excColdef also exists in excel_coldefs
                     let excel_row_byKey = get_arrayRow_by_keyValue(mimp.excel_coldefs, "excColdef", stored_coldef.excColdef);
         //console.log("excel_row_byKey", excel_row_byKey);
@@ -789,19 +1003,22 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                         //delete stored_coldef.excColdef;
                     //} else if (!!excel_row_byKey){
                     if (excel_row_byKey){
+
 // ---  if excColdef is found in excel_coldefs: add awpColdef and awpCaption to excel_row
                         excel_row_byKey.awpColdef = stored_coldef.awpColdef;
                         excel_row_byKey.awpCaption = stored_coldef.caption;
         //console.log(">>> excColdef is found in excel_coldefs");
                         is_linked = true;
                     } else {
+
 // ---  if excColdef is not found in excel_coldefs remove excColdef from stored_coldef
                         delete stored_coldef.excColdef;
                 }}
+
 // ---  if column not linked, check if awpCaption and Excel name are the same, if so: link anyway
                 if (!is_linked && !skip_link_same_values){
+                    // get_arrayRow_by_keyValue returns row of array that contains keyValue in arrKey
                     let excel_row_byCaption = get_arrayRow_by_keyValue (mimp.excel_coldefs, "excColdef", stored_coldef.caption)
-        //console.log("excel_row_byCaption", excel_row_byCaption);
                     if (excel_row_byCaption){
                         stored_coldef.excColdef = excel_row_byCaption.excColdef;
                         excel_row_byCaption.awpColdef = stored_coldef.awpColdef;
@@ -810,16 +1027,19 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             };  // for (let i = 0, stored_coldef; stored_coldef = mimp_stored.coldefs[i]; i++)
         }
 
-        //console.log("mimp.excel_coldefs", mimp.excel_coldefs);
+        console.log("mimp_stored.coldefs", mimp_stored.coldefs);
+        console.log("mimp.excel_coldefs", mimp.excel_coldefs);
     }  // FillExcelColdefArray
 
 //=========  FillWorksheetData  ========================================================================
     function FillWorksheetData() {
-        //console.log("=========  function FillWorksheetData =========");
+        console.log("=========  function FillWorksheetData =========");
         //console.log("mimp.excel_coldefs", mimp.excel_coldefs);
     // fills the list 'worksheet_data' with data from 'worksheet'
-            // TODO: change to dict, add date 'w' value to show erro date in result
-
+            // TODO: change to dict, add date 'w' value to show error date in result
+            // A1: {t: 's', v: 'ID-nummer', r: '<t>ID-nummer</t>', h: 'ID-nummer', w: 'ID-nummer'}
+            // D2: {t: 'n', v: 5.5, w: '5.5'}
+console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         let sheet_data = [];
         const range = mimp.curWorksheetRange;
         if(range){
@@ -831,19 +1051,23 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 let has_values = false;
                 for (let col_index = range.StartColNumber; col_index <= range.EndColNumber; col_index++){
                     let CellName = GetCellName (col_index, row_index);
-                    let CellValue = GetExcelValue(mimp.curWorkSheet, CellName,"v");
-                    if (CellValue) {has_values = true}
-                    NewRow.push (CellValue);
+                    //let CellValue = GetExcelValue(mimp.curWorkSheet, CellName, "v");
+
+                    //const CellValues = (mimp.import_table === "import_grade") ?
+                    //                    GetExcelValuesDict(mimp.curWorkSheet, CellName) :
+                    //                    GetExcelValue(mimp.curWorkSheet, CellName);
+                    const CellValues = GetExcelValue(mimp.curWorkSheet, CellName, "w");
+                    if (CellValues) {has_values = true};
+                    NewRow.push (CellValues);
                 };
                 if (has_values){
                     sheet_data.push (NewRow);
                 };
             }
         }
-    //console.log("sheet_data", sheet_data);
+    console.log("sheet_data", sheet_data);
         return sheet_data;
     }  // FillWorksheetData
-
 
 //========= is_valid_filetype  ====================================
     function is_valid_filetype(File) {
@@ -976,6 +1200,22 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         return col_name;
     }; //function GetCellName (ColIndex, RowIndex )
 
+
+//========= GetExcelValuesDict  =========== PR2021-12-08
+    function GetExcelValuesDict(Sheet, CellName) {
+//console.log("--------------GetExcelValuesDict");
+//console.log("GetExcelValue CellName: " + CellName);
+//console.log("     Sheet: ",Sheet);
+        let CellValues = null;
+        if(CellName in Sheet) {
+            const Cell = Sheet[CellName];
+            CellValues = {t: Cell.t, v: Cell.v, w: Cell.w}
+            //// in case of csv file property 'w' not available, get 'v' (value) instead
+        };
+//console.log("CellValues: ", CellValues);
+        return CellValues;
+    }; // GetExcelValuesDict
+
 //========= GetExcelValue  ====================================
     // PR2017-11-04 from: https://stackoverflow.com/questions/2693021/how-to-count-javascript-array-objects
     function GetExcelValue(Sheet, CellName, ValType) {
@@ -1017,124 +1257,203 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         return "id_tr_" + tblName + "_" + key  + "_" + i.toString();
     }
 
-//=========  MIMP_btnPrevNextClicked  ================ PR2020-12-05
-    function MIMP_btnPrevNextClicked(prev_next) {
-        //console.log("=== MIMP_btnPrevNextClicked ===", prev_next);
+//=========  MIMP_ExamgradetypeChange  ================ PR2021-12-06
+    function MIMP_ExamgradetypeChange(el_input) {
+        console.log("=== MIMP_ExamgradetypeChange ===");
+    console.log("el_input", el_input);
+    console.log("el_input.value", el_input.value);
+        mimp.examgradetype = el_input.value;
+// upload new settings
+        UploadImportSetting ("examgradetype");
 
-        let data_btn = mimp.sel_btn;
-        const index_str = (data_btn) ? data_btn.slice(-1) : "1";
-        let index = (Number(index_str)) ? Number(index_str) : 1;
+        MIMP_HighlightAndDisableButtons();
+        MIMP_SetHeaderText()
+
+    }  // MIMP_ExamgradetypeChange
+
+//=========  MIMP_btnPrevNextClicked  ================ PR2020-12-05  PR2021-12-05
+    function MIMP_btnPrevNextClicked(prev_next) {
+        console.log("=== MIMP_btnPrevNextClicked ===", prev_next);
+    console.log("??? mimp.sel_btn_index: " + mimp.sel_btn_index, typeof mimp.sel_btn_index);
+
+    // get btn_index
+        let btn_index = (mimp.sel_btn_index) ? mimp.sel_btn_index : 1;
+
+        // skip step 2 when is_import_grade
+        const step = ( (mimp.is_import_grade && prev_next === "next" && btn_index === 1) ||
+                        (mimp.is_import_grade && prev_next === "prev" && btn_index === 3) ) ? 2 : 1;
 
         if (prev_next === "next"){
-            index += 1;
+            if (mimp.is_import_grade && btn_index === 1){
+                // skip step 2 when
+            } else {
+                btn_index += step;
+            }
         } else if (prev_next === "prev"){
-            index -= 1;
+            btn_index -= step;
         }
-        if (index < 1) {
-            index = 1;
-        } else if (index > 5) {
-            index = 5;
+        // skip step 2 when not  has_examgradetype
+        if (btn_index < 1) {
+            btn_index = 1;
+        } else if (btn_index > 5) {
+            btn_index = 5;
         };
-        data_btn = "btn_step" + index;
 
-        MIMP_btnSelectClicked(data_btn);
-    }
+    console.log(">>>>>>>>>>>  MIMP_btnSelectClicked ===", btn_index, typeof btn_index);
+        MIMP_btnSelectClicked(null, btn_index);
+    }  // MIMP_btnPrevNextClicked
 
-//=========  MIMP_btnSelectClicked  ================ PR2020-12-05
-    function MIMP_btnSelectClicked(data_btn) {
-        //console.log("=== MIMP_btnSelectClicked ===", data_btn);
-        mimp.sel_btn = data_btn
+//=========  MIMP_btnSelectClicked  ================ PR2020-12-05  PR2021-12-05
+    function MIMP_btnSelectClicked(btn, btn_index_int) {
+        console.log("=== MIMP_btnSelectClicked ===");
+        // get btn_index from btn if called bij eventhandler, from btn_index_int otherwise
+        if (btn){
+            btn_index_int = get_attr_from_el_int(btn, "data-btn_index")
+        };
+
+        mimp.sel_btn_index = btn_index_int;
 
 // ---  show only the elements that are used in this mod_shift_option
         const el_MIMP_body = document.getElementById("id_MIMP_body")
         //PR2021-04-20 mod_upload_permits has no el_MIMP_body and no step buttons
         if(el_MIMP_body){
+            const sel_btn = "btn_step" + mimp.sel_btn_index;
             const els = el_MIMP_body.getElementsByClassName("btn_show");
             for (let i = 0, el; el = els[i]; i++) {
-                const is_show = el.classList.contains(mimp.sel_btn)
+                const is_show = el.classList.contains(sel_btn);
                 show_hide_element(el, is_show)
-            }
+            };
 
-// ---  hide loader,  msg_container
+// ---  set header_text,
+            MIMP_SetHeaderText()
+
+// ---  hide loader, msg_container
             add_or_remove_class(document.getElementById("id_MIMP_loader"), cls_hide, true);
             add_or_remove_class(document.getElementById("id_MIMP_msg_container"), cls_hide, true)
 
 // ---  highlight selected button
             MIMP_HighlightAndDisableButtons();
             // open filedialog when clicked on 'step1 btn, not when opening modal, not when sel_fileexists
-            if(!mimp.skip_open_filedialog && data_btn === "btn_step1" && !mimp.sel_file){
+            if(btn && mimp.sel_btn_index === 1 && !mimp.sel_file){
                 const el_MIMP_filedialog = document.getElementById("id_MIMP_filedialog");
                 el_MIMP_filedialog.click();
-            }
-            mimp.skip_open_filedialog = false;
-        }
-    }  // MIMP_btnSelectClicked
+            };
+        };
+    };  // MIMP_btnSelectClicked
+
+//=========  MIMP_SetHeaderText  ================ PR2021-12-06
+    function MIMP_SetHeaderText() {
+        console.log("=== MIMP_SetHeaderText ===");
+        console.log("     mimp.sel_btn_index", mimp.sel_btn_index);
+        console.log("     mimp.examgradetype", mimp.examgradetype);
+        if (mimp_stored.import_table === "import_grade" && mimp.sel_btn_index > 1) {
+            let header_text = mimp_loc.Upload_grades;
+            if(mimp_stored.examgradetype){
+                for (let i = 0, item_dict; item_dict = loc.examgrade_options[i]; i++) {
+        console.log("....... value", item_dict.value, "caption", item_dict.caption);
+                    if(item_dict.value === mimp.examgradetype && item_dict.caption) {
+                        header_text += (": " + item_dict.caption.toLowerCase() ) ;
+        console.log("....... header_text", header_text);
+                        break;
+                    };
+                };
+            };
+            console.log(">>>>>>>>>> header_text", header_text);
+            document.getElementById("id_MIMP_header").innerText = header_text;
+        };
+    }  // MIMP_SetHeaderText
 
 //=========  MIMP_HighlightAndDisableButtons  ================ PR2019-05-25 PR2021-04-21
     function MIMP_HighlightAndDisableButtons() {
         //console.log("=== MIMP_HighlightAndDisableButtons ===");
         // el_MIMP_btn_prev and el_MIMP_btn_next don't exists when user has no permission
 
-        const el_filedialog = document.getElementById("id_MIMP_filedialog");
+    //console.log("mimp.sel_btn_index", mimp.sel_btn_index);
+        const is_btn_grade = (mimp.min_btn_index === 0);
+    //console.log("is_btn_grade", is_btn_grade);
+
         const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
         const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
         const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
-        const el_select_unique = document.getElementById("id_MIMP_select_unique");
-        const el_MIMP_crosstab = document.getElementById("id_MIMP_crosstab");
-
-// ---  set mimp.sel_btn
-        if(!mimp.sel_btn){ mimp.sel_btn = "btn_step1"};
+        //const el_select_unique = document.getElementById("id_MIMP_select_unique");
+        //const el_MIMP_crosstab = document.getElementById("id_MIMP_crosstab");
+        const el_MIMP_examgradetype = document.getElementById("id_MIMP_examgradetype");
 
         const no_worksheet_with_data = !(el_worksheet_list && el_worksheet_list.options && el_worksheet_list.options.length);
+        const no_gradetype_selected = (mimp.sel_btn_index === 0 && (!el_MIMP_examgradetype || !el_MIMP_examgradetype.value));
         const no_linked_columns =  !(mimp.excel_coldefs && mimp.excel_coldefs.length)
         const no_excel_data = !(mimp.curWorksheetData && mimp.curWorksheetData.length);
 
 // ---  check if selected unique field is linked to an excel column
         const not_all_required_fields_are_linked = !MIMP_RequredFieldsAreLinked();
 
-        const step2_disabled = (no_worksheet_with_data);
-        const step3_disabled = (step2_disabled || no_linked_columns || not_all_required_fields_are_linked || no_excel_data);
-        const step4_disabled = (step3_disabled);
-        const step5_disabled = (step4_disabled || !mimp.is_tested);
+        const idx_2_disabled = (no_worksheet_with_data);
+        const idx_3_disabled = (no_worksheet_with_data || (mimp.is_import_grade && no_gradetype_selected));
+        const idx_4_disabled = (idx_3_disabled || no_linked_columns || not_all_required_fields_are_linked || no_excel_data);
+        const idx_5_disabled = (idx_4_disabled);
+        const idx_6_disabled = (idx_5_disabled || !mimp.is_tested);
 
-        const btn_prev_disabled = (mimp.sel_btn === "btn_step1")
-        const btn_next_disabled = ( (mimp.sel_btn === "btn_step5") ||
-                                    (mimp.sel_btn === "btn_step4" && step5_disabled) ||
-                                    (mimp.sel_btn === "btn_step3" && step4_disabled) ||
-                                    (mimp.sel_btn === "btn_step2" && step3_disabled) ||
-                                    (mimp.sel_btn === "btn_step1" && step2_disabled))
+        const btn_prev_disabled = (mimp.sel_btn_index <= mimp.min_btn_index)
+        const btn_next_disabled = ( (mimp.sel_btn_index === 6) ||
+                                    (mimp.sel_btn_index === 5 && idx_6_disabled) ||
+                                    (mimp.sel_btn_index === 4 && idx_5_disabled) ||
+                                    (mimp.sel_btn_index === 3 && idx_4_disabled) ||
+                                    (mimp.sel_btn_index === 2 && idx_3_disabled) ||
+                                    (mimp.sel_btn_index === 1 && idx_2_disabled))
         el_MIMP_btn_prev.disabled = btn_prev_disabled;
         el_MIMP_btn_next.disabled = btn_next_disabled;
 
+        const el_MIMP_step_text = document.getElementById("id_MIMP_step_text")
+        el_MIMP_step_text.innerText = null;
+
+    //console.log("mimp.is_import_grade", mimp.is_import_grade);
+
 // ---  disable selected button
         let step_text = null;
+        let step_index = 0;
         let el_btn_container = document.getElementById("id_MIMP_btn_container")
         if(!!el_btn_container){
             let btns = el_btn_container.children;
             for (let i = 0, btn; btn = btns[i]; i++) {
-                const data_btn = get_attr_from_el(btn, "data-btn")
-                if (data_btn === "btn_step1"){
-                    // button step 1 is alway enabled
-                    btn.disabled = false;
-                } else if (data_btn === "btn_step2"){
-                    btn.disabled = step2_disabled;
-                } else if (data_btn === "btn_step3"){
-                    btn.disabled = step3_disabled;
-                } else if (data_btn === "btn_step4"){
-                    btn.disabled = step4_disabled;
-                } else if (data_btn === "btn_step5"){
-                    btn.disabled = step5_disabled;
-                }
-// ---  highlight selected button
-                const is_selected = (data_btn === mimp.sel_btn);
-                add_or_remove_class (btn, cls_btn_selected, is_selected);
-                if(is_selected){
-                    step_text = btn.innerText;
-                }
-        }};
+                const data_btn_index = get_attr_from_el_int(btn, "data-btn_index")
+                step_index += (!mimp.is_import_grade && data_btn_index === 2) ? 0 : 1;
+                step_text = [loc.Step, " ", step_index.toString(), ": "].join("");
 
+                if (data_btn_index === 1){
+                    // button step 1 is always enabled
+                    btn.disabled = false;
+                    step_text += loc.Select_file;
+                } else if (data_btn_index === 2){
+                    add_or_remove_class(btn, cls_hide, !mimp.is_import_grade)
+                    if (mimp.is_import_grade){
+                        btn.disabled = idx_2_disabled;
+                        step_text += loc.Select_grade_type;
+                    };
+                } else if (data_btn_index === 3){
+                    btn.disabled = idx_3_disabled;
+                    step_text += loc.Link_colums;
+                } else if (data_btn_index === 4){
+                    btn.disabled = idx_4_disabled;
+                    step_text += loc.Link_data;
+                } else if (data_btn_index === 5){
+                    btn.disabled = idx_5_disabled;
+                    step_text += loc.Test_upload;
+                } else if (data_btn_index === 6){
+                    btn.disabled = idx_6_disabled;
+                    step_text += loc.Upload_data;
+                }
+    //console.log("step_text", step_text);
+// ---  highlight selected button
+                const is_selected = (data_btn_index === mimp.sel_btn_index);
+                add_or_remove_class (btn, cls_btn_selected, is_selected);
+
+                btn.innerText = step_text;
 // ---  set subheader text 'Step 1. Select file' etc
-        document.getElementById("id_MIMP_step_text").innerText = step_text
+                if(is_selected){
+                    el_MIMP_step_text.innerText = step_text;
+                };
+            }
+        };
 
 // ---  make el_MIMP_msg_linkrequired visible
         //let el_MIMP_msg_linkrequired = document.getElementById("id_MIMP_msg_linkrequired");
@@ -1206,18 +1525,18 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //=========  FillExcelValueLists  ================ PR2020-12-26 PR2021-02-23
     function FillExcelValueLists(link_same_names){
-        //console.log(" ===== FillExcelValueLists  =====");
-        //console.log("mimp_stored", mimp_stored);
-        //console.log("mimp.excel_coldefs", mimp.excel_coldefs);
-        //console.log("mimp.awp_coldefs", mimp.awp_coldefs);
-        //console.log("mimp.import_table", mimp.import_table);
-        //console.log("mimp", mimp);
+        console.log("===== FillExcelValueLists  =====");
+        console.log("mimp_stored", mimp_stored);
+        console.log("mimp.excel_coldefs", mimp.excel_coldefs);
+        console.log("mimp.awp_coldefs", mimp.awp_coldefs);
+        console.log("mimp.import_table", mimp.import_table);
+        console.log("mimp", mimp);
 
         // function is called by MIMP_GetWorkbook, MIMP_SelectWorksheet, MIMP_CheckboxHasheaderChanged, LinkColumns, UnlinkColumns
+
         // function fills mimp.linked_exc_values with excel_values of department, level, sector, subject, NIU: subjecttype
         // links same names, not after LinkColumns / UnlinkColumns
-        // mimp_stored contains saved links
-        // mimp_stored gets value from schoolsetting_dict in i_UpdateSchoolsettingsImport(schoolsetting_dict)
+        // mimp_stored contains saved links, gets value from schoolsetting_dict in i_UpdateSchoolsettingsImport
         // mimp_stored.coldefs = {awpColdef: "idnumber", caption: "ID-nummer", linkfield: true, excColdef: "ID-nummer"}
         // excel_column = {index: 1, excValue: "exnr", awpValue: "examnumber", awpCaption: "Examennummer"}
 
@@ -1225,16 +1544,22 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         const awp_colNames_dict = {import_student: ["department", "level", "sector", "profiel"],
                                    // PR2021-08-11 was: import_studsubj: ["subject", "subjecttype"],
                                    import_studsubj: ["subject"],
+                                   import_grade: ["subject"],
                                    import_permit: ["permits"],
                                    import_awp: ["awpdata"],
-                                // TODO
-                               import_subject: [],
-                               import_grade: []}
+                                   import_subject: []}
         const awp_colNames_list = awp_colNames_dict[mimp.import_table];
+        // awp_colNames_list ['subject']
+
+        console.log("awp_colNames_dict", awp_colNames_dict);
+        console.log("awp_colNames_list", awp_colNames_list);
+        console.log("mimp.import_table", mimp.import_table);
 // skip when import_table = import_studsubj and is_crosstab, fill lists by .... instead
 
         if(awp_colNames_list && awp_colNames_list.length){
             for (let x = 0, awpColdef; awpColdef = awp_colNames_list[x]; x++) {
+                // awpColdef = 'subject'
+        console.log("awpColdef", awpColdef);
 
     // ---  skip when awpColdef not linked
                     // lookup excel_coldef_row with awpColdef in it, the awpColdef is not linked when no row found
@@ -1246,9 +1571,9 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                     add_or_remove_class(el_container, cls_hide, !excel_coldef_row);
 
 // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-// skip when import_table = import_studsubj , get subject names from coldefs instead
+// skip when import_table = import_studsubj or import_grade, get subject names from coldefs instead
                 // PR2021-08-11 is_crosstab NIU. WAS: if (mimp.import_table === "import_studsubj" && mimp.is_crosstab) {
-                if (mimp.import_table === "import_studsubj") {
+                if (["import_studsubj", "import_grade"].includes(mimp.import_table)) {
                     if (awpColdef === "subject"){
 // --- get subject names from unlinked coldefs
                          let excel_value_list = get_unlinked_excel_coldefs();
@@ -1273,6 +1598,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                         // excel_value_list = ["EM", "NT", "CM"]
                         const excel_value_list = get_excel_valuelist_from_tablecolumn([excColIndex]); // [excColIndex] is a list
                         if (excel_value_list && excel_value_list.length){
+
     // ---  convert the excel_value_list to a dict_list, add linked awpBasePk and awpValue to exc_dict
                             const dict_list = convert_excelvaluelist_to_dictlist(
                                         excColIndex, excColdef, awpColdef, excel_value_list, link_same_names);
@@ -1284,21 +1610,22 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             }  //  for (let x = 0, awp_colName; awp_colName = awp_col_names[x]; x++)
         }  // if(awp_col_names.length){
 
-        //console.log("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
-        //console.log("mimp.linked_awp_values", deepcopy_dict(mimp.linked_awp_values));
+        console.log("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
+        console.log("mimp.linked_awp_values", deepcopy_dict(mimp.linked_awp_values));
     }  // FillExcelValueLists
 
 //=========  create_mimp_linked_values_list  ================   PR2021-02-28
     function create_mimp_linked_values_list(awpColdef, excel_value_list){
-        //console.log("================ create_mimp_linked_values_list  ========= ");
-        //console.log("awpColdef", awpColdef);
-        //console.log("excel_value_list", excel_value_list);
+        console.log("@@@@@@@@@@@ ================ create_mimp_linked_values_list  ========= ");
+        console.log("awpColdef", awpColdef);
+        console.log("excel_value_list", excel_value_list);
 
 // --- create new_awpDict_list
         const new_awpDict_list = []
         const stored_awp_coldefs = mimp_stored[awpColdef];
         // stored_awp_coldefs = [{awpBasePk: 42, awpValue: "zwi", excValue: "leerweg"},... ]
         if(stored_awp_coldefs){
+        console.log("#### stored_awp_coldefs", stored_awp_coldefs);
             for (let i = 0, dict; dict = stored_awp_coldefs[i]; i++) {
                 const sortby = (dict.awpValue) ? dict.awpValue.toLowerCase() : "zzzzz";
                 const row_id = get_AEL_rowId(awpColdef, "awp", i); // row_id: id_tr_subject_awp_2
@@ -1360,9 +1687,9 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         }  //   if(excel_value_list)
         mimp.linked_exc_values[awpColdef] = new_excDict_list
         mimp.linked_awp_values[awpColdef] = new_awpDict_list;
-        //console.log("============ mimp.linked_exc_values[awpColdef]", new_excDict_list);
-        //console.log("============ mimp.linked_awp_values[awpColdef] ", new_awpDict_list);
-        //console.log("-----------------------------------------------------------------");
+    console.log("============ mimp.linked_exc_values[awpColdef]", new_excDict_list);
+    console.log("============ mimp.linked_awp_values[awpColdef] ", new_awpDict_list);
+    console.log("-----------------------------------------------------------------");
     }  // create_mimp_linked_values_list
 
 //=========  get_unlinked_excel_coldefs  ================   PR2021-02-25
@@ -1404,7 +1731,8 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 // ---  loop through rows of curWorksheetData,
         // loop only through columns that are in excColIndex_list
-        //  (in crosstab it is the list vof subjects, in tablular it is one column 'Subject' or 'Subjecttype'
+        //  (in crosstab it is the list of subjects, in tabular it is one column 'Subject' or 'Subjecttype'
+
         // create a list of excel values and add to mimp.linked_exc_values
         // excel_value_list = ["EM", "NT", "CM"]
         let excel_value_list = [];
@@ -1426,9 +1754,11 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         const excel_value_dictlist = []
         if (excel_value_list.length){
 
+        //console.log("excel_value_list", excel_value_list);
+
 // ---  sort the excel_value_list
             // from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort
-            excel_value_list.sort(function (a, b) {return a.localeCompare(b);});
+            //excel_value_list.sort(function (a, b) {return a.localeCompare(b);});
 
         //console.log("..............excel_value_list", excel_value_list);
 // --- convert to dictlist
@@ -1537,15 +1867,16 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //========= Fill_AEL_Tables  ====================================
     function Fill_AEL_Tables(JustLinkedAwpId, JustUnLinkedAwpId, JustUnlinkedExcId) {
-        //console.log("==== Fill_AEL_Tables  =========>> ");
-        //console.log("mimp_stored.coldefs ", mimp_stored.coldefs);
-        //console.log("mimp_stored.tablelist ", mimp_stored.tablelist);
-        //console.log("mimp.excel_coldefs ", mimp.excel_coldefs);
+        console.log("????????? ==== Fill_AEL_Tables  =========>> ");
+        console.log("mimp_stored.tablelist ", mimp_stored.tablelist);
+        console.log("mimp_stored.coldefs ", mimp_stored.coldefs);
+        console.log("mimp.excel_coldefs ", mimp.excel_coldefs);
         // called by MIMP_GetWorkbook, MIMP_SelectWorksheet, MIMP_CheckboxHasheaderChanged, LinkColumns, UnlinkColumns
 
         // only fill tables that are in mimp_stored.tablelist
         if(mimp_stored.tablelist){
             for (let i = 0, tbodyTblName; tbodyTblName = mimp_stored.tablelist[i]; i++) {
+        console.log("tbodyTblName", tbodyTblName);
                 Fill_AEL_Table(tbodyTblName, JustLinkedAwpId, JustUnLinkedAwpId, JustUnlinkedExcId)
             }
         }
@@ -1553,7 +1884,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //========= Fill_AEL_Table  ==================================== PR2020-12-29
     function Fill_AEL_Table(tbodyTblName, JustLinkedAwpId, JustUnLinkedAwpId, JustUnlinkedExcId) {
-        //console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ ==== Fill_AEL_Table  ========= ");
+        console.log(" =============== Fill_AEL_Table  ========================== ");
         //console.log("tbodyTblName", tbodyTblName);
         //console.log("mimp.import_table", mimp.import_table);
         //console.log("mimp.linked_awp_values[tbodyTblName] ", deepcopy_dict(mimp.linked_awp_values[tbodyTblName]));
@@ -1565,6 +1896,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         // stored_coldef: [ {awpColdef: "examnumber", caption: "Examennummer", linkfield: true, excColdef: "exnr"}, ...]
 
         const is_tbl_coldef = (tbodyTblName === "coldef");
+        const show_console = (tbodyTblName === "level");
 
 // ---  reset tables
         const el_tbody_awp = document.getElementById("id_MIMP_tbody_" + tbodyTblName + "_awp")
@@ -1582,6 +1914,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             let show_table = false;
             if (is_tbl_coldef){
                 show_table = true;
+//console.log("%%%%%%%%%%%%%%%% is_tbl_coldef %%%%%%%%%%%%%%%%%%%%%%%%%%%%");
             } else {
                 if(mimp.import_table === "import_student"){
                     // --- hide tables that are not linked
@@ -1590,15 +1923,16 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                     // check if it is a linked column by checking if 'excColdef' exists in row
                     show_table = (!!lookup_row && "excColdef" in lookup_row) ;
 
-                } else if(mimp.import_table === "import_studsubj"){
+                } else if(["import_studsubj", "import_grade"].includes(mimp.import_table)){
                     // PR2021-08-11 NIU. Was: show_table = (["subject", "subjecttype"].includes(tbodyTblName));
                     show_table = (tbodyTblName === "subject");
                 }
             }
+            // el_container is used to map values, like in  id_MIMP_container_sector
             const el_container = document.getElementById("id_MIMP_container_" + tbodyTblName);
             if(el_container) {add_or_remove_class(el_container, cls_hide, !show_table)};
 
-             // mimp_stored.coldefs gets value from schoolsetting_dict in i_UpdateSchoolsettingsImport(schoolsetting_dict)
+            // mimp_stored.coldefs gets value from schoolsetting_dict in i_UpdateSchoolsettingsImport(schoolsetting_dict)
 
             if(show_table){
     // ---  first loop through array of awp_columns, then through array of excel_coldefs
@@ -1609,31 +1943,29 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                                                    (key === "awp") ? mimp.linked_awp_values[tbodyTblName] : mimp.linked_exc_values[tbodyTblName];
                     const rows_name = (is_tbl_coldef) ? (key === "awp") ? "mimp_stored.coldefs" : "mimp.excel_coldefs" :
                                                    (key === "awp") ? "mimp.linked_awp_values[" + tbodyTblName + "]" : "mimp.linked_exc_values[" + tbodyTblName + "]";
-            //console.log("=============== key", key, "==================");
-            //console.log("------------- rows_name", rows_name);
-            //console.log("------------- rows", rows);
-
-
-            //console.log("mimp.linked_exc_values[subject] ", deepcopy_dict(mimp.linked_awp_values["subject"]));
-
+if (show_console){
+    console.log("=============== key", key, "==================");
+    console.log("------------- rows_name", rows_name);
+    console.log("------------- rows", rows);
+    console.log("mimp.linked_exc_values[subject] ", deepcopy_dict(mimp.linked_awp_values["subject"]));
+}
                     if(rows){
                         for (let i = 0, row ; row = rows[i]; i++) {
                             // mimp_stored.coldefs row = {awpColdef: "examnumber", caption: "Examennummer", linkfield: true, excColdef: "exnr"}
                             //                    row = {awpBasePk: 7, awpValue: "n&t", excColdef: "Profiel", excValue: "NT"}
                             // {awpBasePk: 5, awpValue: "e&m", excColdef: "Profiel", excValue: "EM"}
                             // >>>>> give value to rowid when creating dictlist
-                            let row_id = row.rowId;
-                            //if(!row_id) { row_id = get_AEL_rowId(tbodyTblName, key, i)}; // row_id: id_tr_level_exc_2
+                            const row_id = get_AEL_rowId(tbodyTblName, key, i); // row_id: id_tr_level_exc_2
                             // add rowId to dict of this row
-                            //row.rowId = row_id;
+                            row.rowId = row_id;
                             // awp row is linked when it has an excColdef and excValue -> add to linked table
                             //const row_is_linked = (!!row.excColdef);
-
-
-            //console.log("------------- row ------------- ");
-            //console.log( row);
-            //console.log("row.excColdef", row.excColdef, "row.awpColdef", row.awpColdef);
-
+if (show_console){
+    console.log("------------- row ------------- ");
+    console.log( row);
+    console.log("row.excColdef", row.excColdef);
+    console.log("row.awpColdef", row.awpColdef);
+}
                             // short version:
                             //const row_is_linked = (is_tbl_coldef) ? (key === "awp") ? !!row.excColdef : !!row.awpColdef :
                             //                                        (key === "awp") ? !!row.excValue : !!row.awpBasePk;
@@ -1642,32 +1974,34 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                             if (is_tbl_coldef) {
                                 if (key === "awp") {
                                     row_is_linked = !!row.excColdef;
+if (show_console){console.log("===> row_is_linked awp row.excColdef exists", row.excColdef)};
                                 } else {
                                     row_is_linked = !!row.awpColdef;
+if (show_console){console.log("===> row_is_linked exc row.awpColdef exists", row.excColdef)};
                                     if(!row_is_linked){
-                                        if (mimp.import_table === "import_studsubj"){
-                                            // all subject show up in excel coldef table, too confusing
+                                        if (["import_studsubj", "import_grade"].includes(mimp.import_table)){
+                                            // all subject showed up in excel coldef table, too confusing
                                             // skip subjects in excel coldef table when they exist in mimp.linked_exc_values[subject]
                                             const lookup_dict = b_lookup_dict_in_dictlist(mimp.linked_awp_values["subject"], "excValue", row.excColdef);
-
-            //console.log(".lookup_dict", !!lookup_dict, lookup_dict);
                                             if(lookup_dict){
                                                 row_is_linked = true;
-                                            }
-                                        }
-                                    }
+if (show_console){console.log("===> row_is_linked lookup_dict", lookup_dict)};
+                                            };
+                                        };
+                                    };
                                 };
                             } else {
                                 if (key === "awp") {
                                     row_is_linked = !!row.excValue;
+if (show_console){console.log("===> row_is_linked row.excValue", row.excValue)};
                                 } else {
                                     row_is_linked = !!row.awpBasePk;
+if (show_console){console.log("===> row_is_linked row.awpBasePk", row.awpBasePk)};
                                 };
                             }
                             const row_cls = (row_is_linked) ? cls_tbl_td_linked : cls_tbl_td_unlinked;
                             const cls_width = (row_is_linked) ? "tsa_tw_50perc" : "tsa_tw_100perc";
                             const row_awpBasePk = (row.awpBasePk) ? row.awpBasePk : null;
-
 
                 // ---  dont add row when excel_row is linked (has awpBasePk)
                             // PR2020-12-27 debug: must use (!!j); (j) will return 0 instead of false;
@@ -1675,13 +2009,12 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                             //const skip_linked_exc_row = (is_tbl_coldef) ? !!j && row_is_linked : (!!j && !!row_awpBasePk);
                             const skip_linked_exc_row = (key === "exc" && row_is_linked)
 
-            //console.log("=========> .row_is_linked", row_is_linked);
-
                             const awpCaption = (is_tbl_coldef) ? row.caption : row.awpValue;
                             const excCaption = (is_tbl_coldef) ? row.excColdef : row.excValue;
-            //console.log("....awpCaption", awpCaption);
-            //console.log("....excCaption", excCaption);
-
+if (show_console){
+    console.log("....awpCaption", awpCaption);
+    console.log("....excCaption", excCaption);
+}
                             if(!skip_linked_exc_row){
             // ---  if excColdef and excValue exist: append row to table ColLinked
                                 //  append row to table Awp if excValue does not exist in items
@@ -1690,7 +2023,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
             // --- insert tblRow into tbody_lnk
                                 let tblRow = el_tbody.insertRow(-1);
-                                    tblRow.id = row_id;
+                                    if (row_id) {tblRow.id = row_id};
 
                                     const row_key = (is_tbl_coldef) ? (key === "awp") ? row.awpColdef : row.excColdef :
                                                                       (key === "awp") ? row.awpBasePk : row.excValue;
@@ -1701,7 +2034,8 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                                     tblRow.addEventListener("click", function(event) {Handle_AEL_row_clicked(event)}, false);
 
             // --- if new appended row: highlight row for 1 second
-                                    const cls_just_linked_unlinked = (row_is_linked) ? "tsa_td_linked_selected" : "tsa_td_unlinked_selected";
+                                    //const cls_just_linked_unlinked = (row_is_linked) ? "tsa_td_linked_selected" : "tsa_td_unlinked_selected";
+                                    const cls_just_linked_unlinked = (row_is_linked) ? "tsa_td_linked_hover" : "tsa_td_unlinked_hover";
 
                                     let show_justLinked = false;
                                     if(row_is_linked)  {
@@ -1760,7 +2094,6 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                     };  // if(items){
                 }  // for (let j = 0; j < 2; j++)
             }  // if(show_table)
-
         }  // if (el_tbody_awp && el_tbody_exc && el_tbody_lnk)
      }; // Fill_AEL_Table()
 
@@ -1786,14 +2119,14 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 // ---  check if clicked row is already selected
             const tr_is_not_yet_selected = (!get_attr_from_el(tr_selected, "data-selected", false))
-/*
-        console.log("tbodyAEL", tbodyAEL) ;
-        console.log("tbodyTblName", tbodyTblName) ;
-        console.log("tr_selected", tr_selected) ;
-        console.log("row_clicked_id", row_clicked_id) ;
-        console.log("row_clicked_key", row_clicked_key) ;
-        console.log("tr_is_not_yet_selected", tr_is_not_yet_selected) ;
-*/
+
+        //console.log("tbodyAEL", tbodyAEL) ;
+        //console.log("tbodyTblName", tbodyTblName) ;
+        //console.log("tr_selected", tr_selected) ;
+        //console.log("row_clicked_id", row_clicked_id) ;
+        //console.log("row_clicked_key", row_clicked_key) ;
+        //console.log("tr_is_not_yet_selected", tr_is_not_yet_selected) ;
+
 // ---  if tr_is_not_yet_selected: add data-selected and class selected, remove class selected from all other rows in this table
             const cls_linked_unlinked_hover = (tbodyAEL === "lnk") ? "tsa_td_linked_hover" : "tsa_td_unlinked_hover";
             for (let i = 0, row; row = table_body_clicked.rows[i]; i++) {
@@ -1818,21 +2151,25 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                     const other_tbodyAEL = (tbodyAEL === "awp") ? "exc" : "awp";
                     const id_tbody_other = "id_MIMP_tbody_" + tbodyTblName + "_" + other_tbodyAEL
                     let table_body_other = document.getElementById(id_tbody_other)
-//console.log("tbodyTblName", tbodyTblName)
-//console.log("id_tbody_other", id_tbody_other)
+    //console.log("tbodyTblName", tbodyTblName)
+    //console.log("id_tbody_other", id_tbody_other)
 // ---  loop through rows of other table
                     let link_rows = false;
                     //for testing:
                     let row_other_caption = null;
                     for (let j = 0, row_other; row_other = table_body_other.rows[j]; j++) {
                        const other_tr_is_selected = get_attr_from_el(row_other, "data-selected", false)
-        //console.log("other_tr_is_selected", other_tr_is_selected) ;
+    //console.log("other_tr_is_selected", other_tr_is_selected) ;
 // ---  set link_rows = true if selected row is found in other table
                        if(other_tr_is_selected) {
                            link_rows = true;
                            row_other_id = get_attr_from_el(row_other, "id");
                            row_other_key = get_attr_from_el(row_other, "data-key");
                            row_other_caption = row_other.innerText;
+    //console.log("link_rows", link_rows) ;
+    //console.log(".....row_other_id", row_other_id) ;
+    //console.log(".....row_other_key", row_other_key) ;
+    //console.log(".....row_other_caption", row_other_caption) ;
                            break;
                         }
                     }
@@ -1862,8 +2199,9 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         // row_clicked_id =  'id_tr_sector_exc_1'   row_other_id = 'id_tr_sector_awp_1'
         // row_clicked_key = 'EM'  row_other_key =  '5'
 
-// --- get awp_row_id from row_clicked_id or row_other_id, depends on which row is clicked
-        const awp_row_id = (tbodyAEL === "awp") ? row_clicked_id : (tbodyAEL === "exc") ? row_other_id : null;
+// --- get JustLinkedAwpId from row_clicked_id or row_other_id, depends on which row is clicked
+        const JustLinkedAwpId = (tbodyAEL === "awp") ? row_clicked_id : (tbodyAEL === "exc") ? row_other_id : null;
+        //console.log("JustLinkedAwpId", JustLinkedAwpId);
 
 // --- get awp / exc key. WHen tbl = 'coldef' key is coldef, otherwise excValue -= value and awpValue = awpBasePk
         // awp_row_key = '5'  excel_row_key  = 'EM'
@@ -1904,7 +2242,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 // ---  fill lists with linked values and update AEL-tables
         //FillExcelValueLists();
-        Fill_AEL_Tables(awp_row_id);
+        Fill_AEL_Tables(JustLinkedAwpId);
 
         MIMP_HighlightAndDisableButtons();
     };  // LinkColumns
@@ -1974,12 +2312,12 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
     }  // UnlinkColumns
 
 //========= UPLOAD  =====================================
-    function UploadImportSetting (tbodyTblName) {
-        //console.log ("==========  UploadImportSetting ========= tbodyTblName: ", tbodyTblName);
+    function UploadImportSetting (key_str) {
+        console.log ("==========  UploadImportSetting ========= key_str: ", key_str);
 
-
-        let awp_rows = (tbodyTblName === "coldef") ? mimp_stored.coldefs : (mimp.linked_awp_values[tbodyTblName]) ? mimp.linked_awp_values[tbodyTblName] : null;
-        //let excel_rows = (tbodyTblName === "coldef") ? mimp.excel_coldefs : (mimp.linked_exc_values[tbodyTblName]) ? mimp.linked_exc_values[tbodyTblName] : null;
+        let awp_rows = (key_str === "coldef") ? mimp_stored.coldefs :
+                       (mimp.linked_awp_values && key_str in mimp.linked_awp_values) ? mimp.linked_awp_values[key_str] : null;
+        //let excel_rows = (key_str === "coldef") ? mimp.excel_coldefs : (mimp.linked_exc_values[key_str]) ? mimp.linked_exc_values[key_str] : null;
 
         let upload_dict = {
             importtable: mimp_stored.import_table,
@@ -1987,14 +2325,17 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             sel_schoolbase_pk: mimp_stored.sel_schoolbase_pk,
             sel_depbase_pk: mimp_stored.sel_depbase_pk
         };
-        if (["workbook", "worksheetlist", "noheader", "select_unique"].includes(tbodyTblName)){
-// ---  upload worksheetname and noheader
+        if (["workbook", "worksheetlist", "noheader", "examgradetype", "select_unique"].includes(key_str)){
+// ---  always upload worksheetname and noheader
             if (mimp.curWorksheetName){
                 upload_dict.worksheetname = mimp.curWorksheetName;
-            }
-            upload_dict.noheader = mimp.curNoHeader;
+            };
+            upload_dict.noheader = (mimp.curNoHeader) ? mimp.curNoHeader : false;
 
-        } else if (tbodyTblName === "coldef"){
+            if (key_str in mimp){
+                upload_dict[key_str] = mimp[key_str];
+            };
+        } else if (key_str === "coldef"){
             let linked_row = {};
                 // awp_row = {awpColdef: "examnumber", caption: "Examennummer", linkfield: true, excColdef: "exnr"}
             if (awp_rows){
@@ -2008,8 +2349,8 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             // upload_dict = { importtable: "student", coldef: {code: "abbrev", name: "name"} }
             upload_dict.coldef = linked_row;
 
-        } else  if (["department", "level", "sector", "profiel", "subject", "subjecttype"].includes(tbodyTblName)){
-            //console.log("tbodyTblName", tbodyTblName)
+        } else  if (["department", "level", "sector", "profiel", "subject", "subjecttype"].includes(key_str)){
+            //console.log("key_str", key_str)
             let linked_values = {};
             if (awp_rows){
                 for (let i = 0, row; row = awp_rows[i]; i++) {
@@ -2022,16 +2363,17 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             // also upload when linked_values is empty, to delete existing links from database
             // linked_values = {CM: 4, EM: 5}
             //console.log("linked_values", linked_values)
-            upload_dict[tbodyTblName] = linked_values;
+            upload_dict[key_str] = linked_values;
         };
+    console.log ("upload_dict", upload_dict);
 
         if (!isEmpty(upload_dict)){
             const parameters = {"upload": JSON.stringify (upload_dict)};
             const el_data = document.getElementById("id_MIMP_data")
             const url_str = get_attr_from_el(el_data, "data-url_import_settings_upload");
 
-            //console.log("url_str", url_str)
-            //console.log("upload_dict", upload_dict)
+        //console.log("url_str", url_str)
+        //console.log("upload_dict", upload_dict)
 
             let response = "";
             $.ajax({
@@ -2040,7 +2382,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
-                    //console.log("UploadImportSetting response: ", response);
+                    console.log("UploadImportSetting response: ", response);
                     //if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
 
                 },
@@ -2049,7 +2391,6 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 }
             });  // $.ajax
         };
-
     }; // function (UploadImportSetting)
 
 //========= i_UpdateSchoolsettingsImport  ================ PR2020-04-17 PR2021-01-12
@@ -2075,7 +2416,6 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         };
 
         const import_table_dict = schoolsetting_dict[import_table];
-        //console.log("import_table_dict", import_table_dict)
         mimp_stored = deepcopy_dict(import_table_dict);
         mimp_stored.import_table = import_table;
 
@@ -2088,13 +2428,14 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
         mimp_stored.sel_school_pk = schoolsetting_dict.sel_school_pk;
         mimp_stored.sel_school_name = schoolsetting_dict.sel_school_name;
 
-        //console.log("mimp_stored", mimp_stored)
-    }  // i_UpdateSchoolsettingsImport
+   //console.log("mimp_stored", mimp_stored)
+
+   }  // i_UpdateSchoolsettingsImport
 
     function UploadData(url_str, upload_dict, RefreshDataRowsAfterUpload){
-        //console.log ("==========  UploadData ==========");
-        //console.log("url_str", url_str);
-        //console.log("upload_dict", upload_dict);
+        console.log ("==========  UploadData ==========");
+        console.log("url_str", url_str);
+        console.log("upload_dict", upload_dict);
 
 // --- reset logfile
         mimp_logfile = []

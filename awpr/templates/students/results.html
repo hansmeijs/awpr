@@ -2,18 +2,17 @@
 {% load i18n %} {% load l10n %}
 {% load static %}
 
-{% block title %}{% trans 'Candidates' %}{% endblock %}
+{% block title %}{% trans 'Results' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import220105.js' %}"></script>
-    <script src="{% static 'js/students220105.js' %}"></script>
+    <script src="{% static 'js/results220105.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
 {% block sidebar %}
     <nav id="id_sidebar" class="awp_sidebar">
         <div class="content_subheader_left mx-2 my-4">
-            <h5>{% trans 'Candidates' %}</h5>
+            <h5>{% trans 'Results' %}</h5>
         </div>
         {% if not no_access %}
             <div class="tw_200 m-2 display_hide">
@@ -66,8 +65,7 @@
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'students/modstudent.html' %}
-            {% include 'students/modstudentsubject.html' %}
-            {% include 'includes/modimport.html' %}
+            {% include 'students/modgradelist.html' %}
 
     <!-- CONTENT HEADER - LOADER -->
             <div class="content_margin_top78">
@@ -82,7 +80,7 @@
             <!-- end content_header -->
     <!-- BUTTON GROUP -->
             <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                <button data-btn="btn_student" class="btn btn-secondary">{% trans 'Candidates' %}</button>
+                <button data-btn="btn_student" class="btn btn-secondary">{% trans 'Results' %}</button>
             </div>
     <!-- end BUTTON GROUP -->
     <!-- END OF CONTENT HEADER -->
@@ -103,6 +101,10 @@
                 data-url_student_upload="{% url 'url_student_upload' %}"
                 data-url_studsubj_validate_scheme="{% url 'url_studsubj_validate_scheme' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
+
+                data-url_download_gradelist="{% url 'url_download_gradelist' '-' %}"
+                data-url_calc_results="{% url 'url_calc_results' '-' %}"
+                data-url_get_auth="{% url 'url_get_auth' %}"
             >
             </div>
         {% endif %}

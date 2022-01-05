@@ -56,7 +56,9 @@ class SchemeitemsDownloadView(View):  # PR2019-01-13
         # logger.debug(' ============= SchemeitemsDownloadView ============= ')
         # logger.debug('request.POST' + str(request.POST) )
 
-        # request.POST<QueryDict: {'dep_id': ['11'], 'lvl_id': ['7'], 'sct_id': ['30']}>
+        # request.POST<QueryDict: {'d
+        #
+        # ep_id': ['11'], 'lvl_id': ['7'], 'sct_id': ['30']}>
 
         params = {}
         if request.user is not None and request.user.examyear is not None:
@@ -224,7 +226,7 @@ def create_subject_rows(setting_dict, subject_pk, cur_dep_only=False):
         sql_keys = {'ey_id': sel_examyear_pk}
         sql_list = ["SELECT sj.id, sj.base_id, sj.examyear_id,",
             "CONCAT('subject_', sj.id::TEXT) AS mapid,",
-            "sj.name, sb.code, sj.sequence, sj.depbases, sj.otherlang, sj.addedbyschool,",
+            "sj.name, sb.code, sj.sequence, sj.depbases, sj.addedbyschool,",
             "sj.modifiedby_id, sj.modifiedat,",
             "ey.code AS examyear_code,",
             "SUBSTRING(au.username, 7) AS modby_username",
@@ -677,7 +679,7 @@ def update_subjecttypebase_instance(instance, upload_dict, error_list, request):
 class SubjecttypeUploadView(View):  # PR2021-06-23
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= SubjecttypeUploadView ============= ')
@@ -745,6 +747,7 @@ class SubjecttypeUploadView(View):  # PR2021-06-23
                             )
                             if logging_on:
                                 logger.debug(' subjecttype: ' + str(subjecttype))
+                                logger.debug(' is_delete: ' + str(is_delete))
 
                             if subjecttype:
 # ++++ Delete subjecttype
@@ -2411,10 +2414,18 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, er
 
         for field, new_value in upload_dict.items():
 
-            if field in ("gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi",
-                         "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
-                         "has_practexam", "has_pws", "is_core_subject", "is_mvt", "is_wisk", "ete_exam", "otherlang",
-                         "sr_allowed", "max_reex",  "no_thirdperiod",  "no_exemption_ce"):
+            if field in ('gradetype', 'weight_se', 'weight_ce', 'multiplier', 'is_mandatory', 'is_mand_subj', 'is_combi',
+                         'extra_count_allowed', 'extra_nocount_allowed',
+                         'has_practexam', 'is_core_subject', 'is_mvt', 'is_wisk',
+
+                         # not in use: "rule_final_vsbo", "rule_finalvsbo_notatevlex",
+                         # not in use: "rule_final_havovwo", "rule_finalhavovwo_notatevlex",
+                         "rule_avg_pece_sufficient", "rule_avg_pece_notatevlex",
+                         "rule_grade_sufficient", "rule_gradesuff_notatevlex",
+                         "rule_core_sufficient", "rule_core_notatevlex",
+
+                         'ete_exam', 'otherlang',
+                         'sr_allowed', 'max_reex', 'no_thirdperiod', 'no_exemption_ce'):
 
                 saved_value = getattr(instance, field)
                 if logging_on:
@@ -2449,7 +2460,7 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, er
 # >>>>>>>>  SCHEME >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_list, request):
-    # --- update existing and new instance PR2021-06-27
+    # --- update existing and new instance PR2021-06-27 PR2021-11-28
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_scheme_instance -----')
@@ -2478,7 +2489,15 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
                         setattr(instance, field, new_value)
                         save_changes = True
 
-            elif field in ('min_subjects', 'max_subjects', 'min_mvt', 'max_mvt', 'min_wisk', 'max_wisk', 'min_combi', 'max_combi'):
+            elif field in ('rule_avg_pece_sufficient', 'rule_avg_pece_notatevlex',
+                            'rule_core_sufficient', 'rule_core_notatevlex'):
+                saved_value = getattr(instance, field)
+                if new_value != saved_value:
+                    setattr(instance, field, new_value)
+                    save_changes = True
+
+            elif field in ('min_subjects', 'max_subjects', 'min_mvt', 'max_mvt',
+                           'min_wisk', 'max_wisk', 'min_combi', 'max_combi', 'max_reex'):
                 msg_html = None
                 new_value_int = None
 
@@ -2515,6 +2534,11 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
                                 msg_html = str(
                                     _("Maximum amount of subjects cannot be fewer than minimum (%(val)s).") % {
                                         'val': min_subjects})
+                        elif field == 'max_reex':
+                            if not new_value_int:
+                                msg_html = str(_('%(cpt)s cannot be blank.') % {'cpt': _("Maximum number of re-examinations")})
+                            elif new_value_int < 0:
+                                msg_html = str(_("Maximum number of re-examinations must be a positive whole number."))
 
                 if msg_html:
                     msg_dict = {'field': field,
@@ -2523,7 +2547,7 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
                                 'msg_html': msg_html}
                     error_list.append(msg_dict)
                 else:
-                    # -note: value can be None
+                    # -note: value can be None, not when max_reex
                     saved_value = getattr(instance, field)
                     if logging_on:
                         logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
@@ -2739,7 +2763,7 @@ def delete_subjecttype(subjecttype, messages, request):
 
 def update_subjecttype_instance(instance, scheme, upload_dict, error_list, request):
     # --- update existing and new instance PR2021-06-23
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_subjecttype_instance -----')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -2792,8 +2816,7 @@ def update_subjecttype_instance(instance, scheme, upload_dict, error_list, reque
 
             elif field in ('min_subjects', 'max_subjects',
                            'min_extra_nocount', 'max_extra_nocount',
-                           'min_extra_counts', 'max_extra_counts',
-                           'min_elective_combi', 'max_elective_combi'
+                           'min_extra_counts', 'max_extra_counts'
                            ):
                 msg_html = None
 
@@ -2844,17 +2867,6 @@ def update_subjecttype_instance(instance, scheme, upload_dict, error_list, reque
                                 msg_html = str(_("Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': min_extra_counts})
 
-                        elif field == 'min_elective_combi':
-                            max_elective_combi = getattr(instance, 'max_elective_combi')
-                            if max_elective_combi is not None and new_value > max_elective_combi:
-                                msg_html = str(_("Minimum amount of %(cpt)s cannot be greater than maximum (%(val)s).") \
-                                               % {'cpt': _('subjects'), 'val': max_elective_combi})
-                        elif field == 'max_elective_combi':
-                            min_elective_combi = getattr(instance, 'min_elective_combi')
-                            if min_elective_combi is not None and new_value < min_elective_combi:
-                                msg_html = str(_("Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s).") \
-                                               % {'cpt': _('subjects'), 'val': min_elective_combi})
-
                 if msg_html:
                     if logging_on:
                         logger.debug('msg_html: <' + str(msg_html) + '> ' + str(type(msg_html)))
@@ -2870,6 +2882,19 @@ def update_subjecttype_instance(instance, scheme, upload_dict, error_list, reque
                     if new_value != saved_value:
                         setattr(instance, field, new_value)
                         save_changes = True
+
+            elif field == 'has_pws':
+                saved_value = getattr(instance, field)
+                if logging_on:
+                    logger.debug('field: ' + str(field))
+                    logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
+                    logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
+
+                if new_value != saved_value:
+                    setattr(instance, field, new_value)
+                    save_changes = True
+
+        #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # --- end of for loop ---
 
 # +++++ save changes
@@ -2915,7 +2940,7 @@ def create_subjecttype_rows(examyear, scheme_pk=None, depbase=None, cur_dep_only
             "sjtpbase.id AS sjtpbase_id, sjtpbase.code AS sjtpbase_code, sjtpbase.name AS sjtpbase_name,",
             "sjtpbase.sequence AS sjtpbase_sequence, sjtp.name, sjtp.abbrev,",
             "sjtp.min_subjects, sjtp.max_subjects, sjtp.min_extra_nocount, sjtp.max_extra_nocount,",
-            "sjtp.min_extra_counts, sjtp.max_extra_counts, sjtp.min_elective_combi, sjtp.max_elective_combi,",
+            "sjtp.min_extra_counts, sjtp.max_extra_counts, sjtp.has_pws,",
             "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev, sct.id AS sct_id, sct.abbrev AS sct_abbrev,",
             "dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id,",
             "ey.code AS ey_code,",
@@ -3019,7 +3044,12 @@ def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=Non
         sql_keys = {'ey_id': examyear.pk}
         sql_list = ["SELECT scheme.id, scheme.department_id, scheme.level_id, scheme.sector_id,",
             "CONCAT('scheme_', scheme.id::TEXT) AS mapid,",
-            "scheme.name, scheme.min_subjects, scheme.max_subjects, scheme.min_mvt, scheme.max_mvt, scheme.min_wisk, scheme.max_wisk, scheme.min_combi, scheme.max_combi,",
+            "scheme.name, scheme.min_subjects, scheme.max_subjects, scheme.min_mvt, scheme.max_mvt, ",
+            "scheme.min_wisk, scheme.max_wisk, scheme.min_combi, scheme.max_combi, scheme.max_reex,",
+
+            "scheme.rule_avg_pece_sufficient, scheme.rule_avg_pece_notatevlex,",
+            "scheme.rule_core_sufficient, scheme.rule_core_notatevlex,",
+
             "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code AS ey_code,",
             "dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id,",
             "depbase.code AS depbase_code,"
@@ -3078,18 +3108,22 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
                 "si.subject_id AS subj_id, subj.name AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
                 "sjtpbase.code AS sjtpbase_code, sjtpbase.sequence AS sjtpbase_sequence,",
                 "sjtp.id AS sjtp_id, sjtp.name AS sjtp_name, sjtp.abbrev AS sjtp_abbrev,",
-                "sjtp.has_prac AS sjtp_has_prac, sjtp.has_pws AS sjtp_has_pws, ",
+                "sjtp.has_prac AS sjtp_has_prac, sjtp.has_pws AS sjtp_has_pws,",
                 "sjtp.min_subjects AS sjtp_min_subjects, sjtp.max_subjects AS sjtp_max_subjects, ",
                 "scheme.name AS scheme_name, scheme.fields AS scheme_fields,",
                 "depbase.id AS depbase_id, depbase.code AS depbase_code,",
                 "lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id,",
-                "lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ey.code,",
+                "lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
 
-                "si.gradetype, si.weight_se, si.weight_ce, si.ete_exam, si.otherlang,",
+                "ey.code, ey.no_practexam AS ey_no_practexam, ey.sr_allowed AS ey_sr_allowed,"
+                "ey.no_centralexam AS ey_no_centralexam, ey.no_thirdperiod AS ey_no_thirdperiod,",
+
+                "si.gradetype, si.weight_se, si.weight_ce, si.multiplier, si.ete_exam, si.otherlang,",
                 "si.is_mandatory, si.is_mand_subj_id,",
                 "si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
-                 # deprecated: si.has_pws, si.elective_combi_allowed,
                 "si.has_practexam, si.is_core_subject, si.is_mvt, si.is_wisk,",
+
+                "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
                 "si.sr_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce,",
 
                 "si.modifiedby_id, si.modifiedat,",
@@ -3147,7 +3181,105 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
     return schemeitem_rows
 # --- end of create_schemeitem_rows
 
+#################
 
+def get_scheme_si_dict(examyear_pk, depbase_pk, scheme_pk=None, schemeitem_pk=None):
+    # PR2021-12-13
+    # --- create dict with all schemitems of this examyear, this department
+    # used to validate studsubj and grades, not to make changes
+    # lookup key = schemeitem_pk
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== get_scheme_si_dict ============= ')
+        logger.debug('examyear_pk:   ' + str(examyear_pk) + ' ' + str(type(examyear_pk)))
+        logger.debug('depbase_pk:    ' + str(depbase_pk) + ' ' + str(type(depbase_pk)))
+        logger.debug('scheme_pk:     ' + str(scheme_pk) + ' ' + str(type(scheme_pk)))
+        logger.debug('schemeitem_pk: ' + str(schemeitem_pk) + ' ' + str(type(schemeitem_pk)))
+
+    schemeitem_dict = {}
+    try:
+        if examyear_pk and depbase_pk:
+            sql_keys = {'ey_id': examyear_pk, 'depbase_pk': depbase_pk}
+            sql_list = ["SELECT si.id, subj.name AS subj_name, subjbase.code AS subj_code,",
+                "sjtpbase.code AS sjtpbase_code,",
+
+                "scheme.name AS scheme_name, scheme.max_reex AS scheme_max_reex,",
+                # TODO check if these will be used
+                #"scheme.min_subjects AS sch_min_subjects, scheme.max_subjects AS sch_max_subjects,",
+                #"scheme.min_extra_nocount AS sch_min_extra_nocount, scheme.max_extra_nocount AS sch_max_extra_nocount,",
+                #"scheme.min_extra_counts AS sch_min_extra_counts, scheme.max_extra_counts AS sch_max_extra_counts,",
+
+                "sjtp.name AS sjtp_name, sjtp.abbrev AS sjtp_abbrev,",
+                "sjtp.has_prac AS sjtp_has_prac, sjtp.has_pws AS sjtp_has_pws,",
+                # TODO check if these will be used
+                #"sjtp.min_subjects AS sjtp_min_subjects, sjtp.max_subjects AS sjtp_max_subjects,",
+                #"sjtp.min_extra_nocount AS sjtp_min_extra_nocount, sjtp.max_extra_nocount AS sjtp_max_extra_nocount,",
+                #"sjtp.min_extra_counts AS sjtp_min_extra_counts, sjtp.max_extra_counts AS sjtp_max_extra_counts,",
+
+                "ey.code AS ey_code, ey.no_practexam AS ey_no_practexam, ey.sr_allowed AS ey_sr_allowed,"
+                "ey.no_centralexam AS ey_no_centralexam, ey.no_thirdperiod AS ey_no_thirdperiod,",
+
+                "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
+                "dep.level_req, dep.sector_req, dep.has_profiel,",
+                "si.ete_exam, si.otherlang,",
+                "si.gradetype, si.weight_se, si.weight_ce, si.multiplier,",
+                "si.is_mandatory, si.is_mand_subj_id,",
+                "si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
+                "si.has_practexam, si.is_core_subject, si.is_mvt, si.is_wisk,",
+
+                "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
+
+                "si.sr_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce",
+
+                "FROM subjects_schemeitem AS si",
+                "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
+                "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+                "INNER JOIN subjects_subjecttype AS sjtp ON (sjtp.id = si.subjecttype_id)",
+                "INNER JOIN subjects_subjecttypebase AS sjtpbase ON (sjtpbase.id = sjtp.base_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
+                "LEFT JOIN subjects_sector AS sct ON (sct.id = scheme.sector_id)",
+
+                "WHERE dep.examyear_id = %(ey_id)s::INT",
+                "AND depbase.id = %(depbase_pk)s::INT"
+                ]
+            if schemeitem_pk:
+                sql_keys['si_id'] = schemeitem_pk
+                sql_list.append("AND si.id = %(si_id)s::INT")
+            elif scheme_pk:
+                sql_keys['schm.id'] = scheme_pk
+                sql_list.append("AND scheme.id = %(schm.id)s::INT")
+            sql = ' '.join(sql_list)
+
+            if logging_on:
+                logger.debug('sql: ' + str(sql))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                rows = af.dictfetchall(cursor)
+
+            for row in rows:
+                si_pk = row.get('id')
+                if si_pk:
+                    schemeitem_dict[si_pk] = row
+
+                if logging_on:
+                    logger.debug('row: ' + str(row))
+
+        if logging_on:
+            logger.debug('schemeitem_dict: ' + str(schemeitem_dict))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+    return schemeitem_dict
+# --- end of get_scheme_si_dict
+
+
+###################
 @method_decorator([login_required], name='dispatch')
 class ExamDownloadExamView(View):  # PR2021-05-06
 

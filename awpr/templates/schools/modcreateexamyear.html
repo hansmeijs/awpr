@@ -1,12 +1,12 @@
  {% load i18n %}
 {% load static %}
 
- <!-- =================== MODAL EXAMYEAR  =================== -->
-    <div class="modal" id="id_mod_examyear" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+ <!-- =================== MODAL CREATE EXAMYEAR  =================== -->
+    <div class="modal" id="id_mod_create_examyear" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg " role="document">
             <div class="modal-content">
                 <div class="modal-header tsa_bc_lightlightgrey">
-                    <h4 id="id_MEY_header" class="modal-title mx-2" ></h4>
+                    <h4 id="id_MCREY_header" class="modal-title mx-2" ></h4>
                     <button class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -16,7 +16,7 @@
                     <div class="modal_containerXX">
 <!-- modal_body_right contains input elements -->
                         <div id="id_div_form_controls" class="mx-">
-                            <div id="id_MEY_loader" class="image_container visibility_hide">
+                            <div id="id_MCREY_loader" class="image_container visibility_hide">
                                 <img  src="{% static 'img/loader.gif' %}" height="24" width="24">
                             </div>
 
@@ -25,15 +25,15 @@
 
                                         <div class="flex_container">
                                             <div class="flex_3 mx-4">
-                                                <label for="id_MEY_examyear_code" class="mx-2">{% trans 'Exam year' %}:</label>
-                                                <input id="id_MEY_examyear_code" type="number" min=2017 data-field="examyear_code"
+                                                <label for="id_MCREY_examyear_code" class="mx-2">{% trans 'Exam year' %}:</label>
+                                                <input id="id_MCREY_examyear_code" type="number" min=2017 data-field="examyear_code"
                                                 class="form-control awp_input_text" disabledXX
                                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
                                             </div>
                                         </div>
                                         <div class="flex_container">
                                             <div class="flex_3 mx-2">
-                                                <small id="id_MEY_msg_examyear" class="text-danger "></small>
+                                                <small id="id_MCREY_msg_examyear" class="text-danger "></small>
                                             </div>
                                         </div>
                                      <!--    <div id="id_msg_container" class="border_bg_message m-4 p-2">   -->
@@ -48,18 +48,18 @@
                                     </div>
                                 </div>
                                 <div class="mx-3 mt-2">
-                                    <small id="id_MEY_msg_modified"></small>
+                                    <small id="id_MCREY_msg_modified"></small>
                                 </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <div class="content_subheader_left mx-1 ">
-                        <button id="id_MEY_btn_delete"  class="btn btn-outline-danger"></button>
+                        <button id="id_MCREY_btn_delete"  class="btn btn-outline-danger"></button>
                     </div>
                     <div class="content_subheader_right">
-                        <button id="id_MEY_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
-                        <button id="id_MEY_btn_save" class="btn btn-primary"></button>
+                        <button id="id_MCREY_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MCREY_btn_save" class="btn btn-primary"></button>
                     </div>
 
                 </div>

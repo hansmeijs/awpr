@@ -1109,6 +1109,7 @@ aXX:hover{
   text-decoration: line-through double red;  /* #dc3545;    /*  red like in django is-invalid */
 }
 
+/* to reset text-decoration after marking tobedeleted row with line-through red */
 .text_decoration_initial {
   text-decoration: initial;
 }
@@ -1116,10 +1117,6 @@ aXX:hover{
 .just_linked_blue {
     background-color: #dc3545;
     transition: background-color 5000ms ease;
-}
-
-.text_decoration_initial {
-  text-decoration: initial;
 }
 
 .msg_bullet {
@@ -1330,7 +1327,7 @@ aXX:hover{
 .diamond_1_0, .diamond_1_1, .diamond_1_2, .diamond_1_3, .diamond_1_4,
 .diamond_2_0, .diamond_2_1, .diamond_2_2, .diamond_2_3, .diamond_2_4,
 .diamond_3_0, .diamond_3_1, .diamond_3_2, .diamond_3_3, .diamond_3_4 {
-    background-image: url('/static/img/diamond210901.png');
+    background-image: url('/static/img/diamond211218.png');
     background-size: 100px 80px;
 }
 
@@ -1339,17 +1336,20 @@ aXX:hover{
 .diamond_0_2 { background-position: -40px -0px;}
 .diamond_0_3 { background-position: -60px -0px;}
 .diamond_0_4 { background-position: -80px -0px;}
+
 .diamond_1_0 { background-position: -0px -20px;}
 .diamond_1_1 { background-position: -20px -20px;}
 .diamond_1_2 { background-position: -40px -20px;}
 .diamond_1_3 { background-position: -60px -20px;}
 .diamond_1_4 { background-position: -80px -20px;}
-.diamond_2_0 { background-position: -0px -20px;}
+
+.diamond_2_0 { background-position: -0px -40px;}
 .diamond_2_1 { background-position: -20px -40px;}
 .diamond_2_2 { background-position: -40px -40px;}
 .diamond_2_3 { background-position: -60px -40px;}
 .diamond_2_4 { background-position: -80px -40px;}
-.diamond_3_0 { background-position: -0px -40px;}
+
+.diamond_3_0 { background-position: -0px -60px;}
 .diamond_3_1 { background-position: -20px -60px;}
 .diamond_3_2 { background-position: -40px -60px;}
 .diamond_3_3 { background-position: -60px -60px;}

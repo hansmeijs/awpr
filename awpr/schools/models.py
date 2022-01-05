@@ -177,7 +177,7 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
     published = BooleanField(default=False)
     locked = BooleanField(default=False)
 
-    # also in schemitems. Here is only to hide checkboxes in schemeitems PR2021-04-24
+    # also in schemitemsPR2021-04-24
     no_practexam = BooleanField(default=False)
     sr_allowed = BooleanField(default=False)  # herkansing schoolexamen
     # deleted: reex_combi_allowed = BooleanField(default=False)

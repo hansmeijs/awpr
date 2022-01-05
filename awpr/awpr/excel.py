@@ -19,6 +19,8 @@ from awpr import constants as c
 from awpr import functions as af
 from awpr import downloads as dl
 from awpr import settings as s
+from  awpr import library as awpr_lib
+
 from schools import models as sch_mod
 from subjects import models as subj_mod
 from subjects import views as subj_view
@@ -57,7 +59,7 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24 PR2021-08-09
                 if sel_examyear and sel_school and sel_department :
 
 # - get text from examyearsetting
-                    settings = af.get_exform_text(sel_examyear, ['exform', 'ex1'])
+                    settings = awpr_lib.get_library(sel_examyear, ['exform', 'ex1'])
 
 # +++ create ex1_xlsx
                     save_to_disk = False
@@ -163,7 +165,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
             # this one gives path:awpmedia/awpmedia/media/cur/2022/published
             requsr_school = sch_mod.School.objects.get_or_none(
                 base=request.user.schoolbase,
-                examyear=sel_examyear
+                examyear=examyear
             )
             requsr_schoolcode = requsr_school.base.code if requsr_school.base.code else '---'
             country_abbrev = examyear.country.abbrev.lower()
@@ -910,7 +912,7 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang, req
         #           subj_published_arr': [None], 'lang': 'ne', 'count': 7}
 
 # - get text from examyearsetting
-    settings = af.get_exform_text(sel_examyear_instance, ['exform', 'ex1'])
+    settings = awpr_lib.get_library(sel_examyear_instance, ['exform', 'ex1'])
 
 # - get depbase dictlist
     department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear_instance)
@@ -1015,7 +1017,7 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):  # P
         #           subj_published_arr': [None], 'lang': 'ne', 'count': 7}
 
 # get text from examyearsetting
-    settings = af.get_exform_text(sel_examyear_instance, ['exform', 'ex1'])
+    settings = awpr_lib.get_library(sel_examyear_instance, ['exform', 'ex1'])
 
 # --- get department dictlist
     # fields are: depbase_id, depbase_code, dep_name, dep_level_req
@@ -2004,7 +2006,6 @@ def create_subjecttype_paragraph_xlsx(row_index, sheet, subjecttype_rows, scheme
                    'min_subjects', 'max_subjects',
                    'min_extra_nocount', 'max_extra_nocount',
                    'min_extra_counts', 'max_extra_counts',
-                   'min_elective_combi', 'max_elective_combi',
                    'modifiedat', 'modby_username']
     field_captions = [str(_('Character')), str(_('Abbreviation')),
                       str(_('Minimum amount of subjects')),
@@ -2013,8 +2014,6 @@ def create_subjecttype_paragraph_xlsx(row_index, sheet, subjecttype_rows, scheme
                       str(_("Maximum extra subject, doesn't count")),
                       str(_("Minimum extra subject, counts")),
                       str(_("Maximum extra subject, counts")),
-                      str(_("Minimum elective combi subject")),
-                      str(_("Maximum elective combi subject")),
                       str(_('Last modified on ')), str(_('Last modified by'))]
     header_format = th_align_center
     row_formats = [row_align_left, row_align_center,
@@ -2062,6 +2061,9 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
                    'weight_se', 'weight_ce',
                    'is_mandatory', 'is_mand_subj',
                    'is_combi', 'is_core_subject', 'is_mvt',
+
+                   "rule_grade_sufficient, rule_gradesuff_notatevlex,",
+
                    'extra_count_allowed', 'extra_nocount_allowed',
                    'has_practexam', 'has_pws',
                    'sr_allowed', 'max_reex',

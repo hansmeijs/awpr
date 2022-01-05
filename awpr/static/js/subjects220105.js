@@ -1,14 +1,16 @@
 // PR2020-09-29 added
 
 // PR2021-07-23  declare variables outside function to make them global variables
+
+let selected_btn = "btn_subject";
+
 let setting_dict = {};
 let permit_dict = {};
 let loc = {};  // locale_dict
 let urls = {};
 
-const field_settings = {};
 
-let selected_btn = "btn_subject";
+const field_settings = {};
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -18,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  get permits
     // permit dict gets value after downloading permit_list PR2021-03-27
     //  if user has no permit to view this page ( {% if no_access %} ): el_loader does not exist PR2020-10-02
-    const has_view_permit = (!!el_loader)
+    const may_view_page = (!!el_loader)
 
     const cls_hide = "display_hide";
     const cls_hover = "tr_hover";
@@ -65,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_subject_upload = get_attr_from_el(el_data, "data-subject_upload_url");
     urls.url_subject_import = get_attr_from_el(el_data, "data-subject_import_url");
     urls.url_subjecttype_upload = get_attr_from_el(el_data, "data-subjecttype_upload_url");
@@ -79,26 +81,34 @@ document.addEventListener('DOMContentLoaded', function() {
         fields: ["name", "depbases", "sequence", "addedbyschool"],
         captions: ["Name", "Departments", "Sequence", "Added_by_school"]};
     columns_tobe_hidden.btn_scheme = {
-        fields: ["depbase_code", "lvl_abbrev", "sct_abbrev", "min_subjects", "max_subjects", "min_mvt", "max_mvt", "min_wisk", "max_wisk", "min_combi", "max_combi"],
+        fields: ["depbase_code", "lvl_abbrev", "sct_abbrev", "min_subjects", "max_subjects",
+                "min_mvt", "max_mvt", "min_wisk", "max_wisk", "min_combi", "max_combi", "max_reex",
+                "rule_avg_pece_sufficient", "rule_avg_pece_notatevlex", "rule_core_sufficient", "rule_core_notatevlex",
+        ],
         captions: ["Department", "Leerweg",  "SectorProfiel_twolines", "Minimum_subjects",  "Maximum_subjects",
-                    "Minimum_MVT_subjects", "Maximum_MVT_subjects", "Minimum_Wisk_subjects", "Maximum_Wisk_subjects", "Minimum_combi_subjects", "Maximum_combi_subjects"]};
+                    "Minimum_MVT_subjects", "Maximum_MVT_subjects", "Minimum_Wisk_subjects", "Maximum_Wisk_subjects",
+                    "Minimum_combi_subjects", "Maximum_combi_subjects", "Maximum_reex",
+                    "Average_CE_grade_rule", "Not_at_evening_lex_school", "Core_subject_rule", "Not_at_evening_lex_school",
+                    ]};
     columns_tobe_hidden.btn_schemeitem = {
         fields: ["subj_name", "sjtp_abbrev", "ete_exam", "otherlang",
-                "gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
-                "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
-                "has_practexam",  "has_pws", "sr_allowed",
+                "gradetype", "weight_se", "weight_ce", "multiplier", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
+                "rule_grade_sufficient", "rule_gradesuff_notatevlex",
+                "extra_count_allowed",  "extra_nocount_allowed",
+                 "has_practexam", "sr_allowed",
                 "max_reex", "no_thirdperiod",  "no_exemption_ce"],
         captions: ["Subject", "Character", "ETE_exam", "Other_languages",
-                "Grade_type", "SE_weighing",  "CE_weighing", "Mandatory", "Mandatory_if_subject", "Combination_subject", "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
-                "Extra_count_allowed",  "Extra_nocount_allowed",  "Elective_combi_allowed",
-                "Has_practical_exam",  "Has_assignment", "Herkansing_SE_allowed",
+                "Grade_type", "SE_weighing",  "CE_weighing", "Counts_double", "Mandatory", "Mandatory_if_subject", "Combination_subject", "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
+                "Subject_must_be_sufficient", "Not_at_evening_lex_school",
+                "Extra_count_allowed", "Extra_nocount_allowed",
+                "Has_practical_exam", "Herkansing_SE_allowed",
                 "Maximum_reex", "No_third_period", "Exemption_without_CE_allowed"]};
 
     columns_tobe_hidden.btn_subjecttype = {
         fields: ["name", "min_subjects",  "max_subjects", "min_extra_nocount" , "max_extra_nocount",
-                "min_extra_counts", "max_extra_counts", "min_elective_combi", "max_elective_combi"],
+                "min_extra_counts", "max_extra_counts", "has_pws"],
         captions: ["Character_name", "Minimum_subjects",  "Maximum_subjects", "Minimum_extra_nocount",  "Maximum_extra_nocount",
-                    "Minimum_extra_counts",  "Maximum_extra_counts", "Minimum_elective_combi",  "Maximum_elective_combi"]};
+                    "Minimum_extra_counts",  "Maximum_extra_counts", "Has_assignment"]};
     columns_tobe_hidden.btn_subjecttypebase = {
         fields: [ "name", "abbrev", "sequence"],
         captions: [ "Name", "Abbreviation",  "Sequence"]};
@@ -110,60 +120,107 @@ document.addEventListener('DOMContentLoaded', function() {
                     filter_tags: ["select", "text", "text",  "text", "number", "toggle"],
                     field_width:  ["020", "120", "300", "150", "120",  "120", "120"],
                     field_align: ["c", "l", "l", "l",  "r", "c"]};
-    field_settings.btn_scheme = {   field_caption: ["", "Subject_scheme_name", "Department", "Leerweg",  "SectorProfiel_twolines", "Minimum_subjects",  "Maximum_subjects",
-                                    "Minimum_MVT_subjects", "Maximum_MVT_subjects", "Minimum_Wisk_subjects", "Maximum_Wisk_subjects", "Minimum_combi_subjects", "Maximum_combi_subjects"],
-                    field_names: ["select", "name", "depbase_code", "lvl_abbrev", "sct_abbrev", "min_subjects", "max_subjects", "min_mvt", "max_mvt", "min_wisk", "max_wisk", "min_combi", "max_combi" ],
-                    field_tags: ["div", "input", "div", "div", "div",  "input", "input", "input", "input", "input","input", "input", "input"],
-                    filter_tags: ["select", "text", "text", "text", "text", "number", "number", "number", "number", "number", "number", "number", "number"],
-                    field_width:  ["020", "280", "120", "120",  "120",  "150",  "150",  "150",  "150", "150",  "150",  "150",  "150"],
-                    field_align: ["c", "l", "l", "l",  "l", "c", "c", "c", "c", "c", "c", "c", "c"]};
+    field_settings.btn_scheme = {
+        field_caption: ["", "Subject_scheme_name", "Department", "Leerweg",  "SectorProfiel_twolines",
+                        "Minimum_subjects", "Maximum_subjects", "Minimum_MVT_subjects", "Maximum_MVT_subjects",
+                        "Minimum_Wisk_subjects", "Maximum_Wisk_subjects", "Minimum_combi_subjects", "Maximum_combi_subjects", "Maximum_reex",
+                        "Average_CE_grade_rule", "Not_at_evening_lex_school", "Core_subject_rule", "Not_at_evening_lex_school",
+                        ],
+        field_names: ["select", "name", "depbase_code", "lvl_abbrev", "sct_abbrev",
+                       "min_subjects", "max_subjects", "min_mvt", "max_mvt",
+                       "min_wisk", "max_wisk", "min_combi", "max_combi", "max_reex",
+                       "rule_avg_pece_sufficient", "rule_avg_pece_notatevlex", "rule_core_sufficient", "rule_core_notatevlex",
+                     ],
+        field_tags: ["div", "input", "div", "div", "div",
+                    "input", "input", "input", "input",
+                    "input","input", "input", "input","input",
+                    "div", "div", "div", "div"
+                    ],
+        filter_tags: ["select", "text", "text", "text", "text",
+                    "number", "number", "number", "number",
+                    "number", "number", "number", "number","number",
+                    "toggle", "toggle", "toggle", "toggle"
+        ],
+        field_width:  ["020", "280", "120", "120",  "120",
+                    "150",  "150",  "150",  "150",
+                    "150",  "150",  "150",  "150", "150",
+                    "090", "120", "090", "120"
+        ],
+        field_align: ["c", "l", "l", "l",  "l",
+                        "c", "c", "c", "c",
+                        "c", "c", "c", "c", "c",
+                        "c", "c", "c", "c"
+        ]};
     field_settings.btn_schemeitem = { field_caption: ["", "Subject_scheme", "Abbreviation", "Subject", "Character", "ETE_exam", "Other_languages",
-                            "Grade_type", "SE_weighing",  "CE_weighing", "Mandatory", "Mandatory_if_subject", "Combination_subject", "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
-                            "Extra_count_allowed",  "Extra_nocount_allowed",  "Elective_combi_allowed",
-                            "Has_practical_exam",  "Has_assignment", "Herkansing_SE_allowed",
-                            "Maximum_reex", "No_third_period", "Exemption_without_CE_allowed"],
+                            "Grade_type", "SE_weighing", "CE_weighing", "Counts_double",
+                            "Mandatory", "Mandatory_if_subject", "Combination_subject",
+                            "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
+                            "Extra_count_allowed",  "Extra_nocount_allowed",
+                            "Has_practical_exam", "Herkansing_SE_allowed",
+                            "Subject_must_be_sufficient", "Not_at_evening_lex_school",
+                            ],
                     field_names: ["select", "scheme_name", "subj_code", "subj_name", "sjtp_abbrev", "ete_exam", "otherlang",
-                            "gradetype", "weight_se", "weight_ce", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
-                            "extra_count_allowed",  "extra_nocount_allowed",  "elective_combi_allowed",
-                            "has_practexam",  "has_pws", "sr_allowed",
-                            "max_reex",  "no_thirdperiod",  "no_exemption_ce"],
+                            "gradetype", "weight_se", "weight_ce", "multiplier",
+                            "is_mandatory", "is_mand_subj", "is_combi",
+                            "is_core_subject", "is_mvt", "is_wisk",
+                            "extra_count_allowed",  "extra_nocount_allowed",
+                            "has_practexam", "sr_allowed",
+                            "rule_grade_sufficient", "rule_gradesuff_notatevlex",
+                            ],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div",
-                                "div", "div", "div", "div", "div", "div", "div", "div", "div",
+                                "div", "div", "div", "div",
                                 "div", "div", "div",
                                 "div", "div", "div",
-                                 "div", "div", "div"],
+                                "div", "div",
+                                "div", "div",
+                                "div", "div",
+                                 ],
                     filter_tags: ["select", "text", "text", "text",  "text", "toggle", "text",
-                                "toggle", "toggle","toggle", "toggle", "toggle",  "toggle", "toggle",  "toggle",  "toggle",
-                                "toggle",  "toggle", "toggle",
-                                "toggle",  "toggle", "toggle",
-                                "toggle", "toggle",  "toggle"],
-                    field_width:  ["020", "180", "090", "300", "120", "090", "180",
-                                    "090", "090", "090", "090","090", "090", "090", "090", "090",
+                                "toggle", "toggle", "toggle", "toggle",
+                                "toggle", "toggle", "toggle",
+                                "toggle", "toggle", "toggle",
+                                "toggle", "toggle",
+                                "toggle", "toggle",
+                                "toggle",  "toggle",
+                                ],
+                    field_width:  ["020", "180", "090", "300", "120", "090", "150",
+                                    "090", "090", "090", "090",
                                     "090", "090", "090",
                                     "090", "090", "090",
-                                     "090", "090", "090"],
+                                    "090", "090",
+                                    "090", "090",
+                                    "090", "100",
+                                     ],
                     field_align: ["c", "l", "l","l", "l", "c", "l",
-                                    "l", "r", "r", "c", "c", "c","c", "c", "c",
+                                    "c", "c", "c", "c",
                                     "c", "c", "c",
                                     "c", "c", "c",
-                                    "c", "c", "c"]
+                                    "c", "c",
+                                    "c", "c",
+                                    "c", "c",
+                                    ]
                     };
     field_settings.btn_subjecttype = {field_caption: ["", "Subject_scheme", "Base_character", "Character_name",
-                    "Minimum_subjects",  "Maximum_subjects",
-                    "Minimum_extra_nocount",  "Maximum_extra_nocount",
-                    "Minimum_extra_counts",  "Maximum_extra_counts",
-                    "Minimum_elective_combi",  "Maximum_elective_combi"
+                    "Minimum_subjects", "Maximum_subjects",
+                    "Minimum_extra_nocount", "Maximum_extra_nocount",
+                    "Minimum_extra_counts", "Maximum_extra_counts", "Has_assignment"
                     ],
                     field_names: ["select", "scheme_name", "sjtpbase_name", "name",
-                                "min_subjects",  "max_subjects",
-                                "min_extra_nocount" , "max_extra_nocount",
-                                "min_extra_counts", "max_extra_counts",
-                                "min_elective_combi", "max_elective_combi"
+                                "min_subjects",  "max_subjects", "min_extra_nocount" , "max_extra_nocount",
+                                "min_extra_counts", "max_extra_counts", "has_pws"
                     ],
-                    field_tags: ["div", "div", "div", "input", "input", "input", "input", "input", "input", "input", "input", "input"],
-                    filter_tags: ["select", "text", "text", "text", "number", "number", "number", "number", "number", "number", "number", "number"],
-                    field_width:  ["020", "180", "280", "240", "100", "100", "100", "100", "100", "100", "100", "100"],
-                    field_align: ["c", "l", "l", "l", "c", "c", "c", "c", "c", "c", "c", "c"]};
+                    field_tags: ["div", "div", "div", "input",
+                                "input", "input",  "input", "input",
+                                "input", "input", "div"],
+                    filter_tags: ["select", "text", "text", "text",
+                                "number", "number", "number", "number",
+                                "number", "number", "toggle"],
+                    field_width:  ["020", "180", "280", "240",
+                                "100", "100", "100", "100",
+                                "100", "100", "100"],
+                    field_align: ["c", "l", "l", "l",
+                                    "c", "c", "c", "c",
+                                    "c", "c", "c"]};
 
     field_settings.btn_subjecttypebase = {field_caption: ["", "Code", "Name", "Abbreviation",  "Sequence"],
                     field_names: ["select", "code", "name", "abbrev", "sequence"],
@@ -325,7 +382,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
         if(el_MCOL_btn_save){
             el_MCOL_btn_save.addEventListener("click", function() {
-                t_MCOL_Save(urls.url_settings_upload, HandleBtnSelect)}, false )
+                t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
         };;
 
 // ---  MOD CONFIRM ------------------------------------
@@ -339,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  set selected menu button active
     SetMenubuttonActive(document.getElementById("id_hdr_users"));
-    if(has_view_permit){
+    if(may_view_page){
         // period also returns emplhour_list
         const datalist_request = {
                 setting: {page: "page_subject"},
@@ -400,13 +457,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  fill cols_hidden
                     if("cols_hidden" in setting_dict){
-                       // clear the array columns_hidden
-                        b_clear_array(columns_hidden);
-                       // fill the array columns_hidden
-                        for (const [key, value] of Object.entries(setting_dict.cols_hidden)) {
-                            columns_hidden[key] = value;
-                        }
-                    }
+                        //  setting_dict.cols_hidden was dict with key 'all' or se_btn, changed to array PR2021-12-14
+                        //  skip when setting_dict.cols_hidden is not an array,
+                        // will be changed into an array when saving with t_MCOL_Save
+                        if (Array.isArray(setting_dict.cols_hidden)) {
+                             b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
+                        };
+                    };
                     //console.log("columns_hidden", columns_hidden)
                     must_update_headerbar = true;
                 }
@@ -495,19 +552,24 @@ document.addEventListener('DOMContentLoaded', function() {
         AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_subject")}, [], "id_submenu_columns")
 
         el_submenu.classList.remove(cls_hide);
-    };//function CreateSubmenu
+    }; //function CreateSubmenu
 
 //###########################################################################
 //=========  HandleBtnSelect  ================ PR2020-09-19
     function HandleBtnSelect(data_btn, skip_upload) {
         //console.log( "===== HandleBtnSelect ========= ", data_btn);
-        selected_btn = data_btn
-        if(!selected_btn){selected_btn = "btn_subject"}
+
+        //  PR2021-09-07 debug: gave error because old btn name was still in saved setting
+        if (data_btn && ["btn_subject", "btn_scheme", "btn_schemeitem", "btn_subjecttype", "btn_subjecttypebase", "btn_package"].includes(data_btn)) {
+            selected_btn = data_btn;
+        } else {
+            selected_btn = "btn_subject";
+        };
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_subject: {sel_btn: selected_btn}};
-            b_UploadSettings (upload_dict, urls.url_settings_upload);
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
         };
 
 // ---  highlight selected button
@@ -529,12 +591,12 @@ document.addEventListener('DOMContentLoaded', function() {
         UpdateHeaderText();
     }  // HandleBtnSelect
 
-//=========  HandleTableRowClicked  ================ PR2020-08-03  PR2021-06-22
-    function HandleTableRowClicked(tr_clicked) {
-        console.log("=== HandleTableRowClicked");
-        console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
-        console.log( "tr_clicked.id: ", tr_clicked.id, typeof tr_clicked.id);
-        console.log( "selected_btn: ", selected_btn);
+//=========  HandleTblRowClicked  ================ PR2020-08-03  PR2021-06-22
+    function HandleTblRowClicked(tr_clicked) {
+        //console.log("=== HandleTblRowClicked");
+        //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
+        //console.log( "tr_clicked.id: ", tr_clicked.id, typeof tr_clicked.id);
+        //console.log( "selected_btn: ", selected_btn);
 
         selected.package_pk = null;
 
@@ -562,7 +624,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if(selected_btn === "btn_subjecttypebase"){
             selected.subjecttypebase_dict = data_dict;
         };
-    }  // HandleTableRowClicked
+    }  // HandleTblRowClicked
 
 //========= UpdateHeaderText  ================== PR2020-07-31
     function UpdateHeaderText(){
@@ -593,8 +655,10 @@ document.addEventListener('DOMContentLoaded', function() {
     //console.log( "data_rows", data_rows);
     //console.log( "selected.scheme_pk", selected.scheme_pk);
 
-// --- set_columns_hidden
-        const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
+// ---  get list of hidden columns
+        // copy col_hidden from mod_MCOL_dict.cols_hidden
+        const col_hidden = [];
+        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
 
 // --- reset table
         tblHead_datatable.innerText = null;
@@ -606,10 +670,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- create table rows
         if(data_rows && data_rows.length){
             for (let i = 0, map_dict; map_dict = data_rows[i]; i++) {
-                const map_id = map_dict.mapid;
-    //console.log("map_id", map_id)
-    //console.log("map_dict", map_dict)
-    //console.log("depbase_pk", selected.depbase_pk, map_dict.depbase_id)
+
+                //console.log("map_dict", map_dict)
+                //console.log("depbase_pk", selected.depbase_pk, map_dict.depbase_id)
 
         // only show rows of selected.depbase_pk etc
                 let show_row = true;
@@ -619,7 +682,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (show_row && selected.sctbase_pk && selected.sctbase_pk !== map_dict.sctbase_id) {show_row = false};
 
                 if(show_row){
-                    let tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_dict)
+                    CreateTblRow(tblName, field_setting, map_dict, col_hidden);
                 };
           };
         }  // if(data_rows)
@@ -629,6 +692,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function CreateTblHeader(field_setting, col_hidden) {
         //console.log("===  CreateTblHeader ===== ");
         //console.log("field_setting", field_setting);
+        //console.log("columns_hidden", columns_hidden);
 
         const column_count = field_setting.field_names.length;
 
@@ -641,8 +705,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const field_name = field_setting.field_names[j];
 
     // --- skip column if in columns_hidden
-            const col_is_hidden = get_column_is_hidden(field_name);
-            if (!col_is_hidden){
+            if (!col_hidden.includes(field_name)){
+
+    // --- get field_caption from field_setting,
                 const field_caption = (loc[field_setting.field_caption[j]]) ? loc[field_setting.field_caption[j]] : field_setting.field_caption[j] ;
                 const field_tag = field_setting.field_tags[j];
                 const filter_tag = field_setting.filter_tags[j];
@@ -718,7 +783,7 @@ if(j){th_filter.classList.add("border_left")};
     };  //  CreateTblHeader
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-05-10  PR2021-06-21
-    function CreateTblRow(tblName, field_setting, col_hidden, map_dict) {
+    function CreateTblRow(tblName, field_setting, map_dict, col_hidden) {
         //console.log("=========  CreateTblRow =========", tblName);
         //console.log("map_dict", map_dict);
 
@@ -762,15 +827,14 @@ if(j){th_filter.classList.add("border_left")};
         tblRow.setAttribute("data-ob3", ob3);
 
 // --- add EventListener to tblRow
-        tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
+        tblRow.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
 
 // +++  insert td's into tblRow
         for (let j = 0; j < column_count; j++) {
             const field_name = field_names[j];
 
 // --- skip columns if in columns_hidden
-            const col_is_hidden = get_column_is_hidden(field_name);
-            if (!col_is_hidden){
+            if (!col_hidden.includes(field_name)){
                 const field_tag = field_tags[j];
                 const filter_tag = filter_tags[j];
                 const class_width = "tw_" + field_width[j];
@@ -815,10 +879,12 @@ if(j){td.classList.add("border_left")};
         // --- add EventListener
                         el.addEventListener("change", function() {UploadInputChange(tblName, el)}, false)
                         el.addEventListener("keydown", function(event){HandleArrowEvent(el, event)});
-                    } else if (field_name === "etenorm") {
+                    } else if (filter_tag ==="toggle"){
                         // attach eventlisterener and hover to td, not to el. No need to add icon_class here
                         td.addEventListener("click", function() {HandleToggle(tblName, el)}, false)
-                        add_hover(td);
+                        td.classList.add("pointer_show");
+                        add_hover(td)
+
                     }
 
                 } else if (tblName === "schemeitem"){
@@ -848,7 +914,10 @@ if(j){td.classList.add("border_left")};
         // --- add EventListener
                         el.addEventListener("change", function() {UploadInputChange(tblName, el)}, false)
                         el.addEventListener("keydown", function(event){HandleArrowEvent(el, event)});
-
+                    } else if (filter_tag ==="toggle"){
+                        td.addEventListener("click", function() {HandleToggle(tblName, el)}, false)
+                        td.classList.add("pointer_show");
+                        add_hover(td)
                     } else if (field_name !== "select"){
                         td.addEventListener("click", function() {MSJTP_Open(el)}, false)
                         td.classList.add("pointer_show");
@@ -902,21 +971,12 @@ if(j){td.classList.add("border_left")};
                 } else if (["scheme_name", "abbrev", "sjtpbase_name", "code", "name", "subj_code", "subj_name", "sjtp_abbrev", "depbase_code", "lvl_abbrev", "sct_abbrev"].includes(field_name)){
                     inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
-                } else if (["min_subjects", "max_subjects", "min_mvt", "max_mvt", "min_wisk", "max_wisk", "min_combi", "max_combi",
+                } else if (["min_subjects", "max_subjects", "min_mvt", "max_mvt", "min_wisk", "max_wisk", "min_combi", "max_combi", "max_reex",
                             "min_extra_nocount" , "max_extra_nocount", "min_extra_counts", "max_extra_counts",
-                            "min_elective_combi", "max_elective_combi",
                             "weight_se", "weight_ce", "sequence"
                 ].includes(field_name)){
                     inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text : null;
-                } else if ( field_name === "max_reex") {
-                    if (map_dict.weight_ce){
-                        inner_text = fld_value;
-                        filter_value = (inner_text) ? inner_text : null;
-                    } else {
-                        inner_text = "-";
-                        filter_value = (inner_text) ? inner_text : null
-                    }
 
                 } else if ( field_name === "gradetype") {
                     inner_text = (fld_value === 2) ? "o/v/g" :
@@ -932,12 +992,20 @@ if(j){td.classList.add("border_left")};
                     inner_text = b_get_depbases_display(department_map, "base_code", fld_value);
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
                 } else if (["ete_exam", "addedbyschool", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
-                            "extra_count_allowed", "extra_nocount_allowed", "elective_combi_allowed",
+                            "rule_avg_pece_sufficient", "rule_avg_pece_notatevlex",
+                            "rule_grade_sufficient", "rule_gradesuff_notatevlex",
+                            "rule_core_sufficient", "rule_core_notatevlex",
+                            "extra_count_allowed", "extra_nocount_allowed",
                             "has_practexam", "has_pws", "sr_allowed", "reex_combi_allowed",
                             "no_reex", "no_exemption_ce"].includes(field_name)) {
-                    const is_etenorm = fld_value;
-                    filter_value = (is_etenorm) ? "1" : "0";
-                    el_div.className = (is_etenorm) ? "tickmark_1_2" : "tickmark_0_0";
+                    filter_value = (fld_value) ? "1" : "0";
+                    el_div.className = (fld_value) ? "tickmark_1_2" : "tickmark_0_0";
+
+                } else if ( field_name === "multiplier") {
+                    const counts_double = (fld_value === 2);
+                    filter_value = (counts_double) ? "1" : "0";
+                    el_div.className = (counts_double) ? "tickmark_1_2" : "tickmark_0_0";
+
                 } else if ( field_name === "no_thirdperiod") {
                     if (map_dict.weight_ce){
                         const is_etenorm = fld_value;
@@ -1010,6 +1078,7 @@ if(j){td.classList.add("border_left")};
 //========= HandleToggle  ============= PR2021-05-12  PR2021-06-21
     function HandleToggle(tblName, el_input) {
         console.log( " ==== HandleToggle ====");
+        console.log("tblName: ", tblName);
         console.log("el_input: ", el_input);
 
         const tblRow = get_tablerow_selected(el_input);
@@ -1031,6 +1100,8 @@ if(j){td.classList.add("border_left")};
                         new_value = (data_dict[fldName] === 1 ) ? 2 : 1;
                     } else if (fldName === "weight_ce"){
                         new_value = (data_dict[fldName] === 1 ) ? 0 : 1;
+                    } else if (fldName === "multiplier"){
+                        new_value = (data_dict[fldName] === 1 ) ? 2 : 1;
                     } else if (fldName === "max_reex"){
                         const old_value = (data_dict[fldName]) ? (data_dict[fldName]) : 0;
                         new_value = old_value + 1;
@@ -1048,11 +1119,14 @@ if(j){td.classList.add("border_left")};
                         mode: "update",
                         mapid: data_dict.mapid,
                         table: tblName,
-                        //examyear_pk: data_dict.examyear_id,
-                        subject_pk: data_dict.id
                     }
                     if (tblName === "subject"){
                         upload_dict.subject_pk = data_dict.id;
+                    } else if (tblName === "scheme"){
+                        upload_dict.scheme_pk = data_dict.id;
+                    } else if (tblName === "subjecttype"){
+                        upload_dict.subjecttype_pk = data_dict.id;
+                        upload_dict.scheme_pk = data_dict.scheme_id;
                     } else if (tblName === "schemeitem"){
                         upload_dict.si_pk = data_dict.id;
                         upload_dict.scheme_pk = data_dict.scheme_id;
@@ -1186,7 +1260,13 @@ if(j){td.classList.add("border_left")};
                 //$("#id_mod_subject").modal("hide");
             }
 
-            const col_hidden = (columns_hidden[tblName]) ? columns_hidden[tblName] : [];
+// ---  get list of hidden columns
+        // copy col_hidden from mod_MCOL_dict.cols_hidden
+        const col_hidden = [];
+        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+
+// ---  get list of columns that are not updated because of errors
+            const error_columns = (update_dict.err_fields) ? update_dict.err_fields : [];
 
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
@@ -1204,7 +1284,7 @@ if(j){td.classList.add("border_left")};
                 data_rows.push(update_dict);
 
     // ---  create row in table., insert in alphabetical order
-                const new_tblRow = CreateTblRow(tblName, field_setting, col_hidden, update_dict)
+                const new_tblRow = CreateTblRow(tblName, field_setting, update_dict, col_hidden)
 
     // ---  scrollIntoView,
                 if(new_tblRow){
@@ -1272,42 +1352,23 @@ if(j){td.classList.add("border_left")};
                                 //--- delete current tblRow
                                     tblRow.parentNode.removeChild(tblRow);
                                 //--- insert row new at new position
-                                    tblRow = CreateTblRow(tblName, field_setting, col_hidden, update_dict)
+                                    tblRow = CreateTblRow(tblName, field_setting, update_dict, col_hidden)
                                 };
 
-        //console.log("tblRow", tblRow);
-                // loop through cells of row
+    // - loop through cells of row
                                 for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
                                     el = td.children[0];
                                     if (el){
                                         el_fldName = get_attr_from_el(el, "data-field")
-                                        UpdateField(el, update_dict);
-
-    // get list of error messages for this field
-    /*
-                                        let msg_list = null;
-                                        if (field_error_list.includes(el_fldName)) {
-                                            for (let i = 0, msg_dict ; msg_dict = error_list[i]; i++) {
-                                                if (msg_dict && "field" in msg_dict) {
-                                                    msg_list = msg_dict.msg_list;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        if(el_fldName && msg_list && msg_list.length){
-                                        // mage input box red
-                                            const el_MSUBJ_input = document.getElementById("id_MSUBJ_" + el_fldName);
-                                            if(el_MSUBJ_input){el_MSUBJ_input.classList.add("border_bg_invalid")};
-
-                                        // put msgtext in msg box
-                                            b_render_msg_container("id_MSUBJ_msg_" + el_fldName, msg_list)
-                                        }
-    */
-                // make field green when field name is in updated_columns
-        //console.log("el_fldName", el_fldName);
-                                        if(updated_columns.includes(el_fldName)){
-        //console.log("el", el);
-                                            ShowOkElement(el);
+                                        const is_updated_field = updated_columns.includes(el_fldName);
+                                        const is_err_field = error_columns.includes(el_fldName);
+    // - update field and make field green when field name is in updated_columns
+                                        if(is_updated_field){
+                                                UpdateField(el, update_dict);
+                                                ShowOkElement(el);
+                                        } else if( is_err_field){
+    // - make field red when error and reset old value after 2 seconds
+                                            reset_element_with_errorclass(el, update_dict, tobedeleted)
                                         };
                                     }  //  if (el){
                                 };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
@@ -1318,6 +1379,17 @@ if(j){td.classList.add("border_left")};
             }; // if(is_created)
         };  // if(!isEmpty(update_dict))
     }  // RefreshDatarowItem
+
+//=========  reset_element_with_errorclass  ================ PR2021-12-15
+    function reset_element_with_errorclass(el_input, update_dict, tobedeleted) {
+        // make field red when error and reset old value after 2 seconds
+        const err_class = "border_bg_invalid";
+        el_input.classList.add(err_class);
+        setTimeout(function (){
+            el_input.classList.remove(err_class);
+            UpdateField(el_input, update_dict);
+        }, 2000);
+    }  //  reset_element_with_errorclass
 
 //=========  fill_data_list  ================ PR2020-10-07
 // TODO deprecate
@@ -1567,14 +1639,14 @@ if(j){td.classList.add("border_left")};
             }
 // ---  upload new setting
             const upload_dict = {selected_pk: {sel_subject_pk: setting_dict.sel_subject_pk, sel_student_pk: null}};
-            b_UploadSettings (upload_dict, urls.url_settings_upload);
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
         }
 
         if (tblName === "school") {
 
         } else {
-            //b_UploadSettings ({selected_pk: selected_pk_dict}, urls.url_settings_upload);
+            //b_UploadSettings ({selected_pk: selected_pk_dict}, urls.url_usersetting_upload);
 
             //UpdateHeaderText(selected_name);
 
@@ -2083,7 +2155,7 @@ if(j){td.classList.add("border_left")};
 
 //###########################################################################
 // +++++++++ MOD SUBJECTTYPE ++++++++++++++++ PR2021-06-22 PR2021-09-08
-// --- called by submenu btn Change_characters_of_subject_scheme and HandleTableRowClicked of subejecttype,
+// --- called by submenu btn Change_characters_of_subject_scheme and HandleTblRowClicked of subejecttype,
     function MSJTP_Open(el_input){
         console.log(" -----  MSJTP_Open   ----")
 
@@ -3636,12 +3708,12 @@ if(j){td.classList.add("border_left")};
         //console.log( "schemitem_pk", schemitem_pk);
         //console.log( "is_selected", is_selected);
 
-        let is_empty = true, is_combi = false, is_elective_combi = false,
+        let is_empty = true, is_combi = false,
             is_extra_counts = false, is_extra_nocount = false,
             pwstitle = null, pwssubjects = null,
-            extra_count_allowed = false, extra_nocount_allowed = false, elective_combi_allowed = false;
+            extra_count_allowed = false, extra_nocount_allowed = false;
 
-        let sjtp_has_prac = false, sjtp_has_pws = false;
+        let sjtp_has_prac = false;
 
         let map_dict = {};
 
@@ -3652,12 +3724,9 @@ if(j){td.classList.add("border_left")};
                 is_combi = map_dict.is_combi
                 extra_count_allowed = map_dict.extra_count_allowed
                 extra_nocount_allowed = map_dict.extra_nocount_allowed
-                elective_combi_allowed = map_dict.elective_combi_allowed
                 is_extra_counts = map_dict.is_extra_counts,
                 is_extra_nocount = map_dict.is_extra_nocount,
-                is_elective_combi = map_dict.is_elective_combi,
                 sjtp_has_prac = map_dict.sjtp_has_prac,
-                sjtp_has_pws = map_dict.sjtp_has_pws,
                 pwstitle = map_dict.pws_title,
                 pwssubjects = map_dict.pws_subjects;
 
@@ -4240,7 +4309,6 @@ if(j){td.classList.add("border_left")};
         return add_to_list;
     }  // ModSelSchOrDep_FillSelectRow
 
-
 //========= get_url_str  ========  PR2021-09-08
     function get_url_str() {
         const url_str = (selected_btn === "btn_subject") ? urls.url_subject_upload :
@@ -4253,6 +4321,7 @@ if(j){td.classList.add("border_left")};
 
 //========= get_recursive_integer_lookup  ========  PR2021-09-08
     function get_recursive_integer_lookup(tblRow) {
+        //console.log( "===== get_recursive_integer_lookup ========= ");
         // PR2021-09-08 debug: don't use b_get_mapdict_from_datarows with field 'mapid'.
         // It doesn't lookup mapid correctly: school_rows is sorted by id, therefore school_100 comes after school_99
         // instead b_recursive_integer_lookup with field 'id'.
@@ -4265,7 +4334,6 @@ if(j){td.classList.add("border_left")};
                             (selected_btn === "btn_subjecttype") ? subjecttype_rows :
                             (selected_btn === "btn_subjecttypebase") ? subjecttypebase_rows : null;
         const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
-        //console.log( "found_dict: ", found_dict);
 
         return found_dict;
     };  // get_recursive_integer_lookup
@@ -4293,33 +4361,6 @@ if(j){td.classList.add("border_left")};
     function get_tblName_from_selectedBtn() {
         return (selected_btn) ? selected_btn.substring(4) : null;
     }
-//========= get_column_is_hidden  ====== PR2021-08-18
-    function get_column_is_hidden(field_name) {
-        //console.log( "===== get_column_is_hidden  === ");
-        //console.log( "selected_btn", selected_btn);
-        //console.log( "field_name", field_name);
-
-        //example of mapped field
-        //const mapped_field = (field_name === "subj_status") ? "subj_error" :
-        //                     (field_name === "pok_validthru") ? "pok_status" : field_name;
-        const mapped_field = field_name;
-
-// --- set cols_hidden
-        const cols_hidden = (columns_hidden[selected_btn]) ? columns_hidden[selected_btn] : [];
-        let is_hidden = cols_hidden.includes(mapped_field);
-
-// skip column 'Leerweg' when not sel_dep_level_req
-        if(!is_hidden){
-            if (mapped_field === "lvlbase_id") {
-                is_hidden = (!setting_dict.sel_dep_level_req);
-            };
-        }
-
-        //console.log( "cols_hidden", cols_hidden);
-        //console.log( "is_hidden", is_hidden);
-
-        return is_hidden;
-    };  // get_column_is_hidden
 
 
 })  // document.addEventListener('DOMContentLoaded', function()

@@ -1,0 +1,103 @@
+ {% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL EDIT EXAMYEAR  =================== -->
+    <div class="modal" id="id_mod_edit_examyear" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg " role="document">
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <div class="flex_container">
+                        <div id="id_MODEY_img_locked" class="diamond_3_4XX tickmark_0_0"> </div>
+                        <h4 id="id_MODEY_header" class="modal-title mx-2" ></h4>
+                    </div>
+                    <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div id="id_MODEY_form_controls" class="modal-body py-2">
+
+                    <div class="m-2 p-2 border_bg_transparent">
+                        <div class="flex_container">
+                            <div class="flex_1 mx-1">
+                                <label class="label_margin_top_m2">{% trans 'Published' %}:</label>
+                                <div data-field="published" class="form-control pt-2 pointer_show awp_input_checkbox">
+                                    <div class="tickmark_0_0"></div>
+                                </div>
+                            </div>
+                            <div class="flex_1 mx-1">
+                                <label class="label_margin_top_m2">{% trans 'Closed' %}:</label>
+                                <div data-field="locked" class="form-control pt-2 pointer_show awp_input_checkbox">
+                                    <div class="tickmark_0_0"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="m-2 p-2 border_bg_transparent">
+                        <div class="flex_container">
+                            <div class="flex_1 mx-1">
+                                <label class="label_margin_top_m2">{% trans 'Practical exams' %}:</label>
+                                <select data-field="no_practexam" class="form-control awp_input_select">
+                                    <option value="0">{% trans 'This exam year has practical exams.' %}</option>
+                                    <option value="1">{% trans 'This exam year has no practical exams.' %}</option>
+                                </select>
+                                <div id="id_MODEY_msg_no_practexam" class="mx-2">
+                                    <small class="text-muted">
+                                        {% trans "Go to page 'Subjects' to set the subjects that have a practical exams." %}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="flex_1 mx-1">
+                                <label class="label_margin_top_m2">{% trans 'Herkansing school exam' %}:</label>
+                                <select data-field="sr_allowed" class="form-control awp_input_select">
+                                    <option value="0">{% trans 'This exam year has no herkansing SE.' %}</option>
+                                    <option value="1">{% trans 'This exam year has herkansing SE.' %}</option>
+                                </select>
+                                <div id="id_MODEY_msg_sr_allowed" class="mx-2">
+                                    <small class="text-muted">
+                                        {% trans "Go to page 'Subjects' to set the subjects that can have a herkansing." %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex_container">
+                            <div class="flex_1 mx-1">
+                                <label class="label_margin_top_m3">{% trans 'Central exam' %}:</label>
+                                <select data-field="no_centralexam" class="form-control awp_input_select">
+                                    <option value="0">{% trans 'This exam year has central exams.' %}</option>
+                                    <option value="1">{% trans 'This exam year has no central exams.' %}</option>
+                                </select>
+                                <div id="id_MODEY_msg_no_centralexam" class="mx-2">
+                                    <small class="text-muted">
+                                        {% trans "Go to page 'Subjects' to set the CE weighing." %}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="flex_1 mx-1">
+                                <label class="label_margin_top_m3">{% trans 'Third exam period' %}:</label>
+                                <select id="id_MODEY_no_thirdperiod"  data-field="no_thirdperiod" class="form-control awp_input_select">
+                                    <option value="0">{% trans 'This exam year has a third period.' %}</option>
+                                    <option value="1">{% trans 'This exam year has no third period.' %}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mx-3 mt-2">
+                    <small id="id_MODEY_modified"></small>
+                </div>
+
+                <div class="modal-footer">
+                    <div class="content_subheader_left mx-1 tab_show tab_update display_hideX">
+                        <button id="id_MODEY_btn_delete"  data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete exam year' %}</button>
+                    </div>
+                    <div class="content_subheader_right">
+                        <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MODEY_btn_save" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>

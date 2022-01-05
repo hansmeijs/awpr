@@ -125,31 +125,33 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     islexstudent = BooleanField(default=False)
     bis_exam = BooleanField(default=False)
     partial_exam = BooleanField(default=False)  # get certificate, only when evening- or lexstudent
-    additional_exam = BooleanField(default=False)  # when student does extra subject at adifferent school, possible in day/evening/lex school, only valid in the same examyear
+
+    # TODO additional_exam to be deprecated, use field partial_exam (additional_exam is partial_exam on a day school
+    # additional_exam = BooleanField(default=False)  # when student does extra subject at adifferent school, possible in day/evening/lex school, only valid in the same examyear
 
     # notlinked contains ';'-delimited list of student_id's with the same idnumber, but that are not the same student
     # islinked = BooleanField(default=False)
     linked = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
     notlinked = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
 
-    has_reex = BooleanField(default=False)
-    has_reex3 = BooleanField(default=False)
-    has_sere = BooleanField(default=False)
+    exemption_count = PositiveSmallIntegerField(default=0)
+    sr_count = PositiveSmallIntegerField(default=0)
+    reex_count = PositiveSmallIntegerField(default=0)
+    reex03_count = PositiveSmallIntegerField(default=0)
+
+    # TODO deprecate is_reex_cand etc, replaced by reex_count
+    #is_reex_cand = BooleanField(default=False)
+    #is_reex03_cand = BooleanField(default=False)
+    #is_sr_cand = BooleanField(default=False)  # student who has done 'herkansing' (SE-reexamination)
     withdrawn = BooleanField(default=False)
 
-    #grade_ce_avg = DecimalField(max_digits=5, decimal_places=2, default = 0)
-    grade_ce_avg_text = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
-    grade_combi_avg_text = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
-    #endgrade_avg = DecimalField(max_digits=5, decimal_places=2, default = 0)
-    endgrade_avg_text = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    grade_ce_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    grade_combi_avg = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    grade_final_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
 
-    #result = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    #resultid_tv01 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    #resultid_tv02 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    #resultid_tv03 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    #resultid_final = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    result_info = CharField(db_index=True, max_length=80, null=True, blank=True)
-    result_status = CharField(max_length=c.MAX_LENGTH_12, null=True, blank=True)
+    result = PositiveSmallIntegerField(db_index=True,default=0)
+    result_status = CharField(max_length=c.MAX_LENGTH_KEY, null=True, blank=True)
+    result_info = CharField(max_length=2048, null=True, blank=True)
 
     tobedeleted = BooleanField(default=False)
 
@@ -251,30 +253,32 @@ class Student_log(sch_mod.AwpBaseModel):
     islexstudent = BooleanField(default=False)
     bis_exam = BooleanField(default=False)
     partial_exam = BooleanField(default=False)  # get certificate, only when evening- or lexstudent
-    additional_exam = BooleanField(default=False)  # when student does extra subject at adifferent school, possible in day/evening/lex school, only valid in the same examyear
+
+    # TODO additional_exam to be deprecated, use field partial_exam (additional_exam is partial_exam on a day school
+    #additional_exam = BooleanField(default=False)  # when student does extra subject at a different school, possible in day/evening/lex school, only valid in the same examyear
 
     # islinked = BooleanField(default=False)
     linked = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
     notlinked = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
 
-    has_reex = BooleanField(default=False)
-    has_reex3 = BooleanField(default=False)
-    has_sere = BooleanField(default=False)
+    exemption_count = PositiveSmallIntegerField(default=0)
+    sr_count = PositiveSmallIntegerField(default=0)
+    reex_count = PositiveSmallIntegerField(default=0)
+    reex03_count = PositiveSmallIntegerField(default=0)
+
+    # TODO deprecate is_reex_cand is_reex03_cand, is_sr_cand -> is replaced by reex_count
+    #is_reex_cand = BooleanField(default=False)
+    #is_reex03_cand = BooleanField(default=False)
+    #is_sr_cand = BooleanField(default=False)  # student who has done 'herkansing' (SE-reexamination)
     withdrawn = BooleanField(default=False)
 
-    # grade_ce_avg = DecimalField(max_digits=5, decimal_places=2, default=0)
-    grade_ce_avg_text = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
-    grade_combi_avg_text = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
-    # endgrade_avg = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
-    endgrade_avg_text = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    grade_ce_avg = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    grade_combi_avg = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    grade_final_avg = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
 
-    #result = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    #resultid_tv01 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    #resultid_tv02 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    #resultid_tv03 = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    #resultid_final = PositiveSmallIntegerField(db_index=True,default=0, choices=c.RESULT_CHOICES)
-    result_info = CharField(max_length=80, null=True, blank=True)
-    result_status = CharField(max_length=c.MAX_LENGTH_12, null=True)
+    result = PositiveSmallIntegerField(db_index=True, default=0)
+    result_status = CharField(max_length=c.MAX_LENGTH_KEY, null=True, blank=True)
+    result_info = CharField(max_length=2048, null=True, blank=True)
 
     tobedeleted = BooleanField(default=False)
 
@@ -330,11 +334,13 @@ class Studentsubject(sch_mod.AwpBaseModel):
     student = ForeignKey(Student, related_name='+', on_delete=CASCADE)
     subject = ForeignKey(subj_mod.Subject, null=True, related_name='+', on_delete=PROTECT)
     schemeitem = ForeignKey(subj_mod.Schemeitem, related_name='+', on_delete=PROTECT)
+
     cluster = ForeignKey(subj_mod.Cluster, null=True, blank=True, related_name='+', on_delete=SET_NULL)
+    # use clustername instead of cluster
+    clustername = CharField(db_index=True, max_length=c.MAX_LENGTH_EXAMNUMBER, null=True, blank=True)
 
     is_extra_nocount = BooleanField(default=False)
     is_extra_counts = BooleanField(default=False)
-    is_elective_combi = BooleanField(default=False)
 
     pws_title = CharField(max_length=80, null=True, blank = True)
     pws_subjects = CharField(max_length=80, null=True, blank = True)
@@ -348,6 +354,7 @@ class Studentsubject(sch_mod.AwpBaseModel):
     #has_pok = BooleanField(default=False)  # proof of knowledge  (for day school)
     #has_pex = BooleanField(default=False)  # proof of exemption (for evening school, lex school)
 
+    exemption_year = PositiveSmallIntegerField(null=True)  # examyear of exemption, to determine if has no CE (year 2020)
     # has proof of knowledge = True when pok_validthru has value PR2021-09-07
     pok_validthru = PositiveSmallIntegerField(null=True)
 
@@ -362,9 +369,14 @@ class Studentsubject(sch_mod.AwpBaseModel):
     prev_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     prev_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
+    # TODO deprecate exem_auth1by, exem_published only grades must be authorized
     exem_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     exem_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     exem_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+
+    sr_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    sr_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    sr_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     reex_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     reex_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -378,21 +390,28 @@ class Studentsubject(sch_mod.AwpBaseModel):
     pok_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pok_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
-    ex_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    ex_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    ex_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    # TODO deprecate
+    #ex_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #ex_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #ex_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #reex_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #reex_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #reex_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #reex3_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #reex3_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #reex3_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
-    reex_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    reex_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    reex_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-
-    reex3_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    reex3_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    reex3_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-
-    gradelist_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    gradelist_sesrgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    gradelist_use_exem = BooleanField(default=False)
+
+    # PR2022-01-02 added: no input info and max_ep
+    gl_ni_se = BooleanField(default=False)
+    gl_ni_sr = BooleanField(default=False)
+    gl_ni_pe = BooleanField(default=False)
+    gl_ni_ce = BooleanField(default=False)
+    gl_examperiod = PositiveSmallIntegerField(null=True)
 
 
 # PR2018-06-06
@@ -404,24 +423,28 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     student_log = ForeignKey(Student_log, null=True, related_name='+', on_delete=CASCADE)
     subject_log = ForeignKey(subj_mod.Subject_log, null=True, related_name='+', on_delete=SET_NULL)
     schemeitem_log = ForeignKey(subj_mod.Schemeitem_log, null=True, related_name='+', on_delete=SET_NULL)
+
     cluster_log = ForeignKey(subj_mod.Cluster_log,null=True, related_name='+', on_delete=SET_NULL)
+
+    # use clustername instead of cluster
+    clustername = CharField(db_index=True, max_length=c.MAX_LENGTH_EXAMNUMBER, null=True, blank=True)
 
     is_extra_nocount = BooleanField(default=False)
     is_extra_counts = BooleanField(default=False)
-    is_elective_combi = BooleanField(default=False)
 
     pws_title = CharField(max_length=80, null=True, blank = True)
     pws_subjects = CharField(max_length=80, null=True, blank = True)
 
     has_exemption = BooleanField(default=False)
-    has_sr = BooleanField(default=False)  # has se_reex (herkansing)
+    has_sr = BooleanField(default=False)  # has se_reex (herkansing) ,only possible when si.sr_allowed
     has_reex = BooleanField(default=False)
-    has_reex03 = BooleanField(default=False)
+    has_reex03 = BooleanField(default=False) # only possible when no_thirdperiod = False
 
     # deprecated, replaced by pok_validthru = NOT NULL
     #has_pok = BooleanField(default=False) # proof of knowledge  (for day school)
     #has_pex = BooleanField(default=False)  # proof of exemption (for evening school, lex school)
 
+    exemption_year = PositiveSmallIntegerField(null=True)  # examyear of exemption, to determine if has no CE (year 2020)
     # has proof of knowledge = True when pok_validthru has value PR2021-09-07
     pok_validthru = PositiveSmallIntegerField(null=True)
 
@@ -439,6 +462,10 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     exem_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     exem_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
+    sr_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    sr_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    sr_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+
     reex_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     reex_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     reex_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
@@ -451,21 +478,28 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     pok_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pok_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
-    ex_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    ex_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    ex_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    # TODO deprecate
+    #ex_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #ex_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #ex_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #reex_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #reex_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #reex_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #reex3_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #reex3_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    #reex3_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
-    reex_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    reex_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    reex_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-
-    reex3_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    reex3_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    reex3_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-
-    gradelist_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    gradelist_sesrgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    gradelist_use_exem = BooleanField(default=False)
+
+    # PR2022-01-02 added: no input info and max_ep
+    gl_ni_se = BooleanField(default=False)
+    gl_ni_sr = BooleanField(default=False)
+    gl_ni_pe = BooleanField(default=False)
+    gl_ni_ce = BooleanField(default=False)
+    gl_examperiod = PositiveSmallIntegerField(null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -516,12 +550,18 @@ class Grade(sch_mod.AwpBaseModel):
     objects = CustomManager()
 
     studentsubject = ForeignKey(Studentsubject, related_name='+', on_delete=CASCADE)
-    exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
+
+    # TODO deprecated, use pe_exam and ce_exam
+    # exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
 
     examperiod = PositiveSmallIntegerField(db_index=True, default=1) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
 
     pescore = PositiveSmallIntegerField(null=True)
     cescore = PositiveSmallIntegerField(null=True)
+
+    # PR2021-11-22 from now grades are saved with dots instead of comma's,
+    #  so they can be used by Decimal() without having to convert to dots
+    #  replace by comma's when printing gradelist and reports
 
     segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     srgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
@@ -579,12 +619,13 @@ class Grade(sch_mod.AwpBaseModel):
     ce_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_exam_blocked = BooleanField(default=False)
 
-    answers = CharField(max_length=2048, null=True)
-    blanks = PositiveSmallIntegerField(null=True) # number of blank questions
-    answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    # TODO deprecated, use pe_exam and ce_exam
+    #answers = CharField(max_length=2048, null=True)
+    #blanks = PositiveSmallIntegerField(null=True) # number of blank questions
+    #answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
-    # TODO deprecate?
     tobedeleted = BooleanField(default=False)
+    # TODO deprecate?
     del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     del_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     del_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
@@ -599,7 +640,7 @@ class Grade_log(sch_mod.AwpBaseModel):
     grade_id = IntegerField(db_index=True)
 
     studentsubject_log = ForeignKey(Studentsubject_log, related_name='+', on_delete=CASCADE)
-    exam_log = ForeignKey(subj_mod.Exam_log, related_name='+', null=True, on_delete=SET_NULL)
+    # exam_log = ForeignKey(subj_mod.Exam_log, related_name='+', null=True, on_delete=SET_NULL)
 
     examperiod = PositiveSmallIntegerField(db_index=True, default=1) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
 
@@ -647,23 +688,23 @@ class Grade_log(sch_mod.AwpBaseModel):
     ce_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_blocked = BooleanField(default=False)
 
-    pe_exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
+    pe_exam_log = ForeignKey(subj_mod.Exam_log, related_name='+', null=True, on_delete=SET_NULL)
     pe_exam_result = CharField(max_length=2048, null=True)
     pe_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     pe_exam_blocked = BooleanField(default=False)
 
-    ce_exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
+    ce_exam_log = ForeignKey(subj_mod.Exam_log, related_name='+', null=True, on_delete=SET_NULL)
     ce_exam_result = CharField(max_length=2048, null=True)
     ce_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_exam_blocked = BooleanField(default=False)
 
-    answers = CharField(max_length=2048, null=True)
-    blanks = PositiveSmallIntegerField(null=True)
-    answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    #answers = CharField(max_length=2048, null=True)
+    #blanks = PositiveSmallIntegerField(null=True)
+    #answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     # TODO deprecate?
     tobedeleted = BooleanField(default=False)

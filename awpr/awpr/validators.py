@@ -160,7 +160,7 @@ def validate_unique_examyear(country, examyear_int, request):
     msg_err = None
     if not examyear_int:
         caption = _('Exam year')
-        msg_err = _('%(caption)s cannot be blank.') % {'caption': caption}
+        msg_err = _('%(cpt)s cannot be blank.') % {'cpt': caption}
     elif request.user.country:
         examyear_exists = sch_mod.Examyear.objects.filter(
             country=country,
@@ -201,6 +201,10 @@ def validate_locked_activated_examyear(examyear):
 # - check if examyear is closed
         if examyear.locked:
             examyear_is_locked = True
+
+            msg = '<br>'.join((str(_('Exam year %(exyr)s is locked.') % { 'exyr': str(examyear.code)}), str("")))
+            awp_message = {'msg_html': [msg], 'class': 'border_bg_warning'}
+
         else:
 # - check if schools have activated or locked their school of this exam year  - can only happen when examyear.published =True
             crit = Q(examyear=examyear) & \
@@ -210,6 +214,18 @@ def validate_locked_activated_examyear(examyear):
                 examyear_has_activated_schools = True
 
     return examyear_is_locked, examyear_has_activated_schools
+
+
+def validate_examyear_locked(examyear):  #  PR2021-12-04
+    # logger.debug ('  -----  validate_examyear_locked  -----')
+
+    awp_message = {}
+    if examyear and examyear.locked:
+        msg = '<br>'.join((str(_('Exam year %(ey_code)s is locked.') % {'ey_code': str(examyear.code)}),
+                           str(_('You cannot make changes.'))))
+        awp_message = {'msg_html': [msg], 'class': 'border_bg_warning'}
+
+    return awp_message
 
 
 def message_diff_exyr(examyear):  #PR2020-10-30
@@ -341,7 +357,7 @@ def validate_code_name_identifier(table, field, new_value, is_absence, parent, u
             blank_not_allowed = True
 
         if blank_not_allowed and length == 0:
-            msg_html = _('%(fld)s cannot be blank.') % {'fld': fld}
+            msg_html = _('%(cpt)s cannot be blank.') % {'cpt': fld}
         elif length > max_len:
             msg_html = _("%(fld)s '%(val)s' is too long, %(max)s characters or fewer.") % {'fld': fld, 'val': new_value, 'max': max_len}
         if not msg_html:

@@ -13,6 +13,8 @@ const selected = {
     school_dict: {}
 }
 
+let department_rows = [];
+let school_rows = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -45,14 +47,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let department_map = new Map();
 
     let school_map = new Map();
-    let school_rows = [];
 
     let filter_dict = {};
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_school_upload = get_attr_from_el(el_data, "data-url_school_upload");
     //urls.url_school_import = get_attr_from_el(el_data, "data-school_import_url");
     urls.url_school_awpupload = get_attr_from_el(el_data, "data-url_old_awp_upload");
@@ -101,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+                function() {t_MSSSS_Open(loc, "school", school_rows, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         }
 
 // ---  MSSS MOD SELECT SCHOOL / SUBJECT / STUDENT ------------------------------
@@ -165,8 +166,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if(el_MIMP_btn_container){
             const btns = el_MIMP_btn_container.children;
             for (let i = 0, btn; btn = btns[i]; i++) {
-                const data_btn = get_attr_from_el(btn,"data-btn")
-                btn.addEventListener("click", function() {MIMP_btnSelectClicked(data_btn)}, false )
+            //PR2021-12-05 debug: data_btn as argument doesn't work, don't know why, use btn as argument instead
+            // was: const data_btn = get_attr_from_el(btn, "data-btn")
+                btn.addEventListener("click", function() {MIMP_btnSelectClicked(btn)}, false )
             }
         }
         const el_filedialog = document.getElementById("id_MIMP_filedialog");
@@ -274,15 +276,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
 
                 if ("department_rows" in response) {
+                    department_rows = response.department_rows;
+        console.log("department_rows:", department_rows);
                     const tblName = "department";
                     const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
                     RefreshDataMap(tblName, field_names, response.department_rows, department_map)
                     }
                 if ("school_rows" in response) {
                     school_rows = response.school_rows;
-                    //const tblName = "school";
-                    //const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                    //RefreshDataMap(tblName, field_names, response.school_rows, school_map)
                 }
 
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
@@ -325,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_school: {sel_btn: selected_btn}};
-            b_UploadSettings (upload_dict, urls.url_settings_upload);
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
         };
 
 // ---  highlight selected button
@@ -339,9 +340,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // HandleBtnSelect
 
-//=========  HandleTableRowClicked  ================ PR2020-08-03
-    function HandleTableRowClicked(tr_clicked) {
-        console.log("=== HandleTableRowClicked");
+//=========  HandleTblRowClicked  ================ PR2020-08-03
+    function HandleTblRowClicked(tr_clicked) {
+        console.log("=== HandleTblRowClicked");
         console.log( "school_rows: ", school_rows);
 
 // ---  deselect all highlighted rows - also tblFoot , highlight selected row
@@ -358,22 +359,19 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "selected.school_dict: ", selected.school_dict, typeof selected.school_dict);
         console.log( "selected.school_pk: ", selected.school_pk, typeof selected.school_pk);
 
-    }  // HandleTableRowClicked
+    }  // HandleTblRowClicked
 
-//========= FillTblRows  ====================================
+//========= FillTblRows  ============== PR2021-12-13
     function FillTblRows() {
         console.log( "===== FillTblRows  === ");
+        //console.log( "setting_dict", setting_dict);
 
-        const tblName = "school" //  tblName = get_tblName_from_selectedBtn()
+        const tblName = "school";
         const field_setting = field_settings[tblName]
         const data_rows = school_rows;
 
 // --- show columns
         set_columns_hidden();
-
-// --- get data_map
-        const data_map = get_datamap_from_tblName(tblName);
-        //console.log( "data_map", data_map);
 
 // --- reset table
         tblHead_datatable.innerText = null;
@@ -389,6 +387,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict);
           };
         }  // if(!!data_map)
+// --- filter tblRows
+        Filter_TableRows();
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-05-10
@@ -498,7 +498,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // NIU: tblRow.setAttribute("data-ob3", ---);
 
 // --- add EventListener to tblRow
-        tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
+        tblRow.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
 
 // +++  insert td's into tblRow
         for (let j = 0; j < column_count; j++) {
@@ -592,72 +592,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // set_columns_hidden
 
 
-
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
-
-//========= UploadToggle  ============= PR2020-07-31
-    function UploadToggle(el_input) {
-        //console.log( " ==== UploadToggle ====");
-
-        mod_dict = {};
-        const tblRow = get_tablerow_selected(el_input);
-        if(tblRow){
-            const tblName = get_attr_from_el(tblRow, "data-table")
-            const map_id = tblRow.id
-            const map_dict = get_mapdict_from_datamap_by_id(school_map, map_id);
-
-            if(!isEmpty(map_dict)){
-                const fldName = get_attr_from_el(el_input, "data-field");
-                let permit_value = get_attr_from_el_int(el_input, "data-value");
-                let has_permit = (!!permit_value);
-
-                // TODO remove requsr_pk from client
-                const is_request_user = (permit_dict.requsr_pk === map_dict.id)
-
-// show message when sysadmin tries to delete sysadmin permit or add readonly
-                if(fldName === "perm_system" && is_request_user && has_permit ){
-                    ModConfirmOpen("permission_sysadm", el_input)
-                } else if(fldName === "perm01_readonly" && is_request_user && !has_permit ){
-                    ModConfirmOpen("permission_sysadm", el_input)
-                } else {
-// loop through row cells to get value of permissions.
-                    // Don't get them from map_dict, might not be correct while changing permissions
-                    let new_permit_sum = 0, new_permit_value = 0
-                    for (let i = 0, cell, cell_name, cell_value; cell = tblRow.cells[i]; i++) {
-                        cell_name = get_attr_from_el(cell, "data-field");
-                        if (cell_name.slice(0, 4) === "perm") {
-                            cell_value = get_attr_from_el_int(cell, "data-value");
-                // toggle value of clicked field
-                            if (cell_name === fldName){
-                                if(cell_value){
-                                    cell_value = 0;
-                                } else {
-                                    const cell_permit = fldName.slice(4, 6);
-                                    cell_value = (Number(cell_permit)) ? Number(cell_permit) : 0;
-                                }
-                                new_permit_value = cell_value;
-                // put new value in cell attribute 'data-value'
-                                cell.setAttribute("data-value", new_permit_value)
-                            };
-                            new_permit_sum += cell_value              }
-                    }
-
-// ---  change icon, before uploading
-                    let el_icon = el_input.children[0];
-                    if(el_icon){add_or_remove_class (el_icon, "tickmark_0_2", new_permit_value)};
-
-// ---  upload changes
-                    const upload_dict = { id: {pk: map_dict.id,
-                                               ppk: map_dict.company_id,
-                                               table: "user",
-                                               mode: "update",
-                                               mapid: map_id},
-                                          permits: {value: new_permit_sum, update: true}};
-                    UploadChanges(upload_dict, urls.url_school_upload);
-                }
-            }  //  if(!isEmpty(map_dict)){
-        }  //   if(!!tblRow)
-    }  // UploadToggle
 
 //========= UploadChanges  ============= PR2020-08-03
     function UploadChanges(upload_dict, url_str) {
@@ -687,7 +622,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         const tblName = "school";
                         const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                        //RefreshDataMap(tblName, field_names, response.updated_school_rows, school_map);
+
                         RefreshDataRows(tblName, response.updated_school_rows, school_rows, true)  // true = update
                     };
                     $("#id_mod_school").modal("hide");
@@ -886,14 +821,14 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 const tblRow = get_tablerow_selected(el_input);
 
-        // --- call HandleTableRowClicked
+        // --- call HandleTblRowClicked
                 // This happened in page studsubject, dont know if it also happens here
-                // becasue of submenu btn 'Delete school' HandleTableRowClicked must stay as tblRow event
-                    // PR2021-08-31 debug. modal didnt open becausue sometimes it comes before HandleTableRowClicked.
+                // becasue of submenu btn 'Delete school' HandleTblRowClicked must stay as tblRow event
+                    // PR2021-08-31 debug. modal didnt open becausue sometimes it comes before HandleTblRowClicked.
                     // In that case there is no map_dict yet and modal will not open.
-                    // solved by moving function HandleTableRowClicked to MSTUSUBJ_Open,
+                    // solved by moving function HandleTblRowClicked to MSTUSUBJ_Open,
 
-                HandleTableRowClicked(tblRow);
+                HandleTblRowClicked(tblRow);
 
 
                 //tblName = get_attr_from_el(tblRow, "data-table")
@@ -901,7 +836,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // PR2021-09-08 debug: don't use mapid with b_get_mapdict_from_datarows.
                 // It doesn't lookup mapid correctly: school_rows is sorted by id, therefore school_100 comes after school_99
                 // instead use id with b_recursive_integer_lookup.
-                // this is done in HandleTableRowClicked, map_dict is stored in selected.school_dict and  selected.school_pk
+                // this is done in HandleTblRowClicked, map_dict is stored in selected.school_dict and  selected.school_pk
                 // was: const map_dict = b_get_mapdict_from_datarows(school_rows, tblRow.id, setting_dict.user_lang);
                 // was: mod_MSCH_dict = deepcopy_dict(map_dict);
                 const map_dict  = deepcopy_dict(selected.school_dict);
@@ -1045,7 +980,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MSCH_FillSelectTableDepartment  ============= PR2020--09-30
     function MSCH_FillSelectTableDepartment() {
         console.log("===== MSCH_FillSelectTableDepartment ===== ");
-        //console.log("department_map", department_map);
+        console.log("department_map", department_map);
 
         const data_map = department_map;
         const tblBody_select = document.getElementById("id_MSCH_tbody_select");
@@ -1152,7 +1087,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 }
-// ---  set tickmark in row 'select_all'when has_rows and no unselected_rows_found
+// ---  set tickmark in row 'select_all' when has_rows and no unselected_rows_found
                 const tblRow_selectall = document.getElementById("sel_depbase_selectall")
                 MSCH_set_selected(tblRow_selectall, (has_rows && !unselected_rows_found))
             }
@@ -1279,8 +1214,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  validate_duplicates_in_department  ================ PR2020-09-11
     function validate_duplicates_in_department(loc, tblName, fldName, caption, selected_mapid, selected_code) {
-        //console.log(" =====  validate_duplicates_in_department =====")
-        //console.log("fldName", fldName)
+        console.log(" =====  validate_duplicates_in_department =====")
+        console.log("fldName", fldName)
         let msg_err = null;
         if (tblName && fldName && selected_code){
             const data_map = (tblName === "school") ? school_map : null;
@@ -1298,8 +1233,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             let depbase_in_common = false;
                             const selected_depbases = MSCH_get_selected_depbases();
                             const lookup_departments = map_dict.depbases;
-                            console.log("selected_depbases", selected_depbases)
-                            console.log("lookup_departments", lookup_departments)
+                console.log("selected_depbases", selected_depbases)
+                console.log("lookup_departments", lookup_departments)
                             if(selected_depbases && lookup_departments){
                                 selected_depbases.forEach((sel_dep_pk, i) => {
                                     lookup_departments.forEach((lookup_dep_pk, j) => {
@@ -1307,6 +1242,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     });
                                 });
                             }
+                console.log("depbase_in_common", depbase_in_common)
                             if(depbase_in_common){
                                 msg_err = caption + " '" + selected_code + "'" + loc.already_exists_in_departments
                                 break;
@@ -2028,10 +1964,14 @@ document.addEventListener('DOMContentLoaded', function() {
             setting_dict.sel_schoolbase_pk = selected_pk;
 
 // ---  upload new setting and refresh page
-            let datalist_request = {setting: {page: "page_grade", sel_schoolbase_pk: selected_pk}};
+            let datalist_request = {
+                setting: {page: "page_school",
+                         sel_schoolbase_pk: selected_pk},
+                school_rows: {get: true},
+            };
             DatalistDownload(datalist_request);
         } else {
-            b_UploadSettings ({selected_pk: selected_pk_dict}, urls.url_settings_upload);
+            b_UploadSettings ({selected_pk: selected_pk_dict}, urls.url_usersetting_upload);
             if (new_selected_btn) {
         // change selected_button
                 HandleBtnSelect(new_selected_btn, true)  // true = skip_upload

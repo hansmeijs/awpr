@@ -1,5 +1,6 @@
 # PR2020-09-17 PR2021-01-27
 from django.contrib.auth.decorators import login_required
+from django.db import connection
 from django.http import HttpResponse
 from django.utils.translation import activate, ugettext_lazy as _
 from django.utils.decorators import method_decorator
@@ -63,6 +64,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 request_item_setting = datalist_request.get('setting')
                 if logging_on:
                     logger.debug('request_item_setting: ' + str(request_item_setting) + ' ' + str(type(request_item_setting)))
+
                 new_setting_dict, permit_dict, sel_examyear, sel_schoolbase, sel_depbase, sel_examperiod, sel_examtype = \
                     download_setting(request_item_setting, messages, user_lang, request)
 
@@ -128,11 +130,10 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- examyears
                 if datalist_request.get('examyear_rows'):
                     cur_ey_only = af.get_dict_value(datalist_request, ('examyear_rows', 'cur_ey_only'), False)
-                    get_all_countries =  af.get_dict_value(datalist_request, ('examyear_rows', 'get_all_countries'), False)
                     sel_examyear_pk = None
                     if cur_ey_only and sel_examyear:
                         sel_examyear_pk = sel_examyear.pk
-                    datalists['examyear_rows'] = school_dicts.create_examyear_rows(request.user, {}, sel_examyear_pk, get_all_countries)
+                    datalists['examyear_rows'] = school_dicts.create_examyear_rows(request.user, {}, sel_examyear_pk)
 # ----- schools
                 if datalist_request.get('school_rows'):
                     datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear, permit_dict)
@@ -182,7 +183,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['exam_rows'] = sj_vw.create_exam_rows(new_setting_dict, {}, cur_dep_only)
 # ----- students
                 if datalist_request.get('student_rows'):
-                    datalists['student_rows'] = stud_view.create_student_rows(new_setting_dict, {}, None)
+                    datalists['student_rows'], error_dict = stud_view.create_student_rows(
+                        sel_examyear_pk= sel_examyear.pk,
+                        sel_schoolbase_pk=sel_schoolbase.pk,
+                        sel_depbase_pk=sel_depbase.pk,
+                        append_dict={})
+                    if error_dict:
+                        datalists['messages'] = [error_dict]
 # ----- studentsubjects
                 if datalist_request.get('studentsubject_rows'):
                     datalists['studentsubject_rows'] = stud_view.create_studentsubject_rows(
@@ -218,6 +225,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_schoolbase_pk=sel_schoolbase.pk,
                             sel_depbase_pk=sel_depbase.pk,
                             sel_examperiod=sel_examperiod,
+                            setting_dict=new_setting_dict,
                             request=request
                         )
 # ----- grade_note_icons
@@ -283,29 +291,40 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # - end of DatalistDownloadView
 
 
-def download_setting(request_item_setting, messages, user_lang, request):  # PR2020-07-01 PR2020-1-14 PR2021-08-12
+def download_setting(request_item_setting, messages, user_lang, request):
+    # PR2020-07-01 PR2020-1-14 PR2021-08-12 PR2021-12-03
 
     if request_item_setting is None:
         request_item_setting = {}
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
+        logger.debug(' ')
         logger.debug(' ----------------- download_setting ---------------------- ')
         logger.debug('request_item_setting: ' + str(request_item_setting) )
     # this function get settingss from request_item_setting.
     # if not in request_item_setting, it takes the saved settings.
 
     # datalist_request_item 'setting' can have the follwoing keys that will be saved in usersettings:
-    #   - key 'page':       required, stored in usersetting sel_page: ( page: 'page_grade'}
+    #   - key 'page':       required, stored in usersetting sel_page: setting: {page: "page_grade"}
     #   - key 'selected_pk': not required, contains all selected pk's: to be saved in usersetting key 'selected_pk' (used in different pages (like examyear, schoolbase, depbase)
 
     # datalist_request_item 'setting' can have two key/values that will be saved in usersettings:
-    #   - key 'page', required, stored in usersetting sel_page: ( page: 'page_grade'}
+    #   - key 'page', required, stored in usersetting sel_page: setting: {page: "page_grade"}
     #   - key 'selected_pk' saves selected values that are used in different pages (like examyear, schoolbase, depbase)
     #       - selected_pk: {sel_examyear_pk: 1, sel_schoolbase_pk: 13 etc
-    #   - usersetting key 'sel_page' saves current page (to be opened at next login)  and kery 'page_user' etc  with key 'sel_btn'  that is different for every page:
+    #   - usersetting key 'sel_page' saves current page (to be opened at next login)
+    #   - usersetting key 'page_user' etc  with key 'sel_btn' is different for every page:
     #       - sel_page: ( page: 'page_grade', page_user: {sel_btn: 'btn_userpermit' }
-
+    """
+    # examples :
+    # PR2021-12-03 grades.js: on opening page: 
+        datalist_request: {'setting': {'page': 'page_grade'}
+    on changing sel_btn:
+        datalist_request: {'setting': {'page': 'page_grade', 'sel_btn': 'btn_exem', 'sel_examperiod': 4}} 
+    page_studsubj, on changing SBR level:
+        datalist_request: {'setting': {'page': 'page_studsubj', 'sel_lvlbase_pk': 14}}
+    """
     req_user = request.user
 
 # ----- get page name from request_item_setting
@@ -396,6 +415,21 @@ def download_setting(request_item_setting, messages, user_lang, request):  # PR2
         if sel_examyear_instance.locked:
             setting_dict['sel_examyear_locked'] = sel_examyear_instance.locked
 
+# - add message when school is locked PR22021-12-04
+            messages.append({'msg_html': [
+                '<br>'.join((str(_('Exam year %(exyr)s is locked.') % {'exyr': str(sel_examyear_instance.code)}),
+                             str(_('You cannot make changes.'))))
+            ], 'class': 'border_bg_warning'})
+
+        if sel_examyear_instance.no_practexam:
+            setting_dict['no_practexam'] = sel_examyear_instance.no_practexam
+        if sel_examyear_instance.sr_allowed:
+            setting_dict['sr_allowed'] = sel_examyear_instance.sr_allowed
+        if sel_examyear_instance.no_centralexam:
+            setting_dict['no_centralexam'] = sel_examyear_instance.no_centralexam
+        if sel_examyear_instance.no_thirdperiod:
+            setting_dict['no_thirdperiod'] = sel_examyear_instance.no_thirdperiod
+
 # - add message when examyear is different from this eaxamyear
     message = val.message_diff_exyr(sel_examyear_instance)  # PR2020-10-30
     if message:
@@ -421,9 +455,20 @@ def download_setting(request_item_setting, messages, user_lang, request):  # PR2
         setting_dict['sel_school_name'] = sel_school.name
         setting_dict['sel_school_abbrev'] = sel_school.abbrev
         if sel_school.activated:
-            setting_dict['sel_school_activated'] = sel_school.activated
+            setting_dict['sel_school_activated'] = True
+        if sel_school.isdayschool:
+            setting_dict['sel_school_isdayschool'] = True
+        if sel_school.iseveningschool:
+            setting_dict['sel_school_iseveningschool'] = True
+        if sel_school.islexschool:
+            setting_dict['sel_school_islexschool'] = True
         if sel_school.locked:
-            setting_dict['sel_school_locked'] = sel_school.locked
+            setting_dict['sel_school_locked'] = True
+# - add message when school is locked PR22021-12-04
+            messages.append( {'msg_html': [
+                    '<br>'.join((str(_('Exam year %(exyr)s of this school is locked.') % {'exyr': str(sel_school.examyear.code)}),
+                                 str(_('You cannot make changes.'))))], 'class': 'border_bg_warning'})
+
         #logger.debug('sel_school.depbases: ' + str(sel_school.depbases) )
 
 # ===== DEPBASE =======================
@@ -518,7 +563,7 @@ def download_setting(request_item_setting, messages, user_lang, request):  # PR2
 # ===== DEPBASE, LEVELBASE, SECTORBASE, SCHEME, SUBJECT, STUDENT, ======================= PR2021-01-23 PR2021-03-14 PR2021-08-13
 
     if logging_on:
-        logger.debug('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        logger.debug('++++++++++++  DEPBASE, LEVELBASE, SECTORBASE, SCHEME, SUBJECT, STUDENT  ++++++++++++++++++++++++')
         logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
 
     for key_str in (c.KEY_SEL_LVLBASE_PK, c.KEY_SEL_SCTBASE_PK, c.KEY_SEL_SCHEME_PK, c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK):
@@ -531,13 +576,15 @@ def download_setting(request_item_setting, messages, user_lang, request):  # PR2
         if saved_pk_str:
             saved_pk_int = int(saved_pk_str)
         if logging_on:
-            logger.debug('saved_pk_int: ' + str(saved_pk_int) + ' ' + str(type(saved_pk_int)))
+            logger.debug('     saved_pk_int: ' + str(saved_pk_int) + ' ' + str(type(saved_pk_int)))
+            logger.debug('     request_item_setting: ' + str(request_item_setting) + ' ' + str(type(request_item_setting)))
+            logger.debug('     key_str: ' + str(key_str) + ' ' + str(type(key_str)))
 
 # - if key_str exists in request_item_setting: get new request_item_pk_int from request_item_setting
         if key_str in request_item_setting:
             request_item_pk_int = request_item_setting.get(key_str)
             if logging_on:
-                logger.debug('request_item_pk_int: ' + str(request_item_pk_int) + ' ' + str(type(request_item_pk_int)))
+                logger.debug('     request_item_pk_int: ' + str(request_item_pk_int) + ' ' + str(type(request_item_pk_int)))
 
 # - use request_pk_str when it has value and is different from the saved one
             # also use request_item_pk_int when its value is None, to reset filter
@@ -718,7 +765,7 @@ def get_selected_experiod_extype_subject_from_usersetting(request):  # PR2021-01
 # - end of get_selected_experiod_extype_subject_from_usersetting
 
 
-def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-06-14
+def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-01-13 PR2021-06-14
     logging_on = False # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_ey_school_dep_from_usersetting ----- ' )
@@ -780,34 +827,25 @@ def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-
                 pk=selected_dict.get(c.KEY_SEL_EXAMYEAR_PK),
                 country=requsr_country
             )
-    # - add info to msg_list, will be sent back to client
-            if sel_examyear is None:
-                msg_list.append(str(_('No exam year selected.')))
-            elif not sel_examyear.published:
-                msg_list.append(str(_('This exam year is not published yet.')))
-            elif sel_examyear.locked:
-                msg_list.append(str(_('This exam year is locked.')))
-
             if logging_on:
                 logger.debug('sel_examyear: ' + str(sel_examyear))
+
+    # - add info to msg_list, will be sent back to client
+            message_examyear_missing_notpublished_locked(sel_examyear, msg_list)
 
 # ===== SCHOOL =======================
             sel_school = sch_mod.School.objects.get_or_none(
                 base=sel_schoolbase,
                 examyear=sel_examyear
             )
-            if sel_school is None:
-                msg_list.append(str(_('School not found in this exam year.')))
-            else:
-                if not sel_school.activated:
-                    msg_list.append(str(_('The school has not activated this exam year yet.')))
-                elif sel_school.locked:
-                    msg_list.append(str(_('This school is locked.')))
+            if logging_on:
+                logger.debug('sel_school: ' + str(sel_school))
 
-                if logging_on:
-                    logger.debug('sel_school: ' + str(sel_school))
+    # - add info to msg_list, will be sent back to client
+            message_school_missing_notactivated_locked(sel_school, sel_examyear, msg_list)
 
 # ===== DEPBASE =======================
+            if sel_school:
                 sel_depbase = sch_mod.Departmentbase.objects.get_or_none(
                     pk=selected_dict.get(c.KEY_SEL_DEPBASE_PK)
                 )
@@ -851,6 +889,7 @@ def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-1-13 PR2021-
     return sel_examyear, sel_school, sel_department, may_edit, msg_list
 # - end of get_selected_ey_school_dep_from_usersetting
 
+
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 def get_selected_examyear_from_usersetting(request):  # PR2021-09-08
@@ -888,15 +927,7 @@ def get_selected_examyear_from_usersetting(request):  # PR2021-09-08
                 logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
 
     # - add info to msg_list, will be sent back to client
-            if sel_examyear is None:
-                msg_list.append(str(_('No exam year selected.')))
-            elif not sel_examyear.published:
-                msg_list.append(str(_('This exam year is not published yet.')))
-            elif sel_examyear.locked:
-                msg_list.append(str(_('This exam year is locked.')))
-
-            if logging_on:
-                logger.debug('sel_examyear: ' + str(sel_examyear))
+            message_examyear_missing_notpublished_locked(sel_examyear, msg_list)
 
     may_edit = len(msg_list) == 0
 
@@ -906,6 +937,49 @@ def get_selected_examyear_from_usersetting(request):  # PR2021-09-08
 
     return sel_examyear, may_edit, msg_list
 # - end of get_selected_examyear_from_usersetting
+
+
+def message_examyear_missing_notpublished_locked(sel_examyear, msg_list):  # PR2021-12-04
+    if sel_examyear is None:
+        msg_list.append(str(_('There is no exam year selected.')))
+    elif not sel_examyear.published:
+        msg_list.append(str(_('Exam year %(ey_code)s is not published yet.') % {'ey_code': str(sel_examyear.code)}))
+    elif sel_examyear.locked:
+        msg_list.append(str(_('Exam year %(ey_code)s is locked.') % {'ey_code': str(sel_examyear.code)}))
+# - end of message_examyear_missing_notpublished_locked
+
+
+def message_school_missing_notactivated_locked(sel_school, sel_examyear,  msg_list):  # PR2021-12-04
+    if sel_school is None:
+        msg_list.append(str(_('School not found in this exam year.')))
+    else:
+        if not sel_school.activated:
+            msg_list.append(str(_('The school has not activated exam year %(ey_code)s yet.') % {'ey_code': str(sel_examyear.code)}))
+        elif sel_school.locked:
+            msg_list.append(str(_('Exam year %(ey_code)s of this school is locked.') % {'ey_code': str(sel_examyear.code)}))
+# - end of message_examyear_missing_notpublished_locked
+
+
+def get_selected_lvlbase_sctbase_from_usersetting(request):  # PR2021-11-18
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_selected_lvlbase_sctbase_from_usersetting ----- ' )
+    # this function gets sel_lvlbase_pk and sel_sctbase_pk from req_user and usersetting
+    # used in DownloadGradelistView (for now)
+    # checks if user may edit .
+
+    req_user = request.user
+    sel_lvlbase_pk = None
+    sel_sctbase_pk = None
+
+    if req_user and  req_user.schoolbase:
+        selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        if selected_dict:
+            sel_lvlbase_pk = selected_dict.get(c.KEY_SEL_LVLBASE_PK)
+            sel_sctbase_pk = selected_dict.get(c.KEY_SEL_SCTBASE_PK)
+
+    return sel_lvlbase_pk, sel_sctbase_pk
+# - end of get_selected_lvlbase_sctbase_from_usersetting
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -929,26 +1003,13 @@ def create_permit_dict(req_user):
             permit_dict['requsr_role_system'] = True
 
 # - get usergroups from req_user, put them in setting_dict
-        user_groups = getattr(req_user, 'usergroups')
-        if user_groups:
-            requsr_usergroups_list = user_groups.split(';')
-            for usergroup in requsr_usergroups_list:
-                if usergroup == c.USERGROUP_READ:
-                    permit_dict['usergroup_read'] = True
-                if usergroup == c.USERGROUP_EDIT:
-                    permit_dict['usergroup_edit'] = True
-                if usergroup == c.USERGROUP_AUTH1_PRES:
-                    permit_dict['usergroup_auth1'] = True
-                if usergroup == c.USERGROUP_AUTH2_SECR:
-                    permit_dict['usergroup_auth2'] = True
-                if usergroup == c.USERGROUP_AUTH3_COM:
-                    permit_dict['usergroup_auth3'] = True
-                if usergroup == c.USERGROUP_AUTH4_EXAM:
-                    permit_dict['usergroup_auth4'] = True
-                if usergroup == c.USERGROUP_ANALYZE:
-                    permit_dict['usergroup_anlz'] = True
-                if usergroup == c.USERGROUP_ADMIN:
-                    permit_dict['usergroup_admin'] = True
+        #user_groups = getattr(req_user, 'usergroups')
+        #if user_groups:
+            #requsr_usergroups_list = user_groups.split(';')
+            #for usergroup in requsr_usergroups_list:
+                #if usergroup in c.USERGROUP_TUPLE:
+                    #key_str = 'usergroup_' + usergroup
+                    #permit_dict[key_str] = True
 
 # ===== SCHOOL =======================
 # - roles higher than school may select other schools PR2021-04-23

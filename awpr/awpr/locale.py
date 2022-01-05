@@ -109,11 +109,14 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Leerweg_twolines'] = _('Leer-\nweg')
     dict['Sectors'] = _('Sectors')
     dict['Abbreviation'] = _('Abbreviation')
+    dict['Cluster'] = _('Cluster')
 
     dict['Total'] = _('Total')
     dict['Candidate'] = _('Candidate')
     dict['Candidates'] = _('Candidates')
     dict['a_candidate'] = _('a candidate')
+
+    dict['Clusters'] = _('Clusters')
 
     dict['Name'] = _('Name')
     dict['Department'] = _('Department')
@@ -129,6 +132,7 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Central_exam'] = _('Central exam')
     dict['Exemption'] = _('Exemption')
     dict['Exemptions'] = _('Exemptions')
+    dict['Re_exam_schoolexam_2lns'] = _('Re-exam\nschool exam')
     dict['Re_examination'] = _('Re-examination')
     dict['Re_examinations'] = _('Re-examinations')
     dict['Re_examination_3rd_period'] = _('Re-exam third period')
@@ -173,6 +177,19 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Upload_candidates'] = _('Upload candidates')
         dict['Upload_subjects'] = _('Upload subjects')
         dict['Upload_grades'] = _('Upload grades')
+        dict['Upload_usernames'] = _('Upload usernames')
+        dict['Upload_permissions'] = _('Upload permissions')
+        dict['Upload_awpdata'] = _('Upload AWP data file')
+        dict['Upload_subjects'] = _('Upload subjects')
+
+        dict['Step'] = _('Step')
+        dict['Select_grade_type'] = _('Select grade type')
+        dict['Select_file'] = _('Select file')
+        dict['Link_colums'] = _('Link colums')
+        dict['Link_data'] = _('Link data')
+        dict['Test_upload'] = _('Test upload')
+        dict['Upload_data'] = _('Upload data')
+
         dict['Select_Excelfile_with_students'] = _('Select an Excel file with students')
         dict['Select_Excelfile_with_subjects'] = _('Select an Excel file with subjects')
         dict['Select_Excelfile_with_grades'] = _('Select an Excel file with grades')
@@ -203,6 +220,10 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Link_sectors'] = _('Link sectors')
         dict['Link_profielen'] = _('Link profielen')
+        dict['examgrade_options'] = c.EXAMGRADE_OPTIONS
+        dict['No_examgradetypes_found'] = _('No exam grade types found')
+        dict['Select_examgradetype'] = _('Please select an exam grade type')
+
 
 # ====== PAGE USER ========================= PR2019-11-19
     if 'page_user' in page_list:
@@ -216,12 +237,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Edit'] = _('Edit')
         dict['pagelist'] = c.PAGE_LIST
 
-        dict['Upload_usernames'] = _('Upload usernames')
-
-        dict['President'] = TXT_President
-        dict['Secretary'] = TXT_Secretary
-        dict['Commissioner'] = TXT_Commissioner
-        dict['Examinator'] = TXT_Examinator
 
         dict['Organization'] = TXT_Organization
         dict['Action'] = _('Action')
@@ -229,9 +244,13 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['on_page'] = _(' on page ')
         dict['Delete_permission'] = _('Delete permission')
 
+        dict['President'] = TXT_President
+        dict['Secretary'] = TXT_Secretary
+        dict['Commissioner'] = TXT_Commissioner
         dict['Commissioner_2lines'] =  pgettext_lazy('2 lines', 'Commis-\nsioner')
+        dict['Examinator'] = TXT_Examinator
+        dict['Teacher'] =  _('Teacher')
         dict['Analyze'] = _('Analyze')
-
         dict['System_administrator'] = _('System administrator')
         dict['System_administrator_2lines'] = pgettext_lazy('2 lines', 'System\nadministrator')
 
@@ -260,7 +279,6 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Add_permission'] = _('Add permission')
         dict['Delete_permission'] = _('Delete permission')
-        dict['Upload_permissions'] = _('Upload permissions')
         dict['Download_permissions'] = _('Download permissions')
 
         dict['No_user_selected'] = _('Please select a user first.')
@@ -344,7 +362,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Copy_subject_schemes'] = _('Copy subject schemes')
         dict['Subjectschemes_of_ey_willbe_copiedto_ey'] = _('Subject schemes of this exam year will be copied<br>to exam year')
 
-        dict['Upload_awpdata'] = _('Upload AWP data file')
 
         dict['msg_info'] = {
         'create': [
@@ -478,6 +495,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['SE_weighing'] = _('SE weighing')
         dict['CE_weighing'] = _('CE weighing')
+        dict['Counts_double'] = _('Counts double')
         dict['Mandatory'] = _('Mandatory')
         dict['Mandatory_if_subject'] = _("'Mandatory-if' subject")
         dict['Mandatory_if_subject_info'] = _("Subject is only mandatory if the candidate has this 'Mandatory-if' subject.")
@@ -485,12 +503,21 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Combination_subject'] = _('Combination subject')
         dict['Extra_count_allowed'] = _('Extra subject counts allowed')
         dict['Extra_nocount_allowed'] = _('Extra subject does not count allowed')
-        dict['Elective_combi_allowed'] = _('Elective combi subject allowed')
         dict['Has_practical_exam'] = _('Has practical exam')
         dict['Has_assignment'] = _('Has assignment')
         dict['Is_core_subject'] = _('Core subject')
         dict['Is_MVT_subject'] = _('MVT subject')
         dict['Is_wiskunde_subject'] = _('Wiskunde subject')
+
+        # NIU: dict['Final_grade_rule_Vsbo'] = _('Final grade rule Vsbo')
+        # NIU: dict['Final_grade_rule_HavoVwo'] = _('Final grade rule Havo Vwo')
+        dict['Average_CE_grade_rule'] = _('Average CE grade rule')
+        dict['Subject_must_be_sufficient'] = _('Subject must be sufficient')
+        dict['Core_subject_rule'] = _('Core subject rule')
+
+
+        dict['Not_at_evening_lex_school'] = _('Not at eveningschool or landsexamen')
+
         dict['Herkansing_SE_allowed'] = _('Herkansing SE allowed')
         dict['Maximum_reex'] = _('Maximum number of re-examinations')
         dict['No_third_period'] = _('Subject has no third period')
@@ -503,7 +530,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Delete_character'] = _('Delete character')
         dict['Delete_scheme'] = _('Delete scheme')
         dict['Delete_package'] = _('Delete package')
-        dict['Upload_subjects'] = _('Upload subjects')
 
         dict['Character'] = _('Character')
         dict['Characters'] = _('Characters')
@@ -531,8 +557,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Maximum_extra_nocount'] = _("Maximum extra subject, doesn't count")
         dict['Minimum_extra_counts'] = _("Minimum extra subject, counts")
         dict['Maximum_extra_counts'] = _("Maximum extra subject, counts")
-        dict['Minimum_elective_combi'] = _("Minimum elective combi subject")
-        dict['Maximum_elective_combi'] = _("Maximum elective combi subject")
 
         dict['Scheme_doesnthave_subjecttypes'] = _('This subject scheme does not have characters yet.')
         dict['Close_window'] = _("Close this window, click the tab")
@@ -545,7 +569,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['English'] = _('English')
         dict['English_and_Papiamentu'] = _('English, Papiamentu')
 
-        dict['Upload_subjects'] = _('Upload subjects')
 
         dict['this_subject'] = _('this subject')
         dict['this_level'] = _('this level')
@@ -596,14 +619,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['is_too_long_max_article'] = _(" is too long. Maximum is %(max)s characters.") % {'max': c.MAX_LENGTH_SCHOOLABBREV}
         dict['is_too_long_max_name'] = _(" is too long. Maximum is %(max)s characters.") % {'max': c.MAX_LENGTH_NAME}
 
-        dict['Upload_awpdata'] = _('Upload AWP data file')
 
 # ====== PAGE STUDENTS ========================= PR2020-10-27
     if 'page_student' in page_list:
 
         dict['Add_candidate'] = _('Add candidate')
         dict['Delete_candidate'] = _('Delete candidate')
-        dict['Upload_candidates'] = _('Upload candidates')
 
         dict['Please_select_candidate_first'] = _('Please select a candidate first.')
         dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
@@ -625,6 +646,8 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Class'] = _('Class')
         dict['Bis_candidate'] = _('Bis-candidate')
+        dict['Partial_exam'] = _('Partial exam')
+        dict['Additional_exam'] = _('Additional exam')
 
         dict['Schemes_of_candidates_willbe_validated'] = _('Schemes of candidates will be validated.')
         dict['Validate_candidate_schemes'] = _('Validate candidate schemes')
@@ -638,6 +661,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Examnumber_twolines'] = TXT_Examnumber_twolines
 
         dict['Abbreviation_twolines'] = _('Abbre-\nviation')
+        dict['Exemption_year'] = _('Exemption year')
+        dict['Exemption_year_twolines'] = _('Exemption-\nyear')
 
         dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
         dict['No_subject_selected'] = _('No subject selected.')
@@ -690,7 +715,19 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Hide_linked_candidates'] = _('Hide linked candidates')
 
         dict['Delete_exemption'] = _('Delete exemption')
+        dict['Delete_reex_schoolexam'] = _('Delete re-examination school exam')
+        dict['Delete_reexamination'] = _('Delete re-examination ')
+        dict['Delete_reexamination_3rd_period'] = _('Delete re-examination 3rd exam period')
+
+        dict['This_subject'] = _('This subject')
         dict['This_exemption'] = _('This exemption')
+        dict['This_reex_schoolexam'] = _('This re-examination school exam')
+        dict['This_reexamination'] = _('This re-examination')
+        dict['This_reexamination_3rd_period'] = _('This re-examination 3rd exam period')
+        dict['This_proof_of_knowledge'] = _('This proof of knowledge')
+        dict['This_item'] = _('This item')
+        dict['is_already_published'] = _('is already published.')
+        dict['You_cannot_change_approval'] = _('You cannot change the approval.')
 
         dict['This_subject_ismarked_fordeletion'] = _('This subject is marked for deletion.')
         dict['You_must_submit_additional_ex1form'] = _('You must submit an additional Ex-1 form to delete it.')
@@ -723,6 +760,16 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Please_select_one_or_more_subjects'] = _('Please select one or more subjects')
         dict['from_available_list'] = _('from the list of available subjects.')
 
+        dict['No_permission'] = _("You don't have permission to edit this subject.")
+        dict['Exemption_is_auth'] = _("This exemption has already been approved.")
+        dict['needs_approvals_removed'] = _("You have to remove the approvals first.")
+        dict['Then_you_can_change_it'] = _("Then you can change it.")
+        dict['Then_you_can_change_it'] = _("Then you can change it.")
+        dict['Exemption_submitted'] = _("This exemption has already been submitted.")
+        dict['need_permission_inspection'] = _("You can only change it with permission of the Inspection.")
+
+        dict['Examyear_not_valid'] = _("This exam year is not valid.")
+        dict['Exemption_year'] = _("Exemption year")
 
 # ====== PAGE EXAM ========================= PR2021-04-04
     if 'page_exams' in page_list:
@@ -871,6 +918,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['SECE_weighing'] = _('SE-CE\nweighing')
         dict['Final_grade_twolines'] = _('Final\ngrade')
 
+        dict['Abbreviation_subject'] = '\n'.join((str(_('Abbreviation')), str(_('subject'))))
         dict['Exemption_SE'] = ' '.join((str(_('Exemption')), str(_('SE-grade'))))
         dict['Exemption_CE'] = ' '.join((str(_('Exemption')), str(_('CE-grade'))))
         dict['Exemption_FINAL'] = ' '.join((str(_('Exemption')), str(_('Final grade'))))
@@ -912,7 +960,7 @@ def get_locale_dict(table_dict, user_lang, request):
             'candidate_locked': _('The candidate data is locked.'),
             'grade_locked': _('This grade is locked.'),
             'no_ce_this_ey': _('There are no central exams this exam year.'),
-            'no_3rd_period': _('There is this exam year no third exam period.'),
+            'no_3rd_period': _('This exam year has no third period.'),
             'reex_combi_notallowed': _('Combination subject has no re-examination.'),
             'exemption_no_ce': _('Exemption has no central exam this exam year.'),
             'no_pe_examyear': _('There are no practical exams this exam year.'),
@@ -949,20 +997,38 @@ def get_locale_dict(table_dict, user_lang, request):
             'need_permission_inspection': _('You can only change it with permission of the Inspection.')
         }
 
-    dict['approve_err_list'] = {'You_have_functions': _('You have the functions of '),
+        dict['approve_err_list'] = {'You_have_functions': _('You have the functions of '),
                                 'Only_1_allowed': _('Only 1 function is allowed. '),
                                'cannot_approve': _('You cannot approve grades.'),
-                               'cannot_submit': _('You cannot approve grades.'),
+                               'cannot_submit': _('You cannot submit grades.'),
                                'This_grade_is_submitted': _('This grade is submitted.'),
-                               'You_cannot_remove_approval': _('You cannot remove the approval.'),
+                               'You_cannot_change_approval': _('You cannot change the approval.'),
                                'This_grade_has_no_value': _('This grade has no value.'),
                                'You_cannot_approve': _('You cannot approve this grade.'),
                                'Approved_different_function': _('You have approved this grade already in a different function.'),
                                'You_cannot_approve_again': _('You cannot approve this grade again.'),
+        }
 
+# ====== PAGE RESULTS ========================= PR2021-11-15
+    if 'page_result' in page_list:
+        dict['Results'] = _('Results')
+        dict['Result'] = _('Result')
+        dict['Preliminary_gradelist'] = _('Preliminary grade list')
+        dict['Download_gradelist'] = _('Download grade list')
 
-                                }
+        dict['The_preliminary_gradelist_of'] = _('The preliminary grade list of')
+        dict['The_final_gradelist_of'] = _('The final grade list of')
+        dict['candidates'] = _(' candidates')
 
+        dict['will_be_downloaded'] = _('will be downloaded.')
+        dict['Select_a_president'] = _('Select a president')
+        dict['Select_a_secretary'] = _('Select a secretary')
+        dict['No_president'] = _('There is no president')
+        dict['No_secretary'] = _('There is no secretary')
+
+        dict['Calc_result'] = _('Calculate result')
+
+# ====== PAGE ORDERLIST =========================
     if 'page_orderlist' in page_list:
         dict['School_code'] = TXT_School_code
         dict['School_name'] = _('School name')

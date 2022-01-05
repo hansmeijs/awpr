@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 def create_mailmessage_received_rows(examyear, request, mailmessage_pk=None):
     # --- create received mail_message rows of this user, this examyear PR2021-10-28
     #       use INNER JOIN mailbox to filter messages for this user
+
     # PR2021-11-03 debug: since received messages cab come from other countries:
     # - dont filter on examyear.pk but on examyear.code
     logging_on = False  # s.LOGGING_ON
@@ -399,12 +400,12 @@ def create_mailbox_usergroup_rows():
 #############################
 
 
-def create_examyear_rows(req_usr, append_dict, examyear_pk, get_all_countries=False):
-    # --- create rows of all examyears of this country PR2020-10-04 PR2021-09-24
+def create_examyear_rows(req_usr, append_dict, examyear_pk):
+    # --- create rows of all examyears of this country PR2020-10-04 PR2021-09-24 PR2021-12-02
     #logger.debug(' =============== create_examyear_rows ============= ')
 
     # when role = school: show examyear plus school.isactivated
-    country_filter = "WHERE TRUE" if get_all_countries else "WHERE ey.country_id = %(cntr_id)s::INT"
+
     sql_keys = {}
     if req_usr.role <= c.ROLE_008_SCHOOL:
         sql_keys['sb_id'] = req_usr.schoolbase.pk
@@ -428,7 +429,7 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk, get_all_countries=Fa
             "FROM schools_examyear AS ey",
             "INNER JOIN schools_country AS cntr ON (cntr.id = ey.country_id)",
             "LEFT JOIN accounts_user AS au ON (au.id = ey.modifiedby_id)",
-            country_filter
+            "WHERE ey.country_id = %(cntr_id)s::INT"
         ]
 
     if examyear_pk:

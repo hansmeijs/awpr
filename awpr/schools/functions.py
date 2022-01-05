@@ -428,9 +428,6 @@ def copy_subjecttypes_from_prev_examyear(request, prev_examyear, mapped_schemes,
                     min_extra_counts=prev_sjtp.min_extra_counts,
                     max_extra_counts=prev_sjtp.max_extra_counts,
 
-                    min_elective_combi=prev_sjtp.min_elective_combi,
-                    max_elective_combi=prev_sjtp.max_elective_combi,
-
                     modifiedby_id=modifiedby_id,
                     modifiedat=modifiedat
                 )
@@ -656,13 +653,14 @@ def copy_schemeitems_from_prev_examyear(request, prev_examyear, mapped_schemes, 
 
                     extra_count_allowed=prev_si.extra_count_allowed,
                     extra_nocount_allowed=prev_si.extra_nocount_allowed,
-                    elective_combi_allowed=prev_si.elective_combi_allowed,
 
                     has_practexam=prev_si.has_practexam,
-                    has_pws=prev_si.has_pws,
                     is_core_subject=prev_si.is_core_subject,
                     is_mvt=prev_si.is_mvt,
                     is_wisk=prev_si.is_wisk,
+
+                    rule_grade_sufficient=prev_si.rule_grade_sufficient,
+                    rule_gradesuff_notatevlex=prev_si.rule_gradesuff_notatevlex,
 
                     sr_allowed=prev_si.sr_allowed,
                     max_reex=prev_si.max_reex,
@@ -971,6 +969,7 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
 
     noheader = False
     worksheetname = ''
+    examgradetype = None
     coldef_list = []
     stored_coldef = {}
 
@@ -980,6 +979,10 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
             table_list = ("coldef", "department", "level", "sector", "profiel")
         else:
             table_list = ("coldef", "level", "sector", "profiel")
+    elif setting_key == c.KEY_IMPORT_GRADE:
+        # PR2021-08-11 subjecttype NIU was: table_list = ("coldef", "subject", "subjecttype")
+        # 'subject' comes first, subject values are used in coldef to exclude linked subjects from coldef list PR2021-08-11
+        table_list = ("subject", "coldef")
     elif setting_key == c.KEY_IMPORT_STUDENTSUBJECT:
         # PR2021-08-11 subjecttype NIU was: table_list = ("coldef", "subject", "subjecttype")
         # 'subject' comes first, subject values are used in coldef to exclude linked subjects from coldef list PR2021-08-11
@@ -991,6 +994,7 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
         if stored_settings_dict:
             noheader = stored_settings_dict.get('noheader', False)
             worksheetname = stored_settings_dict.get('worksheetname')
+            examgradetype = stored_settings_dict.get('examgradetype')
             stored_coldef = stored_settings_dict.get('coldef')
 
         default_coldef_list = c.KEY_COLDEF.get(setting_key)
@@ -1041,6 +1045,7 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
     setting_dict = {
         'worksheetname': worksheetname,
         'noheader': noheader,
+        'examgradetype': examgradetype,
         'coldefs': coldef_list,
         'tablelist': table_list
         }

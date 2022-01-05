@@ -30,9 +30,10 @@ logger = logging.getLogger(__name__)
 
 def save_to_log(instance, req_mode, request):
     # PR2019-02-23 PR2020-10-23 PR2020-12-15 PR2021-05-11
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- save_to_log  ----- mode: ' + str(req_mode))
+        logger.debug(' ----- save_to_log  -----')
+        logger.debug('req_mode: ' + str(req_mode))
         logger.debug('instance: ' + str(instance))
 
     if instance:
@@ -108,16 +109,15 @@ def save_to_log(instance, req_mode, request):
             pass
         elif model_name == 'Grade':
             pass
-
-
 # - end of save_to_log
 
 
 def copy_examyear_to_log(mode, instance, modby_id, mod_at):
+    # fields update PR2021-12-13
     try:
         examyear_log = sch_mod.Examyear_log(
             examyear_id=instance.id,
-            # nog log exists for country
+            # no log exists for country
             country_id=instance.country_id,
 
             code=instance.code,
@@ -133,6 +133,18 @@ def copy_examyear_to_log(mode, instance, modby_id, mod_at):
             publishedat=instance.publishedat,
             lockedat=instance.lockedat,
 
+            order_extra_fixed=instance.order_extra_fixed,
+            order_extra_perc=instance.order_extra_perc,
+            order_round_to=instance.order_round_to,
+
+            order_tv2_divisor=instance.order_tv2_divisor,
+            order_tv2_multiplier=instance.order_tv2_multiplier,
+            order_tv2_max=instance.order_tv2_max,
+
+            order_admin_divisor=instance.order_admin_divisor,
+            order_admin_multiplier=instance.order_admin_multiplier,
+            order_admin_max=instance.order_admin_max,
+
             modifiedby_id=modby_id,
             modifiedat=mod_at,
             mode=mode
@@ -143,6 +155,7 @@ def copy_examyear_to_log(mode, instance, modby_id, mod_at):
 
 
 def copy_department_to_log(mode, instance, modby_id, mod_at):  # PR2021-04-25 PR2021-06-28
+    # fields checked and correct PR2021-12-13
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- copy_department_to_log  -----')
@@ -165,6 +178,7 @@ def copy_department_to_log(mode, instance, modby_id, mod_at):  # PR2021-04-25 PR
                 name=instance.name,
                 abbrev=instance.abbrev,
                 sequence=instance.sequence,
+
                 level_req=instance.level_req,
                 sector_req=instance.sector_req,
                 has_profiel=instance.has_profiel,
@@ -182,6 +196,7 @@ def copy_department_to_log(mode, instance, modby_id, mod_at):  # PR2021-04-25 PR
 
 
 def copy_scheme_to_log(mode, instance, modby_id, mod_at):  # PR2021-06-28
+    # fields updated PR2021-12-13
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- copy_scheme_to_log  -----')  # PR2021-06-28
@@ -208,12 +223,20 @@ def copy_scheme_to_log(mode, instance, modby_id, mod_at):  # PR2021-06-28
 
             min_subjects=instance.min_subjects,
             max_subjects=instance.max_subjects,
+
             min_mvt=instance.min_mvt,
             max_mvt=instance.max_mvt,
+
             min_wisk=instance.min_wisk,
             max_wisk=instance.max_wisk,
+
             min_combi=instance.min_combi,
             max_combi=instance.max_combi,
+
+            rule_avg_pece_sufficient=instance.rule_avg_pece_sufficient,
+            rule_avg_pece_notatevlex=instance.rule_avg_pece_notatevlex,  # PR2021-11-27  NOT IN USE: mustbe_avg_pece_sufficient not at evening or lex school
+            rule_core_sufficient=instance.rule_core_sufficient,
+            rule_core_notatevlex=instance.rule_core_notatevlex,  # PR2021-11-27  NOT IN USE: mustbe_avg_pece_sufficient not at evening or lex school
 
             modifiedby_id=modby_id,
             modifiedat=mod_at,
@@ -226,6 +249,70 @@ def copy_scheme_to_log(mode, instance, modby_id, mod_at):  # PR2021-06-28
 # - end of copy_scheme_to_log
 
 
+def copy_grade_to_log(mode, instance, modby_id, mod_at):  # PR2021-12-13
+    # ISN
+    # fields updated PR2021-12-13
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- copy_grade_to_log  -----')  # PR2021-06-28
+        logger.debug('mode: ' + str(mode))
+        logger.debug('instance: ' + str(instance) + ' ' + str(type(instance)))
+        logger.debug('modby_id: ' + str(modby_id) + ' ' + str(type(modby_id)))
+        logger.debug('mod_at: ' + str(mod_at) + ' ' + str(type(mod_at)))
+
+    # get most recent studentsubject_log, exam_log (with highest id)
+    studentsubject_log_pk = get_studentsubject_log_pk(instance.studentsubject_id)
+    exam_log_pk = get_exam_log_pk(instance.exam_id)
+    if studentsubject_log_pk:
+        try:
+            grade_log = stud_mod.Grade_log(
+                grade_id=instance.id,
+
+                studentsubject_log_id=studentsubject_log_pk,
+                exam_log_id=exam_log_pk,
+
+                examperiod=instance.examperiod,
+                pescore=instance.pescore,
+                cescore=instance.cescore,
+                segrade=instance.segrade,
+                srgrade=instance.srgrade,
+                sesrgrade=instance.sesrgrade,
+                pegrade=instance.pegrade,
+                cegrade=instance.cegrade,
+                pecegrade=instance.pecegrade,
+                finalgrade=instance.finalgrade,
+                
+                fields=instance.fields,
+
+                min_subjects=instance.min_subjects,
+                max_subjects=instance.max_subjects,
+
+                min_mvt=instance.min_mvt,
+                max_mvt=instance.max_mvt,
+
+                min_wisk=instance.min_wisk,
+                max_wisk=instance.max_wisk,
+
+                min_combi=instance.min_combi,
+                max_combi=instance.max_combi,
+
+                rule_avg_pece_sufficient=instance.rule_avg_pece_sufficient,
+                rule_avg_pece_notatevlex=instance.rule_avg_pece_notatevlex,
+                # PR2021-11-27  NOT IN USE: mustbe_avg_pece_sufficient not at evening or lex school
+                rule_core_sufficient=instance.rule_core_sufficient,
+                rule_core_notatevlex=instance.rule_core_notatevlex,
+                # PR2021-11-27  NOT IN USE: mustbe_avg_pece_sufficient not at evening or lex school
+
+                modifiedby_id=modby_id,
+                modifiedat=mod_at,
+                mode=mode
+            )
+            grade_log.save()
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+# - end of copy_grade_to_log
 
 
 def get_examyear_log(examyear_id):
@@ -274,9 +361,45 @@ def get_sector_log(sector_id): # PR20201-06-28
     return log
 
 
+def get_studentsubject_log_pk(studentsubject_id): # PR2021-12-13
+    log_pk = None
+    try:
+        log = stud_mod.Studentsubject_log.objects.filter(
+            studentsubject_id=studentsubject_id
+        ).order_by('-pk').first().values('pk')
+
+    # add Studentsubject_log if it does not exist yet
+        # TODO create Studentsubject_log if it does not exist yet
+        if log is None:
+            pass
+
+        if log:
+            log_pk = getattr(log, 'pk')
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+    return log_pk
+
+
+def get_exam_log_pk(exam_id): # PR2021-12-13
+    log_pk = None
+    try:
+        log = subj_mod.Exam_log.objects.filter(
+            exam_id=exam_id
+        ).order_by('-pk').first().values('pk')
+    # add Exam_log if it does not exist yet
+        # TODO create Exam_log if it does not exist yet
+        if log is None:
+            pass
+
+        if log:
+            log_pk = getattr(log, 'pk')
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+    return log_pk
+
 """
 Old save_to_log with SQL, not in use PR2021-04-25
-
+fields updated PR2021-12-13
 elif model_name == 'Grade':
     # this one not working, cannot get filter pc.id with LIMIT 1 in query, get info from pricecodelist instead
     sub_ssl_list = ["SELECT id, studentsubject_id AS studsubj_id,",
@@ -287,14 +410,29 @@ elif model_name == 'Grade':
     sql_keys = {'grade_id': pk_int,  'mode': mode, 'modby_id': modby_id, 'mod_at': mod_at}
     sql_list = ["WITH sub_ssl AS (" + sub_ssl + ")",
                 "INSERT INTO students_grade_log (id,",
-                    "grade_id, studentsubject_log_id, examperiod,",
-                    "pescore, cescore, segrade, pegrade, cegrade, pecegrade, finalgrade,",
-                    "sepublished, pepublished, cepublished,",
+                    "grade_id, studentsubject_log_id, exam_id, examperiod,",
+                    
+                    "pescore, cescore, segrade, srgrade, sesrgrade,",
+                    "pegrade, cegrade, pecegrade, finalgrade,",
+                    
+                    "sepublished_id, sr_published_id, pepublished_id, cepublished_id,",
+                    "seblocked, srblocked, peblocked, ceblocked,",
+                    
+                    "answers, blanks, answers_published_id,",
+                    
                     "mode, modifiedby_id, modifiedat)",
+                    
                 "SELECT nextval('students_grade_log_id_seq'),",
-                    "grade_id, sub_ssl.id, examperiod,",
-                    "pescore, cescore, segrade, pegrade, cegrade, pecegrade, finalgrade,",
-                    "sepublished, pepublished, cepublished,",
+                    "grade_id, sub_ssl.id, exam_id, examperiod, ",
+                    
+                    "pescore, cescore, segrade, srgrade, sesrgrade,",
+                    "pegrade, cegrade, pecegrade, finalgrade,",
+                    
+                    "sepublished_id, sr_published_id, pepublished_id, cepublished_id,",
+                    "seblocked, srblocked, peblocked, ceblocked,",
+                    
+                    "answers, blanks, answers_published_id,",
+                    
                     "%(mode)s::TEXT, %(modby_id)s::INT, %(mod_at)s::DATE",
                 "FROM students_grade AS grade",
                 "INNER JOIN sub_ssl ON (sub_ssl.studsubj_id = grade.studentsubject_id)",

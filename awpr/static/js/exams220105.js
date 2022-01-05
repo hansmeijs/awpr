@@ -1,4 +1,19 @@
 // PR2020-09-29 added
+
+// PR2021-12-16 declare variables outside function to make them global variables
+
+// from https://stackoverflow.com/questions/11558025/do-browsers-propagate-javascript-variables-across-tabs
+// variable values should not propagate between tabs - each tab should have its own global namespace,
+// there would be all kinds of security issues if one tab could affect the JavaScript in another
+
+// selected_btn is also used in t_MCOL_Open
+let selected_btn = "btn_ep_01";
+
+let setting_dict = {};
+let permit_dict = {};
+let loc = {};  // locale_dict
+let urls = {};
+
 document.addEventListener
 ("DOMContentLoaded", function() {
     "use strict";
@@ -15,11 +30,7 @@ document.addEventListener
     const cls_visible_hide = "visibility_hide";
     const cls_selected = "tsa_tr_selected";
 
-    let selected_btn = null;
-    let setting_dict = {};
-    let permit_dict = {};
 
-    let loc = {};  // locale_dict
     let mod_dict = {};
     let mod_MSEX_dict = {};
     let mod_MEX_dict = {};
@@ -43,19 +54,21 @@ document.addEventListener
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
-    const url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    const url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
-    const url_subject_upload = get_attr_from_el(el_data, "data-subject_upload_url");
-    const url_exam_upload = get_attr_from_el(el_data, "data-exam_upload_url");
-    const url_grade_upload = get_attr_from_el(el_data, "data-grade_upload_url");
-    const url_grade_approve = get_attr_from_el(el_data, "data-grade_approve_url");
+    urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+    urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
+    urls.url_subject_upload = get_attr_from_el(el_data, "data-subject_upload_url");
+    urls.url_exam_upload = get_attr_from_el(el_data, "data-exam_upload_url");
+    urls.url_grade_upload = get_attr_from_el(el_data, "data-grade_upload_url");
+    urls.url_grade_approve = get_attr_from_el(el_data, "data-grade_approve_url");
 
-    const url_exam_download_exam_pdf = get_attr_from_el(el_data, "data-exam_download_exam_pdf_url");
-    const url_exam_download_exam_json = get_attr_from_el(el_data, "data-exam_download_exam_json_url");
+    urls.url_exam_download_exam_pdf = get_attr_from_el(el_data, "data-exam_download_exam_pdf_url");
+    urls.url_exam_download_exam_json = get_attr_from_el(el_data, "data-exam_download_exam_json_url");
 
-    const url_download_published = get_attr_from_el(el_data, "data-download_published_url");
+    urls.url_download_published = get_attr_from_el(el_data, "data-download_published_url");
 
-    let columns_hidden = {lvl_abbrev: true};
+    columns_tobe_hidden.all = {
+        fields: ["subj_name", "lvl_abbrev", "version", "examtype", "blanks", "printpdf", "printjson"],
+        captions: ["Subject", "Leerweg", "Version",  "Exam_type", "Blanks", "Download_PDF", "Download_JSON"]}
 
 // --- get field_settings
     const field_settings = {
@@ -240,6 +253,13 @@ document.addEventListener
             el_mod_message_btn_cancel.addEventListener("click", function() {ModMessageClose(el_mod_message_btn_cancel)}, false);
         }
 
+// ---  MODAL SELECT COLUMNS ------------------------------------
+        const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
+        if(el_MCOL_btn_save){
+            el_MCOL_btn_save.addEventListener("click", function() {
+                t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
+        };
+
     if(may_view_page){
 // ---  set selected menu button active
        // SetMenubuttonActive(document.getElementById("id_hdr_users"));
@@ -277,7 +297,7 @@ document.addEventListener
         let response = "";
         $.ajax({
             type: "POST",
-            url: url_datalist_download,
+            url: urls.url_datalist_download,
             data: param,
             dataType: "json",
             success: function (response) {
@@ -297,6 +317,17 @@ document.addEventListener
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict;
                     selected_btn = (setting_dict.sel_tab)
+
+            // ---  fill cols_hidden
+                    if("cols_hidden" in setting_dict){
+                        //  setting_dict.cols_hidden was dict with key 'all' or se_btn, changed to array PR2021-12-14
+                        //  skip when setting_dict.cols_hidden is not an array,
+                        // will be changed into an array when saving with t_MCOL_Save
+                        if (Array.isArray(setting_dict.cols_hidden)) {
+                             b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
+                        };
+                    };
+
                     must_update_headerbar = true;
                 };
 
@@ -304,7 +335,6 @@ document.addEventListener
                     permit_dict = response.permit_dict;
                     // get_permits must come before CreateSubmenu and FiLLTbl
                     b_get_permits_from_permitlist(permit_dict);
-                    set_columns_hidden();
                     must_update_headerbar = true;
                 }
 
@@ -371,7 +401,9 @@ document.addEventListener
          if(permit_dict.permit_crud && permit_dict.requsr_same_school){
             AddSubmenuButton(el_submenu, loc.Submit_exam, function() {ModConfirmOpen("deleteXX")});
         }
-        //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A_form, null, "id_submenu_download_ex2a", url_grade_download_ex2a, true);  // true = download
+        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_exams")}, [], "id_submenu_columns")
+
+        //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A_form, null, "id_submenu_download_ex2a", urls.url_grade_download_ex2a, true);  // true = download
         //if (permit.approve_grade){
         //    AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MAG_Open("approve")});
         //}
@@ -389,11 +421,27 @@ document.addEventListener
         console.log( "===== HandleBtnSelect ========= ", data_btn);
         // function is called by MSSSS_Response, select_btn.click, DatalistDownload after response.setting_dict
 
-        if(data_btn){selected_btn = data_btn;}
-        if(!selected_btn){selected_btn = "btn_exams"}
+// ---  get data_btn from selected_btn when null;
+        if (!data_btn) {data_btn = selected_btn};
+
+// check if data_btn exists, gave error because old btn name was still in saved setting PR2021-09-07 debug
+        const btns_allowed = ["btn_ep_01", "btn_reex"];
+        if (setting_dict.no_centralexam) {b_remove_item_from_array(btns_allowed, "btn_reex")};
+
+        if (data_btn && btns_allowed.includes(data_btn)) {
+            selected_btn = data_btn;
+        } else {
+            selected_btn = "btn_ep_01";
+        };
+
+// ---  upload new selected_btn, not after loading page (then skip_upload = true)
+        if(!skip_upload){
+            const upload_dict = {page_exams: {sel_btn: selected_btn}};
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+        };
 
 // ---  highlight selected button
-        //highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
+        highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
 
 // --- update header text - comes after MSSSS_display_in_sbr
         UpdateHeaderLeft();
@@ -423,41 +471,6 @@ document.addEventListener
         //console.log( "setting_dict.sel_exam_pk: ", setting_dict.sel_exam_pk);
     }  // HandleTblRowClicked
 
-//=========  HandleSelectRowClicked  ================ PR2020-12-16
-    function HandleSelectRowClicked_NIU(tr_clicked) {
-        console.log("=== HandleSelectRowClicked");
-        console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
-        const tblName = get_attr_from_el(tr_clicked, "data-table")
-        console.log( "tblName: ", tblName);
-
-        if (tblName === "select_student") {
-             setting_dict.sel_student_pk = null;
-        } else if (tblName === "select_subject") {
-            setting_dict.sel_subject_pk = null;
-        }
-
-// ---  deselect all highlighted rows - also tblFoot , highlight selected row
-        DeselectHighlightedRows(tr_clicked, cls_selected);
-        tr_clicked.classList.add(cls_selected)
-
-// ---  update setting_dict.sel_student_pk or setting_dict.sel_subject_pk
-        // only select employee from select table
-        const row_id = tr_clicked.id
-        if(row_id){
-            const data_map = (tblName === "select_student") ? student_map :
-                              (tblName === "select_subject") ? subject_map : null;
-            const map_dict = get_mapdict_from_datamap_by_id(data_map, row_id)
-            if (tblName === "select_student") {
-                 setting_dict.sel_student_pk = map_dict.id;
-            } else if (tblName === "select_subject") {
-                setting_dict.sel_subject_pk = map_dict.id;
-            }
-        }
-        console.log( "setting_dict.sel_student_pk: ", setting_dict.sel_student_pk);
-        console.log( "setting_dict.sel_subject_pk: ", setting_dict.sel_subject_pk);
-
-        FillTblRows();
-    }  // HandleSelectRowClicked_NIU
 
 //=========  HandleSbrPeriod  ================ PR2020-12-20
     function HandleSbrPeriod(el_select) {
@@ -477,7 +490,7 @@ document.addEventListener
 
 // ---  upload new setting
         //const upload_dict = {selected_pk: {sel_examperiod: setting_dict.sel_examperiod}};
-        //b_UploadSettings (upload_dict, url_settings_upload);
+        //b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
 // ---  upload new setting
         let new_setting = {page_exams: {mode: "get"},
@@ -503,7 +516,7 @@ document.addEventListener
 
 // ---  upload new setting
         const upload_dict = {selected_pk: {sel_examtype: setting_dict.sel_examtype}};
-        b_UploadSettings (upload_dict, url_settings_upload);
+        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
         FillTblRows();
     }  // HandleSbrExamtype
@@ -518,7 +531,7 @@ document.addEventListener
 
 // ---  upload new setting
         const upload_dict = {selected_pk: {sel_lvlbase_pk: setting_dict.sel_lvlbase_pk}};
-        b_UploadSettings (upload_dict, url_settings_upload);
+        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
         UpdateHeaderLeft();
 
@@ -547,7 +560,7 @@ document.addEventListener
                 setting_dict.sel_examtype = first_option;
     // ---  upload new setting
                 const upload_dict = {selected_pk: {sel_examtype: setting_dict.sel_examtype}};
-                b_UploadSettings (upload_dict, url_settings_upload);
+                b_UploadSettings (upload_dict, urls.url_usersetting_upload);
             }
         }
 
@@ -641,7 +654,7 @@ document.addEventListener
         //const page_grade_dict = {sel_btn: "grade_by_all"}
        //const upload_dict = {selected_pk: selected_pk_dict, page_grade: page_grade_dict};
         const upload_dict = {selected_pk: selected_pk_dict};
-        b_UploadSettings (upload_dict, url_settings_upload);
+        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
         HandleBtnSelect("grade_by_all", true) // true = skip_upload
         // also calls: FillTblRows(), MSSSS_display_in_sbr(), UpdateHeader()
@@ -675,12 +688,22 @@ document.addEventListener
         const data_map = (!!permit_dict.requsr_role_school) ? grade_with_exam_map : exam_map;
 
         console.log( "data_map", data_map);
+        console.log( "mod_MCOL_dict", mod_MCOL_dict);
+
+// ---  get list of hidden columns
+        // copy col_hidden from mod_MCOL_dict.cols_hidden
+        const col_hidden = [];
+        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+        // hide level when not level_req
+        //if(!setting_dict.sel_dep_level_req){col_hidden.push("lvl_abbrev")};
+
+
 // --- reset table
         tblHead_datatable.innerText = null;
         tblBody_datatable.innerText = null;
 
 // --- create table header
-        CreateTblHeader(field_setting);
+        CreateTblHeader(field_setting, col_hidden);
 
 // --- loop through data_map
         //console.log( "data_map", data_map);
@@ -705,14 +728,14 @@ document.addEventListener
                     //const order_by = schoolcode_sliced +  ( (map_dict.username) ? map_dict.username.toLowerCase() : "");
                     const order_by = null; // TODO
                     const row_index = -1; // t_get_rowindex_by_sortby(tblBody_datatable, order_by)
-                    let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict, order_by, row_index)
+                    let tblRow = CreateTblRow(tblName, field_setting, map_id, map_dict, col_hidden, order_by, row_index)
                 };
           };
         };
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-12-03 PR2020-12-18 PR2021-01-022
-    function CreateTblHeader(field_setting) {
+    function CreateTblHeader(field_setting, col_hidden) {
         //console.log("===  CreateTblHeader ===== ");
 
 // +++  insert header and filter row ++++++++++++++++++++++++++++++++
@@ -726,7 +749,7 @@ document.addEventListener
             const field_name = field_setting.field_names[j];
 
 // skip columns if in columns_hidden
-            if (!columns_hidden[field_name]){
+            if (!col_hidden.includes(field_name)){
                 const field_caption = loc[field_setting.field_caption[j]]
                 const field_tag = field_setting.field_tags[j];
                 const filter_tag = field_setting.filter_tags[j];
@@ -792,7 +815,7 @@ document.addEventListener
     };  //  CreateTblHeader
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-05-23
-    function CreateTblRow(tblName, field_setting, map_id, map_dict, order_by, row_index) {
+    function CreateTblRow(tblName, field_setting, map_id, map_dict, col_hidden, order_by, row_index) {
         //console.log("=========  CreateTblRow =========");
         //console.log("field_setting", field_setting);
 
@@ -916,7 +939,9 @@ document.addEventListener
                 if (field_name ==="select"){
                     // pass
                 } else if (field_name ==="status"){
-                    el_div.className = b_get_status_iconclass(map_dict.se_published_id, map_dict.se_auth1by_id, map_dict.se_auth2by_id, map_dict.se_auth3by_id);
+                    el_div.className = b_get_status_iconclass(map_dict.se_published_id, map_dict.se_blocked,
+                                        map_dict.se_auth1by_id, map_dict.se_auth2by_id,
+                                        map_dict.se_auth3by_id, map_dict.se_auth4by_id);
                 } else if (field_name === "examperiod"){
                     inner_text = loc.examperiod_caption[map_dict.examperiod];
                     el_div.innerText = inner_text;
@@ -934,21 +959,21 @@ document.addEventListener
                 } else if (field_name === "printpdf"){
             // +++  create href and put it in button PR2021-05-07
                     const href_str = map_dict.id.toString()
-                    let href = url_exam_download_exam_pdf.replace("-", href_str);
+                    let href = urls.url_exam_download_exam_pdf.replace("-", href_str);
                     el_div.href = href;
                 } else if (field_name === "printjson"){
             // +++  create href and put it in button PR2021-05-07
                     const href_str = map_dict.id.toString()
-                    let href = url_exam_download_exam_json.replace("-", href_str);
+                    let href = urls.url_exam_download_exam_json.replace("-", href_str);
                     el_div.href = href;
 
                 } else if (field_name === "filename"){
                     const name = (map_dict.name) ? map_dict.name : null;
                     const file_path = (map_dict.filepath) ? map_dict.filepath : null;
                     if (file_path){
-                        // url_download_published = "/grades/download//0/"
-                        const len = url_download_published.length;
-                        const href = url_download_published.slice(0, len - 2) + map_dict.id +"/"
+                        // urls.url_download_published = "/grades/download//0/"
+                        const len = urls.url_download_published.length;
+                        const href = urls.url_download_published.slice(0, len - 2) + map_dict.id +"/"
                         //el_div.setAttribute("href", href);
                         //el_div.setAttribute("download", name);
                         el_div.title = loc.Download_Exform;
@@ -967,12 +992,6 @@ document.addEventListener
         }
     };  // UpdateField
 
-//========= set_columns_hidden  ====== PR2021-05-07
-    function set_columns_hidden() {
-        //console.log( "===== set_columns_hidden  === ");
-        //console.log("setting_dict.sel_dep_level_req", setting_dict.sel_dep_level_req);
-        columns_hidden.lvl_abbrev = (!setting_dict.sel_dep_level_req);
-    }  // set_columns_hidden
 
 //###########################################################################
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++++++++++++++++++++++++++
@@ -1109,7 +1128,7 @@ document.addEventListener
                                                            examtype: examtype,
 
                                                            grade_pk: map_dict.id};
-                                    UploadChanges(upload_dict, url_grade_approve);
+                                    UploadChanges(upload_dict, urls.url_grade_approve);
                                 } //  if (double_approved))
                             }  // if (!grade_value)
                         }  // if (published_pk)
@@ -1133,14 +1152,14 @@ document.addEventListener
 
        // window.open = '/ticket?orderId=' + pk_int;
 
-        // UploadChanges(upload_dict, url_download_published);
+        // UploadChanges(upload_dict, urls.url_download_published);
         const upload_dict = { published_pk: pk_int};
         if(!isEmpty(upload_dict)) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
             let response = "";
             $.ajax({
                 type: "POST",
-                url: url_download_published,
+                url: urls.url_download_published,
                 data: parameters,
                 dataType:'json',
             success: function (response) {
@@ -1194,7 +1213,7 @@ document.addEventListener
 
         // PR2021-03-06 from https://stackoverflow.com/questions/1999607/download-and-open-pdf-file-using-ajax
         //$.ajax({
-        //    url: url_download_published,
+        //    url: urls.url_download_published,
         //    success: download.bind(true, "<FILENAME_TO_SAVE_WITH_EXTENSION>", "application/pdf")
         //    });
 
@@ -1272,7 +1291,7 @@ document.addEventListener
                 //let order_by = (update_dict.fullname) ? update_dict.fullname.toLowerCase() : ""
                 const order_by = null; // TODO
                 const row_index = t_get_rowindex_by_sortby(tblBody_datatable, order_by);
-                tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict, order_by, row_index);
+                tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict, col_hidden, order_by, row_index);
     // ---  scrollIntoView,
                 if(tblRow){
                     tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
@@ -1591,7 +1610,7 @@ document.addEventListener
             }
             const map_dict = get_mapdict_from_datamap_by_id(exam_map, mod_MEX_dict.map_id);
 
-            UploadChanges(upload_dict, url_grade_upload);
+            UploadChanges(upload_dict, urls.url_grade_upload);
 
 
         }  // if(permit_dict.permit_crud){
@@ -1956,7 +1975,7 @@ document.addEventListener
                 if(keys_str) {keys_str = keys_str.slice(1)};
                 upload_dict.keys = (keys_str) ? keys_str : null;
             }
-            UploadChanges(upload_dict, url_exam_upload);
+            UploadChanges(upload_dict, urls.url_exam_upload);
         };  // if(has_permit_edit
 
 // ---  hide modal
@@ -2005,7 +2024,7 @@ document.addEventListener
 
         console.log( "upload_dict: ", upload_dict);
 
-            UploadChanges(upload_dict, url_grade_upload);
+            UploadChanges(upload_dict, urls.url_grade_upload);
         };  // if(has_permit_edit
 
 // ---  hide modal
@@ -3005,9 +3024,9 @@ document.addEventListener
 
 // +++  create href and put it in save button PR2021-05-06
             if (href_str){
-                let href = url_exam_download_exam_pdf.replace("-", href_str);
+                let href = urls.url_exam_download_exam_pdf.replace("-", href_str);
                 console.log ("href_str", href_str)
-                console.log ("url_exam_download_exam_pdf", url_exam_download_exam_pdf)
+                console.log ("urls.url_exam_download_exam_pdf", urls.url_exam_download_exam_pdf)
                 console.log ("href", href)
                 el_confirm_btn_save.setAttribute("href", href)
                 // target="_blank opens file in new tab
@@ -3039,7 +3058,7 @@ document.addEventListener
                                 depbase_pk: mod_dict.depbase_pk,
                                 subject_pk: mod_dict.subject_pk,
                                 };
-            UploadChanges(upload_dict, url_exam_upload);
+            UploadChanges(upload_dict, urls.url_exam_upload);
         };
 // ---  hide modal
         //if(close_modal) {
@@ -3218,7 +3237,7 @@ document.addEventListener
         if (tblName === "school") {
             // not enabled on this page
         } else {
-            b_UploadSettings ({selected_pk: selected_pk_dict}, url_settings_upload);
+            b_UploadSettings ({selected_pk: selected_pk_dict}, urls.url_usersetting_upload);
             if (new_selected_btn) {
         // change selected_button
                 HandleBtnSelect(new_selected_btn, true)  // true = skip_upload
@@ -3252,7 +3271,7 @@ document.addEventListener
             }
 
         }
-        b_UploadSettings ({selected_pk: selected_pk_dict}, url_settings_upload);
+        b_UploadSettings ({selected_pk: selected_pk_dict}, urls.url_usersetting_upload);
 
         if (new_selected_btn) {
     // change selected_button

@@ -1,87 +1,84 @@
 # PR2021-01-17
 from decimal import Decimal
 from django.utils.translation import ugettext_lazy as _
+
 from awpr import constants as c
-from grades import calculations as calc
-from awpr import locale as loc
+from awpr import settings as s
 
-from students import models as stud_mod
-
+from grades import calculations as grade_calc
 import logging
 logger = logging.getLogger(__name__)
 
-def update_finalgrade(grade, logging_on):
+
+def calc_sesr_pece_final_grade(is_ep_exemption, has_practexam, gradetype, weight_se, weight_ce,
+                               has_sr, se_grade, sr_grade, pe_grade, ce_grade):  # PR2021-12-28
+    # only called by GradeUploadView.recalc_finalgrade_in_grade_and_save
+    # this function does not save the grade_instance
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ------- update_finalgrade -------')
+        logger.debug(' ------- calc_sesr_pece_final_grade -------')
 
-    studentsubject = grade.studentsubject
-    schemeitem = studentsubject.schemeitem
-    gradetype = schemeitem.gradetype
-    weight_se = schemeitem.weight_se
-    weight_ce = schemeitem.weight_ce
+    # - when second or third examperiod: get se_grade and pe_grade from first examperiod,
+    # and store them in second or third examperiod
+    # NOT ANY MORE: se, sr and pe grades are already stored in grade reex and reex03 when updating
 
-    se_grade = None
-    pe_grade = None
-    finalgrade = None
+    sesr_grade, pece_grade, finalgrade = None, None, None
+    try:
+        if logging_on:
+            logger.debug('gradetype: ' + str(gradetype))
+            logger.debug('weight_se: ' + str(weight_se))
+            logger.debug('weight_ce: ' + str(weight_ce))
+            logger.debug('se_grade: ' + str(se_grade) + ' ' + str(type(se_grade)))
+            logger.debug('sr_grade: ' + str(sr_grade) + ' ' + str(type(sr_grade)))
+            logger.debug('pe_grade: ' + str(pe_grade) + ' ' + str(type(pe_grade)))
+            logger.debug('ce_grade: ' + str(ce_grade) + ' ' + str(type(ce_grade)))
 
-# - when second or third examperiod: get se_grade and pe_grade from first examperiod,
-    if grade.examperiod == c.EXAMPERIOD_SECOND or grade.examperiod == c.EXAMPERIOD_THIRD:
-        # get grade of first examperiod
-        grade_first_period = stud_mod.Grade.objects.get_or_none(
-            studentsubject=studentsubject,
-            examperiod=c.EXAMPERIOD_FIRST
-        )
-        if grade_first_period is None:
-            count_grade_first_period = stud_mod.Grade.objects.filter(
-                studentsubject=studentsubject,
-                examperiod=c.EXAMPERIOD_FIRST
-            ).count()
-            logger.error('ERROR: ' + count_grade_first_period + ' grades found in first examperiod.')
-            logger.error('       subject: ' + str(schemeitem.subject.base.code))
-            logger.error('       student: ' + str(studentsubject.student))
-        else:
+# ++++  calculate finalgrade when gradetype is character
+        if gradetype == c.GRADETYPE_02_CHARACTER:
+    # - calculate sesr_grade
+            sesr_grade, se_noinput, sr_noinput = calc_sesr_char(se_grade, sr_grade, has_sr, weight_se)
+    # - calculate finalgrade
+            finalgrade = calc_finalgrade_char(sesr_grade, se_noinput, sr_noinput, weight_se)
 
-# - when second / third examperiod: get se_grade and pe_grade from grade_first_period
-            se_grade = grade_first_period.segrade
-            pe_grade = grade_first_period.pegrade
-    else:
+# ++++  calculate finalgrade when gradetype is number
+        elif gradetype == c.GRADETYPE_01_NUMBER:
 
-# - when first examperiod or exemption: get se_grade and pe_grade from grade
-        se_grade = grade.segrade
-        pe_grade = grade.pegrade
-
-# - get ce_grade always from grade
-    ce_grade = grade.cegrade
-
-# - calculate finalgrade when gradetype is character
-    if gradetype == c.GRADETYPE_02_CHARACTER:
-        if grade.examperiod == c.EXAMPERIOD_SECOND:
-            finalgrade = calc_finalgrade_char_reex_corona(se_grade, ce_grade, weight_se, logging_on)
-        else:
-            finalgrade = se_grade
-
-# - calculate finalgrade when gradetype is number
-    elif gradetype == c.GRADETYPE_01_NUMBER:
+    # - calculate se_sr
+            sesr_decimal, se_noinput, sr_noinput = calc_sesr_decimal(is_ep_exemption, se_grade, sr_grade, has_sr, weight_se)
+            sesr_grade = str(sesr_decimal) if sesr_decimal else None
 
     # - calculate pe_ce
-        has_practex = schemeitem.has_practexam
-        pece_grade = calc_pece_grade(grade.examperiod, has_practex, ce_grade, pe_grade, logging_on)
-        setattr(grade, 'pecegrade', pece_grade)
+            pece_decimal, pe_noinput, ce_noinput = calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce,
+                                                                     has_practexam)
+            pece_grade = str(pece_decimal) if pece_decimal else None
 
-        finalgrade = calc_final_grade(se_grade, pece_grade, weight_se, weight_ce, logging_on)
+    # - sesr_noinput = True if als weight_se > 0 and  se_noinput = True or sr_noinput = True
+            sesr_noinput = weight_se > 0 and (se_noinput or sr_noinput)
 
-    setattr(grade, 'finalgrade', finalgrade)
+    # - pece_noinput = True if als weight_ce > 0 and  pe_noinput = True or ce_noinput = True
+            pece_noinput = weight_ce > 0 and (pe_noinput or ce_noinput)
 
-# --- end of calc_final_grade
+    # - calculate finalgrade
+            finalgrade = calc_final_grade_number(sesr_decimal, pece_decimal,
+                                                sesr_noinput, pece_noinput,
+                                                weight_se, weight_ce)
 
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
 
-def calc_final_grade(se_grade, pece_grade, weight_se, weight_ce, logging_on):
+    return sesr_grade, pece_grade, finalgrade
+# --- end of calc_sesr_pece_final_grade
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+def calc_final_grade_number(sesr_decimal, pece_decimal, sesr_noinput, pece_noinput, weight_se, weight_ce):
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- calc_final_grade -----')
-        logger.debug('se_grade: ' + str(se_grade) + ' ' + str(type(se_grade)))
-        logger.debug('pece_grade: ' + str(pece_grade) + ' ' + str(type(pece_grade)))
-        logger.debug('weight_se: ' + str(weight_se) + ' ' + str(type(weight_se)))
-        logger.debug('weight_ce: ' + str(weight_ce) + ' ' + str(type(weight_ce)))
+        logger.debug(' ----- calc_final_grade_number -----')
+        logger.debug('sesr_decimal: ' + str(sesr_decimal) + ' ' + str(type(sesr_decimal)))
+        logger.debug('pece_decimal: ' + str(pece_decimal) + ' ' + str(type(pece_decimal)))
+        logger.debug('sesr_noinput: ' + str(sesr_noinput))
+        logger.debug('pece_noinput: ' + str(pece_noinput))
 
     """
     #'+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -94,46 +91,50 @@ def calc_final_grade(se_grade, pece_grade, weight_se, weight_ce, logging_on):
     #'+                                                                           +
     #'+  Eindcijfer             = Int(0.5 + EindcijferNietAfgerond)               +
     #'+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   
+    HERKANSING - Function Calculations.CalcEindcijfer_Crc_Corona
+            'PR2020-05-12 eindcijfer berekening ten tijde van Corona:
+        ' - in eerste tijdvak is eindcijfer gelijk aan SE cijfer
+        ' - in tweede tijdvak (herkansing) is berekening als in mail Esther:
+        ' - vrijstelling berekent eindcijfer op de normale manier, doorloopt de functie CalcEindcijfer_Crc
+        ' - derde tijdvak is niet van toepassing
+        
+        'mail Esther ETE 1 mei 2020:
+           ' Het cijfer voor de extra her-toets wordt bepaald op één decimaal en telt voor 50% mee,
+           ' het eerder behaalde SE-resultaat voor dat vak ook voor 50%.
+           ' Beide cijfers worden gemiddeld en dat is het nieuwe eindcijfer.
+           ' Dit geldt niet als het gemiddelde resultaat lager is dan het SE-resultaat.
+           ' In dat geval is het Eindcijfer gelijk aan het eerder behaalde SE-resultaat.
+
+        'ook de op 1 decimaal afgerond eindcijfer is een return value, voor weergave op de cijferlijst.
+        'daarom crcSEcijfer_na_herkansing() als byref parameter opgenomen.
+        
+        'PR2020-05-29 debug: Lorraine Wieske JPD: SE_na_herkansing verschijnt niet op cijferlijst,
+        ' aparte parameter crcSEcijfer_na_herkansing() gemaakt
     """
 
     final_grade = None
-
-# - no_se_grade = True if als weight_se > 0 and  se_decimal is None or 0
-    no_se_grade = (weight_se > 0 and not se_grade)
-
-# - no_pece_grade = True if als weight_ce > 0 and  pece_decimal is None or 0
-    # note: if pe_number = 0 or None, pece_decimal = 0. Therefore you don't have to check if pe_number has value
-    no_pece_grade = (weight_ce > 0 and not pece_grade)
-
-    if no_se_grade or no_pece_grade:
-        if not no_se_grade:
-            final_grade = se_grade
-        elif not no_pece_grade:
-            final_grade = pece_grade
-    else:
-        if se_grade and pece_grade:
-            se_grade_dot = se_grade.replace(',', '.')
-            pece_grade_dot = pece_grade.replace(',', '.')
-            decimal_notrounded = (Decimal(se_grade_dot) * Decimal(str(weight_se)) +
-                                     Decimal(pece_grade_dot) * Decimal(str(weight_ce))) \
-                                    / (Decimal(str(weight_se)) + Decimal(str(weight_ce)))
-        elif se_grade:
-            se_grade_dot = se_grade.replace(',', '.')
-            decimal_notrounded = Decimal(se_grade_dot)
-        elif pece_grade:
-            pece_grade_dot = pece_grade.replace(',', '.')
-            decimal_notrounded = Decimal(pece_grade_dot)
+    if not sesr_noinput and not pece_noinput:
+        weight_se_decimal = Decimal(str(weight_se))
+        weight_ce_decimal = Decimal(str(weight_ce))
+        if sesr_decimal and pece_decimal:
+            final_decimal_notrounded = (sesr_decimal * weight_se_decimal + pece_decimal * weight_ce_decimal) \
+                                        /( weight_se_decimal + weight_ce_decimal)
+        elif sesr_decimal:
+            final_decimal_notrounded = sesr_decimal
+        elif pece_decimal:
+            final_decimal_notrounded = pece_decimal
         else:
-            decimal_notrounded = None
+            final_decimal_notrounded = None
         if logging_on:
-            logger.debug('decimal_notrounded: ' + str(decimal_notrounded) + ' ' + str(type(decimal_notrounded)))
+            logger.debug('final_decimal_notrounded: ' + str(final_decimal_notrounded) + ' ' + str(type(final_decimal_notrounded)))
 
-        if decimal_notrounded:
-            output_decimal = decimal_notrounded.quantize(Decimal("1"), rounding='ROUND_HALF_UP')
+        if final_decimal_notrounded:
+            final_decimal_rounded = final_decimal_notrounded.quantize(Decimal("1"), rounding='ROUND_HALF_UP')
             if logging_on:
-                logger.debug('output_decimal: ' + str(output_decimal) + ' ' + str(type(output_decimal)))
-            final_dot = str(output_decimal)
-            final_grade = final_dot.replace('.', ',')
+                logger.debug('final_decimal_rounded: ' + str(final_decimal_rounded) + ' ' + str(type(final_decimal_rounded)))
+            # final_decimal_rounded is integer , so no need for: final_grade = final_dot.replace('.', ',')
+            final_grade = str(final_decimal_rounded)
         else:
             final_grade = None
 
@@ -141,49 +142,174 @@ def calc_final_grade(se_grade, pece_grade, weight_se, weight_ce, logging_on):
         logger.debug('final_grade: ' + str(final_grade) + ' ' + str(type(final_grade)))
 
     return final_grade
-# --- end of calc_final_grade
+# --- end of calc_final_grade_number
 
 
-def calc_finalgrade_char_reex_corona(se_grade, ce_grade, weight_se, logging_on):
+def calc_finalgrade_char(sesr_grade, se_noinput, sr_noinput, weight_se):  # PR2021-12-15
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- calc_finalgrade_char_reex_corona -----')
-        logger.debug('se_grade: ' + str(se_grade) + ' ce_grade: ' + str(se_grade) + ' weight_se: ' + str(weight_se))
-    # PR2020-05-15 Corona: Herkansing mogelijk bij ovg vakken. her-cijfer wordt in cegrade gezet
-    # berekening:
-    # - gebruik SE cijfer als herkansing lager is dan SE of gelijk aan SE
-    # - bereken'gemiddelde' van se en ce als herkansing hoger is dan SE: v + g > g;  o + g > v (geen g !); o + v > v
+        logger.debug(' ----- calc_finalgrade_char -----')
+        logger.debug('sesr_grade: ' + str(sesr_grade) + ' se_noinput: ' + str(se_noinput) + ' sr_noinput: ' + str(sr_noinput) + ' weight_se: ' + str(weight_se))
+
     final_grade = None
     if weight_se:
-        if se_grade and ce_grade and se_grade != ce_grade:
-            if se_grade == 'g':
-                # gebruik SE cijfer als herkansing lager is dan SE
-                final_grade = 'g'
-            elif se_grade == 'v':
-                if ce_grade == 'g':
-                    #gemiddeld eindcijfer v + g > g
-                    final_grade = 'g'
-                elif ce_grade == 'o':
-                    #' gebruik SE cijfer als herkansing lager is dan SE
-                    final_grade = 'v'
-            elif se_grade == 'o':
-                # gemiddeld eindcijfer o + g > v (geen g !!!)
-                # gemiddeld eindcijfer o + v > v
-                final_grade = 'v'
-        else:
-            final_grade = se_grade
+        # if there is no sr: sr_noinput = False
+        if not se_noinput and not sr_noinput:
+            final_grade = sesr_grade
 
     if logging_on:
         logger.debug( 'final_grade: ' + str(final_grade))
     return final_grade
+# --- end of calc_finalgrade_char
 
 
-def calc_pece_grade(examperiod_int, has_practex, ce_grade, pe_grade, logging_on):  # PR2021-01-18 PR2021-09-1820
+def calc_sesr_char(se_grade, sr_grade, has_sr, weight_se):  # PR2021-12-15
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- calc_pece_grade -----')
-        logger.debug('examperiodt: ' + str(examperiod_int))
-        logger.debug('has_practex: ' + str(has_practex))
-        logger.debug('ce_grade   : ' + str(ce_grade))
-        logger.debug('pe_grade   : ' + str(pe_grade))
+        logger.debug(' ----- calc_sesr_char -----')
+        logger.debug('se_grade: ' + str(se_grade) + ' sr_grade: ' + str(sr_grade) + ' has_sr: ' + str(has_sr))
+
+    # PR2020-05-15 Corona: Herkansing mogelijk bij ovg vakken. her-cijfer wordt in cegrade gezet
+    # berekening:
+    # - gebruik SE cijfer als herkansing lager is dan SE of gelijk aan SE
+    # - bereken'gemiddelde' van se en ce als herkansing hoger is dan SE:
+    #   v + g > g;
+    #   o + g > v  LET OP: geen g !
+    #   o + v > v
+
+# - reset output variabelen
+    se_noinput = False
+    sr_noinput = False
+    sesr_grade = None
+
+# - skip if weight_se = 0, no error
+    if weight_se:
+
+# - check if se_grade has value, if so: set se_noinput = True
+        if not se_grade:
+            se_noinput = True
+        else:
+
+# if subject has no herkansing: sesr_grade = se_grade
+            if not has_sr:
+                sesr_grade = se_grade
+
+# - check if sr_grade has no value, if so: set sr_noinput = True
+            elif not sr_grade:
+                sr_noinput = True
+            else:
+                if se_grade == sr_grade:
+                    sesr_grade = se_grade
+                else:
+                    if se_grade.lower() == 'g':
+                        # gebruik SE cijfer als herkansing lager is dan SE
+                        sesr_grade = 'g'
+                    elif se_grade.lower() == 'v':
+                        if sr_grade == 'g':
+                            #gemiddeld eindcijfer v + g > g
+                            sesr_grade = 'g'
+                        elif sr_grade.lower() == 'o':
+                            #' gebruik SE cijfer als herkansing lager is dan SE
+                            sesr_grade = 'v'
+                    elif se_grade.lower() == 'o':
+                        # gemiddeld eindcijfer o + g > v (geen g !!!)
+                        # gemiddeld eindcijfer o + v > v
+                        sesr_grade = 'v'
+    if logging_on:
+        logger.debug( 'sesr_grade: ' + str(sesr_grade))
+    return sesr_grade, se_noinput, sr_noinput
+# --- end of calc_sesr_char
+
+
+def calc_sesr_decimal(is_ep_exemption, se_grade, sr_grade, has_sr, weight_se):  # PR2021-12-13
+    # from AWP Calculations.CalcEindcijfer_SeFinal PR2021-04-12
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- calc_sesr_decimal -----')
+        logger.debug('... is_ep_exemption:  ' + str(is_ep_exemption))
+        logger.debug('... se_grade: ' + str(se_grade) + ' ' + str(type(se_grade)))
+        logger.debug('... sr_grade: ' + str(sr_grade) + ' ' + str(type(sr_grade)))
+        logger.debug('... has_sr: ' + str(has_sr))
+        logger.debug('... weight_se: ' + str(weight_se))
+
+# - reset output variabelen
+    se_noinput = False
+    sr_noinput = False
+    sesr_decimal = None
+
+# - skip when second or third examperiod, no error
+    # in examperiod reex and reex03 the fields se_grade, sr_grade and sesr_grade are not used
+    # PR2021-12-21 not correct: must also calc sesrgrade; se_grade znd sr_grade got value from examperiod 1
+    # was: if examperiod_int in (c.EXAMPERIOD_EXEMPTION, c.EXAMPERIOD_FIRST):
+
+# - skip if weight_se = 0, no error
+    if weight_se:
+
+# - check if se_grade has value, if so: set se_noinput = True
+        if not se_grade:
+            se_noinput = True
+        else:
+
+# - in se_grade: replace comma by dot, convert to decimal
+            se_dot_nz = se_grade.replace(',', '.') if se_grade else "0"
+            se_decimal_A = Decimal(se_dot_nz)
+            if logging_on:
+                logger.debug('... se_decimal_A: ' + str(se_decimal_A) + ' ' + str(type(se_decimal_A)))
+
+# if examperiod exemption: sesr_grade = se_grade
+            if is_ep_exemption:
+                sesr_decimal = se_decimal_A
+            else:
+
+# if subject has no herkansing: sesr_grade = se_grade
+                if not has_sr:
+                    sesr_decimal = se_decimal_A
+
+# - check if sr_grade has no value, if so: set sr_noinput = True
+                elif not sr_grade:
+                    sr_noinput = True
+                else:
+
+# - in sr_grade: replace comma by dot, convert to decimal
+                    sr_dot_nz = sr_grade.replace(',', '.') if sr_grade else "0"
+                    sr_decimal_B = Decimal(sr_dot_nz)
+
+# - check if sr_grade > se_grade:
+                    compare_se_sr = sr_decimal_B.compare(se_decimal_A)
+                    if logging_on:
+                        logger.debug('... sr_decimal_B: ' + str(sr_decimal_B) + ' ' + str(type(sr_decimal_B)))
+                        logger.debug('... compare_se_sr: ' + str(compare_se_sr))
+
+# - if sr_grade > se_grade:
+                    if compare_se_sr == 1:  # b.compare(a) == 1 means b > a
+
+# calculate average se_grade, only when sr_grade > se_grade
+                        sesr_decimal_not_rounded = ( se_decimal_A + sr_decimal_B ) / Decimal("2")
+
+# round to one digit after dot
+                        sesr_decimal = grade_calc.round_decimal(sesr_decimal_not_rounded, 1)
+                    else:
+
+# if sr_grade <= se_grade: sesr_grade = se_grade
+                        sesr_decimal = se_decimal_A
+
+    if logging_on:
+        logger.debug('... sesr_decimal: ' + str(sesr_decimal) + ' ' + str(type(sesr_decimal)))
+        logger.debug('... se_noinput: ' + str(se_noinput) + ' sr_noinput: ' + str(sr_noinput))
+    return sesr_decimal, se_noinput, sr_noinput
+# - end of calc_sesr_decimal
+
+
+def calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce, has_practexam):  # PR2021-01-18 PR2021-09-18 PR2021-12-14
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- calc_pece_decimal -----')
+        logger.debug('... is_ep_exemption:  ' + str(is_ep_exemption))
+        logger.debug('... ce_grade: ' + str(ce_grade) + ' ' + str(type(ce_grade)))
+        logger.debug('... pe_grade: ' + str(pe_grade) + ' ' + str(type(pe_grade)))
+        logger.debug('... weight_ce: ' + str(weight_ce))
+        logger.debug('... has_practexam: ' + str(has_practexam))
+
     """
     #'+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     #'+  PeCEcijferNietAfgerond = (PEcijfer + CEcijfer) / 2                       +
@@ -196,36 +322,59 @@ def calc_pece_grade(examperiod_int, has_practex, ce_grade, pe_grade, logging_on)
     # -  bij vrijstelling wordt geen PE ingevuld, daarom is pece_number gelijk aan ce_number
     #  - Corona: geen PE bij Corona: If pblAfd.IsCorona Then vsi_HasPraktijkex = False
 
-    pece_grade = None
-    if examperiod_int in (c.EXAMPERIOD_FIRST, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
-        # 'a. bij praktijkexamen: bereken PeCecijfer uit CE en PE cijfer
-        if has_practex:
-# '1. PEcijfer en CEcijfer moeten beide zijn ingevuld
-            if ce_grade and pe_grade:
-                ce_dot = ce_grade.replace(',', '.')
-                pe_dot = pe_grade.replace(',', '.')
-# '2. bereken gemiddeld PeCe-cijfer
-                pece_decimal = ( Decimal(ce_dot) + Decimal(pe_dot) ) / Decimal("2")
-                if logging_on:
-                    logger.debug('pece_decimal: ' + str(pece_decimal) + ' ' + str(type(pece_decimal)))
-# '3. rond af op 1 cijfer achter de komma
-                output_decimal = pece_decimal.quantize(Decimal("1.0"), rounding='ROUND_HALF_UP')
-                if logging_on:
-                    logger.debug('output_decimal: ' + str(output_decimal) + ' ' + str(type(output_decimal)))
-                pece_dot = str(output_decimal) if output_decimal else None
-                if pece_dot:
-                    pece_grade = pece_dot.replace('.', ',')
+# - reset output variabelen
+    ce_noinput = False
+    pe_noinput = False
+    pece_decimal = None
+
+# - skip if weight_ce = 0, no error
+    if weight_ce:
+
+# - check if ce_grade has value, if so: set ce_noinput = True
+        if not ce_grade:
+            ce_noinput = True
+            if logging_on:
+                logger.debug('... ce_noinput = True')
         else:
-    #     'b. bij geen Vsi_HasPraktijkex is PeCe(Tv)=0 gelijk aan crcCE(Tv)
-            pece_grade = ce_grade
-    #         End If
-    elif examperiod_int == c.EXAMPERIOD_EXEMPTION:
-    #     'c. bij vrijstelling wordt geen PE ingevuld, daarom is PeCe(Tv)=0 gelijk aan crcCEvrijst
-        pece_grade = ce_grade
+
+# - in ce_grade: replace comma by dot, convert to decimal
+            ce_dot_nz = ce_grade.replace(',', '.') if ce_grade else "0"
+            ce_decimal_A = Decimal(ce_dot_nz)
+            if logging_on:
+                logger.debug('... ce_dot_nz: ' + str(ce_dot_nz) + ' ' + str(type(ce_dot_nz)))
+                logger.debug('... ce_decimal_A: ' + str(ce_decimal_A) + ' ' + str(type(ce_decimal_A)))
+
+# if subject has no practical exam: pece_grade = ce_grade
+# also if exemption: pece_grade = ce_grade
+            if not has_practexam or is_ep_exemption:
+                pece_decimal = ce_decimal_A
+
+# - check if pe_grade has no value, if so: set pe_noinput = True
+            elif not pe_grade:
+                pe_noinput = True
+            else:
+
+# - in pe_grade: replace comma by dot, convert to decimal
+                pe_dot_nz = pe_grade.replace(',', '.') if pe_grade else "0"
+                pe_decimal_B = Decimal(pe_dot_nz)
+
+# calculate average pece_grade
+                pece_decimal_not_rounded = (ce_decimal_A + pe_decimal_B) / Decimal("2")
+
+# round to one digit after dot
+                pece_decimal = grade_calc.round_decimal(pece_decimal_not_rounded, 1)
+                if logging_on:
+                    logger.debug('... pe_dot_nz: ' + str(pe_dot_nz) + ' ' + str(type(pe_dot_nz)))
+                    logger.debug('... pe_decimal_B: ' + str(pe_decimal_B) + ' ' + str(type(pe_decimal_B)))
+                    logger.debug('... pece_decimal_not_rounded: ' + str(pece_decimal_not_rounded) + ' ' + str(type(pece_decimal_not_rounded)))
+
     if logging_on:
-        logger.debug('... pece_grade: ' + str(pece_grade))
-    return pece_grade
-# --- end of calc_pece_grade
+        logger.debug('... pece_decimal: ' + str(pece_decimal) + ' ' + str(type(pece_decimal)))
+        logger.debug('... pe_noinput: ' + str(pe_noinput) + ' ' + str(type(pe_noinput)))
+        logger.debug('... ce_noinput: ' + str(ce_noinput) + ' ' + str(type(ce_noinput)))
+
+    return pece_decimal, pe_noinput, ce_noinput
+# --- end of calc_pece_decimal
 
 
 def get_score_from_inputscore(input_value, max_score):
@@ -234,7 +383,9 @@ def get_score_from_inputscore(input_value, max_score):
     # function converts input_value to whole number PR2021-01-18
 
 # 1. reset output variables
-    input_number, output_text, msg_err = 0, None, None
+    input_number, output_text = 0, None
+    err_list = []
+
 # 2. remove spaces before and after input_value
     imput_trim = input_value.strip() if input_value else ''
 # - exit if imput_trim has no value, without msg_err
@@ -259,79 +410,109 @@ def get_score_from_inputscore(input_value, max_score):
                 has_error = True
         if has_error:
             input_number = None
-            msg_err = str(_("Score '%(val)s' is not allowed.") % {'val': str(input_value)}  ) + "\n" + \
-                    str(_("The score must be a whole number between 0 and %(max)s.") % {'max': max_score})
+            err_list.append(str(_("Score '%(val)s' is not allowed.") % {'val': str(input_value)}))
+            if max_score:
+                err_list.append(str(_("The score must be a whole number between 0 and %(max)s.") % {'max': max_score}))
+            else:
+                err_list.append(str(_("The score must be a whole number.")))
 
-    return input_number, msg_err
+    return input_number, err_list
 # --- end of get_score_from_inputscore
 
 
-def get_grade_from_input_str(input_str, logging_on):
+def get_grade_number_from_input_str(input_str):
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_grade_number_from_input_str -----')
+        logger.debug('input_value: ' + str(input_str) + ' ' + str(type(input_str)))
+
+    output_str = None
+    err_list = []
+# - remove spaces before and after input_value
+    imput_trim = input_str.strip() if input_str else ''
+    if logging_on:
+        logger.debug('imput_trim: >' + str(imput_trim) + '< ' + str(type(imput_trim)))
+
+# - exit if imput_trim has no value, without msg_err
+    if imput_trim:
+        has_error = False
+
+# - remove all comma's and dots
+        input_replaced = imput_trim.replace(',', '')
+        input_replaced = input_replaced.replace('.', '')
+
+        if logging_on:
+            logger.debug('input_replaced: >' + str(input_replaced) + '< ' + str(type(input_replaced)))
+
+# check if input without dots is integer
+        input_int = 0
+        try:
+            input_int = int(input_replaced)
+        except:
+            has_error = True
+        if logging_on:
+            logger.debug('input_int: >' + str(input_int) + '< ' + str(type(input_int)))
+
+# check if input >= 1 and <= 100
+        if not has_error:
+            if input_int < 1:
+                has_error = True
+            elif input_int > 100:
+                has_error = True
+
+        if not has_error:
+            if input_int < 11:
+                # '0.9' must give error, not '9'
+                if input_replaced[0:1] == '0':
+                    has_error = True
+                else:
+                    output_str = str(input_int) + '.0'
+            elif input_int == 100:
+                output_str = '10.0'
+            else:
+                input_str = str(input_int)
+                # if input_int is between '11' en '99': put dot in the middle
+                output_str = ''.join((input_str[0:1], '.', input_str[1:]))
+
+        if has_error:
+            err_list.append(str(_("Grade '%(val)s' is not allowed.") % {'val': imput_trim}))
+            err_list.append(''.join((str(_('The grade must be a number between 1 and 10')), ',')))
+            err_list.append(str(_('with one digit after the decimal point.')))
+
+    if logging_on:
+        logger.debug('output_str: ' + str(output_str))
+        if err_list:
+            logger.debug('msg_list: ' + str(err_list))
+
+    return output_str, err_list
+# - end of get_grade_number_from_input_str
+
+
+def get_grade_char_from_input_str(input_str):
     logging_on = False
     if logging_on:
-        logger.debug(' ----- get_grade_from_input_str -----')
+        logger.debug(' ----- get_grade_char_from_input_str -----')
         logger.debug('input_value: ' + str(input_str) + ' ' + str(type(input_str)))
 
 # - set output variables
-    output_str, msg_err = None, None
-
+    output_str = None
+    err_list = []
 # - remove spaces before and after input_value
     imput_trim = input_str.strip() if input_str else ''
 
 # - exit if imput_trim has no value, without msg_err
     if imput_trim:
-        has_err = False
-
-# - replace all comma's by dots
-        input_replaced = imput_trim.replace(',', '.')
-        length = len(input_replaced)
-
-# - add dot when input_replaced has no dots
-        if '.' not in input_replaced:
-    # if input_replaced is between '1' en '9': add '.0'
-            if length == 1:
-                input_replaced += '.0'
-            elif length == 2:
-    # if input_replaced = '10': add '.0'
-                if input_replaced == '10':
-                    input_replaced += '.0'
-                else:
-    # if input_replaced is between '11' en '99': pu dot in the middle
-                    input_replaced = ''.join( ( input_replaced[0:1], '.', input_replaced[1:] ) )
-            else:
-                has_err = True
+        value_lc = imput_trim.lower()
+        if value_lc in ('o', 'v', 'g'):
+            output_str = value_lc
         else:
-            if length == 2:
-                #  '.7' is not allowed, '7.0' is allowed
-                has_err = (input_replaced[0:1] == '.')
-            elif length == 3:
-                #  '.56' and '.56' are not allowed, '5.6' is allowed
-                has_err = (input_replaced[1:2] != '.')
-            else:
-                #  'only '10.0' is allowed
-                has_err = (input_replaced != '10.0')
-
-        if not has_err:
-# - convert input_replaced to Decimal type
-            try:
-                output_decimal = Decimal(input_replaced)
-                output_str = str(output_decimal)
-                # replace dot by comma
-                output_str = output_str.replace('.', ',')
-            except Exception as e:
-                # '', ' ' and non-numeric give InvalidOperation error
-                has_err = True
-                if logging_on:
-                    logger.debug(getattr(e, 'message', str(e)))
-
-        if has_err:
-            msg_err = str(_('Grade')) + " '" + imput_trim + "' " + str(_('is not allowed.')) + "\n"
-            msg_err += str(_('The grade must be a number between 1 and 10.'))
+            err_list.append(str(_("Grade '%(val)s' is not allowed.") % {'val': value_lc}))
+            err_list.append(str(_("Grade can only be 'g', 'v' or 'o'.")))
 
     if logging_on:
         logger.debug('output_str: ' + str(output_str))
-        if msg_err:
-            logger.debug('msg_err: ' + str(msg_err))
+        if err_list:
+            logger.debug('msg_list: ' + str(err_list))
 
-    return output_str, msg_err
-# - end of get_grade_from_input_str
+    return output_str, err_list
+# - end of get_grade_char_from_input_str

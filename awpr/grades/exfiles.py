@@ -25,6 +25,7 @@ from awpr import settings as s
 from awpr import functions as af
 from awpr import downloads as dl
 from awpr import settings as awpr_settings
+from awpr import library as awpr_lib
 
 from accounts import views as acc_view
 from schools import models as sch_mod
@@ -183,7 +184,7 @@ class GetEx3infoView(View):  # PR2021-10-06
         sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'examperiod': examperiod}
 
         sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name,",
-                    "MAX(studsubj.cluster_id) AS max_cluster_id, MAX(stud.classname) AS max_classname,",
+                    "MAX(studsubj.clustername) AS max_clustername, MAX(stud.classname) AS max_classname,",
                     "ARRAY_AGG(DISTINCT lvl.base_id) AS lvlbase_id_arr",
 
                     "FROM students_grade AS grd",
@@ -427,7 +428,7 @@ class DownloadEx3View(View):  # PR2021-10-07
                 acc_view.set_usersetting_dict(c.KEY_EX3, setting_dict, request)
 
 # - get exform_text from examyearsetting
-                exform_text = af.get_exform_text(sel_examyear, ['exform', 'ex3'])
+                exform_text = awpr_lib.get_library(sel_examyear, ['exform', 'ex3'])
 
 # +++ get ex3_grade_rows
                 ex3_dict = self.get_ex3_grade_rows(sel_examyear, sel_school, sel_department, upload_dict, sel_examperiod)
@@ -569,14 +570,13 @@ class DownloadEx3View(View):  # PR2021-10-07
         logger.debug('subject_filter: ' + str(subject_filter))
         sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name,",
                     "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, ",
-                    "studsubj.cluster_id, stud.classname, cls.name AS cluster_name,",
+                    "studsubj.clustername, stud.classname, cls.name AS cluster_name,",
                     "stud.level_id, lvl.name AS lvl_name",
 
                     "FROM students_grade AS grd",
                     "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
                     "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
                     "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
-                    "LEFT JOIN subjects_cluster AS cls ON (cls.id = studsubj.cluster_id)",
 
                     "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
                     "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
@@ -609,8 +609,7 @@ class DownloadEx3View(View):  # PR2021-10-07
                 subj_pk = row.get('subj_id')
                 subj_name = row.get('subj_name', '---')
                 classname = row.get('classname', '---')
-                cluster_id = row.get('cluster_id')
-                cluster_name = row.get('cluster_name', '---')
+                clustername = row.get('clustername')
                 level_id = row.get('level_id')
                 lvl_name = row.get('lvl_name', '---')
                 examnumber = row.get('examnumber', '---')
@@ -624,7 +623,7 @@ class DownloadEx3View(View):  # PR2021-10-07
                 elif sel_layout == "class":
                     key = (subj_pk, classname)
                 elif sel_layout == "cluster":
-                    key = (subj_pk, cluster_id)
+                    key = (subj_pk, clustername)
                 else:
                     sel_layout = None
                     key = subj_pk
@@ -690,13 +689,15 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
 
 # +++ get selected grade_rows
                 auth_dict = {}
+                setting_dict = {}
                 grade_rows = gr_vw.create_grade_rows(
                     sel_examyear_pk=sel_examyear.pk,
                     sel_schoolbase_pk=sel_school.base_id,
                     sel_depbase_pk=sel_department.base_id,
                     sel_examperiod=sel_examperiod,
+                    setting_dict=setting_dict,
                     request=request,
-                    sel_subject_pk=sel_subject_pk,
+                    subject_pk=sel_subject_pk,
                     auth_dict=auth_dict
                     )
 
@@ -974,10 +975,6 @@ def draw_ex_box(canvas, border, exform_text):
 
     # add 'EX.3' in the right upper corner
     canvas.drawString(right - 13 * mm, top - 8 * mm, ex_code)
-
-
-
-
 # - end of draw_ex_box
 
 

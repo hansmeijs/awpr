@@ -120,7 +120,7 @@ class UserUploadView(View):
     #  when ok: it also sends an email to the user
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserUploadView ===============')
@@ -374,7 +374,7 @@ class UserDownloadPermitsView(View):
     #  UserDownloadPermitsView is called from Users form
     #  it returns a HttpResponse, with all permits
     def get(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserDownloadPermitsView ===============')
@@ -490,7 +490,7 @@ class UserpermitUploadView(View):
     #  it returns a HttpResponse, with ok_msg or err-msg
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserpermitUploadView ===============')
@@ -655,6 +655,7 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
                     logger.debug('upload_dict: ' + str(upload_dict))
 
                 set_usersetting_from_uploaddict(upload_dict, request)
+
 # - add update_dict to update_wrap
                 update_wrap['setting'] = {'result': 'ok'}
 # F. return update_wrap
@@ -931,7 +932,7 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
     #  send_activation_email is called from table Users, field 'activated' when the activation link has expired.
     #  it sends an email to the user
     #  it returns a HttpResponse, with ok_msg or err-msg
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  ')
         logger.debug(' ========== send_activation_email ===============')
@@ -1627,7 +1628,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, user
 
 # === update_user_instance ========== PR2020-08-16 PR2020-09-24 PR2021-03-24 PR2021-08-01
 def update_user_instance(instance, upload_dict, msg_list, request):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-----  update_user_instance  -----')
         logger.debug('instance: ' + str(instance))
@@ -1791,7 +1792,7 @@ def update_usergroups(instance, field_dict, validate, request):
     # called by UserUploadView.update_user_instance and UserpermitUploadView.update_grouppermit
     # validate only when called by update_user_instance
     # usergroups: {auth2: false}
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-----  update_usergroups  -----')
         logger.debug('field_dict: ' + str(field_dict))
@@ -1818,6 +1819,7 @@ def update_usergroups(instance, field_dict, validate, request):
         # - remove other 'auth' usergroups when usergroup = 'auth123' is set to True
         #   only when called by update_user_instance
                 if validate:
+                    # TODO check if correct
                     auth_list = (c.USERGROUP_AUTH1_PRES, c.USERGROUP_AUTH2_SECR, c.USERGROUP_AUTH3_COM, c.USERGROUP_AUTH4_EXAM)
                     if usergroup in auth_list:
                         for auth in auth_list:
@@ -1932,10 +1934,12 @@ def get_usersetting_dict(key_str, request):  # PR2019-03-09 PR2021-01-25
 
 def set_usersetting_dict(key_str, setting_dict, request):  # PR2019-03-09 PR2021-01-25
     # function saves setting in first row that matches the filter, adds new row when not found
-    # logger.debug('---  set_usersetting_dict  ------- ')
-    # logger.debug('key_str: ' + str(key_str))
-    # logger.debug('setting_dict: ' + str(setting_dict))
-    # logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('---  set_usersetting_dict  ------- ')
+        logger.debug('key_str: ' + str(key_str))
+        logger.debug('setting_dict: ' + str(setting_dict))
+
 
     #  json.dumps converts a dict in a json object
     #  json.loads retrieves a dict (or other type) from a json object
@@ -1957,23 +1961,40 @@ def set_usersetting_dict(key_str, setting_dict, request):  # PR2019-03-09 PR2021
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
         logger.error('key_str: ', str(key_str))
-        logger.error('setting_dict: ', str(setting_dict))
 
+    if logging_on:
+        logger.error('setting_dict: ', str(setting_dict))
 # - end of set_usersetting_dict
 
 def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
-    #logger.debug(' ----- set_usersetting_from_uploaddict ----- ')
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- set_usersetting_from_uploaddict ----- ')
+        logger.debug('upload_dict: ' + str(upload_dict))
+        # upload_dict: {'selected_pk': {'sel_examtype': 'sr', 'sel_examperiod': 1}}
+
     # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
     # logger.debug('upload_dict: ' + str(upload_dict))
+
     # PR2020-07-12 debug. creates multiple rows when key does not exist and newdict has multiple subkeys
     # PR2020-10-04 not any more, don't know why
     # - loop through keys of upload_dict
     for key, new_setting_dict in upload_dict.items():
         set_usersetting_from_upload_subdict(key, new_setting_dict, request)
-
 # - end of set_usersetting_from_uploaddict
 
-def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # PR2021-02-07 PR2021-08-19
+
+def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # PR2021-02-07 PR2021-08-19 PR2021-12-02
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
+        logger.debug('key_str: ' + str(key_str))
+        # key_str: page_grade
+        logger.debug('new_setting_dict: ' + str(new_setting_dict))
+        # new_setting_dict: {'cols_hidden': {'all': ['examnumber', 'subj_name']}}
+        # new_setting_dict: {'sel_examtype': 'sr', 'sel_examperiod': 1}
+
     # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
     # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
     # PR2020-10-04 not any more, don't know why
@@ -1985,25 +2006,30 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
     # new_setting_dict = 'page_examyear', dict = {'sel_btn': 'examyears'}
     # get saved_settings_dict. new settings will be put in saved_settings_dict,  saved_settings_dict will be saved
     saved_settings_dict = get_usersetting_dict(key_str, request)
-    logging_on = False  #s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
-        logger.debug('key_str: ' + str(key_str))
-        logger.debug('new_setting_dict: ' + str(new_setting_dict))
-        logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
 
+    if logging_on:
+        logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
+        # saved_settings_dict: {}
+        # saved_settings_dict: {'all': ['examnumber', 'subj_name']}
+        # saved_settings_dict: {'sel_examyear_pk': 58, 'sel_depbase_pk': 1, 'sel_examtype': None, 'sel_examperiod': 1, 'sel_lvlbase_pk': 12, 'sel_sctbase_pk': 12}
     try:
         has_changed = False
-    # - loop through subkeys of new settings
+    # - loop through subkeys of new_setting_dict
         if logging_on:
             logger.debug(' --------------------- loop ')
         for subkey, new_subdict_or_value in new_setting_dict.items():
-            # subkeys can have value: {'page': 'page_student'}, {'sel_depbase_pk': 23'}
-            # or can be a dict:       {'cols_hidden': {'scheme': ['min_mtv', 'max_mvt')}}
+            # subkeys are the keys in new_setting_dict, for instance: 'cols_hidden'
+            # values in new_setting_dict can be a string, number or a dict
+            # string, number: {'page': 'page_student'}, {'sel_depbase_pk': 23'}
+            # or dict:        {'cols_hidden': {'scheme': ['min_mtv', 'max_mvt')}}
 
             if logging_on:
                 logger.debug('subkey: ' + str(subkey))
+                # subkey: cols_hidden
+                # subkey: sel_examperiod
                 logger.debug('new_subdict_or_value: ' + str(new_subdict_or_value))
+                # new_subdict_or_value: {'all': ['examnumber', 'subj_name']}
+                # new_subdict_or_value: sr
 
             # when subkey = cols_hidden it contains a dict: saved_subdict_or_value = {'published': ['examperiod', 'datepublished', 'url']}}
             # when subkey = sel_btn it contains a value: 'btn_studsubj'
@@ -2012,29 +2038,45 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
                 # get saved_subdict_or_value exists in saved_settings_dict, create empty dict when not found
                 # when subkey = cols_hidden: saved_subdict_or_value is a dict
                 saved_subdict_or_value = af.get_dict_value(saved_settings_dict, (subkey,))
-                if saved_subdict_or_value is None:
+                if logging_on:
+                    logger.debug('???? saved_subdict_or_value: ' + str(saved_subdict_or_value) + ' ' + str(type(saved_subdict_or_value)))
+
+                # PR2021-12-02 debug: don't use 'saved_subdict_or_value is None', because get_dict_value returns {}, not None
+                if not saved_subdict_or_value:
                     saved_settings_dict[subkey] = {}
                     saved_subdict_or_value = saved_settings_dict[subkey]
                 if logging_on:
                     logger.debug('saved_subdict_or_value: ' + str(saved_subdict_or_value))
+                    # saved_subdict_or_value: {}
 
                 for subsubkey, new_subsubvalue in new_subdict_or_value.items():
                     saved_subsubvalue = af.get_dict_value(saved_subdict_or_value, (subsubkey,))
 
                     if logging_on:
                         logger.debug('..... saved_subsubvalue: ' + str(saved_subsubvalue))
+                        # saved_subsubvalue: {}
                         logger.debug('..... subsubkey: ' + str(subsubkey))
+                        # subsubkey: 'all'
                         logger.debug('       new_subsubvalue: ' + str( new_subsubvalue))
-                    # subsubkey is the table name: 'studsubj', 'published'
+                        # new_subsubvalue: ['examnumber', 'subj_name']
+
+                    # subsubkey is the tab name: 'studsubj', 'published' or 'all'
                     # new_subsubvalue is a list: ['examperiod', 'datepublished', 'url']
 
                     item_has_changed = replace_value_in_dict(saved_subdict_or_value, subsubkey, new_subsubvalue)
+
+                    if logging_on:
+                        logger.debug('----- saved_subdict_or_value: ' + str(saved_subdict_or_value))
+
                     if item_has_changed:
                         has_changed = True
             else:
                 item_has_changed = replace_value_in_dict(saved_settings_dict, subkey, new_subdict_or_value)
                 if item_has_changed:
                     has_changed = True
+
+        if logging_on:
+            logger.debug('----- saved_settings_dict: ' + str(saved_settings_dict))
 
         if has_changed:
             # - save key in usersetting and return settings_dict
@@ -2047,7 +2089,7 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
         logger.error('key_str: ', str(key_str))
-        logger.error('setting_dict: ', str(new_setting_dict))
+        logger.error('new_setting_dict: ', str(new_setting_dict))
 
     if logging_on:
         logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
@@ -2055,10 +2097,24 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
 # - end of set_usersetting_from_upload_subdict
 
 
-def replace_value_in_dict(settings_dict, key_str, new_value): #PR2021-08-19
+def replace_value_in_dict(settings_dict, key_str, new_value): # PR2021-08-19 PR2021-12-02
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- replace_value_in_dict ----- ')
+        logger.debug('settings_dict: ' + str(settings_dict))
+        #  settings_dict: {'sel_examyear_pk': 58, 'sel_depbase_pk': 1, 'sel_examtype': None, 'sel_examperiod': 1, 'sel_lvlbase_pk': 12, 'sel_sctbase_pk': 12}
+        logger.debug('key_str: ' + str(key_str))
+        # key_str: all
+        # key_str: sel_examtype
+        logger.debug('new_value: ' + str(new_value))
+        # new_value: ['examnumber', 'sct_abbrev']
+        # new_value: sr
     item_has_changed = False
 
     saved_subdict_or_value = af.get_dict_value(settings_dict, (key_str,))
+    if logging_on:
+        logger.debug('saved_subdict_or_value: ' + str(saved_subdict_or_value))
 
     if new_value is None:
         if key_str in settings_dict:
@@ -2068,6 +2124,9 @@ def replace_value_in_dict(settings_dict, key_str, new_value): #PR2021-08-19
         item_has_changed = True
         settings_dict[key_str] = new_value
 
+    if logging_on:
+        logger.debug('item_has_changed: ' + str(item_has_changed))
+        logger.debug('settings_dict: ' + str(settings_dict))
     return item_has_changed
 
 # +++++++++++++++++++  get and set setting +++++++++++++++++++++++
@@ -2089,3 +2148,20 @@ def get_usr_schoolname_with_article(user):  # PR2019-03-09 PR2021-01-25 PR2021-0
 
     return usr_schoolname_with_article
 # - end of set_usersetting_from_upload_subdict
+
+
+def get_username_dict():  # PR2021-12-19
+    # create dict with key = user_pk and value = username
+    # used to add auth names without adding LEFT JOIN accounts_user to sql
+
+    username_dict = {}
+    sql = "SELECT au.id, au.last_name FROM accounts_user AS au"
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+
+        for row in cursor.fetchall():
+            username_dict[row[0]] = row[1]
+
+    return username_dict
+# - end of get_username_dict
+

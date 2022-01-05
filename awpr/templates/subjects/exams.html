@@ -5,8 +5,8 @@
 {% block title %}{% trans 'Exams' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exams211010.js' %}"></script>
-    <script src="{% static 'js/download210816.js' %}"></script>
+    <script src="{% static 'js/exams220105.js' %}"></script>
+    <script src="{% static 'js/download220105.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -54,6 +54,7 @@
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
+            {% include 'includes/modselectcolumns.html' %}
             {% include 'includes/modselectexam.html' %}
             {% include 'subjects/modexamquestions.html' %}
             {% include 'students/modapprovegrade.html' %}
@@ -63,7 +64,11 @@
 
             <div class="content_margin_top78">
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="btn_exams" class="btn btn-secondary ">{% trans 'Exams' %}</button>
+                    <button data-btn="btn_ep_01" class="btn btn-secondary ">{% trans 'First exam period' %}</button>
+                    {% if not no_centralexam %}
+                        <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Second exam period' %}</button>
+                    {% endif %}
+
                 </div>
     <!-- end BUTTON GROUP -->
 
@@ -101,7 +106,7 @@
 
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
-                data-url_settings_upload="{% url 'url_settings_upload' %}"
+                data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
                 data-url_student_upload="{% url 'url_student_upload' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
                 data-exam_upload_url="{% url 'exam_upload_url' %}"

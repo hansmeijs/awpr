@@ -5,8 +5,8 @@
 {% block title %}{% trans 'Subjects of candidates' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import210913.js' %}"></script>
-    <script src="{% static 'js/studentsubjects211103.js' %}"></script>
+    <script src="{% static 'js/import220105.js' %}"></script>
+    <script src="{% static 'js/studentsubjects220105.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -30,15 +30,15 @@
                ></select>
             </div>
 
-            <div id="id_SBR_container_subject" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Subject' %}:</h6>
-                <input id="id_SBR_select_subject" type="text"
-                    class="tw_200 border_none pointer_show px-2" readonly>
-            </div>
-
             <div id="id_SBR_container_cluster" class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
                <input id="id_SBR_select_cluster" type="text"
+                    class="tw_200 border_none pointer_show px-2" readonly>
+            </div>
+
+            <div id="id_SBR_container_subject" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Subject' %}:</h6>
+                <input id="id_SBR_select_subject" type="text"
                     class="tw_200 border_none pointer_show px-2" readonly>
             </div>
 
@@ -69,13 +69,13 @@
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modselectcolumns.html' %}
-            {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'students/modapprovesubject.html' %}
             {% include 'students/modstudentsubject.html' %}
-            {% include 'students/modmultipleoccurrences.html' %}
             {% include 'students/modselectex3.html' %}
             {% include 'includes/modimport.html' %}
+            {% include 'students/modmultipleoccurrences.html' %}
+            {% include 'includes/modmessage.html' %}
 
     <!-- CONTENT HEADER - LOADER -->
             <div class="margin_top78_left16">
@@ -106,9 +106,17 @@
     <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="btn_studsubj" class="btn btn-secondary ">{% trans 'Subjects' %}</button>
-                    <button data-btn="btn_exemption" class="btn btn-secondary">{% trans 'Exemptions' %}</button>
-                    <button data-btn="btn_reex" class="btn btn-secondary">{% trans 'Re-examinations' %}</button>
-                    <button data-btn="btn_reex3" class="btn btn-secondary">{% trans 'Re-exam 3rd period' %}</button>
+                    <button data-btn="btn_exemption" class="btn btn-secondary">{% trans 'Exemption' %}</button>
+
+                    {% if sr_allowed %}
+                        <button data-btn="btn_sr" class="btn btn-secondary">{% trans 'Re-examination school exam' %}</button>
+                    {% endif %}
+                    {% if not no_centralexam %}
+                        <button data-btn="btn_reex" class="btn btn-secondary">{% trans 'Re-examination' %}</button>
+                        {% if not no_thirdperiod %}
+                            <button data-btn="btn_reex03" class="btn btn-secondary">{% trans 'Re-exam 3rd period' %}</button>
+                        {% endif %}
+                    {% endif %}
                     <button data-btn="btn_pok" class="btn btn-secondary">{% trans 'Proof_of_knowledge' %}</button>
                     <button data-btn="btn_published" class="btn btn-secondary ">{% trans 'Submitted Ex forms' %}</button>
                 </div>
@@ -129,7 +137,7 @@
             </div>
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
-                data-url_settings_upload="{% url 'url_settings_upload' %}"
+                data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
                 data-url_student_biscand="{% url 'url_student_biscand' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
                 data-url_studsubj_single_update="{% url 'url_studsubj_single_update' %}"

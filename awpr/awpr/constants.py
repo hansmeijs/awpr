@@ -83,40 +83,6 @@ LOCKED_DICT = {
     1: _('Locked')
 }
 
-
-# PR2018-07-19 choises must be tuple or list, dictionary gives error: 'int' object is not iterable
-INACTIVE_CHOICES = (
-    (0, _('Active')),
-    (1, _('Inactive'))
-)
-
-# PR2018-10-15
-IS_TEMPLATE_DICT = {
-    0: _('Not a template'),
-    1: _('Template')
-}
-# PR2018-10-15  choises must be tuple or list, dictionary gives error: 'int' object is not iterable
-IS_TEMPLATE_CHOICES = (
-    (0, _('Not a template')),
-    (1, _('Template'))
-)
-
-
-# PR2018-07-31 choise 0 = 'None' for empty choice
-CHOICE_NONE = (0, _('None'))
-
-# PR2018-08-04 for Examyear.publishes
-PUBLISHED_CHOICES = (
-    (0, _('Not published')),
-    (1, _('Published'))
-)
-PUBLISHED_DICT = {
-    0: _('Not published'),
-    1: _('Published')
-}
-
-
-
 GRADETYPE_00_NONE = 0
 GRADETYPE_01_NUMBER = 1
 GRADETYPE_02_CHARACTER = 2  # goed / voldoende / onvoldoende
@@ -137,13 +103,11 @@ GRADETYPE_ABBREVS = {
 # PR2019-01-19
 SCHEMEFIELD_MANDATORY = 'mand'
 SCHEMEFIELD_COMBI = 'comb'
-SCHEMEFIELD_CHOICECOMBI_ALLOWED = 'chal'
 SCHEMEFIELD_PRACTEXAM = 'prac'
 
 SCHEMEFIELD_CHOICES = (
     (SCHEMEFIELD_MANDATORY, _('Mandatory')),
     (SCHEMEFIELD_COMBI, _('Combination subject')),
-    (SCHEMEFIELD_CHOICECOMBI_ALLOWED, _('Elective combi allowed')),
     (SCHEMEFIELD_PRACTEXAM, _('Practical exam')),
 )
 
@@ -157,12 +121,27 @@ GRADE = 2
 PECE = 3
 FINAL = 4
 
-GRADECODE_CHOICES = (
-    (SCORE, _('Score')),
-    (GRADE, _('Grade')),
-    (PECE, _('CE-PE')),
-    (FINAL, _('Final grade'))
-)
+
+GRADE_IN_LETTERS = {
+    '1': _('een'),
+    '2': _('twee'),
+    '3': _('drie'),
+    '4': _('vier'),
+    '5': _('vijf'),
+    '6': _('zes'),
+    '7': _('zeven'),
+    '8': _('acht'),
+    '9': _('negen'),
+    '10': _('tien'),
+    'o': _('onvoldoende'),
+    'v': _('voldoende'),
+    'g': _('goed'),
+    'O': _('onvoldoende'),
+    'V': _('voldoende'),
+    'G': _('goed')
+}
+
+
 
 # PR2019-02-15 PR2020-12-14
 EXAMPERIOD_FIRST = 1
@@ -184,6 +163,22 @@ EXAMPERIOD_OPTIONS = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam perio
 EXAMPERIOD_OPTIONS_12ONLY = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam period')},
                         {'value': EXAMPERIOD_SECOND, 'caption': _('Second exam period')}]
 
+# examgradetypes are: 'segrade', 'srgrade', 'pescore', 'pegrade', 'cescore', 'cegrade
+EXAMGRADE_OPTIONS = [
+    {'value': 'exemsegrade', 'caption': _('Exemption school exam')},
+    {'value': 'exemcegrade', 'caption': _('Exemption central exam')},
+    {'value': 'segrade', 'caption': _('School exam')},
+    {'value': 'srgrade', 'caption': _('Re-examination school exam')},
+    {'value': 'pescore', 'caption': _('Practical exam score')},
+    {'value': 'pegrade', 'caption': _('Practical exam grade')},
+    {'value': 'cescore', 'caption': _('Central exam score')},
+    {'value': 'cegrade', 'caption': _('Central exam grade')},
+    {'value': 'reexscore', 'caption': _('Re-examination score')},
+    {'value': 'reexgrade', 'caption': _('Re-examination grade')},
+    {'value': 'reex03score', 'caption': _('Re-examination 3rd period score')},
+    {'value': 'reex03grade', 'caption': _('Re-examination 3rd period grade')},
+]
+
 
 def get_examperiod_caption(examperiod_int):
     return EXAMPERIOD_CAPTION.get(examperiod_int, '')
@@ -191,13 +186,14 @@ def get_examperiod_caption(examperiod_int):
 
 # options_examtype value = ecamtype, filter = examperiod PR2020-12-17
 EXAMTYPE_OPTIONS = [
-    {'value': 'se', 'filter': EXAMPERIOD_FIRST, 'caption': _('School exam')},
-    {'value': 'sere', 'filter': EXAMPERIOD_FIRST, 'caption': _('Re-examination school exam')},
-    {'value': 'pe', 'filter': EXAMPERIOD_FIRST, 'caption': _('Practical exam')},
-    {'value': 'ce', 'filter': EXAMPERIOD_FIRST, 'caption': _('Central exam')},
-    {'value': 're2', 'filter': EXAMPERIOD_SECOND, 'caption': _('Re-examination')},
-    {'value': 're3', 'filter': EXAMPERIOD_THIRD, 'caption': _('Re-examination 3rd period')},
-    {'value': 'exm', 'filter': EXAMPERIOD_EXEMPTION, 'caption': _('School- / Central exam')}
+    {'value': 'se', 'caption': _('School exam')},
+    {'value': 'sr', 'caption': _('Re-examination school exam')},
+    {'value': 'pe', 'caption': _('Practical exam')},
+    {'value': 'ce', 'caption': _('Central exam')},
+    {'value': 'reex', 'caption': _('Re-examination')},
+    {'value': 'reex03', 'caption': _('Re-examination 3rd period')},
+    {'value': 'exem', 'caption': _('Exemption')},
+    {'value': 'all', 'caption': _('All exams')}
     ]
 # options_examtype value = ecamtype, filter = examperiod PR2021-05-07
 # used in page exam, without SE and EXEMPTION
@@ -226,19 +222,19 @@ def get_examtype_caption(examtype_str):
 
 # PR2018-11-28
 # se, pe ce, ce2, ce3, end
-NORESULT_RESULT = 0
-PASSED_RESULT = 1
-FAILED_RESULT = 2
-REEXAM_RESULT = 3
-WITHDRAWN_RESULT = 4
+RESULT_NORESULT = 0
+RESULT_PASSED = 1
+RESULT_FAILED = 2
+RESULT_REEXAM = 3
+RESULT_WITHDRAWN = 4
 
-RESULT_CHOICES = (
-    (NORESULT_RESULT, _('No result')),
-    (PASSED_RESULT, _('Passed')),
-    (FAILED_RESULT, _('Failed')),
-    (REEXAM_RESULT, _('Re-examination')),
-    (WITHDRAWN_RESULT, _('Withdrawn'))
-)
+RESULT_CAPTION = [
+    _('No result'),
+    _('Passed'),
+    _('Failed'),
+    _('Re-examination'),
+    _('Withdrawn')
+]
 
 STATUS_NONE = 0
 STATUS_00_CREATED = 1
@@ -289,6 +285,7 @@ KEY_SEL_BTN = 'sel_btn'
 KEY_COLS_HIDDEN = 'cols_hidden'
 KEY_VERIFICATIONCODE = 'verificationcode'
 KEY_EX3 = 'ex3'
+KEY_GRADELIST = 'gradelist'
 
 # SCHOOL SETTING KEYS PR2018-12-03  PR2020-12-04
 
@@ -324,6 +321,10 @@ KEY_COLDEF = {
             # PR2021-08-11 NOT IN USE:
             #{'awpColdef': 'subjecttype', 'caption': _('Character'), 'tabularfield': True}
          ],
+
+    KEY_IMPORT_GRADE:
+        [ {'awpColdef': 'idnumber', 'caption': _('ID-number'), 'linkrequired': True, 'unique': True},
+        ],
 
     KEY_IMPORT_STUDENT:
         [ {'awpColdef': 'idnumber', 'caption': _('ID-number'), 'linkrequired': True, 'unique': True},
@@ -415,16 +416,18 @@ FIELDS_STUDENT = ('base', 'school', 'department', 'level', 'sector', 'scheme', '
                   'lastname', 'firstname', 'prefix', 'gender', 'idnumber', 'birthdate', 'birthcountry', 'birthcity',
                   'classname', 'examnumber', 'regnumber', 'diplomanumber', 'gradelistnumber', 'iseveningstudent',
                   'locked', 'has_reex', 'bis_exam', 'withdrawn', 'modifiedby', 'modifiedat')
-FIELDS_STUDENTSUBJECT = ('student', 'schemeitem', 'cluster', 'is_extra_nocount', 'is_extra_counts', 'is_elective_combi',
-                'pws_title', 'pws_subjects', 'has_exemption', 'has_reex', 'has_reex03', 'pok_validthru',  'pex_validthru',
+FIELDS_STUDENTSUBJECT = ('student', 'schemeitem', 'cluster', 'is_extra_nocount', 'is_extra_counts',
+                'pws_title', 'pws_subjects', 'has_exemption', 'has_reex', 'has_reex03', 'exemption_year', 'pok_validthru',  'pex_validthru',
                'subj_auth1by', 'subj_auth2by', 'subj_published',
                'exem_auth1by', 'exem_auth2by', 'exem_published',
                'reex_auth1by', 'reex_auth2by', 'reex_published',
                'reex3_auth1by', 'reex3_auth2by', 'reex3_published',
                'pok_auth1by', 'pok_auth2by', 'pok_published',
                'deleted', 'modifiedby', 'modifiedat')
-FIELDS_GRADE =('studentsubject', 'examperiod', 'pescore', 'cescore',
-               'segrade', 'pegrade', 'cegrade', 'pecegrade', 'finalgrade',
+FIELDS_GRADE =('studentsubject', 'examperiod',
+               'pescore', 'cescore',
+               'segrade', 'srgrade', 'sesrgrade',
+               'pegrade', 'cegrade', 'pecegrade', 'finalgrade',
                'se_auth1by', 'se_auth2by', 'se_published',
                'pe_auth1by', 'pe_auth2by', 'pe_published',
                'ce_auth1by', 'ce_auth2by', 'ce_published',
@@ -437,6 +440,7 @@ STRING_SPACE_15 = ' ' * 15
 STRING_SPACE_10 = ' ' * 10
 STRING_SPACE_05 = ' ' * 5
 STRING_DOUBLELINE_80 = '=' * 80
+STRING_SINGLELINE_80 = '-' * 80
 
 # ============================================================================
 # ROLES AND PERMITS PR2021-02-23
@@ -483,6 +487,18 @@ USERGROUP_AUTH3_COM = 'auth3'
 USERGROUP_AUTH4_EXAM = 'auth4'
 USERGROUP_ANALYZE = 'anlz'
 USERGROUP_ADMIN = 'admin'
+
+USERGROUP_TUPLE = (
+    USERGROUP_READ,
+    USERGROUP_EDIT,
+    USERGROUP_TEACHER,
+    USERGROUP_AUTH1_PRES,
+    USERGROUP_AUTH2_SECR,
+    USERGROUP_AUTH3_COM,
+    USERGROUP_AUTH4_EXAM,
+    USERGROUP_ANALYZE,
+    USERGROUP_ADMIN
+)
 
 USERGROUP_CAPTION = {
     USERGROUP_READ: _('Read'),

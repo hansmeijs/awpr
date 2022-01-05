@@ -34,8 +34,8 @@ def get_next_examnumber(sel_school, sel_department):  # PR2021-08-11
 # - end of get_next_examnumber
 
 
-def calc_regnumber(regnr_school, gender, examyear_int, examnumber_str, depbase, levelbase):
-    # function calculates regnumber. This format is used in examyear 2015 and later PR2021-07-19
+def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_code, levelbase_code):
+    # function calculates regnumber. This format is used in examyear 2015 and later PR2021-07-19 PR2021-11-17
     #    'structuur registratienummer kandidaat: '12345 6 78910 111213 14 bv: cur02112130021 = cur02-1-1213-002-1
     #    '12345:     SchoolID: CUR01 etc, BON01,
     #    '6:         M=1, V = 2
@@ -46,15 +46,15 @@ def calc_regnumber(regnr_school, gender, examyear_int, examnumber_str, depbase, 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- calc_regnumber -------')
-        logger.debug('regnr_school: ' + str(regnr_school))
+        logger.debug('school_code: ' + str(school_code))
         logger.debug('gender:       ' + str(gender))
-        logger.debug('examyear:     ' + str(examyear_int) + ' ' + str(type(examyear_int)))
+        logger.debug('examyear_str:     ' + str(examyear_str) + ' ' + str(type(examyear_str)))
         logger.debug('examnumber:   ' + str(examnumber_str) + ' ' + str(type(examnumber_str)))
-        logger.debug('depbase:      ' + str(depbase))
-        logger.debug('levelbase:    ' + str(levelbase))
+        logger.debug('depbase_code:      ' + str(depbase_code))
+        logger.debug('levelbase_code:    ' + str(levelbase_code))
 
-    # - eerste 5 tekens zijn regnr school
-    regnr_school_fill = regnr_school + '-----'
+# - eerste 5 tekens zijn school_code, Fill with '-' if less than 5 characters
+    regnr_school_fill = school_code + '-----' if school_code else '-----'
     reg01 = regnr_school_fill[:5]
 
 # - teken 6 is geslacht M=1, V = 2
@@ -66,7 +66,6 @@ def calc_regnumber(regnr_school, gender, examyear_int, examnumber_str, depbase, 
         reg02 = '2'
 
 # - teken 7, 8 is examenjaar
-    examyear_str = str(examyear_int)
     reg03 = examyear_str[2:4] if examyear_str else '--'
 
 # - teken 9, 10, 11 en 12 zijn volgnr kandidaat
@@ -84,20 +83,20 @@ def calc_regnumber(regnr_school, gender, examyear_int, examnumber_str, depbase, 
 
 # - teken 13: 1 = havo, 2 = vwo, 3 = tkl, 4 = pkl, 5 = pbl
     reg05 = '-'
-    if depbase:
-        depbase_code = depbase.code.lower() if depbase else None
-        if depbase_code == 'havo':
+    if depbase_code:
+        depbase_code_lc = depbase_code.lower()
+        if depbase_code_lc == 'havo':
             reg05 = '1'
-        elif depbase_code == 'vwo':
+        elif depbase_code_lc == 'vwo':
             reg05 = '2'
-        elif depbase_code == 'vsbo':
-            if levelbase:
-                levelbase_code = levelbase.code.lower() if levelbase else None
-                if levelbase_code == 'tkl':
+        elif depbase_code_lc == 'vsbo':
+            if levelbase_code:
+                levelbase_code_lc = levelbase_code.lower()
+                if levelbase_code_lc == 'tkl':
                     reg05 = '3'
-                elif levelbase_code == 'pkl':
+                elif levelbase_code_lc == 'pkl':
                     reg05 = '4'
-                elif levelbase_code == 'pbl':
+                elif levelbase_code_lc == 'pbl':
                     reg05 = '5'
     regnumber = ''.join((reg01, reg02, reg03, reg04, reg05 ))
 
@@ -255,7 +254,7 @@ def get_full_name(last_name, first_name, prefix):  # PR2021-07-26 PR2021-09-05  
         _full_name = ', '.join((_full_name, _firstname))
 
     return _full_name
-
+# - end of get_full_name
 
 def get_firstname_initials(first_name):  # PR2021-07-26
     firstname_initials = ''

@@ -181,7 +181,6 @@ class UserActivateForm(ModelForm):
         # self.fields['password1'].widget = HiddenInput() # this works, but label stays
         # self.fields['password2'].widget = HiddenInput() # this works, but label stays
 
-
 """
 USED TO FIND PROBLEM THAT PASSWORDS ARE NOT SAVED - problem: forgot 'password_mod' in datahaschanged in model User
 # PR2018-10-13

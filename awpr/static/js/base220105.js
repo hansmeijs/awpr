@@ -212,9 +212,9 @@
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //========= b_get_permits_from_permitlist  ============= PPR2021-04-26
     function b_get_permits_from_permitlist(permit_dict) {
-        console.log("----- b_get_permits_from_permitlist -----");
-        console.log("permit_dict", permit_dict);
-        console.log("permit_dict.permit_list", permit_dict.permit_list);
+        //console.log("----- b_get_permits_from_permitlist -----");
+        //console.log("permit_dict", permit_dict);
+        //console.log("permit_dict.permit_list", permit_dict.permit_list);
         // function puts permits from permit_list as key in permit_dict, for ease of use
         if(permit_dict.permit_list){
             for (let i = 0, action; action = permit_dict.permit_list[i]; i++) {
@@ -374,6 +374,7 @@
         if(cur_class) {el_input.classList.remove(cur_class)};
         if(!ok_class) {ok_class = "border_bg_valid"};
         el_input.classList.add(ok_class);
+
         setTimeout(function (){
             el_input.classList.remove(ok_class);
             if(cur_class) {el_input.classList.add(cur_class)};
@@ -645,7 +646,7 @@
         return b_get_status_bool_at_arrayindex(status_array, index);
     }  // b_get_status_bool_at_index
 
-//========= b_get_status_bool_at_index  ============= PR2021-02-05
+//========= b_get_status_bool_at_arrayindex  ============= PR2021-02-05
     function b_get_status_bool_at_arrayindex(status_array, index) {
         let status_bool = false;
         if(status_array && index < status_array.length) {
@@ -705,15 +706,72 @@
         return status_array_reversed
     }  // b_get_status_array
 
-    function b_get_status_iconclass(publ, auth1, auth2, auth3) { //  PR2021-05-07
-        const img_class = (publ) ? "appr_1_5" :
-                          (auth1 && auth2 && auth3) ? "appr_1_4" :
-                          (auth2 && auth3) ? "appr_1_3" :
-                          (auth1 && auth3) ? "appr_1_2" :
-                          (auth1 && auth2) ? "appr_0_4" :
-                          (auth3) ? "appr_1_1" :
-                          (auth2 ) ? "appr_0_3" :
-                          (auth1 ) ? "appr_0_2" : "appr_0_0"
+    function b_get_status_iconclass(publ, blocked, auth1, auth2, auth3, auth4) { //  PR2021-05-07 PR2021-12-18
+        let img_class = "diamond_0_0" // empty diamond
+        if(publ){
+            if (blocked){
+                img_class = "diamond_0_4";  // blue diamond: published
+            } else {
+                img_class = "diamond_2_4";  // orange diamond: published after blocked by Inspection
+            }
+        } else {
+            if (blocked){
+                img_class = "diamond_1_4";  // red diamond: blocked by Inspection, published is removed to enable correction
+            } else {
+                if (auth1){
+                    if (auth2){
+                        if (auth3){
+                            if (auth4){
+                                img_class = "diamond_3_3"; // auth 1+2+3+4
+                            } else {
+                                img_class = "diamond_1_3"; // auth 1+2+3
+                            }
+                        } else {
+                            if (auth4){
+                                img_class = "diamond_2_3"; // auth 1+2+4
+                            } else {
+                                img_class = "diamond_0_3"; // auth 1+2
+                        }};
+                    } else {
+                        if (auth3){
+                            if (auth4){
+                                img_class = "diamond_3_1"; // auth 1+3+4
+                            } else {
+                                img_class = "diamond_1_1"; // auth 1+3
+                            }
+                        } else {
+                            if (auth4){
+                                img_class = "diamond_2_1"; // auth 1+4
+                            } else {
+                                img_class = "diamond_0_1"; // auth 1
+                    }}};
+                } else {
+                    if (auth2){
+                        if (auth3){
+                            if (auth4){
+                                img_class = "diamond_3_2"; // auth 2+3+4
+                            } else {
+                                img_class = "diamond_1_2"; // auth 2+3
+                            }
+                        } else {
+                            if (auth4){
+                                img_class = "diamond_3_2"; // auth 2+4
+                            } else {
+                                img_class = "diamond_0_2"; // auth 2
+                        }};
+                    } else {
+                        if (auth3){
+                            if (auth4){
+                                img_class = "diamond_3_0"; // auth 3+4
+                            } else {
+                                img_class = "diamond_1_0"; // auth 3
+                            }
+                        } else {
+                            if (auth4){
+                                img_class = "diamond_2_0"; // auth 4
+                            } else {
+                                img_class = "diamond_0_0"; // auth -
+        }}}}}};
         return img_class
     }
 
@@ -1389,6 +1447,25 @@
         return new_array;
     } // b_remove_item_from_array2
 
+//=========  b_copy_array_noduplicates  ================ PR2021-12-16
+    function b_copy_array_noduplicates(old_array, new_array){
+        b_clear_array(new_array);
+        // skip if old_array is not an array type
+        if(old_array && Array.isArray(old_array)){
+            if(old_array.length){
+                for (let i = 0, item; item = old_array[i]; i++) {
+        // skip if item already exists in new_array
+                    if (!new_array.includes(item)){
+                        new_array.push(item);
+                    };
+                };
+            };
+        };
+        // from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter?retiredLocale=nl
+        // new_array = array.filter(item => true);
+    };  // b_clear_array
+
+
 //=========  b_clear_array  ================ PR2021-07-07
     function b_clear_array(array){
        // clear the array. from https://love2dev.com/blog/javascript-remove-from-array/
@@ -1411,21 +1488,27 @@
         };
     };  // b_clear_dict
 
-//========= b_get_statusindex_of_requsr  ======== // PR2021-03-26 PR2021-07-26
+//========= b_get_statusindex_of_requsr  ======== // PR2021-03-26 PR2021-07-26 PR2021-12-18
     function b_get_statusindex_of_requsr(loc, permit_dict){
         // function returns status_index of auth user, returns 0 when user has none or multiple auth usergroups
         // gives err messages when multiple found.
         // STATUS_01_AUTH1 = 2,  STATUS_02_AUTH2 = 4, STATUS_03_AUTH3 = 8, STATUS_04_AUTH3 = 16
-        let status_index = 0;
-        const usrgrp = {auth1: false, auth2: false, auth3: false};
-            const perm_auth1 = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth1"));
-            const perm_auth2 = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth2"));
-            const perm_auth3 = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth3"));
-            const perm_auth4 = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth4"));
 
-            if(!perm_auth1 && !perm_auth2 && !perm_auth3){
-                // skip if user has no auth usergroup
-            } else if(perm_auth1 + perm_auth2 + perm_auth3 > 1){
+        //console.log( "-----  b_get_statusindex_of_requsr  -----");
+        //console.log( "permit_dict", permit_dict);
+
+        let status_index = 0, count_auth = 0;
+        if (permit_dict.usergroup_list){
+            for (let i = 1; i < 5; i++) {
+                if (permit_dict.usergroup_list.includes("auth" + i)){
+                    count_auth += 1;
+                    status_index = i;
+        }}};
+
+// skip if user has no auth usergroup
+        if(count_auth){
+            if ( count_auth > 1){
+                status_index = 0;
     // show msg error if user has multiple auth usergroups
                 const functions = (perm_auth1 && perm_auth2 && perm_auth3) ? loc.President + ", " + loc.Secretary + loc.and + loc.Commissioner :
                                   (perm_auth1 && perm_auth2) ? loc.President + loc.and + loc.Secretary :
@@ -1435,17 +1518,10 @@
                 const msg_html = loc.approve_err_list.You_have_functions + functions + ". " + "<br>" +
                             loc.approve_err_list.Only_1_allowed + "<br>" + loc.approve_err_list.cannot_approve
                 b_show_mod_message(msg_html);
+            };
+        };
 
-            } else if(perm_auth1){
-                status_index = 1;
-            } else if(perm_auth2){
-                status_index = 2;
-            } else if(perm_auth3){
-                status_index = 3;
-            } else if(perm_auth4){
-                status_index = 4;
-            }
-    return status_index;
+        return status_index;
     }  // b_get_statusindex_of_requsr
 
 //#########################################################################
@@ -1463,8 +1539,17 @@
         if(el_msg_btn_cancel){set_focus_on_el_with_timeout(el_msg_btn_cancel, 150 )};
 
         $("#id_mod_message").modal({backdrop: false});
+        /*
+        'hide.bs.modal' executes when the .modal (modal window) gets closed.
+         So, whenever you open a modal window with the class modal (obviously),
+         at some point it gets closed. When that modal window gets hidden (or closed)
+         the event hidden.bs.modal gets triggered and the function gets executed.
+         This is not managed by the user (you didn't write explicit code) but the Bootstrap library has it built in.
+        */
+
         $('#id_mod_message').on('hide.bs.modal', function (e) {
             try {
+                // ModMessageClose sets the focus to the element mod_dict.el_focus
                 ModMessageClose();
             } catch (error) {
             }
@@ -1517,51 +1602,68 @@
         }
     }  // b_render_msg_container
 
-//=========  b_ShowModMessages  ================ PR2021-06-27  PR2021-07-03
-    function b_ShowModMessages(msg_dictlist) {
+//=========  b_ShowModMessages  ================ PR2021-06-27  PR2021-07-03 PR2021-12-01
+    function b_ShowModMessages(msg_dictlist, skip_warning_messages) {
         //console.log("==== b_ShowModMessages  ======")
-        //console.log("msg_dictlist", msg_dictlist)
+        //console.log.log("msg_dictlist", msg_dictlist)
+        //console.log.log("skip_warning_messages", skip_warning_messages)
 
         //  [ { class: "alert-warning", header: 'Update this',
         //      msg_html: "Deze loonperiode heeft 7 diensten."]
 
-        if(msg_dictlist && msg_dictlist.length){
-            const el_container = document.getElementById("id_mod_message_container");
-            let header_text = null
-            //console.log("el_container", el_container)
-            if(el_container){
+        const el_container = document.getElementById("id_mod_message_container");
+        if(el_container){
+            if(msg_dictlist && msg_dictlist.length){
+                // when skip_warning_messages = true:
+                // skip showing warning messages,
+                // in page grade msg 'Not current examyear' kept showing) PR2021-12-01
+                // used in page grade (for now)
+                let has_non_warning_msg = false;
+
+                let header_text = null
+                //console.log("el_container", el_container)
                 el_container.innerHTML = null;
                 for (let i = 0, msg_dict; msg_dict = msg_dictlist[i]; i++) {
-                    const class_str = (msg_dict.class) ? msg_dict.class : "border_bg_transparent";
-            //console.log("class_str", class_str)
-                    if(!header_text && msg_dict.header){
-                        header_text = msg_dict.header;
-                    }
-            //console.log("header_text", header_text)
-                    const msg_html = msg_dict.msg_html;
-            //console.log("msg_html", msg_html)
 
-                    if (msg_html){
+                    let class_str = null;
+                    if ("header" in msg_dict && msg_dict.header ) {
+                        // msgbox only has 1 header. Use first occurring header
+                        if (!header_text){ header_text = msg_dict.header};
+                    };
+
+                    if ("class" in msg_dict && msg_dict.class ) {
+                        // each msg_html has a border
+                        class_str = msg_dict.class;
+                        if (class_str !== "border_bg_warning") { has_non_warning_msg = true };
+                    };
+
+        //console.log.log("class_str", class_str)
+        //console.log.log("has_non_warning_msg", has_non_warning_msg)
+                    if ("msg_html" in msg_dict && msg_dict.msg_html ) {
             // --- create div element with alert border for each message in messages
                         const el_border = document.createElement("div");
+                        if (!class_str) { class_str = "border_bg_transparent"};
                         el_border.classList.add(class_str, "p-2", "my-2");
                         const el_div = document.createElement("div");
-                        el_div.innerHTML = msg_html;
+                        el_div.innerHTML = msg_dict.msg_html;
                         el_border.appendChild(el_div);
                         el_container.appendChild(el_border);
                     };
                 };
-            }  // if(el_container)
+        //console.log.log("!skip_warning_messages || has_non_warning_msg", !skip_warning_messages || has_non_warning_msg)
+                if (!skip_warning_messages || has_non_warning_msg ){
+                    const el_header = document.getElementById("id_mod_message_header");
+                    if(el_header) {el_header.innerText = header_text};
+        // ---  set focus to close button - not working
+                    const el_btn_cancel = document.getElementById("id_mod_message_btn_cancel");
+                    set_focus_on_el_with_timeout(el_btn_cancel, 150);
 
-            const el_header =  document.getElementById("id_mod_message_header");
-            if(el_header) {el_header.innerText = header_text};
-// ---  set focus to close button - not working
-            const el_btn_cancel = document.getElementById("id_mod_message_btn_cancel");
-            set_focus_on_el_with_timeout(el_btn_cancel, 150);
-
-            $("#id_mod_message").modal({backdrop: true});
-        };
-    }  // b_ShowModMessages
+                    $("#id_mod_message").modal({backdrop: true});
+                };
+            };
+        }; // if(el_container)
+        skip_warning_messages = false;
+    };  // b_ShowModMessages
 
 //?????????????????????????????????????????????????????????????????
 

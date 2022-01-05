@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let selected_scheme_pk = null;
     let selected_package_pk = null;
     let mod_dict = {};
-    let mod_MEY_dict = {};
+    let mod_MCREY_dict = {};
 
     let selected_copyto_examyear_dict = {};
 
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    urls.url_settings_upload = get_attr_from_el(el_data, "data-url_settings_upload");
+    urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_examyear_upload = get_attr_from_el(el_data, "data-url_examyear_upload");
     urls.url_examyear_copytosxm = get_attr_from_el(el_data, "data-url_examyear_copytosxm");
     urls.url_examyear_deletesubjectsfromsxm = get_attr_from_el(el_data, "data-url_examyear_deletesubjectsfromsxm");
@@ -115,34 +115,35 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
 */
-// ---  MODAL EXAMYEAR
-        const el_MEY_input_code = document.getElementById("id_MEY_examyear_code");
-        if(el_MEY_input_code){
-            el_MEY_input_code.addEventListener("change", function() {MEY_Input(el_MEY_input_code)}, false )};
-        const el_MEY_btn_delete = document.getElementById("id_MEY_btn_delete");
-        if(el_MEY_btn_delete){
-            el_MEY_btn_delete.addEventListener("click", function() {MEY_Save("undo")}, false )};
-        const el_MEY_btn_save = document.getElementById("id_MEY_btn_save");
-        if(el_MEY_btn_save){
-            el_MEY_btn_save.addEventListener("click", function() {MEY_Save("save")}, false )};
-        const el_MEY_btn_cancel = document.getElementById("id_MEY_btn_cancel");
+// ---  MODAL CREATE EXAMYEAR
+        const el_MCREY_input_code = document.getElementById("id_MCREY_examyear_code");
+        if(el_MCREY_input_code){
+            el_MCREY_input_code.addEventListener("change", function() {MCREY_Input(el_MCREY_input_code)}, false )};
+        const el_MCREY_btn_delete = document.getElementById("id_MCREY_btn_delete");
+        if(el_MCREY_btn_delete){
+            el_MCREY_btn_delete.addEventListener("click", function() {MCREY_Save("undo")}, false )};
+        const el_MCREY_btn_save = document.getElementById("id_MCREY_btn_save");
+        if(el_MCREY_btn_save){
+            el_MCREY_btn_save.addEventListener("click", function() {MCREY_Save("save")}, false )};
+        const el_MCREY_btn_cancel = document.getElementById("id_MCREY_btn_cancel");
 
 // ---  MODAL EDIT EXAMYEAR
-        const el_MEDEY_form_controls = document.getElementById("id_MEDEY_form_controls")
-        if(el_MEDEY_form_controls){
-            const form_elements = el_MEDEY_form_controls.querySelectorAll(".awp_input_checkbox")
+        const el_MODEY_form_controls = document.getElementById("id_MODEY_form_controls")
+        if(el_MODEY_form_controls){
+            const form_elements = el_MODEY_form_controls.querySelectorAll(".awp_input_select, .awp_input_checkbox")
             for (let i = 0, el; el = form_elements[i]; i++) {
-                el.addEventListener("click", function() {MEDEY_Toggle(el)}, false);
+                const even_str = (el.classList.contains("awp_input_checkbox")) ? "click" : "change";
+                el.addEventListener(even_str, function() {MODEY_InputChanged(el)}, false);
             };
         };
 
-        const el_MEDEY_btn_delete = document.getElementById("id_MEDEY_btn_delete");
-        if(el_MEDEY_btn_delete){
-            el_MEDEY_btn_delete.addEventListener("click", function() {MEDEY_Save("delete")}, false )};
-        const el_MEDEY_btn_save = document.getElementById("id_MEDEY_btn_save");
-        if(el_MEDEY_btn_save){
-            el_MEDEY_btn_save.addEventListener("click", function() {MEDEY_Save("save")}, false )};
-        //const el_MEDEY_btn_cancel = document.getElementById("id_MEDEY_btn_cancel");
+        const el_MODEY_btn_delete = document.getElementById("id_MODEY_btn_delete");
+        if(el_MODEY_btn_delete){
+            el_MODEY_btn_delete.addEventListener("click", function() {MODEY_Save("delete")}, false )};
+        const el_MODEY_btn_save = document.getElementById("id_MODEY_btn_save");
+        if(el_MODEY_btn_save){
+            el_MODEY_btn_save.addEventListener("click", function() {MODEY_Save("save")}, false )};
+        //const el_MODEY_btn_cancel = document.getElementById("id_MODEY_btn_cancel");
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");
@@ -166,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const datalist_request = {
                 setting: {page: "page_examyear"},
                 locale: {page: ["page_examyear"]},
-                examyear_rows: {get_all_countries: true},
+                examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true}
             };
@@ -264,17 +265,17 @@ document.addEventListener('DOMContentLoaded', function() {
             el_submenu.innerHTML = null;
             if (permit_dict.requsr_role_school && permit_dict.requsr_same_school) {
                 // may activate and lock own school (filter is in download create_examyear_rows)
-                AddSubmenuButton(el_submenu, loc.Activate_examyear, function() {MEY_Open("activate")});
-                AddSubmenuButton(el_submenu, loc.Close_examyear, function() {MEY_Open("close_school")});
+                AddSubmenuButton(el_submenu, loc.Activate_examyear, function() {MCREY_Open("activate")});
+                AddSubmenuButton(el_submenu, loc.Close_examyear, function() {MCREY_Open("close_school")});
             } else if (permit_dict.requsr_role_comm){
                 // no permit to view this page
             } else if (permit_dict.requsr_role_insp){
                 // view permit only
             } else if (permit_dict.requsr_role_admin || permit_dict.requsr_role_system){
                 // may create, publish, lock exam year
-                AddSubmenuButton(el_submenu, loc.Create_new_examyear, function() {MEY_Open("create")});
-                AddSubmenuButton(el_submenu, loc.Publish_examyear, function() {MEY_Open("publish")});
-                AddSubmenuButton(el_submenu, loc.Close_examyear, function() {MEY_Open("close_admin")});
+                AddSubmenuButton(el_submenu, loc.Create_new_examyear, function() {MCREY_Open("create")});
+                AddSubmenuButton(el_submenu, loc.Publish_examyear, function() {MCREY_Open("publish")});
+                AddSubmenuButton(el_submenu, loc.Close_examyear, function() {MCREY_Open("close_admin")});
                 AddSubmenuButton(el_submenu, loc.Delete_examyear, function() {ModConfirmOpen("delete")});
                 if (permit_dict.requsr_role_system){
                     AddSubmenuButton(el_submenu, loc.Copy_examyear_to_SXM, function() {ModConfirmOpen("copy_to_sxm")});
@@ -302,7 +303,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  upload new selected.btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_examyear: {sel_btn: selected.btn}};
-            b_UploadSettings (upload_dict, urls.url_settings_upload);
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
         };
 
 // ---  highlight selected button
@@ -319,9 +320,9 @@ document.addEventListener('DOMContentLoaded', function() {
         UpdateHeaderText();
     }  // HandleBtnSelect
 
-//=========  HandleTableRowClicked  ================ PR2020-08-03
-    function HandleTableRowClicked(tr_clicked) {
-        //console.log("=== HandleTableRowClicked");
+//=========  HandleTblRowClicked  ================ PR2020-08-03
+    function HandleTblRowClicked(tr_clicked) {
+        //console.log("=== HandleTblRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
         selected.examyear_pk = null;
@@ -353,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (tblName === "package") { selected_package_pk = map_dict.id };
         //console.log("selected.examyear_pk", selected.examyear_pk);
         }
-    }  // HandleTableRowClicked
+    }  // HandleTblRowClicked
 
 
 //========= UpdateHeaderText  ================== PR2020-07-31
@@ -566,7 +567,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             //console.log("tblRow", tblRow);
 // --- add EventListener to tblRow
-            tblRow.addEventListener("click", function() {HandleTableRowClicked(tblRow)}, false);
+            tblRow.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
 
 // +++  insert td's into tblRow
             for (let j = 0; j < column_count; j++) {
@@ -577,7 +578,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- add data-field attribute
                 el_td.setAttribute("data-field", field_name);
                 if (j){  // skip first column (margin to select without opening mod)
-                    el_td.addEventListener("click", function() {MEDEY_Open(el_td)}, false)
+                    el_td.addEventListener("click", function() {MODEY_Open(el_td)}, false)
                     el_td.classList.add("pointer_show");
                     add_hover(el_td);
 
@@ -678,18 +679,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_loader.classList.add(cls_visible_hide);
                     el_confirm_loader.classList.add(cls_visible_hide);
 
-                    const el_MEY_loader = document.getElementById("id_MEY_loader");
-                    el_MEY_loader.classList.add(cls_visible_hide);
+                    const el_MCREY_loader = document.getElementById("id_MCREY_loader");
+                    el_MCREY_loader.classList.add(cls_visible_hide);
 
                     console.log( "response");
                     console.log( response);
                     const mode = get_dict_value(response, ["mode"]);
 
                     if ("updated_examyear_rows" in response) {
-                        MEY_update_after_response (response);
+                        MCREY_update_after_response (response);
                     };
                     if ("updated_school_rows" in response) {
-                        MEY_update_after_response (response);
+                        MCREY_update_after_response (response);
                     };
                     if ("SXM_added_list" in response) {
                         $("#id_mod_confirm").modal("hide");
@@ -718,8 +719,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
 
 // +++++++++ MOD EXAM YEAR ++++++++++++++++ PR2020-10-04
-    function MEY_Open(mode, el_input){
-        console.log(" -----  MEY_Open   ----")
+    function MCREY_Open(mode, el_input){
+        console.log(" -----  MCREY_Open   ----")
         console.log("selected.examyear_pk", selected.examyear_pk)
         console.log("mode", mode)
         //console.log("permit_dict", permit_dict)
@@ -761,48 +762,48 @@ document.addEventListener('DOMContentLoaded', function() {
                     map_id = (selected_pk) ? "examyear_" + selected_pk : null;
                 }
                 const map_dict = get_mapdict_from_datamap_by_id(examyear_map, map_id)
-                mod_MEY_dict = {}
-                if(!isEmpty(map_dict)){mod_MEY_dict = deepcopy_dict(map_dict)}
-                mod_MEY_dict.mode = mode;
-                mod_MEY_dict.is_addnew = is_addnew;
+                mod_MCREY_dict = {}
+                if(!isEmpty(map_dict)){mod_MCREY_dict = deepcopy_dict(map_dict)}
+                mod_MCREY_dict.mode = mode;
+                mod_MCREY_dict.is_addnew = is_addnew;
                 if(is_addnew){
-                    mod_MEY_dict.country_id = permit_dict.requsr_country_pk;
-                    mod_MEY_dict.examyear_code = MEY_get_next_examyear()
+                    mod_MCREY_dict.country_id = permit_dict.requsr_country_pk;
+                    mod_MCREY_dict.examyear_code = MCREY_get_next_examyear()
                 }
 
     // ---  set header text, input element and info box
-                MEY_SetMsgElements()
+                MCREY_SetMsgElements()
 
         // ---  show modal
-                $("#id_mod_examyear").modal({backdrop: true});
+                $("#id_mod_create_examyear").modal({backdrop: true});
             }
         }
-    };  // MEY_Open
+    };  // MCREY_Open
 
-//=========  MEY_Save  ================  PR2020-10-01 PR2021-04-26
-    function MEY_Save(btn_clicked) {
-        console.log(" -----  MEY_save  ----", btn_clicked);
-        console.log( "mod_MEY_dict: ", mod_MEY_dict);
+//=========  MCREY_Save  ================  PR2020-10-01 PR2021-04-26
+    function MCREY_Save(btn_clicked) {
+        console.log(" -----  MCREY_save  ----", btn_clicked);
+        console.log( "mod_MCREY_dict: ", mod_MCREY_dict);
 
         // mode = 'create, 'publish', 'activate', 'close_admin', 'close_school', 'edit' (with el_input)
-        const mode = mod_MEY_dict.mode;
+        const mode = mod_MCREY_dict.mode;
         //console.log( "mode: ", mode);
 
         if(!!permit_dict.permit_crud){
             let upload_changes = false;
-            let upload_dict = {table: 'examyear', country_pk: mod_MEY_dict.country_id};
+            let upload_dict = {table: 'examyear', country_pk: mod_MCREY_dict.country_id};
             if(btn_clicked === "undo"){
 
         //console.log( "btn_clicked undo: ", btn_clicked);
-                upload_dict.examyear_pk = mod_MEY_dict.examyear_id;
-                upload_dict.mapid = mod_MEY_dict.mapid;
-                if(mod_MEY_dict.locked){
+                upload_dict.examyear_pk = mod_MCREY_dict.examyear_id;
+                upload_dict.mapid = mod_MCREY_dict.mapid;
+                if(mod_MCREY_dict.locked){
                     upload_dict.locked = false;
                     upload_changes = true;
-                } else if(mod_MEY_dict.published){
+                } else if(mod_MCREY_dict.published){
                     upload_dict.published = false;
                     upload_changes = true;
-                } else if(!mod_MEY_dict.is_addnew){
+                } else if(!mod_MCREY_dict.is_addnew){
                     // delete exam year
                     // TODO open confirm modal when delete
                     upload_dict.mode = "delete";
@@ -811,25 +812,25 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 if (mode === "create") {
                     upload_dict.mode = "create";
-                    upload_dict.examyear_code = mod_MEY_dict.examyear_code;
-                } else if(mod_MEY_dict.is_delete) {
+                    upload_dict.examyear_code = mod_MCREY_dict.examyear_code;
+                } else if(mod_MCREY_dict.is_delete) {
                     // handled by mod confirm
-                    //upload_dict.examyear_pk = mod_MEY_dict.examyear_id;
-                    //upload_dict.mapid = mod_MEY_dict.mapid;
+                    //upload_dict.examyear_pk = mod_MCREY_dict.examyear_id;
+                    //upload_dict.mapid = mod_MCREY_dict.mapid;
                     //upload_dict.mode = "delete";
                 } else if (mode === "activate") {
-                    upload_dict.examyear_pk = mod_MEY_dict.examyear_id;
+                    upload_dict.examyear_pk = mod_MCREY_dict.examyear_id;
                     upload_dict.table = "school"
-                    upload_dict.school_pk = mod_MEY_dict.school_id;
+                    upload_dict.school_pk = mod_MCREY_dict.school_id;
                     upload_dict.mode = "update";
                     upload_dict.activated = true;
                 } else {
-                    upload_dict.examyear_pk = mod_MEY_dict.examyear_id;
-                    upload_dict.mapid = mod_MEY_dict.mapid;
+                    upload_dict.examyear_pk = mod_MCREY_dict.examyear_id;
+                    upload_dict.mapid = mod_MCREY_dict.mapid;
                     upload_dict.mode = "update";
-                    if(!mod_MEY_dict.published){
+                    if(!mod_MCREY_dict.published){
                         upload_dict.published = true;
-                    } else if(!mod_MEY_dict.locked){
+                    } else if(!mod_MCREY_dict.locked){
                         upload_dict.locked = true;
                     }
                 }
@@ -837,26 +838,26 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             if(upload_changes){
                 const url_str = (["activate", "close_school"].includes(mode)) ? urls.url_school_upload : urls.url_examyear_upload
-                const el_MEY_loader =  document.getElementById("id_MEY_loader");
-                if(el_MEY_loader){el_MEY_loader.classList.remove(cls_visible_hide)};
+                const el_MCREY_loader =  document.getElementById("id_MCREY_loader");
+                if(el_MCREY_loader){el_MCREY_loader.classList.remove(cls_visible_hide)};
                 UploadChanges(upload_dict, url_str);
             }
         }
-    }  // MEY_Save
+    }  // MCREY_Save
 
-//=========  MEY_Input  ================  PR2021-08-30
-    function MEY_Input(el_input) {
-        console.log(" -----  MEY_Input  ----");
+//=========  MCREY_Input  ================  PR2021-08-30
+    function MCREY_Input(el_input) {
+        console.log(" -----  MCREY_Input  ----");
         if(el_input.value && Number(el_input.value)){
-            mod_MEY_dict.examyear_code = Number(el_input.value);
+            mod_MCREY_dict.examyear_code = Number(el_input.value);
         };
-        console.log( "mod_MEY_dict: ", mod_MEY_dict);
+        console.log( "mod_MCREY_dict: ", mod_MCREY_dict);
     };
 
-//=========  MEY_update_after_response  ================  PR2020-10-01 PR2021-06-20
-    function MEY_update_after_response(response) {
-        //console.log(" -----  MEY_update_after_response  ----");
-        //console.log( "mod_MEY_dict: ", mod_MEY_dict);
+//=========  MCREY_update_after_response  ================  PR2020-10-01 PR2021-06-20
+    function MCREY_update_after_response(response) {
+        //console.log(" -----  MCREY_update_after_response  ----");
+        //console.log( "mod_MCREY_dict: ", mod_MCREY_dict);
 
         if ("updated_examyear_rows" in response) {
             const updated_examyear_rows = response.updated_examyear_rows
@@ -873,7 +874,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ("error" in updated_examyear_dict){
                         const msg_list = updated_examyear_dict.error;
                         const border_class = "border_bg_invalid";
-                        MEY_SetMsgContainer(border_class, msg_list);
+                        MCREY_SetMsgContainer(border_class, msg_list);
 
                     } else if ("created" in updated_examyear_dict){
                         let msg_list = [loc.Examyear_successfully_created];
@@ -884,11 +885,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             el.innerText = (msg_list && msg_list[index]) ? msg_list[index] : null
                         }
                         add_or_remove_class(el_msg_container, "border_bg_valid", true, "border_bg_message")
-                        el_MEY_btn_save.classList.add(cls_hide)
-                        el_MEY_btn_cancel.innertext = loc.Close
+                        el_MCREY_btn_save.classList.add(cls_hide)
+                        el_MCREY_btn_cancel.innertext = loc.Close
 
                     } else {
-                        $("#id_mod_examyear").modal("hide");
+                        $("#id_mod_create_examyear").modal("hide");
                     }
                 }
             }
@@ -909,24 +910,24 @@ document.addEventListener('DOMContentLoaded', function() {
                         if ("general" in err_dict){
                             const msg_list = err_dict.general;
                             const border_class = "border_bg_invalid";
-                            MEY_SetMsgContainer(border_class, msg_list);
-                            el_MEY_btn_save.classList.add(cls_hide);
-                            el_MEY_btn_save.classList.add(cls_hide);
+                            MCREY_SetMsgContainer(border_class, msg_list);
+                            el_MCREY_btn_save.classList.add(cls_hide);
+                            el_MCREY_btn_save.classList.add(cls_hide);
                             // ---  set text on btn Save Cancel, hide btn save on error  or after save
                             const hide_btn_save = true;
-                            MEY_SetBtnOkCancel(mod_MEY_dict.mode, hide_btn_save);
+                            MCREY_SetBtnOkCancel(mod_MCREY_dict.mode, hide_btn_save);
                         }
                     } else {
-                        $("#id_mod_examyear").modal("hide");
+                        $("#id_mod_create_examyear").modal("hide");
                     }
                 }
             }
         };
-    }  // MEY_update_after_response
+    }  // MCREY_update_after_response
 
-//========= MEY_get_next_examyear  ============= PR2020-10-04
-    function MEY_get_next_examyear(){
-        //console.log( "===== MEY_get_next_examyear  ========= ");
+//========= MCREY_get_next_examyear  ============= PR2020-10-04
+    function MCREY_get_next_examyear(){
+        //console.log( "===== MCREY_get_next_examyear  ========= ");
 
         let max_examyear_int = 0, new_examyear_int = 0;
         for (const [map_id, item_dict] of examyear_map.entries()) {
@@ -945,14 +946,14 @@ document.addEventListener('DOMContentLoaded', function() {
             new_examyear_int = (this_month_index < 8) ? this_year : 1 + this_year;
         }
         return new_examyear_int;
-    }; // MEY_get_next_examyear
+    }; // MCREY_get_next_examyear
 
-//========= MEY_SetMsgElements  ============= PR2020-10-05 PR2021-04-24
-    function MEY_SetMsgElements(response){
-        //console.log( "===== MEY_SetMsgElements  ========= ");
+//========= MCREY_SetMsgElements  ============= PR2020-10-05 PR2021-04-24
+    function MCREY_SetMsgElements(response){
+        //console.log( "===== MCREY_SetMsgElements  ========= ");
         //console.log( "response", response);
-        //console.log( "mod_MEY_dict", mod_MEY_dict);
-        const mode = mod_MEY_dict.mode;
+        //console.log( "mod_MCREY_dict", mod_MCREY_dict);
+        const mode = mod_MCREY_dict.mode;
         //console.log( "mode", mode);
         // mode = 'create, 'publish', 'activate', 'close_admin', 'close_school', 'edit' (with el_input)
 
@@ -965,10 +966,10 @@ document.addEventListener('DOMContentLoaded', function() {
                               (mode === "publish")  ? loc.Publish_examyear_part2 :
                               (mode === "activate")  ? loc.Activate_examyear_part2 :
                               (["close_admin", "close_school"].includes(mode))  ? loc.Close_examyear_part2 : null;
-        document.getElementById("id_MEY_header").innerText = header_part1 + mod_MEY_dict.examyear_code + header_part2;
+        document.getElementById("id_MCREY_header").innerText = header_part1 + mod_MCREY_dict.examyear_code + header_part2;
 
 // --- set input element
-        el_MEY_input_code.value = (mod_MEY_dict.examyear_code) ? mod_MEY_dict.examyear_code : null;
+        el_MCREY_input_code.value = (mod_MCREY_dict.examyear_code) ? mod_MCREY_dict.examyear_code : null;
 
 // set msg elements
         const msg_list = (mode === "create") ? loc.msg_info.create :
@@ -981,55 +982,55 @@ document.addEventListener('DOMContentLoaded', function() {
         const is_ok = (response && "msg_ok" in response);
         const border_class = (is_error) ? "border_bg_invalid" : (is_ok) ? "border_bg_valid" : "border_bg_message";
 
-        MEY_SetMsgContainer(border_class, msg_list) ;
+        MCREY_SetMsgContainer(border_class, msg_list) ;
 
         let err_save = false;
 
 // ---  set text on msg_modified
         let modified_text = null;
         if (mode !== "create"){
-            const modified_dateJS = parse_dateJS_from_dateISO(mod_MEY_dict.modifiedat);
+            const modified_dateJS = parse_dateJS_from_dateISO(mod_MCREY_dict.modifiedat);
             const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
-            const modified_by = (mod_MEY_dict.modby_username) ? mod_MEY_dict.modby_username : "-";
+            const modified_by = (mod_MCREY_dict.modby_username) ? mod_MCREY_dict.modby_username : "-";
             modified_text = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
         }
-        document.getElementById("id_MEY_msg_modified").innerText = modified_text;
+        document.getElementById("id_MCREY_msg_modified").innerText = modified_text;
 
 // ---  set text on btn delete
         const btn_del_text = (mode === "publish")  ? loc.Delete_examyear :
                              (mode === "close_admin")  ? loc.Undo_publish_examyear :
                              (mode === "close_school")  ? loc.Undo_activate_examyear : null;
-        el_MEY_btn_delete.innerText = btn_del_text;
-        add_or_remove_class(el_MEY_btn_delete, cls_hide, !btn_del_text)
+        el_MCREY_btn_delete.innerText = btn_del_text;
+        add_or_remove_class(el_MCREY_btn_delete, cls_hide, !btn_del_text)
 
 // ---  set text on btn Save Cancel, hide btn save on error  or after save
         const hide_btn_save = (is_ok || err_save);
-        MEY_SetBtnOkCancel(mode, hide_btn_save);
+        MCREY_SetBtnOkCancel(mode, hide_btn_save);
 
-    }  // MEY_SetMsgElements
+    }  // MCREY_SetMsgElements
 
-//========= MEY_SetMsgContainer ======== // PR2021-06-20
-    function MEY_SetBtnOkCancel(mode, hide_btn_save) {
+//========= MCREY_SetMsgContainer ======== // PR2021-06-20
+    function MCREY_SetBtnOkCancel(mode, hide_btn_save) {
 
 // ---  btn_save_text
         const btn_save_text = (mode === "create") ? loc.Create_new_examyear :
                               (mode === "publish")  ? loc.Publish_examyear :
                               (mode === "activate")  ? loc.Activate_examyear :
                               (["close_admin", "close_school"].includes(mode))  ? loc.Close_examyear : null;
-        el_MEY_btn_save.innerText = btn_save_text;
+        el_MCREY_btn_save.innerText = btn_save_text;
 
 // ---  show / hide btn save
-        add_or_remove_class(el_MEY_btn_save, cls_hide, hide_btn_save)
+        add_or_remove_class(el_MCREY_btn_save, cls_hide, hide_btn_save)
 
 // ---  set text on btn cancel
-        el_MEY_btn_cancel.innerText = ((hide_btn_save) ? loc.Close: loc.Cancel);
-        if(hide_btn_save){el_MEY_btn_cancel.focus()}
+        el_MCREY_btn_cancel.innerText = ((hide_btn_save) ? loc.Close: loc.Cancel);
+        if(hide_btn_save){el_MCREY_btn_cancel.focus()}
 
     }
 
-//========= MEY_SetMsgContainer ======== // PR2021-04-24
-    function MEY_SetMsgContainer(border_class, msg_list) {
-        //console.log(" -----  MEY_SetMsgContainer   ----")
+//========= MCREY_SetMsgContainer ======== // PR2021-04-24
+    function MCREY_SetMsgContainer(border_class, msg_list) {
+        //console.log(" -----  MCREY_SetMsgContainer   ----")
         //console.log("msg_list", msg_list)
 
         const el_msg_container = document.getElementById("id_msg_container");
@@ -1044,21 +1045,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         el_msg_container.innerHTML = msg_html;
 
-    }  // MEY_SetMsgContainer
+    }  // MCREY_SetMsgContainer
 
 
-//========= MEY_headertext  ======== // PR2020-10-04
-    function MEY_headertext(mode) {
-        //console.log(" -----  MEY_headertext   ----")
+//========= MCREY_headertext  ======== // PR2020-10-04
+    function MCREY_headertext(mode) {
+        //console.log(" -----  MCREY_headertext   ----")
 
 
-    }  // MEY_headertext
+    }  // MCREY_headertext
 
 // +++++++++ END MOD EXAMYEAR ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 // +++++++++ MOD EDIT EXAM YEAR ++++++++++++++++ PR2021-08-30
-    function MEDEY_Open(el_input){
-        console.log(" -----  MEDEY_Open   ----")
+    function MODEY_Open(el_input){
+        console.log(" -----  MODEY_Open   ----")
         console.log("permit_dict.permit_crud", permit_dict.permit_crud)
 
         if(!permit_dict.permit_crud){
@@ -1077,42 +1078,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 map_id = tblRow.id;
             }
             const map_dict = get_mapdict_from_datamap_by_id(examyear_map, map_id)
-            mod_MEY_dict = {}
-            if(!isEmpty(map_dict)){mod_MEY_dict = deepcopy_dict(map_dict)}
+            mod_MCREY_dict = {}
+            if(!isEmpty(map_dict)){mod_MCREY_dict = deepcopy_dict(map_dict)}
 
-        console.log("mod_MEY_dict", mod_MEY_dict)
+        console.log("mod_MCREY_dict", mod_MCREY_dict)
 // ---  set header text, input element and info box
-            MEDEY_SetElements()
+            MODEY_SetElements()
 
     // ---  show modal
             $("#id_mod_edit_examyear").modal({backdrop: true});
 
         }
+    };  // MODEY_Open
 
-    };  // MEDEY_Open
-//=========  MEDEY_Save  ================  PR2020-10-01
-    function MEDEY_Save(crud_mode) {
-        console.log(" -----  MEDEY_Save  ----", crud_mode);
-        console.log( "mod_MEY_dict: ", mod_MEY_dict);
+//=========  MODEY_Save  ================  PR2020-10-01
+    function MODEY_Save(crud_mode) {
+        //console.log(" -----  MODEY_Save  ----", crud_mode);
+        //console.log( "mod_MCREY_dict: ", mod_MCREY_dict);
 
         if (permit_dict.permit_crud){
-            const is_create = (mod_MEY_dict.is_addnew);
+            const is_create = (mod_MCREY_dict.is_addnew);
             const is_delete = (crud_mode === "delete");
             const upload_mode = (is_create) ? "create" : (is_delete) ? "delete" : "update"
 
             let upload_dict = {table: 'examyear', mode: upload_mode}
-            if(mod_MEY_dict.examyear_id){upload_dict.examyear_pk = mod_MEY_dict.examyear_id};
-            if(mod_MEY_dict.mapid){upload_dict.mapid = mod_MEY_dict.mapid};
+            if(mod_MCREY_dict.examyear_id){upload_dict.examyear_pk = mod_MCREY_dict.examyear_id};
+            if(mod_MCREY_dict.mapid){upload_dict.mapid = mod_MCREY_dict.mapid};
 
     // ---  put changed values of input elements in upload_dict
             let has_changed = false;
-            if(el_MEDEY_form_controls){
-                const form_elements = el_MEDEY_form_controls.querySelectorAll(".awp_input_checkbox")
+            if(el_MODEY_form_controls){
+                const form_elements = el_MODEY_form_controls.querySelectorAll(".awp_input_select, .awp_input_checkbox");
                 for (let i = 0, el; el = form_elements[i]; i++) {
                     const fldName = get_attr_from_el(el, "data-field");
                     const data_value = get_attr_from_el(el, "data-value");
-                    const new_value = !(data_value !== "1");
-                    const old_value = (mod_MEY_dict[fldName]) ? mod_MEY_dict[fldName] : false;
+                    const new_value = (data_value === "1");
+                    const old_value = (mod_MCREY_dict[fldName]) ? mod_MCREY_dict[fldName] : false;
                     if (new_value !== old_value) {
                         upload_dict[fldName] = new_value;
                         has_changed = true;
@@ -1125,57 +1126,95 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 // ---  hide modal
         $("#id_mod_edit_examyear").modal("hide");
-    }  // MEDEY_Save
+    }  // MODEY_Save
 
-//========= MEDEY_Toggle  ============= PR2021-09-03
-    function MEDEY_Toggle(el_input){
-        console.log( "===== MEDEY_Toggle  ========= ");
+//========= MODEY_InputChanged  ============= PR2021-09-03 PR2021-12-02
+    function MODEY_InputChanged(el_input){
+        //console.log( "===== MODEY_InputChanged  ========= ");
 
-        el_MEDEY_btn_save.disabled=false;
-        t_InputToggle(el_input);
+        if (el_input.tagName === "SELECT") {
+            MODEY_select_toggle(el_input)
+        } else {
+            t_InputToggle(el_input);
+        }
 
-    };  // MEDEY_Toggle
+        el_MODEY_btn_save.disabled = false;
+    };  // MODEY_InputChanged
 
-//========= MEDEY_SetElements  ============= PR2021-08-30
-    function MEDEY_SetElements(){
-        console.log( "===== MEDEY_SetElements  ========= ");
+//========= MODEY_select_toggle  ============= PR2021-12-02
+    function MODEY_select_toggle(el_input){
+        //console.log( "===== MODEY_select_toggle  ========= ");
+
+        el_input.setAttribute("data-value", el_input.value);
+
+        const value_bool = (el_input.value === "1");
+        const fldName = get_attr_from_el_str(el_input, "data-field");
+        const hide_msg = (["no_practexam", "no_centralexam"].includes(fldName)) ? value_bool : !value_bool;
+
+        const el_msg = document.getElementById("id_MODEY_msg_" + fldName);
+        add_or_remove_class(el_msg, cls_hide, hide_msg);
+        if (fldName === "no_centralexam"){
+            const el_no_third_period = document.getElementById("id_MODEY_no_thirdperiod");
+            el_no_third_period.disabled = value_bool;
+            // also set el_no_third_period = true when no central exam
+            if(value_bool){
+                el_no_third_period.value = "1";
+                el_no_third_period.setAttribute("data-value", el_input.value);
+            }
+        }
+    };  // MODEY_select_toggle
+
+//========= MODEY_SetElements  ============= PR2021-08-30
+    function MODEY_SetElements(){
+        //console.log( "===== MODEY_SetElements  ========= ");
 
 // ---  header text
-        const el_MEDEY_header = document.getElementById("id_MEDEY_header");
-        el_MEDEY_header.innerText = loc.Examyear + " " + mod_MEY_dict.examyear_code;
+        const el_MODEY_header = document.getElementById("id_MODEY_header");
+        el_MODEY_header.innerText = loc.Examyear + " " + mod_MCREY_dict.examyear_code;
 
-        if(el_MEDEY_form_controls){
-            const form_elements = el_MEDEY_form_controls.querySelectorAll(".awp_input_checkbox")
+        //console.log( "mod_MCREY_dict: ", mod_MCREY_dict);
+        if(el_MODEY_form_controls){
+            const form_elements = el_MODEY_form_controls.querySelectorAll(".awp_input_select, .awp_input_checkbox")
+
             for (let i = 0, el; el = form_elements[i]; i++) {
                 const field = get_attr_from_el(el, "data-field");
-                const value_bool = mod_MEY_dict[field];
-                el.setAttribute("data-value", (value_bool) ? "1" : "0");
-                add_or_remove_class(el.children[0], "tickmark_2_2", value_bool, "tickmark_1_1")
+                const value_bool = mod_MCREY_dict[field];
+                const value_bool_str = (value_bool) ? "1" : "0";
+
+                el.setAttribute("data-value", value_bool_str);
+                if(el.classList.contains("awp_input_checkbox")){
+                el.setAttribute("data-value", value_bool_str);
+                    add_or_remove_class(el.children[0], "tickmark_2_2", value_bool, "tickmark_1_1");
+                } else {
+                    el.value = value_bool_str;
+                    // this one is in MODEY_select_toggle:  el.setAttribute("data-value", value_bool_str);
+                    MODEY_select_toggle(el);
+                };
             };
         };
 
 // ---  set text on msg_modified
         let modified_text = null;
-        if (mod_MEY_dict.modifiedat){
-            const modified_dateJS = parse_dateJS_from_dateISO(mod_MEY_dict.modifiedat);
+        if (mod_MCREY_dict.modifiedat){
+            const modified_dateJS = parse_dateJS_from_dateISO(mod_MCREY_dict.modifiedat);
             const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
-            const modified_by = (mod_MEY_dict.modby_username) ? mod_MEY_dict.modby_username : "-";
+            const modified_by = (mod_MCREY_dict.modby_username) ? mod_MCREY_dict.modby_username : "-";
             modified_text = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
-        }
-        document.getElementById("id_MEDEY_modified").innerText = modified_text;
+        };
+        document.getElementById("id_MODEY_modified").innerText = modified_text;
 
 // ---  set text on btn Save Cancel, hide btn save on error  or after save
-        el_MEDEY_btn_save.disabled=true;
-        //MEY_SetBtnOkCancel(mode, hide_btn_save);
+        el_MODEY_btn_save.disabled=true;
+        //MCREY_SetBtnOkCancel(mode, hide_btn_save);
 
-    }  // MEDEY_SetElements
+    }  // MODEY_SetElements
 //////////////////////////////////////////////////
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-11-22 PR2021-06-29 PR2021-08-21
     function ModConfirmOpen(mode) {
         console.log(" -----  ModConfirmOpen   ----")
-        // called by el_MEY_btn_delete and submenu btn delete examyear and copyfrom_
+        // called by el_MCREY_btn_delete and submenu btn delete examyear and copyfrom_
         // mode is 'delete', 'copy_to_sxm', 'delete_subjects_from_sxm', 'copy_scheme
         //console.log("selected", selected)
         //console.log("permit_dict", permit_dict)

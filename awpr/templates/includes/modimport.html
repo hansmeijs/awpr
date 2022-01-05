@@ -17,19 +17,19 @@
 
                 <div class="modal_body_right mx-4 mt-2 mb-0">
                     <div id="id_MIMP_btn_container" class="btn-group btn-block m-2" role="group" aria-label="Choose option" >
-                        <button data-btn="btn_step1" class="btn btn-secondary">{% trans 'Step' %} 1: {% trans 'Select file' %}</button>
-                        <button data-btn="btn_step2" class="btn btn-secondary">{% trans 'Step' %} 2: {% trans 'Link colums' %}</button>
-                        <button data-btn="btn_step3" class="btn btn-secondary">{% trans 'Step' %} 3: {% trans 'Link data' %}</button>
-                        <button data-btn="btn_step4" class="btn btn-secondary">{% trans 'Step' %} 4: {% trans 'Test upload' %}</button>
-                        <button data-btn="btn_step5" class="btn btn-secondary">{% trans 'Step' %} 5: {% trans 'Upload data' %}</button>
+                        <button data-btn_index="1" class="btn btn-secondary"></button>
+                        <button data-btn_index="2" class="btn btn-secondary"></button>
+                        <button data-btn_index="3" class="btn btn-secondary"></button>
+                        <button data-btn_index="4" class="btn btn-secondary"></button>
+                        <button data-btn_index="5" class="btn btn-secondary"></button>
+                        <button data-btn_index="6" class="btn btn-secondary"></button>
                     </div>
                 </div>
                 <div id="id_MIMP_body" class="mx-4 my-2">
-
-
                     <h4 id="id_MIMP_step_text" class="mx-4 my-0"></h4>
+
 <!-- STEP 1 -->
-                    <div class="ta_l mx-4 btn_show btn_step1">
+                    <div class="ta_l mx-4 btn_show btn_step1 display_hide">
                         <label id="id_MIMP_filedialog_label" class="m-2"></label>
                         <div class="display_hide">
                             <input id="id_MIMP_filedialog" type="file" name="file" class="mb-0" accept=".xlsx, .xls, csv">
@@ -63,7 +63,6 @@
                             </div>
                         </div>
 
-
                         <label class="mx-2 mt-3 mb-2">C. {% trans 'Select if the worksheet has a header row:' %}</label>
                         <div class="content_subheader_left mx-4">
                             <span>
@@ -74,13 +73,21 @@
                     </div>
 
 <!-- STEP 2 -->
-                    <div class="mx-4 mt-2 btn_show btn_step2 display_hide">
+                    <div class="ta_l mx-4 btn_show btn_step2 display_hide">
+                        <label class="label_margin_top_m2">{% trans 'Select the grade type of the exam you want to upload' %}:</label>
+                        <select id="id_MIMP_examgradetype" class="form-control">
+                        </select>
+
+                    </div>
+
+<!-- STEP 3 -->
+                    <div class="mx-4 mt-2 btn_show btn_step3 display_hide">
                         <div class="mx-2"><small>{% trans "Click corresponding names in the left and right list to link an Excel column to an AWP-column." %}</small></div>
                         <div class="mx-2"><small >{% trans "Click linked names in the lower list to unlink these columns." %}</small></div>
                         <div id="id_MIMP_msg_dontlinksubjects" class="mx-2"><small><b>{% trans "You don't have to link the subjects yet." %}</b> {% trans "They will be linked in the next step." %}</small></div>
                         <div class="mx-2"><small id="id_MIMP_msg_linkrequired"></small></div>
 
-                        <div id="id_MIMP_crosstab_container" class="mx-4 mt-2 display_hide">
+                        <div id="id_MIMP_crosstab_container" class="mx-4 mt-2 display_hideXX">
                             <h6 class="mx-2 mt-2">{% trans "Select if each subject has a separate column, or all subjects are in one column 'Subject':" %}</h6>
                             <span>
                                 <input id="id_MIMP_crosstab" type="checkbox" value="true" class="tw_032">
@@ -131,8 +138,8 @@
                         </div>
                     </div>
 
-<!-- STEP 3-->
-                    <div class="mx-4 mt-2 btn_show btn_step3 display_hide">
+<!-- STEP 4 -->
+                    <div class="mx-4 mt-2 btn_show btn_step4 display_hide">
                         <div class="mx-2"><small>{% trans "Click corresponding names in the left and right list to link an Excel value to an AWP value." %}</small></div>
                         <div class="mx-2"><small >{% trans "Click linked values in the lower list to unlink these values." %}</small></div>
 
@@ -362,18 +369,18 @@
                         </div>
                     </div>
 
-<!-- STEP 4 - STEP 5 -->
-                    <div class="ta_l mx-4 mt-2 btn_show btn_step4 btn_step5 display_hide">
+<!-- STEP 5 - STEP 6 -->
+                    <div class="ta_l mx-4 mt-2 btn_show btn_step5 btn_step6 display_hide">
                         <div class="mx-2 btn_show btn_step4 display_hide">
                             <small>{% trans "Click 'Test upload' to validate the new data and compare it with the existing database. It will not save the new data yet." %}</small>
                         </div>
-                        <div class="mx-2 btn_show btn_step5 display_hide">
+                        <div class="mx-2 btn_show btn_step6 display_hide">
                             <small >{% trans "Click 'Upload' to upload and save the new data." %} {% trans "Candidates, who already exist in the database, will be skipped." %}</small>
                         </div>
-                        <div class="content_subheader_left mx-2 my-2 btn_show btn_step4 display_hide">
+                        <div class="content_subheader_left mx-2 my-2 btn_show btn_step5 display_hide">
                             <button id="id_MIMP_btn_test"  class="btn btn-secondary">{% trans 'Test upload' %}</button>
                         </div>
-                        <div class="content_subheader_left mx-2 my-2 btn_show btn_step5 display_hide">
+                        <div class="content_subheader_left mx-2 my-2 btn_show btn_step6 display_hide">
                             <button id="id_MIMP_btn_upload"  class="btn btn-secondary">{% trans 'Upload' %}</button>
                         </div>
 
@@ -413,6 +420,7 @@
                      data-url_importdata_upload="{% url 'url_importdata_upload' %}"
                      data-url_importstudent_upload="{% url 'url_importstudent_upload' %}"
                      data-url_importstudentsubject_upload="{% url 'url_importstudentsubject_upload' %}"
+                     data-url_importgrade_upload="{% url 'url_importgrade_upload' %}"
                      data-url_importusername_upload="{% url 'url_importusername_upload' %}"></div>
             </div>
         </div>

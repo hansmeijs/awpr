@@ -101,7 +101,7 @@ def Loggedin(request):
 
         if sel_page_dict is not None:
             sel_page = sel_page_dict.get('page')
-# get page_url of sel_page, rturns 'home' when not found
+# get page_url of sel_page, returns 'page_student' when not found
     page_url = awpr_menu.get_saved_page_url(sel_page, request)
     #logger.debug('page_url: ' + str(page_url))
 
@@ -1963,7 +1963,7 @@ class OrderlistRequestVerifcodeView(View):  # PR2021-09-08
             if permit_list:
                 has_permit = 'permit_submit_orderlist' in permit_list
             if logging_on:
-                logger.debug('req_usr.usergroup_list:: ' + str(req_usr.usergroup_list))
+                logger.debug('req_usr.usergroup_list: ' + str(req_usr.usergroup_list))
                 logger.debug('permit_list: ' + str(permit_list))
                 logger.debug('has_permit: ' + str(has_permit))
 
@@ -2110,7 +2110,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12
                         log_list.append(c.STRING_SPACE_05)
 
 # get text from examyearsetting
-                        settings = af.get_exform_text(sel_examyear_instance, ['exform', 'ex1'])
+                        settings = af.get_library(sel_examyear_instance, ['exform', 'ex1'])
 
 # - get department_dictlist, lvlbase_dictlist, subjectbase_dictlist, schoolbase_dictlist
                         department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear_instance)
@@ -3611,6 +3611,7 @@ class SchoolImportUploadSetting(View):   # PR2019-03-10
 
                 new_worksheetname = ''
                 new_has_header = True
+                new_examgradetype = ''
                 new_code_calc = ''
                 new_coldefs = {}
 
@@ -3621,6 +3622,7 @@ class SchoolImportUploadSetting(View):   # PR2019-03-10
                     if stored_setting:
                         new_has_header = stored_setting.get('has_header', True)
                         new_worksheetname = stored_setting.get('worksheetname', '')
+                        new_examgradetype = stored_setting.get('examgradetype', '')
                         new_code_calc = stored_setting.get('codecalc', '')
                         new_coldefs = stored_setting.get('coldefs', {})
 
@@ -3632,11 +3634,14 @@ class SchoolImportUploadSetting(View):   # PR2019-03-10
                             new_worksheetname = new_setting.get('worksheetname', '')
                         if 'has_header' in new_setting:
                             new_has_header = new_setting.get('has_header', True)
+                        if 'examgradetype' in new_setting:
+                            new_examgradetype = new_setting.get('examgradetype', '')
                         if 'coldefs' in new_setting:
                             new_coldefs = new_setting.get('coldefs', {})
                     #logger.debug('new_code_calc' + str(new_code_calc))
                 new_setting = {'worksheetname': new_worksheetname,
                                'has_header': new_has_header,
+                               'examgradetype': new_examgradetype,
                                'codecalc': new_code_calc,
                                'coldefs': new_coldefs}
                 new_setting_json = json.dumps(new_setting)

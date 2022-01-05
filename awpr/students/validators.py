@@ -361,12 +361,15 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted):
         logger.debug('studsubj_dictlist_with_tobedeleted: ' + str(studsubj_dictlist_with_tobedeleted))
 
     # PR2021-09-29 debug: 'tobedeleted' subjects must be filtered out
+    # PR2021-12-27 debug: also subjects with 'is_extra_nocount' must be filtered out
     studsubj_dictlist = []
     if studsubj_dictlist_with_tobedeleted:
         for studsubj_dict in studsubj_dictlist_with_tobedeleted:
             tobedeleted = studsubj_dict.get('tobedeleted', False)
             if not tobedeleted:
-                studsubj_dictlist.append(studsubj_dict)
+                is_extra_nocount = studsubj_dict.get('is_extra_nocount', False)
+                if not is_extra_nocount:
+                    studsubj_dictlist.append(studsubj_dict)
 
     try:
         msg_list = []
@@ -640,10 +643,7 @@ def validate_studsubj_appr_subm_locked(student_instance):
 # - end of validate_approved_or_submitted_studsubj
 
 
-#??????????????????????????????????????????????????????????
-
 # ========  validate_studentsubjects  ======= PR2021-07-24
-
 def validate_studentsubjects_no_msg(student):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -787,7 +787,7 @@ def validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict,
                 logger.debug('scheme_item_dict: ' + str(scheme_item_dict))
             # scheme_item_dict: {'name': 'Gemeensch.', 'min_subjects': 2, 'max_subjects': 4,
             # 'min_extra_nocount': 2, 'max_extra_nocount': 4, 'min_extra_counts': 2, 'max_extra_counts': 4,
-            # 'min_elective_combi': 2, 'max_elective_combi': 4}
+
 
             sjtp_name = scheme_item_dict.get('name', '')
             min_subjects = scheme_item_dict.get('min_subjects')
@@ -799,9 +799,6 @@ def validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict,
             min_extra_counts = scheme_item_dict.get('min_extra_counts')
             max_extra_counts = scheme_item_dict.get('max_extra_counts')
 
-            min_elective_combi = scheme_item_dict.get('min_elective_combi')
-            max_elective_combi = scheme_item_dict.get('max_elective_combi')
-
             if logging_on:
                 logger.debug('----------------: ' + str(sjtp_name))
                 logger.debug('min_subjects: ' + str(min_subjects))
@@ -812,11 +809,10 @@ def validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict,
                 studsubj_item_dict = studsubj_sjtp_dict.get(scheme_sjtp_dict_pk)
                 # studsubj_item_dict: {'min': 2, 'max': 4, 'name': 'Gemeensch.',
                 #                       'subj_list': [1026, 999, 998, 1002, 1027],
-                #                       'nocount_list': [], 'counts_list': [], 'elective_list': []}
+                #                       'nocount_list': [], 'counts_list': [],
                 subj_list = studsubj_item_dict.get('subj_list')
                 nocount_list = studsubj_item_dict.get('nocount_list', [])
                 counts_list = studsubj_item_dict.get('counts_list', [])
-                elective_list = studsubj_item_dict.get('elective_list', [])
                 subject_count = len(subj_list)
 
                 if logging_on:
@@ -826,7 +822,6 @@ def validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict,
                     logger.debug('subj_list: ' + str(subj_list))
                     logger.debug('nocount_list: ' + str(nocount_list))
                     logger.debug('counts_list: ' + str(counts_list))
-                    logger.debug('elective_list: ' + str(elective_list))
                     logger.debug('subject_count: ' + str(subject_count))
 
             caption = _('subject')
@@ -1096,10 +1091,7 @@ def get_scheme_si_sjtp_dict(scheme):
                 'max_extra_nocount': sjtp.max_extra_nocount,
 
                 'min_extra_counts': sjtp.min_extra_counts,
-                'max_extra_counts': sjtp.max_extra_counts,
-
-                'min_elective_combi': sjtp.min_elective_combi,
-                'max_elective_combi': sjtp.max_elective_combi,
+                'max_extra_counts': sjtp.max_extra_counts
             }
 
 # - get info from schemeitems
@@ -1109,6 +1101,8 @@ def get_scheme_si_sjtp_dict(scheme):
     mvt_list = []
     wisk_list = []
     core_list = []
+    sufficient_list = []
+    notatevlex_list = []
 
     subject_code = {}
 
@@ -1131,6 +1125,11 @@ def get_scheme_si_sjtp_dict(scheme):
         if si.is_core_subject:
             core_list.append(subj_pk)
 
+        if si.rule_grade_sufficient:  # PR2021-11-23
+            sufficient_list.append(subj_pk)
+        if si.rule_gradesuff_notatevlex:  # PR2021-11-23
+            notatevlex_list.append(subj_pk)
+
     scheme_dict = {
         'schemename': schemename,
         'min_subj': min_subj,
@@ -1150,6 +1149,8 @@ def get_scheme_si_sjtp_dict(scheme):
         'mvt_list': mvt_list,
         'wisk_list': wisk_list,
         'core_list': core_list,
+        'sufficient_list': sufficient_list,
+        'notatevlex_list': notatevlex_list,
 
         'subj_code': subject_code
     }
@@ -1176,22 +1177,23 @@ def get_studsubj_dict_from_modal(stud_scheme, student, si_dictlist, doubles_list
     wisk_list = []
     core_list = []
 
+    sufficient_list = []  # PR2021-11-23
+    notatevlex_list = []
+
     if not si_dictlist:
         msg_list.append(str(_("This candidate has no subjects.")))
     else:
         for si_dict in si_dictlist:
-            # si_dict = {schemeitem_id: 2089, is_extra_counts: false, is_extra_nocount: false, is_elective_combi: false}
+            # si_dict = {schemeitem_id: 2089, is_extra_counts: false, is_extra_nocount: false,}
             schemeitem = None
             schemeitem_pk = si_dict.get('schemeitem_id')
             is_extra_nocount = si_dict.get('is_extra_nocount', False)
             is_extra_counts = si_dict.get('is_extra_counts', False)
-            is_elective_combi = si_dict.get('is_elective_combi', False)
             if schemeitem_pk:
                 schemeitem = subj_mod.Schemeitem.objects.get_or_none(pk=schemeitem_pk)
-            get_schemitem_info(stud_scheme, schemeitem,
-                                   is_extra_nocount, is_extra_counts, is_elective_combi,
+            get_schemitem_info(stud_scheme, schemeitem, is_extra_nocount, is_extra_counts,
                                    subject_list, doubles_list, sjtp_dict, mand_list, mand_subj_list, combi_list,
-                                   mvt_list, wisk_list, core_list, msg_list)
+                                   mvt_list, wisk_list, core_list, sufficient_list, notatevlex_list, msg_list)
 
     studsubj_dict = {
         'subject_list': subject_list,
@@ -1202,7 +1204,9 @@ def get_studsubj_dict_from_modal(stud_scheme, student, si_dictlist, doubles_list
         'combi_list': combi_list,
         'mvt_list': mvt_list,
         'wisk_list': wisk_list,
-        'core_list': core_list
+        'core_list': core_list,
+        'sufficient_list': sufficient_list,
+        'notatevlex_list': notatevlex_list
     }
 
     if logging_on:
@@ -1211,8 +1215,8 @@ def get_studsubj_dict_from_modal(stud_scheme, student, si_dictlist, doubles_list
 # - end of get_studsubj_dict_from_modal
 
 
-def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
-    # - get info from student subjects PR2021-07-10
+def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):  #  PR2021-07-10 PR2021-12-30
+    # - get info from student subjects
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_studsubj_dict  -----')
@@ -1228,19 +1232,24 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
     wisk_list = []
     core_list = []
 
+    sufficient_list = []  # PR2021-11-23
+    notatevlex_list = []
+
 # - create dict with studentsubject values that are used in validator
+    # PR2021-12-27 debug: also skip subjects with 'is_extra_nocount'
     rows = stud_mod.Studentsubject.objects.filter(
         student=student,
-        tobedeleted=False
+        tobedeleted=False,
+        is_extra_nocount=False
     )
     if rows is None:
         msg_list.append(_("This candidate has no subjects."))
     else:
         for studsubj in rows:
             get_schemitem_info(stud_scheme, studsubj.schemeitem,
-                                   studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_elective_combi,
+                                   studsubj.is_extra_nocount, studsubj.is_extra_counts,
                                    subject_list, doubles_list, sjtp_dict, mand_list, mand_subj_list, combi_list,
-                                   mvt_list, wisk_list, core_list, msg_list)
+                                   mvt_list, wisk_list, core_list, sufficient_list, notatevlex_list, msg_list)
 
     studsubj_dict = {
         'subject_list': subject_list,
@@ -1251,7 +1260,9 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
         'combi_list': combi_list,
         'mvt_list': mvt_list,
         'wisk_list': wisk_list,
-        'core_list': core_list
+        'core_list': core_list,
+        'sufficient_list': sufficient_list,
+        'notatevlex_list': notatevlex_list
     }
 
     if logging_on:
@@ -1261,9 +1272,9 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):
 
 
 def get_schemitem_info(stud_scheme, schemeitem,
-                       studsubj_is_extra_nocount, studsubj_is_extra_counts, studsubj_is_elective_combi,
+                       studsubj_is_extra_nocount, studsubj_is_extra_counts,
                        subject_list, doubles_list, sjtp_dict, mand_list, mand_subj_list, combi_list,
-                       mvt_list, wisk_list, core_list, msg_list):
+                       mvt_list, wisk_list, core_list, sufficient_list, notatevlex_list, msg_list):
     # - get info from schemitem PR2021-08-17
     logging_on = False  # s.LOGGING_ON
     if schemeitem.scheme_id != stud_scheme.pk:
@@ -1293,9 +1304,7 @@ def get_schemitem_info(stud_scheme, schemeitem,
                     'name': subjecttype.name,
                     'subj_list': [],
                     'nocount_list': [],
-                    'counts_list': [],
-                    'elective_list': [],
-
+                    'counts_list': []
                 }
             item_dict = sjtp_dict.get(sjtp_pk)
 
@@ -1308,9 +1317,6 @@ def get_schemitem_info(stud_scheme, schemeitem,
             if studsubj_is_extra_counts:
                 counts_list = item_dict.get('counts_list')
                 counts_list.append(subj_pk)
-            if studsubj_is_elective_combi:
-                elective_list = item_dict.get('elective_list')
-                elective_list.append(subj_pk)
 
             if schemeitem.is_mandatory:
                 mand_list.append(subj_pk)
@@ -1324,6 +1330,11 @@ def get_schemitem_info(stud_scheme, schemeitem,
                 wisk_list.append(subj_pk)
             if schemeitem.is_core_subject:
                 core_list.append(subj_pk)
+            if schemeitem.rule_grade_sufficient:  # PR2021-11-23
+                sufficient_list.append(subj_pk)
+            if schemeitem.rule_gradesuff_notatevlex:  # PR2021-11-23
+                notatevlex_list.append(subj_pk)
+
 # - end of get_schemitem_info
 
 
@@ -1553,6 +1564,7 @@ def get_double_schoolcode_usernamelist_from_uploadfile(data_list):
     return double_username_list, double_email_list
 # - end of get_double_schoolcode_usernamelist_from_uploadfile
 
+
 def found_in_tuple_list(tuple_list, search_tuple): # PR2021-08-05
     found = False
     if tuple_list:
@@ -1588,10 +1600,10 @@ def validate_double_schoolcode_email_in_uploadfile(schoolcode, email, double_ent
 # - end of validate_double_schoolcode_username_in_uploadfile
 
 
-# ========  get_double_entrieslist_from_uploadfile  ======= PR2021-06-14 PR2021-07-17
+# ========  get_double_entrieslist_from_uploadfile  ======= PR2021-06-14 PR2021-07-17 PR2022-01-04
 
 def get_double_entrieslist_from_uploadfile(data_list):
-    # function returns list of idnumbers, that occur multiple times in data_list
+    # function returns list of valid idnumbers, that occur multiple times in data_list
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -1607,17 +1619,23 @@ def get_double_entrieslist_from_uploadfile(data_list):
             logger.debug('isinstance(id_number, int): ' + str(isinstance(id_number, int)))
 
         idnumber_nodots_stripped, msg_errNIU, birthdate_dteobjNIU = get_idnumber_nodots_stripped_lower(id_number)
+        if logging_on:
+            logger.debug('idnumber_nodots_stripped: ' + str(idnumber_nodots_stripped) + ' ' + str(type(idnumber_nodots_stripped)))
 
-        found = False
-        if student_list:
-            for student_id in student_list:
-                if student_id == idnumber_nodots_stripped:
-                    found = True
-                    if idnumber_nodots_stripped not in double_entrieslist:
-                        double_entrieslist.append(idnumber_nodots_stripped)
-                    break
-        if not found:
-            student_list.append(idnumber_nodots_stripped)
+        # PR2022-01-04 debug: when idnumber is not valid, idnumber_nodots_stripped = ''. Skip check in that case
+        if idnumber_nodots_stripped:
+            found = False
+            if student_list:
+                for student_id in student_list:
+                    if student_id == idnumber_nodots_stripped:
+                        if logging_on:
+                            logger.debug('student_id == idnumber_nodots_stripped: ' + str(student_id) + ' ' + str(type(student_id)))
+                        found = True
+                        if idnumber_nodots_stripped not in double_entrieslist:
+                            double_entrieslist.append(idnumber_nodots_stripped)
+                        break
+            if not found:
+                student_list.append(idnumber_nodots_stripped)
 
         if logging_on:
             logger.debug('student_list: ' + str(student_list))
@@ -1628,6 +1646,11 @@ def get_double_entrieslist_from_uploadfile(data_list):
 
 def get_idnumber_nodots_stripped_lower(id_number):
     # PR2021-07-20  PR2021-09-10
+    logger_on = False  # s.LOGGING_ON
+    if logger_on:
+        logger.debug('  -----  get_idnumber_nodots_stripped_lower  -----')
+        logger.debug('id_number: ' + str(id_number) + ' ' + str(type(id_number)))
+
     idnumber_nodots_stripped_lower = ''
     birthdate_dteobj = None
     msg_err = None
@@ -1639,6 +1662,8 @@ def get_idnumber_nodots_stripped_lower(id_number):
             id_number_str = id_number.replace('.', '')
             if id_number_str:
                 id_number_str = id_number_str.strip()
+                if logger_on:
+                    logger.debug('id_number_str: <' + str(id_number_str) + '> ' + str(type(id_number_str)))
                 if id_number_str:
                     id_number_str = id_number_str.lower()
 
@@ -1655,6 +1680,8 @@ def get_idnumber_nodots_stripped_lower(id_number):
                                 if birthdate_dteobj :
                                     is_ok = True
 
+                    if logger_on:
+                        logger.debug('is_ok: ' + str(is_ok) )
                     if is_ok:
                         idnumber_nodots_stripped_lower = id_number_str
                     else:
@@ -1665,12 +1692,42 @@ def get_idnumber_nodots_stripped_lower(id_number):
     else:
         msg_err = _("ID number is not entered.")
 
+    if logger_on:
+        logger.debug('msg_err: ' + str(msg_err))
+        logger.debug('idnumber_nodots_stripped_lower: ' + str(idnumber_nodots_stripped_lower) + ' ' + str(type(idnumber_nodots_stripped_lower)))
+        logger.debug('birthdate_dteobj: ' + str(birthdate_dteobj)+ ' ' + str(type(birthdate_dteobj)))
     return idnumber_nodots_stripped_lower, msg_err, birthdate_dteobj
 # - end of get_idnumber_nodots_stripped_lower
 
 
+
+def get_string_convert_type_and_strip(caption, value, blank_not_allowed):
+    # function converts non-string types to string and strips it from spaces PR2021-11-07
+    value_stripped = ''
+    msg_err = None
+    if value:
+        try:
+            if not isinstance(value, str):
+                value = str(value)
+
+            value_stripped = value.strip()
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            msg_err = _("%(cpt)s '%(val)s' is not a valid field type.") % {'cpt': caption, 'val': str(value)}
+
+    elif blank_not_allowed:
+        msg_err = _("%(cpt)s cannot be blank.")% {'cpt': caption, 'val': str(value)}
+
+    return value_stripped, msg_err
+# - end of get_string_checked_for_type_and_stripped
+
+
+
+
 # ========  get_double_entrieslist_with_firstlastname_from_uploadfileNIU  ======= PR2021-06-14 PR2021-07-16
 # NOT IN USE
+
 def get_double_entrieslist_with_firstlastname_from_uploadfileNIU(data_list):
     # function returns list of student tuples with (idnumber, lastname, firstname) that occur multiple times in data_list
 
@@ -1730,7 +1787,7 @@ def validate_student_name_length(lastname_stripped, firstname_stripped, prefix_s
 
     if not lastname_stripped:
         has_error = True
-        error_list.append(_('%(fld)s cannot be blank.') % {'fld': _("The last name")})
+        error_list.append(_('%(cpt)s cannot be blank.') % {'cpt': _("The last name")})
     elif len(lastname_stripped) > c.MAX_LENGTH_FIRSTLASTNAME:
         has_error = True
         error_list.append(_("%(fld)s '%(val)s' is too long, maximum %(max)s characters.") \
@@ -1738,7 +1795,7 @@ def validate_student_name_length(lastname_stripped, firstname_stripped, prefix_s
 
     if not firstname_stripped:
         has_error = True
-        error_list.append(_('%(fld)s cannot be blank.') % {'fld': _("The first name")})
+        error_list.append(_('%(cpt)s cannot be blank.') % {'cpt': _("The first name")})
     elif len(firstname_stripped) > c.MAX_LENGTH_FIRSTLASTNAME:
         has_error = True
         error_list.append(_("%(fld)s '%(val)s' is too long, maximum %(max)s characters.") \
@@ -1763,7 +1820,7 @@ def validate_length(caption, input_value, max_length, blank_allowed):
     msg_err = None
     if not input_value:
         if not blank_allowed:
-            msg_err = _('%(fld)s cannot be blank.') % {'fld': caption}
+            msg_err = _('%(cpt)s cannot be blank.') % {'cpt': caption}
 
     elif len(input_value) > c.MAX_LENGTH_IDNUMBER:
         has_error = True
@@ -1794,3 +1851,69 @@ def validate_gender(value):
         if not valid:
             msg_text = _('Gender \'"%s"\' is not allowed.' % value)
     return clean_gender, msg_text
+
+
+# Not in use, maybe can be used for warning
+def validate_reex_count(studsubj_instance, si_dict):  # PR2021-12-19
+    err_list = []
+    max_reex = si_dict.get('scheme_max_reex', 1)
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- validate_reex_count -------')
+        logger.debug('max_reex: ' + str(max_reex))
+
+    # Note: Students that have been sick may do more reex
+    # instead of blocking, give flag when reex amount exceeds
+
+    reex_count = stud_mod.Studentsubject.objects.filter(
+        student=studsubj_instance.student,
+        has_reex=True
+    ).count()
+
+    if reex_count >= max_reex:
+        is_are = _('is') if max_reex == 1 else _('are')
+        caption = _('Re-examination') if max_reex == 1 else _('Re-examinations')
+        err_list.append(_("The candidate already has %(val)s %(cpt)s, only %(max)s %(is_are)s allowed.") \
+                    % {'val': str(reex_count), 'cpt': str(caption).lower(), 'is_are': is_are, 'max': str(max_reex)})
+
+    return err_list
+# function checks if the amount of re-examination equals or exceeds the maximum
+
+
+def validate_studsubj_sr_allowed(si_dict):  # PR2021-12-25
+    err_list = []
+
+    if not si_dict.get('ey_sr_allowed', False):
+        err_list.append(str(_('Re-examinations of the school exam are not allowed this exam year.')))
+    elif not si_dict.get('sr_allowed', False):
+        err_list.append(str(_('Re-examinations of the school exam are not allowed for this subject.')))
+    elif not si_dict.get('weight_se', 0):
+        caption = _('Re-examination school exam')
+        err_list.append(str(_('The %(se_ce_cpt)s weighing of this subject is zero.') % {'se_ce_cpt': 'SE'}))
+        err_list.append(str(_('You cannot enter a %(item)s.') % {'item': str(caption).lower()}))
+
+    return err_list
+# --- end of validate_studsubj_sr_allowed
+
+
+def validate_studsubj_add_reex_reex03_allowed(field, si_dict):  # PR2021-12-18
+    err_list = []
+    if field in ['has_reex', 'has_reex03']:
+        if si_dict.get('no_centralexam', False):
+            err_list.append(str(_('This exam year has no central exams.')))
+        else:
+            if field == 'has_reex03' and si_dict.get('ey_no_thirdperiod', False):
+                err_list.append(str(_('This exam year has no third exam period.')))
+            elif field == 'has_reex03' and si_dict.get('no_thirdperiod', False):
+                err_list.append(str(_('This subject has no third exam period.')))
+            elif not si_dict.get('weight_ce', 0):
+                caption = _('Re-examination 3rd period') if field == 'has_reex03' else _('Re-examination')
+                err_list.append(
+                    str(_('The %(se_ce_cpt)s weighing of this subject is zero.') % {'se_ce_cpt': 'CE'}))
+                err_list.append(str(_('You cannot enter a %(item)s.') % {'item': str(caption).lower()}))
+
+    return err_list
+# --- end of validate_studsubj_add_reex_reex03_allowed
+
+
