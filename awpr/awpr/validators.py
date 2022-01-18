@@ -142,15 +142,15 @@ def validate_unique_useremail(value, country, schoolbase, cur_user_id=None, skip
 # === validate_notblank_maxlength ========= PR2020-08-02 PR2021-06-29 PR2021-10-13
 def validate_notblank_maxlength(value, max_length, caption, blank_allowed=False):
     #logger.debug ('=== validate_notblank_maxlength ====')
-    msg_html = None
+    msg_err = None
     if value:
         if max_length and len(value) > max_length:
-            msg_html = _("%(cpt)s '%(val)s' is too long.<br>Maximum %(max)s characters.") \
+            msg_err = _("%(cpt)s '%(val)s' is too long. Maximum %(max)s characters.") \
                     % {'cpt': str(caption), 'val': str(value), 'max': max_length}
     elif not blank_allowed:
-        msg_html = _('%(cpt)s cannot be blank.') % {'cpt': str(caption)}
+        msg_err = _('%(cpt)s cannot be blank.') % {'cpt': str(caption)}
 
-    return msg_html
+    return msg_err
 # - end of validate_notblank_maxlength
 
 # === validate_unique_examyear ======== PR2020-10-05
@@ -251,6 +251,22 @@ def message_diff_exyr(examyear):  #PR2020-10-30
 
     return awp_message
 
+def message_testsite():  #PR2022-01-12
+    # check if selected examyear is the same as this examyear,
+    # return warning when examyear is different from this_examyear
+    awp_message = {}
+
+    if s.IS_TESTSITE:
+        msg = ''.join(('<b>', str(_('Warning')).upper(), '</b>:<br>',
+                       str(_('You are logged in to <b>awptest.net</b>, the testsite of AWP-online.')),'<br>',
+            str(_('This testsite is for testing and practicing only.')),'<br>',
+            str(_('It contains a copy of the actual data of AWP-online.')),'<br>',
+            str(_('The data you enter in the testsite will not affect the actual data in AWP-online.')),'<br>',
+            str(_('Log in to <b>www.awponline.net</b> if you want to enter the actual data.'))
+                       ))
+        awp_message = {'msg_html': [msg], 'class': 'border_bg_warning'}
+
+    return awp_message
 
 # ============ SUBJECTS
 def validate_subject_code_exists(code, cur_subject=None):  # PR2020-12-11 PR2021-06-22

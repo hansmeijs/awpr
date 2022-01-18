@@ -163,6 +163,12 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         setting_dict=new_setting_dict,
                         subject_pk=None,
                         cur_dep_only=cur_dep_only)
+# ----- clusters
+                if datalist_request.get('cluster_rows'):
+                    datalists['cluster_rows'] = sj_vw.create_cluster_rows(
+                        sel_examyear_pk=sel_examyear.pk,
+                        sel_schoolbase_pk=sel_schoolbase.pk,
+                        sel_depbase_pk=sel_depbase.pk)
 # ----- schemes
                 if datalist_request.get('scheme_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('scheme_rows', 'cur_dep_only'), False)
@@ -430,7 +436,12 @@ def download_setting(request_item_setting, messages, user_lang, request):
         if sel_examyear_instance.no_thirdperiod:
             setting_dict['no_thirdperiod'] = sel_examyear_instance.no_thirdperiod
 
-# - add message when examyear is different from this eaxamyear
+# - add message when logged in to testsite
+    message = val.message_testsite()  # PR2022-01-12
+    if message:
+        messages.append(message)
+
+    # - add message when examyear is different from this eaxamyear
     message = val.message_diff_exyr(sel_examyear_instance)  # PR2020-10-30
     if message:
         messages.append(message)

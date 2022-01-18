@@ -1713,14 +1713,14 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
                     if (!excel_value_list.includes(excColdef_lc)) {
                         const dict = {excColIndex: excColIndex, excColdef: excColdef, sortby: excColdef_lc}
                         excel_value_list.push(dict);
-                    }
-                }
-            }
+                    };
+                };
+            };
             if (excel_value_list.length){
 // ---  sort dictlist by key 'sortby' PR2021-02-25
                 excel_value_list.sort(b_comparator_sortby);
-            }
-        }``
+            };
+        };
         return excel_value_list;
     }  // get_unlinked_excel_coldefs
 

@@ -110,13 +110,13 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Sectors'] = _('Sectors')
     dict['Abbreviation'] = _('Abbreviation')
     dict['Cluster'] = _('Cluster')
+    dict['Clusters'] = _('Clusters')
 
     dict['Total'] = _('Total')
     dict['Candidate'] = _('Candidate')
     dict['Candidates'] = _('Candidates')
     dict['a_candidate'] = _('a candidate')
 
-    dict['Clusters'] = _('Clusters')
 
     dict['Name'] = _('Name')
     dict['Department'] = _('Department')
@@ -665,13 +665,26 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Exemption_year_twolines'] = _('Exemption-\nyear')
 
         dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
-        dict['No_subject_selected'] = _('No subject selected.')
+        dict['No_subject_selected'] = TXT_No_subject_selected
         dict['validation_error'] = _('The composition of the subjects is not correct')
 
         dict['All_subjects'] = TXT_All_subjects
         dict['All_candidates'] = TXT_All_candidates
 
         dict['Notes'] = _('Notes')
+
+        dict['Add_cluster'] = _('Add_cluster')
+        dict['Delete_cluster'] = _('Delete cluster')
+        dict['Edit_clustername'] = _('Edit cluster name')
+        dict['Click_here_to_select_subject'] = TXT_Click_to_select_subject
+        dict['You_must_select_subject_first'] = _('You must select a subject first, before you can add a cluster.')
+        dict['Please_select_cluster_first'] = _('Please select a cluster first.')
+        dict['No_cluster_selected'] = _('No cluster selected.')
+        dict['Clustername_cannot_be_blank'] = _('The cluster name cannot be blank.')
+        dict['All_classes'] = _('All classes')
+        dict['No_classes'] = _('There are no classes')
+        dict['has_candidates'] = _('has candidates.')
+        dict['cluster_willbe_removed'] = _('The cluster will be removed from these candidates.')
 
         dict['mandatory_subject'] = _('mandatory subject')
         dict['combination_subject'] = _('combination subject')
@@ -782,7 +795,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Select_examtype'] = TXT_Select_examtype
         dict['No_examtypes_found'] = TXT_No_examtypes_found
 
-        dict['Select_subject'] = _('Select subject')
+        dict['Click_here_to_select_subject'] = TXT_Click_to_select_subject
+        dict['No_subject_selected'] = TXT_No_subject_selected
+        dict['No_exam_selected'] = _('No exam selected.')
 
         dict['options_examperiod_exam'] = c.EXAMPERIOD_OPTIONS_12ONLY
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
@@ -803,6 +818,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Key'] = _("Key")
         dict['Version'] = _("Version")
         dict['Quest'] = _('Quest.')
+        dict['Question'] = _('Question')
+        dict['Questions'] = _('Questions')
         dict['Number_of_questions'] = _('Number of questions')
 
         dict['Maximum_score'] = _('Maximum score')
@@ -811,13 +828,31 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['No_exam_for_this_subject'] = _("There is no exam for this subject.")
 
+        dict['Add_partial_exam'] = _('Add partial exam')
+        dict['Delete_partial_exam'] = _('Delete partial exam')
+        dict['Edit_partial_exam'] = _('Edit partial exam')
+        dict['No_partex_selected'] = _('There is no partial exam selected.')
+
+        dict['Partexname_cannot_be_blank'] = _('The name of the partial exam cannot be blank.')
+        dict['Remove_partial_exams'] = _('Remove partial exams')
+        dict['All_partex_willbe_removed'] = _('All partial exams will be removed,')
+        dict['except_for_selected_exam'] = _('except for the selected exam')
+        dict['Yes_remove'] = _('Yes, remove')
+
+        dict['Enter_total_of_maximum_scores'] = _('Enter here the total of the maximum scores of the required partial exams.')
+
         dict['err_list'] = {
             'Amount': _("Amount"),
             'not_allowed': _(" is not allowed."),
-            'Amount_cannot_be_blank': _("The amount cannot be blank."),
-            'amount_mustbe_between': _('The amount must be a whole number between 1 and %(max)s.') % {'max': 100},
+            'Amount_cannot_be_blank': _("The amount of questions cannot be blank."),
+            'amount_mustbe_between_1_and_100': _('The amount of questions must be a whole number between 1 and %(max)s.') % {'max': 100},
+            'amount_mustbe_between_1_and_250': _('The amount of questions must be a whole number between 1 and %(max)s.') % {'max': 250},
+
+            'Max_score_cannot_be_blank': _("The maximum score cannot be blank."),
+            'characters_not_allowed': _("Characters ';', '#' and '|' are not allowed."),
+
             'Minimum_score': _('Minimum score'),
-            'Minimum_score_mustbe_lessthan_or_equalto': _('Minimum score must be less than or equal to'),
+            'Minimum_score_mustbe_lessthan_or_equalto': _('Minimum score must be less than or equal to '),
             'This_isa_multiplechoice_question': _('This is a multiple choice question.'),
             'This_isnota_multiplechoice_question': _('This is not a multiple choice question.'),
             'must_enter_whole_number_between_0_and_': _('You must enter a whole number between 0 and '),
@@ -929,7 +964,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Examnumber'] = TXT_Examnumber
         dict['Notes'] = _('Notes')
 
-        dict['No_subject_selected'] = _('No subject selected.')
+        dict['No_subject_selected'] = TXT_No_subject_selected
 
         dict['Exam_period'] = TXT_Exam_period
         dict['Select_examperiod'] = TXT_Select_examperiod
@@ -1069,7 +1104,6 @@ def get_locale_dict(table_dict, user_lang, request):
         }
     return dict
 
-
 TXT_School_code = _('School code')
 TXT_Organization = _('Organization')
 
@@ -1100,6 +1134,10 @@ TXT_Email_address = _('Email address')
 TXT_Inactive = _("Inactive")
 
 TXT_This_candidate_has_no_subjects = _('This candidate has no subjects.')
+
+TXT_Click_to_select_subject = _('Click here to select a subject ...')
+TXT_No_subject_selected = _('No subject selected.')
+
 
 TXT_Function = _('Function')
 TXT_President = _('President')

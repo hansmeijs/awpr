@@ -1144,7 +1144,7 @@ def ImportCluster(ws_name, row_data, logfile, mapped, examyear, school, request)
         logger.debug('-------------------  cluster ----------------- sel_examyear: ' + str(examyear))
         logger.debug('row_data: ' + str(row_data))
         logger.debug('ws_name: ' + str(ws_name))
-        # row_data: {'clustername': 1, 'subject_id': 64, 'dep_id': 3, 'name': 'ne - 1'}
+        # row_data: {'cluster_name': 1, 'subject_id': 64, 'dep_id': 3, 'name': 'ne - 1'}
 
     if ws_name == 'cluster' and row_data:
         try:
@@ -1184,10 +1184,10 @@ def ImportCluster(ws_name, row_data, logfile, mapped, examyear, school, request)
                     if logging_on:
                         logger.debug (ws_name + ': ' + str(cluster))
                     awp_cluster_id = row_data.get('cluster_id')
-                    # TODO change to clustername
+
                     if ws_name not in mapped:
                         mapped[ws_name] = {}
-                    mapped[ws_name][awp_cluster_id] = cluster
+                    mapped[ws_name][awp_cluster_id] = cluster.pk
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
@@ -1358,7 +1358,6 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
     schemeitem_id,
     subject_id,
     cluster_id, 
-    # TODO change to clustername
     
     is_extra_nocount, 
     is_extra_counts, 
@@ -1947,8 +1946,6 @@ def get_cluster_from_mapped(row_data, mapped):  # PR2021-05-20
     cluster = None
     if row_data and mapped:
         mapped_clusters = mapped.get('cluster')
-
-        # TODO change to clustername
 
         awp_cluster_id = row_data.get('cluster_id')
         if logging_on:

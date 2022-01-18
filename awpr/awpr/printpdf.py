@@ -56,6 +56,9 @@ def draw_exam(canvas, sel_exam_instance, user_lang):  # PR2021-05-07
 
     blanks_str = str(sel_exam_instance.blanks) if sel_exam_instance.blanks else '-'
 
+    scalelength = sel_exam_instance.scalelength if sel_exam_instance.scalelength else 0
+
+    partex = sel_exam_instance.partex
     assignment = sel_exam_instance.assignment
     keys = sel_exam_instance.keys
     examyear_code = str(examyear.code)
@@ -65,7 +68,7 @@ def draw_exam(canvas, sel_exam_instance, user_lang):  # PR2021-05-07
     examtype_caption = c.get_examtype_caption(examtype)
 
 # create list of questions
-    assignment_keys_dict = subj_views.get_assignment_keys_dict(amount, assignment, keys)
+    assignment_keys_dict = subj_views.get_assignment_keys_dict(amount, scalelength, partex, assignment, keys)
     if logging_on:
         logger.debug('assignment_keys_dict: ' + str(assignment_keys_dict) + ' ' + str(type(assignment_keys_dict)))
 
@@ -330,7 +333,7 @@ def write_question(canvas, amount, assignment_keys_dict, max_rows_per_page, page
             label_frame.addFromList(label_list, canvas)
 
     # - add data_frame to canvas
-            data_frame = Frame(x_data, bottom, width, height, showBoundary=0)
+            data_frame = Frame(x_data, bottom, width, height, showBoundary=1)
             data_frame.addFromList(data_list, canvas)
 
 
@@ -373,6 +376,9 @@ def draw_pdf_upload_log(canvas, sel_exam_instance, user_lang):  # PR2021-07-16
 
     blanks_str = str(sel_exam_instance.blanks) if sel_exam_instance.blanks else '-'
 
+    scalelength = sel_exam_instance.scalelength if sel_exam_instance.scalelength else 0
+
+    partex = sel_exam_instance.partex
     assignment = sel_exam_instance.assignment
     keys = sel_exam_instance.keys
     examyear_code = str(examyear.code)
@@ -382,7 +388,7 @@ def draw_pdf_upload_log(canvas, sel_exam_instance, user_lang):  # PR2021-07-16
     examtype_caption = c.get_examtype_caption(examtype)
 
 # create list of questions
-    assignment_keys_dict = subj_views.get_assignment_keys_dict(amount, assignment, keys)
+    assignment_keys_dict = subj_views.get_assignment_keys_dict(amount, scalelength, partex, assignment, keys)
     if logging_on:
         logger.debug('assignment_keys_dict: ' + str(assignment_keys_dict) + ' ' + str(type(assignment_keys_dict)))
 

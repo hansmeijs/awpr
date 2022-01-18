@@ -153,7 +153,8 @@ document.addEventListener('DOMContentLoaded', function() {
         get_dropdown_button("studsubj", "id_intro", "id_btn_studsubj", "Vakken van kandidaten", [
             ["id_filter_subjects", "Vakken filteren"],
             ["id_validate_subjects", "Controle op de samenstelling van de vakken"],
-            ["id_enter_subjects", "Vakken van kandidaten invoeren"],
+            ["id_enter_studsubj", "Vakken van kandidaten invoeren"],
+            ["id_clusters", "Clusters"],
             ]),
 
         get_dropdown_button("approve", "id_intro", "id_btn_approve", "Goedkeuren en indienen van Ex-formulieren", [

@@ -369,7 +369,7 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
                 "ey.code::TEXT AS examyear_txt, c.name AS country,"
                 "dep.name AS dep_name, dep.abbrev AS dep_abbrev, dep.level_req, dep.has_profiel,"
                 "lvl.name AS lvl_name, sct.name AS sct_name,"
-                "studsubj.clustername, stud.classname,",
+                "cl.name AS cluster_name, stud.classname,",
                 "studsubj.gradelist_sesrgrade, studsubj.gradelist_pecegrade, studsubj.gradelist_finalgrade,",
                 "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.gradelist_use_exem,",
 
@@ -399,6 +399,8 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
 
                 "INNER JOIN subjects_subjecttype AS sjtp ON (sjtp.id = si.subjecttype_id)",
                 "INNER JOIN subjects_subjecttypebase AS sjtpbase ON (sjtpbase.id = sjtp.base_id)",
+
+                "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
 
                 "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
                 "AND NOT studsubj.tobedeleted"
@@ -468,7 +470,7 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
                     'regnumber':  row.get('regnumber'),
                     'examnumber':  row.get('examnumber'),
                     'classname':  row.get('classname'),
-                    'clustername':  row.get('clustername'),
+                    'cluster_name':  row.get('cluster_name'),
 
                     'ce_avg': row.get('grade_ce_avg_text'),
                     'combi_avg':  row.get('grade_combi_avg'),
@@ -557,7 +559,7 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, auth1_pk, auth2_pk,
         student_dict: {
             'examyear_txt': '2021', 'school_name': 'Juan Pablo Duarte Vsbo', 'country': 'Curacao', 'school_article': 'de', 
             'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'dep_abbrev': 'V.S.B.O.', 'level_req': True, 'has_profiel': False, 
-            'lvl_name': 'Theoretisch Kadergerichte Leerweg', 'sct_name': 'Zorg & Welzijn', 'clustername': None, 'classname': 'T4A', 
+            'lvl_name': 'Theoretisch Kadergerichte Leerweg', 'sct_name': 'Zorg & Welzijn', 'cluster_name': None, 'classname': 'T4A', 
             'fullname': 'ANTOINE, Stayci', 'idnumber': None, 'birthdate': '23 juni 2005', 'birthplace': 'Willemstad, Curaçao', 
             'regnumber': None, 'islexschool': False, 'ce_avg': None, 'combi_avg': None, 'endgrade_avg': '7,1', 
             'result_info': 'Geslaagd', 

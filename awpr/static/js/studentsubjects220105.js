@@ -13,8 +13,11 @@ let urls = {};
 
 const selected = {
     studsubj_dict: null,
-    student_pk: null,
+    studsubj_pk: null,
     subject_pk: null,
+    subject_name: null,
+    student_pk: null,
+    student_name: null,
     item_count: 0
 };
 
@@ -22,6 +25,7 @@ let school_rows = [];
 let student_rows = [];
 let subject_rows = [];
 let studsubj_rows = [];
+let cluster_rows = [];
 
 let schemeitem_rows = [];
 let published_rows = [];
@@ -38,7 +42,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  check if user has permit to view this page. If not: el_loader does not exist PR2020-10-02
     const el_loader = document.getElementById("id_loader");
 
-    const el_hdr_left = document.getElementById("id_hdr_left");
+    const el_header_left = document.getElementById("id_header_left");
+    const el_header_right = document.getElementById("id_header_right");
     const may_view_page = (!!el_loader)
 
     const cls_hide = "display_hide";
@@ -47,9 +52,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_selected = "tsa_tr_selected";
 
 // ---  id of selected customer and selected order
-
     let mod_dict = {};
     let mod_MSTUD_dict = {};
+    const mod_MCL_dict = {};
 
 // mod_MSTUDSUBJ_dict stores available studsubj for selected candidate in MSTUDSUBJ
     let mod_MSTUDSUBJ_dict = {
@@ -89,29 +94,28 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_ex3_getinfo = get_attr_from_el(el_data, "data-url_ex3_getinfo");
     urls.url_ex3_download = get_attr_from_el(el_data, "data-url_ex3_download");
 
+    urls.url_cluster_upload = get_attr_from_el(el_data, "data-url_cluster_upload");
+
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
     columns_tobe_hidden.btn_studsubj = {
-        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "clustername", "subj_name", "sjtp_abbrev", "subj_status"],
+        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name", "sjtp_abbrev", "subj_status"],
         captions: ["Examnumber", "Leerweg", "SectorProfiel_twolines", "Cluster", "Subject", "Character", "Approved"]}
     columns_tobe_hidden.btn_exemption = {
-        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "clustername", "subj_name", "exemption_year"],
+        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name", "exemption_year"],
         captions: ["Examnumber",  "Leerweg", "SectorProfiel_twolines", "Cluster", "Subject", "Exemption_year"]}
     columns_tobe_hidden.btn_sr = {
-        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "clustername", "subj_name"],
+        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name"],
         captions: ["Examnumber",  "Leerweg", "SectorProfiel_twolines", "Cluster", "Subject"]}
     columns_tobe_hidden.btn_reex = {
-        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "clustername", "subj_name"],
+        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name"],
         captions: ["Examnumber",  "Leerweg", "SectorProfiel_twolines", "Cluster", "Subject"]}
     columns_tobe_hidden.btn_reex03 = {
-        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "clustername", "subj_name"],
+        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name"],
         captions: ["Examnumber",  "Leerweg", "SectorProfiel_twolines", "Cluster", "Subject"]}
     columns_tobe_hidden.btn_pok = {
-        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "clustername", "subj_name"],
+        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name"],
         captions: ["Examnumber",  "Leerweg", "SectorProfiel_twolines", "Cluster", "Subject"]}
-    columns_tobe_hidden.btn_published = {
-        fields: ["examperiod", "datepublished", "url"],
-        captions: ["Exam_period",  "Date_submitted", "Download_Exform"]}
 
 // --- get field_settings
     const field_settings = {
@@ -119,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 "Abbreviation_twolines", "Subject", "Character",  "",
                                 "Exemption", "", "Re_examination", "", "Re_exam_3rd_2lns", "",
                                 "Proof_of_knowledge_2lns", "", ""],
-                    field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "clustername",
+                    field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "sjtp_abbrev", "subj_status",
                                 ],
                     field_tags: ["div", "div", "div", "div", "div", "div",
@@ -142,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // note: exemption has no status, only exemption grades must be submitted
         btn_exemption: {field_caption: ["subj_error", "Examnumber_twolines", "Candidate", "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Exemption", "Exemption_year_twolines"],
-                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "clustername",
+                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "has_exemption", "exemption_year"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "input"],
                     filter_tags: ["toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "text"],
@@ -151,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         btn_sr:  {field_caption: ["subj_error", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_exam_schoolexam_2lns", "", ],
-                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "clustername",
+                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "has_sr", "sr_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "multitoggle"],
@@ -159,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_align: ["c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
         btn_reex:  {field_caption: ["subj_error", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_examination", "", ],
-                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "clustername",
+                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "has_reex", "reex_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "multitoggle"],
@@ -167,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_align: ["c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
         btn_reex03:  {field_caption: ["subj_error", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_exam_3rd_2lns", "", ],
-                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "clustername",
+                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "has_reex03", "reex03_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "multitoggle"],
@@ -175,19 +179,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_align: ["c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
         btn_pok:  {field_caption: ["subj_error", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Proof_of_knowledge_2lns", "", ],
-                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "clustername",
+                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "pok_validthru:", "pok_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "multitoggle"],
                     field_width:  ["020", "075", "180",  "075", "075", "075", "075", "180", "120", "032"],
                     field_align: ["c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
-
-        btn_published: {field_caption: ["", "Name_ex_form", "Exam_period",  "Date_submitted", "Download_Exform"],
-                    field_names: ["select", "name", "examperiod", "datepublished", "url"],
-                    field_tags: ["div", "div", "div", "div", "a"],
-                    filter_tags: ["text", "text","text", "text", "text"],
-                    field_width: ["020", "480", "150", "150", "120"],
-                    field_align: ["c", "l", "l", "l", "c"]}
         };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -279,6 +276,46 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MCOL_btn_save.addEventListener("click", function() {
                 t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
         };
+
+// ---  MODAL CLUSTER
+        const el_MCL_select_subject = document.getElementById("id_MCL_select_subject")
+        if(el_MCL_select_subject){el_MCL_select_subject.addEventListener("click", function() {MCL_BtnSelectSubjectClick()}, false)};
+
+        const el_MCL_btngroup_add_cluster = document.getElementById("id_MCL_btngroup_add_cluster")
+        const el_MCL_group_cluster_name = document.getElementById("id_MCL_group_cluster_name")
+
+        const el_MCL_input_cluster_name = document.getElementById("id_MCL_input_cluster_name")
+        if(el_MCL_input_cluster_name){el_MCL_input_cluster_name.addEventListener("change", function() {MCL_InputClusterName(el_MCL_input_cluster_name)}, false)};
+        const el_MCL_btn_add_cluster = document.getElementById("id_MCL_btn_add_cluster")
+        if(el_MCL_btn_add_cluster){el_MCL_btn_add_cluster.addEventListener("click", function() {MCL_BtnClusterClick("add")}, false)};
+        const el_MCL_btn_delete_cluster = document.getElementById("id_MCL_btn_delete_cluster")
+        if(el_MCL_btn_delete_cluster){el_MCL_btn_delete_cluster.addEventListener("click", function() {MCL_BtnClusterClick("delete")}, false)};
+        const el_MCL_btn_edit_cluster = document.getElementById("id_MCL_btn_edit_cluster")
+        if(el_MCL_btn_edit_cluster){el_MCL_btn_edit_cluster.addEventListener("click", function() {MCL_BtnClusterClick("update")}, false)};
+        const el_MCL_btn_cluster_save = document.getElementById("id_MCL_btn_cluster_save")
+        if(el_MCL_btn_cluster_save){el_MCL_btn_cluster_save.addEventListener("click", function() {MCL_BtnClusterClick("save")}, false)};
+        const el_MCL_btn_cluster_cancel = document.getElementById("id_MCL_btn_cluster_cancel")
+        if(el_MCL_btn_cluster_cancel){el_MCL_btn_cluster_cancel.addEventListener("click", function() {MCL_BtnClusterClick("cancel")}, false)};
+
+        const el_MCL_tblBody_clusters = document.getElementById("id_MCL_tblBody_clusters");
+        const el_MCL_tblBody_studs_selected = document.getElementById("id_MCL_tblBody_studs_selected");
+        const el_MCL_tblBody_studs_available = document.getElementById("id_MCL_tblBody_studs_available");
+
+        const el_MCL_btn_remove_all = document.getElementById("id_MCL_btn_remove_all")
+        if(el_MCL_btn_remove_all){el_MCL_btn_remove_all.addEventListener("click", function() {MCL_BtnAddRemoveAllClick("remove")}, false)};
+        const el_MCL_btn_add_all = document.getElementById("id_MCL_btn_add_all")
+        if(el_MCL_btn_add_all){el_MCL_btn_add_all.addEventListener("click", function() {MCL_BtnAddRemoveAllClick("add")}, false)};
+
+        const el_MCL_studs_selected_count = document.getElementById("id_MCL_studs_selected_count");
+        const el_MCL_studs_available_count = document.getElementById("id_MCL_studs_available_count");
+
+        const el_MCL_select_class = document.getElementById("id_MCL_select_class");
+        if(el_MCL_select_class){el_MCL_select_class.addEventListener("change", function() {MCL_SelectClassnameClick(el_MCL_select_class)}, false)};
+        const el_MCL_chk_nocluster = document.getElementById("id_MCL_chk_nocluster");
+        if(el_MCL_chk_nocluster){el_MCL_chk_nocluster.addEventListener("change", function() {MCL_ChkNoClusterClick(el_MCL_chk_nocluster)}, false)};
+
+        const el_MCL_btn_save = document.getElementById("id_MCL_btn_save")
+        if(el_MCL_btn_save){el_MCL_btn_save.addEventListener("click", function() {MCL_Save()}, false)};
 
 // ---  MODAL STUDENT SUBJECTS
         const el_MSTUDSUBJ_hdr = document.getElementById("id_MSTUDSUBJ_hdr")
@@ -430,6 +467,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 student_rows: {cur_dep_only: true},
                 subject_rows: {cur_dep_only: true},
+                cluster_rows: {get: true},
                 studentsubject_rows: {cur_dep_only: true},
 
                 published_rows: {get: true}
@@ -449,7 +487,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  show loader
         el_loader.classList.remove(cls_hide)
-        el_hdr_left.classList.add(cls_hide)
+        UpdateHeaderText(true);  // true = reset
+
 
         let param = {"download": JSON.stringify (datalist_request)};
         let response = "";
@@ -464,7 +503,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  hide loader
                 el_loader.classList.add(cls_hide)
-                el_hdr_left.classList.remove(cls_hide)
+                // UpdateHeaderText will be done in HandleBtnSelect
 
                 let must_create_submenu = false, must_update_headerbar = false;
                 let check_validation = false;
@@ -474,6 +513,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     must_create_submenu = true;
                 };
                 if ("setting_dict" in response) {
+
+        console.log("response.setting_dict.sel_sector_abbrev: ", response.setting_dict.sel_sector_abbrev)
                     setting_dict = response.setting_dict;
                     setting_dict.skip_download_multiple_occurrences = false;
 
@@ -488,6 +529,14 @@ document.addEventListener('DOMContentLoaded', function() {
                              b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
                         };
                     };
+
+                    selected.studsubj_dict = null;
+                    selected.subject_pk = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_pk : null;
+                    selected.subject_name = (setting_dict.sel_subject_name) ? setting_dict.sel_subject_name : null;
+
+                    selected.student_pk = (setting_dict.sel_student_pk) ? setting_dict.sel_student_pk : null;
+                    selected.student_name = (setting_dict.sel_student_name) ? setting_dict.sel_student_name : null;
+
 
 // ---  check for multiple occurrences when btn = exemption, only once
                     if(!setting_dict.skip_download_multiple_occurrences){
@@ -539,6 +588,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("subject_rows" in response) {
                     subject_rows = response.subject_rows;
                 }
+                if ("cluster_rows" in response) {
+                    cluster_rows = response.cluster_rows;
+                }
+
                 if ("studentsubject_rows" in response) {
                     studsubj_rows = response.studentsubject_rows;
                     check_validation = true;
@@ -561,7 +614,8 @@ document.addEventListener('DOMContentLoaded', function() {
             error: function (xhr, msg) {
 // ---  hide loader
                 el_loader.classList.add(cls_hide);
-                el_hdr_left.classList.remove(cls_hide)
+                //el_header_left.classList.remove(cls_hide)
+                //el_header_right.classList.remove(cls_hide)
                 console.log(msg + '\n' + xhr.responseText);
             }
         });
@@ -584,9 +638,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     AddSubmenuButton(el_submenu, loc.Submit_Ex1_form, function() {MASS_Open("submit")});
                 };
                 AddSubmenuButton(el_submenu, loc.Ex3_form, function() {MEX3_Open()});
-            };
-            if(permit_dict.permit_crud){
-                AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open(loc, "import_studsubj")}, null, "id_submenu_import");
+                if(permit_dict.permit_crud){
+                    AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open(loc, "import_studsubj")}, null, "id_submenu_import");
+                    AddSubmenuButton(el_submenu, loc.Clusters, function() {MCL_Open()});
+                };
             };
 
             AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_studsubj")}, [], "id_submenu_columns")
@@ -596,15 +651,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //###########################################################################
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
-//=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14 PR2021-08-07
+//=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14 PR2021-08-07 PR2022-01-05
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ", data_btn);
+        //console.log( "===== HandleBtnSelect ========= ", data_btn);
 
 // ---  get data_btn from selected_btn when null;
         if (!data_btn) {data_btn = selected_btn};
 
 // check if data_btn exists, gave error because old btn name was still in saved setting PR2021-09-07 debug
-        const btns_allowed = ["btn_student", "btn_exemption", "btn_sr", "btn_reex", "btn_reex03", "btn_pok", "btn_published"];
+        const btns_allowed = ["btn_student", "btn_exemption", "btn_sr", "btn_reex", "btn_reex03", "btn_pok"];
         if (!setting_dict.sr_allowed) {b_remove_item_from_array(btns_allowed, "btn_sr")};
         if (setting_dict.no_centralexam) {b_remove_item_from_array(btns_allowed, "btn_reex")};
         if (setting_dict.no_centralexam) {b_remove_item_from_array(btns_allowed, "btn_reex03")};
@@ -626,7 +681,11 @@ document.addEventListener('DOMContentLoaded', function() {
         highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
 
 // ---  show only the elements that are used in this tab
-        b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
+        const selected_tab = selected_btn.replace("btn", "tab");
+        b_show_hide_selected_elements_byClass("tab_show", selected_tab);
+
+// ---  update header
+        UpdateHeaderText();
 
         FillTblRows();
 
@@ -637,39 +696,42 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("=== HandleTblRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
-// ---  update selected student_pk
-        selected.studsubj_dict = null;
-        selected.student_pk = null;
-        selected.subject_pk = null;
-
 // get data_dict from data_rows
         const data_dict = get_datadict_from_tblRow(tr_clicked);
         //console.log( "data_dict", data_dict);
 
-        if (selected_btn === "btn_published"){
-            //TODO
-        } else {
-            selected.studsubj_dict = data_dict;
-            selected.studsubj_pk = (data_dict.studsubj_id) ? data_dict.studsubj_id : null;
-            if (selected.studsubj_dict){
-                selected.student_pk = selected.studsubj_dict.stud_id;
-                selected.subject_pk = selected.studsubj_dict.subj_id;
-            };
-        }
+// ---  update selected studsubj_dict / student_pk / subject pk
+        selected.studsubj_dict = data_dict;
+        selected.studsubj_pk = (data_dict.studsubj_id) ? data_dict.studsubj_id : null;
+
+        selected.student_pk = (data_dict && data_dict.stud_id) ? data_dict.stud_id : null;
+        selected.subject_pk = (data_dict && data_dict.subj_id) ? data_dict.subj_id : null;
 
 // ---  deselect all highlighted rows - also tblFoot , highlight selected row
         DeselectHighlightedRows(tr_clicked, cls_selected);
         tr_clicked.classList.add(cls_selected)
     }  // HandleTblRowClicked
 
-//========= UpdateHeaderText  ================== PR2020-07-31 PR2021-07-23
-    function UpdateHeaderText(header_text){
+//========= UpdateHeaderText  ================== PR2020-07-31 PR2021-07-23 PR2020-01-06 PR2022-01-08
+    function UpdateHeaderText(reset_header){
         //console.log(" --- UpdateHeaderText ---" )
-        //console.log( "header_text", header_text);
-        //console.log( "el_hdr_left", el_hdr_left);
-        if (el_hdr_left) {
-            el_hdr_left.innerText = (header_text) ? header_text : null;
-        }
+
+        let header_text_left = "";
+        let header_text_right = "";
+
+        if (!reset_header){
+            header_text_left = (selected.subject_pk) ? selected.subject_name :
+                                (selected.student_pk) ? selected.student_name : null;
+            // only show level_abbrev when sel_dep_level_req
+            const lvl_caption = (setting_dict.sel_dep_level_req &&  setting_dict.sel_lvlbase_pk && setting_dict.sel_level_abbrev) ? setting_dict.sel_level_abbrev : "";
+            const sct_caption = (setting_dict.sel_sctbase_pk && setting_dict.sel_sector_abbrev) ? setting_dict.sel_sector_abbrev : "";
+            header_text_right = lvl_caption;
+            if(lvl_caption && sct_caption ){header_text_right += " - "};
+            if(sct_caption ){header_text_right += sct_caption};
+        };
+        el_header_left.innerText = (header_text_left) ? header_text_left : null;
+        el_header_right.innerText = (header_text_right) ? header_text_right : null;
+
     }   //  UpdateHeaderText
 
 
@@ -691,26 +753,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // hide level when not level_req
         //if(!setting_dict.sel_dep_level_req){col_hidden.push("lvl_abbrev")};
 
-// ---  filter subject or student
-        const filter_field = (setting_dict.sel_subject_pk) ? "subject" : (setting_dict.sel_student_pk) ? "student" : null;
-        const filter_pk = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_pk :
-                            (setting_dict.sel_student_pk) ? setting_dict.sel_student_pk : null;
-
-// --- update header text
-        let selected_name = null;
-        if (filter_pk){
-            const data_rows = (filter_field === "subject") ? subject_rows :
-                                  (filter_field === "student") ? student_rows : null;
-            const data_dict = b_get_datadict_by_integer_from_datarows(data_rows, "id", filter_pk)
-            if(!isEmpty(data_dict)){
-                selected_name = (filter_field === "subject") ? data_dict.name :
-                                  (filter_field === "student") ? data_dict.fullname : null;
-            } else {
-                selected_name = null;
-            }
-        }
-        UpdateHeaderText(selected_name);
-
 // --- reset table
         tblHead_datatable.innerText = null;
         tblBody_datatable.innerText = null;
@@ -722,23 +764,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if(data_rows && data_rows.length){
             for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
                 const map_id = data_dict.mapid;
-                /*
-                let show_row = true;
-                if (tblName !== "published"){
-                    if (filter_field && filter_pk){
-                        if (filter_field === "subject"){
-                            //show_row = (filter_pk === data_dict.subj_id)
-                        } else if (filter_field === "student"){
-                            //show_row = (filter_pk === data_dict.stud_id)
-                        }
-                    }
-                }
-                */
-                const show_row = (tblName === "published") ? true :
-                                (!setting_dict.sel_level_pk || data_dict.lvl_id === setting_dict.sel_level_pk) &&
-                                (!setting_dict.sel_sector_pk || data_dict.sct_id === setting_dict.sel_sector_pk) &&
-                                (!setting_dict.sel_student_pk || data_dict.student_id === setting_dict.sel_student_pk) &&
-                                (!setting_dict.sel_subject_pk || data_dict.subject_id === setting_dict.sel_subject_pk);
+
+                const show_row = (!setting_dict.sel_lvlbase_pk || data_dict.lvlbase_id === setting_dict.sel_lvlbase_pk) &&
+                                (!setting_dict.sel_sctbase_pk || data_dict.sctbase_id === setting_dict.sel_sctbase_pk) &&
+                                (!setting_dict.sel_student_pk || data_dict.stud_id === setting_dict.sel_student_pk) &&
+                                (!setting_dict.sel_subject_pk || data_dict.subj_id === setting_dict.sel_subject_pk);
 
                 if (show_row){
                     CreateTblRow(tblName, field_setting, map_id, data_dict, col_hidden)
@@ -981,7 +1011,15 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- add class 'input_text' and text_align
                 // class 'input_text' contains 'width: 100%', necessary to keep input field within td width
                     el.classList.add("input_text");
-
+                } else if (field_name === "cluster_name") {
+                    td.addEventListener("click", function() {MCL_Open(td)}, false)
+                    td.classList.add("pointer_show");
+                    add_hover(td);
+                } else {
+                    // everyone that can view the page can open it, only permit_crud from same_school can edit PR2021-08-31
+                    td.addEventListener("click", function() {MSTUDSUBJ_Open(td)}, false)
+                    td.classList.add("pointer_show");
+                    add_hover(td);
                 };
 
         // --- add width, text_align, right padding in examnumber
@@ -1005,11 +1043,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  UpdateTblRow  ================ PR2020-08-01
     function UpdateTblRow(tblRow, tblName, map_dict) {
-        console.log("=========  UpdateTblRow =========");
+        //console.log("=========  UpdateTblRow =========");
         if (tblRow && tblRow.cells){
             const tobedeleted = (mapdict.tobedeleted) ? mapdict.tobedeleted : false;
-        console.log("map_dict", map_dict);
-        console.log("tobedeleted", tobedeleted);
+        //console.log("map_dict", map_dict);
+        //console.log("tobedeleted", tobedeleted);
             for (let i = 0, td; td = tblRow.cells[i]; i++) {
                 UpdateField(td.children[0], map_dict, tobedeleted);
             }
@@ -1032,10 +1070,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (field === "select") {
                     // TODO add select multiple users option PR2020-08-18
                 } else if (["examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
-                            "subj_code", "subj_name", "sjtp_abbrev", "name", "exemption_year"
+                            "subj_code", "subj_name", "sjtp_abbrev", "name", "exemption_year", "cluster_name"
                              ].includes(field)){
-                    inner_text = fld_value;
-                    filter_value = (inner_text) ? inner_text.toString().toLowerCase() : null;
+                    filter_value = (fld_value) ? fld_value.toString().toLowerCase() : null;
+                    // "NBSP (non-breaking space)" is necessary to show green box when field is empty
+                    inner_text = (fld_value) ? fld_value : "&nbsp";
 
                 } else if (field.includes("has_")){
                     filter_value = (fld_value) ? "1" : "0";
@@ -1079,7 +1118,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (el_div.tagName === "A"){
                     el_div.href = h_ref;
                 } else {
-                    el_div.innerText = inner_text;
+                    el_div.innerHTML = inner_text;
                 };
                 add_or_remove_attr (el_div, "title", !!title_text, title_text);
 
@@ -1192,18 +1231,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= HandleInputChange  =============== PR2022-01-04
     function HandleInputChange(el_input){
-        console.log(" --- HandleInputChange ---")
+        //console.log(" --- HandleInputChange ---")
 
 // ---  get selected.data_dict
         const tblRow = get_tablerow_selected(el_input)
         const data_dict = get_datadict_from_tblRow(tblRow);
-    console.log("data_dict", data_dict)
 
         if (data_dict){
             const fldName = get_attr_from_el(el_input, "data-field")
-    console.log("fldName", fldName)
+
             const old_value = data_dict[fldName];
-    console.log("old_value", old_value)
 
             const has_permit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
             if (!has_permit){
@@ -1446,7 +1483,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 success: function (response) {
                     // ---  hide loader
                     el_loader.classList.add(cls_hide)
-                    el_hdr_left.classList.remove(cls_hide)
+                    //el_header_left.classList.remove(cls_hide)
+                    //el_header_right.classList.remove(cls_hide)
+
                     console.log( "response");
                     console.log( response);
 
@@ -1496,7 +1535,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 error: function (xhr, msg) {
                     // ---  hide loader
                     el_loader.classList.add(cls_hide)
-                    el_hdr_left.classList.remove(cls_hide)
+                    //el_header_left.classList.remove(cls_hide)
+                    //el_header_right.classList.remove(cls_hide)
 
                     //console.log(msg + '\n' + xhr.responseText);
                 }  // error: function (xhr, msg) {
@@ -2403,8 +2443,639 @@ console.log("mode: ", mode)
 
 // +++++++++ END MOD STUDENT SUBJECT +++++++++++++++++++++++++++++++++
 
-// +++++++++++++++++ MODAL MULTIPLE OCCURRENCES ++++++++++++++++++++++++++++++++++++++++++
+// +++++++++++++++++ MODAL CLUSTERS ++++++++++++++++++++++++++++++++++++++++++
+//=========  MCL_Open  ================ PR2022-01-06
+    function MCL_Open(el_div) {
+        console.log("===== MCL_Open =====");
+        console.log("selected", selected);
+        console.log("el_div", el_div);
 
+        if (permit_dict.permit_crud && permit_dict.requsr_same_school) {
+
+// -- lookup selected.subject_pk in subject_rows and get sel_subject_dict
+            MCL_SaveSubject_in_MCL_dict(selected.subject_pk);
+
+            MCL_FillClusterList();
+            MCL_FillTableClusters();
+            MCL_FillStudentList();
+            MCL_FillTableStudsubj();
+            MCL_FillSelectClass();
+
+// ---  show modal
+            $("#id_mod_cluster").modal({backdrop: true});
+        };
+    };  // MCL_Open
+
+//=========  MCL_Save  ================ PR2022-01-09
+    function MCL_Save() {
+        console.log("===== MCL_Save =====");
+
+// ---  loop through mod_MCL_dict.cluster_list
+        const cluster_list = []
+        for (let i = 0, cluster_dict; cluster_dict = mod_MCL_dict.cluster_list[i]; i++) {
+            if (["create", 'delete', "update"].includes(cluster_dict.mode)){
+                cluster_list.push({
+                    cluster_pk: cluster_dict.cluster_pk,
+                    cluster_name: cluster_dict.sortby,
+                    subject_pk: cluster_dict.subject_pk,
+                    mode: cluster_dict.mode
+                });
+            };
+        };
+
+// ---  loop through mod_MCL_dict.student_list
+        const studsubj_list = []
+        for (let i = 0, student_dict; student_dict = mod_MCL_dict.student_list[i]; i++) {
+            if (student_dict.mode === "update"){
+                studsubj_list.push({
+                    studsubj_pk: student_dict.studsubj_pk,
+                    cluster_pk: student_dict.cluster_pk
+                });
+            };
+        };
+
+        if (cluster_list.length || studsubj_list.length){
+        console.log("vvvvvvvvvvvvvvv studsubj_list", studsubj_list);
+    // ---  upload changes
+                const upload_dict = {
+                    subject_pk: mod_MCL_dict.subject_pk,
+                    subject_name: mod_MCL_dict.subject_name
+                };
+                if (cluster_list.length){
+                    upload_dict.cluster_list = cluster_list;
+                };
+                if (studsubj_list.length){
+                    upload_dict.studsubj_list = studsubj_list;
+                };
+        console.log("upload_dict", upload_dict);
+                UploadChanges(upload_dict, urls.url_cluster_upload);
+        };
+
+        $("#id_mod_cluster").modal("hide");
+    };  // MCL_Save
+
+//=========  MCL_BtnClusterClick  ================ PR2022-01-06
+    function MCL_BtnClusterClick(mode) {
+        console.log("===== MCL_BtnClusterClick =====");
+        console.log("mode", mode);
+        console.log("mod_MCL_dict", mod_MCL_dict);
+        // values of 'mode' are: "add", "delete", "update", "ok", "cancel"
+
+        const header_txt = (mode === "add") ? loc.Add_cluster :
+                            (mode === "delete") ? loc.Delete_cluster :
+                            (mode === "update") ? loc.Edit_clustername : null;
+        if (mode === "cancel"){
+            mod_MCL_dict.mode_edit_clustername = null;
+            el_MCL_input_cluster_name.value = null;
+
+        } else if (!mod_MCL_dict.subject_pk){
+            // no subject selected - give msg
+            b_show_mod_message("<div class='p-2'>" + loc.You_must_select_subject_first + "</div>", header_txt);
+
+        } else if (mode === "add"){
+            // increase id_new with 1
+            mod_MCL_dict.id_new += 1;
+            const new_cluster_pk = "new_" + mod_MCL_dict.id_new;
+            const new_cluster_name = MCL_get_next_clustername();
+            const new_cluster_dict = {
+                cluster_pk: new_cluster_pk,
+                sortby: new_cluster_name,
+                subject_pk: mod_MCL_dict.subject_pk,
+                subject_code: mod_MCL_dict.subject_code,
+                mode: "create"
+            };
+            mod_MCL_dict.cluster_list.push(new_cluster_dict);
+            mod_MCL_dict.cluster_list.sort(b_comparator_sortby);
+
+            mod_MCL_dict.sel_cluster_pk = new_cluster_pk;
+            mod_MCL_dict.sel_cluster_dict = MCL_get_cluster_dict(new_cluster_pk);
+
+            MCL_FillTableClusters();
+            MCL_FillTableStudsubj();
+
+        } else {
+            const cluster_dict = mod_MCL_dict.sel_cluster_dict;
+
+            if(!cluster_dict && mod_MCL_dict.mode_edit_clustername !== "create"){
+                // no cluster selected - give msg - not when is_create
+                b_show_mod_message("<div class='p-2'>" + loc.No_cluster_selected + "</div>", header_txt);
+            } else if (mode === "update"){
+                // changes will be put in mod_MCL_dict when clicked on OK btn
+                mod_MCL_dict.mode_edit_clustername = "update";
+                el_MCL_input_cluster_name.value = cluster_dict.sortby; // sortby = cluster_name
+
+            } else if (mode === "delete"){
+// check if cluster has studsubj
+                let has_studsubj = false;
+                for (let i = 0, student_dict; student_dict = mod_MCL_dict.student_list[i]; i++) {
+                    if (student_dict.cluster_pk === cluster_dict.cluster_pk){
+                        has_studsubj = true;
+                        break;
+                    };
+                };
+                if (has_studsubj){
+                    ModConfirmOpen("delete_cluster");
+                } else {
+                    MCL_delete_cluster(cluster_dict);
+                };
+
+            } else if (mode === "save"){
+                const new_cluster_name = el_MCL_input_cluster_name.value
+                if (!new_cluster_name){
+                    const msh_html = "<div class='p-2'>" + loc.Clustername_cannot_be_blank + "</div>";
+                    b_show_mod_message(msh_html);
+
+                } else {
+
+        console.log("mod_MCL_dict.mode_edit_clustername", mod_MCL_dict.mode_edit_clustername);
+                    if (mod_MCL_dict.mode_edit_clustername === "update"){
+                // change clustername
+                        cluster_dict.sortby = new_cluster_name;
+                        cluster_dict.mode = "update";
+                    };
+                    mod_MCL_dict.cluster_list.sort(b_comparator_sortby);
+                    MCL_FillTableClusters();
+                };
+            };
+        };
+        MCL_ShowClusterName();
+    };  // MCL_BtnClusterClick
+
+  //=========  MCL_delete_cluster  ================ PR2022-01-09
+    function MCL_delete_cluster(cluster_dict) {
+        console.log("===== MCL_delete_cluster =====");
+        console.log("cluster_dict", cluster_dict);
+// set mode = 'delete' in cluster_dict
+        cluster_dict.mode = "delete";
+// also remove cluster_pk from studsubj
+        for (let i = 0, student_dict; student_dict = mod_MCL_dict.student_list[i]; i++) {
+            if (student_dict.cluster_pk === cluster_dict.cluster_pk){
+                student_dict.cluster_pk = null;
+            };
+        };
+
+// reset cluster_pk in mod_MCL_dict
+        mod_MCL_dict.sel_cluster_pk = null;
+        mod_MCL_dict.sel_cluster_dict = null;
+
+        MCL_FillTableClusters();
+        MCL_FillTableStudsubj();
+    }; // MCL_delete_cluster
+
+  //=========  MCL_BtnSelectSubjectClick  ================ PR2022-01-06
+    function MCL_BtnSelectSubjectClick() {
+        console.log("===== MCL_BtnSelectSubjectClick =====");
+        // reset mode_edit_clustername
+        mod_MCL_dict.mode_edit_clustername = null;
+        MCL_ShowClusterName();
+        t_MSSSS_Open(loc, "subject", subject_rows, false, setting_dict, permit_dict, MSSSS_Response);
+    };  // MCL_BtnSelectSubjectClick
+
+  //=========  MCL_InputClusterName  ================ PR2022-01-06
+    function MCL_InputClusterName(el) {
+        console.log("===== MCL_InputClusterName =====");
+        console.log("el.value", el.value);
+
+        if (permit_dict.permit_crud && permit_dict.requsr_same_school) {
+
+        };
+    };  // MCL_InputClusterName
+
+//=========  MCL_ShowClusterName  ================ PR2022-01-06
+    function MCL_ShowClusterName() {
+        add_or_remove_class(el_MCL_btngroup_add_cluster, cls_hide, mod_MCL_dict.mode_edit_clustername)
+        add_or_remove_class(el_MCL_group_cluster_name, cls_hide, !mod_MCL_dict.mode_edit_clustername)
+
+    };  // MCL_ShowClusterName
+
+//=========  MCL_SaveSubject_in_MCL_dict  ================ PR2022-01-07
+    function MCL_SaveSubject_in_MCL_dict(sel_subject_pk) {
+
+        console.log("===== MCL_SaveSubject_in_MCL_dict =====");
+        console.log("sel_subject_pk", sel_subject_pk);
+
+// - reset mod_MCL_dict
+        b_clear_dict(mod_MCL_dict);
+        mod_MCL_dict.subject_pk = null;
+        mod_MCL_dict.subject_name = null;
+        mod_MCL_dict.subject_code = null;
+
+        mod_MCL_dict.subject_dict = null;
+        mod_MCL_dict.sel_cluster_pk = null;
+        mod_MCL_dict.mode_edit_clustername = null;
+        mod_MCL_dict.id_new = 0;
+
+        MCL_ShowClusterName()
+
+// - reset input_cluster_name.
+        el_MCL_input_cluster_name.value = null;
+
+// -- lookup selected.subject_pk in subject_rows and get sel_subject_dict
+        const [index, found_dict, compare] = b_recursive_integer_lookup(subject_rows, "id", sel_subject_pk);
+        if (!isEmpty(found_dict)){
+            mod_MCL_dict.subject_pk = found_dict.id;
+            mod_MCL_dict.subject_dict = found_dict;
+            mod_MCL_dict.subject_name = (found_dict.name) ? found_dict.name : null;
+            mod_MCL_dict.subject_code = (found_dict.code) ? found_dict.code : null;
+        }
+
+        selected.subject_pk = mod_MCL_dict.subject_pk;
+        if(!selected.subject_pk){selected.student_pk = null};
+
+// update text in select subject div
+        el_MCL_select_subject.innerText = (mod_MCL_dict.subject_pk) ?
+                                            mod_MCL_dict.subject_name : loc.Click_here_to_select_subject;;
+
+        console.log("mod_MCL_dict", mod_MCL_dict);
+
+    }  // MCL_SaveSubject_in_MCL_dict
+
+//=========  MCL_FillTableClusters  ================ PR2022-01-07
+    function MCL_FillTableClusters() {
+        //console.log("===== MCL_FillTableClusters =====");
+
+// reset mode_edit_clustername
+        mod_MCL_dict.mode_edit_clustername = null;
+        MCL_ShowClusterName();
+
+        el_MCL_tblBody_clusters.innerHTML = null;
+
+    // show only clusters of this subject - is filtered in MCL_FillClusterList
+
+// ---  loop through mod_MCL_dict.cluster_list
+        for (let i = 0, data_dict; data_dict = mod_MCL_dict.cluster_list[i]; i++) {
+            /* cluster_dict = {
+                cluster_pk: data_dict.id,
+                sortby: data_dict.name,  // cluster_name
+                subject_pk: data_dict.subject_id,
+                subject_code: data_dict.code,
+                mode: null
+                });
+            */
+            // skip clusters with mode = 'delete'
+            if (data_dict.mode !== "delete"){
+    // +++ insert tblRow into el_MCL_tblBody_clusters
+                const tblRow = el_MCL_tblBody_clusters.insertRow(-1);
+                tblRow.setAttribute("data-cluster_pk", data_dict.cluster_pk)
+                tblRow.addEventListener("click", function() {MCL_ClusterSelect(tblRow)}, false );
+    //- add hover to tableBody row
+                add_hover(tblRow)
+    // - insert td into tblRow
+                let td = tblRow.insertCell(-1);
+                td.innerText = data_dict.sortby; // cluster_name
+                td.classList.add("tw_240")
+    // - insert td into tblRow
+                td = tblRow.insertCell(-1);
+                td.innerText = data_dict.subject_code;
+                td.classList.add("tw_060");
+
+    // ---  highlight selected cluster
+                if (mod_MCL_dict.sel_cluster_pk && mod_MCL_dict.sel_cluster_pk === data_dict.cluster_pk){
+                    add_or_remove_class(tblRow, "bg_selected_blue", true);
+        }}};
+    };  // MCL_FillTableClusters
+
+//=========  MCL_ClusterSelect  ================ PR2022-01-07
+    function MCL_ClusterSelect(tblRow, is_selected) {
+        console.log("===== MCL_ClusterSelect =====");
+        console.log("tblRow", tblRow);
+        const cluster_pk = get_attr_from_el(tblRow, "data-cluster_pk");
+        console.log("cluster_pk", cluster_pk);
+        // cluster_pk is number or 'new_1' when created
+        mod_MCL_dict.sel_cluster_pk = (!cluster_pk) ? null :
+                                      (Number(cluster_pk)) ? Number(cluster_pk) : cluster_pk;
+
+// ---  get sel_cluster_dict
+        mod_MCL_dict.sel_cluster_dict = MCL_get_cluster_dict(mod_MCL_dict.sel_cluster_pk)
+
+// ---  reset highlighted culsters
+        const els = el_MCL_tblBody_clusters.querySelectorAll(".bg_selected_blue")
+        for (let i = 0, el; el = els[i]; i++) {
+            el.classList.remove("bg_selected_blue")
+        };
+// ---  highlightselected cluster
+        add_or_remove_class(tblRow, "bg_selected_blue", true )
+
+        console.log("mod_MCL_dict", mod_MCL_dict);
+        MCL_FillTableStudsubj();
+    };  // MCL_ClusterSelect
+
+//=========  MCL_get_cluster_dict  ================ PR2022-01-09
+    function MCL_get_cluster_dict(cluster_pk) {
+        //console.log("===== MCL_get_cluster_dict =====");
+        let cluster_dict = null;
+// ---  lookup through mod_MCL_dict.cluster_list
+        if (mod_MCL_dict.cluster_list && cluster_pk){
+            for (let i = 0, dict; dict = mod_MCL_dict.cluster_list[i]; i++) {
+                if (dict.cluster_pk === cluster_pk){
+                    cluster_dict = dict;
+                    break;
+        }}};
+        return cluster_dict;
+    };  // MCL_get_cluster_dict
+
+
+//=========  MCL_FillSelectClass  ================ PR2022-01-09
+    function MCL_FillSelectClass() {
+        console.log("===== MCL_FillSelectClass =====");
+        const first_item = (mod_MCL_dict.classname_list) ? loc.All_classes : loc.No_classes;
+        let option_text = "<option value=\"0\">" + first_item + "</option>";
+        if (mod_MCL_dict.classname_list){
+            for (let i = 0, classname; classname = mod_MCL_dict.classname_list[i]; i++) {
+                option_text += "<option value=\"" + classname + "\">" + classname + "</option>";
+            };
+        }
+        el_MCL_select_class.innerHTML = option_text;
+    };  // MCL_FillSelectClass
+
+
+//=========  MCL_FillClusterList  ================ PR2022-01-09
+    function MCL_FillClusterList() {
+
+        console.log("===== MCL_FillClusterList =====");
+        // called by MCL_Open and by MSSSS_Response (after selecting subject)
+
+// - reset cluster_list
+        mod_MCL_dict.cluster_list = [];
+
+// ---  loop through cluster_rows
+        for (let i = 0, data_dict; data_dict = cluster_rows[i]; i++) {
+            /* data_dict = {
+                code: "zwi"
+                id: 209
+                name: "zwi - 1"
+                subject_id: 2132}
+            */
+    // add only clusters of this subject
+            if (data_dict.subject_id === mod_MCL_dict.subject_pk){
+                mod_MCL_dict.cluster_list.push({
+                    cluster_pk: data_dict.id,
+                    sortby: data_dict.name,  // cluster_name
+                    subject_pk: data_dict.subject_id,
+                    subject_code: data_dict.code,
+                    mode: null
+                });
+            };
+// ---  sort dictlist by key 'sortby'
+            mod_MCL_dict.cluster_list.sort(b_comparator_sortby);
+        };
+    };  // MCL_FillClusterList
+
+//=========  MCL_FillStudentList  ================ PR2022-01-06
+    function MCL_FillStudentList() {
+
+        console.log("===== MCL_FillStudentList =====");
+        // called by MCL_Open and by MSSSS_Response (after selecting subject)
+
+// - reset mode_edit_clustername
+        mod_MCL_dict.student_list = [];
+        mod_MCL_dict.classname_list = [];
+        /* studsubj_row = {
+            cluster_id: null
+            cluster_name: null
+            subj_id: 2114
+            subj_name: "Nederlandse taal"
+            stud_id: 9240
+            studsubj_id: 67920
+        */
+
+        if(studsubj_rows && studsubj_rows.length){
+            for (let i = 0, data_dict; data_dict = studsubj_rows[i]; i++) {
+// - add only the studsubjects from this subject to student_list
+                if (data_dict.subj_id && data_dict.subj_id === mod_MCL_dict.subject_pk){
+
+        console.log("data_dict", data_dict);
+                    mod_MCL_dict.student_list.push({
+                        studsubj_pk: data_dict.studsubj_id,
+                        sortby: data_dict.fullname,  // key must have name 'sortby', b_comparator_sortby sorts by this field
+                        subject_pk: data_dict.subj_id,
+                        subject_code: data_dict.subj_code,
+                        cluster_pk: data_dict.cluster_id,
+                        cluster_name: data_dict.cluster_name,
+                        classname: data_dict.classname,
+                        mode: null
+                    });
+                    // add classname to classname_list
+                    if(data_dict.classname){
+                        if (!mod_MCL_dict.classname_list.includes(data_dict.classname)){
+                            mod_MCL_dict.classname_list.push(data_dict.classname)
+                        };
+                    };
+                };
+            };
+// ---  sort dictlist by key 'sortby'
+            mod_MCL_dict.student_list.sort(b_comparator_sortby);
+            mod_MCL_dict.classname_list.sort();
+    //console.log("mod_MCL_dict.student_list", mod_MCL_dict.student_list);
+    console.log("mod_MCL_dict", mod_MCL_dict);
+        };
+    };  // MCL_FillStudentList
+
+//=========  MCL_FillTableStudsubj  ================ PR2022-01-06
+    function MCL_FillTableStudsubj() {
+        console.log("===== MCL_FillTableStudsubj =====");
+        // reset mode_edit_clustername
+        mod_MCL_dict.mode_edit_clustername = null;
+        MCL_ShowClusterName();
+
+        el_MCL_tblBody_studs_selected.innerHTML = null;
+        el_MCL_tblBody_studs_available.innerHTML = null;
+
+// ---  loop through dictlist
+        for (let i = 0, student_dict; student_dict = mod_MCL_dict.student_list[i]; i++) {
+
+            /* student_dict = {
+                cluster_pk: null,
+                cluster_name: null,
+                selected: false
+                studsubj_pk: 68758,
+                subject_code: "zwi",
+                sortby: "van den Wall Arnemann, Tamara"}
+            */
+    // put all studsubjects of this cluster in table el_MCL_tblBody_studs_selected
+            const is_selected = (!!student_dict.cluster_pk && student_dict.cluster_pk === mod_MCL_dict.sel_cluster_pk);
+
+    // filter_nocluster and filter_classname in studsubj is available
+            let show_row = true;
+            if (is_selected){
+                show_row = true;
+            } else {
+                if (mod_MCL_dict.filter_nocluster){
+                    show_row = (!student_dict.cluster_pk);
+                };
+                if (show_row && mod_MCL_dict.filter_classname) {
+                    show_row = (student_dict.classname === mod_MCL_dict.filter_classname);
+                }
+            }
+            if (show_row){
+                const tBody = (is_selected) ? el_MCL_tblBody_studs_selected : el_MCL_tblBody_studs_available;
+
+    // +++ insert tblRow into tBody
+                const tblRow = tBody.insertRow(-1);
+                tblRow.setAttribute("data-studsubj_pk", student_dict.studsubj_pk)
+                // PR2022-01-09 debug: if clause necessary, otherwise data-cluster_pk will be string "null"
+                if (student_dict.cluster_pk){tblRow.setAttribute("data-cluster_pk", student_dict.cluster_pk)};
+                tblRow.addEventListener("click", function() {MCL_StudsubjSelect(tblRow, is_selected)}, false );
+    //- add hover to tableBody row
+                add_hover(tblRow)
+    // - insert td into tblRow
+                const td = tblRow.insertCell(-1);
+                td.innerText = student_dict.sortby;
+                td.classList.add("tw_240");
+    // - insert td into tblRow
+                const td_temp = tblRow.insertCell(-1);
+                td_temp.innerText = student_dict.classname;
+                td_temp.classList.add("tw_090");
+            };
+
+
+        };
+        const selected_count = (el_MCL_tblBody_studs_selected.rows.length) ? el_MCL_tblBody_studs_selected.rows.length : 0;
+        const available_count = (el_MCL_tblBody_studs_available.rows.length) ? el_MCL_tblBody_studs_available.rows.length : 0;
+
+        console.log("selected_count", selected_count, "available_count", available_count);
+
+        el_MCL_studs_selected_count.innerText = (selected_count === 1) ? "1 " + loc.Candidate.toLowerCase() : selected_count + " " + loc.Candidates.toLowerCase()
+        el_MCL_studs_available_count.innerText = (available_count === 1) ? "1 " + loc.Candidate.toLowerCase() : available_count + " " + loc.Candidates.toLowerCase();
+
+    };  // MCL_FillTableStudsubj
+
+//=========  MCL_StudsubjSelect  ================ PR2022-01-06
+    function MCL_StudsubjSelect(tblRow, is_selected) {
+
+        console.log("===== MCL_StudsubjSelect =====");
+        const studsubj_pk = get_attr_from_el_int(tblRow, "data-studsubj_pk");
+        const cluster_pk_str = get_attr_from_el(tblRow, "data-cluster_pk");
+        console.log("studsubj_pk", studsubj_pk);
+        console.log("cluster_pk_str", cluster_pk_str);
+        const cluster_pk = (!cluster_pk_str) ? null :
+                            (Number(cluster_pk_str)) ? Number(cluster_pk_str) :
+                            cluster_pk_str;
+
+        if (!is_selected && !mod_MCL_dict.sel_cluster_pk){
+            // no cluster selected - give msg - not when is_create
+            b_show_mod_message("<div class='p-2'>" + loc.Please_select_cluster_first + "</div>");
+        } else {
+    // ---  lookup studsubj in mod_MCL_dict.student_list
+            for (let i = 0, student_dict; student_dict = mod_MCL_dict.student_list[i]; i++) {
+                if (student_dict.studsubj_pk === studsubj_pk){
+                    // when clicked on selected tblRow
+                    if (is_selected){
+                        // remove cluster_pk
+                        student_dict.cluster_pk = null;
+                        student_dict.cluster_name = null;
+                        student_dict.mode = "update";
+                    } else {
+                    // when clicked on available tblRow
+                    // add cluster_pk to student_dict
+                        // lookup cluster in cluster_list
+                         for (let i = 0, cluster_dict; cluster_dict = mod_MCL_dict.cluster_list[i]; i++) {
+                             if (cluster_dict.cluster_pk === mod_MCL_dict.sel_cluster_pk){
+                                student_dict.cluster_pk = cluster_dict.cluster_pk;
+                                student_dict.cluster_name = cluster_dict.sortby; // sortby = sel_cluster_name;
+                                student_dict.mode = "update";
+                                break;
+                             };
+                         };
+                    };
+            console.log("student_dict", student_dict);
+                    break;
+                };
+            };
+        };
+        MCL_FillTableStudsubj();
+
+    };  // MCL_StudsubjSelect
+
+//=========  MCL_BtnAddRemoveAllClick  ================ PR2022-01-09
+    function MCL_BtnAddRemoveAllClick(mode) {
+        console.log("===== MCL_BtnAddRemoveAllClick =====");
+
+        if (!mod_MCL_dict.sel_cluster_pk){
+            // no cluster selected - give msg - not when is_create
+            b_show_mod_message("<div class='p-2'>" + loc.Please_select_cluster_first + "</div>");
+        } else {
+
+            if (mode === "remove") {
+                for (let i = 0, student_dict; student_dict = mod_MCL_dict.student_list[i]; i++) {
+                    if (student_dict.cluster_pk === mod_MCL_dict.sel_cluster_pk){
+                        student_dict.cluster_pk = null;
+                        student_dict.mode = "update";
+                    };
+                };
+            } else if (mode === "add") {
+                for (let i = 0, student_dict; student_dict = mod_MCL_dict.student_list[i]; i++) {
+                    // apply same filter same as in MCL_FillTableStudsubj
+                    // add sel_cluster_pk to all available studsubjects that are shown in table Available
+                    // filter: - not selected and not selected in this cluster
+                    //         - if filter_nocluster: cluster_pk is null
+                    //         - if filter_classname: classname = selected class
+                    if ((!student_dict.cluster_pk || student_dict.cluster_pk !== mod_MCL_dict.sel_cluster_pk) &&
+                            (!mod_MCL_dict.filter_nocluster || !student_dict.cluster_pk) &&
+                            (!mod_MCL_dict.filter_classname || student_dict.classname === mod_MCL_dict.filter_classname) ) {
+                        student_dict.cluster_pk = mod_MCL_dict.sel_cluster_pk;
+                        student_dict.mode = "update";
+                    };
+                };
+            }
+
+            MCL_FillTableStudsubj();
+        };
+    };  // MCL_BtnAddRemoveAllClick
+
+//=========  MCL_SelectClassnameClick  ================ PR2022-01-09
+    function MCL_SelectClassnameClick(el_select) {
+        console.log("===== MCL_SelectClassnameClick =====");
+        mod_MCL_dict.filter_classname = (!el_select.value || el_select.value === "0") ? null : el_select.value;
+        console.log("mod_MCL_dict.filter_classname", mod_MCL_dict.filter_classname);
+
+        MCL_FillTableStudsubj();
+    };  // MCL_SelectClassnameClick
+
+//=========  MCL_ChkNoClusterClick  ================ PR2022-01-09
+    function MCL_ChkNoClusterClick(el_checkbox) {
+        console.log("===== MCL_ChkNoClusterClick =====");
+        mod_MCL_dict.filter_nocluster = (el_checkbox.checked) ? el_checkbox.checked : false;
+        console.log("mod_MCL_dict.filter_nocluster", mod_MCL_dict.filter_nocluster);
+
+
+        MCL_FillTableStudsubj();
+
+    };  // MCL_ChkNoClusterClick
+
+
+//=========  MCL_get_next_clustername  ================ PR2022-01-09
+    function MCL_get_next_clustername() {
+        console.log("===== MCL_get_next_clustername =====");
+        let next_cluster_name = null;
+        if (mod_MCL_dict.cluster_list && mod_MCL_dict.cluster_list.length){
+            let max_number = 0;
+            for (let i = 0, cluster_dict; cluster_dict = mod_MCL_dict.cluster_list[i]; i++) {
+                const cluster_name = cluster_dict.sortby;
+                if (cluster_name && cluster_name.includes("-")){
+                    const arr = cluster_name.split("-");
+                    if (arr[0] && arr[0].trim().toLowerCase() === cluster_dict.subject_code.toLowerCase()){
+                        console.log("cluster_dict.subject_code", cluster_dict.subject_code);
+                         if (arr[1]){
+                            const arr_number = Number(arr[1]);
+                            if (arr_number && arr_number > max_number) {max_number = arr_number};
+                        };
+                    };
+                };
+            };
+            if (mod_MCL_dict.cluster_list.length > max_number) { max_number = mod_MCL_dict.cluster_list.length};
+            const next_number = max_number + 1;
+            next_cluster_name = mod_MCL_dict.subject_code + " - " + next_number;
+        }
+        console.log("next_cluster_name", next_cluster_name);
+        return next_cluster_name
+
+    };  // MCL_get_next_clustername
+
+
+// +++++++++++++++++ END OF MODAL CLUSTERS +++++++++++++++++++++++++++++++++++
+
+// +++++++++++++++++ MODAL MULTIPLE OCCURRENCES ++++++++++++++++++++++++++++++++++++++++++
 //=========  MMUOC_Open  ================ PR2021-09-05
     function MMUOC_Open() {
         //console.log("===== MMUOC_Open =====");
@@ -2630,7 +3301,6 @@ console.log("mode: ", mode)
 // ---  upload new setting - not necessary, new setting will be saved in DatalistDownload
         //b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
-        //UpdateHeaderLeft();
        // FillTblRows();
 
         const new_setting_dict = {page: "page_studsubj"}
@@ -3033,7 +3703,34 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 
         mod_dict = {mode: mode};
 
-        if (mode === "prelim_ex1"){
+        if (mode === "delete_cluster"){
+            mod_dict.sel_cluster_pk = mod_MCL_dict.sel_cluster_pk;
+
+            const cluster_dict = mod_MCL_dict.sel_cluster_dict;
+            const cluster_name = (cluster_dict) ? cluster_dict.sortby : null
+
+            el_confirm_header.innerText = loc.Delete_cluster;
+            el_confirm_msg_container.className = "p-3";
+
+            const msg_html = [
+                    "<p>", loc.Cluster, " '", cluster_name, "' " + loc.has_candidates + "</p><p>" +
+                     loc.cluster_willbe_removed  + "</p><p>" + loc.Do_you_want_to_continue + "</p>"].join("")
+            el_confirm_msg_container.innerHTML = msg_html;
+
+            el_confirm_loader.className = cls_hide;
+
+            el_confirm_btn_save.innerText = loc.OK;
+            el_confirm_btn_cancel.innerText = loc.Cancel;
+            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
+
+        // set focus to save button
+            setTimeout(function (){
+                el_confirm_btn_save.focus();
+            }, 500);
+        // show modal
+            $("#id_mod_confirm").modal({backdrop: true});
+
+        } else if (mode === "prelim_ex1"){
             el_confirm_header.innerText = loc.Download_Ex_form;
             el_confirm_loader.classList.add(cls_visible_hide)
             el_confirm_msg_container.className = "p-3";
@@ -3051,7 +3748,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
             el_confirm_btn_cancel.innerText = loc.Cancel;
             add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
 
-                // set focus to save button
+        // set focus to save button
             setTimeout(function (){
                 el_confirm_btn_save.focus();
             }, 500);
@@ -3114,7 +3811,11 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
         //console.log("mod_dict: ", mod_dict);
 
         let close_modal = false;
-        if (mod_dict.mode === "prelim_ex1"){
+
+        if (mod_dict.mode === "delete_cluster"){
+            MCL_delete_cluster(mod_MCL_dict.sel_cluster_dict);
+            close_modal = true;
+        } else if (mod_dict.mode === "prelim_ex1"){
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             if (el_modconfirm_link) {
                 el_modconfirm_link.click();
@@ -3620,10 +4321,10 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 //###########################################################################
 //=========  MSSSS_Response  ================ PR2021-01-23 PR2021-07-26
     function MSSSS_Response(tblName, selected_dict, selected_pk) {
-        //console.log( "===== MSSSS_Response ========= ");
-        //console.log( "tblName", tblName);
-        //console.log( "selected_pk", selected_pk);
-        //console.log( "selected_dict", selected_dict);
+        console.log( "===== MSSSS_Response ========= ");
+        console.log( "tblName", tblName);
+        console.log( "selected_pk", selected_pk);
+        console.log( "selected_dict", selected_dict);
 
         if(selected_pk === -1) { selected_pk = null};
 
@@ -3652,13 +4353,27 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
             DatalistDownload(datalist_request);
 
         } else if (tblName === "subject") {
-            setting_dict.sel_subject_pk = selected_pk;
-    // reset selected student when subject is selected, in setting_dict and upload_dict
-            if(selected_pk){
-                setting_dict.sel_student_pk = null;
-            }
+            selected.subject_pk = selected_pk;
+
+// -- update mod cluster
+
+// -- lookup selected.subject_pk in subject_rows and get sel_subject_dict
+            // only when modal is open
+            const el_modal = document.getElementById("id_mod_cluster");
+            const modal_MCL_is_open = (!!el_modal && el_modal.classList.contains("show"));
+        console.log( "modal_MCL_is_open", modal_MCL_is_open);
+            if(modal_MCL_is_open){
+                MCL_SaveSubject_in_MCL_dict(selected.subject_pk);
+
+                MCL_FillClusterList();
+                MCL_FillTableClusters();
+                MCL_FillStudentList();
+                MCL_FillTableStudsubj();
+                MCL_FillSelectClass()
+            };
+
 // ---  upload new setting
-            const upload_dict = {selected_pk: {sel_subject_pk: setting_dict.sel_subject_pk, sel_student_pk: null}};
+            const upload_dict = {selected_pk: {sel_subject_pk: selected.subject_pk, sel_student_pk: null}};
             b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
         } else if (tblName === "student") {
@@ -3675,22 +4390,16 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
         if (tblName === "school") {
 
         } else {
-            //b_UploadSettings ({selected_pk: selected_pk_dict}, urls.url_usersetting_upload);
-//console.log("selected_dict", selected_dict)
+           // b_UploadSettings ({selected_pk: selected_pk_dict}, urls.url_usersetting_upload);
+
     // --- update header text
-            const selected_name = (selected_dict) ?
-                                    (tblName === "subject") ? selected_dict.name :
-                                    (tblName === "student") ? selected_dict.fullname : null
-                                  : null;
-            UpdateHeaderText(selected_name);
+            UpdateHeaderText();
 
     // ---  fill datatable
        //console.log("function MSSSS_Response");
             FillTblRows()
 
             //MSSSS_display_in_sbr()
-    // --- update header text - comes after MSSSS_display_in_sbr
-            //UpdateHeaderLeft();
         }
     }  // MSSSS_Response
 
@@ -4007,7 +4716,8 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
         //console.log( " ==== DownloadGradeStatusAndIcons ====");
         const url_str = urls.url_studsubj_validate_all;
         const upload_dict = {studsubj_validate: {get: true}};
-        UploadChanges(upload_dict, url_str);
+        // TODO enable this
+        //UploadChanges(upload_dict, url_str);
      } // DownloadGradeStatusAndIcons
 
 //========= DownloadMultipleOccurrences ============= PR2021-09-05
@@ -4015,7 +4725,8 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
         //console.log( " ==== DownloadMultipleOccurrences ====");
         const url_str = urls.url_studsubj_multiple_occurrences;
         const upload_dict = {studsubj_multiple_occurrences: {get: true}};
-        UploadChanges(upload_dict, url_str);
+        // TODO enable this
+        //UploadChanges(upload_dict, url_str);
      } // DownloadMultipleOccurrences
 
 //========= ResponseValidationAll ============= PR2021-07-24 PR2021-08-17
@@ -4087,9 +4798,9 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
     function get_datadict_by_studpk_studsubjpk(student_pk, studsubj_pk) {
         //console.log( " ==== get_datadict_by_studpk_studsubjpk ====");
 
-        const data_rows = (selected_btn === "btn_published") ? published_rows : studsubj_rows;
-        const lookup_1_field = (selected_btn === "btn_published") ? null : "stud_id";
-        const lookup_2_field = (selected_btn === "btn_published") ? "id" : "studsubj_id";
+        const data_rows = studsubj_rows;
+        const lookup_1_field = "stud_id";
+        const lookup_2_field = "studsubj_id";
         const search_1_int = student_pk;
         const search_2_int = studsubj_pk;
         const [middle_index, found_dict, compare] = b_recursive_integer_lookup(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int);
@@ -4102,7 +4813,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 ////////////////////
 //========= get_tblName_from_selectedBtn  ======== // PR2021-07-28
     function get_tblName_from_selectedBtn() {
-        const tblName = (selected_btn === "btn_published") ? "published" : "studsubj";
+        const tblName = "studsubj";
         return tblName;
     }
 

@@ -86,7 +86,8 @@ class ManualListView(View):
         #headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
         param = {'page': page, 'paragraph': paragraph, 'lang': user_lang}
 
-        logger.debug("param: " + str(param))
+        if logging_on:
+            logger.debug("param: " + str(param))
 
         return render(request, 'manual.html', param)
 
@@ -306,8 +307,12 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             if sel_page in ('page_student', 'page_studsubj', 'page_grade'):
                 no_access_message = _("The school has not activated this examyear yet.")
                 messages.append(no_access_message)
+
 # - sentr_src contains link for Sentry awp_js PR2021-09-19
         sentry_src = s.SENTRY_SRC
+
+# - make background red when testsite PR2022-01-11
+        class_bg_testsite = "tsa_tr_error" if s.IS_TESTSITE else ""
 
         headerbar_param = {
             'no_access': no_access,
@@ -326,7 +331,8 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             'sr_allowed': sr_allowed,
             'no_centralexam': no_centralexam,
             'no_thirdperiod': no_thirdperiod,
-            'sentry_src': sentry_src
+            'sentry_src': sentry_src,
+            'class_bg_testsite': class_bg_testsite
         }
         if param:
             headerbar_param.update(param)

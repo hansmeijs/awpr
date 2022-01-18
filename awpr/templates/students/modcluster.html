@@ -1,0 +1,123 @@
+ {% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL CLUSTER  =================== -->
+    <div class="modal" id="id_mod_cluster" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl " role="document">
+
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <a href="{% url 'manual_url' 'studsubj' 'id_clusters' %}" target="_blank" title="{% trans 'Open manual' %}" aria-label="Manual"> <div class="questionmark"></div> </a>
+
+                    <h4 class="modal-title mx-2" >{% trans 'Clusters' %}</h4>
+                    <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mx-3 mb-2 p-2 border_bg_transparent">
+                        <div id="id_MCL_select_subject" class="pointer_show">
+                        </div>
+                    </div>
+                    <div id="id_MCL_loader" class="display_hide mx-4 mt-2 ">
+                        <div class="image_container">
+                            <img src="{% static 'img/loader.gif' %}" class="icon_24">
+                        </div>
+                    </div>
+
+                    <div class="content_header ml-2 mr-0">
+                        <div class="flex_4 p-2 ">
+                            <h6 class="px-2">{% trans 'Clusters' %}:</h6>
+                            <table class="tableX tsa_tbl border_bg_message tbl_studsubj_h320_w_auto">
+                                <tbody id="id_MCL_tblBody_clusters"></tbody>
+                            </table>
+
+                            <div id="id_MCL_btngroup_add_cluster">
+                                <div class="flex_container pt-2">
+                                    <div class="flex_1 pr-1">
+                                        <button id="id_MCL_btn_add_cluster" class="btn btn-block btn-outline-secondary ">{% trans 'Add cluster' %}</button>
+                                    </div>
+                                    <div class="flex_1 pl-1">
+                                        <button id="id_MCL_btn_delete_cluster" class="btn btn-block btn-outline-secondary ">{% trans 'Delete cluster' %}</button>
+                                    </div>
+                                </div>
+                                <div class="flex_container pt-2">
+                                    <button id="id_MCL_btn_edit_cluster" class="btn btn-block btn-outline-secondary ">{% trans 'Change cluster name' %}</button>
+                                </div>
+                            </div>
+
+                            <div id="id_MCL_group_cluster_name">
+                                    <label class="mx-2 my-1">{% trans 'Cluster name' %}:</label>
+                                    <input id="id_MCL_input_cluster_name" type="text" class="form-control"
+                                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+                                    >
+                                <div class="flex_container pt-2">
+                                <div class="flex_1 pl-1">
+                                    <button id="id_MCL_btn_cluster_cancel" class="btn btn-block btn-outline-secondary">{% trans 'Cancel' %}</button>
+                                </div>
+                                <div class="flex_1 pr-1">
+                                    <button id="id_MCL_btn_cluster_save" class="btn btn-block btn-outline-secondary">{% trans 'OK' %}</button>
+                                </div>
+                                </div>
+                             </div>
+
+                         </div>
+
+                        <div class="flex_4 p-2">
+                            <h6 class="px-2">{% trans 'Candidates of this cluster' %}:</h6>
+                            <table class="tableX tsa_tbl border_bg_lightblue tbl_studsubj_h320_w_auto">
+                                <tbody id="id_MCL_tblBody_studs_selected"></tbody>
+                            </table>
+                            <div id="id_MCL_studs_selected_count" class="px-2"></div>
+                            <button id="id_MCL_btn_remove_all" class="btn btn-block btn-outline-secondary ">{% trans 'Remove all candidates' %}</button>
+                        </div>
+
+                        <div class="flex_4 p-2">
+                            <h6 class="px-2">{% trans 'Available candidates' %}:</h6>
+                            <table class="tableX tsa_tbl border_bg_message tbl_studsubj_h320_w_auto">
+                                <tbody id="id_MCL_tblBody_studs_available"></tbody>
+                            </table>
+                            <div id="id_MCL_studs_available_count" class="px-2"></div>
+
+                            <button id="id_MCL_btn_add_all" class="btn btn-block btn-outline-secondary ">{% trans 'Add all candidates' %}</button>
+                        </div>
+                        <div class="flex_4 p-2">
+                            <h6 class="px-2">{% trans 'Filter available candidates' %}:</h6>
+                            <div class="border_bg_message tbl_studsubj_h320_w_auto">
+
+                                <div class="flex_1X mx-1 p-2">
+                                <label for="id_MCL_select_class" class="label_margin_top_m3">{% trans 'Filter class' %}:</label>
+                                <select id="id_MCL_select_class" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                </select>
+                                </div>
+
+                                <div class="flex_box mt-2">
+                                    <div class="flex_1">
+                                        <input id="id_MCL_chk_nocluster" type="checkbox" data-field="is_extra_counts" class="awp_input_checkbox tw_032 mx-2">
+                                    </div>
+
+                                    <div class="flex_4">
+                                        <label for="id_MCL_chk_nocluster">{% trans 'Show only candidates without cluster' %}</label>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <div class="content_subheader_right">
+                        <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MCL_btn_save" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>

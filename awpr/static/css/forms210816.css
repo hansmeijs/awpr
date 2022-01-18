@@ -89,6 +89,13 @@ note_flex_2 {
     flex: 4;
 }
 
+.flex_2_align_right {
+    flex: 2;
+    text-align: right;
+}
+
+
+
 
 /* PR2021-10-11 from https://css-tricks.com/snippets/css/a-guide-to-flexbox/#basics-and-terminology */
 .flex_container_direction_rowreverse {
@@ -362,26 +369,10 @@ note_flex_2 {
     text-align: right;
 }
 
-.content_header_middle {
-    flex: 1;
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    margin: auto;
-    text-align: center;
-}
-
 .content_subheader_left {
     flex: 1;
     text-align: left;
     align-items: end;
-}
-
-.content_subheader_left_flex2 {
-    flex: 2;
-    text-align: left;
-    align-items: end;
-    margin-right: auto;
 }
 
 .content_subheader_right {

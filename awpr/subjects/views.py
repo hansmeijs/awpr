@@ -262,6 +262,53 @@ def create_subject_rows(setting_dict, subject_pk, cur_dep_only=False):
 # --- end of create_subject_rows
 
 
+def create_cluster_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_cluster_pk=None):
+    # --- create rows of all clusters of this examyear this department  PR2022-01-06
+    logging_on = s.LOGGING_ON
+
+    if logging_on:
+        logger.debug(' =============== create_cluster_rows ============= ')
+        logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk) + ' ' + str(type(sel_examyear_pk)))
+        logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk) + ' ' + str(type(sel_schoolbase_pk)))
+        logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk) + ' ' + str(type(sel_depbase_pk)))
+
+    cluster_rows = []
+    if sel_examyear_pk and sel_schoolbase_pk and sel_depbase_pk:
+        try:
+            sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
+            sql_list = ["SELECT cl.id, cl.name, subj.id AS subject_id, subjbase.code",
+
+                        "FROM subjects_cluster AS cl",
+                        "INNER JOIN subjects_subject AS subj ON (subj.id = cl.subject_id)",
+                        "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+                        "INNER JOIN schools_school AS sch ON (sch.id = cl.school_id)",
+                        "INNER JOIN schools_department AS dep ON (dep.id = cl.department_id)",
+
+                        "WHERE subj.examyear_id = %(ey_id)s::INT",
+                        "AND sch.examyear_id = %(ey_id)s::INT",
+                        "AND sch.base_id = %(sb_id)s::INT",
+                        "AND dep.base_id = %(db_id)s::INT",
+                        ]
+            if sel_cluster_pk:
+                sql_keys['cluster_id'] = sel_cluster_pk
+                sql_list.append("AND cl.id = %(cluster_id)s::INT")
+            else:
+                sql_list.append("ORDER BY cl.id")
+            sql = ' '.join(sql_list)
+
+            if logging_on:
+                logger.debug('sql: ' + str(sql))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                cluster_rows = af.dictfetchall(cursor)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+    return cluster_rows
+# --- end of create_cluster_rows
+
+
 @method_decorator([login_required], name='dispatch')
 class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
 
@@ -1095,12 +1142,11 @@ class ExamListView(View):  # PR2021-04-04
 
 # ============= ExamUploadView ============= PR2021-04-04
 
-
 @method_decorator([login_required], name='dispatch')
 class ExamUploadView(View):
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= ExamUploadView ============= ')
@@ -1126,6 +1172,7 @@ class ExamUploadView(View):
         if not has_permit:
             err_html = str(_("You don't have permission to perform this action."))
         else:
+
 # - get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
             if upload_json:
@@ -1211,7 +1258,7 @@ class ExamUploadView(View):
                                 deleted_list.append(deleted_row)
                         else:
 
-    # +++++ Update instance, also when it is created, not when is_delete
+# +++++ Update instance, also when it is created, not when is_delete
                             update_exam_instance(exam, upload_dict, error_list, examyear, request)
 
     # 6. create list of updated exam
@@ -1314,7 +1361,7 @@ def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05
 # - end of delete_exam_instance
 
 def update_exam_instance(instance, upload_dict, error_list, examyear, request):
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' --------- update_exam_instance -------------')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -1329,6 +1376,7 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request):
 # --- skip fields that don't contain new values
             if field in ('mode', 'examyear_pk', 'subject_pk', 'exam_pk', 'examperiod_int', 'examtype'):
                 pass
+
 # ---   save changes in field 'depbases', 'levelbases', 'sectorbases'
             elif field in ('depbases', 'levelbases', 'sectorbases'):
                 old_value = getattr(instance, field)
@@ -1361,8 +1409,16 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request):
                     setattr(instance, field, new_value)
                     save_changes = True
 
-            elif field in ('assignment', 'keys', 'amount', 'version', 'blanks'):
+            elif field in ('assignment', 'keys', 'amount', 'version', 'blanks', 'partex'):
                 old_value = getattr(instance, field)
+                if new_value != old_value:
+                    setattr(instance, field, new_value)
+                    save_changes = True
+
+            elif field == 'has_partex':
+                if not new_value:
+                    new_value = False
+                old_value = getattr(instance, field, False)
                 if new_value != old_value:
                     setattr(instance, field, new_value)
                     save_changes = True
@@ -1391,7 +1447,7 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request):
 
 
 def create_exam_rows(setting_dict, append_dict, cur_dep_only=False):
-    # --- create rows of all exams of this examyear  PR2021-04-05
+    # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-11
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_exam_rows ============= ')
@@ -1421,7 +1477,7 @@ def create_exam_rows(setting_dict, append_dict, cur_dep_only=False):
 
         "ex.examperiod, ex.examtype, ex.department_id, depbase.code AS depbase_code,",
         "ex.level_id, lvl.base_id AS levelbase_id, lvl.abbrev AS lvl_abbrev,",
-        "ex.version, ex.assignment, ex.keys, ex.amount, ex.blanks,",
+        "ex.version, ex.has_partex, ex.partex, ex.assignment, ex.keys, ex.amount, ex.blanks,",
         "ex.status, ex.auth1by_id, ex.auth2by_id, ex.locked,",
         "ex.modifiedby_id, ex.modifiedat,",
         "sb.code AS subj_base_code, subj.name AS subj_name,",
@@ -3284,7 +3340,7 @@ def get_scheme_si_dict(examyear_pk, depbase_pk, scheme_pk=None, schemeitem_pk=No
 class ExamDownloadExamView(View):  # PR2021-05-06
 
     def get(self, request, list):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('===== ExamDownloadExamView ===== ')
             logger.debug('list: ' + str(list) + ' ' + str(type(list)))
@@ -3470,55 +3526,74 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
 
 # - end of ExamDownloadExamJsonView
 
-def get_assignment_keys_dict(amount, assignment, keys):
-    logging_on = False  # s.LOGGING_ON
+def get_assignment_keys_dict(amount, scalelength, partex, assignment, keys):
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_assignment_keys_dict -----')
+        logger.debug('amount: ' + str(amount))
+        logger.debug('scalelength: ' + str(scalelength))
+        logger.debug('partex: ' + str(partex))
+        # partex: 1;3;30;Deelexamen 1|2;2;56;Deelexamen 2
+        logger.debug('assignment: ' + str(assignment))
+        logger.debug('keys: ' + str(keys))
 
     # - create dict with assignments PR2021-05-08
     assignment_keys_dict = {}
     if amount and assignment:
-        # assignment: 1:4|2:5|3:6|4:M
+        # assignment: 1;3;30|1;;22;|2;P;5;|3;;3; # 2;2;25|1;C;22;|2;;3;
         maxchar_maxscore_dict = {}
         minscore_dict = {}
-        for qa in assignment.split('|'):
-            # qa_arr: ['1', '4;;']
-            qa_arr = qa.split(':')
-            if len(qa_arr) > 0:
-                q_number = int(qa_arr[0])
-                if logging_on:
-                    logger.debug('qa_arr: ' + str(qa_arr) + ' ' + str(type(qa_arr)))
-                if qa_arr[1]:
-                    value_list = qa_arr[1].split(';')
+        for partex in assignment.split('#'):
+            logger.debug('partex: ' + str(partex))
+            # partex: 1;3;30|1;;22;|2;P;5;|3;;3;
+            skip_item = True
+            for qa in partex.split('|'):
+                # qa: 1;C;22;
+                # skip first item, it contains partex_pk, amount and max_score
+                if skip_item:
+                    skip_item = False
+                else:
+                    qa_arr = qa.split(';')
+                    # qa_arr: ['2', 'P', '5']  q_number, max_char, max_score, min_score
+                    logger.debug('qa_arr: ' + str(qa_arr))
+                    # qa_arr: ['1;3;30']
+                    if len(qa_arr) == 4:
+                        q_number = int(qa_arr[0])
+                        max_char = qa_arr[1] if qa_arr[1] else ""
+                        max_score = qa_arr[2] if qa_arr[2] else ""
+                        min_score = qa_arr[3] if qa_arr[3] else ""
 
-                    value = ''
-                    if value_list[1]:
-                        value = value_list[1]
-                    elif value_list[0]:
-                        value += value_list[0]
-                    if value:
-                        maxchar_maxscore_dict[q_number] = value
+                        if logging_on:
+                            logger.debug('qa_arr: ' + str(qa_arr) + ' ' + str(type(qa_arr)))
+                            logger.debug('q_number: ' + str(q_number) + ' ' + str(type(q_number)))
+                            logger.debug('max_char: ' + str(max_char) + ' ' + str(type(max_char)))
+                            logger.debug('max_score: ' + str(max_score) + ' ' + str(type(max_score)))
+                            logger.debug('min_score: ' + str(min_score) + ' ' + str(type(min_score)))
 
-                    if value_list[2]:
-                        minscore_dict[q_number] = value_list[2]
+                        value = max_char + max_score
+                        if value:
+                            maxchar_maxscore_dict[q_number] = value
 
-        keys_dict = {}
-        if keys:
-            for qa in keys.split('|'):
-                qa_arr = qa.split(':')
-                if len(qa_arr) > 0:
-                    keys_dict[int(qa_arr[0])] = qa_arr[1]
-        if logging_on:
-            logger.debug('keys_dict: ' + str(keys_dict) + ' ' + str(type(keys_dict)))
+                        if min_score:
+                            minscore_dict[q_number] = min_score
 
-        for q_number in range(1, amount + 1):  # range(start_value, end_value, step), end_value is not included!
-            if q_number in maxchar_maxscore_dict:
-                value = maxchar_maxscore_dict.get(q_number, '')
-                if q_number in keys_dict:
-                    value += ' - ' +  keys_dict.get(q_number,'')
-                if q_number in minscore_dict:
-                    value += ' - min:' + minscore_dict.get(q_number,'')
-                assignment_keys_dict[q_number] = value
+            keys_dict = {}
+            if keys:
+                for qa in keys.split('|'):
+                    qa_arr = qa.split(':')
+                    if len(qa_arr) > 0:
+                        keys_dict[int(qa_arr[0])] = qa_arr[1]
+            if logging_on:
+                logger.debug('keys_dict: ' + str(keys_dict) + ' ' + str(type(keys_dict)))
+
+            for q_number in range(1, amount + 1):  # range(start_value, end_value, step), end_value is not included!
+                if q_number in maxchar_maxscore_dict:
+                    value = maxchar_maxscore_dict.get(q_number, '')
+                    if q_number in keys_dict:
+                        value += ' - ' + keys_dict.get(q_number,'')
+                    if q_number in minscore_dict:
+                        value += ' - min:' + minscore_dict.get(q_number,'')
+                    assignment_keys_dict[q_number] = value
 
     return assignment_keys_dict
 

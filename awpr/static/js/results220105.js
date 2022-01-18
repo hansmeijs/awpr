@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  check if user has permit to view this page. If not: el_loader does not exist PR2020-10-02
     const el_loader = document.getElementById("id_loader");
-    const el_hdr_left = document.getElementById("id_hdr_left");
+    const el_hdr_left = document.getElementById("id_header_left");
     const may_view_page = (!!el_loader);
 
     const cls_hide = "display_hide";

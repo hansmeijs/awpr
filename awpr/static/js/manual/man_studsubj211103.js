@@ -63,7 +63,7 @@ const man_studsubj = {
         "</div>",
         set_image_div("img_studsubj_mod_studsubj_ne"),
 
-        write_paragraph_header("id_enter_subjects", "Vakken van kandidaten invoeren"),
+        write_paragraph_header("id_enter_studsubj", "Vakken van kandidaten invoeren"),
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
@@ -85,13 +85,120 @@ const man_studsubj = {
 
                 "<p><b>Kenmerken van het vak wijzigen</b><br> ",
                 "Klik op een kandidaat in de rechter lijst. In het kader <i>Kenmerken van het vak</i> staan alle kenmerken van dat vak. ",
-                "De algemene kenmerken kun je niet veranderen. Dat zijn bijvboorbeeld: 'Combinatievak', 'Verplicht vak'. ",
-                "Individuele kenmerken kun je wel per kandidaat instellen. het zijn: <b>Extra vak</b> en <b>Keuze-combinatievak</b>. ",
-                "Ook de <b>Titel van het werkstuk</b> en <b>Vakken waarop het werkstuk betrekking heeft</b> zijn voortaan opgenomen als individueel kenmerk van het vak 'Werkstuk'. ",
-                "Je kunt meerdere vakken selecteren.<br>",
+                "De algemene kenmerken kun je niet veranderen. Dat zijn bijvboorbeeld: 'Combinatievak', 'Verplicht vak'.<br>",
+                "Individuele kenmerken kun je wel per kandidaat instellen. ", "Het zijn: 'Extra vak, telt niet mee voor de uitslag' en 'Extra vak, telt mee voor de uitslag'.<br>",
+                "Ook de 'Titel van het werkstuk' en 'Vakken waarop het werkstuk betrekking heeft' zijn voortaan opgenomen als individueel kenmerk van het vak 'Werkstuk'. ",
             "</div>",
         "</div>",
         set_image_div("img_studsubj_mod_studsubj_ne"),
+
+        write_paragraph_header("id_clusters", "Clusters"),
+        "<div class='mfc mb-2'>",
+            "<div class='mfl'><p></p></div>",
+            "<div class='mfr'>",
+
+                "<p>Een <b>cluster</b> is een groep examenkandidaten die hetzelfde vak volgen. ",
+                "Het verschil met de klas is dat elke kandidaat maar in één klas kan zitten, ",
+                "terwijl een kandidaat voor elk vak tot een apart cluster behoort. ",
+                "Clusters worden gebruikt bij het uitprinten van rapportages - met name voor het Ex3-formulier - en bij het filteren van kandidaten.</p>",
+
+                "<p>Klik in de pagina <i>Vakken</i> op de knop <i>Clusters</i>. Het onderstaande venster <i>Clusters</i> wordt nu geopend. </p>",
+
+
+                "<p><b>Clusters toevoegen of verwijderen</b><br> ",
+                /*
+                Een cluster toevoegen gaat als volgt:
+        Selecteer eerst een vak in het veld Selecteer vak, links boven in het venster.
+        Klik op de knop Cluster toevoegen. Er verschijnt een veld Naam cluster.
+        AWP vult automatisch de naam van de cluster in. U kunt deze naam wijzigen. Elke clusternaam
+kan maar eenmaal voorkomen.
+        Klik op OK.
+Kandidaten toevoegen aan een cluster gaat als volgt:
+
+        Selecteer eerst een cluster in de lijst Selecteer cluster.
+
+        Selecteer één of meerdere kandidaten in de lijst Overige kandidaten met dit vak.
+
+Houdt de Control  toets ingedrukt om meerdere kandidaten te selecteren of sleep met de muis.
+
+Klik vervolgens op de knop < Toevoegen.
+
+U kunt een kandidaat ook toevoegen of wissen door te dubbelklikken.
+In de rechter lijst Overige kandidaten met dit vak staan alleen de kandidaten, die dit vak hebben en die nog niet in een andere cluster van dit vak zitten. Als u ook de kandidaten die al in een andere cluster van dit vakken zitten wilt weergeven, haalt u het vinkje weg bij Alleen kandidaten die nog niet in cluster zitten voor dit vak.
+​
+Elke kandidaat kan per vak maar in 1 cluster voorkomen. Als u een kandidaat in een nieuwe cluster zet wordt de oude cluster van de kandidaat gewist. AWP geeft vooraf een waarschuwing.
+​
+U kunt een kandidaat ook aan een cluster toevoegen of wissen in het scherm Examenkandidaat - Basisgegevens. Hier vindt u een veld Clusters. Klik op knop rechts van deze lijst. Het scherm Selecteer clusters van een kandidaat verschijnt.
+
+Cluster wissen
+Selecteer de cluster in de lijst en klik op de knop Wis cluster van de lijst. De cluster wordt nu gewist.
+​
+LET OP: Als u een cluster wist wordt de cluster ook bij alle kandidaten gewist, die in deze cluster zitten. Als dit geval is verschijnt eerst een waarschuwing.
+
+Clusters printen
+U kunt de volgende rapporten per cluster uitprinten:
+
+-       Ex2A formulier
+-       Ex3 formulier
+-       Lijst ‘Kandidaten met persoonsgegevens’
+-       Lijst ‘Kandidaten met uitslagen’
+​
+
+Selecteer in het keuzescherm de optie Print formulier per cluster en selecteer de clusters die u wilt printen.
+                */
+
+             "</div>",
+        "</div>",
+
+        set_image_div("img_studsubj_mod_cluster_ne"),
+
+        "<div class='mfc mb-2'>",
+            "<div class='mfl'><p></p></div>",
+            "<div class='mfr'>",
+
+
+                "<p><b>Clusters toevoegen of verwijderen</b><br> ",
+
+                "<p>Een cluster toevoegen gaat als volgt: ",
+                "Selecteer eerst een vak in het veld Selecteer vak, links boven in het venster. ",
+                "Klik op de knop <i>Cluster toevoegen</i>. Er verschijnt een veld Naam cluster. ",
+                "AWP vult automatisch de naam van de cluster in. U kunt deze naam wijzigen. Elke clusternaam kan maar eenmaal voorkomen. ",
+                "Klik op OK.</p>",
+
+                "<p><b>Kandidaten toevoegen</b> aan een cluster gaat als volgt: ",
+                "Selecteer eerst een cluster in de lijst Selecteer cluster. ",
+                "Selecteer één of meerdere kandidaten in de lijst Overige kandidaten met dit vak. ",
+                "AWP vult automatisch de naam van de cluster in. U kunt deze naam wijzigen. Elke clusternaam kan maar eenmaal voorkomen. ",
+                "Klik op OK.</p>",
+
+                /*
+
+In de rechter lijst Overige kandidaten met dit vak staan alleen de kandidaten, die dit vak hebben en die nog niet in een andere cluster van dit vak zitten. Als u ook de kandidaten die al in een andere cluster van dit vakken zitten wilt weergeven, haalt u het vinkje weg bij Alleen kandidaten die nog niet in cluster zitten voor dit vak.
+​
+Elke kandidaat kan per vak maar in 1 cluster voorkomen. Als u een kandidaat in een nieuwe cluster zet wordt de oude cluster van de kandidaat gewist. AWP geeft vooraf een waarschuwing.
+​
+U kunt een kandidaat ook aan een cluster toevoegen of wissen in het scherm Examenkandidaat - Basisgegevens. Hier vindt u een veld Clusters. Klik op knop rechts van deze lijst. Het scherm Selecteer clusters van een kandidaat verschijnt.
+
+Cluster wissen
+Selecteer de cluster in de lijst en klik op de knop Wis cluster van de lijst. De cluster wordt nu gewist.
+​
+LET OP: Als u een cluster wist wordt de cluster ook bij alle kandidaten gewist, die in deze cluster zitten. Als dit geval is verschijnt eerst een waarschuwing.
+
+Clusters printen
+U kunt de volgende rapporten per cluster uitprinten:
+
+-       Ex2A formulier
+-       Ex3 formulier
+-       Lijst ‘Kandidaten met persoonsgegevens’
+-       Lijst ‘Kandidaten met uitslagen’
+​
+
+Selecteer in het keuzescherm de optie Print formulier per cluster en selecteer de clusters die u wilt printen.
+                */
+
+             "</div>",
+        "</div>",
+
 
         "<div class='p-3 visibility_hide'>-</div>",
     ],

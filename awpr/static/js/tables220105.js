@@ -7,11 +7,12 @@
     const cls_selected = "tsa_tr_selected";
     const cls_bc_transparent = "tsa_bc_transparent";
 
+
 // ++++++++++++  MODAL SELECT EXAMYEAR OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
 
 //=========  t_MSED_Open  ================ PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10
     function t_MSED_Open(loc, tblName, data_map, setting_dict, permit_dict, MSED_Response, all_countries) {
-        console.log( "===== t_MSED_Open ========= ", tblName);
+        //console.log( "===== t_MSED_Open ========= ", tblName);
         //console.log( "setting_dict", setting_dict);
         //console.log( "permit_dict", permit_dict);
         // PR2021-09-24 all_countries is added for copy subjects to other examyear/ country
@@ -47,7 +48,7 @@
 
     //=========  t_MSED_Save  ================ PR2021-05-10 PR2021-08-13 PR2021-09-24
     function t_MSED_Save(MSED_Response, tblRow) {
-        //console.log("===  t_MSED_Save =========");
+        console.log("===  t_MSED_Save =========");
     // --- put tblName, sel_pk and value in MSED_Response, MSED_Response handles uploading
 
         const tblName = get_attr_from_el(tblRow, "data-table");
@@ -65,7 +66,27 @@
             if(all_countries){new_setting.all_countries = true};
         } else if (tblName === "department") {
             new_setting.sel_depbase_pk = (selected_pk_int) ? selected_pk_int : null;
-        }
+            // PR2022-01-08 debug: set level, sector, subject and student null when changing depbase
+            new_setting.sel_lvlbase_pk = null;
+            new_setting.sel_sctbase_pk = null;
+            // also reset setting_dict - setting_dict must be a global variable;
+            setting_dict.sel_lvlbase_pk = null;
+            setting_dict.sel_level_abbrev = null;
+            setting_dict.sel_sctbase_pk = null;
+            setting_dict.sel_sector_abbrev = null;
+
+        };
+        // always reset student and subject when changing dep or ey
+        new_setting.sel_student_pk = null;
+        new_setting.sel_subject_pk = null;
+
+        setting_dict.sel_student_pk = null;
+        setting_dict.sel_student_name = null;
+        setting_dict.sel_student_name_init = null;
+
+        setting_dict.sel_subject_pk = null;
+        setting_dict.sel_subject_code = null;
+        setting_dict.sel_subject_name = null;
 
         //console.log("new_setting", new_setting);
         MSED_Response(new_setting)
@@ -186,7 +207,7 @@
         console.log(" ===  t_MSSSS_Open  =====", tblName) ;
         //console.log( "setting_dict", setting_dict);
         //console.log( "permit_dict", permit_dict);
-        console.log( "data_rows", data_rows, typeof data_rows );
+        //console.log( "data_rows", data_rows, typeof data_rows );
         // tblNames are: "school", "subject", "student"
 
         // PR2021-04-27 debug: opening modal before loc and setting_dict are loaded gives 'NaN' on modal.
@@ -195,8 +216,9 @@
             const may_select = (tblName === "school") ? !!permit_dict.may_select_school : true;
         //console.log( "may_select", may_select);
             if (may_select){
-                const selected_pk = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_pk : null;
-
+                const selected_pk = (tblName === "school") ? setting_dict.sel_school_pk :
+                                   (tblName === "subject") ? setting_dict.sel_subject_pk :
+                                   (tblName === "student") ? setting_dict.sel_student_pk : null;
                 const el_MSSSS_input = document.getElementById("id_MSSSS_input")
                 el_MSSSS_input.setAttribute("data-table", tblName);
         //console.log( "el_MSSSS_input", el_MSSSS_input);
@@ -236,9 +258,12 @@
         //console.log("selected_name", selected_name);
         //console.log( "selected_dict", selected_dict);
 
+        console.log( "===== t_MSSSS_display_in_sbr  ========= ");
         t_MSSSS_display_in_sbr(tblName, selected_pk_int);
         const other_tblName = (tblName === "subject") ? "student" : (tblName === "student") ? "subject" : null;
         if (other_tblName){
+
+        console.log( "===== other_tblName t_MSSSS_display_in_sbr  ========= ");
             t_MSSSS_display_in_sbr(other_tblName, null);
         }
 
@@ -468,35 +493,34 @@
         if (tblName === "school") {
 
         } else if (["subject", "student", "cluster"].includes(tblName)) {
-            const data_rows = (tblName === "student") ? student_rows :
-                              (tblName === "subject") ? subject_rows :
-                              (tblName === "cluster") ? cluster_rows : [];
-        //console.log( "data_rows", data_rows);
-            let display_txt = null;
-            // selected_pk = -1 when clicked on All
-            if(selected_pk > 0){
-                const data_dict = b_get_datadict_by_integer_from_datarows(data_rows, "id", selected_pk)
-        //console.log( "data_dict", data_dict);
-                const name_field = (tblName === "student") ? "name_first_init" : "name";
-                const code_field = (tblName === "student") ? "name_first_init" : "code";
-                display_txt = (data_dict && name_field in data_dict && data_dict[name_field].length < 25) ? data_dict[name_field] :
-                              (data_dict && code_field in data_dict) ? data_dict[code_field] : "---";
-
-            } else {
-                display_txt = add_all_txt;
-            };
-            //console.log( "display_txt", display_txt);
-
-           // const display_txt = (!selected_pk) ? t_MSSSS_AddAll_txt(tblName) :
-           //                     (selected_name && selected_name.length < 25) ? selected_name :
-           //                     (selected_code) ? selected_code : null;
-
+            // PR2022-01-11 debug: skip when el_SBR not defined
             const el_SBR_select_id = (tblName === "student") ? "id_SBR_select_student" :
                                      (tblName === "subject") ? "id_SBR_select_subject" :
-                                     (tblName === "cluster") ? "id_SBR_select_cluster" : null;
+                                     (tblName === "cluster") ? "id_SBR_select_cluster" : "xxxxx";
             const el_SBR_select = document.getElementById(el_SBR_select_id);
 
             if(el_SBR_select){
+                const data_rows = (tblName === "student") ? student_rows :
+                                  (tblName === "subject") ? subject_rows :
+                                  (tblName === "cluster") ? cluster_rows : [];
+        //console.log( "data_rows", data_rows);
+                let display_txt = null;
+                // selected_pk = -1 when clicked on All
+                if(selected_pk > 0){
+                    const data_dict = b_get_datadict_by_integer_from_datarows(data_rows, "id", selected_pk)
+            //console.log( "data_dict", data_dict);
+                    const name_field = (tblName === "student") ? "name_first_init" : "name";
+                    const code_field = (tblName === "student") ? "name_first_init" : "code";
+                    display_txt = (data_dict && name_field in data_dict && data_dict[name_field].length < 25) ? data_dict[name_field] :
+                                  (data_dict && code_field in data_dict) ? data_dict[code_field] : "---";
+
+                } else {
+                    display_txt = add_all_txt;
+                };
+               // const display_txt = (!selected_pk) ? t_MSSSS_AddAll_txt(tblName) :
+               //                     (selected_name && selected_name.length < 25) ? selected_name :
+               //                     (selected_code) ? selected_code : null;
+
                 el_SBR_select.value = display_txt;
                 add_or_remove_class(el_SBR_select.parentNode, cls_hide, false)
             }
@@ -743,8 +767,6 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         return row_index
     }  // t_get_rowindex_by_sortby
 
-
-
 //=========  t_clear_td_selected  ================ PR2021-11-18
     function t_td_selected_clear(tableBody) {
         //console.log("=========  t_clear_td_selected =========");
@@ -782,7 +804,6 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 
     }  // t_td_selected_set
 
-
 //=========  t_td_selected_toggle  ================ PR2021-11-18
     function t_td_selected_toggle(tblRow) {
         //console.log("=========  t_td_selected_toggle =========");
@@ -803,7 +824,6 @@ console.log("=========   handle_table_row_clicked   ======================") ;
             };
         };
     }  // t_td_selected_toggle
-
 
 //=========  t_HighlightSelectedTblRowByPk  ================ PR2019-10-05 PR2020-06-01
     function t_HighlightSelectedTblRowByPk(tblBody, selected_pk, cls_selected, cls_background) {
@@ -923,7 +943,8 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         // when label has no id the text is Sector / Profiel, set in .html file
         const el_SBR_select_sector_label = document.getElementById("id_SBR_select_sector_label");
         const all_sectors_profielen_txt = (!el_SBR_select_sector_label) ? loc.All_sectors_profielen : (has_profiel) ? loc.All_profielen :loc.All_sectors;
-        const caption_all = "&#60" + (
+        let caption_all = null;
+        const all_txt = "&#60" + (
                 (tblName === "department") ? loc.All_departments :
                 (tblName === "level") ? loc.All_levels :
                 (tblName === "sector") ? all_sectors_profielen_txt : "---"
@@ -940,6 +961,9 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                     setting_dict.sel_sctbase_pk = rows.base_id
                 }
             } else if (rows.length > 1){
+                //PR2022-01-08 caption_all = all_txt is necessary to skip all_txt in setting_dict.sel_sector_abbrev
+                caption_all = all_txt;
+
                 // add row 'Alle leerwegen' / Alle profielen / Alle sectoren in first row
                 // HTML code "&#60" = "<" HTML code "&#62" = ">";
                 display_rows.push({value: 0, caption: caption_all })
@@ -956,12 +980,16 @@ console.log("=========   handle_table_row_clicked   ======================") ;
             const el_SBR_select = (id_SBR_select) ? document.getElementById(id_SBR_select) : null;
             t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
 
-            // put displayed text in setting_dict
-            const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].text : null;
-            if (tblName === "level"){
-                setting_dict.sel_level_abbrev = sel_abbrev;
-            } else if (tblName === "sector"){
-                setting_dict.sel_sector_abbrev = sel_abbrev;
+            // put displayed text in setting_dict - PR2022-01-08 dont show 'All profielen' etc
+
+            //PR2022-01-08 dont put 'All profielen' etc in setting_dict > skip when caption_all has value
+            if (!caption_all){
+                const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].text : null;
+                if (tblName === "level"){
+                    setting_dict.sel_level_abbrev = sel_abbrev;
+                } else if (tblName === "sector"){
+                    setting_dict.sel_sector_abbrev = sel_abbrev;
+                };
             };
         };
         // show select level and sector

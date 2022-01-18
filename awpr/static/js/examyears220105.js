@@ -370,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else  if(selected.btn === "sector"){
             header_text = loc.SectorenProfielen;
         }
-        document.getElementById("id_hdr_left").innerText = header_text;
+        document.getElementById("id_header_left").innerText = header_text;
 
     }   //  UpdateHeaderText
 

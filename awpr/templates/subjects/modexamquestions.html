@@ -6,36 +6,28 @@
         <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
             <div class="modal-content">
                 <div class="mex_header1">
-                    <h4 id="id_MEX_header1" class="modal-title mx-2" ></h4>
+                    <h4 id="id_MEXQ_header1" class="modal-title mx-2" ></h4>
                     <button class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="mex_header2">
-                    <h4 id="id_MEX_header2" class="modal-title mx-2" ></h4>
+                    <h4 id="id_MEXQ_header2" class="modal-title mx-2" ></h4>
                 </div>
                 <div class="mex_header2">
-                    <h4 id="id_MEX_header3" class="modal-title mx-2" ></h4>
+                    <h4 id="id_MEXQ_header3" class="modal-title mx-2" ></h4>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body py-0">
                     {% if is_requsr_admin_or_system %}
                         <div class="tab_show tab_start">
                             <div class="flex_container">
-                                <div id="id_MEXQ_subjects_container" class="flex_1">
-                                    <div class="tbl_div_390_360 p-2 m-2">
-                                        <table class="table tsa_tbl">
-                                            <tbody id="id_MEXQ_tblBody_subjects" >
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+
                                 <div class="flex_1">
                                     <div class="m-2">
-                                        <label id="id_MEX_input_subject_label"  class="mx-2 my-1">{% trans 'Select subject' %}:</label>
-                                        <div class="form-group">
-                                            <input id="id_MEX_input_subject" type="text" class="form-control"
-                                            autocomplete="off" ondragstart="return false;" ondrop="return false;"
-                                            placeholder="{% trans 'Type a few letters or select a subject in the list'%}...">
+                                        <label class="mx-2 my-1">{% trans 'Subject' %}:</label>
+                                        <div class="form-groupXXX">
+
+                                        <div id="id_MEXQ_select_subject" class="form-control pt-2 pointer_show"></div>
                                         </div>
                                         <div class="mx-2 display_hide">
                                             <small id="id_MEXQ_err_subject" class="text-muted">{% trans 'The subject cannot be blank.' %}</small>
@@ -53,33 +45,114 @@
                                     </div>
                                     <div class="m-2">
                                         <label class="mx-2 my-1">{% trans 'Version of the exam' %}:</label>
-                                        <input id="id_MEX_input_version" type="text" class="form-control"
+                                        <input id="id_MEXQ_input_version" type="text" class="form-control"
                                             autocomplete="off" ondragstart="return false;" ondrop="return false;">
                                         <div class="mx-2">
                                             <small id="id_MEXQ_err_version" class="text-muted">{% trans 'Only required when a subject has multiple exams.' %}</small>
                                         </div>
                                     </div>
                                     <div class="m-2">
+                                        <span>
+                                            <input id="id_MEXQ_partex_checkbox" type="checkbox" value="true" class="tw_032 mx-2">
+                                            <label for="id_MEXQ_partex_checkbox" class="mx-2 my-1">{% trans 'This exam has partial exams' %}</label>
+                                        </span>
+                                    </div>
+
+                                    <div id="id_MEXQ_input_amount_container" class="m-2">
                                         <label class="mx-2 my-1">{% trans 'Number of questions' %}:</label>
-                                        <input id="id_MEX_input_amount" type="text" class="form-control"
+                                        <input id="id_MEXQ_input_amount" type="text" class="form-control"
                                             autocomplete="off" ondragstart="return false;" ondrop="return false;">
                                         <div class="mx-2">
-                                            <small id="id_MEX_err_amount" class="text-danger"></small>
+                                            <small id="id_MEXQ_err_amount" class="text-danger"></small>
+                                        </div>
+                                    </div>
+
+                                    <div id="id_MEXQ_input_scalelength_container" class="m-2">
+                                        <label class="mx-2 my-1">{% trans 'Maximum score' %}:</label>
+                                        <input id="id_MEXQ_input_scalelength" type="text" class="form-control"
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                        <div class="mx-2">
+                                            <small id="id_MEXQ_err_scalelength" class="text-danger"></small>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <div id="id_MEXQ_partex_container" class="flex_1">
+
+                                    <div class="m-2">
+                                        <label class="mx-2 my-1">{% trans 'Partial exams' %}:</label>
+                                        <table class="tableX tsa_tbl border_bg_transparent tbl_partex_h220_w_auto">
+                                            <tbody id="id_MEXQ_tblBody_partex"></tbody>
+                                        </table>
+
+                                        <div id="id_MEXQ_btngroup_add_partex">
+                                            <div class="flex_container pt-2">
+                                                <div class="flex_1 pr-1">
+                                                    <button id="id_MEXQ_btn_partex_add" class="btn btn-block btn-outline-secondary ">{% trans 'Add partial exam' %}</button>
+                                                </div>
+                                                <div class="flex_1 pl-1">
+                                                    <button id="id_MEXQ_btn_partex_delete" class="btn btn-block btn-outline-secondary ">{% trans 'Delete partial exam' %}</button>
+                                                </div>
+                                            </div>
+                                            <div class="flex_container pt-2">
+                                                <button id="id_MEXQ_btn_partex_edit" class="btn btn-block btn-outline-secondary ">{% trans 'Change partial exam' %}</button>
+                                            </div>
+                                        </div>
+
+                                        <div id="id_MEXQ_group_partex_name" class="border_bg_transparent mt-2 p-2">
+
+                                            <label class="mx-2 my-1">{% trans 'Partial exam name' %}:</label>
+                                            <input id="id_MEXQ_input_partex_name" type="text" class="form-control"
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                            <div class="mx-2">
+                                                <small id="id_MEXQ_err_partex_name" class="text-danger"></small>
+                                            </div>
+
+                                            <label class="mx-2 my-1">{% trans 'Number of questions' %}:</label>
+                                            <input id="id_MEXQ_partex_amount" type="text" class="form-control"
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                            <div class="mx-2">
+                                                <small id="id_MEXQ_err_partex_amount" class="text-danger"></small>
+                                            </div>
+
+                                            <div class="flex_container pt-2">
+                                                <div class="flex_1 pr-1">
+                                                    <button id="id_MEXQ_btn_partex_save" class="btn btn-block btn-outline-secondary">{% trans 'OK' %}</button>
+                                                </div>
+                                                <div class="flex_1 pl-1">
+                                                    <button id="id_MEXQ_btn_partex_cancel" class="btn btn-block btn-outline-secondary">{% trans 'Cancel' %}</button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
                     {% endif %}
-                    <div class="tab_show tab_assign tab_keys tab_answers display_hide">
+
+                    <div class="tab_show tab_assign tab_keys tab_answers display_hide ">
+
                         <div class="flex_container">
-                            <div id="id_MEX_col_0" class="flex_1 p-2"></div>
-                            <div id="id_MEX_col_1" class="flex_1 p-2"></div>
-                            <div id="id_MEX_col_2" class="flex_1 p-2"></div>
-                            <div id="id_MEX_col_3" class="flex_1 p-2"></div>
-                            <div id="id_MEX_col_4" class="flex_1 p-2"></div>
+
+                            <div class="flex_3 flex_container">
+                                <div id="id_MEXQ_partex2_container" class="flex_2 p-2">
+                                    <table class="tableX tsa_tbl border_bg_transparent tbl_partex_h220_w_auto">
+                                        <tbody id="id_MEXQ_tblBody_partex2"></tbody>
+                                    </table>
+                                </div>
+
+                                <div id="id_MEXQ_col_0" class="flex_1 p-2"></div>
+                                <div id="id_MEXQ_col_1" class="flex_1 p-2"></div>
+                                <div id="id_MEXQ_col_2" class="flex_1 p-2"></div>
+                                <div id="id_MEXQ_col_3" class="flex_1 p-2"></div>
+                                <div id="id_MEXQ_col_4" class="flex_1 p-2"></div>
+
+                            </div>
                         </div>
+
+
+
                     </div>
                     <div class="tab_show tab_assign display_hide">
                         <div class="mx-2">
@@ -111,7 +184,7 @@
                 <div class="modal-footer">
                     {% if is_requsr_admin_or_system %}
                         <div class="flex_3">
-                            <div id="id_MEX_btn_tab_container" class="btn-group btn-block px-2 my-2" role="group" aria-label="Choose option" >
+                            <div id="id_MEXQ_btn_tab_container" class="btn-group btn-block px-2 my-2" role="group" aria-label="Choose option" >
                                 <button data-btn="tab_start" class="btn btn-secondary">{% trans 'Start' %}</button>
                                 <button data-btn="tab_assign" class="btn btn-secondary">{% trans 'Questions' %}</button>
                                 <button data-btn="tab_minscore" class="btn btn-secondary display_hide">{% trans 'Min. score' %}</button>
@@ -121,7 +194,7 @@
                     {% endif %}
 
                     <div class="flex_2">
-                        <div id="id_MEX_btn_pge_container" class="btn-group btn-block px-2 my-2" role="group" aria-label="Choose option" >
+                        <div id="id_MEXQ_btn_pge_container" class="btn-group btn-block px-2 my-2 display_hide" role="group" aria-label="Choose option" >
                             <button data-btn="pge_1" class="btn btn-secondary">1-50</button>
                             <button data-btn="pge_2" class="btn btn-secondary display_hide"></button>
                             <button data-btn="pge_3" class="btn btn-secondary display_hide "></button>
@@ -131,7 +204,7 @@
                     </div>
                     <div class="content_subheader_right_flex2">
                         <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
-                        <button id="id_MEX_btn_save"  class="btn btn-primary">{% trans 'Save' %}</button>
+                        <button id="id_MEXQ_btn_save"  class="btn btn-primary">{% trans 'Save' %}</button>
                     </div>
                 </div>
 

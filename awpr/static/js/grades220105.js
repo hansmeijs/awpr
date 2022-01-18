@@ -892,7 +892,7 @@ document.addEventListener("DOMContentLoaded", function() {
             if (header_txt) { header_txt += " - "}
             header_txt += subject_student_txt;
         }
-        document.getElementById("id_hdr_left").innerText = header_txt;
+        document.getElementById("id_header_left").innerText = header_txt;
 
     }   //  UpdateHeader
 

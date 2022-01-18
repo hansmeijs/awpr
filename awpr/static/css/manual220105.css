@@ -444,6 +444,17 @@
     background-image: url('/static/manual/studsubj_submitted_exforms_en.png');
 }
 
+.img_studsubj_mod_cluster_ne, .img_studsubj_mod_cluster_en {
+    width: 1138px;
+    height: 704px;
+    background-size: 1138px 704px;
+ }
+.img_studsubj_mod_cluster_ne {
+    background-image: url('/static/manual/studsubj_mod_cluster_ne.png');
+}
+.img_studsubj_mod_cluster_en {
+    background-image: url('/static/manual/studsubj_mod_cluster_en.png');
+}
 
 /* ---------------------------------------------------
     IMAGES - MAILBOX

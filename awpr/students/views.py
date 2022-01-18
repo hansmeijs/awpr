@@ -120,7 +120,7 @@ class OrderlistsListView(View): # PR2021-07-04
 def create_student_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, append_dict,
                         student_pk=None, sel_lvlbase_pk=None, sel_sctbase_pk=None):
     # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_student_rows -----')
 
@@ -228,6 +228,248 @@ def create_student_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, appe
     return student_rows, error_dict
 # --- end of create_student_rows
 
+
+@method_decorator([login_required], name='dispatch')
+class ClusterUploadView(View):  # PR2022-01-06
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= ClusterUploadView ============= ')
+
+        update_wrap = {}
+        msg_list = []
+
+# - get permit
+        has_permit = af.get_permit_crud_of_this_page('page_studsubj', request)
+        if has_permit:
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                """
+                upload_dict: {
+                    'subject_pk': 2132, 'subject_name': 'Zorg en Welzijn Intrasectoraal',
+                    'cluster_list': [
+                        {'cluster_pk': 210, 'cluster_name': 'zwi - 222', 'subject_pk': 2132, 'mode': 'update'}, 
+                        {'cluster_pk': 'new_1', 'cluster_name': 'zwi - 6', 'subject_pk': 2132, 'mode': 'create'}], 
+                    'studsubj_list': [
+                        {'studsubj_pk': 68838, 'cluster_pk': 'new_1'}, 
+                        {'studsubj_pk': 68862, 'cluster_pk': 'new_1'}, 
+                        {'studsubj_pk': 68886, 'cluster_pk': 'new_1'}]}    
+                """
+# - get variables
+                subject_pk = upload_dict.get('subject_pk')
+                subject_name = upload_dict.get('subject_name', '-')
+                cluster_list = upload_dict.get('cluster_list')
+                studsubj_list = upload_dict.get('studsubj_list')
+
+                if logging_on:
+                    logger.debug('upload_dict: ' + str(upload_dict))
+
+                updated_rows = []
+                append_dict = {}
+
+# ----- get selected examyear, school and department from usersettings
+                # may_edit = False when:
+                #  - country is locked,
+                #  - examyear is not found, not published or locked
+                #  - school is not found, not same_school, not activated, or locked
+                #  - department is not found, not in user allowed depbase or not in school_depbase
+                sel_examyear, sel_school, sel_department, may_edit, sel_msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+
+                if logging_on:
+                    logger.debug('sel_examyear:   ' + str(sel_examyear))
+                    logger.debug('sel_school:     ' + str(sel_school))
+                    logger.debug('sel_department: ' + str(sel_department))
+                    logger.debug('may_edit:       ' + str(may_edit))
+                    logger.debug('sel_msg_list:       ' + str(sel_msg_list))
+
+                if sel_msg_list:
+                    msg_list.extend(sel_msg_list)
+                else:
+
+# +++  get subject
+                    subject = subj_mod.Subject.objects.get_or_none(
+                        pk=subject_pk
+                    )
+                    if logging_on:
+                        logger.debug('subject: ' + str(subject))
+
+                    if subject is None:
+                        msg_list.append(_("%(cpt)s %(val)s not found in this examyear.") \
+                                       % {'cpt': _('Subject'), 'val': subject_name})
+                    else:
+                        mapped_cluster_pk_dict = {}
+                        if cluster_list:
+                            err_list = loop_cluster_list(sel_school, sel_department, subject, cluster_list, mapped_cluster_pk_dict, request)
+                            if err_list:
+                                msg_list.extend(err_list)
+
+                        if studsubj_list:
+                            err_list, studsubj_pk_list = loop_studsubj_list(studsubj_list, mapped_cluster_pk_dict, request)
+                            if err_list:
+                                msg_list.extend(err_list)
+                            if logging_on:
+                                logger.debug('studsubj_pk_list: ' + str(studsubj_pk_list))
+
+                            if studsubj_pk_list:
+                                rows = create_studentsubject_rows(
+                                    examyear=sel_examyear,
+                                    schoolbase=sel_school.base,
+                                    depbase=sel_department.base,
+                                    requsr_same_school=True,  # check for same_school is included in may_edit
+                                    setting_dict={},
+                                    append_dict=append_dict,
+                                    studsubj_pk_list=studsubj_pk_list
+                                )
+                                if rows:
+                                    update_wrap['updated_studsubj_rows'] = rows
+                            #if logging_on:
+                            #    logger.debug('rows: ' + str(rows))
+
+        # - addd messages to update_wrap
+        if msg_list:
+            msg_html = '<br>'.join(msg_list)
+            update_wrap['msg_html'] = msg_html
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of ClusterUploadView
+
+
+def loop_cluster_list(sel_school, sel_department, subject, cluster_list, mapped_cluster_pk_dict, request):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        if logging_on:
+            logger.debug(' ----- loop_cluster_list  -----')
+
+    err_list = []
+
+    for cluster_dict in cluster_list:
+        if logging_on:
+            logger.debug('cluster_dict: ' + str(cluster_dict))
+
+        cluster_pk = cluster_dict.get('cluster_pk')
+
+        mode = cluster_dict.get('mode')
+        is_create = mode == 'create'
+        is_delete = mode == 'delete'
+
+        if logging_on:
+            logger.debug('mode: ' + str(mode))
+
+# +++  Create new cluster
+        if is_create:
+            err_lst = create_cluster(sel_school, sel_department, subject, cluster_dict, mapped_cluster_pk_dict, request)
+            if err_lst:
+                err_list.extend(err_lst)
+
+# +++  or get existing cluster
+        # filter out 'new_1', should not happen
+        elif isinstance(cluster_pk, int):
+            cluster = subj_mod.Cluster.objects.get_or_none(
+                pk=cluster_pk,
+                school=sel_school,
+                department=sel_department
+            )
+            if logging_on:
+                logger.debug('cluster: ' + str(cluster))
+
+            if cluster:
+# +++ Delete cluster
+                if is_delete:
+                    deleted_ok, err_lst = delete_cluster(cluster, request)
+                    if err_lst:
+                        err_list.extend(err_lst)
+# +++ Update cluster, not when it is created, not when delete has failed (when deleted ok there is no cluster)
+                else:
+                    err_lst = update_cluster_instance(sel_school, sel_department, cluster, cluster_dict, request)
+                    if err_lst:
+                        err_list.extend(err_lst)
+                    if logging_on:
+                        logger.debug('cluster: ' + str(cluster))
+    return err_list
+# - end of loop_cluster_list
+
+
+def loop_studsubj_list(studsubj_list, mapped_cluster_pk_dict, request):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        if logging_on:
+            logger.debug(' ----- loop_studsubj_list  -----')
+
+    err_list = []
+    updated_studsubj_list = []
+    """
+    'studsubj_list': [
+        {'studsubj_pk': 68838, 'cluster_pk': 'new_1'},
+        {'studsubj_pk': 68862, 'cluster_pk': 'new_1'},
+        {'studsubj_pk': 68886, 'cluster_pk': 'new_1'}]}
+    """
+    if studsubj_list:
+
+        sql_studsubj_list = []
+        for studsubj_dict in studsubj_list:
+            studsubj_pk = studsubj_dict.get('studsubj_pk')
+            if studsubj_pk:
+                cluster_pk = studsubj_dict.get('cluster_pk')
+
+        # replace cluster_pk 'new_1' bij saved cluster_pk
+                clean_cluster_pk = None
+                if isinstance(cluster_pk, int):
+                    clean_cluster_pk = cluster_pk
+                elif cluster_pk in mapped_cluster_pk_dict:
+                    clean_cluster_pk = mapped_cluster_pk_dict[cluster_pk]
+                clean_cluster_str = str(clean_cluster_pk) if clean_cluster_pk else 'NULL'
+
+                sql_studsubj_list.append((str(studsubj_pk), clean_cluster_str))
+        # sql_keys = {'ey_id': school.examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk}
+
+        """
+        # you can define the types by casting the values of the first row:
+        CREATE TEMP TABLE lookup (key, val) AS
+        VALUES 
+            (0::bigint, -99999::int), 
+            (1, 100) ;
+        """
+
+        modifiedby_pk_str = str(request.user.pk)
+        modifiedat_str = str(timezone.now())
+
+    # fields are: [studentsubject_id, cluster_id, modifiedby_id, modifiedat]
+        sql_list = ["DROP TABLE IF EXISTS tmp; CREATE TEMP TABLE tmp (ss_id, cl_id) AS VALUES (0::INT, 0::INT)"]
+
+        for row in sql_studsubj_list:
+            sql_list.append(''.join((", (", str(row[0]), ', ' , str(row[1]), ")")))
+        sql_list.extend((
+            "; UPDATE students_studentsubject AS ss",
+            "SET cluster_id = tmp.cl_id, modifiedby_id = ", modifiedby_pk_str, ", modifiedat = '", modifiedat_str, "'",
+            "FROM tmp",
+            "WHERE ss.id = tmp.ss_id",
+            "RETURNING ss.id;"
+        ))
+
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            if rows:
+                for row in rows:
+                    updated_studsubj_list.append(row[0])
+    # - end of save_studsubj_batch
+
+
+    return err_list, updated_studsubj_list
+# - end of loop_studsubj_list
 
 @method_decorator([login_required], name='dispatch')
 class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
@@ -1615,6 +1857,7 @@ class StudentsubjectApproveSingleView(View):  # PR2021-07-25
 
                                 if logging_on:
                                     logger.debug('studsubj.pk: ' + str(studsubj.pk))
+                                studsubj_pk_list = [studsubj.pk] if studsubj.pk else None
                                 rows = create_studentsubject_rows(
                                     examyear=sel_examyear,
                                     schoolbase=sel_school.base,
@@ -1623,7 +1866,7 @@ class StudentsubjectApproveSingleView(View):  # PR2021-07-25
                                     setting_dict={},
                                     append_dict=append_dict,
                                     student_pk=student.pk,
-                                    studsubj_pk=studsubj.pk
+                                    studsubj_pk_list=studsubj_pk_list
                                 )
                                 if rows:
                                     studsubj_row = rows[0]
@@ -2416,6 +2659,8 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28
                             # TODO check value of error_dict
                             if error_dict:
                                 append_dict['error'] = error_dict
+
+                            studsubj_pk_list = [studsubj.pk] if studsubj.pk else None
                             rows = create_studentsubject_rows(
                                 examyear=sel_examyear,
                                 schoolbase=sel_school.base,
@@ -2424,7 +2669,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28
                                 setting_dict={},
                                 append_dict=append_dict,
                                 student_pk=student.pk,
-                                studsubj_pk=studsubj.pk
+                                studsubj_pk_list=studsubj_pk_list
                             )
                             if logging_on:
                                 logger.debug('error_dict: ' + str(error_dict))
@@ -2580,6 +2825,8 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                         append_dict = {}
                         if err_fields:
                             append_dict['err_fields'] = err_fields
+
+                        studsubj_pk_list = [studsubj.pk] if studsubj.pk else None
                         studsubj_rows = create_studentsubject_rows(
                             examyear=sel_examyear,
                             schoolbase=sel_school.base,
@@ -2588,7 +2835,7 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                             setting_dict={},
                             append_dict=append_dict,
                             student_pk=student.pk,
-                            studsubj_pk=studsubj.pk
+                            studsubj_pk_list=studsubj_pk_list
                         )
                         if studsubj_rows:
                             update_wrap['updated_studsubj_rows'] = studsubj_rows
@@ -4249,13 +4496,14 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
 
 #/////////////////////////////////////////////////////////////////
 
-def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school, setting_dict, append_dict, student_pk=None, studsubj_pk=None):
-    # --- create rows of all students of this examyear / school PR2020-10-27
+def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school, setting_dict,
+                               append_dict, student_pk=None, studsubj_pk_list=None):
+    # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-10 studsubj_pk_list added
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_studentsubject_rows ============= ')
         logger.debug('student_pk: ' + str(student_pk))
-        logger.debug('studsubj_pk: ' + str(studsubj_pk))
+        logger.debug('studsubj_pk_list: ' + str(studsubj_pk_list))
         logger.debug('setting_dict: ' + str(setting_dict))
         logger.debug('append_dict: ' + str(append_dict))
     rows = []
@@ -4267,8 +4515,9 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
         sel_schoolbase_pk = schoolbase.pk if schoolbase else None
         sel_depbase_pk = depbase.pk if depbase else None
 
-        # dont show studnets without subject on other users than sameschool
-        left_or_inner_join = "LEFT JOIN" if requsr_same_school else "INNER JOIN"
+        # dont show students without subject on other users than sameschool
+        #PR2022-01-10 also use inner join when studsubj_pk_list has values: only these records must be returned
+        left_or_inner_join = "LEFT JOIN" if requsr_same_school and not studsubj_pk_list else "INNER JOIN"
 
         sel_lvlbase_pk = None
         if c.KEY_SEL_LVLBASE_PK in setting_dict:
@@ -4280,7 +4529,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
 
         sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
         sql_studsubj_list = ["SELECT studsubj.id AS studsubj_id, studsubj.student_id,",
-            "studsubj.clustername, si.id AS schemeitem_id, si.scheme_id AS scheme_id,",
+            "cl.id AS cluster_id, cl.name AS cluster_name, si.id AS schemeitem_id, si.scheme_id AS scheme_id,",
             "studsubj.is_extra_nocount, studsubj.is_extra_counts,",
             "studsubj.pws_title, studsubj.pws_subjects,",
             "studsubj.has_exemption, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03, studsubj.exemption_year, studsubj.pok_validthru,",
@@ -4321,11 +4570,14 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             "SUBSTRING(au.username, 7) AS modby_username",
 
             "FROM students_studentsubject AS studsubj",
+
             "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
             "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
             "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
             "LEFT JOIN subjects_subjecttype AS sjt ON (sjt.id = si.subjecttype_id)",
             "INNER JOIN subjects_subjecttypebase AS sjtbase ON (sjtbase.id = sjt.base_id)",
+
+            "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
 
             "LEFT JOIN accounts_user AS au ON (au.id = studsubj.modifiedby_id)",
 
@@ -4362,13 +4614,15 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
         sql_studsubjects = ' '.join(sql_studsubj_list)
 
         sql_list = ["WITH studsubj AS (" + sql_studsubjects + ")",
-            "SELECT st.id AS stud_id, studsubj.studsubj_id, studsubj.schemeitem_id, studsubj.clustername,",
+            "SELECT st.id AS stud_id, studsubj.studsubj_id, studsubj.schemeitem_id, studsubj.cluster_id, studsubj.cluster_name,",
             "CONCAT('studsubj_', st.id::TEXT, '_', studsubj.studsubj_id::TEXT) AS mapid, 'studsubj' AS table,",
             "st.lastname, st.firstname, st.prefix, st.examnumber,",
-            "st.scheme_id, st.iseveningstudent, st.islexstudent, ",
+            "st.scheme_id, st.iseveningstudent, st.islexstudent, st.classname, ",
             "st.tobedeleted, st.reex_count, st.reex03_count, st.bis_exam, st.withdrawn,",
             "studsubj.subject_id AS subj_id, studsubj.subj_code, studsubj.subj_name,",
-            "dep.abbrev AS dep_abbrev, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
+            "dep.base_id AS depbase_id, dep.abbrev AS dep_abbrev,",
+            "lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
+            "sct.base_id AS sctbase_id, sct.abbrev AS sct_abbrev,",
 
             "studsubj.is_extra_nocount, studsubj.is_extra_counts,",
             "studsubj.pws_title, studsubj.pws_subjects,",
@@ -4421,12 +4675,17 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
         if sel_sctbase_pk:
             sql_list.append('AND sct.base_id = %(sctbase_id)s::INT')
             sql_keys['sctbase_id'] = sel_sctbase_pk
-        if studsubj_pk:
-            sql_list.append('AND studsubj.studsubj_id = %(studsubj_id)s::INT')
-            sql_keys['studsubj_id'] = studsubj_pk
         if student_pk:
             sql_keys['st_id'] = student_pk
             sql_list.append('AND st.id = %(st_id)s::INT')
+
+
+        # - filter on studsubj_pk_list with ANY clause
+
+        if studsubj_pk_list:
+            sql_keys['ss_pk_list'] = studsubj_pk_list
+            sql_list.append("AND studsubj.studsubj_id = ANY(%(ss_pk_list)s::INT[])")
+
 
         sql_list.append('ORDER BY st.id, studsubj.studsubj_id NULLS FIRST')
         sql = ' '.join(sql_list)
@@ -4437,7 +4696,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
 
         if logging_on:
             logger.debug('sql_keys: ' + str(sql_keys) + ' ' + str(type(sql_keys)))
-            #logger.debug('sql: ' + str(sql) + ' ' + str(type(sql)))
+            logger.debug('sql: ' + str(sql) + ' ' + str(type(sql)))
         #logger.debug('connection.queries: ' + str(connection.queries))
 
     # - full name to rows
@@ -4451,7 +4710,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             row['fullname'] = full_name if full_name else None
 
     # - add messages to all studsubj_rows, only when student_pk or studsubj_pk have value
-            if student_pk or studsubj_pk:
+            if student_pk or studsubj_pk_list:
                 if rows:
                     for row in rows:
                         for key, value in append_dict.items():
@@ -4706,5 +4965,149 @@ def create_orderlist_rows(sel_examyear_code, request):
 # --- end of create_orderlist_rows
 
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def create_cluster(school, department, subject, upload_dict, mapped_cluster_pk_dict, request):
+    # --- create cluster # PR2022-01-06
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' +++++++++++++++++ create_cluster +++++++++++++++++ ')
+
+    err_list = []
+
+    if school and department and subject:
+# - get value of 'cluster_name'
+        cluster_name = upload_dict.get('cluster_name')
+        new_value = cluster_name.strip() if cluster_name else None
+        if logging_on:
+            logger.debug('new_value: ' + str(new_value))
+
+        try:
+    # - validate length of cluster name
+            msg_err = av.validate_notblank_maxlength(new_value, c.MAX_LENGTH_KEY, _('The cluster name'))
+            if msg_err:
+                err_list.append(msg_err)
+            else:
+
+# - validate if cluster already exists
+                name_exists = subj_mod.Cluster.objects.filter(
+                    school=school,
+                    department=department,
+                    name__iexact=new_value
+                )
+                if name_exists:
+                    err_list.append(str(_("%(cpt)s '%(val)s' already exists.") \
+                                        % {'cpt': _('Cluster name') , 'val': new_value} ))
+                else:
+# - create and save cluster
+                    cluster = subj_mod.Cluster(
+                        school=school,
+                        department=department,
+                        subject=subject,
+                        name=new_value
+                    )
+                    cluster.save(request=request)
+
+                    if cluster and cluster.pk:
+                        mapped_cluster_pk_dict[cluster_name] = cluster.pk
+
+                    if logging_on:
+                        logger.debug('new cluster: ' + str(cluster))
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            err_list.append(str(_('An error occurred.')))
+            err_list.append(str(_("%(cpt)s '%(val)s' could not be added.") % {'cpt': str(_('Cluster')), 'val': new_value}))
+
+    return err_list
+# - end of create_cluster
 
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def delete_cluster(cluster, request):
+    # --- delete cluster # PR2022-01-06
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- delete_cluster ----- ')
+        logger.debug('cluster: ' + str(cluster))
+
+    deleted_ok = False
+    err_list = []
+# - create updated_row - to be returned after successfull delete
+    #updated_row = {'id': cluster.pk, 'deleted': True}
+
+    this_txt = ''.join((str(_('Cluster')), " '", cluster.name, "' "))
+    header_txt = _("Delete cluster")
+
+# - delete cluster
+    error_list = []
+    deleted_ok = sch_mod.delete_instance(cluster, [], error_list, request, this_txt, header_txt)
+    if logging_on:
+        logger.debug('deleted_ok' + str(deleted_ok))
+        logger.debug('error_list' + str(error_list))
+
+    if error_list:
+        err_list.extend(error_list)
+
+# - add deleted_row to updated_rows
+    #if deleted_ok:
+    #    updated_rows.append(updated_row)
+
+# - check if this cluster is used in studsubj
+        #  not necessary,  cluster has on_delete=SET_NULL in studsubj
+
+    if logging_on:
+        #logger.debug('updated_rows' + str(updated_rows))
+        logger.debug('err_list' + str(err_list))
+
+    return deleted_ok, err_list
+# - end of delete_cluster
+
+
+def update_cluster_instance(school, department, instance, upload_dict, request):
+# --- update existing cluster name PR2022-01-10
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- update_cluster_instance -------')
+
+    err_list = []
+    if instance:
+        try:
+            field = 'name'
+
+# - get value of 'cluster_name'
+            cluster_name = upload_dict.get('cluster_name')
+            new_value = cluster_name.strip() if cluster_name else None
+
+# - save changes in fields 'name'
+            saved_value = getattr(instance, field)
+
+            if new_value != saved_value:
+
+# - validate length of cluster name
+                msg_err = av.validate_notblank_maxlength(new_value, c.MAX_LENGTH_KEY, _('The cluster name'))
+                if msg_err:
+                    err_list.append(msg_err)
+                else:
+
+# - validate if cluster already exists
+                    name_exists = subj_mod.Cluster.objects.filter(
+                        school=school,
+                        department=department,
+                        name__iexact=new_value
+                    )
+                    if name_exists:
+                        err_list.append(str(_("%(cpt)s '%(val)s' already exists.") \
+                                            % {'cpt': _('Cluster name'), 'val': new_value}))
+                    else:
+                        setattr(instance, field, new_value)
+                        instance.save(request=request)
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+            err_list.append(''.join((str(_('An error occurred')), ' (', str(e), ').')))
+            err_list.append(str(_("%(cpt)s have not been saved.") % {'cpt': _('The changes')}))
+
+    return err_list
+# - end of update_cluster_instance

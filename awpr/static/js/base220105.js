@@ -68,9 +68,9 @@
 
 //========= b_UploadSettings  ============= PR2019-10-09
     function b_UploadSettings (upload_dict, url_str) {
-        //console.log("=== b_UploadSettings");
-        //console.log("url_str", url_str);
-        //console.log("upload_dict", upload_dict);
+        console.log("=== b_UploadSettings");
+        console.log("url_str", url_str);
+        console.log("upload_dict", upload_dict);
 
         if(!!upload_dict) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -871,7 +871,7 @@
 //========= b_comparator_sortby  =========  PR2020-09-03
 // PR2020-09-01 from: https://stackoverflow.com/questions/5435228/sort-an-array-with-arrays-in-it-by-string/5435341
 // explained in https://www.javascripttutorial.net/javascript-array-sort/
-// function used in Array.sort to sort list of dicts by key 'code', null or '---' last  PR2021-02-25
+// function used in Array.sort to sort list of dicts by key 'sortby', null or '---' last  PR2021-02-25
     function b_comparator_sortby(a, b) {
         const max_len = 24 // CODE_MAX_LENGTH = 24;
         const z_str = "z".repeat(max_len);
@@ -1464,7 +1464,6 @@
         // from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter?retiredLocale=nl
         // new_array = array.filter(item => true);
     };  // b_clear_array
-
 
 //=========  b_clear_array  ================ PR2021-07-07
     function b_clear_array(array){

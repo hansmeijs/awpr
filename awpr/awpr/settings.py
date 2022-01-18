@@ -267,6 +267,9 @@ sentry_sdk.init(
 
 SENTRY_SRC = config('SENTRY_SRC', default=None)
 
+# PR2022-01-11
+IS_TESTSITE = config('IS_TESTSITE', default=False, cast=bool)
+
 # PR2021-03-26
 LOGGING_ON = config('LOGGING_ON', default=False, cast=bool)
 

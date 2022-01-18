@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MSCH_abbrev = document.getElementById("id_MSCH_abbrev")
         const el_MSCH_article = document.getElementById("id_MSCH_article")
         const el_MSCH_name = document.getElementById("id_MSCH_name")
-        const el_MSCH_tbody_select = document.getElementById("id_MSCH_tbody_select")
+        const el_MSCH_tbody_select_department = document.getElementById("id_MSCH_tbody_select_department")
 
         const el_MSCH_btn_delete = document.getElementById("id_MSCH_btn_delete");
         const el_MSCH_btn_save = document.getElementById("id_MSCH_btn_save");
@@ -151,8 +151,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     el.addEventListener("keyup", function() {MSCH_InputKeyup(el)}, false )
                 } else if(el.tagName === "SELECT"){
                     el.addEventListener("change", function() {MSCH_InputSelect(el)}, false )
-                } else if(el.tagName === "DIV"){
-                    el.addEventListener("click", function() {MSCH_InputToggle(el)}, false )
                 };
             };
         };
@@ -656,7 +654,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }  //  RefreshDataRows
 
-//=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-16
+//=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-16 PR2022-01-17
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
         console.log(" --- RefreshDatarowItem  ---");
         console.log("update_dict", update_dict);
@@ -668,13 +666,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const is_deleted = (!!update_dict.deleted);
             const is_created = (!!update_dict.created);
 
+            let updated_columns = [];
+            let field_error_list = []
+
             const error_list = get_dict_value(update_dict, ["error"], []);
             //console.log("error_list", error_list);
-            // field_error_list is not in use (yet)
-            let field_error_list = []
 
             if(error_list && error_list.length){
     // - show modal messages
+                // TODO cannot show error_list in b_ShowModMessages.Already shown by response.messages
+
                 b_ShowModMessages(error_list);
 
     // - add fields with error in field_error_list, to put old value back in field
@@ -685,6 +686,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // close modal MSJ when no error --- already done in modal
                 //$("#id_mod_subject").modal("hide");
             }
+
+// ---  get list of hidden columns
+        // copy col_hidden from mod_MCOL_dict.cols_hidden
+        const col_hidden = [];
+        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+
+// ---  get list of columns that are not updated because of errors
+        const error_columns = (update_dict.err_fields) ? update_dict.err_fields : [];
 
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
@@ -701,7 +710,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  add new item in data_rows at end
                 data_rows.push(update_dict);
 
-    // ---  create row in table., insert in alphabetical order
+    // ---  create row in table, insert in alphabetical order
                 const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict)
 
     // ---  scrollIntoView,
@@ -714,7 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
 
 // --- get existing data_dict from data_rows
-                const pk_int = update_dict.pk;
+                const pk_int = update_dict.id;
                 const [index, found_dict, compare] = b_recursive_integer_lookup(school_rows, "id", pk_int);
                 const data_dict = (found_dict) ?  found_dict : {};
                 const datarow_index = index;
@@ -729,38 +738,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     if(deleted_row_dict && deleted_row_dict.mapid){
                         const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
     // ---  when delete: make tblRow red for 2 seconds, before uploading
-                        if (tblRow_tobe_deleted ){tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)};
+                        tblRow_tobe_deleted.classList.add("tsa_tr_error")
+                        setTimeout(function() {
+                            tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)
+                        }, 2000);
                     };
                 } else {
 
 // +++++++++++ updated row +++++++++++
         // ---  check which fields are updated, add to list 'updated_columns'
                     if(!isEmpty(data_dict) && field_names){
-                        let updated_columns = [];
 
-                        // skip first column (is margin)
-                        // col_field is the name of the column on page, not the db_field
+        // skip first column (is margin)
                         for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
-                            let has_changed = false;
                             if (col_field in data_dict && col_field in update_dict){
-                                has_changed = (data_dict[col_field] !== update_dict[col_field] );
-                            };
+                                if (data_dict[col_field] !== update_dict[col_field] ) {
         // ---  add field to updated_columns list
-                            if (has_changed){
-                                updated_columns.push(col_field);
-                            };
-                        };
-// ---  update fields in data_row
-                        for (const [key, new_value] of Object.entries(update_dict)) {
-                            if (key in data_dict){
-                                if (new_value !== data_dict[key]) {
-                                    data_dict[key] = new_value;
+                                    updated_columns.push(col_field)
+        // ---  update field in data_row
+                                    data_dict[col_field] = update_dict[col_field];
                         }}};
 
+        console.log("updated_columns", updated_columns);
         // ---  update field in tblRow
                         // note: when updated_columns is empty, then updated_columns is still true.
                         // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
                         if(updated_columns.length || field_error_list.length){
+        //console.log("updated_columns", updated_columns);
+        //console.log("field_error_list", field_error_list);
+
 
 // --- get existing tblRow
                             let tblRow = document.getElementById(map_id);
@@ -778,12 +784,17 @@ document.addEventListener('DOMContentLoaded', function() {
                                     el = td.children[0];
                                     if (el){
                                         el_fldName = get_attr_from_el(el, "data-field")
-                                        UpdateField(el, update_dict);
-                // make field green when field name is in updated_columns
-                                        if(updated_columns.includes(el_fldName)){
-                                            ShowOkElement(el);
-                                        }
-                                    }
+                                        const is_updated_field = updated_columns.includes(el_fldName);
+                                        const is_err_field = error_columns.includes(el_fldName);
+    // - update field and make field green when field name is in updated_columns
+                                        if(is_updated_field){
+                                                UpdateField(el, update_dict);
+                                                ShowOkElement(el);
+                                        } else if( is_err_field){
+    // - make field red when error and reset old value after 2 seconds
+                                            reset_element_with_errorclass(el, update_dict, tobedeleted)
+                                        };
+                                    }  //  if (el)
                                 };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
                             };  // if(tblRow){
                         }; //  if(updated_columns.length){
@@ -791,7 +802,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };  // if(is_deleted){
             };  // if(is_created)
         }  // if(!isEmpty(update_dict)){
-    }  // RefreshDatarowItem
+    } ; // RefreshDatarowItem
 
 
 // +++++++++++++++++++++++++++ MOD SCHOOL +++++++++++++++++++++++++ PR2020-09-30 PR2021-08-26
@@ -983,7 +994,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("department_map", department_map);
 
         const data_map = department_map;
-        const tblBody_select = document.getElementById("id_MSCH_tbody_select");
+        const tblBody_select = el_MSCH_tbody_select_department;
         tblBody_select.innerText = null;
 
 // ---  loop through data_map
@@ -997,11 +1008,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     } // MSCH_FillSelectTableDepartment
 
-//========= MSCH_FillSelectRow  ============= PR2020--09-30
+//========= MSCH_FillSelectRow  ============= PR2020-09-30
     function MSCH_FillSelectRow(tblBody_select, dict, select_all_text) {
-        //console.log("===== MSCH_FillSelectRowDepartment ===== ");
-        // add_select_all when not isEmpty(dict)
-        //console.log("dict", dict);
+        console.log("===== MSCH_FillSelectRowDepartment ===== ");
+
+// - add_select_all when not isEmpty(dict)
+        console.log("dict", dict);
         let pk_int = null, map_id = null, abbrev = null
         if (isEmpty(dict)){
             pk_int = 0;
@@ -1012,7 +1024,9 @@ document.addEventListener('DOMContentLoaded', function() {
             map_id = "sel_depbase_" + dict.base_id;
             abbrev = (dict.abbrev) ? dict.base_code : "";
         };
-        // check if this dep is in mod_MSCH_dict.depbases. Set tickmark if yes
+
+// - check if this dep is in mod_MSCH_dict.depbases. Set tickmark if yes
+        console.log("mod_MSCH_dict.depbases", mod_MSCH_dict.depbases);
         let selected_int = 0;
         if(mod_MSCH_dict.depbases){
             const arr = mod_MSCH_dict.depbases.split(";");
@@ -1027,6 +1041,7 @@ document.addEventListener('DOMContentLoaded', function() {
         tblRow.setAttribute("data-pk", pk_int);
         tblRow.setAttribute("data-selected", selected_int);
 
+        console.log("tblRow", tblRow);
 //- add hover to select row
         add_hover(tblRow)
 
@@ -1058,12 +1073,12 @@ document.addEventListener('DOMContentLoaded', function() {
             let is_selected = (!!get_attr_from_el_int(tblRow, "data-selected"));
             let pk_int = get_attr_from_el_int(tblRow, "data-pk");
             const is_select_all = (!pk_int);
-        console.log( "is_selected", is_selected);
         console.log( "pk_int", pk_int);
 // ---  toggle is_selected
             is_selected = !is_selected;
+        console.log( "after toggle is_selected", is_selected);
 
-            const tblBody_selectTable = tblRow.parentNode;
+            const tblBody_selectTable = el_MSCH_tbody_select_department;
             if(is_select_all){
 // ---  if is_select_all: select/ deselect all rows
                 for (let i = 0, row, el, set_tickmark; row = tblBody_selectTable.rows[i]; i++) {
@@ -1090,6 +1105,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  set tickmark in row 'select_all' when has_rows and no unselected_rows_found
                 const tblRow_selectall = document.getElementById("sel_depbase_selectall")
                 MSCH_set_selected(tblRow_selectall, (has_rows && !unselected_rows_found))
+
             }
 // check for double abbrev in deps
             const fldName = "abbrev";
@@ -1120,7 +1136,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MSCH_get_selected_depbases  ============= PR2020-10-07
     function MSCH_get_selected_depbases(){
         console.log( "  ---  MSCH_get_selected_depbases  --- ")
-        const tblBody_select = document.getElementById("id_MSCH_tbody_select");
+        const tblBody_select = el_MSCH_tbody_select_department;
         let dep_list_arr = [];
         for (let i = 0, row; row = tblBody_select.rows[i]; i++) {
             let row_pk = get_attr_from_el_int(row, "data-pk");
@@ -1150,15 +1166,6 @@ document.addEventListener('DOMContentLoaded', function() {
         MSCH_validate_and_disable();
     }; // MSCH_InputSelect
 
-//========= MSCH_InputToggle  ============= PR2021-08-26
-    function MSCH_InputToggle(el_input){
-        console.log( "===== MSCH_InputToggle  ========= ");
-        const data_value = get_attr_from_el(el_input, "data-value")
-        const new_data_value = (data_value === "1") ? "0" : "1";
-        el_input.setAttribute("data-value", new_data_value);
-        const el_img = el_input.children[0];
-        add_or_remove_class(el_img, "tickmark_2_2", (new_data_value === "1"), "tickmark_1_1")
-    }; // MSCH_InputToggle
 
 //=========  MSCH_validate_and_disable  ================  PR2020-10-01
     function MSCH_validate_and_disable() {
@@ -1216,6 +1223,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function validate_duplicates_in_department(loc, tblName, fldName, caption, selected_mapid, selected_code) {
         console.log(" =====  validate_duplicates_in_department =====")
         console.log("fldName", fldName)
+
         let msg_err = null;
         if (tblName && fldName && selected_code){
             const data_map = (tblName === "school") ? school_map : null;

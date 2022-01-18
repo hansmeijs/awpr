@@ -52,11 +52,11 @@
         {% if no_access %}
             {% include 'includes/message_noaccess.html' %}
         {% else %}
+            {% include 'subjects/modexamquestions.html' %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modselectcolumns.html' %}
             {% include 'includes/modselectexam.html' %}
-            {% include 'subjects/modexamquestions.html' %}
             {% include 'students/modapprovegrade.html' %}
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
@@ -80,7 +80,7 @@
                     </div>
         <!-- left header_text -->
                     <div class="flex_4 pl-4 py-2">
-                        <h5 id="id_hdr_left"></h5>
+                        <h5 id="id_header_left"></h5>
                     </div>
         <!-- loader -->
                     <div class="flex_1 py-2">

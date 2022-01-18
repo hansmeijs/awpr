@@ -1413,7 +1413,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
         if logging_on:
             logger.debug('sql_keys: ' + str(sql_keys))
 
-        sql_list = ["SELECT grd.id, studsubj.id AS studsubj_id, studsubj.schemeitem_id, studsubj.clustername,",
+        sql_list = ["SELECT grd.id, studsubj.id AS studsubj_id, studsubj.schemeitem_id, cl.name AS cluster_name,",
                     "CONCAT('grade_', grd.id::TEXT) AS mapid,",
                     "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
                     "stud.level_id AS lvl_id, lvl.abbrev AS lvl_abbrev, stud.sector_id AS sct_id, sct.abbrev AS sct_abbrev,",
@@ -1457,6 +1457,8 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                     "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
                     "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
                     "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                    "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
 
                     "LEFT JOIN schools_published AS se_published ON (se_published.id = grd.se_published_id)",
                     "LEFT JOIN schools_published AS sr_published ON (sr_published.id = grd.sr_published_id)",
@@ -1555,6 +1557,10 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
     # note: don't forget to filter deleted = false!! PR2021-03-15
     # grades that are not published are only visible when 'same_school'
     # note_icon is downloaded in separate call
+    # IMPORTANT: only add field 'keys' when ETE has logged in .
+    #   Field 'keys' contains the answers of multiple choice questions,
+    #   they may not be downloaded by schools,
+    #   to be 100% sure that the answers cannot be retrieved by a school.
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -1564,11 +1570,14 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
     # - also commissioner .TODO: add school to commissioner permit
     requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and request.user.schoolbase.pk == sel_schoolbase_pk)
 
+    examkeys_fields = ""
+    if request.user.role == c.ROLE_064_ADMIN:
+        examkeys_fields = "ce_exam.keys AS ceex_keys, pe_exam.keys AS peex_keys,"
+
     sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk,
                 'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
-
-    # - only when requsr_same_school the not-published grades are visible
-
+    # TODO
+    # - the not-published grades are only visible when requsr_same_school
 
     if logging_on:
         logger.debug('sql_keys: ' + str(sql_keys))
@@ -1576,7 +1585,10 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
     sub_list = ["SELECT exam.id, ",
                 "CONCAT(subjbase.code,",
                 "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
-                "CASE WHEN exam.version IS NULL THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name, exam.amount",
+                "CASE WHEN exam.version IS NULL THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
+
+                "exam.examperiod, exam.examtype, exam.version, exam.has_partex, exam.partex, exam.amount, exam.blanks, exam.assignment, exam.keys,",
+                "exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm",
 
                 "FROM subjects_exam AS exam",
                 "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
@@ -1591,12 +1603,30 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix,",
                 "lvl.id AS level_id, lvl.base_id AS levelbase_id, lvl.abbrev AS lvl_abbrev,",
                 "subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name,",
-                "studsubj.id AS studsubj_id, sub_exam.exam_name, sub_exam.amount,",
-                "grd.exam_id, grd.answers, grd.blanks, grd.answers_published_id",
+                "studsubj.id AS studsubj_id,",
+                "grd.pe_exam_id, grd.pe_exam_result, grd.pe_exam_auth1by_id, grd.pe_exam_auth2by_id, grd.pe_exam_published_id, grd.pe_exam_blocked,",
+                "grd.ce_exam_id, grd.ce_exam_result, grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, grd.ce_exam_published_id, grd.ce_exam_blocked,",
+
+                "ce_exam.id AS ceex_exam_id, ce_exam.exam_name AS ceex_name,"
+                "ce_exam.examperiod AS ceex_examperiod, ce_exam.examtype AS ceex_examtype,",
+                "ce_exam.version AS ceex_version, ce_exam.amount AS ceex_amount,",
+                "ce_exam.has_partex AS ceex_has_partex, ce_exam.partex AS ceex_partex,",
+                "ce_exam.blanks AS ceex_blanks, ce_exam.assignment AS ceex_assignment,",
+                "ce_exam.nex_id AS ceex_nex_id, ce_exam.scalelength AS ceex_scalelength, ce_exam.cesuur AS ceex_cesuur, ce_exam.nterm AS ceex_nterm,",
+
+                examkeys_fields,
+
+                "pe_exam.id AS peex_exam_id, pe_exam.exam_name AS peex_name,"
+                "pe_exam.examperiod AS peex_examperiod, pe_exam.examtype AS peex_examtype,",
+                "pe_exam.version AS peex_version, pe_exam.amount AS peex_amount,",
+                "pe_exam.has_partex AS peex_has_partex, pe_exam.partex AS peex_partex,",
+                "pe_exam.blanks AS peex_blanks, pe_exam.assignment AS peex_assignment,",
+                "pe_exam.nex_id AS peex_nex_id, pe_exam.scalelength AS peex_scalelength, pe_exam.cesuur AS peex_cesuur, pe_exam.nterm AS peex_nterm",
 
                 "FROM students_grade AS grd",
                 "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
-                "LEFT JOIN (", sub_exam, ") AS sub_exam ON (sub_exam.id = grd.exam_id)",
+                "LEFT JOIN (", sub_exam, ") AS ce_exam ON (ce_exam.id = grd.ce_exam_id)",
+                "LEFT JOIN (", sub_exam, ") AS pe_exam ON (pe_exam.id = grd.pe_exam_id)",
 
                 "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
                 "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",

@@ -336,8 +336,6 @@ class Studentsubject(sch_mod.AwpBaseModel):
     schemeitem = ForeignKey(subj_mod.Schemeitem, related_name='+', on_delete=PROTECT)
 
     cluster = ForeignKey(subj_mod.Cluster, null=True, blank=True, related_name='+', on_delete=SET_NULL)
-    # use clustername instead of cluster
-    clustername = CharField(db_index=True, max_length=c.MAX_LENGTH_EXAMNUMBER, null=True, blank=True)
 
     is_extra_nocount = BooleanField(default=False)
     is_extra_counts = BooleanField(default=False)
@@ -425,9 +423,6 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     schemeitem_log = ForeignKey(subj_mod.Schemeitem_log, null=True, related_name='+', on_delete=SET_NULL)
 
     cluster_log = ForeignKey(subj_mod.Cluster_log,null=True, related_name='+', on_delete=SET_NULL)
-
-    # use clustername instead of cluster
-    clustername = CharField(db_index=True, max_length=c.MAX_LENGTH_EXAMNUMBER, null=True, blank=True)
 
     is_extra_nocount = BooleanField(default=False)
     is_extra_counts = BooleanField(default=False)

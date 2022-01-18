@@ -2374,7 +2374,7 @@ def get_students_with_grades_dictlist(examyear, school, department, sel_lvlbase_
     cascade_dict = {}
 
     sub_list = ["SELECT studsubj.id,studsubj.student_id, si.id as si_id,",
-                "subj.id AS subj_id, subj.name AS subj_name, subjbase.code AS subj, studsubj.clustername,",
+                "subj.id AS subj_id, subj.name AS subj_name, subjbase.code AS subj, cl.name AS cluster_name,",
                 "studsubj.is_extra_nocount, studsubj.is_extra_counts,",
                 "studsubj.has_exemption, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03, studsubj.exemption_year,",
 
@@ -2391,6 +2391,8 @@ def get_students_with_grades_dictlist(examyear, school, department, sel_lvlbase_
                 "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
                 "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
                 "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
 
                 "WHERE NOT studsubj.tobedeleted AND NOT grade.tobedeleted",
                 "ORDER BY subj.sequence"
@@ -2413,7 +2415,7 @@ def get_students_with_grades_dictlist(examyear, school, department, sel_lvlbase_
                 "dep.name AS dep_name, dep.abbrev AS dep_abbrev, dep.level_req, dep.has_profiel,"
                 "lvl.name AS lvl_name, sct.name AS sct_name,"
                 
-                "studsubj.subj_id, studsubj.subj_name, studsubj.subj, studsubj.clustername,",
+                "studsubj.subj_id, studsubj.subj_name, studsubj.subj, studsubj.cluster_name,",
                 "studsubj.is_extra_nocount, studsubj.is_extra_counts,",
                 "studsubj.has_exemption, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03, studsubj.exemption_year,",
 

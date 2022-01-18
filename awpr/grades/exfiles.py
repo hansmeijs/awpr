@@ -184,7 +184,9 @@ class GetEx3infoView(View):  # PR2021-10-06
         sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'examperiod': examperiod}
 
         sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name,",
-                    "MAX(studsubj.clustername) AS max_clustername, MAX(stud.classname) AS max_classname,",
+                    # TODO add cluster
+                    # "MAX(studsubj.clustername) AS max_clustername, MAX(stud.classname) AS max_classname,",
+                    "MAX(stud.classname) AS max_classname,",
                     "ARRAY_AGG(DISTINCT lvl.base_id) AS lvlbase_id_arr",
 
                     "FROM students_grade AS grd",
@@ -570,7 +572,7 @@ class DownloadEx3View(View):  # PR2021-10-07
         logger.debug('subject_filter: ' + str(subject_filter))
         sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name,",
                     "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, ",
-                    "studsubj.clustername, stud.classname, cls.name AS cluster_name,",
+                    "stud.classname, cl.name AS cluster_name,",
                     "stud.level_id, lvl.name AS lvl_name",
 
                     "FROM students_grade AS grd",
@@ -585,6 +587,8 @@ class DownloadEx3View(View):  # PR2021-10-07
                     "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
                     "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
                     "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                    "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
 
                     "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
                     level_filter,
@@ -609,7 +613,7 @@ class DownloadEx3View(View):  # PR2021-10-07
                 subj_pk = row.get('subj_id')
                 subj_name = row.get('subj_name', '---')
                 classname = row.get('classname', '---')
-                clustername = row.get('clustername')
+                cluster_name = row.get('cluster_name', '---')
                 level_id = row.get('level_id')
                 lvl_name = row.get('lvl_name', '---')
                 examnumber = row.get('examnumber', '---')
@@ -623,7 +627,7 @@ class DownloadEx3View(View):  # PR2021-10-07
                 elif sel_layout == "class":
                     key = (subj_pk, classname)
                 elif sel_layout == "cluster":
-                    key = (subj_pk, clustername)
+                    key = (subj_pk, cluster_name)
                 else:
                     sel_layout = None
                     key = subj_pk

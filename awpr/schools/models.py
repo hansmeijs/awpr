@@ -670,20 +670,24 @@ def delete_instance(instance, messages, error_list, request, this_txt=None, head
     #   {'field': fldName, header': header_txt, 'retry': True, 'class': 'border_bg_invalid', 'msg_html': msg_html}
     #  retry: not in use yet, lets user retry again
     #  error_list is to be deprecated PR2021-10-24
+    # P2022-01-10 I think it is best to use error_list insted of msg_html.
+    # error_list doenst have 'header' and 'class', is better when tehre are multiple errors in err_list
     deleted_ok = False
 
     if instance:
         try:
             instance.delete(request=request)
+
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
             caption = this_txt if this_txt else _('This item')
-            err_txt1 = str(_('An error occurred'))
-            err_txt2 = str(e)
-            err_txt3 = str(_("%(cpt)s could not be deleted.") % {'cpt': str(caption)})
-            error_list = ''.join((err_txt1, ' (', err_txt2, ') ', err_txt3))
+            err_tx1 = str(_('An error occurred'))
+            err_txt2 = str(_("%(cpt)s could not be deleted.") % {'cpt': caption})
 
-            msg_html = ''.join((err_txt1, ': ', '<br><i>', err_txt2, '</i><br>',err_txt3))
+            error_list.append(''.join((err_tx1, ' (', str(e), ').')))
+            error_list.append(err_txt2)
+
+            msg_html = ''.join((err_tx1, ': ', '<br><i>', str(e), '</i><br>', err_txt2))
             msg_dict = {'header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
             messages.append(msg_dict)
         else:

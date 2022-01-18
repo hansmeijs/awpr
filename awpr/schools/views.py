@@ -506,7 +506,7 @@ class MailinglistUploadView(View):  # PR2021-10-23
 
 # ++++ Delete mailinglist_instance
                     if is_delete:
-                        deleted_ok = delete_mailinglist(mailinglist_instance, is_public, is_sys_admin, updated_rows, messages, error_list, request)
+                        deleted_ok = delete_mailinglist(mailinglist_instance, is_public, updated_rows, messages, error_list, request)
 
 # +++ Update mailmessage, also when it is created, nor when deleted
                     else:
@@ -1299,7 +1299,7 @@ def send_email_message(examyear, userlist_dict, log_list, header, request):
 
 # ===================================
 
-def delete_mailinglist(instance, is_public, is_sys_admin, updated_rows, messages, error_list, request):
+def delete_mailinglist(instance, is_public, updated_rows, messages, error_list, request):
 
     logging_on = s.LOGGING_ON  # PR2021-10-24
     if logging_on:
@@ -1317,7 +1317,7 @@ def delete_mailinglist(instance, is_public, is_sys_admin, updated_rows, messages
     header_txt = _("Delete mailing list")
 
 # - check if mailinglist is private or req_usr is sysadmin
-    if is_public and not is_sys_admin:
+    if is_public and not request.user.is_usergroup_admin:
         msg_html = ''.join(
             (str(_("This is a general mailing list.")), '<br>',
              str(_(  "It can only be deleted by the system administrator."))))
@@ -2697,7 +2697,7 @@ def create_published_instance_orderlist(now_arr, examyear, school, request, user
     # this one gives path:awpmedia/awpmedia/media/cur/2022/published
     requsr_school = sch_mod.School.objects.get_or_none(
         base=request.user.schoolbase,
-        examyear=sel_examyear
+        examyear=examyear
     )
     requsr_schoolcode = requsr_school.base.code if requsr_school.base.code else '---'
     country_abbrev = examyear.country.abbrev.lower()

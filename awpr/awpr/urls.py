@@ -238,7 +238,11 @@ urlpatterns = [
         path('download_ex1', grade_excel.StudsubjDownloadEx1View.as_view(), name='url_grade_download_ex1'),
 
         path('ex3_getinfo/', grade_exfiles.GetEx3infoView.as_view(), name='url_ex3_getinfo'),
-        path('download_ex3/<list>/', grade_exfiles.DownloadEx3View.as_view(), name='url_ex3_download')
+        path('download_ex3/<list>/', grade_exfiles.DownloadEx3View.as_view(), name='url_ex3_download'),
+
+
+        path('cluster_upload', student_views.ClusterUploadView.as_view(), name='url_cluster_upload')
+
     ])),
 
 # ===== GRADES ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16

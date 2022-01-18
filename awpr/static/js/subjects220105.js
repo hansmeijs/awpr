@@ -635,7 +635,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             header_text = null;
         }
-        document.getElementById("id_hdr_left").innerText = header_text;
+        document.getElementById("id_header_left").innerText = header_text;
     }   //  UpdateHeaderText
 
 //###########################################################################
@@ -1283,12 +1283,13 @@ if(j){td.classList.add("border_left")};
     // ---  add new item in data_rows at end
                 data_rows.push(update_dict);
 
-    // ---  create row in table., insert in alphabetical order
+    // ---  create row in table, insert in alphabetical order
                 const new_tblRow = CreateTblRow(tblName, field_setting, update_dict, col_hidden)
 
     // ---  scrollIntoView,
                 if(new_tblRow){
                     new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
+
     // ---  make new row green for 2 seconds,
                     ShowOkElement(new_tblRow);
                 }
@@ -1320,7 +1321,7 @@ if(j){td.classList.add("border_left")};
                         setTimeout(function() {
                             tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)
                         }, 2000);
-                    }
+                    };
                 } else {
 
 // +++++++++++ updated row +++++++++++
@@ -1370,7 +1371,7 @@ if(j){td.classList.add("border_left")};
     // - make field red when error and reset old value after 2 seconds
                                             reset_element_with_errorclass(el, update_dict, tobedeleted)
                                         };
-                                    }  //  if (el){
+                                    }  //  if (el)
                                 };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
                             };  // if(tblRow){
                         }; //  if(updated_columns.length){
