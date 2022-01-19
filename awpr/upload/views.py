@@ -843,7 +843,7 @@ def ImportSchemeitem(ws_name, row_data, logfile, mapped, examyear_instance, requ
     # fields of schemitem are:
     # scheme, subject, subjecttype, norm ,
     # gradetype, weight_se, weight_ce,
-    # is_mandatory,  is_combi, extra_count_allowed,  extra_nocount_allowed, has_practexam,  has_pws,
+    # is_mandatory,  is_combi, extra_count_allowed,  extra_nocount_allowed, has_practexam,
     # sr_allowed,  reex_combi_allowed, no_centralexam, no_reex, no_thirdperiod, no_exemption_ce,
 
     if ws_name == 'schemeitem' and row_data:

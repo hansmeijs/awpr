@@ -2065,7 +2065,7 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
                    "rule_grade_sufficient, rule_gradesuff_notatevlex,",
 
                    'extra_count_allowed', 'extra_nocount_allowed',
-                   'has_practexam', 'has_pws',
+                   'has_practexam',
                    'sr_allowed', 'max_reex',
                    'no_thirdperiod', 'no_exemption_ce',
                    'otherlang',

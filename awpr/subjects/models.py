@@ -579,7 +579,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
     extra_nocount_allowed = BooleanField(default=False)
 
     has_practexam = BooleanField(default=False)
-    # TODO deprecate has_pws, use sjtp.has_prac instead
+    # has_pws is deprecated, use sjtp.has_prac instead
     # has_pws = BooleanField(default=False)
 
     is_core_subject = BooleanField(default=False)
@@ -708,7 +708,7 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
 
     has_practexam = BooleanField(default=False)
 
-    # TODO deprecate has_pws, use sjtp.has_prac instead
+    # has_pws is deprecated, use sjtp.has_prac instead
     # has_pws = BooleanField(default=False)
 
     is_core_subject = BooleanField(default=False)

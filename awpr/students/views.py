@@ -2895,8 +2895,8 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         logger.debug('>>>>> new_schemeitem save')
 
         elif field in ['pws_title', 'pws_subjects']:
-            # only allowed when schemeitem has_pws = True
-            if not studsubj_instance.schemeitem.has_pws:
+            # only allowed when subjecttype has_pws = True
+            if not studsubj_instance.schemeitem.subjecttype.has_pws:
                 msg_list.append(str(_("Title and subjects are not allowed in this subject.")))
             else:
                 saved_value = getattr(studsubj_instance, field)
@@ -2908,7 +2908,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
 
         elif field == 'exemption_year':
             # TODO Validate if changing allowed
-            # only allowed when schemeitem has_pws = True
+
             if not new_value:
                 new_value = False
             saved_value = getattr(studsubj_instance, field)
@@ -4618,7 +4618,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             "CONCAT('studsubj_', st.id::TEXT, '_', studsubj.studsubj_id::TEXT) AS mapid, 'studsubj' AS table,",
             "st.lastname, st.firstname, st.prefix, st.examnumber,",
             "st.scheme_id, st.iseveningstudent, st.islexstudent, st.classname, ",
-            "st.tobedeleted, st.reex_count, st.reex03_count, st.bis_exam, st.withdrawn,",
+            "st.tobedeleted AS st_tobedeleted, st.reex_count, st.reex03_count, st.bis_exam, st.withdrawn,",
             "studsubj.subject_id AS subj_id, studsubj.subj_code, studsubj.subj_name,",
             "dep.base_id AS depbase_id, dep.abbrev AS dep_abbrev,",
             "lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",

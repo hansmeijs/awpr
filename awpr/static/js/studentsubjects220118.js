@@ -1630,9 +1630,9 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MSTUDSUBJ_Save  ============= PR2020-11-18
     function MSTUDSUBJ_Save(){
         console.log(" -----  MSTUDSUBJ_Save   ----")
-        console.log( "mod_MSTUDSUBJ_dict.studsubj_dict: ", mod_MSTUDSUBJ_dict.studsubj_dict);
-        console.log( "mod_MSTUDSUBJ_dict: ", mod_MSTUDSUBJ_dict);
-                    console.log("mod_MSTUDSUBJ_dict.stud_id: ", mod_MSTUDSUBJ_dict.stud_id)
+        //console.log( "mod_MSTUDSUBJ_dict.studsubj_dict: ", mod_MSTUDSUBJ_dict.studsubj_dict);
+        //console.log( "mod_MSTUDSUBJ_dict: ", mod_MSTUDSUBJ_dict);
+        //console.log("mod_MSTUDSUBJ_dict.stud_id: ", mod_MSTUDSUBJ_dict.stud_id)
 
         const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
         if(may_edit){
@@ -1644,16 +1644,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     sel_depbase_pk: setting_dict.sel_depbase_pk,
                     student_pk: mod_MSTUDSUBJ_dict.stud_id
                 }
-console.log("upload_dict: ", upload_dict)
+
                 const studsubj_list = []
     // ---  loop through mod_MSTUDSUBJ_dict.studsubj_dict
                 for (const [studsubj_pk_str, ss_dict] of Object.entries(mod_MSTUDSUBJ_dict.studsubj_dict)) {
                     //const studsubj_pk = Number(studsubj_pk_str);
                      const studsubj_pk = (ss_dict.studsubj_id) ? ss_dict.studsubj_id : null
 
-console.log("studsubj_pk_str: ", studsubj_pk_str)
-console.log("studsubj_pk: ", studsubj_pk)
-console.log("ss_dict: ", ss_dict)
                     if(!isEmpty(ss_dict)){
                         let mode = null;
                         if(ss_dict.tobedeleted){
@@ -1665,7 +1662,7 @@ console.log("ss_dict: ", ss_dict)
                         } else  if(ss_dict.tobechanged){
                             mode = "update";
                         }
-console.log("mode: ", mode)
+
                         if (mode){
                             const studsubj_dict = {
                                     mode: mode,
@@ -1696,7 +1693,7 @@ console.log("mode: ", mode)
                 };
                 if(studsubj_list && studsubj_list.length){
                     upload_dict.studsubj_list = studsubj_list;
-                    console.log("upload_dict: ", upload_dict)
+
                     UploadChanges(upload_dict, urls.url_studsubj_upload);
                 };
             };  // if(mod_MSTUDSUBJ_dict.stud_id)
@@ -2537,6 +2534,7 @@ console.log("mode: ", mode)
             mod_MCL_dict.id_new += 1;
             const new_cluster_pk = "new_" + mod_MCL_dict.id_new;
             const new_cluster_name = MCL_get_next_clustername();
+        console.log("new_cluster_name", new_cluster_name);
             const new_cluster_dict = {
                 cluster_pk: new_cluster_pk,
                 sortby: new_cluster_name,
@@ -2544,12 +2542,14 @@ console.log("mode: ", mode)
                 subject_code: mod_MCL_dict.subject_code,
                 mode: "create"
             };
+        console.log("new_cluster_dict", new_cluster_dict);
             mod_MCL_dict.cluster_list.push(new_cluster_dict);
             mod_MCL_dict.cluster_list.sort(b_comparator_sortby);
 
             mod_MCL_dict.sel_cluster_pk = new_cluster_pk;
             mod_MCL_dict.sel_cluster_dict = MCL_get_cluster_dict(new_cluster_pk);
 
+        console.log("mod_MCL_dict.cluster_list", mod_MCL_dict.cluster_list);
             MCL_FillTableClusters();
             MCL_FillTableStudsubj();
 
@@ -2791,7 +2791,6 @@ console.log("mode: ", mode)
 
 //=========  MCL_FillClusterList  ================ PR2022-01-09
     function MCL_FillClusterList() {
-
         console.log("===== MCL_FillClusterList =====");
         // called by MCL_Open and by MSSSS_Response (after selecting subject)
 
@@ -2823,7 +2822,6 @@ console.log("mode: ", mode)
 
 //=========  MCL_FillStudentList  ================ PR2022-01-06
     function MCL_FillStudentList() {
-
         console.log("===== MCL_FillStudentList =====");
         // called by MCL_Open and by MSSSS_Response (after selecting subject)
 
@@ -2841,10 +2839,9 @@ console.log("mode: ", mode)
 
         if(studsubj_rows && studsubj_rows.length){
             for (let i = 0, data_dict; data_dict = studsubj_rows[i]; i++) {
-// - add only the studsubjects from this subject to student_list
-                if (data_dict.subj_id && data_dict.subj_id === mod_MCL_dict.subject_pk){
-
-        console.log("data_dict", data_dict);
+// - add only the studsubjects from this subject to student_list, only when tobeleted=false and st_tobedeleted=false
+                if (data_dict.subj_id && data_dict.subj_id === mod_MCL_dict.subject_pk &&
+                        !data_dict.tobedeleted && !data_dict.st_tobedeleted){
                     mod_MCL_dict.student_list.push({
                         studsubj_pk: data_dict.studsubj_id,
                         sortby: data_dict.fullname,  // key must have name 'sortby', b_comparator_sortby sorts by this field
@@ -2866,8 +2863,6 @@ console.log("mode: ", mode)
 // ---  sort dictlist by key 'sortby'
             mod_MCL_dict.student_list.sort(b_comparator_sortby);
             mod_MCL_dict.classname_list.sort();
-    //console.log("mod_MCL_dict.student_list", mod_MCL_dict.student_list);
-    console.log("mod_MCL_dict", mod_MCL_dict);
         };
     };  // MCL_FillStudentList
 
@@ -3044,13 +3039,24 @@ console.log("mode: ", mode)
     };  // MCL_ChkNoClusterClick
 
 
-//=========  MCL_get_next_clustername  ================ PR2022-01-09
+//=========  MCL_get_next_clustername  ================ PR2022-01-18
     function MCL_get_next_clustername() {
         console.log("===== MCL_get_next_clustername =====");
-        let next_cluster_name = null;
+        console.log("mod_MCL_dict.cluster_list", mod_MCL_dict.cluster_list);
+
+        let max_number = 0;
+        // mod_MCL_dict.cluster_list contains only the clusters of this subject
         if (mod_MCL_dict.cluster_list && mod_MCL_dict.cluster_list.length){
-            let max_number = 0;
             for (let i = 0, cluster_dict; cluster_dict = mod_MCL_dict.cluster_list[i]; i++) {
+
+                /* cluster_dict = {
+                    cluster_pk: data_dict.id,
+                    sortby: data_dict.name,  // cluster_name
+                    subject_pk: data_dict.subject_id,
+                    subject_code: data_dict.code,
+                    mode: null  });
+                */
+
                 const cluster_name = cluster_dict.sortby;
                 if (cluster_name && cluster_name.includes("-")){
                     const arr = cluster_name.split("-");
@@ -3063,13 +3069,13 @@ console.log("mode: ", mode)
                     };
                 };
             };
-            if (mod_MCL_dict.cluster_list.length > max_number) { max_number = mod_MCL_dict.cluster_list.length};
-            const next_number = max_number + 1;
-            next_cluster_name = mod_MCL_dict.subject_code + " - " + next_number;
-        }
-        console.log("next_cluster_name", next_cluster_name);
-        return next_cluster_name
-
+            if (mod_MCL_dict.cluster_list.length > max_number) {
+                max_number = mod_MCL_dict.cluster_list.length;
+            };
+        };
+        const next_number = max_number + 1;
+        const next_cluster_name = mod_MCL_dict.subject_code + " - " + next_number;
+        return next_cluster_name;
     };  // MCL_get_next_clustername
 
 
@@ -3949,6 +3955,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
         //console.log("field_setting", field_setting);
         console.log("update_dict", update_dict);
 
+
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
 
@@ -4072,6 +4079,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 // --- get existing tblRow
                             let tblRow = document.getElementById(map_id);
     console.log("tblRow", tblRow);
+    console.log("updated_columns", updated_columns);
                             if(tblRow){
 
     // - to make it perfect: move row when first or last name have changed
@@ -4084,6 +4092,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 
     // - loop through cells of row
                                 const tobedeleted = (update_dict.tobedeleted) ? update_dict.tobedeleted : false;
+    console.log("tobedeleted", tobedeleted);
                                 for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
                                     el = td.children[0];
                                     if (el){
@@ -4092,10 +4101,12 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
                                         const is_err_field = error_columns.includes(el_fldName);
 
     // - update field and make field green when field name is in updated_columns
-                                        if(is_updated_field){
-                                                UpdateField(el, update_dict, tobedeleted);
-                                                ShowOkElement(el);
-                                        } else if(is_err_field){
+                                        // PR2022-01-18 debug: UpdateField also when record is tobedeleted
+                                        if(is_updated_field || tobedeleted){
+                                            UpdateField(el, update_dict, tobedeleted);
+                                        };
+                                        if(is_updated_field){ShowOkElement(el)};
+                                        if(is_err_field){
     // - make field red when error and reset old value after 2 seconds
                                             reset_element_with_errorclass(el, update_dict, tobedeleted)
                                         };
