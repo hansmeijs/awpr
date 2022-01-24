@@ -600,6 +600,7 @@ class Grade(sch_mod.AwpBaseModel):
     ce_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_blocked = BooleanField(default=False)
 
+    # 'pe_exam' is not in use. Let it stay in case they want to introduce pe-exam again PR2022-01-19
     pe_exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
     pe_exam_result = CharField(max_length=2048, null=True)
     pe_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)

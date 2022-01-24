@@ -820,6 +820,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Quest'] = _('Quest.')
         dict['Question'] = _('Question')
         dict['Questions'] = _('Questions')
+        dict['Q_abbrev'] = pgettext_lazy('abbrev. of question', 'q.')
+        dict['reex_abbrev'] = pgettext_lazy('abbrev. of re-examination', 're-ex')
+        dict['ce_plus_reex_abbrev'] = pgettext_lazy('abbrev. of re-examination', 'CE + re-ex')
+
         dict['Number_of_questions'] = _('Number of questions')
 
         dict['Maximum_score'] = _('Maximum score')

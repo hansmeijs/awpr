@@ -209,7 +209,8 @@ document.addEventListener('DOMContentLoaded', function() {
                this.querySelector("thead").style.transform = translate;
             });
         }
-// --- buttons in btn_container
+
+// --- BUTTON CONTAINER ------------------------------------
         const el_btn_container = document.getElementById("id_btn_container")
         if (el_btn_container){
             const btns = el_btn_container.children;
@@ -1197,10 +1198,9 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "field", field);
         //console.log("setting_dict.sel_dep_level_req", setting_dict.sel_dep_level_req);
 
-
         // note: exemption has no status, only exemption grades must be submitted
-        const mapped_field = (field === "re2_status") ? "has_reex" :
-                             (field === "re3_status") ? "has_reex03" :
+        const mapped_field = (field === "reex_status") ? "has_reex" :
+                             (field === "reex03_status") ? "has_reex03" :
                              (field === "pok_validthru") ? "pok_status" : field;
         //console.log( "mapped_field", mapped_field);
 

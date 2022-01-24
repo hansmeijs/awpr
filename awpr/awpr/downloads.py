@@ -185,8 +185,11 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         depbase=sel_depbase)
 # ----- exams
                 if datalist_request.get('exam_rows'):
-                    cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
-                    datalists['exam_rows'] = sj_vw.create_exam_rows(new_setting_dict, {}, cur_dep_only)
+                    datalists['exam_rows'] = sj_vw.create_exam_rows(
+                        sel_examyear_pk=sel_examyear.pk,
+                        sel_depbase_pk=sel_depbase.pk,
+                        append_dict={}
+                    )
 # ----- students
                 if datalist_request.get('student_rows'):
                     datalists['student_rows'], error_dict = stud_view.create_student_rows(
@@ -213,6 +216,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- orderlists
                 if datalist_request.get('orderlist_rows'):
                     datalists['orderlist_rows'] = stud_view.create_orderlist_rows(sel_examyear.code, request)
+
 # ----- grade_with_exam_rows
                 if datalist_request.get('grade_with_exam_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:

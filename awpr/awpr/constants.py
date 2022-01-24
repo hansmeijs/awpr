@@ -202,8 +202,8 @@ EXAMTYPE_OPTIONS_EXAM = [
     #{'value': 'sere', 'filter': EXAMPERIOD_FIRST, 'caption': _('Re-examination school exam')},
     #{'value': 'pe', 'filter': EXAMPERIOD_FIRST, 'caption': _('Practical exam')},
     {'value': 'ce', 'filter': EXAMPERIOD_FIRST, 'caption': _('Central exam')},
-    {'value': 're2', 'filter': EXAMPERIOD_SECOND, 'caption': _('Re-examination')},
-    #{'value': 're3', 'filter': EXAMPERIOD_THIRD, 'caption': _('Re-examination 3rd period')},
+    {'value': 'reex', 'filter': EXAMPERIOD_SECOND, 'caption': _('Re-examination')},
+    #{'value': 'reex03', 'filter': EXAMPERIOD_THIRD, 'caption': _('Re-examination 3rd period')},
     #{'value': 'exm', 'filter': EXAMPERIOD_EXEMPTION, 'caption': _('School- / Central exam')}
     ]
 EXAMTYPE_CAPTION = {
@@ -211,9 +211,9 @@ EXAMTYPE_CAPTION = {
     'sere': _('Re-examination school exam'),
     'pe': _('Practical exam'),
     'ce': _('Central exam'),
-    're2': _('Re-examination'),
-    're3': _('Re-examination 3rd period'),
-    'exm': _('Exemption')
+    'reex': _('Re-examination'),
+    'reex03': _('Re-examination 3rd period'),
+    'exm': _('Exemption'),
 }
 
 

@@ -1076,7 +1076,7 @@
     //console.log( "data_rows", data_rows);
 
         // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
-        // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
+        // don't use recursive function, it is less efficient than a loop because it puts each call in the stack
         // function returns rowindex of searched value, or rowindex of row to be inserted
         // data_rows must be ordered by id, done by server
 

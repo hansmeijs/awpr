@@ -483,13 +483,14 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     level = ForeignKey(Level, related_name='+', null=True, on_delete=SET_NULL)
 
     examperiod = PositiveSmallIntegerField(db_index=True, default=1)
+    # examtype not in use, maybe necessary if pe_exam will be used again
     examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True, default='ce')
 
     version = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     has_partex = BooleanField(default=False)
     partex = CharField(max_length=2048, null=True)
-    # TODO deprecate amount, store amount always in partex
+    # amount contains total amount of questions, amount per partex is stored in partex
     amount = PositiveSmallIntegerField(null=True)
     blanks = PositiveSmallIntegerField(null=True)
 

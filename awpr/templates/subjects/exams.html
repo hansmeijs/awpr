@@ -62,41 +62,53 @@
             {% include 'includes/modconfirm.html' %}
             {% include 'includes/modstatus.html' %}
 
-            <div class="content_margin_top78">
-                <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="btn_ep_01" class="btn btn-secondary ">{% trans 'First exam period' %}</button>
-                    {% if not no_centralexam %}
-                        <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Second exam period' %}</button>
-                    {% endif %}
-
-                </div>
-    <!-- end BUTTON GROUP -->
-
-<!-- CONTENT HEADER - LOADER -->
-
-        <!-- submenu -->
-                <div class="content_header flex_container">
-                    <div id="id_submenu" class="awp_navbar_submenuXX mt-5">
-                    </div>
-        <!-- left header_text -->
-                    <div class="flex_4 pl-4 py-2">
-                        <h5 id="id_header_left"></h5>
+    <!-- CONTENT HEADER - LOADER -->
+            <div class="margin_top80_left16_right32">
+                <div class="flex_container">
+    <!-- content_header -->
+        <!-- header_text left -->
+                    <div class="flex_2 p-2">
+                        <h5 id="id_header_left" class="mb-0"></h5>
                     </div>
         <!-- loader -->
-                    <div class="flex_1 py-2">
-                        {% include 'includes/loader.html' %}
+                    <div id="id_loader" class="py-2">
+                        <div class="loader p-2">
+                            <div class="duo duo1">
+                                <div class="dot dot-a"></div>
+                                <div class="dot dot-b"></div>
+                            </div>
+                                <div class="duo duo2">
+                                <div class="dot dot-a"></div>
+                                <div class="dot dot-b"></div>
+                            </div>
+                        </div>
                     </div>
-
-        <!-- right header_text -->
-                    <div class="text_align_right flex_4 pr-4 py-2 mr-2">
-                        <h5 id="id_hdr_textright1"></h5>
+        <!-- header_text right -->
+                    <div class="flex_2_align_right p-2">
+                        <h5 id="id_header_right" class="mb-0"></h5>
                     </div>
                 </div>
-            <!-- end content_header -->
+            </div>
+    <!-- end content_header -->
+
+    <!-- BUTTON GROUP -->
+        <!--
+            <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
+                <button data-btn="btn_ep_01" class="btn btn-secondary ">{% trans 'First exam period' %}</button>
+                {% if not no_centralexam %}
+                    <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Second exam period' %}</button>
+                {% endif %}
+            </div>
+        -->
+    <!-- end BUTTON GROUP -->
+    <!-- end BUTTON GROUP -->
+    <!-- END OF CONTENT HEADER - LOADER -->
+
 
     <!-- CONTENT BODY -->
     <!-- =================== DATA TABLE  =================== -->
-            <div class="content_header ml-2 mr-4">
+            <div id="id_tbl_container"
+                class="content_body mx-2 mt-2 pr-4">
                 <table class="table tsa_tbl">
                     <thead id="id_tblHead_datatable"></thead>
                     <tbody id="id_tblBody_datatable"></tbody>

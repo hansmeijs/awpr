@@ -1181,8 +1181,8 @@ class ExamUploadView(View):
                     logger.debug('upload_dict' + str(upload_dict))
 
                 error_list = []
-                deleted_list = []
                 append_dict = {}
+                deleted_row = None
 
 # - get variables from upload_dict
                 # don't get it from usersettings, get it from upload_dict instead
@@ -1229,8 +1229,7 @@ class ExamUploadView(View):
                             logger.debug('department:     ' + str(department))
                             logger.debug('level:     ' + str(level))
                         examperiod_int = upload_dict.get('examperiod')
-                        examtype = upload_dict.get('examtype')
-                        exam, msg_err = create_exam_instance(subject, department, level, examperiod_int, examtype, request)
+                        exam, msg_err = create_exam_instance(subject, department, level, examperiod_int, request)
 
                         if exam:
                             append_dict['created'] = True
@@ -1254,25 +1253,24 @@ class ExamUploadView(View):
 # +++++ Delete instance if is_delete
                         if mode == 'delete':
                             deleted_row = delete_exam_instance(exam, error_list, request)
-                            if deleted_row:
-                                deleted_list.append(deleted_row)
                         else:
 
 # +++++ Update instance, also when it is created, not when is_delete
                             update_exam_instance(exam, upload_dict, error_list, examyear, request)
 
     # 6. create list of updated exam
-                    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-                    s_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
+                    if deleted_row:
+                        updated_exam_rows = [deleted_row]
+                    else:
+                        updated_exam_rows = create_exam_rows(
+                            sel_examyear_pk=examyear.pk,
+                            sel_depbase_pk=depbase_pk,
+                            append_dict=append_dict,
+                            exam_pk=exam.pk
+                        )
 
-                    setting_dict = {'sel_examyear_pk': examyear.pk,
-                                    'sel_depbase_pk': depbase_pk,
-                                    'exam_pk': exam.pk}
-                    exam_rows = create_exam_rows(setting_dict, append_dict)
-                    if deleted_list:
-                        exam_rows.extend(deleted_list)
-                    if exam_rows:
-                        update_wrap['updated_exam_rows'] = exam_rows
+                    if updated_exam_rows:
+                        update_wrap['updated_exam_rows'] = updated_exam_rows
         if err_html:
             update_wrap['err_html'] = err_html
 # - return update_wrap
@@ -1296,7 +1294,7 @@ class ExamApproveView(View):  # PR2021-04-04
 # --- end of ExamApproveView
 
 
-def create_exam_instance(subject, department, level, examperiod_int, examtype, request):
+def create_exam_instance(subject, department, level, examperiod_int, request):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' --- create_exam_instance --- ')
@@ -1304,7 +1302,6 @@ def create_exam_instance(subject, department, level, examperiod_int, examtype, r
         logger.debug('department: ' + str(department))
         logger.debug('level: ' + str(level))
         logger.debug('examperiod_int: ' + str(examperiod_int))
-        logger.debug('examtype: ' + str(examtype))
 
     exam = None
     msg_err = None
@@ -1316,7 +1313,7 @@ def create_exam_instance(subject, department, level, examperiod_int, examtype, r
             department=department,
             level=level,
             examperiod=examperiod_int,
-            examtype=examtype
+            # NIU (null not allowed): examtype=examtype
         )
         exam.save(request=request)
         if logging_on:
@@ -1333,26 +1330,26 @@ def create_exam_instance(subject, department, level, examperiod_int, examtype, r
 # - end of create_exam_instance
 
 
-def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05
-
+def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05 PR2022-01-22
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' --- delete_exam_instance --- ')
         logger.debug('instance: ' + str(instance))
+
 # - create deleted_row
     deleted_row = {'pk': instance.pk,
                     'mapid': 'exam_' + str(instance.pk),
                     'deleted': True}
     if logging_on:
         logger.debug('deleted_row: ' + str(deleted_row))
+
 # - delete instance
-    #try:
-    if True:
+    try:
         instance.delete(request=request)
-    #except Exception as e:
-    #    deleted_row = None
-   #     logger.error(getattr(e, 'message', str(e)))
-    #    error_list.append(_('This item could not be created.'))
+    except Exception as e:
+        deleted_row = None
+        logger.error(getattr(e, 'message', str(e)))
+        error_list.append(_('This exam could not be deleted.'))
 
     if logging_on:
         logger.debug('deleted_row: ' + str(deleted_row))
@@ -1360,8 +1357,9 @@ def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05
     return deleted_row
 # - end of delete_exam_instance
 
-def update_exam_instance(instance, upload_dict, error_list, examyear, request):
-    logging_on = s.LOGGING_ON
+
+def update_exam_instance(instance, upload_dict, error_list, examyear, request): #  PR2021-04-05 PR2022-01-22
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' --------- update_exam_instance -------------')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -1369,12 +1367,9 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request):
     if instance:
         save_changes = False
         for field, new_value in upload_dict.items():
-            if logging_on:
-                logger.debug('field: ' + str(field))
-                logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
 
 # --- skip fields that don't contain new values
-            if field in ('mode', 'examyear_pk', 'subject_pk', 'exam_pk', 'examperiod_int', 'examtype'):
+            if field in ('mode', 'examyear_pk', 'subject_pk', 'exam_pk', 'examtype'):
                 pass
 
 # ---   save changes in field 'depbases', 'levelbases', 'sectorbases'
@@ -1409,7 +1404,10 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request):
                     setattr(instance, field, new_value)
                     save_changes = True
 
-            elif field in ('assignment', 'keys', 'amount', 'version', 'blanks', 'partex'):
+            elif field in ('partex', 'assignment', 'keys', 'version', 'examperiod', 'amount', 'blanks'):
+                # save None instead of  '' or 0
+                if not new_value:
+                    new_value = None
                 old_value = getattr(instance, field)
                 if new_value != old_value:
                     setattr(instance, field, new_value)
@@ -1442,29 +1440,14 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request):
                 logger.error(getattr(e, 'message', str(e)))
                 msg_err = _('An error occurred. This exam could not be updated.')
                 error_list.append(msg_err)
-
 # - end of update_exam_instance
 
 
-def create_exam_rows(setting_dict, append_dict, cur_dep_only=False):
-    # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-11
-    logging_on = False  # s.LOGGING_ON
+def create_exam_rows(sel_examyear_pk, sel_depbase_pk, append_dict, exam_pk=None):
+    # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_exam_rows ============= ')
-        logger.debug('setting_dict: ' + str(setting_dict))
-
-    sel_examyear_pk = setting_dict.get('sel_examyear_pk')
-    sel_examperiod = setting_dict.get('sel_examperiod')
-    sel_depbase_pk = setting_dict.get('sel_depbase_pk')
-    sel_lvlbase_pk = setting_dict.get('sel_lvlbase_pk')
-    exam_pk = setting_dict.get('exam_pk')
-
-    if logging_on:
-        logger.debug('exam_pk: ' + str(exam_pk))
-        logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
-        logger.debug('sel_examperiod:  ' + str(sel_examperiod))
-        logger.debug('sel_depbase_pk:  ' + str(sel_depbase_pk))
-        logger.debug('sel_lvlbase_pk:  ' + str(sel_lvlbase_pk))
 
     sql_keys = {'ey_id': sel_examyear_pk, 'depbase_id': sel_depbase_pk}
 
@@ -1472,17 +1455,16 @@ def create_exam_rows(setting_dict, append_dict, cur_dep_only=False):
         "SELECT ex.id, ex.subject_id, subj.base_id AS subj_base_id, subj.examyear_id AS subj_examyear_id,",
         "CONCAT('exam_', ex.id::TEXT) AS mapid,",
         "CONCAT(subj.name,",
-        "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' ', lvl.abbrev) END,",
-        "CASE WHEN ex.version IS NULL THEN NULL ELSE CONCAT(' (', ex.version, ')') END ) AS exam_name,",
+        "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
+        "CASE WHEN ex.version IS NULL OR ex.version = '' THEN NULL ELSE CONCAT(' - ', ex.version) END ) AS exam_name,",
 
-        "ex.examperiod, ex.examtype, ex.department_id, depbase.code AS depbase_code,",
+        "ex.examperiod, ex.department_id, depbase.code AS depbase_code,",
         "ex.level_id, lvl.base_id AS levelbase_id, lvl.abbrev AS lvl_abbrev,",
         "ex.version, ex.has_partex, ex.partex, ex.assignment, ex.keys, ex.amount, ex.blanks,",
-        "ex.status, ex.auth1by_id, ex.auth2by_id, ex.locked,",
-        "ex.modifiedby_id, ex.modifiedat,",
+        "ex.status, ex.auth1by_id, ex.auth2by_id, ex.locked, ex.modifiedat,",
         "sb.code AS subj_base_code, subj.name AS subj_name,",
         "ey.code AS ey_code, ey.locked AS ey_locked,",
-        "SUBSTRING(au.username, 7) AS modby_username",
+        "au.last_name AS modby_username",
 
         "FROM subjects_exam AS ex",
         "INNER JOIN subjects_subject AS subj ON (subj.id = ex.subject_id)",
@@ -1500,28 +1482,16 @@ def create_exam_rows(setting_dict, append_dict, cur_dep_only=False):
         sql_keys ['ex_id'] = exam_pk
         sql_list.append('AND ex.id = %(ex_id)s::INT')
     else:
-        if sel_lvlbase_pk:
-            # cannot filter on levelbase_pk because of LEFT JOIN subjects_level
-            level = subj_mod.Level.objects.get_or_none(
-                base_id=sel_lvlbase_pk,
-                examyear_id=sel_examyear_pk
-            )
-            if level:
-                sql_keys ['lvl_id'] = level.pk
-                sql_list.append("AND lvl.id = %(lvl_id)s::INT")
-
-        if sel_examperiod:
-            sql_keys ['ex_per'] = sel_examperiod
-            sql_list.append("AND ex.examperiod = %(ex_per)s::INT")
-        sql_list.append("ORDER BY LOWER(sb.code)")
+        sql_list.append("ORDER BY ex.id")
 
     sql = ' '.join(sql_list)
-
+    if logging_on:
+        logger.debug('sql: ' + str(sql))
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
         exam_rows = af.dictfetchall(cursor)
 
-        # - add messages to exam_row
+# - add messages to first exam_row, only when exam_pk exists
         if exam_pk and exam_rows:
             # when exam_pk has value there is only 1 row
             row = exam_rows[0]
@@ -1532,9 +1502,87 @@ def create_exam_rows(setting_dict, append_dict, cur_dep_only=False):
     #if logging_on:
         #logger.debug('exam_rows: ' + str(exam_rows))
 
+    calc_total()
+
     return exam_rows
 # --- end of create_exam_rows
 
+
+def calc_total():
+    # --- creates possible sums of list with max_scores and occurrencies
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== calc_total ============= ')
+
+    maxscore_list = [(18, 2), (34, 1), (27, 4)]
+    if logging_on:
+        logger.debug('maxscore_list: ' + str(maxscore_list))
+
+    # use list to get reference instead of value
+    used_score_str = ""
+    total_score_dict = {}
+    total_score = 0
+    list_index = len(maxscore_list) -1
+
+    calc_recursive(maxscore_list, total_score_dict, used_score_str, total_score, list_index)
+
+
+    if logging_on:
+        logger.debug('total_score_list: ' + str(total_score_dict))
+
+    return total_score_dict
+# --- end of calc_total
+
+
+def calc_recursive(maxscore_list, total_score_dict, used_score_str, total_score, list_index):
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('-----  calc_recursive  ----- list_index: ' + str(list_index))
+        logger.debug('total_score: ' + str(total_score))
+        logger.debug('used_score_str: ' + str(used_score_str))
+
+    if list_index >= 0:
+        tuple_at_index = maxscore_list[list_index]
+        max_score = tuple_at_index[0]
+        occurrencies = tuple_at_index[1]
+        if logging_on:
+            logger.debug('     max_score: ' + str(max_score) + ' occurrencies: ' + str(occurrencies))
+
+        new_listindex = list_index - 1
+        this_used_score_str = used_score_str
+        # loop through amount of occurrencies
+        for multiplier in range(0, occurrencies + 1, 1):  # range(start_value, end_value, step), end_value is not included!
+            new_total_score = total_score + max_score * multiplier
+            if multiplier:
+                new_used_score_str = ';'.join((this_used_score_str, str(max_score)))
+            else:
+                new_used_score_str = this_used_score_str
+            if logging_on:
+                logger.debug('..... for multiplier = ' + str(multiplier))
+                logger.debug('     new_total_score: ' + str(new_total_score))
+
+            calc_recursive(maxscore_list, total_score_dict, new_used_score_str, new_total_score, new_listindex)
+
+            if logging_on:
+                logger.debug('..... end of for multiplier = ' + str(multiplier))
+    else:
+        if total_score:
+            used_score_arr = []
+            if used_score_str:
+                used_score_str = used_score_str[1:]
+                arr = used_score_str.split(';')
+                if len(arr):
+                    for score_str in arr:
+                        used_score_arr.append(int(score_str))
+                    used_score_arr.sort()
+
+            total_score_dict[total_score] = used_score_arr
+
+        if logging_on:
+            logger.debug('     end of recurrencies ')
+            logger.debug('     total_score_dict: ' + str(total_score_dict))
+            logger.debug('-----  end of calc_recursive')
+# - end of calc_recursive
 
 @method_decorator([login_required], name='dispatch')
 class SubjectImportView(View):  # PR2020-10-01

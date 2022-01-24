@@ -743,6 +743,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
     function t_get_rowindex_by_sortby(tblBody, search_sortby) {
         //console.log(" ===== t_get_rowindex_by_sortby =====");
         //console.log("search_sortby", search_sortby);
+        // TODO to be deprecated, only used in schools.js, To be replaced by b_recursive_tblRow_lookup
         let row_index = -1;
 // --- loop through rows of tblBody_datatable
         if(search_sortby){

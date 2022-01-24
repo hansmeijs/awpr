@@ -114,7 +114,7 @@ class GradeDownloadGradeIconsView(View):  # PR2021-04-30
 class GradeApproveView(View):  # PR2021-01-19
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= GradeApproveView ============= ')
         # function creates, deletes and updates grade records of current studentsubject PR2020-11-21
@@ -534,7 +534,7 @@ def get_approved_text(count):
 
 def approve_grade(grade, sel_examtype, requsr_auth, status_index, is_test, is_reset, msg_dict, request):  # PR2021-01-19
     # status_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- approve_grade -----')
         logger.debug('sel_examtype: ' + str(sel_examtype))
@@ -645,7 +645,7 @@ def approve_grade(grade, sel_examtype, requsr_auth, status_index, is_test, is_re
 
 
 def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, request):  # PR2021-01-21
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- submit_grade -----')
 
@@ -941,7 +941,8 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
 
 # ----- save changes in field 'exam'
         elif field == 'exam_pk':
-            db_field = 'exam'
+            # 'pe_exam' is not in use. Let it stay in case they want to introduce pe-exam again
+            db_field = 'ce_exam'
             saved_exam = getattr(grade_instance, db_field)
             if logging_on:
                 logger.debug('field: ' + str(field) + ' new_value: ' + str(new_value))
@@ -962,8 +963,8 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
                 if logging_on:
                     logger.debug('save_exam: ' + str(save_exam) + ' ' + str(type(save_exam)))
 
-# - save changes in field 'assignment'
-        elif field == 'answers':
+# - save changes in field 'ce_exam_result', 'pe_exam_result'
+        elif field in ('ce_exam_result', 'pe_exam_result'):
             saved_value = getattr(grade_instance, field)
             if logging_on:
                 logger.debug('field: ' + str(field) + ' new_value: ' + str(new_value))
@@ -971,18 +972,9 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
     # 2. save changes if changed and no_error
             if new_value != saved_value:
                 setattr(grade_instance, field, new_value)
-                setattr(grade_instance, 'blanks', upload_dict.get('blanks'))
                 save_changes = True
                 if logging_on:
                     logger.debug('save_changes: ' + str(save_changes))
-
-# - save changes in field 'blanks'
-        elif field == 'blanks':
-            saved_value = getattr(grade_instance, field)
-            # 2. save changes if changed and no_error
-            if new_value != saved_value:
-                setattr(grade_instance, field, new_value)
-                save_changes = True
 
         # - save changes in fields 'xx_status' and 'xxpublished'
         elif field in ('se_status', 'pe_status', 'ce_status', 'sepublished', 'pepublished', 'cepublished'):
@@ -1066,7 +1058,7 @@ def recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict):  #
     #  - check if there is a reex or reex03 grade: if so, recalc final grade in reex or reex03
     #  - only when first examperiod ( is filtered in update_grade_instance)
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- recalc_finalgrade_in_reex_reex03_grade_and_save -----')
         logger.debug('grade_instance: ' + str(grade_instance) + ' ep: ' + str(grade_instance.examperiod))
@@ -1162,7 +1154,7 @@ def recalc_finalgrade_in_grade_and_save(grade_instance, si_dict):  # PR2021-12-1
 
 
 def save_se_sr_pe_in_grade_reex_reex03_NIU(studsubj_pk, se_grade, sr_grade, pe_grade):  # PR2021-12-25
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- save_se_sr_pe_in_grade_reex_reex03_NIU -----')
     # - function puts se_grade, sr_grade and pe_grade from firstperiod grade in grade reex and reex03, if exists
@@ -1579,13 +1571,10 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
     # TODO
     # - the not-published grades are only visible when requsr_same_school
 
-    if logging_on:
-        logger.debug('sql_keys: ' + str(sql_keys))
-
     sub_list = ["SELECT exam.id, ",
                 "CONCAT(subjbase.code,",
                 "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
-                "CASE WHEN exam.version IS NULL THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
+                "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
 
                 "exam.examperiod, exam.examtype, exam.version, exam.has_partex, exam.partex, exam.amount, exam.blanks, exam.assignment, exam.keys,",
                 "exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm",
@@ -1593,7 +1582,9 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "FROM subjects_exam AS exam",
                 "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
                 "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-                "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)"
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
+                # TODO set filter
+                #"WHERE exam.published IS NOT NULL"
                 ]
     sub_exam = ' '.join(sub_list)
 
@@ -1643,7 +1634,7 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "AND school.base_id = %(sb_id)s::INT",
                 "AND dep.base_id = %(depbase_id)s::INT",
                 "AND si.ete_exam",
-                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
+                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted",
 
                 "AND grd.examperiod = %(experiod)s::INT"
                 ]
@@ -1651,9 +1642,10 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
         # when grade_pk has value: skip other filters
         sql_keys['grade_id'] = grade_pk
         sql_list.append('AND grd.id = %(grade_id)s::INT')
-    else:
-    # show grades that are not published only when requsr_same_school PR2021-04-29
-        sql_list.append('ORDER BY LOWER(stud.lastname), LOWER(stud.firstname), subjbase.code')
+
+# show grades that are not published only when requsr_same_school PR2021-04-29
+
+    sql_list.append('ORDER BY grd.id')
     sql = ' '.join(sql_list)
 
     with connection.cursor() as cursor:
@@ -1673,6 +1665,8 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
             full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
             row['fullname'] = full_name if full_name else None
 
+            if logging_on:
+                logger.debug('row: ' + str(row))
     return grade_rows
 # --- end of create_grade_with_exam_rows
 

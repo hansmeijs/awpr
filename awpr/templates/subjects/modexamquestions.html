@@ -51,11 +51,25 @@
                                             <small id="id_MEXQ_err_version" class="text-muted">{% trans 'Only required when a subject has multiple exams.' %}</small>
                                         </div>
                                     </div>
-                                    <div class="m-2">
-                                        <span>
-                                            <input id="id_MEXQ_partex_checkbox" type="checkbox" value="true" class="tw_032 mx-2">
-                                            <label for="id_MEXQ_partex_checkbox" class="mx-2 my-1">{% trans 'This exam has partial exams' %}</label>
-                                        </span>
+                                    <div class="flex_container  m-2">
+                                        <div class="flex_1">
+                                            <span>
+                                                <input id="id_MEXQ_examperiod1_checkbox" type="checkbox" value="true" class="tw_032 mx-2">
+                                                <label for="id_MEXQ_examperiod1_checkbox" class="mx-2 my-1">{% trans 'Central exam' %}</label>
+                                            </span>
+                                        </div>
+                                        <div class="flex_1">
+                                            <span>
+                                                <input id="id_MEXQ_examperiod2_checkbox" type="checkbox" value="true" class="tw_032 mx-2">
+                                                <label for="id_MEXQ_examperiod2_checkbox" class="mx-2 my-1">{% trans 'Re-examination' %}</label>
+                                            </span>
+                                        </div>
+                                        <div class="flex_2">
+                                            <span>
+                                                <input id="id_MEXQ_has_partex_checkbox" type="checkbox" value="true" class="tw_032 mx-2">
+                                                <label for="id_MEXQ_has_partex_checkbox" class="mx-2 my-1">{% trans 'This exam has partial exams' %}</label>
+                                            </span>
+                                        </div>
                                     </div>
 
                                     <div id="id_MEXQ_input_amount_container" class="m-2">
@@ -78,12 +92,12 @@
 
                                 </div>
 
-                                <div id="id_MEXQ_partex_container" class="flex_1">
+                                <div id="id_MEXQ_partex1_container" class="flex_1">
 
                                     <div class="m-2">
                                         <label class="mx-2 my-1">{% trans 'Partial exams' %}:</label>
                                         <table class="tableX tsa_tbl border_bg_transparent tbl_partex_h220_w_auto">
-                                            <tbody id="id_MEXQ_tblBody_partex"></tbody>
+                                            <tbody id="id_MEXQ_tblBody_partex1"></tbody>
                                         </table>
 
                                         <div id="id_MEXQ_btngroup_add_partex">
@@ -101,19 +115,40 @@
                                         </div>
 
                                         <div id="id_MEXQ_group_partex_name" class="border_bg_transparent mt-2 p-2">
-
-                                            <label class="mx-2 my-1">{% trans 'Partial exam name' %}:</label>
-                                            <input id="id_MEXQ_input_partex_name" type="text" class="form-control"
-                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                            <div class="mx-2">
-                                                <small id="id_MEXQ_err_partex_name" class="text-danger"></small>
+                                            <div class="flex_container">
+                                                <div class="flex_1 pr-1">
+                                                    <label class="mx-2 my-1">{% trans 'Partial exam name' %}:</label>
+                                                    <input id="id_MEXQ_input_partex_name" type="text" class="form-control"
+                                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                                    <div class="mx-2">
+                                                        <small id="id_MEXQ_err_partex_name" class="text-danger"></small>
+                                                    </div>
+                                                </div>
+                                                <div class="flex_1 pl-1">
+                                                    <label class="mx-2 my-1">{% trans 'Number of questions' %}:</label>
+                                                    <input id="id_MEXQ_partex_amount" type="text" class="form-control"
+                                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                                    <div class="mx-2">
+                                                        <small id="id_MEXQ_err_partex_amount" class="text-danger"></small>
+                                                    </div>
+                                                </div>
                                             </div>
 
-                                            <label class="mx-2 my-1">{% trans 'Number of questions' %}:</label>
-                                            <input id="id_MEXQ_partex_amount" type="text" class="form-control"
-                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                            <div class="mx-2">
-                                                <small id="id_MEXQ_err_partex_amount" class="text-danger"></small>
+                                            <div id="id_MEXQ_partex_period_container">
+                                                <div class="flex_container pt-2">
+                                                    <div class="flex_1">
+                                                        <span>
+                                                            <input id="id_MEXQ_partex_period1_checkbox" type="checkbox" value="true" class="tw_032">
+                                                            <label for="id_MEXQ_partex_period1_checkbox" class="mr-2 my-1">{% trans 'Central exam' %}</label>
+                                                        </span>
+                                                    </div>
+                                                    <div class="flex_1">
+                                                        <span>
+                                                            <input id="id_MEXQ_partex_period2_checkbox" type="checkbox" value="true" class="tw_032 ml-2">
+                                                            <label for="id_MEXQ_partex_period2_checkbox" class="mr-2 my-1">{% trans 'Re-examination' %}</label>
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             <div class="flex_container pt-2">
@@ -131,17 +166,33 @@
                         </div>
                     {% endif %}
 
-                    <div class="tab_show tab_assign tab_keys tab_answers display_hide ">
+                    <div class="tab_show tab_assign tab_keys tab_answers display_hide">
 
                         <div class="flex_container">
 
                             <div class="flex_3 flex_container">
-                                <div id="id_MEXQ_partex2_container" class="flex_2 p-2">
-                                    <table class="tableX tsa_tbl border_bg_transparent tbl_partex_h220_w_auto">
+
+                                <div id="id_MEXQ_partex2_container" class="flex_2 p-2 tab_show tab_assign tab_keys display_hide">
+                                    <label class="mx-2 my-1">{% trans 'Partial exams' %}:</label>
+                                    <table class="tsa_tbl border_bg_transparent tbl_partex_h220_w_auto">
                                         <tbody id="id_MEXQ_tblBody_partex2"></tbody>
                                     </table>
                                 </div>
-
+                                <div class="flex_2 p-2 tab_show tab_answers display_hidexx">
+                                    <label class="mx-2 my-1">{% trans 'Avaliable partial exams' %}:</label>
+                                    <table class="tsa_tbl border_bg_message tbl_partex_h220_w_auto">
+                                        <tbody id="id_MEXQ_tblBody_partex_available"></tbody>
+                                    </table>
+                                </div>
+                                <div class="flex_2 p-2 tab_show tab_answers display_hidexx">
+                                    <label class="mx-2 my-1">{% trans 'Partial exams taken' %}:</label>
+                                    <table class="tsa_tbl border_bg_lightblue tbl_partex_h220_w_auto">
+                                        <tbody id="id_MEXQ_tblBody_partex_taken"></tbody>
+                                    </table>
+                                    <div class="flex_1">
+                                        <button id="id_MEXQ_btn_remove_taken" class="btn btn-block btn-outline-secondary ">{% trans 'Remove partial exam' %}</button>
+                                    </div>
+                                </div>
                                 <div id="id_MEXQ_col_0" class="flex_1 p-2"></div>
                                 <div id="id_MEXQ_col_1" class="flex_1 p-2"></div>
                                 <div id="id_MEXQ_col_2" class="flex_1 p-2"></div>
@@ -150,10 +201,8 @@
 
                             </div>
                         </div>
-
-
-
                     </div>
+
                     <div class="tab_show tab_assign display_hide">
                         <div class="mx-2">
                             <small>{% trans 'Enter the maximum score, or - in case of multiple choice - the letter of the last option.' %}</small>
@@ -170,7 +219,7 @@
                     <div class="tab_show tab_answers display_hide">
                         <div class="mx-2">
                             <small>{% trans "Enter the letter of the answer in case of a multiple choice question, enter the score in case of an open question." %}</small><br>
-                            <small>{% trans "Enter 'x' when an answer is blank." %}</small><br>
+                            <small>{% trans "Enter 'x' when an answer is blank or - in case of a multiple choice question - multiple answers are entered." %}</small><br>
                             <small>{% trans "A multiple choice question is indicated with an * after the question number." %}</small>
                         </div>
                     </div>
@@ -179,7 +228,9 @@
                             <small>{% trans 'Click ENTER, TAB or &#8595; to go to the next question or click SHIFT+TAB or &#8593; to go to the previous one.' %}</small>
                         </div>
                     </div>
-
+                <div class="mx-2 mt-2">
+                    <small id="id_MEXQ_msg_modified"></small>
+                </div>
                 </div>
                 <div class="modal-footer">
                     {% if is_requsr_admin_or_system %}
@@ -207,6 +258,7 @@
                         <button id="id_MEXQ_btn_save"  class="btn btn-primary">{% trans 'Save' %}</button>
                     </div>
                 </div>
+
 
             </div>
         </div>

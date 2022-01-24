@@ -724,12 +724,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         if(field_name === "is_mand_subj"){
                             el_header.title = loc.Mandatory_if_subject_info;
                         }
-        // --- add width, text_align
-                        // not necessary: th_header.classList.add(class_width, class_align);
-                        el_header.classList.add(class_width, class_align);
 
-                if(filter_tag === "number"){el_header.classList.add("pr-3")}
-if(j){th_header.classList.add("border_left")};
+        // --- add vertical line
+                    if(j){th_header.classList.add("border_left")};
+        // --- right padding in number
+                    if(filter_tag === "number"){el_header.classList.add("pr-3")}
+        // --- add width, text_align
+                        el_header.classList.add(class_width, class_align);
                         //if(["etenorm", "addedbyschool"].includes(field_name)){
                        //     el_header.classList.add("tickmark_2_2")
                         //}
@@ -739,16 +740,12 @@ if(j){th_header.classList.add("border_left")};
 // ++++++++++ create filter row +++++++++++++++
         // --- add th to tblRow_filter.
                 const th_filter = document.createElement("th");
-
         // --- create element with tag based on filter_tag
                     const filter_field_tag = (["text", "number"].includes(filter_tag)) ? "input" : "div";
                     const el_filter = document.createElement(filter_field_tag);
-
         // --- add data-field Attribute.
                     el_filter.setAttribute("data-field", field_name);
                     el_filter.setAttribute("data-filtertag", filter_tag);
-if(j){th_filter.classList.add("border_left")};
-
         // --- add EventListener to el_filter
                     if (["text", "number"].includes(filter_tag)) {
                         el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
@@ -760,8 +757,7 @@ if(j){th_filter.classList.add("border_left")};
 
                         el_filter.classList.add("tickmark_0_0");
                         add_hover(th_filter);
-                    }
-
+                    };
         // --- add other attributes
                     if (filter_tag === "text") {
                         el_filter.setAttribute("type", "text")
@@ -770,10 +766,13 @@ if(j){th_filter.classList.add("border_left")};
                         el_filter.setAttribute("autocomplete", "off");
                         el_filter.setAttribute("ondragstart", "return false;");
                         el_filter.setAttribute("ondrop", "return false;");
-                    }
+                    };
 
-    // --- add width, text_align
-                    // not necessary: th_filter.classList.add(class_width, class_align);
+        // --- add vertical line
+                if(j){th_filter.classList.add("border_left")};
+        // --- right padding in number
+                if(filter_tag === "number"){el_header.classList.add("pr-3")}
+        // --- add width, text_align, color
                     el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
                 th_filter.appendChild(el_filter)
                 tblRow_filter.appendChild(th_filter);
@@ -819,7 +818,8 @@ if(j){th_filter.classList.add("border_left")};
         tblRow.id = map_id
 
 // --- add data attributes to tblRow
-        tblRow.setAttribute("data-pk", map_dict.id);
+        const pk_int = map_dict.id;
+        tblRow.setAttribute("data-pk", pk_int);
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
         tblRow.setAttribute("data-ob1", ob1);
@@ -849,14 +849,12 @@ if(j){th_filter.classList.add("border_left")};
         // --- add data-field attribute
                 el.setAttribute("data-field", field_name);
 
-        // --- add width, text_align
-                // not necessary: td.classList.add(class_width, class_align);
-                el.classList.add(class_width, class_align);
-
-if(j){td.classList.add("border_left")};
-
+        // --- add vertical line
+                if(j){td.classList.add("border_left")};
+        // --- right padding in number
                 if(filter_tag === "number"){el.classList.add("pr-3")}
-
+        // --- add width, text_align
+                el.classList.add(class_width, class_align);
 
         // --- append element
                 td.appendChild(el);

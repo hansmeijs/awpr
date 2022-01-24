@@ -81,12 +81,12 @@
     <!-- CONTENT HEADER - LOADER -->
             <div class="margin_top80_left16_right32">
                 <div class="flex_container">
-            <!-- content_header -->
-    <!-- header_text left -->
+    <!-- content_header -->
+        <!-- header_text left -->
                     <div class="flex_2 p-2">
-                        <h5 id="id_header_left" class="mb-0">WWW</h5>
+                        <h5 id="id_header_left" class="mb-0"></h5>
                     </div>
-    <!-- loader -->
+        <!-- loader -->
                     <div id="id_loader" class="py-2">
                         <div class="loader p-2">
                             <div class="duo duo1">
@@ -99,49 +99,45 @@
                             </div>
                         </div>
                     </div>
-<!-- header_text left -->
+        <!-- header_text right -->
                     <div class="flex_2_align_right p-2">
-                        <h5 id="id_header_right" class="mb-0">XXXX</h5>
+                        <h5 id="id_header_right" class="mb-0"></h5>
                     </div>
-
                 </div>
             </div>
-            <!-- end content_header -->
+    <!-- end content_header -->
 
     <!-- BUTTON GROUP -->
-                <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                    <button data-btn="btn_studsubj" class="btn btn-secondary ">{% trans 'Subjects' %}</button>
-                    <button data-btn="btn_exemption" class="btn btn-secondary">{% trans 'Exemption' %}</button>
+            <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
+                <button data-btn="btn_studsubj" class="btn btn-secondary ">{% trans 'Subjects' %}</button>
+                <button data-btn="btn_exemption" class="btn btn-secondary">{% trans 'Exemption' %}</button>
 
-                    {% if sr_allowed %}
-                        <button data-btn="btn_sr" class="btn btn-secondary">{% trans 'Re-examination school exam' %}</button>
+                {% if sr_allowed %}
+                    <button data-btn="btn_sr" class="btn btn-secondary">{% trans 'Re-examination school exam' %}</button>
+                {% endif %}
+                {% if not no_centralexam %}
+                    <button data-btn="btn_reex" class="btn btn-secondary">{% trans 'Re-examination' %}</button>
+                    {% if not no_thirdperiod %}
+                        <button data-btn="btn_reex03" class="btn btn-secondary">{% trans 'Re-exam 3rd period' %}</button>
                     {% endif %}
-                    {% if not no_centralexam %}
-                        <button data-btn="btn_reex" class="btn btn-secondary">{% trans 'Re-examination' %}</button>
-                        {% if not no_thirdperiod %}
-                            <button data-btn="btn_reex03" class="btn btn-secondary">{% trans 'Re-exam 3rd period' %}</button>
-                        {% endif %}
-                    {% endif %}
-                    <button data-btn="btn_pok" class="btn btn-secondary">{% trans 'Proof_of_knowledge' %}</button>
-                </div>
+                {% endif %}
+                <button data-btn="btn_pok" class="btn btn-secondary">{% trans 'Proof_of_knowledge' %}</button>
+            </div>
     <!-- end BUTTON GROUP -->
-    <!-- END OF CONTENT HEADER -->
+    <!-- END OF CONTENT HEADER - LOADER -->
 
     <!-- CONTENT BODY -->
     <!-- =================== DATA TABLE  =================== -->
             <div id="id_tbl_container"
-                 class="content_body mx-2 mt-2 pr-4">
+                class="content_body mx-2 mt-2 pr-4">
                 <table class="table tsa_tbl">
                     <thead id="id_tblHead_datatable"></thead>
                     <tbody id="id_tblBody_datatable"></tbody>
                 </table>
             </div>
 
-
-    <!-- =================== STUDENT SUBJECTS  =================== -->
-
     <!-- END OF CONTENT BODY -->
-            </div>
+
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"

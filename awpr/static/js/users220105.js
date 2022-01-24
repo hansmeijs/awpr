@@ -603,7 +603,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- add EventListener to td
                     if (field_name === "select") {
                         // TODO add select multiple users option PR2020-08-18
-
                     } else if (["sb_code", "school_abbrev", "username", "last_name", "email"].includes(field_name)){
                         el.addEventListener("click", function() {MUA_Open("update", el)}, false)
                         el.classList.add("pointer_show");
@@ -618,7 +617,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         // attach eventlistener and hover to td, not to el. No need to add icon_class here
                         td.addEventListener("click", function() {UploadToggle(el)}, false)
                         add_hover(td);
-                    } else if ( field_name === "activated") {
+                    } else if (field_name === "activated") {
                         el.addEventListener("click", function() {ModConfirmOpen("user", "send_activation_email", el)}, false )
                     } else if (field_name === "is_active") {
                         el.addEventListener("click", function() {ModConfirmOpen("user", "is_active", el)}, false )
@@ -656,7 +655,6 @@ document.addEventListener('DOMContentLoaded', function() {
             let inner_text = null, title_text = null, filter_value = null;
             if (field_name === "select") {
                 // TODO add select multiple users option PR2020-08-18
-
             } else if (["sb_code", "username", "last_name", "email", "page"].includes(field_name)){
                 inner_text = map_dict[field_name];
                 filter_value = (inner_text) ? inner_text.toLowerCase() : null;
@@ -770,7 +768,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // TODO remove requsr_pk from client
                     const is_request_user = (permit_dict.requsr_pk && permit_dict.requsr_pk === data_dict.id);
                     if(fldName === "group_admin" && is_request_user && permit_bool ){
-                        ModConfirmOpen("uergroup", "permission_admin", el_input)
+                        ModConfirmOpen("usergroup", "permission_admin", el_input)
                     } else {
 
             // ---  toggle permission el_input
@@ -1251,8 +1249,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         el_MUA_footer_container.classList.add(cls_hide);
-
-id_MUA_msg_modified
 
 // ---  reset text on btn cancel
         if(el_MUA_btn_cancel) {el_MUA_btn_cancel.innerText = loc.Cancel};
@@ -1815,6 +1811,7 @@ id_MUA_msg_modified
         let dont_show_modal = false;
         const is_mode_permission_admin = (mode === "permission_admin");
         const is_mode_send_activation_email = (mode === "send_activation_email");
+
         //console.log("mode", mode)
         const inactive_txt = (mod_dict.current_isactive) ? loc.Make_user_inactive : loc.Make_user_active;
         const header_text = (mode === "delete") ? (tblName === "userpermit") ? loc.Delete_permission : loc.Delete_user :

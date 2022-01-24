@@ -683,7 +683,7 @@ document.addEventListener("DOMContentLoaded", function() {
     function HandleSbrExamtype(el_select) {
         console.log("=== HandleSbrExamtype");
         //console.log( "el_select.value: ", el_select.value, typeof el_select.value)
-        // sel_examtype = "se", "pe", "ce", "re2", "re3", "exm"
+        // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exm"
         setting_dict.sel_examtype = el_select.value;
         const filter_value = Number(el_select.value);
         //t_FillOptionsFromList(el_SBR_select_examtype, loc.options_examtype, "value", "caption",
@@ -1381,7 +1381,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
                             pecegrade: true, finalgrade: true, note_status: true,
         */
 
-                // sel_examtype = "se", "pe", "ce", "re2", "re3", "exm"
+                // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exm"
         // first reset shown
         const show_all_grades = (selected_btn === "grade_by_all")
         columns_shown.pescore = show_all_grades; columns_shown.cescore = show_all_grades;
@@ -1402,9 +1402,9 @@ if(j && !is_status_field){td.classList.add("border_left")};
             columns_shown.pescore = true; columns_shown.pe_status = true;
         } else if (sel_examtype === "ce"){
             columns_shown.cescore = true; columns_shown.ce_status = true;
-        } else if (sel_examtype === "re2"){
+        } else if (sel_examtype === "reex"){
             columns_shown.cescore = true; columns_shown.cegrade = true; columns_shown.ce_status = true;
-        } else if (sel_examtype === "re3"){
+        } else if (sel_examtype === "reex03"){
             columns_shown.cescore = true; columns_shown.cegrade = true; columns_shown.ce_status = true;
         } else if (sel_examtype === "exm"){
             columns_shown.segrade = true; columns_shown.se_status = true;
@@ -2142,7 +2142,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
                 document.getElementById("id_MAG_subheader").innerText = (is_approve_mode) ? loc.MAG_info.subheader_approve : loc.MAG_info.subheader_submit;
 
                 el_MAG_examperiod.innerText = setting_dict.sel_examperiod_caption
-                // sel_examtype = "se", "pe", "ce", "re2", "re3", "exm"
+                // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exm"
                 let examtype_caption = null;
                 for (let i = 0, dict; dict = loc.options_examtype[i]; i++) {
                     if(dict.value === setting_dict.sel_examtype) {
